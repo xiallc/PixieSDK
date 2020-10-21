@@ -1,0 +1,128 @@
+# -*- Makefile -*-
+#
+# Compiles will look like this:
+# $(CC) $(CFLAG_COMPILE) $(CFLAGS) [specific defs] [source file(s)]
+#
+# Links will look like this:
+# $(LINK) $(LINK_PRE_FLAGS) $(LINK_OUT) [objects] [libs: $(LINK_LIBS), etc] $(LINK_POST_FLAGS)
+# where $(LINK_LIBS) is pulled in from the enclosing sub-make file.
+#
+
+LIB_ROOT        := lib
+
+ifeq ($(SYSTEM_ROOT), '')
+SYSTEM_LIB_ROOT := c:/windows/system32
+else
+SYSTEM_LIB_ROOT := $(SYSTEM_ROOT)
+endif
+
+# The ':' the separator isn't supposed
+# to work on Win32 versions of make, but
+# it is the *only* separator that seems
+# to work here.
+export VPATH := ../inc:../lib:../t
+
+# The extension of an object file
+OBJ := obj
+# The extension of a dynamic library
+DYNLIB  := dll
+# The extension of a static library
+STATLIB := lib
+# The extension of a Ruby extension library
+RBLIB := so
+# For Linux machines...
+PREFIX_LIB :=
+
+# The system delete/rm command
+# We assume that if you are running on
+# Windows w/ 'make' then you probably have
+# Cygwin and have 'rm' as well.
+RM := rm
+# The system cd/chdir command
+CD := cd
+
+# The archiver
+AR := lib
+
+
+# This is called after the link is complete. Perhaps SYSTEM_COPY should
+# go here in the future?
+LINK_HOOK =
+
+# This is a hook to delete symbolic links when 'clean' is called.
+RM_LINKS = 
+
+
+# This should be the compiler
+#CC     := c:\\progra~1\\micros~2\\vc98\\bin\\cl.exe
+CC := cl
+
+# This should be the flag the compiler provides
+# for just generating an object file, instead of
+# an executable
+CFLAG_COMPILE := -c
+CFLAG_OUT     := /Fo
+
+# This should be any flags you want to pass to the compiler,
+# not including the previous flag
+
+CFLAGS := /nologo /Zp2 /W3 /Gm /ZI /Od /EHsc /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" \
+          /FD /D "_CRT_SECURE_NO_DEPRECATE"
+
+INCFLAGS := -I"app" -I"sys" -I"sys/inc"
+
+RELEASE = true
+
+ifeq ($(RELEASE), false)
+CFLAGS := $(CFLAGS) -MDd -LDd
+else
+CFLAGS := $(CFLAGS) -MT
+endif
+
+# This should be the linker
+#LINK := c:\\progra~1\\micros~2\\vc98\\bin\\link.exe
+LINK := link
+
+# Any flags that go before the object files in the linker pass
+LINK_PRE_FLAGS := 
+
+# Linker output flag
+LINK_FLAG_OUT := /out:
+# Linker implib flag
+LINK_IMPLIB   := /implib:
+# Linker pdb flag
+LINK_PDB      := /pdb:
+
+# The bulk of the dynamic linker flags
+DYN_LIB_LINK_FLAGS := /dll /incremental:no /machine:I386
+
+# The bulk of the dynamic linker flags for executables
+EXE_LINK_FLAGS := /incremental:no /machine:I386
+		      
+# Static library linking
+STAT_LIB_LINK_FLAGS := /lib /libpath:"$(LIB_ROOT)" /machine:I386 \
+                       /libpath:"c:\program files\microsoft visual studio\vc98\lib" \
+                       /out:"$(LIB_ROOT)\$(NAME).$(STATLIB)"
+
+# Stock Win32 libraries
+SYSTEM_LIBS := kernel32.lib user32.lib gdi32.lib winspool.lib \
+               comdlg32.lib advapi32.lib shell32.lib ole32.lib \
+               oleaut32.lib uuid.lib odbccp32.lib
+	       
+EXTRA_LIBS := winmm.lib
+APP_EXTRA_LIBS := pixie16sysdll.lib
+# Precompiled PLX library 
+PLX_LIB := sys/lib/PlxApi.lib
+
+# Ruby 
+RUBY := ruby
+
+# Special make command to build tests. It is introduced due to the use of NMAKE
+# which is different form GNU make. NMAKE is necessary since in MS Windows environment 
+# ruby builds makefiles for NMAKE. MAKEFLAGS= is necessary to clean the flag otherwise
+# NMAKE crashes
+BINDINGS_MAKE_CMD := cd bindings; MAKEFLAGS=; nmake 
+
+
+EXTRA_FILES := *.pdb *.exp *.idb *.$(STATLIB) 
+

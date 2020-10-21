@@ -1,0 +1,97 @@
+# -*- Makefile -*-
+#
+# Compiles will look like this:
+# $(CC) $(CFLAG_COMPILE) $(CFLAGS) [specific defs] [source file(s)]
+#
+# Links will look like this:
+# $(LINK) $(LINK_PRE_FLAGS) $(LINK_OUT) [objects] [libs: $(LINK_LIBS), etc] $(LINK_POST_FLAGS)
+# where $(LINK_LIBS) is pulled in from the enclosing sub-make file.
+#
+
+LIB_ROOT        := 
+
+ifeq ($(SYSTEM_ROOT), '')
+SYSTEM_LIB_ROOT := c:/windows/system32
+else
+SYSTEM_LIB_ROOT := $(SYSTEM_ROOT)
+endif
+
+# The ':' the separator isn't supposed
+# to work on Win32 versions of make, but
+# it is the *only* separator that seems
+# to work here.
+export VPATH := ../inc:../lib:../t
+
+# The extension of an object file
+OBJ := o
+# The extension of a dynamic library
+DYNLIB  := so
+# The extension of a static library
+STATLIB := a
+# The extension of a Ruby extension library
+RBLIB := so
+# For Linux machines...
+PREFIX_LIB := lib
+
+# The system delete/rm command
+# We assume that if you are running on
+# Windows w/ 'make' then you probably have
+# Cygwin and have 'rm' as well.
+RM := rm
+# The system cd/chdir command
+CD := cd
+
+# The archiver
+AR := ar
+
+
+# This is called after the link is complete. Perhaps SYSTEM_COPY should
+# go here in the future?
+LINK_HOOK =
+
+# This is a hook to delete symbolic links when 'clean' is called.
+RM_LINKS = 
+
+# This should be the compiler
+CC := gcc
+
+# This should be the flag the compiler provides
+# for just generating an object file, instead of
+# an executable
+CFLAG_COMPILE := -c
+CFLAG_OUT     := -o
+
+# This should be any flags you want to pass to the compiler,
+# not including the previous flag
+CFLAGS := -DPLX_LINUX
+	  
+INCFLAGS := -Iapp -Isys -Isys/inc
+
+# This should be the linker
+LINK := gcc
+
+# Any flags that go before the object files in the linker pass
+LINK_PRE_FLAGS := 
+
+# Linker output flag
+LINK_FLAG_OUT := -o
+
+# The bulk of the dynamic linker flags
+DYN_LIB_LINK_FLAGS := -shared -L.
+		      
+# Static library linking
+STAT_LIB_LINK_FLAGS := 
+
+# System libraries
+SYSTEM_LIBS := 
+	       
+EXTRA_LIBS :=
+APP_EXTRA_LIBS := -lpixie16sysdll
+# Precompiled PLX library 
+PLX_LIB := sys/lib/PlxApi.a
+
+# Ruby 
+RUBY := ruby
+
+EXTRA_FILES := *.pdb *.exp *.idb *.$(STATLIB) 
+
