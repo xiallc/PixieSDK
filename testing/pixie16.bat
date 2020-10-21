@@ -1,0 +1,1 @@
+\Xilinx\bin\nt\impact.exe -batch pixie16RevBCD.cmd
