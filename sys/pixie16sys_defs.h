@@ -62,9 +62,14 @@ extern "C" {
   -------------------------------------*/
 #define PIXIE16_WINDOWS_SYSAPI    0
 #define PIXIE16_LINUX_SYSAPI      1
-	// Changing PIXIE16_SYSAPI_VER here affects the code globally
-#define PIXIE16_SYSAPI_VER        PIXIE16_WINDOWS_SYSAPI	
-	
+
+// Changing PIXIE16_SYSAPI_VER here affects the code globally
+#ifdef PLX_LINUX
+#define PIXIE16_SYSAPI_VER        PIXIE16_LINUX_SYSAPI
+#else
+#define PIXIE16_SYSAPI_VER        PIXIE16_WINDOWS_SYSAPI
+#endif
+
 
 /*------------------------------------- 
 	Define EXPORT macro
