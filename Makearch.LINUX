@@ -63,7 +63,7 @@ CFLAG_OUT     := -o
 
 # This should be any flags you want to pass to the compiler,
 # not including the previous flag
-CFLAGS := -DPLX_LINUX
+CFLAGS := -DPLX_LINUX -fPIC
 	  
 INCFLAGS := -Iapp -Isys -Isys/inc
 
@@ -83,12 +83,12 @@ DYN_LIB_LINK_FLAGS := -shared -L.
 STAT_LIB_LINK_FLAGS := 
 
 # System libraries
-SYSTEM_LIBS := 
-	       
-EXTRA_LIBS :=
-APP_EXTRA_LIBS := -lpixie16sysdll
-# Precompiled PLX library 
-PLX_LIB := sys/lib/PlxApi.a
+SYSTEM_LIBS :=
+
+#EXTRA_LIBS :=
+#APP_EXTRA_LIBS := -lpixie16sysdll
+# Precompiled PLX library
+#PLX_LIB := sys/lib/PlxApi.a
 
 # Ruby 
 RUBY := ruby

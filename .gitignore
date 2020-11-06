@@ -1,5 +1,11 @@
-# Created by svpaulauskas
+# IDE Files
 .idea/
+
+# WAF Files
+.lock-waf*
+waf3-*
+build/
+
 
 # Created by .ignore support plugin (hsz.mobi)
 ### VisualStudioCode template
@@ -16,35 +22,20 @@
 # CMake
 cmake-build-*/
 
-# Mongo Explorer plugin
-.idea/**/mongoSettings.xml
-
 # File-based project format
 *.iws
 
 # IntelliJ
 out/
 
-# mpeltonen/sbt-idea plugin
-.idea_modules/
-
 # JIRA plugin
 atlassian-ide-plugin.xml
-
-# Cursive Clojure plugin
-.idea/replstate.xml
 
 # Crashlytics plugin (for Android Studio and IntelliJ)
 com_crashlytics_export_strings.xml
 crashlytics.properties
 crashlytics-build.properties
 fabric.properties
-
-# Editor-based Rest Client
-.idea/httpRequests
-
-# Android studio 3.1+ serialized cache file
-.idea/caches/build_file_checksums.ser
 
 ### Windows template
 # Windows thumbnail cache files
@@ -172,4 +163,3 @@ install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
 _deps
-
