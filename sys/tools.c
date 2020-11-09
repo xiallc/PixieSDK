@@ -48,25 +48,25 @@
 ******************************************************************************/
 
 #include "pixie16sys_common.h"
-#include "pixie16sys_export.h"
 #include "pixie16sys_defs.h"
+#include "pixie16sys_export.h"
 
-#include <stdio.h>
 #include <math.h>
-#include <time.h>
-#include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <time.h>
 #if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
 #include <windows.h>
 #elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI
-#include <unistd.h>
-#include <sys/time.h>
 #include <stdint.h>
-#define SECOND 1000*1000*1000	/* nanoseconds/second */
+#include <sys/time.h>
+#include <unistd.h>
+#define SECOND 1000 * 1000 * 1000 /* nanoseconds/second */
 #endif
 
 
-#if PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI && defined (USE_USLEEP)
+#if PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI && defined(USE_USLEEP)
 /****************************************************************
 *	USleep:
 *		Block for the specified number of nanoseconds.
@@ -74,25 +74,21 @@
 *
 ****************************************************************/
 
-static void USleep(double nanoseconds)
-{
-	// determine if we need to sleep for seconds
-	uint32_t sec = (uint32_t)(nanoseconds / (SECOND));
+static void USleep(double nanoseconds) {
+    // determine if we need to sleep for seconds
+    uint32_t sec = (uint32_t)(nanoseconds / (SECOND));
 
-	// determine the left over nanoseconds
-	uint32_t remainder = nanoseconds - sec * SECOND;
+    // determine the left over nanoseconds
+    uint32_t remainder = nanoseconds - sec * SECOND;
 
-	// convert to nanoseconds
-	struct timespec sleepAmount = {sec, remainder};
-	struct timespec sleepRemaining;
+    // convert to nanoseconds
+    struct timespec sleepAmount = {sec, remainder};
+    struct timespec sleepRemaining;
 
-	// This loop deals with the case that nanosleep is interrupted by
-	// a signal. In that case, sleepRemaining will be set to the unslept
-	// time.
-	while(nanosleep(&sleepAmount, &sleepRemaining) != 0)
-	{
-		sleepAmount = sleepRemaining;
-	}
+    // This loop deals with the case that nanosleep is interrupted by
+    // a signal. In that case, sleepRemaining will be set to the unslept
+    // time.
+    while (nanosleep(&sleepAmount, &sleepRemaining) != 0) { sleepAmount = sleepRemaining; }
 }
 #endif
 
@@ -112,109 +108,95 @@ static void USleep(double nanoseconds)
 *
 ****************************************************************/
 
-int get_ns_per_cycle(double *ns_per_cycle)
-{
+int get_ns_per_cycle(double* ns_per_cycle) {
 #if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
-	TIMECAPS resolution;
-	DWORD start, finish, duration;
-	char ErrMSG[MAX_ERRMSG_LENGTH];
-	unsigned int NumCycles;
-	int count;
-#elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI && (!defined (USE_USLEEP))
-	struct timeval start_time, end_time;
-	double start_count, end_count, duration;
-	unsigned int NumCycles;
-	int count;
+    TIMECAPS resolution;
+    DWORD start, finish, duration;
+    char ErrMSG[MAX_ERRMSG_LENGTH];
+    unsigned int NumCycles;
+    int count;
+#elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI && (!defined(USE_USLEEP))
+    struct timeval start_time, end_time;
+    double start_count, end_count, duration;
+    unsigned int NumCycles;
+    int count;
 #endif
-	
+
 #if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
-	if (timeGetDevCaps (&resolution, sizeof (TIMECAPS)) != TIMERR_NOERROR)
-	{
-		sprintf(ErrMSG, "*ERROR* (get_ns_per_cycle): failed to obtain timer resolution");
-		Pixie_Print_MSG(ErrMSG);
-		return(-1);
-	}
-	
-	if (resolution.wPeriodMin <= 1)
-	{
-		if (timeBeginPeriod (1) == TIMERR_NOERROR)
-		{
-			
-			NumCycles = 100000000;
-			count = NumCycles;
-			
-			start = timeGetTime ();
-			
-			do
-			{
-				count --;
-			} while (count >= 0);
-			
-			finish = timeGetTime ();
-			
-			duration = finish - start;
-			
-			*ns_per_cycle = ceil((double)duration / (double)NumCycles * 1.0e6);
-			
-			timeEndPeriod (1);
-		}
-		else
-		{
-			sprintf(ErrMSG, "*ERROR* (get_ns_per_cycle): failed to set timer resolution to 1 ms");
-			Pixie_Print_MSG(ErrMSG);
-			return(-2);
-		}
-	}
-	else
-	{
-		sprintf(ErrMSG, "*ERROR* (get_ns_per_cycle): minimum timer resolution is greater than 1 ms");
-		Pixie_Print_MSG(ErrMSG);
-		return(-3);
-	}
+    if (timeGetDevCaps(&resolution, sizeof(TIMECAPS)) != TIMERR_NOERROR) {
+        sprintf(ErrMSG, "*ERROR* (get_ns_per_cycle): failed to obtain timer resolution");
+        Pixie_Print_MSG(ErrMSG);
+        return (-1);
+    }
+
+    if (resolution.wPeriodMin <= 1) {
+        if (timeBeginPeriod(1) == TIMERR_NOERROR) {
+
+            NumCycles = 100000000;
+            count = NumCycles;
+
+            start = timeGetTime();
+
+            do { count--; } while (count >= 0);
+
+            finish = timeGetTime();
+
+            duration = finish - start;
+
+            *ns_per_cycle = ceil((double) duration / (double) NumCycles * 1.0e6);
+
+            timeEndPeriod(1);
+        } else {
+            sprintf(ErrMSG, "*ERROR* (get_ns_per_cycle): failed to set timer resolution to 1 ms");
+            Pixie_Print_MSG(ErrMSG);
+            return (-2);
+        }
+    } else {
+        sprintf(ErrMSG, "*ERROR* (get_ns_per_cycle): minimum timer resolution is greater than 1 ms");
+        Pixie_Print_MSG(ErrMSG);
+        return (-3);
+    }
 #elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI
 
-	// There are two options in Linux for returning the ns_per_cycle:
-	//   (1) Use gettimeofday function to directly compute it and then wait
-	//       for the number of cycles directly;
-	//   (2) Directly return it as NSMULTIPLIER and then use USleep function
-	//       for the wait.
+    // There are two options in Linux for returning the ns_per_cycle:
+    //   (1) Use gettimeofday function to directly compute it and then wait
+    //       for the number of cycles directly;
+    //   (2) Directly return it as NSMULTIPLIER and then use USleep function
+    //       for the wait.
 
-#ifndef USE_USLEEP	// USleep function will NOT be used
+#ifndef USE_USLEEP  // USleep function will NOT be used
 
-	// initialize the counter
-	NumCycles = 100000000;
-	count = NumCycles;
-	
-	// record the start time
-	gettimeofday(&start_time, NULL);
-	
-	do
-	{
-		count --;
-	} while (count >= 0);
-	
-	// record the end time
-	gettimeofday(&end_time, NULL);
-	
-	start_count = (double) start_time.tv_sec + 1.0e-6 * (double) start_time.tv_usec;
-	end_count = (double) end_time.tv_sec + 1.0e-6 * (double) end_time.tv_usec;
-	duration = end_count - start_count;
+    // initialize the counter
+    NumCycles = 100000000;
+    count = NumCycles;
 
-	// return ns_per_cycle with a multiplication factor (NSMULTIPLIER), which is defined
-	// in pixie16sys_defs.h and can be modified to accommodate different booting timing
-	// requirements in different Linux systems.
+    // record the start time
+    gettimeofday(&start_time, NULL);
 
-	*ns_per_cycle = NSMULTIPLIER * ceil((double)duration / (double)NumCycles * 1.0e9);
+    do { count--; } while (count >= 0);
 
-#else	// USleep function will be used
+    // record the end time
+    gettimeofday(&end_time, NULL);
 
-	*ns_per_cycle = NSMULTIPLIER;
+    start_count = (double) start_time.tv_sec + 1.0e-6 * (double) start_time.tv_usec;
+    end_count = (double) end_time.tv_sec + 1.0e-6 * (double) end_time.tv_usec;
+    duration = end_count - start_count;
 
-#endif	// End of USE_USLEEP check
+    // return ns_per_cycle with a multiplication factor (NSMULTIPLIER), which is defined
+    // in pixie16sys_defs.h and can be modified to accommodate different booting timing
+    // requirements in different Linux systems.
 
-#endif	// End of PIXIE16_LINUX_SYSAPI
-	
-	return(0);
+    *ns_per_cycle = NSMULTIPLIER * ceil((double) duration / (double) NumCycles * 1.0e9);
+
+#else  // USleep function will be used
+
+    *ns_per_cycle = NSMULTIPLIER;
+
+#endif  // End of USE_USLEEP check
+
+#endif  // End of PIXIE16_LINUX_SYSAPI
+
+    return (0);
 }
 
 
@@ -224,38 +206,30 @@ int get_ns_per_cycle(double *ns_per_cycle)
 *
 ****************************************************************/
 
-void wait_for_a_short_time(int cycles)
-{
+void wait_for_a_short_time(int cycles) {
 
 #if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
 
-	do
-	{
-		cycles --;
-	}while (cycles >= 0);
+    do { cycles--; } while (cycles >= 0);
 
 #elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI
 
-	
-	// There are two options for this wait_for_a_short_time in Linux:
-	//   (1) wait for the number of cycles directly;
-	//   (2) use USleep function for the wait.
 
-#ifndef USE_USLEEP	// USleep function will NOT be used
+    // There are two options for this wait_for_a_short_time in Linux:
+    //   (1) wait for the number of cycles directly;
+    //   (2) use USleep function for the wait.
 
-	do
-	{
-		cycles --;
-	}while (cycles >= 0);
+#ifndef USE_USLEEP  // USleep function will NOT be used
 
-#else	// USleep function will be used
+    do { cycles--; } while (cycles >= 0);
 
-	USleep((double)cycles);
+#else  // USleep function will be used
 
-#endif	// End of USE_USLEEP check
+    USleep((double) cycles);
 
-#endif	// End of PIXIE16_LINUX_SYSAPI
+#endif  // End of USE_USLEEP check
 
+#endif  // End of PIXIE16_LINUX_SYSAPI
 }
 
 
@@ -265,9 +239,8 @@ void wait_for_a_short_time(int cycles)
 *
 ****************************************************************/
 
-unsigned short SYS16_SetBit(unsigned short bit, unsigned short value)
-{
-	return(value | (unsigned short)(pow(2.0, (double)bit)));
+unsigned short SYS16_SetBit(unsigned short bit, unsigned short value) {
+    return (value | (unsigned short) (pow(2.0, (double) bit)));
 }
 
 
@@ -277,10 +250,9 @@ unsigned short SYS16_SetBit(unsigned short bit, unsigned short value)
 *
 ****************************************************************/
 
-unsigned short SYS16_ClrBit(unsigned short bit, unsigned short value)
-{
-	value = SYS16_SetBit(bit, value);
-	return(value ^ (unsigned short)(pow(2.0, (double)bit)));
+unsigned short SYS16_ClrBit(unsigned short bit, unsigned short value) {
+    value = SYS16_SetBit(bit, value);
+    return (value ^ (unsigned short) (pow(2.0, (double) bit)));
 }
 
 
@@ -290,9 +262,8 @@ unsigned short SYS16_ClrBit(unsigned short bit, unsigned short value)
 *
 ****************************************************************/
 
-unsigned short SYS16_TstBit(unsigned short bit, unsigned short value)
-{
-	return(((value & (unsigned short)(pow(2.0, (double)bit))) >> bit));
+unsigned short SYS16_TstBit(unsigned short bit, unsigned short value) {
+    return (((value & (unsigned short) (pow(2.0, (double) bit))) >> bit));
 }
 
 
@@ -302,9 +273,8 @@ unsigned short SYS16_TstBit(unsigned short bit, unsigned short value)
 *
 ****************************************************************/
 
-unsigned int SYS32_SetBit(unsigned short bit, unsigned int value)
-{
-	return(value | (unsigned int)(pow(2.0, (double)bit)));
+unsigned int SYS32_SetBit(unsigned short bit, unsigned int value) {
+    return (value | (unsigned int) (pow(2.0, (double) bit)));
 }
 
 
@@ -314,10 +284,9 @@ unsigned int SYS32_SetBit(unsigned short bit, unsigned int value)
 *
 ****************************************************************/
 
-unsigned int SYS32_ClrBit(unsigned short bit, unsigned int value)
-{
-	value = SYS32_SetBit(bit, value);
-	return(value ^ (unsigned int)(pow(2.0, (double)bit)));
+unsigned int SYS32_ClrBit(unsigned short bit, unsigned int value) {
+    value = SYS32_SetBit(bit, value);
+    return (value ^ (unsigned int) (pow(2.0, (double) bit)));
 }
 
 
@@ -327,9 +296,8 @@ unsigned int SYS32_ClrBit(unsigned short bit, unsigned int value)
 *
 ****************************************************************/
 
-unsigned int SYS32_TstBit(unsigned short bit, unsigned int value)
-{
-	return(((value & (unsigned int)(pow(2.0, (double)bit))) >> bit));
+unsigned int SYS32_TstBit(unsigned short bit, unsigned int value) {
+    return (((value & (unsigned int) (pow(2.0, (double) bit))) >> bit));
 }
 
 /****************************************************************
@@ -342,30 +310,28 @@ unsigned int SYS32_TstBit(unsigned short bit, unsigned int value)
 *
 ****************************************************************/
 
-int Pixie_Print_MSG(char *message)
-{
-	time_t rawtime;
-	struct tm *timeinfo;
-	FILE *Pixie16msg = NULL;
-	
-	// Get current date and time
-	time ( &rawtime );
-	timeinfo = localtime ( &rawtime );
-	
-	// Append current date and time
-	strcat(message, "\t\t[");
-	strncat(message, asctime(timeinfo), strlen(asctime(timeinfo))-1);
-	strcat(message, "]\n");
-	
-	// Write to file
-	Pixie16msg = fopen("Pixie16msg.txt", "a");
-	if(Pixie16msg == NULL)
-	{
-		return(-1);
-	}
-	
-	fprintf(Pixie16msg, "%s", message);
-	fclose(Pixie16msg);
-	
-	return(0);
+int Pixie_Print_MSG(char* message) {
+    time_t rawtime;
+    struct tm* timeinfo;
+    FILE* Pixie16msg = NULL;
+
+    // Get current date and time
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    // Append current date and time
+    strcat(message, "\t\t[");
+    strncat(message, asctime(timeinfo), strlen(asctime(timeinfo)) - 1);
+    strcat(message, "]\n");
+
+    // Write to file
+    Pixie16msg = fopen("Pixie16msg.txt", "a");
+    if (Pixie16msg == NULL) {
+        return (-1);
+    }
+
+    fprintf(Pixie16msg, "%s", message);
+    fclose(Pixie16msg);
+
+    return (0);
 }

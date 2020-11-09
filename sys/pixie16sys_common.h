@@ -55,37 +55,36 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-	
-	unsigned short SYS16_SetBit(unsigned short bit, unsigned short value);
-	unsigned short SYS16_ClrBit(unsigned short bit, unsigned short value);
-	unsigned short SYS16_TstBit(unsigned short bit, unsigned short value);
-	unsigned int SYS32_SetBit(unsigned short bit, unsigned int value);
-	unsigned int SYS32_ClrBit(unsigned short bit, unsigned int value);
-	unsigned int SYS32_TstBit(unsigned short bit, unsigned int value);
-	
-	
-	int get_ns_per_cycle(double *ns_per_cycle);
-	void wait_for_a_short_time(int cycles);
-	
-	int Pixie_DSP_Memory_Burst_Read (
-	  unsigned int *dsp_data,        // DSP data for the I/O
-	  unsigned int dsp_address,      // DSP data memory address
-	  unsigned int nWords,           // Number of DSP data words for the I/O
-	  unsigned short ModNum );       // The Pixie module for the I/O
-	
-	
-	int I2CM24C64_start(unsigned short ModNum);
 
-	int I2CM24C64_stop(unsigned short ModNum);
-	int I2CM24C64_byte_write(unsigned short ModNum, char ByteToSend);
-	int I2CM24C64_byte_read(unsigned short ModNum, char *ByteToReceive);
+unsigned short SYS16_SetBit(unsigned short bit, unsigned short value);
+unsigned short SYS16_ClrBit(unsigned short bit, unsigned short value);
+unsigned short SYS16_TstBit(unsigned short bit, unsigned short value);
+unsigned int SYS32_SetBit(unsigned short bit, unsigned int value);
+unsigned int SYS32_ClrBit(unsigned short bit, unsigned int value);
+unsigned int SYS32_TstBit(unsigned short bit, unsigned int value);
 
-	char I2CM24C64_getACK(unsigned short ModNum);
-	char I2CM24C64_sendACK(unsigned short ModNum);
+
+int get_ns_per_cycle(double* ns_per_cycle);
+void wait_for_a_short_time(int cycles);
+
+int Pixie_DSP_Memory_Burst_Read(unsigned int* dsp_data,  // DSP data for the I/O
+                                unsigned int dsp_address,  // DSP data memory address
+                                unsigned int nWords,  // Number of DSP data words for the I/O
+                                unsigned short ModNum);  // The Pixie module for the I/O
+
+
+int I2CM24C64_start(unsigned short ModNum);
+
+int I2CM24C64_stop(unsigned short ModNum);
+int I2CM24C64_byte_write(unsigned short ModNum, char ByteToSend);
+int I2CM24C64_byte_read(unsigned short ModNum, char* ByteToReceive);
+
+char I2CM24C64_getACK(unsigned short ModNum);
+char I2CM24C64_sendACK(unsigned short ModNum);
 
 
 #ifdef __cplusplus
 }
-#endif	// End of notice for C++ compilers
+#endif  // End of notice for C++ compilers
 
-#endif	// End of pixie16sys_common.h
+#endif  // End of pixie16sys_common.h
