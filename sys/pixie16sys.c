@@ -99,12 +99,14 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap, unsi
     unsigned char PlxBusNum[SYS_MAX_NUM_MODULES], PlxDeviceNum[SYS_MAX_NUM_MODULES];
     unsigned char Bus_Number[SYS_MAX_NUM_MODULES];  // PCI bus number for each module
     unsigned char Device_Number[SYS_MAX_NUM_MODULES];  // PCI device number for each module
-    unsigned char TotalPlx9054Devices, PlxModIndex[SYS_MAX_NUM_MODULES];
+    unsigned char TotalPlx9054Devices, PlxModIndex[SYS_MAX_NUM_MODULES], DeviceSearchCount;
     unsigned int i;
-    unsigned char slotnum, minPCIBusNum, minPLXBusNum, minSlotNum;
+    unsigned char slotnum, minPCIBusNum, minPLXBusNum, minSlotNum, maxSlotNum;
     unsigned char MappedPCIBusCount, FoundPCIBusCount, CurPCIBus;
     unsigned short k, m;
+    unsigned char Wiener_PXIe_Crate_Detected, pci_device_found_earlier;
     int retval;
+    char pxie_crate_identifier[] = "** WIENER 6023 series PXIe 14-slot Pixie-16 crate **\n";
 
     // First, update a few global variables
     SYS_Number_Modules = NumModules;  // the total number modules in the crate
@@ -140,24 +142,30 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap, unsi
     }
 
     // Read PCIDeviceNumber from the pxisys.ini file
+    // Also detect if this is a Wiener PXIe crate
+    Wiener_PXIe_Crate_Detected = 0;
     do {
         fgets(sbuffer, 100, pci_ini_file);
-        if (sbuffer[0] == '[') {
-            if (sbuffer[6] == ']') {
-                sbuffer[6] = '\0';
-                slotnum = (unsigned char) atoi(&sbuffer[5]);
-            } else {
-                sbuffer[7] = '\0';
-                slotnum = (unsigned char) atoi(&sbuffer[5]);
-            }
+        if (strcmp(sbuffer, pxie_crate_identifier) == 0) {
+            Wiener_PXIe_Crate_Detected = 1;
+        } else {
+            if (sbuffer[0] == '[') {
+                if (sbuffer[6] == ']') {
+                    sbuffer[6] = '\0';
+                    slotnum = (unsigned char) atoi(&sbuffer[5]);
+                } else {
+                    sbuffer[7] = '\0';
+                    slotnum = (unsigned char) atoi(&sbuffer[5]);
+                }
 
-            fgets(sbuffer, 100, pci_ini_file);
-            fgets(sbuffer, 100, pci_ini_file);
-            fgets(sbuffer, 100, pci_ini_file);
-            fgets(sbuffer, 100, pci_ini_file);
-            PCIBusNum[slotnum] = (unsigned char) atoi(&sbuffer[15]);
-            fgets(sbuffer, 100, pci_ini_file);
-            PCIDeviceNum[slotnum] = (unsigned char) atoi(&sbuffer[18]);
+                fgets(sbuffer, 100, pci_ini_file);
+                fgets(sbuffer, 100, pci_ini_file);
+                fgets(sbuffer, 100, pci_ini_file);
+                fgets(sbuffer, 100, pci_ini_file);
+                PCIBusNum[slotnum] = (unsigned char) atoi(&sbuffer[15]);
+                fgets(sbuffer, 100, pci_ini_file);
+                PCIDeviceNum[slotnum] = (unsigned char) atoi(&sbuffer[18]);
+            }
         }
 
         if (feof(pci_ini_file))
@@ -171,7 +179,8 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap, unsi
     k = 0;
     MappedPCIBusCount = 0;
     CurPCIBus = 0xFF;
-    minSlotNum = 0;
+    minSlotNum = 14;
+    maxSlotNum = 0;
     do {
         Bus_Number[k] = PCIBusNum[*(PXISlotMap + k)];
         Device_Number[k] = PCIDeviceNum[*(PXISlotMap + k)];
@@ -185,7 +194,14 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap, unsi
         if (CurPCIBus != Bus_Number[k]) {
             CurPCIBus = Bus_Number[k];
             MappedPCIBusCount++;
-            minSlotNum = (unsigned char) *(PXISlotMap + k);
+
+            if (minSlotNum > (unsigned char) *(PXISlotMap + k)) {
+                minSlotNum = (unsigned char) *(PXISlotMap + k);
+            }
+
+            if (maxSlotNum < (unsigned char) *(PXISlotMap + k)) {
+                maxSlotNum = (unsigned char) *(PXISlotMap + k);
+            }
         }
         k++;
     } while (k < SYS_Number_Modules);
@@ -195,6 +211,8 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap, unsi
     minPLXBusNum = 255;
     FoundPCIBusCount = 0;
     CurPCIBus = 0xFF;
+    pci_device_found_earlier = 0;
+    DeviceSearchCount = 0;
     do {
         // Clear key structure to find first device
         memset(&DeviceKey, PCI_FIELD_IGNORE, sizeof(PLX_DEVICE_KEY));
@@ -204,28 +222,49 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap, unsi
         // Specify Device ID (PLX Device ID is 0x9054)
         DeviceKey.DeviceId = 0x9054;
 
-        rc = PlxPci_DeviceFind(&DeviceKey, TotalPlx9054Devices);
+        rc = PlxPci_DeviceFind(&DeviceKey, DeviceSearchCount);
         if (rc == ApiSuccess) {
-            // Record PLX device information
-            PlxBusNum[TotalPlx9054Devices] = DeviceKey.bus;
-            PlxDeviceNum[TotalPlx9054Devices] = DeviceKey.slot;
-            sprintf(ErrMSG, "Device ID = 0x%04x, Vendor ID = 0x%04x, Bus Number = 0x%02x, Device number = 0x%02x",
-                    DeviceKey.DeviceId, DeviceKey.VendorId, DeviceKey.bus, DeviceKey.slot);
-            Pixie_Print_MSG(ErrMSG);
+            // Check if the device has been found earlier
+            if (TotalPlx9054Devices > 0) {
+                // Clear flag prior to searching
+                pci_device_found_earlier = 0;
 
-            // Update minPLXBusNum
-            if (minPLXBusNum > DeviceKey.bus) {
-                minPLXBusNum = DeviceKey.bus;
+                for (k = 0; k < TotalPlx9054Devices; k++) {
+                    if ((DeviceKey.bus == PlxBusNum[k]) && (DeviceKey.slot == PlxDeviceNum[k])) {
+                        pci_device_found_earlier = 1;
+                    }
+                }
+            } else {
+                // First found PLX device
+                pci_device_found_earlier = 0;
             }
 
-            // Check if there is a new PCI bus
-            if (CurPCIBus != PlxBusNum[TotalPlx9054Devices]) {
-                CurPCIBus = PlxBusNum[TotalPlx9054Devices];
-                FoundPCIBusCount++;
+            // Only update PLX devices if not found previously
+            if (pci_device_found_earlier == 0) {
+                // Record PLX device information
+                PlxBusNum[TotalPlx9054Devices] = DeviceKey.bus;
+                PlxDeviceNum[TotalPlx9054Devices] = DeviceKey.slot;
+                sprintf(ErrMSG, "Device ID = 0x%04x, Vendor ID = 0x%04x, Bus Number = 0x%02x, Device number = 0x%02x",
+                        DeviceKey.DeviceId, DeviceKey.VendorId, DeviceKey.bus, DeviceKey.slot);
+                Pixie_Print_MSG(ErrMSG);
+
+                // Update minPLXBusNum
+                if (minPLXBusNum > DeviceKey.bus) {
+                    minPLXBusNum = DeviceKey.bus;
+                }
+
+                // Check if there is a new PCI bus
+                if (CurPCIBus != PlxBusNum[TotalPlx9054Devices]) {
+                    CurPCIBus = PlxBusNum[TotalPlx9054Devices];
+                    FoundPCIBusCount++;
+                }
+
+                // Increment found Plx9054 devices by 1
+                TotalPlx9054Devices++;
             }
 
-            // Increment found Plx9054 devices by 1
-            TotalPlx9054Devices++;
+            // Increment device search count by 1
+            DeviceSearchCount++;
         } else {
             break;
         }
@@ -256,12 +295,23 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap, unsi
     // This could happen if a user does not want to boot all the
     // modules installed in the system.
     else {
-        if (minSlotNum < 8) {
-            // Mapped module with minimum PCI bus number is in the first PCI bus segment of a 14-slot crate
-            BusNoOffset = minPLXBusNum - minPCIBusNum;
+        if (Wiener_PXIe_Crate_Detected == 1) {
+            // Special handling for PXIe crate
+            if (maxSlotNum < 8) {
+                // Mapped module with minimum PCI bus number is in the first PCI bus segment of a 14-slot crate
+                BusNoOffset = minPLXBusNum - (minPCIBusNum - 3);
+            } else {
+                // Mapped module with minimum PCI bus number is in the second PCI bus segment of a 14-slot crate
+                BusNoOffset = minPLXBusNum - minPCIBusNum;
+            }
         } else {
-            // Mapped module with minimum PCI bus number is in the second PCI bus segment of a 14-slot crate
-            BusNoOffset = minPLXBusNum - (minPCIBusNum - 1);
+            if (minSlotNum < 8) {
+                // Mapped module with minimum PCI bus number is in the first PCI bus segment of a 14-slot crate
+                BusNoOffset = minPLXBusNum - minPCIBusNum;
+            } else {
+                // Mapped module with minimum PCI bus number is in the second PCI bus segment of a 14-slot crate
+                BusNoOffset = minPLXBusNum - (minPCIBusNum - 1);
+            }
         }
     }
 
