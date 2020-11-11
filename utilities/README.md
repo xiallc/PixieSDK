@@ -10,5 +10,3 @@ This program provides simple functionality to configure a Pixie system.
 
 ## daq
 This program provides simple functionality to read data out of a Pixie system.
-
- 
