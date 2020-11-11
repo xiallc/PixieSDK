@@ -167,7 +167,7 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap, unsi
     fclose(pci_ini_file);
 
     // Set the Device_Number and Bus_Number for each Pixie-16 module installed in the system
-    minPCIBusNum = MAX_PCI_BUS;
+    minPCIBusNum = 255;
     k = 0;
     MappedPCIBusCount = 0;
     CurPCIBus = 0xFF;
@@ -192,7 +192,7 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap, unsi
 
     // Find all the PLX devices installed in the system
     TotalPlx9054Devices = 0;
-    minPLXBusNum = MAX_PCI_BUS;
+    minPLXBusNum = 255;
     FoundPCIBusCount = 0;
     CurPCIBus = 0xFF;
     do {
