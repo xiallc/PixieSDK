@@ -270,7 +270,7 @@ int Pixie_DSP_Memory_Burst_Read(unsigned int* dsp_data,  // DSP data for the I/O
     DmaProp.ReadyInput = 1;
     DmaProp.Burst = 1;
     DmaProp.BurstInfinite = 1;
-#if PLX_SDK_VERSION_MAJOR == 6 || PLX_SDK_VERSION_MAJOR == 7
+#if PLX_SDK_VERSION_MAJOR == 6 || PLX_SDK_VERSION_MAJOR == 7 || PLX_SDK_VERSION_MAJOR == 8
     DmaProp.ConstAddrLocal = 1;
 #else
     DmaProp.LocalAddrConst = 1;
@@ -338,7 +338,7 @@ int Pixie_DSP_Memory_Burst_Read(unsigned int* dsp_data,  // DSP data for the I/O
     // Clear DMA parameters
     memset(&DmaParams, 0, sizeof(PLX_DMA_PARAMS));
 
-#if PLX_SDK_VERSION_MAJOR == 6 || PLX_SDK_VERSION_MAJOR == 7
+#if PLX_SDK_VERSION_MAJOR == 6 || PLX_SDK_VERSION_MAJOR == 7 || PLX_SDK_VERSION_MAJOR == 8
     DmaParams.UserVa = PLX_PTR_TO_INT(dsp_data);
 #else
     DmaParams.u.UserVa = (PLX_UINT_PTR) dsp_data;
@@ -346,7 +346,7 @@ int Pixie_DSP_Memory_Burst_Read(unsigned int* dsp_data,  // DSP data for the I/O
 
     DmaParams.LocalAddr = localAddress;
     DmaParams.ByteCount = nWords * 4;  // Read nWords*4 bytes
-#if PLX_SDK_VERSION_MAJOR == 6 || PLX_SDK_VERSION_MAJOR == 7
+#if PLX_SDK_VERSION_MAJOR == 6 || PLX_SDK_VERSION_MAJOR == 7 || PLX_SDK_VERSION_MAJOR == 8
     DmaParams.Direction = PLX_DMA_LOC_TO_PCI;
 #else
     DmaParams.LocalToPciDma = 1;
@@ -471,7 +471,7 @@ int Pixie_ExtFIFO_Read(unsigned int* extfifo_data,  // To receive the external F
     DmaProp.ReadyInput = 1;
     DmaProp.Burst = 1;
     DmaProp.BurstInfinite = 1;
-#if PLX_SDK_VERSION_MAJOR == 6 || PLX_SDK_VERSION_MAJOR == 7
+#if PLX_SDK_VERSION_MAJOR == 6 || PLX_SDK_VERSION_MAJOR == 7 || PLX_SDK_VERSION_MAJOR == 8
     DmaProp.ConstAddrLocal = 1;
 #else
     DmaProp.LocalAddrConst = 1;
@@ -523,14 +523,14 @@ int Pixie_ExtFIFO_Read(unsigned int* extfifo_data,  // To receive the external F
     // Clear DMA parameters
     memset(&DmaParams, 0, sizeof(PLX_DMA_PARAMS));
 
-#if PLX_SDK_VERSION_MAJOR == 6 || PLX_SDK_VERSION_MAJOR == 7
+#if PLX_SDK_VERSION_MAJOR == 6 || PLX_SDK_VERSION_MAJOR == 7 || PLX_SDK_VERSION_MAJOR == 8
     DmaParams.UserVa = PLX_PTR_TO_INT(extfifo_data);
 #else
     DmaParams.u.UserVa = (PLX_UINT_PTR) extfifo_data;
 #endif
     DmaParams.LocalAddr = localAddress;
     DmaParams.ByteCount = nWords * 4;  // Read nWords*4 bytes
-#if PLX_SDK_VERSION_MAJOR == 6 || PLX_SDK_VERSION_MAJOR == 7
+#if PLX_SDK_VERSION_MAJOR == 6 || PLX_SDK_VERSION_MAJOR == 7 || PLX_SDK_VERSION_MAJOR == 8
     DmaParams.Direction = PLX_DMA_LOC_TO_PCI;
 #else
     DmaParams.LocalToPciDma = 1;
@@ -632,7 +632,7 @@ int Pixie_Main_Memory_IO(unsigned int* memory_data,  // Memory data for the I/O
         DmaProp.ReadyInput = 1;
         DmaProp.Burst = 1;
         DmaProp.BurstInfinite = 1;
-#if PLX_SDK_VERSION_MAJOR == 6 || PLX_SDK_VERSION_MAJOR == 7
+#if PLX_SDK_VERSION_MAJOR == 6 || PLX_SDK_VERSION_MAJOR == 7 || PLX_SDK_VERSION_MAJOR == 8
         DmaProp.ConstAddrLocal = 1;
 #else
         DmaProp.LocalAddrConst = 1;
@@ -655,14 +655,14 @@ int Pixie_Main_Memory_IO(unsigned int* memory_data,  // Memory data for the I/O
         // Clear DMA parameters
         memset(&DmaParams, 0, sizeof(PLX_DMA_PARAMS));
 
-#if PLX_SDK_VERSION_MAJOR == 6 || PLX_SDK_VERSION_MAJOR == 7
+#if PLX_SDK_VERSION_MAJOR == 6 || PLX_SDK_VERSION_MAJOR == 7 || PLX_SDK_VERSION_MAJOR == 8
         DmaParams.UserVa = PLX_PTR_TO_INT(memory_data);
 #else
         DmaParams.u.UserVa = (PLX_UINT_PTR) memory_data;
 #endif
         DmaParams.LocalAddr = localAddress;
         DmaParams.ByteCount = nWords * 4;  // Read nWords*4 bytes
-#if PLX_SDK_VERSION_MAJOR == 6 || PLX_SDK_VERSION_MAJOR == 7
+#if PLX_SDK_VERSION_MAJOR == 6 || PLX_SDK_VERSION_MAJOR == 7 || PLX_SDK_VERSION_MAJOR == 8
         DmaParams.Direction = PLX_DMA_LOC_TO_PCI;
 #else
         DmaParams.LocalToPciDma = 1;
