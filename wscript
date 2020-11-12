@@ -59,6 +59,7 @@ def configure(ctx):
     Configuration function to load the C and C++ compilers and set some of our flags
     :param ctx: The configuration dictionary.
     """
+    ctx.env.PREFIX = f"{ctx.env.PREFIX}/xia/pixie-sdk"
     ctx.load("compiler_c compiler_cxx")
     ctx.env.CFLAGS = ["-g", "-Wall", "-DPLX_LITTLE_ENDIAN", "-DPCI_CODE"]
 
@@ -82,19 +83,23 @@ def build(bld):
     The main build function. This function builds libPixie16app.a and libPixie16sys.a.
     :param bld: The build dictionary
     """
-    app_prefix = "app"
-    bld.stlib(source=[f"{app_prefix}/pixie16app.c",
-                      f"{app_prefix}/utilities.c"],
-              target='Pixie16App',
-              use="APP")
+    for name in ['app', 'sys']:
+        use_list = [name.upper()]
+        if name == 'sys':
+            use_list.append("PLX")
 
-    sys_prefix = "sys"
-    bld.stlib(source=[f"{sys_prefix}/pixie16sys.c",
-                      f"{sys_prefix}/i2cm24c64.c",
-                      f"{sys_prefix}/tools.c",
-                      f"{sys_prefix}/communication.c"],
-              target='Pixie16Sys',
-              use="SYS PLX")
+        bld.stlib(source=bld.path.find_dir(name).ant_glob("*.c"),
+                  target=f'Pixie16{name.title()}',
+                  install_path="${PREFIX}/lib",
+                  use=use_list)
+        bld.shlib(source=bld.path.find_dir(name).ant_glob("*.c"),
+                  target=f'Pixie16{name.title()}',
+                  install_path="${PREFIX}/lib",
+                  use=use_list)
+
+    for header_path in set(bld.env.INCLUDES_APP + bld.env.INCLUDES_SYS):
+        path = bld.path.find_dir(header_path)
+        bld.install_files('${PREFIX}/include', path.ant_glob('*.h'), cwd=path, relative_trick=True)
 
     if bld.options.utilities:
         for source, target in [('utilities/boot/boot.cpp', 'boot'),
