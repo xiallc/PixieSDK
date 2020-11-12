@@ -10,8 +10,8 @@ from os.path import isdir
 
 from waflib.Configure import conf
 
-top = "."
-out = "build"
+TOP = "."
+OUT = "build"
 
 
 def options(opt):
@@ -20,7 +20,7 @@ def options(opt):
     :param opt: The options dictionary
     """
     opt.load("compiler_c compiler_cxx")
-    opt.add_option('--test', action='store_true', default=False, help="Instructs the program to build tests.")
+    opt.add_option('--utilities', action='store_true', default=False, help="Builds the utility programs.")
     opt.add_option('--usleep', action='store_true', default=False, help="Adds USLEEP parameter to sys compilation.")
 
 
@@ -45,10 +45,10 @@ def find_broadcom_sdk(ctx):
 
     ctx.env.INCLUDES_PLX = include_dir
 
-    lib_dir = f"{sdk_dir}/PlxApi/Library/"
+    lib_dir = f"{sdk_dir}/PlxApi/Library"
     lib_name = "PlxApi.a"
     ctx.find_file(lib_name, lib_dir)
-    ctx.env.LIB_PLX = f'{lib_dir}/{lib_name}'
+    ctx.env.LIB_PLX = f':{lib_name}'
     ctx.env.LIBPATH_PLX = lib_dir
 
     ctx.end_msg(sdk_dir)
@@ -59,6 +59,7 @@ def configure(ctx):
     Configuration function to load the C and C++ compilers and set some of our flags
     :param ctx: The configuration dictionary.
     """
+    ctx.env.PREFIX = f"{ctx.env.PREFIX}/xia/pixie-sdk"
     ctx.load("compiler_c compiler_cxx")
     ctx.env.CFLAGS = ["-g", "-Wall", "-DPLX_LITTLE_ENDIAN", "-DPCI_CODE"]
 
@@ -74,22 +75,31 @@ def configure(ctx):
     if ctx.options.usleep:
         ctx.env.CFLAGS_SYS = ctx.env.CFLAGS + ["-DUSE_USLEEP"]
 
+    ctx.env.CPPFLAGS = ctx.env.CFLAGS
+
 
 def build(bld):
     """
     The main build function. This function builds libPixie16app.a and libPixie16sys.a.
     :param bld: The build dictionary
     """
-    app_prefix = "app"
-    bld.stlib(source=[f"{app_prefix}/pixie16app.c",
-                      f"{app_prefix}/utilities.c"],
-              target='Pixie16App',
-              use="APP")
+    for name in ['app', 'sys']:
+        use_list = [name.upper()]
+        if name == 'sys':
+            use_list.append("PLX")
 
-    sys_prefix = "sys"
-    bld.stlib(source=[f"{sys_prefix}/pixie16sys.c",
-                      f"{sys_prefix}/i2cm24c64.c",
-                      f"{sys_prefix}/tools.c",
-                      f"{sys_prefix}/communication.c"],
-              target='Pixie16Sys',
-              use="SYS PLX")
+        bld.stlib(source=bld.path.find_dir(name).ant_glob("*.c"), target=f'Pixie16{name.title()}',
+                  install_path="${PREFIX}/lib", use=use_list)
+        bld.shlib(source=bld.path.find_dir(name).ant_glob("*.c"), target=f'Pixie16{name.title()}',
+                  install_path="${PREFIX}/lib", use=use_list)
+
+    for header_path in set(bld.env.INCLUDES_APP + bld.env.INCLUDES_SYS):
+        path = bld.path.find_dir(header_path)
+        bld.install_files('${PREFIX}/include', path.ant_glob('*.h'), cwd=path, relative_trick=True)
+
+    if bld.options.utilities:
+        for source, target in [('utilities/boot/boot.cpp', 'boot'), ('utilities/daq/daq.cpp', 'daq')]:
+            bld.program(source=source, target=target, use='Pixie16App Pixie16Sys PLX APP SYS', lib=['m', 'dl'],
+                        install_path="${PREFIX}/lib")
+        bld.install_files('${PREFIX}/share', bld.path.find_dir("utilities/share").ant_glob('**/*'),
+                          cwd=bld.path.find_dir("utilities/share/"), relative_trick=True)
