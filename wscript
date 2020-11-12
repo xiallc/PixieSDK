@@ -88,21 +88,15 @@ def build(bld):
         if name == 'sys':
             use_list.append("PLX")
 
-        bld.stlib(source=bld.path.find_dir(name).ant_glob("*.c"),
-                  target=f'Pixie16{name.title()}',
-                  install_path="${PREFIX}/lib",
-                  use=use_list)
-        bld.shlib(source=bld.path.find_dir(name).ant_glob("*.c"),
-                  target=f'Pixie16{name.title()}',
-                  install_path="${PREFIX}/lib",
-                  use=use_list)
+        bld.stlib(source=bld.path.find_dir(name).ant_glob("*.c"), target=f'Pixie16{name.title()}',
+                  install_path="${PREFIX}/lib", use=use_list)
+        bld.shlib(source=bld.path.find_dir(name).ant_glob("*.c"), target=f'Pixie16{name.title()}',
+                  install_path="${PREFIX}/lib", use=use_list)
 
     for header_path in set(bld.env.INCLUDES_APP + bld.env.INCLUDES_SYS):
         path = bld.path.find_dir(header_path)
         bld.install_files('${PREFIX}/include', path.ant_glob('*.h'), cwd=path, relative_trick=True)
 
     if bld.options.utilities:
-        for source, target in [('utilities/boot/boot.cpp', 'boot'),
-                               ('utilities/daq/daq.cpp', 'daq')]:
-            bld.program(source=source, target=target, use='Pixie16App Pixie16Sys PLX APP SYS',
-                        lib=['m', 'dl'])
+        for source, target in [('utilities/boot/boot.cpp', 'boot'), ('utilities/daq/daq.cpp', 'daq')]:
+            bld.program(source=source, target=target, use='Pixie16App Pixie16Sys PLX APP SYS', lib=['m', 'dl'])
