@@ -97,7 +97,7 @@ def build(bld):
               use="SYS PLX")
 
     if bld.options.utilities:
-        bld.program(source='utilities/boot/boot.cpp',
-                    target='boot',
-                    use='Pixie16App Pixie16Sys PLX APP SYS ',
-                    lib=['m', 'dl'])
+        for source, target in [('utilities/boot/boot.cpp', 'boot'),
+                               ('utilities/daq/daq.cpp', 'daq')]:
+            bld.program(source=source, target=target, use='Pixie16App Pixie16Sys PLX APP SYS',
+                        lib=['m', 'dl'])
