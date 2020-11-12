@@ -99,4 +99,7 @@ def build(bld):
 
     if bld.options.utilities:
         for source, target in [('utilities/boot/boot.cpp', 'boot'), ('utilities/daq/daq.cpp', 'daq')]:
-            bld.program(source=source, target=target, use='Pixie16App Pixie16Sys PLX APP SYS', lib=['m', 'dl'])
+            bld.program(source=source, target=target, use='Pixie16App Pixie16Sys PLX APP SYS', lib=['m', 'dl'],
+                        install_path="${PREFIX}/lib")
+        bld.install_files('${PREFIX}/share', bld.path.find_dir("utilities/share").ant_glob('**/*'),
+                          cwd=bld.path.find_dir("utilities/share/"), relative_trick=True)
