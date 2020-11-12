@@ -10,8 +10,8 @@ from os.path import isdir
 
 from waflib.Configure import conf
 
-top = "."
-out = "build"
+TOP = "."
+OUT = "build"
 
 
 def options(opt):
@@ -20,7 +20,7 @@ def options(opt):
     :param opt: The options dictionary
     """
     opt.load("compiler_c compiler_cxx")
-    opt.add_option('--test', action='store_true', default=False, help="Instructs the program to build tests.")
+    opt.add_option('--utilities', action='store_true', default=False, help="Builds the utility programs.")
     opt.add_option('--usleep', action='store_true', default=False, help="Adds USLEEP parameter to sys compilation.")
 
 
@@ -45,10 +45,10 @@ def find_broadcom_sdk(ctx):
 
     ctx.env.INCLUDES_PLX = include_dir
 
-    lib_dir = f"{sdk_dir}/PlxApi/Library/"
+    lib_dir = f"{sdk_dir}/PlxApi/Library"
     lib_name = "PlxApi.a"
     ctx.find_file(lib_name, lib_dir)
-    ctx.env.LIB_PLX = f'{lib_dir}/{lib_name}'
+    ctx.env.LIB_PLX = f':{lib_name}'
     ctx.env.LIBPATH_PLX = lib_dir
 
     ctx.end_msg(sdk_dir)
@@ -74,6 +74,8 @@ def configure(ctx):
     if ctx.options.usleep:
         ctx.env.CFLAGS_SYS = ctx.env.CFLAGS + ["-DUSE_USLEEP"]
 
+    ctx.env.CPPFLAGS = ctx.env.CFLAGS
+
 
 def build(bld):
     """
@@ -93,3 +95,9 @@ def build(bld):
                       f"{sys_prefix}/communication.c"],
               target='Pixie16Sys',
               use="SYS PLX")
+
+    if bld.options.utilities:
+        bld.program(source='utilities/boot/boot.cpp',
+                    target='boot',
+                    use='Pixie16App Pixie16Sys PLX APP SYS ',
+                    lib=['m', 'dl'])
