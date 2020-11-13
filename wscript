@@ -98,8 +98,8 @@ def build(bld):
         bld.install_files('${PREFIX}/include', path.ant_glob('*.h'), cwd=path, relative_trick=True)
 
     if bld.options.utilities:
-        for source, target in [('utilities/boot/boot.cpp', 'boot'), ('utilities/daq/daq.cpp', 'daq')]:
-            bld.program(source=source, target=target, use='Pixie16App Pixie16Sys PLX APP SYS', lib=['m', 'dl'],
-                        install_path="${PREFIX}/lib")
+        for source in ['boot.cpp', 'daq.cpp']:
+            bld.program(source=f"utilities/src/{source}", target=source.split(".")[0],
+                        use='Pixie16App Pixie16Sys PLX APP SYS', lib=['m', 'dl'], install_path="${PREFIX}/bin")
         bld.install_files('${PREFIX}/share', bld.path.find_dir("utilities/share").ant_glob('**/*'),
                           cwd=bld.path.find_dir("utilities/share/"), relative_trick=True)
