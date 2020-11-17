@@ -4,7 +4,6 @@ brief:
 author: S. V. Paulauskas
 date: November 16, 2020
 """
-from sys import exit
 from argparse import ArgumentParser
 import ctypes
 
@@ -12,10 +11,21 @@ import yaml
 
 
 def calculate_num_modules(slot_map):
+    """
+    Reads the slot map and counts the number of modules we have in total
+    :param slot_map: The Slot map containing the number of modules.
+    :return: The number of modules counted in the config.
+    """
     return sum([len(v) for v in slot_map.values()])
 
 
 def initialize_modules(cfg, sdk):
+    """
+    Initializes the modules according to the information provided in the configuration file.
+    :param cfg: The configuration containing the information we need.
+    :param sdk: The SDK object that contains our functions.
+    :return: The API result code.
+    """
     num_modules = calculate_num_modules(cfg['slot_map'])
 
     slot_map = (ctypes.c_short * num_modules)()
@@ -29,6 +39,12 @@ def initialize_modules(cfg, sdk):
 
 
 def boot(cfg, sdk):
+    """
+    Boots the modules by loading the firmware and a settings file.
+    :param cfg: The configuration containing all the information we need to boot the module
+    :param sdk: The SDK object with the boot function
+    :return: The status code returned from the procedure.
+    """
     return sdk.Pixie16BootModule(ctypes.c_char_p(cfg['firmware']['sys'].encode()),
                                  ctypes.c_char_p(cfg['firmware']['fippi'].encode()),
                                  ctypes.c_char_p(cfg['firmware']['trig'].encode()),
@@ -39,18 +55,8 @@ def boot(cfg, sdk):
                                  127)
 
 
-def main():
-    # PixieSysDLL = ctypes.cdll.LoadLibrary("/home/stan/clion/software/build/libPixie16Sys.so")
-    # print(PixieSysDLL.Pixie_InitSystem(ctypes.c_short(1),
-    #                                    ctypes.cast(slot_map, ctypes.POINTER(ctypes.c_short * 1)),
-    #                                    ctypes.c_short(0)))
-    pass
-
-
 if __name__ == '__main__':
     try:
-        PIXIE_SDK = ctypes.cdll.LoadLibrary("/home/stan/clion/software/build/libPixie16App.so")
-
         PARSER = ArgumentParser(description='Converts PLD files into Apache Parquet format.')
         PARSER.add_argument('cfg', type=str, default='config.yaml',
                             help='The YAML configuration file')
@@ -58,15 +64,21 @@ if __name__ == '__main__':
         with open(ARGS.cfg) as f:
             CFG = yaml.safe_load(f)
 
+        if not CFG.get('sdk', None):
+            raise LookupError("Configuration file is missing the path to the SDK")
+
+        PIXIE_SDK = ctypes.cdll.LoadLibrary(CFG['sdk'])
+
         INIT_CODE = initialize_modules(CFG, PIXIE_SDK)
         if INIT_CODE != 0:
-            print(f"Initialization failed with Error Code {INIT_CODE}")
-            raise KeyboardInterrupt
+            raise RuntimeError(f"Initialization failed with Error Code {INIT_CODE}")
 
         BOOT_CODE = boot(CFG, PIXIE_SDK)
         if BOOT_CODE != 0:
-            print(f"Boot failed with Error Code {INIT_CODE}")
-            raise KeyboardInterrupt
+            raise RuntimeError(f"Boot failed with Error Code {BOOT_CODE}")
+
+    except (LookupError, RuntimeError) as err:
+        print(err)
     except KeyboardInterrupt:
         print("Received interrupt!")
     finally:

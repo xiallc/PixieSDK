@@ -1,6 +1,8 @@
 # Offline mode
 offline_mode: 0
 
+sdk: /home/stan/clion/software/build/libPixie16App.so
+
 # Maps the crates to the proper pxisys.ini files.
 pxisys_map:
   0: /home/stan/clion/software/usr/local/xia/pixie-sdk/share/pxi/pxisys_14slot_wiener_pxie.ini
