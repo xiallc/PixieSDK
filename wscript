@@ -85,6 +85,8 @@ def build(bld):
     """
     for name in ['app', 'sys']:
         use_list = [name.upper()]
+        if name == 'app':
+            use_list = use_list + ['Pixie16Sys', 'SYS', 'PLX']
         if name == 'sys':
             use_list.append("PLX")
 
