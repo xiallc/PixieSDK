@@ -43,6 +43,7 @@
 *		This file contains the code necessary to boot a crate of Pixie modules.
 ******************************************************************************/
 #include "def21160.h"
+#include "helper_functions.hpp"
 #include "pixie16app_export.h"
 #include "pixie16sys_export.h"
 
@@ -54,15 +55,21 @@
 #include <sstream>
 #include <string>
 
-/////////////timing stuff//////////////
-
 #include <sys/time.h>
-
-//////////////////////////////////////
 
 using namespace std;
 
-int main(int argc, char* argv[]) {
+int main(int argc, char** argv) {
+    if (argc < 2) {
+        cerr << "ERROR: Need to provide the configuration file for reading." << endl;
+        return (1);
+    }
+
+    auto cfg = helper_functions::read_configuration_file(argv[1]);
+
+
+    return 0;
+
     unsigned short NumModules;
     unsigned short* PXISlotMap;
     char ComFPGAConfigFile[80];
