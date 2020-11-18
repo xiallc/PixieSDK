@@ -92,8 +92,6 @@ def build(bld):
         if name == 'sys':
             use_list.append("PLX")
 
-        bld.stlib(source=bld.path.find_dir(name).ant_glob("*.c"), target=f'Pixie16{name.title()}',
-                  install_path="${PREFIX}/lib", use=use_list)
         bld.shlib(source=bld.path.find_dir(name).ant_glob("*.c"), target=f'Pixie16{name.title()}',
                   install_path="${PREFIX}/lib", use=use_list)
 
