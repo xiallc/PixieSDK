@@ -42,119 +42,56 @@
 *
 *		This file contains the code necessary to boot a crate of Pixie modules.
 ******************************************************************************/
-#include "def21160.h"
-#include "helper_functions.hpp"
+#include "functions.hpp"
 #include "pixie16app_export.h"
-#include "pixie16sys_export.h"
 
+#include <chrono>
+#include <iostream>
+#include <vector>
+
+#include <csignal>
 #include <cstdio>
 #include <cstring>
-#include <fstream>
-#include <iostream>
-#include <signal.h>
-#include <sstream>
-#include <string>
+#include <ctime>
 
-#include <sys/time.h>
+#ifdef _WIN64
+#include <Windows.h>
+#else
+#include <unistd.h>
+#endif
+
 
 using namespace std;
 
 int main(int argc, char** argv) {
-    if (argc < 2) {
-        cerr << "ERROR: Need to provide the configuration file for reading." << endl;
-        return (1);
+    xia::Configuration cfg;
+    if (xia::cmdOptionExists(argv, argv + argc, "-c"))
+        try {
+            cfg = xia::read_configuration_file(xia::getCmdOption(argv, argv + argc, "-c"));
+        } catch (invalid_argument& invalidArgument) {
+            cerr << invalidArgument.what() << endl;
+            return 1;
+        }
+    else {
+        cerr << "ERROR - Need to provide the configuration file for reading." << endl;
+        return 1;
     }
 
-    auto cfg = helper_functions::read_configuration_file(argv[1]);
-
-
-    return 0;
-
-    unsigned short NumModules;
-    unsigned short* PXISlotMap;
-    char ComFPGAConfigFile[80];
-    char SPFPGAConfigFile[80];
-    char TrigFPGAConfigFile[80];
-    char DSPCodeFile[80];
-    char DSPParFile[80];
-    char DSPVarFile[80];
-    char ErrMSG[256];
-    int retval = 0;
-
-
-    ////////read cfg file (cfgPixie16.txt)///////////////////////////////////
-    const char config[20] = "cfgPixie16.txt";
-
-    ifstream input;
-    char* temp = new char[80];
-    input.open(config, ios::in);
-
-    if (input.fail()) {
-        cout << "can't open the config file ! " << config << endl << flush;
-        return false;
-    }
-
-    input >> NumModules;
-    cout << "\n\n" << NumModules << " modules, in slots:";
-    input.getline(temp, 80);
-    PXISlotMap = new unsigned short[NumModules + 1];
-    for (int i = 0; i < NumModules; i++) {
-        input >> PXISlotMap[i];
-        input.getline(temp, 80);
-        cout << PXISlotMap[i] << " ";
-    }
-
-    //==== This code is necessary if modules are installed in two crates ====//
-    //input >> PXISlotMap[NumModules];
-    //input.getline (temp, 80);
-    //cout << PXISlotMap[NumModules] << " ";
-
-    cout << endl << "Firmware files: \n";
-    input >> ComFPGAConfigFile;
-    input.getline(temp, 80);
-    cout << "ComFPGAConfigFile:  " << ComFPGAConfigFile << endl;
-    input >> SPFPGAConfigFile;
-    input.getline(temp, 80);
-    cout << "SPFPGAConfigFile:   " << SPFPGAConfigFile << endl;
-    input >> TrigFPGAConfigFile;
-    input.getline(temp, 80);
-    cout << "TrigFPGAConfigFile: " << TrigFPGAConfigFile << endl;
-    input >> DSPCodeFile;
-    input.getline(temp, 80);
-    cout << "DSPCodeFile:        " << DSPCodeFile << endl;
-    input >> DSPParFile;
-    input.getline(temp, 80);
-    cout << "DSPParFile:         " << DSPParFile << endl;
-    input >> DSPVarFile;
-    input.getline(temp, 80);
-    cout << "DSPVarFile:         " << DSPVarFile << endl;
-    input.close();
-    input.clear();
-
-    ////////////////////////////////////////////////////////////////////
-    cout << "-----------------------------------------\n";
-    cout << "Booting....\n";
-
-    retval = Pixie16InitSystem(NumModules, PXISlotMap, 0);
+    cout << "INFO - Initializing Pixie Modules.......";
+    int retval = Pixie16InitSystem(cfg.numModules, cfg.slot_map, 0);
     if (retval < 0) {
-        sprintf(ErrMSG, "*ERROR* Pixie16InitSystem failed, retval = %d", retval);
-        Pixie_Print_MSG(ErrMSG);
-        return -1;
-    } else {
-        cout << "Init OK " << retval << endl;
-    }
+        cerr << endl << "ERROR - Pixie16InitSystem failed, retval = %d" << retval << endl;
+        return retval;
+    } else
+        cout << "OK" << endl;
 
-    retval = Pixie16BootModule(ComFPGAConfigFile, SPFPGAConfigFile, TrigFPGAConfigFile, DSPCodeFile, DSPParFile,
-                               DSPVarFile, NumModules, 0x7F);
+    cout << "INFO - Booting Pixie modules........" << endl;
+    retval = Pixie16BootModule(cfg.ComFPGAConfigFile.c_str(), cfg.SPFPGAConfigFile.c_str(),
+                               cfg.TrigFPGAConfigFile.c_str(), cfg.DSPCodeFile.c_str(), cfg.DSPParFile.c_str(),
+                               cfg.DSPVarFile.c_str(), cfg.numModules, 0x7F);
     if (retval < 0) {
-        sprintf(ErrMSG, "*ERROR* Pixie16BootModule failed, retval = %d", retval);
-        Pixie_Print_MSG(ErrMSG);
-        return -2;
-    }
-
-    sprintf(ErrMSG, "Pixie16BootModule succeeded, retval = %d", retval);
-    Pixie_Print_MSG(ErrMSG);
-    cout << "Boot OK " << retval << endl;
-
-    return 1;
+        cerr << endl << "ERROR - Failed to boot modules with Error Code " << retval << endl;
+        return retval;
+    } else
+        cout << "OK" << endl;
 }
