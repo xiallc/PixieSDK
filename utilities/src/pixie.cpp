@@ -235,4 +235,11 @@ int main(int argc, char** argv) {
         } else
             cout << "OK" << endl;
     }
+
+    if (xia::cmdOptionExists(argv, argv + argc, "--histograms")) {
+        cout << "INFO - Starting to write histograms from the module...";
+        for (int i = 0; i < cfg.numModules; i++)
+            Pixie16SaveHistogramToFile(("module" + to_string(i) + ".his").c_str(), i);
+        cout << "OK" << endl;
+    }
 }
