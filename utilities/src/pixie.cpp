@@ -220,4 +220,19 @@ int main(int argc, char** argv) {
 
         free(lmdata);
     }
+
+    if (xia::cmdOptionExists(argv, argv + argc, "--save-dsp-pars")) {
+        auto output_file_name = xia::getCmdOption(argv, argv + argc, "--save-dsp-pars");
+        if (!output_file_name) {
+            cerr << "ERROR - You must provide a file name with --save-dsp-pars!" << endl;
+            return EXIT_FAILURE;
+        }
+
+        cout << "INFO - Saving DSP Parameters to " << output_file_name << "....";
+        retval = Pixie16SaveDSPParametersToFile(output_file_name);
+        if (retval < 0) {
+            cerr << "ERROR - Saving DSP parameters to file failed with Exit Code " << retval << endl;
+        } else
+            cout << "OK" << endl;
+    }
 }
