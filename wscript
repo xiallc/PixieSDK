@@ -77,6 +77,8 @@ def configure(ctx):
 
     ctx.env.CPPFLAGS = ctx.env.CFLAGS
 
+    ctx.env.INCLUDES_UTILITIES = ['utilities/include']
+
 
 def build(bld):
     """
@@ -100,8 +102,11 @@ def build(bld):
         bld.install_files('${PREFIX}/include', path.ant_glob('*.h'), cwd=path, relative_trick=True)
 
     if bld.options.utilities:
-        for source in ['boot.cpp', 'daq.cpp']:
+        for source in ['pixie.cpp']:
             bld.program(source=f"utilities/src/{source}", target=source.split(".")[0],
-                        use='Pixie16App Pixie16Sys PLX APP SYS', lib=['m', 'dl'], install_path="${PREFIX}/bin")
+                        use='Pixie16App Pixie16Sys PLX APP SYS UTILITIES', lib=['m', 'dl'],
+                        install_path="${PREFIX}/bin")
         bld.install_files('${PREFIX}/share', bld.path.find_dir("utilities/share").ant_glob('**/*'),
                           cwd=bld.path.find_dir("utilities/share/"), relative_trick=True)
+
+        bld.install_files('${PREFIX}/bin', bld.path.find_dir("utilities/src").ant_glob('*.py'))
