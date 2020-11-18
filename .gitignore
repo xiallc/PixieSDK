@@ -1,4 +1,7 @@
-# IDE Files
+# External Tools
+sourcetrail/
+
+# JetBrains folders
 .idea/
 
 # WAF Files
