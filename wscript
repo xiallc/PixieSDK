@@ -77,6 +77,8 @@ def configure(ctx):
 
     ctx.env.CPPFLAGS = ctx.env.CFLAGS
 
+    ctx.env.INCLUDES_UTILITIES = ['utilities/include']
+
 
 def build(bld):
     """
@@ -85,11 +87,11 @@ def build(bld):
     """
     for name in ['app', 'sys']:
         use_list = [name.upper()]
+        if name == 'app':
+            use_list = use_list + ['Pixie16Sys', 'SYS', 'PLX']
         if name == 'sys':
             use_list.append("PLX")
 
-        bld.stlib(source=bld.path.find_dir(name).ant_glob("*.c"), target=f'Pixie16{name.title()}',
-                  install_path="${PREFIX}/lib", use=use_list)
         bld.shlib(source=bld.path.find_dir(name).ant_glob("*.c"), target=f'Pixie16{name.title()}',
                   install_path="${PREFIX}/lib", use=use_list)
 
@@ -98,8 +100,11 @@ def build(bld):
         bld.install_files('${PREFIX}/include', path.ant_glob('*.h'), cwd=path, relative_trick=True)
 
     if bld.options.utilities:
-        for source, target in [('utilities/boot/boot.cpp', 'boot'), ('utilities/daq/daq.cpp', 'daq')]:
-            bld.program(source=source, target=target, use='Pixie16App Pixie16Sys PLX APP SYS', lib=['m', 'dl'],
-                        install_path="${PREFIX}/lib")
+        for source in ['pixie.cpp']:
+            bld.program(source=f"utilities/src/{source}", target=source.split(".")[0],
+                        use='Pixie16App Pixie16Sys PLX APP SYS UTILITIES', lib=['m', 'dl'],
+                        install_path="${PREFIX}/bin")
         bld.install_files('${PREFIX}/share', bld.path.find_dir("utilities/share").ant_glob('**/*'),
                           cwd=bld.path.find_dir("utilities/share/"), relative_trick=True)
+
+        bld.install_files('${PREFIX}/bin', bld.path.find_dir("utilities/src").ant_glob('*.py'))
