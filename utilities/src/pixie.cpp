@@ -231,7 +231,7 @@ int main(int argc, char** argv) {
         cout << "INFO - Saving DSP Parameters to " << output_file_name << "....";
         retval = Pixie16SaveDSPParametersToFile(output_file_name);
         if (retval < 0) {
-            cerr << "ERROR - Saving DSP parameters to file failed with Exit Code " << retval << endl;
+            cerr << endl << "ERROR - Saving DSP parameters to file failed with Exit Code " << retval << endl;
         } else
             cout << "OK" << endl;
     }
@@ -242,4 +242,13 @@ int main(int argc, char** argv) {
             Pixie16SaveHistogramToFile(("module" + to_string(i) + ".his").c_str(), i);
         cout << "OK" << endl;
     }
+
+    cout << "INFO - Closing out the connection to Modules....";
+    for (int i = 0; i < cfg.numModules; i++) {
+        retval = Pixie16ExitSystem(i);
+        if (retval != 0) {
+            cerr << endl << "ERROR - Closing Module " << i << " failed with Exit Code " << retval << endl;
+        }
+    }
+    cout << "OK" << endl;
 }
