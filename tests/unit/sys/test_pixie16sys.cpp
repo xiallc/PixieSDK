@@ -5,7 +5,7 @@
 #include "doctest.h"
 #include "pixie16sys_export.h"
 
-TEST_SUITE("Pixie16Sys") {
+TEST_SUITE("sys/pixie16sys.c") {
     TEST_CASE("Pixie_Boot_CompFPGA") { CHECK(false); }
     TEST_CASE("Pixie_Boot_DSP") { CHECK(false); }
     TEST_CASE("Pixie_Boot_FIPPI") { CHECK(false); }

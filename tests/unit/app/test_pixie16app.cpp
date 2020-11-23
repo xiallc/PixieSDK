@@ -6,13 +6,46 @@
 
 #include "doctest.h"
 
-TEST_SUITE("Pixie16App") {
-    TEST_CASE("APP16_ClrBit"){CHECK(false);}
-    TEST_CASE("APP16_SetBit"){CHECK(false);}
-    TEST_CASE("APP16_TstBit"){CHECK(false);}
-    TEST_CASE("APP32_ClrBit"){CHECK(false);}
-    TEST_CASE("APP32_SetBit"){CHECK(false);}
-    TEST_CASE("APP32_TstBit"){CHECK(false);}
+TEST_SUITE("app/pixie16app.c") {
+    TEST_CASE("APP16_ClrBit"){
+        CHECK(10 == APP16_ClrBit(10, 10));
+        CHECK(8 == APP16_ClrBit(1, 10));
+        CHECK(8 == APP16_ClrBit(64, 8));
+        CHECK(8 == APP16_ClrBit(32, 8));
+        CHECK(8 == APP16_ClrBit(-4, 8));
+        CHECK(0 == APP16_ClrBit(25, 134217728));
+    }
+    TEST_CASE("APP16_SetBit"){
+        CHECK(8 == APP16_SetBit(3, 8));
+        CHECK(10 == APP16_SetBit(1, 8));
+        CHECK(8 == APP16_SetBit(400, 8));
+        CHECK(8 == APP16_SetBit(-4, 8));
+        CHECK(0 == APP16_SetBit(25, 134217728));
+    }
+    TEST_CASE("APP16_TstBit"){
+        CHECK(APP16_TstBit(3, 8));
+        CHECK_FALSE(APP16_TstBit(10, 8));
+        CHECK_FALSE(APP16_TstBit(17, 65535));
+    }
+    TEST_CASE("APP32_ClrBit"){
+        CHECK(8 == APP32_ClrBit(1, 8));
+        CHECK(8 == APP32_ClrBit(400, 8));
+        CHECK(8 == APP32_ClrBit(-4, 8));
+        CHECK(134217728 == APP32_ClrBit(25, 167772160));
+        CHECK(0 == APP32_ClrBit(33, 8589934592));
+    }
+    TEST_CASE("APP32_SetBit"){
+        CHECK(524290 == APP32_SetBit(1, 524288));
+        CHECK(8 == APP32_SetBit(400, 8));
+        CHECK(8 == APP32_SetBit(-4, 8));
+        CHECK(167772160 == APP32_SetBit(25, 134217728));
+        CHECK(0 == APP32_SetBit(33, 8589934592));
+    }
+    TEST_CASE("APP32_TstBit"){
+        CHECK(APP32_TstBit(19, 524288));
+        CHECK_FALSE(APP32_TstBit(10, 524288));
+        CHECK_FALSE(APP32_TstBit(33, 4294967295));
+    }
     TEST_CASE("Pixie16AcquireADCTrace"){CHECK(false);}
     TEST_CASE("Pixie16AcquireBaselines"){CHECK(false);}
     TEST_CASE("Pixie16AdjustOffsets"){CHECK(false);}

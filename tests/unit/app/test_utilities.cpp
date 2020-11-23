@@ -6,9 +6,7 @@
 
 #include "doctest.h"
 
-#include <limits>
-
-TEST_SUITE("Utilities") {
+TEST_SUITE("app/utilities.c") {
     TEST_CASE("Decimal2IEEEFloating"){
         CHECK((unsigned) 0 == Decimal2IEEEFloating(0));
         CHECK((unsigned) 1230546000 == doctest::Approx(Decimal2IEEEFloating(887365)));
@@ -16,9 +14,7 @@ TEST_SUITE("Utilities") {
         CHECK((unsigned) 1118927127 == doctest::Approx(Decimal2IEEEFloating(88.7365)));
         CHECK((unsigned) 3266410775 == doctest::Approx(Decimal2IEEEFloating(-88.7365)));
     }
-
     TEST_CASE("IEEEFloating2Decimal"){
-        CHECK(doctest::Approx(std::numeric_limits<double>::max()) == IEEEFloating2Decimal(2147483647));
         CHECK(doctest::Approx(0) == IEEEFloating2Decimal(0));
         CHECK(doctest::Approx(887365) == IEEEFloating2Decimal(1230546000));
         CHECK(doctest::Approx(-887365) == IEEEFloating2Decimal(3378029648));
