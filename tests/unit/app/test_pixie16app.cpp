@@ -5,6 +5,7 @@
 #include "pixie16app_export.h"
 
 #include "doctest.h"
+
 TEST_SUITE("Pixie16App") {
     TEST_CASE("APP16_ClrBit"){CHECK(false);}
     TEST_CASE("APP16_SetBit"){CHECK(false);}
@@ -12,8 +13,6 @@ TEST_SUITE("Pixie16App") {
     TEST_CASE("APP32_ClrBit"){CHECK(false);}
     TEST_CASE("APP32_SetBit"){CHECK(false);}
     TEST_CASE("APP32_TstBit"){CHECK(false);}
-    TEST_CASE("Decimal2IEEEFloating"){CHECK(false);}
-    TEST_CASE("IEEEFloating2Decimal"){CHECK(false);}
     TEST_CASE("Pixie16AcquireADCTrace"){CHECK(false);}
     TEST_CASE("Pixie16AcquireBaselines"){CHECK(false);}
     TEST_CASE("Pixie16AdjustOffsets"){CHECK(false);}
@@ -61,7 +60,6 @@ TEST_SUITE("Pixie16App") {
     TEST_CASE("Pixie16ReadHistogramFromModule"){CHECK(false);}
     TEST_CASE("Pixie16ReadListModeTrace"){CHECK(false);}
     TEST_CASE("Pixie16ReadModuleInfo"){CHECK(false);}
-    TEST_CASE("Pixie16ReadMSGFile"){CHECK(false);}
     TEST_CASE("Pixie16ReadSglChanADCTrace"){CHECK(false);}
     TEST_CASE("Pixie16ReadSglChanBaselines"){CHECK(false);}
     TEST_CASE("Pixie16ReadSglChanPar"){CHECK(false);}
