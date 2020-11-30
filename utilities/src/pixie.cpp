@@ -90,14 +90,15 @@ int main(int argc, char** argv) {
             return EXIT_FAILURE;
         }
     else {
-        cerr << "ERROR - Need to provide the configuration file for reading." << endl;
+        cerr << "ERROR - Couldn't find the configuration file!" << endl;
+        display_help();
         return EXIT_FAILURE;
     }
 
     cout << "INFO - Initializing Pixie Modules.......";
     int retval = Pixie16InitSystem(cfg.numModules, cfg.slot_map, 0);
     if (retval < 0) {
-        cerr << endl << "ERROR - Pixie16InitSystem failed, retval = %d" << retval << endl;
+        cerr << endl << "ERROR - Pixie16InitSystem failed, retval = " << retval << endl;
         return EXIT_FAILURE;
     } else
         cout << "OK" << endl;
@@ -107,7 +108,7 @@ int main(int argc, char** argv) {
                                cfg.TrigFPGAConfigFile.c_str(), cfg.DSPCodeFile.c_str(), cfg.DSPParFile.c_str(),
                                cfg.DSPVarFile.c_str(), cfg.numModules, 0x7F);
     if (retval < 0) {
-        cerr << endl << "ERROR - Failed to boot modules with Error Code " << retval << endl;
+        cerr << endl << "ERROR - Booting modules failed with Error Code " << retval << endl;
         return retval;
     } else
         cout << "OK" << endl;
