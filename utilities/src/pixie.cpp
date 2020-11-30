@@ -76,6 +76,16 @@ void display_help() {
          << endl;
 }
 
+bool verify_api_return_value(const int& val, const std::string& errmsg, const std::string& okmsg = "OK") {
+    if (val < 0) {
+        cerr << endl << errmsg << val << endl;
+        return false;
+    }
+    cout << okmsg << endl;
+    return true;
+}
+
+
 int main(int argc, char** argv) {
     if (xia::cmdOptionExists(argc, argv, "-h") || xia::cmdOptionExists(argc, argv, "--help")) {
         display_help();
@@ -97,12 +107,9 @@ int main(int argc, char** argv) {
     }
 
     cout << "INFO - Initializing Pixie Modules.......";
-    int retval = Pixie16InitSystem(cfg.numModules, cfg.slot_map, 0);
-    if (retval < 0) {
-        cerr << endl << "ERROR - Pixie16InitSystem failed, retval = " << retval << endl;
+    if (!verify_api_return_value(Pixie16InitSystem(cfg.numModules, cfg.slot_map, 0),
+                                 "ERROR - Pixie16InitSystem failed, retval = "))
         return EXIT_FAILURE;
-    } else
-        cout << "OK" << endl;
 
     unsigned short boot_pattern = 0x7F;
     if (xia::cmdOptionExists(argc, argv, "-f") || xia::cmdOptionExists(argc, argv, "--fast-boot")) {
@@ -111,53 +118,38 @@ int main(int argc, char** argv) {
     } else
         cout << "INFO - Booting Pixie modules........" << endl;
 
-    retval = Pixie16BootModule(cfg.ComFPGAConfigFile.c_str(), cfg.SPFPGAConfigFile.c_str(),
-                               cfg.TrigFPGAConfigFile.c_str(), cfg.DSPCodeFile.c_str(), cfg.DSPParFile.c_str(),
-                               cfg.DSPVarFile.c_str(), cfg.numModules, boot_pattern);
-    if (retval < 0) {
-        cerr << endl << "ERROR - Booting modules failed with Error Code " << retval << endl;
-        return retval;
-    } else
-        cout << "OK" << endl;
+    if (!verify_api_return_value(Pixie16BootModule(cfg.ComFPGAConfigFile.c_str(), cfg.SPFPGAConfigFile.c_str(),
+                                                   cfg.TrigFPGAConfigFile.c_str(), cfg.DSPCodeFile.c_str(),
+                                                   cfg.DSPParFile.c_str(), cfg.DSPVarFile.c_str(), cfg.numModules,
+                                                   boot_pattern),
+                                 "ERROR - Booting modules failed with Error Code "))
+        return EXIT_FAILURE;
 
     if (xia::cmdOptionExists(argc, argv, "--list-mode-run")) {
-        // Adjust DC-Offsets
         for (int k = 0; k < cfg.numModules; k++) {
-            retval = Pixie16AdjustOffsets(k);
-            if (retval < 0) {
-                cerr << "ERROR - Pixie16AdjustOffsets in module" << k << "failed with Error Code " << retval << endl;
+            if (!verify_api_return_value(Pixie16AdjustOffsets(k), "ERROR - Pixie16AdjustOffsets in module" +
+                                                                          to_string(k) + "failed with Error Code "))
                 return EXIT_FAILURE;
-            }
         }
 
         cout << "INFO - Setting SYNCH_WAIT in Module 0.......";
-        retval = Pixie16WriteSglModPar("SYNCH_WAIT", 1, 0);
-        if (retval < 0) {
-            cerr << endl << "ERROR - Setting SYNC_WAIT failed with Exit Code " << retval << endl;
+        if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", 1, 0),
+                                     "ERROR - Setting SYNC_WAIT failed with Exit Code "))
             return EXIT_FAILURE;
-        } else
-            cout << "OK" << endl;
 
         cout << "INFO - Setting IN_SYNCH in Module 0.......";
-        retval = Pixie16WriteSglModPar("IN_SYNCH", 0, 0);
-        if (retval < 0) {
-            cerr << endl << "ERROR - Setting IN_SYNC failed with Exit Code " << retval << endl;
+        if (!verify_api_return_value(Pixie16WriteSglModPar("IN_SYNCH", 0, 0),
+                                     "ERROR - Setting IN_SYNC failed with Exit Code "))
             return EXIT_FAILURE;
-        } else
-            cout << "OK" << endl;
 
         cout << "INFO - Starting List Mode Run.......";
-        retval = Pixie16StartListModeRun(cfg.numModules, 0x100, NEW_RUN);
-        if (retval < 0) {
-            cerr << endl << "ERROR - Pixie16StartListModeRun failed with Error Code " << retval << endl;
+        if (!verify_api_return_value(Pixie16StartListModeRun(cfg.numModules, 0x100, NEW_RUN),
+                                     "ERROR - Pixie16StartListModeRun failed with Error Code "))
             return EXIT_FAILURE;
-        } else
-            cout << "OK" << endl;
 
         cout << "INFO - Waiting for DSP to boot....";
         sleep(1);
         cout << "OK" << endl;
-
 
         unsigned int* lmdata;
         if ((lmdata = (unsigned int*) malloc(sizeof(unsigned int) * 131072)) == nullptr) {
@@ -180,10 +172,10 @@ int main(int argc, char** argv) {
         while (duration_cast<duration<double>>(steady_clock::now() - run_start_time).count() <
                requested_run_length_in_seconds) {
             for (int k = 0; k < cfg.numModules; k++) {
-                retval = Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(), &mod_numwordsread, k, 0);
-                if (retval < 0) {
-                    cerr << "*ERROR* Pixie16SaveExternalFIFODataToFile failed for Module " << k << "with Error Code "
-                         << retval;
+                if (!verify_api_return_value(
+                            Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(), &mod_numwordsread, k, 0),
+                            "ERROR - Pixie16SaveExternalFIFODataToFile failed for Module " + to_string(k) +
+                                    "with Error Code ")) {
                     free(lmdata);
                     break;
                 }
@@ -201,22 +193,18 @@ int main(int argc, char** argv) {
         // Stop run in the Director module (module #0) - a SYNC interrupt should be generated
         // to stop run in all modules simultaneously
         cout << "INFO - Stopping List Mode Run.......";
-        retval = Pixie16EndRun(0);
-        if (retval < 0) {
-            cerr << endl << "ERROR - Stopping List Mode Run failed with Error Code " << retval << endl;
-            return 3;
-        } else
-            cout << "OK" << endl;
+        if (!verify_api_return_value(Pixie16EndRun(0), "ERROR - Stopping List Mode Run failed with Error Code "))
+            return EXIT_FAILURE;
 
         // Make sure all modules indeed finish their run successfully.
         for (int k = 0; k < cfg.numModules; k++) {
             size_t finalize_attempt_number = 0;
             while (finalize_attempt_number < 10) {
                 if (Pixie16CheckRunStatus(k) != 0) {
-                    retval = Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(), &mod_numwordsread, k, 1);
-                    if (retval < 0) {
-                        cerr << "ERROR - Pixie16SaveExternalFIFODataToFile failed in module " << k << "with Exit Code "
-                             << retval << endl;
+                    if (!verify_api_return_value(Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(),
+                                                                                   &mod_numwordsread, k, 1),
+                                                 "ERROR - Pixie16SaveExternalFIFODataToFile failed in module " +
+                                                         to_string(k) + "with Exit Code ")) {
                         free(lmdata);
                         return EXIT_FAILURE;
                     }
@@ -233,10 +221,10 @@ int main(int argc, char** argv) {
 
         // All modules have their run stopped successfully. Now read out the possible last words from the external FIFO
         for (int k = 0; k < cfg.numModules; k++) {
-            retval = Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(), &mod_numwordsread, k, 1);
-            if (retval < 0) {
-                cerr << "ERROR - Pixie16SaveExternalFIFODataToFile failed in module " << k << "with Exit Code "
-                     << retval << endl;
+            if (!verify_api_return_value(
+                        Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(), &mod_numwordsread, k, 1),
+                        "ERROR - Pixie16SaveExternalFIFODataToFile failed in module " + to_string(k) +
+                                "with Exit Code ")) {
                 free(lmdata);
                 return EXIT_FAILURE;
             }
@@ -253,11 +241,9 @@ int main(int argc, char** argv) {
         }
 
         cout << "INFO - Saving DSP Parameters to " << output_file_name << "....";
-        retval = Pixie16SaveDSPParametersToFile(output_file_name);
-        if (retval < 0) {
-            cerr << endl << "ERROR - Saving DSP parameters to file failed with Exit Code " << retval << endl;
-        } else
-            cout << "OK" << endl;
+        if (!verify_api_return_value(Pixie16SaveDSPParametersToFile(output_file_name),
+                                     "ERROR - Saving DSP parameters to file failed with Exit Code "))
+            return EXIT_FAILURE;
     }
 
     if (xia::cmdOptionExists(argc, argv, "--histograms")) {
@@ -267,12 +253,9 @@ int main(int argc, char** argv) {
         cout << "OK" << endl;
     }
 
-    cout << "INFO - Closing out the connection to Modules....";
     for (int i = 0; i < cfg.numModules; i++) {
-        retval = Pixie16ExitSystem(i);
-        if (retval != 0) {
-            cerr << endl << "ERROR - Closing Module " << i << " failed with Exit Code " << retval << endl;
-        }
+        cout << "INFO - Closing out connection to Module " << i << "......";
+        verify_api_return_value(Pixie16ExitSystem(i),
+                                "ERROR - Closing Module " + to_string(i) + " failed with Exit Code ");
     }
-    cout << "OK" << endl;
 }
