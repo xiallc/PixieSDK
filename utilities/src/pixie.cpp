@@ -72,6 +72,7 @@ void display_help() {
          << "\t-t <run time in seconds>  Defines how long a list mode run will execute. [Default: 10]" << endl
          << "\t--save-dsp-pars <name>    Saves the DSP parameters to a file. " << endl
          << "\t--histograms              Reads histograms from the modules and saves them to a file." << endl
+         << "\t-f --fast-boot            Skips uploading firmware to the modules. " << endl
          << endl;
 }
 
@@ -103,10 +104,16 @@ int main(int argc, char** argv) {
     } else
         cout << "OK" << endl;
 
-    cout << "INFO - Booting Pixie modules........" << endl;
+    unsigned short boot_pattern = 0x7F;
+    if (xia::cmdOptionExists(argc, argv, "-f") || xia::cmdOptionExists(argc, argv, "--fast-boot")) {
+        cout << "INFO - Fast booting modules......";
+        boot_pattern = 0x70;
+    } else
+        cout << "INFO - Booting Pixie modules........" << endl;
+
     retval = Pixie16BootModule(cfg.ComFPGAConfigFile.c_str(), cfg.SPFPGAConfigFile.c_str(),
                                cfg.TrigFPGAConfigFile.c_str(), cfg.DSPCodeFile.c_str(), cfg.DSPParFile.c_str(),
-                               cfg.DSPVarFile.c_str(), cfg.numModules, 0x7F);
+                               cfg.DSPVarFile.c_str(), cfg.numModules, boot_pattern);
     if (retval < 0) {
         cerr << endl << "ERROR - Booting modules failed with Error Code " << retval << endl;
         return retval;
