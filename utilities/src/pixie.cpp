@@ -32,16 +32,10 @@
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
-/******************************************************************************
-*
-* File Name:
-*
-*		Pixie16Boot.c
-*
-* Description:
-*
-*		This file contains the code necessary to boot a crate of Pixie modules.
-******************************************************************************/
+/// @file pixie.cpp
+/// @brief This file contains the code necessary to boot a crate of Pixie modules.
+/// @author H. Tan and S. V. Paulauskas
+/// @date November 14, 2020
 #include "functions.hpp"
 #include "pixie16app_export.h"
 
@@ -49,10 +43,7 @@
 #include <iostream>
 #include <vector>
 
-#include <csignal>
-#include <cstdio>
 #include <cstring>
-#include <ctime>
 
 #ifdef _WIN64
 #include <Windows.h>
@@ -64,7 +55,32 @@
 using namespace std;
 using namespace std::chrono;
 
+void display_help() {
+    cout << "Pixie sample user interface" << endl
+         << endl
+         << "Usage:" << endl
+         << "\tpixie -h | --help" << endl
+         << "\tpixie -c <path to config>" << endl
+         << "\tpixie --list-mode-run [-t <run time in seconds>]" << endl
+         << "\tpixie --save-dsp-pars <name>" << endl
+         << "\tpixie --histograms" << endl
+         << endl
+         << "Options:" << endl
+         << "\t-h --help                 Display this message" << endl
+         << "\t-c <config file>          Configuration file to use." << endl
+         << "\t--list-mode-run           Starts a list mode run " << endl
+         << "\t-t <run time in seconds>  Defines how long a list mode run will execute. [Default: 10]" << endl
+         << "\t--save-dsp-pars <name>    Saves the DSP parameters to a file. " << endl
+         << "\t--histograms              Reads histograms from the modules and saves them to a file." << endl
+         << endl;
+}
+
 int main(int argc, char** argv) {
+    if (xia::cmdOptionExists(argv, argv + argc, "-h") || xia::cmdOptionExists(argv, argv + argc, "--help")) {
+        display_help();
+        return EXIT_SUCCESS;
+    }
+
     xia::Configuration cfg;
     if (xia::cmdOptionExists(argv, argv + argc, "-c"))
         try {
