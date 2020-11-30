@@ -40,6 +40,7 @@
 #include "pixie16app_export.h"
 
 #include <chrono>
+#include <iomanip>
 #include <iostream>
 #include <vector>
 
@@ -112,15 +113,16 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
 
     unsigned short boot_pattern = 0x7F;
-    if (xia::cmdOptionExists(argc, argv, "-f") || xia::cmdOptionExists(argc, argv, "--fast-boot")) {
+    if (xia::cmdOptionExists(argc, argv, "-f") || xia::cmdOptionExists(argc, argv, "--fast-boot"))
         boot_pattern = 0x70;
 
-    cout << "INFO - Calling Pixie16BootModule with boot pattern: " << boot_pattern << endl;
+    cout << "INFO - Calling Pixie16BootModule with boot pattern: " << showbase << hex << boot_pattern << dec
+         << "............" << endl;
     if (!verify_api_return_value(Pixie16BootModule(cfg.ComFPGAConfigFile.c_str(), cfg.SPFPGAConfigFile.c_str(),
                                                    cfg.TrigFPGAConfigFile.c_str(), cfg.DSPCodeFile.c_str(),
                                                    cfg.DSPParFile.c_str(), cfg.DSPVarFile.c_str(), cfg.numModules,
                                                    boot_pattern),
-                                 "Pixie16BootModule"))
+                                 "Pixie16BootModule", ""))
         return EXIT_FAILURE;
 
     if (xia::cmdOptionExists(argc, argv, "--list-mode-run")) {
@@ -129,15 +131,15 @@ int main(int argc, char** argv) {
                 return EXIT_FAILURE;
         }
 
-        cout << "INFO - Setting SYNCH_WAIT in Module 0.......";
+        cout << "INFO - Calling Pixie16WriteSglModPar to write SYNCH_WAIT = 1 in Module 0.......";
         if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", 1, 0), "Pixie16WriteSglModPar - SYNC_WAIT"))
             return EXIT_FAILURE;
 
-        cout << "INFO - Setting IN_SYNCH in Module 0.......";
+        cout << "INFO - Calling Pixie16WriteSglModPar to write IN_SYNCH  = 0 in Module 0.......";
         if (!verify_api_return_value(Pixie16WriteSglModPar("IN_SYNCH", 0, 0), "Pixie16WriteSglModPar - IN_SYNC"))
             return EXIT_FAILURE;
 
-        cout << "INFO - Starting List Mode Run.......";
+        cout << "INFO - Calling Pixie16StartListModeRun.......";
         if (!verify_api_return_value(Pixie16StartListModeRun(cfg.numModules, 0x100, NEW_RUN),
                                      "Pixie16StartListModeRun"))
             return EXIT_FAILURE;
@@ -155,6 +157,7 @@ int main(int argc, char** argv) {
         unsigned int mod_numwordsread = 0;
 
         vector<string> output_file_names;
+        output_file_names.reserve(cfg.numModules);
         for (auto i = 0; i < cfg.numModules; i++)
             output_file_names.push_back("module" + to_string(i) + ".lmd");
 
@@ -197,7 +200,7 @@ int main(int argc, char** argv) {
                 if (Pixie16CheckRunStatus(k) != 0) {
                     if (!verify_api_return_value(Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(),
                                                                                    &mod_numwordsread, k, 1),
-                                                 "Pixie16SaveExternalFIFODataToFile for Module " + to_string(k))) {
+                                                 "Pixie16SaveExternalFIFODataToFile for Module " + to_string(k), "")) {
                         free(lmdata);
                         return EXIT_FAILURE;
                     }
@@ -207,8 +210,9 @@ int main(int argc, char** argv) {
                 finalize_attempt_number++;
             }
             if (finalize_attempt_number == 10)
-                cout << "end run in module " << k << " failed" << endl << flush;
+                cerr << "ERROR - End run in module " << k << " failed" << endl;
         }
+
         cout << "INFO - Finished collecting data in "
              << duration_cast<duration<double>>(steady_clock::now() - run_start_time).count() << " s" << endl;
 
@@ -216,12 +220,11 @@ int main(int argc, char** argv) {
         for (int k = 0; k < cfg.numModules; k++) {
             if (!verify_api_return_value(
                         Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(), &mod_numwordsread, k, 1),
-                        "Pixie16SaveExternalFIFODataToFile for Module " + to_string(k))) {
+                        "Pixie16SaveExternalFIFODataToFile for Module " + to_string(k), "")) {
                 free(lmdata);
                 return EXIT_FAILURE;
             }
         }
-
         free(lmdata);
     }
 
