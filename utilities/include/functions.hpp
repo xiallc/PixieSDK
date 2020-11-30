@@ -49,15 +49,17 @@ namespace xia {
     }
 
     //From https://stackoverflow.com/a/868894
-    char* getCmdOption(char** begin, char** end, const std::string& option) {
-        char** itr = std::find(begin, end, option);
+    char* getCmdOption(const int& argc, char** argv, const std::string& option) {
+        auto end = argv + argc;
+        char** itr = std::find(argv, end, option);
         if (itr != end && ++itr != end)
             return *itr;
         return nullptr;
     }
 
-    bool cmdOptionExists(char** begin, char** end, const std::string& option) {
-        return std::find(begin, end, option) != end;
+    bool cmdOptionExists(const int& argc, char** argv, const std::string& option) {
+        auto end = argv + argc;
+        return std::find(argv, end, option) != end;
     }
 }  // namespace xia
 

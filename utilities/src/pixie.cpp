@@ -76,15 +76,15 @@ void display_help() {
 }
 
 int main(int argc, char** argv) {
-    if (xia::cmdOptionExists(argv, argv + argc, "-h") || xia::cmdOptionExists(argv, argv + argc, "--help")) {
+    if (xia::cmdOptionExists(argc, argv, "-h") || xia::cmdOptionExists(argc, argv, "--help")) {
         display_help();
         return EXIT_SUCCESS;
     }
 
     xia::Configuration cfg;
-    if (xia::cmdOptionExists(argv, argv + argc, "-c"))
+    if (xia::cmdOptionExists(argc, argv, "-c"))
         try {
-            cfg = xia::read_configuration_file(xia::getCmdOption(argv, argv + argc, "-c"));
+            cfg = xia::read_configuration_file(xia::getCmdOption(argc, argv, "-c"));
         } catch (invalid_argument& invalidArgument) {
             cerr << invalidArgument.what() << endl;
             return EXIT_FAILURE;
@@ -113,7 +113,7 @@ int main(int argc, char** argv) {
     } else
         cout << "OK" << endl;
 
-    if (xia::cmdOptionExists(argv, argv + argc, "--list-mode-run")) {
+    if (xia::cmdOptionExists(argc, argv, "--list-mode-run")) {
         // Adjust DC-Offsets
         for (int k = 0; k < cfg.numModules; k++) {
             retval = Pixie16AdjustOffsets(k);
@@ -165,8 +165,8 @@ int main(int argc, char** argv) {
             output_file_names.push_back("module" + to_string(i) + ".lmd");
 
         size_t requested_run_length_in_seconds = 10;
-        if (xia::cmdOptionExists(argv, argv + argc, "-t"))
-            requested_run_length_in_seconds = stod(xia::getCmdOption(argv, argv + argc, "-t"));
+        if (xia::cmdOptionExists(argc, argv, "-t"))
+            requested_run_length_in_seconds = stod(xia::getCmdOption(argc, argv, "-t"));
 
         cout << "INFO - Collecting data for " << requested_run_length_in_seconds << " s." << endl;
         steady_clock::time_point run_start_time = steady_clock::now();
@@ -238,8 +238,8 @@ int main(int argc, char** argv) {
         free(lmdata);
     }
 
-    if (xia::cmdOptionExists(argv, argv + argc, "--save-dsp-pars")) {
-        auto output_file_name = xia::getCmdOption(argv, argv + argc, "--save-dsp-pars");
+    if (xia::cmdOptionExists(argc, argv, "--save-dsp-pars")) {
+        auto output_file_name = xia::getCmdOption(argc, argv, "--save-dsp-pars");
         if (!output_file_name) {
             cerr << "ERROR - You must provide a file name with --save-dsp-pars!" << endl;
             return EXIT_FAILURE;
@@ -253,7 +253,7 @@ int main(int argc, char** argv) {
             cout << "OK" << endl;
     }
 
-    if (xia::cmdOptionExists(argv, argv + argc, "--histograms")) {
+    if (xia::cmdOptionExists(argc, argv, "--histograms")) {
         cout << "INFO - Starting to write histograms from the module...";
         for (int i = 0; i < cfg.numModules; i++)
             Pixie16SaveHistogramToFile(("module" + to_string(i) + ".his").c_str(), i);
