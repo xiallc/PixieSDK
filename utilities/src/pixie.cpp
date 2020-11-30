@@ -62,10 +62,11 @@ void display_help() {
          << "Usage:" << endl
          << "\tpixie -h | --help" << endl
          << "\tpixie -c <path to config>" << endl
-         << "\tpixie --list-mode-run [-t <run time in seconds>]" << endl
+         << "\tpixie (--list-mode-run | -l) [-t <run time in seconds>]" << endl
          << "\tpixie --save-dsp-pars <name>" << endl
          << "\tpixie --histograms" << endl
-         << endl
+         << "\tpixie -c <path to config> -r <PARAMETER NAME> --crate <x> --mod <y> [--chan <z>]" << endl
+         << "\tpixie -c <path to config> -w <PARAMETER NAME> -v <val> --crate <x> --mod <y> [--chan <z>]" << endl
          << "Options:" << endl
          << "\t-h --help                 Display this message" << endl
          << "\t-c <config file>          Configuration file to use." << endl
@@ -73,8 +74,11 @@ void display_help() {
          << "\t-t <run time in seconds>  Defines how long a list mode run will execute. [Default: 10]" << endl
          << "\t--save-dsp-pars <name>    Saves the DSP parameters to a file. " << endl
          << "\t--histograms              Reads histograms from the modules and saves them to a file." << endl
-         << "\t-f --fast-boot            Skips uploading firmware to the modules. " << endl
-         << endl;
+         << "\t-f --fast-boot            Skips uploading firmware to the modules." << endl
+         << "\t--mod <y>                 Module number to read from" << endl
+         << "\t--chan <z>                Channel number to read from" << endl
+         << "\t--crate <x>               Crate number to read from" << endl
+         << "\t-v <val>                  Value we will write to the specified Crate/Module[/Channel]. " << endl;
 }
 
 bool verify_api_return_value(const int& val, const std::string& func_name, const std::string& okmsg = "OK") {
@@ -87,6 +91,237 @@ bool verify_api_return_value(const int& val, const std::string& func_name, const
     return true;
 }
 
+bool verify_cli_argument(const std::string* par) {
+    if (!par) {
+        cerr << "ERROR - Could not parse command line argument!" << endl;
+        display_help();
+        return false;
+    }
+    return true;
+}
+
+bool save_dsp_pars(const std::string& filename) {
+    cout << "INFO - Saving DSP Parameters to " << filename << "....";
+    if (!verify_api_return_value(Pixie16SaveDSPParametersToFile(filename.c_str()), "Pixie16SaveDSPParametersToFile"))
+        return false;
+    return true;
+}
+
+bool execute_list_mode_run(const int& argc, char** argv, const xia::Configuration& cfg) {
+    for (int k = 0; k < cfg.numModules; k++) {
+        if (!verify_api_return_value(Pixie16AdjustOffsets(k), "Pixie16AdjustOffsets for Module" + to_string(k)))
+            return false;
+    }
+
+    cout << "INFO - Calling Pixie16WriteSglModPar to write SYNCH_WAIT = 1 in Module 0.......";
+    if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", 1, 0), "Pixie16WriteSglModPar - SYNC_WAIT"))
+        return false;
+
+    cout << "INFO - Calling Pixie16WriteSglModPar to write IN_SYNCH  = 0 in Module 0.......";
+    if (!verify_api_return_value(Pixie16WriteSglModPar("IN_SYNCH", 0, 0), "Pixie16WriteSglModPar - IN_SYNC"))
+        return false;
+
+    cout << "INFO - Calling Pixie16StartListModeRun.......";
+    if (!verify_api_return_value(Pixie16StartListModeRun(cfg.numModules, 0x100, NEW_RUN), "Pixie16StartListModeRun"))
+        return false;
+
+    cout << "INFO - Waiting for DSP to boot....";
+    sleep(1);
+    cout << "OK" << endl;
+
+    unsigned int* lmdata;
+    if ((lmdata = (unsigned int*) malloc(sizeof(unsigned int) * 131072)) == nullptr) {
+        cerr << "ERROR - Failed to allocate memory block (lmdata) for list mode data!" << endl;
+        return false;
+    }
+
+    unsigned int mod_numwordsread = 0;
+
+    vector<string> output_file_names;
+    output_file_names.reserve(cfg.numModules);
+    for (auto i = 0; i < cfg.numModules; i++)
+        output_file_names.push_back("module" + to_string(i) + ".lmd");
+
+    size_t requested_run_length_in_seconds = 10;
+    if (xia::cmdOptionExists(argc, argv, "-t"))
+        requested_run_length_in_seconds = stod(xia::getCmdOption(argc, argv, "-t"));
+
+    cout << "INFO - Collecting data for " << requested_run_length_in_seconds << " s." << endl;
+    steady_clock::time_point run_start_time = steady_clock::now();
+    while (duration_cast<duration<double>>(steady_clock::now() - run_start_time).count() <
+           requested_run_length_in_seconds) {
+        for (int k = 0; k < cfg.numModules; k++) {
+            if (!verify_api_return_value(
+                        Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(), &mod_numwordsread, k, 0),
+                        "Pixie16SaveExternalFIFODataToFile for Module " + to_string(k), "")) {
+                free(lmdata);
+                break;
+            }
+        }
+
+        // Check the run status of the Director module (module #0) to see if the run has been stopped.
+        // This is possible in a multi-chassis system where modules in one chassis can stop the run
+        // in all chassis.
+        if (Pixie16CheckRunStatus(0) == 0) {
+            cout << "Run was stopped but number of events are not reached yet" << endl;
+            break;
+        }
+    }
+
+    // Stop run in the Director module (module #0) - a SYNC interrupt should be generated
+    // to stop run in all modules simultaneously
+    cout << "INFO - Stopping List Mode Run.......";
+    if (!verify_api_return_value(Pixie16EndRun(0), "Pixie16EndRun"))
+        return false;
+
+    // Make sure all modules indeed finish their run successfully.
+    for (int k = 0; k < cfg.numModules; k++) {
+        size_t finalize_attempt_number = 0;
+        while (finalize_attempt_number < 10) {
+            if (Pixie16CheckRunStatus(k) != 0) {
+                if (!verify_api_return_value(
+                            Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(), &mod_numwordsread, k, 1),
+                            "Pixie16SaveExternalFIFODataToFile for Module " + to_string(k), "")) {
+                    free(lmdata);
+                    return false;
+                }
+            } else
+                break;
+
+            finalize_attempt_number++;
+        }
+        if (finalize_attempt_number == 10)
+            cerr << "ERROR - End run in module " << k << " failed" << endl;
+    }
+
+    cout << "INFO - Finished collecting data in "
+         << duration_cast<duration<double>>(steady_clock::now() - run_start_time).count() << " s" << endl;
+
+    // All modules have their run stopped successfully. Now read out the possible last words from the external FIFO
+    for (int k = 0; k < cfg.numModules; k++) {
+        if (!verify_api_return_value(
+                    Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(), &mod_numwordsread, k, 1),
+                    "Pixie16SaveExternalFIFODataToFile for Module " + to_string(k), "")) {
+            free(lmdata);
+            return false;
+        }
+    }
+    free(lmdata);
+    return true;
+}
+
+bool execute_parameter_read(const int& argc, char** argv) {
+    if (!xia::cmdOptionExists(argc, argv, "--crate") || !xia::cmdOptionExists(argc, argv, "--mod")) {
+        cerr << "ERROR - You must specify a crate and module to read from!" << endl;
+        display_help();
+        return false;
+    }
+
+    bool is_channel_parameter = xia::cmdOptionExists(argc, argv, "--chan");
+
+    int crate, mod, chan;
+    try {
+        crate = stoi(xia::getCmdOption(argc, argv, "--crate"));
+        mod = stoi(xia::getCmdOption(argc, argv, "--mod"));
+        if (is_channel_parameter)
+            chan = stoi(xia::getCmdOption(argc, argv, "--chan"));
+    } catch (invalid_argument& invalid_argument) {
+        cerr << "ERROR - Invalid option for crate, module, or channel!" << endl;
+        display_help();
+        return false;
+    }
+
+    string parameter_name = xia::getCmdOption(argc, argv, "-r");
+
+    if (!verify_cli_argument(&parameter_name)) {
+        cout << "ERROR - Invalid argument parsed!" << endl;
+        display_help();
+        return false;
+    }
+
+    if (is_channel_parameter) {
+        double result;
+        cout << "INFO - Pixie16ReadSglChanPar reading " << parameter_name << " from Crate " << crate << " Module "
+             << mod << " Channel " << chan << "........ ";
+        if (!verify_api_return_value(Pixie16ReadSglChanPar(parameter_name.c_str(), &result, mod, chan),
+                                     "Pixie16ReadSglChanPar", ""))
+            return false;
+        cout << result << endl;
+    } else {
+        unsigned int result;
+        cout << "INFO - Pixie16ReadSglModPar reading " << parameter_name << " from Crate " << crate << " Module " << mod
+             << "........ ";
+        if (!verify_api_return_value(Pixie16ReadSglModPar(parameter_name.c_str(), &result, mod), "Pixie16ReadSglModPar",
+                                     ""))
+            return false;
+        cout << result << endl;
+    }
+    return true;
+}
+
+bool execute_parameter_write(const int& argc, char** argv, const std::string& setfile) {
+    if (!xia::cmdOptionExists(argc, argv, "--crate") || !xia::cmdOptionExists(argc, argv, "--mod")) {
+        cerr << "ERROR - You must specify a crate and module to read from!" << endl;
+        display_help();
+        return false;
+    }
+
+    bool is_channel_parameter = xia::cmdOptionExists(argc, argv, "--chan");
+
+    int crate, mod, chan;
+    try {
+        crate = stoi(xia::getCmdOption(argc, argv, "--crate"));
+        mod = stoi(xia::getCmdOption(argc, argv, "--mod"));
+        if (is_channel_parameter)
+            chan = stoi(xia::getCmdOption(argc, argv, "--chan"));
+    } catch (invalid_argument& invalid_argument) {
+        cerr << "ERROR - Invalid option for crate, module, or channel!" << endl;
+        display_help();
+        return false;
+    }
+
+    string parameter_name = xia::getCmdOption(argc, argv, "-w");
+
+    if (!verify_cli_argument(&parameter_name)) {
+        cout << "ERROR - Invalid argument parsed!" << endl;
+        display_help();
+        return false;
+    }
+
+    double value;
+    try {
+        value = stod(xia::getCmdOption(argc, argv, "-v"));
+    } catch (invalid_argument& invalid_argument) {
+        cerr << "ERROR - Invalid option for value!" << endl;
+        display_help();
+        return false;
+    }
+
+    if (is_channel_parameter) {
+        cout << "INFO - Pixie16WriteSglChanPar setting " << parameter_name << " to " << value << " for Crate " << crate
+             << " Module " << mod << " Channel " << chan << "........ ";
+        if (!verify_api_return_value(Pixie16WriteSglChanPar(parameter_name.c_str(), value, mod, chan),
+                                     "Pixie16WriteSglChanPar"))
+            return false;
+    } else {
+        cout << "INFO - Pixie16WriteSglModPar setting " << parameter_name << " to " << value << " for  Crate " << crate
+             << " Module " << mod << "........ ";
+        if (!verify_api_return_value(Pixie16WriteSglModPar(parameter_name.c_str(), value, mod), "Pixie16ReadSglModPar"))
+            return false;
+    }
+
+    if (!save_dsp_pars(setfile))
+        return false;
+    return true;
+}
+
+bool execute_close_module_connection(const int& numModules) {
+    for (int i = 0; i < numModules; i++) {
+        cout << "INFO - Closing out connection to Module " << i << "......";
+        verify_api_return_value(Pixie16ExitSystem(i), "Pixie16ExitSystem for Module" + to_string(i));
+    }
+    return true;
+}
 
 int main(int argc, char** argv) {
     if (xia::cmdOptionExists(argc, argv, "-h") || xia::cmdOptionExists(argc, argv, "--help")) {
@@ -125,107 +360,25 @@ int main(int argc, char** argv) {
                                  "Pixie16BootModule", ""))
         return EXIT_FAILURE;
 
-    if (xia::cmdOptionExists(argc, argv, "--list-mode-run")) {
-        for (int k = 0; k < cfg.numModules; k++) {
-            if (!verify_api_return_value(Pixie16AdjustOffsets(k), "Pixie16AdjustOffsets for Module" + to_string(k)))
-                return EXIT_FAILURE;
-        }
-
-        cout << "INFO - Calling Pixie16WriteSglModPar to write SYNCH_WAIT = 1 in Module 0.......";
-        if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", 1, 0), "Pixie16WriteSglModPar - SYNC_WAIT"))
+    if (xia::cmdOptionExists(argc, argv, "-r")) {
+        if (!execute_parameter_read(argc, argv))
             return EXIT_FAILURE;
+        execute_close_module_connection(cfg.numModules);
+        return EXIT_SUCCESS;
+    }
 
-        cout << "INFO - Calling Pixie16WriteSglModPar to write IN_SYNCH  = 0 in Module 0.......";
-        if (!verify_api_return_value(Pixie16WriteSglModPar("IN_SYNCH", 0, 0), "Pixie16WriteSglModPar - IN_SYNC"))
+    if (xia::cmdOptionExists(argc, argv, "-w")) {
+        if (!execute_parameter_write(argc, argv, cfg.DSPParFile))
             return EXIT_FAILURE;
+        execute_close_module_connection(cfg.numModules);
+        return EXIT_SUCCESS;
+    }
 
-        cout << "INFO - Calling Pixie16StartListModeRun.......";
-        if (!verify_api_return_value(Pixie16StartListModeRun(cfg.numModules, 0x100, NEW_RUN),
-                                     "Pixie16StartListModeRun"))
+    if (xia::cmdOptionExists(argc, argv, "--list-mode-run") || xia::cmdOptionExists(argc, argv, "-l")) {
+        if (!execute_list_mode_run(argc, argv, cfg))
             return EXIT_FAILURE;
-
-        cout << "INFO - Waiting for DSP to boot....";
-        sleep(1);
-        cout << "OK" << endl;
-
-        unsigned int* lmdata;
-        if ((lmdata = (unsigned int*) malloc(sizeof(unsigned int) * 131072)) == nullptr) {
-            cerr << "ERROR - Failed to allocate memory block (lmdata) for list mode data!" << endl;
-            return EXIT_FAILURE;
-        }
-
-        unsigned int mod_numwordsread = 0;
-
-        vector<string> output_file_names;
-        output_file_names.reserve(cfg.numModules);
-        for (auto i = 0; i < cfg.numModules; i++)
-            output_file_names.push_back("module" + to_string(i) + ".lmd");
-
-        size_t requested_run_length_in_seconds = 10;
-        if (xia::cmdOptionExists(argc, argv, "-t"))
-            requested_run_length_in_seconds = stod(xia::getCmdOption(argc, argv, "-t"));
-
-        cout << "INFO - Collecting data for " << requested_run_length_in_seconds << " s." << endl;
-        steady_clock::time_point run_start_time = steady_clock::now();
-        while (duration_cast<duration<double>>(steady_clock::now() - run_start_time).count() <
-               requested_run_length_in_seconds) {
-            for (int k = 0; k < cfg.numModules; k++) {
-                if (!verify_api_return_value(
-                            Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(), &mod_numwordsread, k, 0),
-                            "Pixie16SaveExternalFIFODataToFile for Module " + to_string(k), "")) {
-                    free(lmdata);
-                    break;
-                }
-            }
-
-            // Check the run status of the Director module (module #0) to see if the run has been stopped.
-            // This is possible in a multi-chassis system where modules in one chassis can stop the run
-            // in all chassis.
-            if (Pixie16CheckRunStatus(0) == 0) {
-                cout << "Run was stopped but number of events are not reached yet" << endl;
-                break;
-            }
-        }
-
-        // Stop run in the Director module (module #0) - a SYNC interrupt should be generated
-        // to stop run in all modules simultaneously
-        cout << "INFO - Stopping List Mode Run.......";
-        if (!verify_api_return_value(Pixie16EndRun(0), "Pixie16EndRun"))
-            return EXIT_FAILURE;
-
-        // Make sure all modules indeed finish their run successfully.
-        for (int k = 0; k < cfg.numModules; k++) {
-            size_t finalize_attempt_number = 0;
-            while (finalize_attempt_number < 10) {
-                if (Pixie16CheckRunStatus(k) != 0) {
-                    if (!verify_api_return_value(Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(),
-                                                                                   &mod_numwordsread, k, 1),
-                                                 "Pixie16SaveExternalFIFODataToFile for Module " + to_string(k), "")) {
-                        free(lmdata);
-                        return EXIT_FAILURE;
-                    }
-                } else
-                    break;
-
-                finalize_attempt_number++;
-            }
-            if (finalize_attempt_number == 10)
-                cerr << "ERROR - End run in module " << k << " failed" << endl;
-        }
-
-        cout << "INFO - Finished collecting data in "
-             << duration_cast<duration<double>>(steady_clock::now() - run_start_time).count() << " s" << endl;
-
-        // All modules have their run stopped successfully. Now read out the possible last words from the external FIFO
-        for (int k = 0; k < cfg.numModules; k++) {
-            if (!verify_api_return_value(
-                        Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(), &mod_numwordsread, k, 1),
-                        "Pixie16SaveExternalFIFODataToFile for Module " + to_string(k), "")) {
-                free(lmdata);
-                return EXIT_FAILURE;
-            }
-        }
-        free(lmdata);
+        execute_close_module_connection(cfg.numModules);
+        return EXIT_SUCCESS;
     }
 
     if (xia::cmdOptionExists(argc, argv, "--save-dsp-pars")) {
@@ -234,11 +387,9 @@ int main(int argc, char** argv) {
             cerr << "ERROR - You must provide a file name with --save-dsp-pars!" << endl;
             return EXIT_FAILURE;
         }
-
-        cout << "INFO - Saving DSP Parameters to " << output_file_name << "....";
-        if (!verify_api_return_value(Pixie16SaveDSPParametersToFile(output_file_name),
-                                     "Pixie16SaveDSPParametersToFile"))
+        if (!save_dsp_pars(cfg.DSPParFile))
             return EXIT_FAILURE;
+        return EXIT_SUCCESS;
     }
 
     if (xia::cmdOptionExists(argc, argv, "--histograms")) {
@@ -248,8 +399,5 @@ int main(int argc, char** argv) {
         cout << "OK" << endl;
     }
 
-    for (int i = 0; i < cfg.numModules; i++) {
-        cout << "INFO - Closing out connection to Module " << i << "......";
-        verify_api_return_value(Pixie16ExitSystem(i), "Pixie16ExitSystem for Module" + to_string(i));
-    }
+    execute_close_module_connection(cfg.numModules);
 }
