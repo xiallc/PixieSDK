@@ -56,31 +56,6 @@
 using namespace std;
 using namespace std::chrono;
 
-void display_help() {
-    cout << "Pixie sample user interface" << endl
-         << endl
-         << "Usage:" << endl
-         << "\tpixie -h | --help" << endl
-         << "\tpixie -c <path to config>" << endl
-         << "\tpixie (--list-mode-run | -l) [-t <run time in seconds>]" << endl
-         << "\tpixie --save-dsp-pars <name>" << endl
-         << "\tpixie --histograms" << endl
-         << "\tpixie -c <path to config> -r <PARAMETER NAME> --crate <x> --mod <y> [--chan <z>]" << endl
-         << "\tpixie -c <path to config> -w <PARAMETER NAME> -v <val> --crate <x> --mod <y> [--chan <z>]" << endl
-         << "Options:" << endl
-         << "\t-h --help                 Display this message" << endl
-         << "\t-c <config file>          Configuration file to use." << endl
-         << "\t--list-mode-run           Starts a list mode run " << endl
-         << "\t-t <run time in seconds>  Defines how long a list mode run will execute. [Default: 10]" << endl
-         << "\t--save-dsp-pars <name>    Saves the DSP parameters to a file. " << endl
-         << "\t--histograms              Reads histograms from the modules and saves them to a file." << endl
-         << "\t-f --fast-boot            Skips uploading firmware to the modules." << endl
-         << "\t--mod <y>                 Module number to read from" << endl
-         << "\t--chan <z>                Channel number to read from" << endl
-         << "\t--crate <x>               Crate number to read from" << endl
-         << "\t-v <val>                  Value we will write to the specified Crate/Module[/Channel]. " << endl;
-}
-
 bool verify_api_return_value(const int& val, const std::string& func_name, const std::string& okmsg = "OK") {
     if (val < 0) {
         cerr << endl << "ERROR - " << func_name << " with Error Code " << val << endl;
@@ -88,15 +63,6 @@ bool verify_api_return_value(const int& val, const std::string& func_name, const
     }
     if (!okmsg.empty())
         cout << okmsg << endl;
-    return true;
-}
-
-bool verify_cli_argument(const std::string* par) {
-    if (!par) {
-        cerr << "ERROR - Could not parse command line argument!" << endl;
-        display_help();
-        return false;
-    }
     return true;
 }
 
@@ -205,103 +171,44 @@ bool execute_list_mode_run(const xia::Configuration& cfg, const double& runtime_
     return true;
 }
 
-bool execute_parameter_read(const int& argc, char** argv) {
-    if (!xia::cmdOptionExists(argc, argv, "--crate") || !xia::cmdOptionExists(argc, argv, "--mod")) {
-        cerr << "ERROR - You must specify a crate and module to read from!" << endl;
-        display_help();
-        return false;
-    }
-
-    bool is_channel_parameter = xia::cmdOptionExists(argc, argv, "--chan");
-
-    int crate, mod, chan;
-    try {
-        crate = stoi(xia::getCmdOption(argc, argv, "--crate"));
-        mod = stoi(xia::getCmdOption(argc, argv, "--mod"));
-        if (is_channel_parameter)
-            chan = stoi(xia::getCmdOption(argc, argv, "--chan"));
-    } catch (invalid_argument& invalid_argument) {
-        cerr << "ERROR - Invalid option for crate, module, or channel!" << endl;
-        display_help();
-        return false;
-    }
-
-    string parameter_name = xia::getCmdOption(argc, argv, "-r");
-
-    if (!verify_cli_argument(&parameter_name)) {
-        cout << "ERROR - Invalid argument parsed!" << endl;
-        display_help();
-        return false;
-    }
-
-    if (is_channel_parameter) {
+bool execute_parameter_read(args::ValueFlag<string>& parameter, args::ValueFlag<unsigned int>& crate,
+                            args::ValueFlag<unsigned int>& module, args::ValueFlag<unsigned int>& channel) {
+    if (channel) {
         double result;
-        cout << "INFO - Pixie16ReadSglChanPar reading " << parameter_name << " from Crate " << crate << " Module "
-             << mod << " Channel " << chan << "........ ";
-        if (!verify_api_return_value(Pixie16ReadSglChanPar(parameter_name.c_str(), &result, mod, chan),
-                                     "Pixie16ReadSglChanPar", ""))
+        cout << "INFO - Pixie16ReadSglChanPar reading " << parameter.Get() << " from Crate " << crate.Get()
+             << " Module " << module.Get() << " Channel " << channel.Get() << "........ ";
+        if (!verify_api_return_value(
+                    Pixie16ReadSglChanPar(parameter.Get().c_str(), &result, module.Get(), channel.Get()),
+                    "Pixie16ReadSglChanPar", ""))
             return false;
         cout << result << endl;
     } else {
         unsigned int result;
-        cout << "INFO - Pixie16ReadSglModPar reading " << parameter_name << " from Crate " << crate << " Module " << mod
-             << "........ ";
-        if (!verify_api_return_value(Pixie16ReadSglModPar(parameter_name.c_str(), &result, mod), "Pixie16ReadSglModPar",
-                                     ""))
+        cout << "INFO - Pixie16ReadSglModPar reading " << parameter.Get() << " from Crate " << crate.Get() << " Module "
+             << module.Get() << "........ ";
+        if (!verify_api_return_value(Pixie16ReadSglModPar(parameter.Get().c_str(), &result, module.Get()),
+                                     "Pixie16ReadSglModPar", ""))
             return false;
         cout << result << endl;
     }
     return true;
 }
 
-bool execute_parameter_write(const int& argc, char** argv, const std::string& setfile) {
-    if (!xia::cmdOptionExists(argc, argv, "--crate") || !xia::cmdOptionExists(argc, argv, "--mod")) {
-        cerr << "ERROR - You must specify a crate and module to read from!" << endl;
-        display_help();
-        return false;
-    }
-
-    bool is_channel_parameter = xia::cmdOptionExists(argc, argv, "--chan");
-
-    int crate, mod, chan;
-    try {
-        crate = stoi(xia::getCmdOption(argc, argv, "--crate"));
-        mod = stoi(xia::getCmdOption(argc, argv, "--mod"));
-        if (is_channel_parameter)
-            chan = stoi(xia::getCmdOption(argc, argv, "--chan"));
-    } catch (invalid_argument& invalid_argument) {
-        cerr << "ERROR - Invalid option for crate, module, or channel!" << endl;
-        display_help();
-        return false;
-    }
-
-    string parameter_name = xia::getCmdOption(argc, argv, "-w");
-
-    if (!verify_cli_argument(&parameter_name)) {
-        cout << "ERROR - Invalid argument parsed!" << endl;
-        display_help();
-        return false;
-    }
-
-    double value;
-    try {
-        value = stod(xia::getCmdOption(argc, argv, "-v"));
-    } catch (invalid_argument& invalid_argument) {
-        cerr << "ERROR - Invalid option for value!" << endl;
-        display_help();
-        return false;
-    }
-
-    if (is_channel_parameter) {
-        cout << "INFO - Pixie16WriteSglChanPar setting " << parameter_name << " to " << value << " for Crate " << crate
-             << " Module " << mod << " Channel " << chan << "........ ";
-        if (!verify_api_return_value(Pixie16WriteSglChanPar(parameter_name.c_str(), value, mod, chan),
-                                     "Pixie16WriteSglChanPar"))
+bool execute_parameter_write(args::ValueFlag<string>& parameter, args::ValueFlag<double>& value,
+                             args::ValueFlag<unsigned int>& crate, args::ValueFlag<unsigned int>& module,
+                             args::ValueFlag<unsigned int>& channel, const std::string& setfile) {
+    if (channel) {
+        cout << "INFO - Pixie16WriteSglChanPar setting " << parameter.Get() << " to " << value.Get() << " for Crate "
+             << crate.Get() << " Module " << module.Get() << " Channel " << channel.Get() << "........ ";
+        if (!verify_api_return_value(
+                    Pixie16WriteSglChanPar(parameter.Get().c_str(), value.Get(), module.Get(), channel.Get()),
+                    "Pixie16WriteSglChanPar"))
             return false;
     } else {
-        cout << "INFO - Pixie16WriteSglModPar setting " << parameter_name << " to " << value << " for  Crate " << crate
-             << " Module " << mod << "........ ";
-        if (!verify_api_return_value(Pixie16WriteSglModPar(parameter_name.c_str(), value, mod), "Pixie16ReadSglModPar"))
+        cout << "INFO - Pixie16WriteSglModPar setting " << parameter.Get() << " to " << value.Get() << " for  Crate "
+             << crate.Get() << " Module " << module.Get() << "........ ";
+        if (!verify_api_return_value(Pixie16WriteSglModPar(parameter.Get().c_str(), value, module.Get()),
+                                     "Pixie16ReadSglModPar"))
             return false;
     }
 
@@ -346,10 +253,14 @@ int main(int argc, char** argv) {
     args::Command write(commands, "write", "Write a parameter to the module.");
     args::ValueFlag<string> parameter(read, "parameter", "The parameter we want to read from the system.",
                                       {'n', "name"});
-    args::ValueFlag<double> crate(read, "crate", "The crate to inspect.", {"crate"}, 0);
-    args::ValueFlag<double> module(read, "module", "The module to inspect.", {"mod"});
-    args::ValueFlag<double> channel(read, "channel", "The channel to inspect.", {"chan"});
+    args::ValueFlag<unsigned int> crate(read, "crate", "The crate", {"crate"}, 0);
+    args::ValueFlag<unsigned int> module(read, "module", "The module", {"mod"});
+    args::ValueFlag<unsigned int> channel(read, "channel", "The channel", {"chan"});
 
+    args::ValueFlag<double> parameter_value(write, "parameter_value", "The value of the parameter we want to write.",
+                                            {'v', "value"});
+
+    write.Add(configuration);
     write.Add(parameter);
     write.Add(crate);
     write.Add(module);
@@ -396,14 +307,14 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
 
     if (read) {
-        if (!execute_parameter_read(argc, argv))
+        if (!execute_parameter_read(parameter, crate, module, channel))
             return EXIT_FAILURE;
         execute_close_module_connection(cfg.numModules);
         return EXIT_SUCCESS;
     }
 
     if (write) {
-        if (!execute_parameter_write(argc, argv, cfg.DSPParFile))
+        if (!execute_parameter_write(parameter, parameter_value, crate, module, channel, cfg.DSPParFile))
             return EXIT_FAILURE;
         execute_close_module_connection(cfg.numModules);
         return EXIT_SUCCESS;

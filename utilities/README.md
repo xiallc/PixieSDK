@@ -6,7 +6,8 @@ basis for developing their own applications.
 ## utilities/pixie.cpp
 This sample C++ base code can be used to test basic functionality to Pixie modules. At the moment users can boot modules
 and take list mode data. Due to the API design you will need to have a `pxisys.ini` file in the same directory that 
-you execute the function. We'll walk you through the basics of using this program below.
+you execute the function. We'll walk you through the basics of using this program below. If you need help with a 
+particular command, then you can use `pixie -h` or `pixie COMMAND -h` to get more information about how to use the commands.
 
 **NOTE**: Make sure that you replace `${INSTALL_PATH}` with the actual installation path. Ex. `/tmp`  
 
