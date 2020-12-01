@@ -47,18 +47,6 @@ namespace xia {
         input.close();
         return cfg;
     }
-
-    //From https://stackoverflow.com/a/868894
-    char* getCmdOption(char** begin, char** end, const std::string& option) {
-        char** itr = std::find(begin, end, option);
-        if (itr != end && ++itr != end)
-            return *itr;
-        return nullptr;
-    }
-
-    bool cmdOptionExists(char** begin, char** end, const std::string& option) {
-        return std::find(begin, end, option) != end;
-    }
 }  // namespace xia
 
 #endif  //SOFTWARE_HELPER_FUNCTIONS_HPP

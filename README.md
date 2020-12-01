@@ -9,12 +9,12 @@ start runs, load firmware).
 * [Broadcom PCI/PCIe SDK](https://www.broadcom.com/products/pcie-switches-bridges/software-dev-kits) - See next section.
 * Python 3.6+
 
-### PLX SDK
+### Broadcomm PCI/PCIe SDK
 This software uses the [Broadcom PLX 9054 driver](https://www.broadcom.com/products/pcie-switches-bridges/software-dev-kits) 
 to communicate with the Pixie modules. Broadcom does not provide clear installation instructions for 
 Linux systems. Here we'll provide instructions for Broadcom PCI/PCIe SDK v8.00 on CentOS 8. 
 
-#### Linux Installation
+#### Broadcomm PCI/PCIe SDK Installation
 1. [Download the v8.00 SDK](https://www.broadcom.com/products/pcie-switches-bridges/software-dev-kits#downloads) to your system.
 2. Extract the tarball and move it to `/usr/local/broadcom/8.00`
    ```shell script
