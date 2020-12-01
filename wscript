@@ -90,10 +90,10 @@ def build(bld):
         if name == 'app':
             use_list = use_list + ['Pixie16Sys', 'SYS', 'PLX']
         if name == 'sys':
-            use_list.append("PLX")
+            use_list = use_list + ["PLX", "dl", "m"]
 
         bld.shlib(source=bld.path.find_dir(name).ant_glob("*.c"), target=f'Pixie16{name.title()}',
-                  install_path="${PREFIX}/lib", use=use_list)
+                  install_path="${PREFIX}/lib", use=use_list, )
 
     for header_path in set(bld.env.INCLUDES_APP + bld.env.INCLUDES_SYS):
         path = bld.path.find_dir(header_path)

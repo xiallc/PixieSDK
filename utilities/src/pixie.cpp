@@ -36,6 +36,7 @@
 /// @brief This file contains the code necessary to boot a crate of Pixie modules.
 /// @author H. Tan and S. V. Paulauskas
 /// @date November 14, 2020
+#include "args.hxx"
 #include "functions.hpp"
 #include "pixie16app_export.h"
 
@@ -51,7 +52,6 @@
 #else
 #include <unistd.h>
 #endif
-
 
 using namespace std;
 using namespace std::chrono;
@@ -107,7 +107,7 @@ bool save_dsp_pars(const std::string& filename) {
     return true;
 }
 
-bool execute_list_mode_run(const int& argc, char** argv, const xia::Configuration& cfg) {
+bool execute_list_mode_run(const xia::Configuration& cfg, const double& runtime_in_seconds) {
     for (int k = 0; k < cfg.numModules; k++) {
         if (!verify_api_return_value(Pixie16AdjustOffsets(k), "Pixie16AdjustOffsets for Module" + to_string(k)))
             return false;
@@ -142,14 +142,9 @@ bool execute_list_mode_run(const int& argc, char** argv, const xia::Configuratio
     for (auto i = 0; i < cfg.numModules; i++)
         output_file_names.push_back("module" + to_string(i) + ".lmd");
 
-    size_t requested_run_length_in_seconds = 10;
-    if (xia::cmdOptionExists(argc, argv, "-t"))
-        requested_run_length_in_seconds = stod(xia::getCmdOption(argc, argv, "-t"));
-
-    cout << "INFO - Collecting data for " << requested_run_length_in_seconds << " s." << endl;
+    cout << "INFO - Collecting data for " << runtime_in_seconds << " s." << endl;
     steady_clock::time_point run_start_time = steady_clock::now();
-    while (duration_cast<duration<double>>(steady_clock::now() - run_start_time).count() <
-           requested_run_length_in_seconds) {
+    while (duration_cast<duration<double>>(steady_clock::now() - run_start_time).count() < runtime_in_seconds) {
         for (int k = 0; k < cfg.numModules; k++) {
             if (!verify_api_return_value(
                         Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(), &mod_numwordsread, k, 0),
@@ -324,31 +319,71 @@ bool execute_close_module_connection(const int& numModules) {
 }
 
 int main(int argc, char** argv) {
-    if (xia::cmdOptionExists(argc, argv, "-h") || xia::cmdOptionExists(argc, argv, "--help")) {
-        display_help();
+    args::ArgumentParser parser("Sample code that interfaces with a Pixie system through the User API.");
+    parser.LongSeparator("=");
+
+    args::Group commands(parser, "commands");
+
+    args::Command boot(commands, "boot", "Boots the crate of modules.");
+    args::Command export_settings(commands, "export-settings",
+                                  "Boots the system and dumps the settings to the file defined in the config.");
+    args::Command fast_boot(commands, "fast-boot", "Boots the crate of modules.");
+    args::Command histogram(commands, "histogram", "Save histograms from the module.");
+    args::Command list_mode(commands, "list-mode", "Starts a list mode data run");
+    //args::Command mca(commands, "mca", "Starts an MCA data run.");
+
+    args::Group arguments(parser, "arguments", args::Group::Validators::AtLeastOne, args::Options::Global);
+    args::Positional<std::string> configuration(arguments, "cfg", "The configuration file to load.",
+                                                args::Options::Required);
+    args::HelpFlag h(arguments, "help", "Displays this message", {'h', "help"});
+    args::Flag is_offline(arguments, "Offline Mode", "Tells the API to use Offline mode when running.",
+                          {'o', "offline"});
+
+    args::ValueFlag<double> run_time(list_mode, "time", "The amount of time that a list mode run will take in seconds.",
+                                     {'t', "run-time"}, 10.);
+
+    args::Command read(commands, "read", "Read a parameter from the module.");
+    args::Command write(commands, "write", "Write a parameter to the module.");
+    args::ValueFlag<string> parameter(read, "parameter", "The parameter we want to read from the system.",
+                                      {'n', "name"});
+    args::ValueFlag<double> crate(read, "crate", "The crate to inspect.", {"crate"}, 0);
+    args::ValueFlag<double> module(read, "module", "The module to inspect.", {"mod"});
+    args::ValueFlag<double> channel(read, "channel", "The channel to inspect.", {"chan"});
+
+    write.Add(parameter);
+    write.Add(crate);
+    write.Add(module);
+    write.Add(channel);
+
+    try {
+        parser.ParseCLI(argc, argv);
+    } catch (args::Help& help) {
+        cout << parser;
         return EXIT_SUCCESS;
+    } catch (args::ValidationError& e) {
+        cerr << e.what() << endl;
+        cout << parser;
+        return EXIT_FAILURE;
     }
 
     xia::Configuration cfg;
-    if (xia::cmdOptionExists(argc, argv, "-c"))
-        try {
-            cfg = xia::read_configuration_file(xia::getCmdOption(argc, argv, "-c"));
-        } catch (invalid_argument& invalidArgument) {
-            cerr << invalidArgument.what() << endl;
-            return EXIT_FAILURE;
-        }
-    else {
-        cerr << "ERROR - Couldn't find the configuration file!" << endl;
-        display_help();
+    try {
+        cfg = xia::read_configuration_file(configuration.Get());
+    } catch (invalid_argument& invalidArgument) {
+        cerr << invalidArgument.what() << endl;
         return EXIT_FAILURE;
     }
 
+    int offline_mode = 0;
+    if (is_offline)
+        offline_mode = 1;
+
     cout << "INFO - Calling Pixie16InitSystem.......";
-    if (!verify_api_return_value(Pixie16InitSystem(cfg.numModules, cfg.slot_map, 0), "Pixie16InitSystem"))
+    if (!verify_api_return_value(Pixie16InitSystem(cfg.numModules, cfg.slot_map, offline_mode), "Pixie16InitSystem"))
         return EXIT_FAILURE;
 
     unsigned short boot_pattern = 0x7F;
-    if (xia::cmdOptionExists(argc, argv, "-f") || xia::cmdOptionExists(argc, argv, "--fast-boot"))
+    if (fast_boot)
         boot_pattern = 0x70;
 
     cout << "INFO - Calling Pixie16BootModule with boot pattern: " << showbase << hex << boot_pattern << dec
@@ -360,39 +395,34 @@ int main(int argc, char** argv) {
                                  "Pixie16BootModule", ""))
         return EXIT_FAILURE;
 
-    if (xia::cmdOptionExists(argc, argv, "-r")) {
+    if (read) {
         if (!execute_parameter_read(argc, argv))
             return EXIT_FAILURE;
         execute_close_module_connection(cfg.numModules);
         return EXIT_SUCCESS;
     }
 
-    if (xia::cmdOptionExists(argc, argv, "-w")) {
+    if (write) {
         if (!execute_parameter_write(argc, argv, cfg.DSPParFile))
             return EXIT_FAILURE;
         execute_close_module_connection(cfg.numModules);
         return EXIT_SUCCESS;
     }
 
-    if (xia::cmdOptionExists(argc, argv, "--list-mode-run") || xia::cmdOptionExists(argc, argv, "-l")) {
-        if (!execute_list_mode_run(argc, argv, cfg))
+    if (list_mode) {
+        if (!execute_list_mode_run(cfg, run_time.Get()))
             return EXIT_FAILURE;
         execute_close_module_connection(cfg.numModules);
         return EXIT_SUCCESS;
     }
 
-    if (xia::cmdOptionExists(argc, argv, "--save-dsp-pars")) {
-        auto output_file_name = xia::getCmdOption(argc, argv, "--save-dsp-pars");
-        if (!output_file_name) {
-            cerr << "ERROR - You must provide a file name with --save-dsp-pars!" << endl;
-            return EXIT_FAILURE;
-        }
+    if (export_settings) {
         if (!save_dsp_pars(cfg.DSPParFile))
             return EXIT_FAILURE;
         return EXIT_SUCCESS;
     }
 
-    if (xia::cmdOptionExists(argc, argv, "--histograms")) {
+    if (histogram) {
         cout << "INFO - Starting to write histograms from the module...";
         for (int i = 0; i < cfg.numModules; i++)
             Pixie16SaveHistogramToFile(("module" + to_string(i) + ".his").c_str(), i);
