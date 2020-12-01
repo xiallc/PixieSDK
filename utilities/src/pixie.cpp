@@ -230,33 +230,29 @@ int main(int argc, char** argv) {
     parser.LongSeparator("=");
 
     args::Group commands(parser, "commands");
-
     args::Command boot(commands, "boot", "Boots the crate of modules.");
     args::Command export_settings(commands, "export-settings",
                                   "Boots the system and dumps the settings to the file defined in the config.");
-    args::Command fast_boot(commands, "fast-boot", "Boots the crate of modules.");
     args::Command histogram(commands, "histogram", "Save histograms from the module.");
     args::Command list_mode(commands, "list-mode", "Starts a list mode data run");
+    args::Command read(commands, "read", "Read a parameter from the module.");
+    args::Command write(commands, "write", "Write a parameter to the module.");
     //args::Command mca(commands, "mca", "Starts an MCA data run.");
 
     args::Group arguments(parser, "arguments", args::Group::Validators::AtLeastOne, args::Options::Global);
     args::Positional<std::string> configuration(arguments, "cfg", "The configuration file to load.",
                                                 args::Options::Required);
     args::HelpFlag h(arguments, "help", "Displays this message", {'h', "help"});
+    args::Flag is_fast_boot(boot, "fast-boot", "Performs a partial boot of the system.", {'f', "fast-boot"});
     args::Flag is_offline(arguments, "Offline Mode", "Tells the API to use Offline mode when running.",
                           {'o', "offline"});
-
     args::ValueFlag<double> run_time(list_mode, "time", "The amount of time that a list mode run will take in seconds.",
                                      {'t', "run-time"}, 10.);
-
-    args::Command read(commands, "read", "Read a parameter from the module.");
-    args::Command write(commands, "write", "Write a parameter to the module.");
     args::ValueFlag<string> parameter(read, "parameter", "The parameter we want to read from the system.",
                                       {'n', "name"});
     args::ValueFlag<unsigned int> crate(read, "crate", "The crate", {"crate"}, 0);
     args::ValueFlag<unsigned int> module(read, "module", "The module", {"mod"});
     args::ValueFlag<unsigned int> channel(read, "channel", "The channel", {"chan"});
-
     args::ValueFlag<double> parameter_value(write, "parameter_value", "The value of the parameter we want to write.",
                                             {'v', "value"});
 
@@ -294,7 +290,7 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
 
     unsigned short boot_pattern = 0x7F;
-    if (fast_boot)
+    if (is_fast_boot)
         boot_pattern = 0x70;
 
     cout << "INFO - Calling Pixie16BootModule with boot pattern: " << showbase << hex << boot_pattern << dec
