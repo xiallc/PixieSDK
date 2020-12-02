@@ -230,6 +230,40 @@ bool execute_parameter_write(args::ValueFlag<string>& parameter, args::ValueFlag
     return true;
 }
 
+bool execute_trace_capture(args::ValueFlag<unsigned int>& module) {
+    if (!module)
+        return false;
+
+    cout << "INFO - Pixie16AcquireADCTrace acquiring traces for Module" << module.Get() << "........";
+    if(!verify_api_return_value(Pixie16AcquireADCTrace(module.Get()), "Pixie16AcquireADCTrace"))
+        return false;
+
+    unsigned short trace[NUMBER_OF_CHANNELS][MAX_ADC_TRACE_LEN];
+    for (unsigned int i = 0; i < NUMBER_OF_CHANNELS; i++) {
+        if (!verify_api_return_value(Pixie16ReadSglChanADCTrace(trace[i], MAX_ADC_TRACE_LEN, module.Get(), i),
+                                     "Pixie16ReadSglChanADCTrace"))
+            return false;
+    }
+
+    ofstream ofstream1("traces-module" + to_string(module.Get()) + ".csv");
+    ofstream1 << "bin,";
+    for (unsigned int i = 0; i < NUMBER_OF_CHANNELS; i++)
+        ofstream1 << "Chan" << i << ",";
+    ofstream1 << endl;
+    for (unsigned int i = 0; i < MAX_ADC_TRACE_LEN; i++) {
+        ofstream1 << i << ",";
+        for (unsigned int k = 0; k < NUMBER_OF_CHANNELS; k++) {
+            if (k != NUMBER_OF_CHANNELS -1)
+                ofstream1 << trace[k][i] << ",";
+            else
+                ofstream1 << trace[k][i];
+        }
+        ofstream1 << endl;
+    }
+
+    return true;
+}
+
 bool execute_close_module_connection(const int& numModules) {
     for (int i = 0; i < numModules; i++) {
         cout << "INFO - Closing out connection to Module " << i << "......";
@@ -273,6 +307,8 @@ int main(int argc, char** argv) {
     args::ValueFlag<double> parameter_value(write, "parameter_value", "The value of the parameter we want to write.",
                                             {'v', "value"});
     adjust_offsets.Add(configuration);
+    trace.Add(configuration);
+    trace.Add(module);
     write.Add(configuration);
     write.Add(parameter);
     write.Add(crate);
@@ -335,6 +371,13 @@ int main(int argc, char** argv) {
 
     if (adjust_offsets) {
         if (!execute_adjust_offsets(cfg.numModules, cfg.DSPParFile))
+            return EXIT_FAILURE;
+        execute_close_module_connection(cfg.numModules);
+        return EXIT_SUCCESS;
+    }
+
+    if (trace) {
+        if (!execute_trace_capture(module))
             return EXIT_FAILURE;
         execute_close_module_connection(cfg.numModules);
         return EXIT_SUCCESS;
