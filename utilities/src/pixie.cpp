@@ -73,11 +73,24 @@ bool save_dsp_pars(const std::string& filename) {
     return true;
 }
 
-bool execute_list_mode_run(const xia::Configuration& cfg, const double& runtime_in_seconds) {
-    for (int k = 0; k < cfg.numModules; k++) {
+bool execute_adjust_offsets(const unsigned int& numModules, const std::string& setfile) {
+    for (unsigned int k = 0; k < numModules; k++) {
+        cout << "INFO - Adjusting baseline offset for Module " << k << ".......";
         if (!verify_api_return_value(Pixie16AdjustOffsets(k), "Pixie16AdjustOffsets for Module" + to_string(k)))
             return false;
     }
+
+    if (!save_dsp_pars(setfile))
+        return false;
+
+    return true;
+}
+
+bool execute_list_mode_run(const xia::Configuration& cfg, const double& runtime_in_seconds) {
+    cout << "INFO - Starting list mode data run for " << runtime_in_seconds << " s." << endl;
+
+    if (!execute_adjust_offsets(cfg.numModules, cfg.DSPParFile))
+        return false;
 
     cout << "INFO - Calling Pixie16WriteSglModPar to write SYNCH_WAIT = 1 in Module 0.......";
     if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", 1, 0), "Pixie16WriteSglModPar - SYNC_WAIT"))
@@ -217,6 +230,40 @@ bool execute_parameter_write(args::ValueFlag<string>& parameter, args::ValueFlag
     return true;
 }
 
+bool execute_trace_capture(args::ValueFlag<unsigned int>& module) {
+    if (!module)
+        return false;
+
+    cout << "INFO - Pixie16AcquireADCTrace acquiring traces for Module" << module.Get() << "........";
+    if(!verify_api_return_value(Pixie16AcquireADCTrace(module.Get()), "Pixie16AcquireADCTrace"))
+        return false;
+
+    unsigned short trace[NUMBER_OF_CHANNELS][MAX_ADC_TRACE_LEN];
+    for (unsigned int i = 0; i < NUMBER_OF_CHANNELS; i++) {
+        if (!verify_api_return_value(Pixie16ReadSglChanADCTrace(trace[i], MAX_ADC_TRACE_LEN, module.Get(), i),
+                                     "Pixie16ReadSglChanADCTrace"))
+            return false;
+    }
+
+    ofstream ofstream1("traces-module" + to_string(module.Get()) + ".csv");
+    ofstream1 << "bin,";
+    for (unsigned int i = 0; i < NUMBER_OF_CHANNELS; i++)
+        ofstream1 << "Chan" << i << ",";
+    ofstream1 << endl;
+    for (unsigned int i = 0; i < MAX_ADC_TRACE_LEN; i++) {
+        ofstream1 << i << ",";
+        for (unsigned int k = 0; k < NUMBER_OF_CHANNELS; k++) {
+            if (k != NUMBER_OF_CHANNELS -1)
+                ofstream1 << trace[k][i] << ",";
+            else
+                ofstream1 << trace[k][i];
+        }
+        ofstream1 << endl;
+    }
+
+    return true;
+}
+
 bool execute_close_module_connection(const int& numModules) {
     for (int i = 0; i < numModules; i++) {
         cout << "INFO - Closing out connection to Module " << i << "......";
@@ -237,12 +284,16 @@ int main(int argc, char** argv) {
     args::Command list_mode(commands, "list-mode", "Starts a list mode data run");
     args::Command read(commands, "read", "Read a parameter from the module.");
     args::Command write(commands, "write", "Write a parameter to the module.");
+    args::Command trace(commands, "trace", "Captures traces from the modules.");
+    args::Command adjust_offsets(commands, "adjust_offsets",
+                                 "Adjusts the DC offsets for all modules in the config file.");
     //args::Command mca(commands, "mca", "Starts an MCA data run.");
 
     args::Group arguments(parser, "arguments", args::Group::Validators::AtLeastOne, args::Options::Global);
+
     args::Positional<std::string> configuration(arguments, "cfg", "The configuration file to load.",
                                                 args::Options::Required);
-    args::HelpFlag h(arguments, "help", "Displays this message", {'h', "help"});
+    args::HelpFlag help_flag(arguments, "help", "Displays this message", {'h', "help"});
     args::Flag is_fast_boot(boot, "fast-boot", "Performs a partial boot of the system.", {'f', "fast-boot"});
     args::Flag is_offline(arguments, "Offline Mode", "Tells the API to use Offline mode when running.",
                           {'o', "offline"});
@@ -255,7 +306,9 @@ int main(int argc, char** argv) {
     args::ValueFlag<unsigned int> channel(read, "channel", "The channel", {"chan"});
     args::ValueFlag<double> parameter_value(write, "parameter_value", "The value of the parameter we want to write.",
                                             {'v', "value"});
-
+    adjust_offsets.Add(configuration);
+    trace.Add(configuration);
+    trace.Add(module);
     write.Add(configuration);
     write.Add(parameter);
     write.Add(crate);
@@ -311,6 +364,20 @@ int main(int argc, char** argv) {
 
     if (write) {
         if (!execute_parameter_write(parameter, parameter_value, crate, module, channel, cfg.DSPParFile))
+            return EXIT_FAILURE;
+        execute_close_module_connection(cfg.numModules);
+        return EXIT_SUCCESS;
+    }
+
+    if (adjust_offsets) {
+        if (!execute_adjust_offsets(cfg.numModules, cfg.DSPParFile))
+            return EXIT_FAILURE;
+        execute_close_module_connection(cfg.numModules);
+        return EXIT_SUCCESS;
+    }
+
+    if (trace) {
+        if (!execute_trace_capture(module))
             return EXIT_FAILURE;
         execute_close_module_connection(cfg.numModules);
         return EXIT_SUCCESS;
