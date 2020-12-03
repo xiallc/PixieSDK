@@ -4,10 +4,35 @@
 /// @date November 23, 2020
 #include "doctest.h"
 #include "pixie16sys_common.h"
+#include "pixie16sys_export.h"
+
+#include <chrono>
+#include <fstream>
+#include <random>
 
 TEST_SUITE("sys/tools.c") {
-    TEST_CASE("get_ns_per_cycle") { CHECK(false); }
-    TEST_CASE("Pixie_Print_MSG") {}
+    TEST_CASE("get_ns_per_cycle") {
+        //NOTE: This function isn't really testable, since there's no independent way to verify the results. We'll work
+        //        under the assumption that we get a result that's greater than 0 and be happy with it.
+        auto* result = new double;
+        CHECK(0 == get_ns_per_cycle(result));
+        CHECK(*result > 0);
+        delete result;
+    }
+    TEST_CASE("Pixie_Print_MSG") {
+        std::random_device rd;
+        auto random_val = std::fabs(rd());
+        char msg[1024];
+        sprintf(msg, "Unit test: %f", random_val);
+        CHECK(Pixie_Print_MSG(msg) == 0);
+        std::ifstream file("Pixie16msg.txt", std::ios::in);
+        REQUIRE(file.is_open());
+        //From: http://cplusplus.com/forum/general/108679/#msg591060
+        std::string line;
+        while (file >> std::ws && std::getline(file, line));
+        CHECK(line.find(std::to_string(random_val)) != std::string::npos);
+        file.close();
+    }
     TEST_CASE("SYS16_ClrBit") {
         CHECK(10 == SYS16_ClrBit(10, 10));
         CHECK(8 == SYS16_ClrBit(1, 10));
@@ -47,5 +72,16 @@ TEST_SUITE("sys/tools.c") {
         CHECK_FALSE(SYS32_TstBit(10, 524288));
         CHECK_FALSE(SYS32_TstBit(33, 4294967295));
     }
-    TEST_CASE("wait_for_a_short_time") { CHECK(false); }
+    TEST_CASE("wait_for_a_short_time") {
+        /// NOTE: This function doesn't have a good way to test. Just as the other time related function above.
+        ///          We'll just make sure that what we are both less than the value we passed in in the event we used
+        ///          the usleep option, and greater than 0.
+        auto start = std::chrono::steady_clock::now();
+        wait_for_a_short_time(10);
+        double result =
+                std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::steady_clock::now() - start)
+                        .count();
+        CHECK(result <= 10.5);
+        CHECK(result > 0);
+    }
 }
