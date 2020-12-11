@@ -7,6 +7,9 @@
 #include "pixie16app_globals.h"
 
 #include <complex>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
 #include <vector>
 
 TEST_SUITE("app/pixie16app.c") {
@@ -117,15 +120,128 @@ TEST_SUITE("app/pixie16app.c") {
             CHECK(expected_result_from_numpy[i] == doctest::Approx(result[i]).epsilon(1e-4));
     }
     TEST_CASE("Pixie16ComputeFastFiltersOffline") {
-        CHECK(Pixie16ComputeFastFiltersOffline(nullptr, 0, 0, 0, 0, nullptr, nullptr, nullptr) == -1);
-        unsigned short trc[1] = {0};
-        CHECK(Pixie16ComputeFastFiltersOffline(nullptr, 0, 0, 0, 1, trc, nullptr, nullptr) == -2);
-        double filter[1] = {0};
-        CHECK(Pixie16ComputeFastFiltersOffline(nullptr, 0, 0, 0, 1, trc, filter, nullptr) == -3);
-        double cfd[1] = {0};
-        CHECK(Pixie16ComputeFastFiltersOffline(nullptr, 40, 0, 0, 1, trc, filter, cfd) == -4);
+        unsigned short module_number = 0, channel_number = 0;
 
-        ///Cannot check anything else for this function as the next step is to start accessing hardware.
+        FastFilterRange_Address[module_number] = 0x0004a00d;
+        Pixie_Devices[module_number]
+                .DSP_Parameter_Values[FastFilterRange_Address[module_number] - DATA_MEMORY_ADDRESS] = 0;
+
+        FastLength_Address[module_number] = 0x0004a0b0;
+        Pixie_Devices[module_number]
+                .DSP_Parameter_Values[FastLength_Address[module_number] + channel_number - DATA_MEMORY_ADDRESS] = 15;
+
+        FastGap_Address[module_number] = 0x0004a0c0;
+        Pixie_Devices[module_number]
+                .DSP_Parameter_Values[FastGap_Address[module_number] + channel_number - DATA_MEMORY_ADDRESS] = 0;
+
+        CFDDelay_Address[module_number] = 0x0004a270;
+        Pixie_Devices[module_number]
+                .DSP_Parameter_Values[CFDDelay_Address[module_number] + channel_number - DATA_MEMORY_ADDRESS] = 8;
+
+        CFDScale_Address[module_number] = 0x0004a280;
+        Pixie_Devices[module_number]
+                .DSP_Parameter_Values[CFDScale_Address[module_number] + channel_number - DATA_MEMORY_ADDRESS] = 0;
+
+        Module_Information[module_number].Module_ADCMSPS = 250;
+        Module_Information[module_number].Module_ADCBits = 16;
+
+        static const unsigned int trace_length = 124;
+        unsigned short trc[trace_length] = {
+                437, 436,  434,  434,  437,  437,  438,  435,  434,  438,  439,  437,  438, 434, 435, 439, 438, 434,
+                434, 435,  437,  440,  439,  435,  437,  439,  438,  435,  436,  436,  437, 439, 435, 433, 434, 436,
+                439, 441,  436,  437,  439,  438,  438,  435,  434,  434,  438,  438,  434, 434, 437, 440, 439, 438,
+                434, 436,  439,  439,  437,  436,  434,  436,  438,  437,  436,  437,  440, 440, 439, 436, 435, 437,
+                501, 1122, 2358, 3509, 3816, 3467, 2921, 2376, 1914, 1538, 1252, 1043, 877, 750, 667, 619, 591, 563,
+                526, 458,  395,  403,  452,  478,  492,  498,  494,  477,  460,  459,  462, 461, 460, 456, 452, 452,
+                455, 453,  446,  441,  440,  444,  456,  459,  451,  450,  447,  445,  449, 456, 456, 455};
+        SUBCASE("Check trace is valid") {
+            CHECK(Pixie16ComputeFastFiltersOffline(nullptr, module_number, channel_number, 0, trace_length, nullptr,
+                                                   nullptr, nullptr) == -1);
+        }
+
+        SUBCASE("Check if results array is valid") {
+            CHECK(Pixie16ComputeFastFiltersOffline(nullptr, module_number, channel_number, 0, trace_length, trc,
+                                                   nullptr, nullptr) == -2);
+        };
+
+        double result[trace_length];
+        SUBCASE("Check if CFD array is valid") {
+            CHECK(Pixie16ComputeFastFiltersOffline(nullptr, module_number, channel_number, 0, trace_length, trc, result,
+                                                   nullptr) == -3);
+        }
+
+        double cfd[trace_length];
+        SUBCASE("Check if Module number is valid") {
+            /// NOTE: This value depends on the global variable PRESET_MAX_MODULES, which has a value of 24 (e.g. 2 crates)
+            CHECK(Pixie16ComputeFastFiltersOffline(nullptr, 40, channel_number, 0, trace_length, trc, result, cfd) ==
+                  -4);
+        }
+
+        SUBCASE("Verify that the trace length is long enough") {
+            CHECK(Pixie16ComputeFastFiltersOffline(nullptr, module_number, channel_number, 0, 1, trc, result, cfd) ==
+                  -5);
+        }
+
+        char filename[255] = "/tmp/test-trace.bin";
+        SUBCASE("Verify the binary can be opened") {
+            std::ofstream outfile(filename, std::ios::binary | std::ios::out);
+            for (uint16_t val : trc)
+                outfile.write(reinterpret_cast<const char*>(&val), sizeof(val));
+            outfile.close();
+            CHECK(Pixie16ComputeFastFiltersOffline("/tmp/notavalidfile.bin", module_number, channel_number, 0,
+                                                   trace_length, trc, result, cfd) == -6);
+        }
+
+        SUBCASE("Verify the fast filter is correct") {
+            Pixie16ComputeFastFiltersOffline(filename, module_number, channel_number, 0, trace_length, trc, result,
+                                             cfd);
+
+            std::vector<double> expected_fast_filter = {
+                    0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,
+                    0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,
+                    0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,
+                    0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,
+                    0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,
+                    0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,
+                    0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.2,      0,        0.0666667,
+                    0.233333, 0.4,      0.466667, 0.466667, 0.233333, 0.266667, 0.266667, 0.133333, 0.0666667,
+                    2.16667,  25.0333,  89.2,     191.867,  304.467,  405.3,    488.2,    552.967,  602.2,
+                    638.8,    665.9,    685.967,  700.833,  711.4,    718.967,  724.833,  729.933,  734.167,
+                    737.333,  738.167,  736.633,  735.367,  735.833,  737.167,  738.867,  740.833,  742.567,
+                    743.967,  744.933,  745.7,    742.3,    697.367,  569.967,  365.7,    140.967,  -60.5,
+                    -225.6,   -354.433, -452.6,   -525.767, -579.933, -620.067, -648.867, -669.033, -683.833,
+                    -695.467, -705.4,   -713.567, -719.2,   -720,     -716.533, -713.667};
+
+            for (auto i = 0; i < trace_length; i++)
+                CHECK(expected_fast_filter[i] == doctest::Approx(result[i]).epsilon(0.01));
+        }
+
+        SUBCASE("Verify the CFD results") {
+            Pixie16ComputeFastFiltersOffline(filename, module_number, channel_number, 0, trace_length, trc, result,
+                                             cfd);
+            std::vector<double> expected_cfd = {
+                    0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,
+                    0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,
+                    0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,
+                    0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,
+                    0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,
+                    -3,     -9,     -7,     -2,     3,      5,      5,      -2,     -1,     -1,     -5,     -7,
+                    56,     742,    2667,   5747,   9128,   12159,  14644,  16582,  18054,  19150,  19963,  20572,
+                    21017,  21334,  21565,  21743,  21833,  21274,  19444,  16389,  12965,  9902,   7429,   5526,
+                    4100,   3061,   2300,   1740,   1323,   1029,   700,    -824,   -4799,  -11054, -17891, -23960,
+                    -28867, -32694, -35653, -37888, -39564, -40827, -41743, -42390, -42863, -43235, -43431, -42328,
+                    -38675, -32571, -25725, -19595};
+            for (auto i = 0; i < trace_length; i++)
+                CHECK(expected_cfd[i] == doctest::Approx(cfd[i]).epsilon(0.01));
+        }
+
+        SUBCASE("Sets an invalid module variant") {
+            Module_Information[module_number].Module_ADCMSPS = 1000;
+            Pixie16ComputeFastFiltersOffline(filename, module_number, channel_number, 0, trace_length, trc, result,
+                                             cfd);
+            for (auto i : cfd)
+                CHECK(0.0 == i);
+        }
     }
     TEST_CASE("Statistics Computations") {
         uint32_t stats[N_DSP_PAR - DSP_IO_BORDER] = {
@@ -223,10 +339,100 @@ TEST_SUITE("app/pixie16app.c") {
     }
 
     TEST_CASE("Pixie16ComputeSlowFiltersOffline") {
-        CHECK(false);
+        /// We're limited on how much testing we can do here because this function needs to open a list mode data file.
+        unsigned short module_number = 0, channel_number = 0;
+        SlowFilterRange_Address[module_number] = 0x0004a00c;
+        Pixie_Devices[module_number]
+                .DSP_Parameter_Values[SlowFilterRange_Address[module_number] - DATA_MEMORY_ADDRESS] = 1;
+
+        SlowLength_Address[module_number] = 0x0004a090;
+        Pixie_Devices[module_number]
+                .DSP_Parameter_Values[SlowLength_Address[module_number] + channel_number - DATA_MEMORY_ADDRESS] = 6;
+
+        SlowGap_Address[module_number] = 0x0004a0a0;
+        Pixie_Devices[module_number]
+                .DSP_Parameter_Values[SlowGap_Address[module_number] + channel_number - DATA_MEMORY_ADDRESS] = 2;
+
+        PreampTau_Address[module_number] = 0x0004a230;
+        Pixie_Devices[module_number]
+                .DSP_Parameter_Values[PreampTau_Address[module_number] + channel_number - DATA_MEMORY_ADDRESS] =
+                1008981770;
+
+        Module_Information[module_number].Module_ADCMSPS = 250;
+        Module_Information[module_number].Module_ADCBits = 16;
+
+        SUBCASE("Verify the trace is valid") {
+            CHECK(Pixie16ComputeSlowFiltersOffline(nullptr, module_number, channel_number, 0, 0, nullptr, nullptr) ==
+                  -1);
+        }
+
+        static const unsigned short trace_length = 124;
+        unsigned short trc[trace_length] = {
+                437, 436,  434,  434,  437,  437,  438,  435,  434,  438,  439,  437,  438, 434, 435, 439, 438, 434,
+                434, 435,  437,  440,  439,  435,  437,  439,  438,  435,  436,  436,  437, 439, 435, 433, 434, 436,
+                439, 441,  436,  437,  439,  438,  438,  435,  434,  434,  438,  438,  434, 434, 437, 440, 439, 438,
+                434, 436,  439,  439,  437,  436,  434,  436,  438,  437,  436,  437,  440, 440, 439, 436, 435, 437,
+                501, 1122, 2358, 3509, 3816, 3467, 2921, 2376, 1914, 1538, 1252, 1043, 877, 750, 667, 619, 591, 563,
+                526, 458,  395,  403,  452,  478,  492,  498,  494,  477,  460,  459,  462, 461, 460, 456, 452, 452,
+                455, 453,  446,  441,  440,  444,  456,  459,  451,  450,  447,  445,  449, 456, 456, 455};
+        SUBCASE("Verify the results array is valid") {
+            CHECK(Pixie16ComputeSlowFiltersOffline(nullptr, module_number, channel_number, 0, trace_length, trc,
+                                                   nullptr) == -2);
+        }
+
+        double result[trace_length] = {0.};
+        SUBCASE("Verify the module number is valid") {
+            CHECK(Pixie16ComputeSlowFiltersOffline(nullptr, 400, channel_number, 0, trace_length, trc, result) == -3);
+        }
+
+        SUBCASE("Verify the trace is long enough") {
+            CHECK(Pixie16ComputeSlowFiltersOffline(nullptr, module_number, channel_number, 0, 0, trc, result) == -4);
+        }
+
+        SUBCASE("Verify that the file is valid") {
+            CHECK(Pixie16ComputeSlowFiltersOffline("/tmp/trace-elfje.bin", module_number, channel_number, 0,
+                                                   trace_length, trc, result) == -5);
+        }
+
+        SUBCASE("Verify results") {
+            char filename[255] = "/tmp/test-trace.bin";
+            std::ofstream outfile(filename, std::ios::binary | std::ios::out);
+            for (uint16_t val : trc)
+                outfile.write(reinterpret_cast<const char*>(&val), sizeof(val));
+            outfile.close();
+            Pixie16ComputeSlowFiltersOffline(filename, module_number, channel_number, 0, trace_length, trc, result);
+
+            std::vector<double> expected = {0,        0,         0,        0,         0,
+                                            0,        0,         0,        0,         0,
+                                            0,        0,         0,        0,         0,
+                                            0,        0,         0,        0,         0,
+                                            0,        0,         0,        0,         0,
+                                            0,        0,         0,        0,         0,
+                                            0,        0,         0,        0,         0,
+                                            0,        0,         0,        0,         0,
+                                            0,        0,         0,        0,         0,
+                                            0,        0,         0,        0,         0,
+                                            0,        0,         0,        0,         0,
+                                            0,        0.659449,  0.659516, 0.329814,  0.659472,
+                                            2.23E-05, -6.70E-05, 0.32968,  -0.329769, -0.000178643,
+                                            1.31863,  3.29687,   4.61572,  4.61581,   2.9673,
+                                            2.63753,  2.63755,   23.0792,  248.596,   881.624,
+                                            1895.13,  3010.18,   4010.17,  4828.82,   5467.78,
+                                            5955.74,  6319.73,   6588.44,  6787.25,   6931.66,
+                                            7034.53,  7111.35,   7171.68,  7221.8,    7262.68,
+                                            7292.03,  7299.28,   7286.42,  7275.54,   7280.16,
+                                            7293.67,  7312.14,   7332.23,  7349.99,   7362.12,
+                                            7368.97,  7376.49,   7385.33,  7393.2,    7379.65,
+                                            7160.05,  6531.62,   5523.7,   4415.56,   3421.83,
+                                            2605.81,  1967.84,   1481.85,  1121.16,   858.71,
+                                            666.164,  525.711,   426.801,  354.267,   296.897,
+                                            250.078,  214.799,   191.719,  190.729};
+            for (auto i = 0; i < trace_length; i++)
+                CHECK(expected[i] == doctest::Approx(result[i]).epsilon(0.01));
+        }
     }
     TEST_CASE("Pixie16ControlTaskRun") {
-        CHECK(false);
+        CHECK(Pixie16ControlTaskRun(300, 1, 1000) == -1);
     }
     TEST_CASE("Pixie16CopyDSPParameters") {
         CHECK(false);
