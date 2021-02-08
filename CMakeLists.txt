@@ -18,19 +18,6 @@ target_link_libraries(Pixie16Sys PUBLIC :PlxApi.so dl)
 target_compile_definitions(Pixie16Sys PUBLIC PLX_LITTLE_ENDIAN PCI_CODE PLX_LINUX PRINT_DEBUG_MSG)
 target_compile_options(Pixie16Sys PUBLIC -g -Wall)
 
-#------------- BUILD Ideation --------------------------
-add_executable(ideation ideation.cpp api/source/pixie_api.cpp)
-target_include_directories(ideation PUBLIC
-        ${PROJECT_SOURCE_DIR}/api/include
-        ${PROJECT_SOURCE_DIR}/sys
-        ${PROJECT_SOURCE_DIR}/vendor/analog_devices
-        ${PROJECT_SOURCE_DIR}/common/include/
-        ${PROJECT_SOURCE_DIR}/hal/include
-        /usr/local/broadcom/current/Include/)
-target_link_libraries(ideation PUBLIC Pixie16Sys :PlxApi.so dl)
-target_compile_definitions(ideation PUBLIC PLX_LITTLE_ENDIAN PCI_CODE PLX_LINUX PRINT_DEBUG_MSG)
-target_compile_options(ideation PUBLIC -g -Wall)
-
 #------------- BUILD APP --------------------------
 add_library(Pixie16App SHARED
         ${PROJECT_SOURCE_DIR}/api/pixie16app.cpp)
