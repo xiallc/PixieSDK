@@ -6,10 +6,61 @@ start runs, load firmware).
 ## Dependencies
 * gcc/g++ 7+
 * linux-kernel headers
-* [Broadcom PCI/PCIe SDK](https://www.broadcom.com/products/pcie-switches-bridges/software-dev-kits) - See next section.
-* Python 3.6+
+* [Broadcom PCI/PCIe SDK](https://www.broadcom.com/products/pcie-switches-bridges/software-dev-kits) - See below.
 
-### Broadcomm PCI/PCIe SDK
+## Installation
+### Dependencies
+* Cmake 3.11+
+* You have already installed the PLX drivers.
+* You have `PLX_SDK_DIR` exported in your environment.
+
+### Instructions
+These installation instructions assume that you
+1. Clone the project from [https://git.xia.com/pixie/pixie_sdk.git](https://git.xia.com/pixie/pixie_sdk.git)
+   ```shell script
+   [user@localhost ~]$ git clone https://gitlab.com/xiallc/pixie_sdk.git 
+   ```
+2. Navigate to the cloned project
+    ```shell script
+    [user@localhost ~]$ cd pixie_sdk
+    ```
+2. Configure and build the project
+    ```shell script
+    [user@localhost pixie_sdk]$ mkdir build; cd build; cmake ../
+    ```
+2. Compile the project
+   ```shell
+   [user@localhost pixie_sdk]$ make
+   ```
+2. (**Optional**) Install the software system wide. Defaults to `/usr/local/xia/pixie_sdk`
+    ```shell script
+    [user@localhost pixie_sdk]$ sudo make install
+    ```
+2. (**Optional**) Install the software to a user specified location
+    ```shell script
+    [user@localhost pixie_sdk]$ cmake ../ -DCMAKE_INSTALL_PREFIX=/path/to/installation/location/; sudo make install
+    ```
+
+## Utility programs
+We provide some basic programs that you can use to test the functionality of the API. These programs do not encompass
+the full functionality of the API. They are **not recommended for production use**. Users may use these codes as a
+basis for developing their own applications.
+
+[View the README.md](https://git.xia.com/pixie/pixie_sdk/-/blob/master/utilities/README.md)
+
+## Testing the software
+TO BE FILLED IN LATER
+
+### Procedure for making Pixie-16 testing programs
+*NOTE:* Pixie-16 testing programs should ONLY be compiled with Pixie-16
+static libraries.
+
+1. Open a command line window, go to C:\Program Files\Microsoft Visual Studio 8\VC\bin, and then type 'vcvars32.bat' to set up VC tools environment.
+2. Go to C:\path\to\project\root\software, and type 'make clean'
+3. Go to C:\path\to\project\root\software\testing, and type 'rm *.exe'
+4. Go back to C:\path\to\project\root\software, and type 'make tests'.
+
+## Broadcomm PCI/PCIe SDK
 This software uses the [Broadcom PLX 9054 driver](https://www.broadcom.com/products/pcie-switches-bridges/software-dev-kits) 
 to communicate with the Pixie modules. Broadcom does not provide clear installation instructions for 
 Linux systems. Here we'll provide instructions for Broadcom PCI/PCIe SDK v8.00 on CentOS 8. 
@@ -54,59 +105,9 @@ Linux systems. Here we'll provide instructions for Broadcom PCI/PCIe SDK v8.00 o
     [user@localhost ~]$ sudo -E ${PLX_SDK_DIR}/Bin/Plx_load 9054
     ```
 
-## Installation
-Our build system is (WAF)[https://waf.io]. It's python based and lightweight. The entire script lives with this 
-repository so you don't have any dependencies other than Python 3.6+.
-
-### Dependencies
-* You have Python 3.5+ installed on your system.
-* You have already installed the PLX drivers.
-* You have `PLX_SDK_DIR` exported in your environment.
-
-### Instructions
-These installation instructions assume that you 
-1. Clone the project from [https://git.xia.com/pixie/pixie_sdk.git](https://git.xia.com/pixie/pixie_sdk.git)
-   ```shell script
-   [user@localhost ~]$ git clone https://git.xia.com/pixie/pixie_sdk.git 
-   ```
-2. Navigate to the cloned project
-    ```shell script
-    [user@localhost ~]$ cd pixie_sdk
-    ```
-2. Configure and build the project
-    ```shell script
-    [user@localhost pixie_sdk]$ python3 waf configure build
-    ```
-2. (**Optional**) Install the software system wide. Defaults to `/usr/local/`
-    ```shell script
-    [user@localhost pixie_sdk]$ sudo python3 waf install
-    ```
-2. (**Optional**) Install the software to a user specified location
-    ```shell script
-    [user@localhost pixie_sdk]$ python3 waf configure install --prefix=/path/to/installation/location/
-    ```
-
-## Utility programs
-We provide some basic programs that you can use to test the functionality of the API. These programs do not encompass
-the full functionality of the API. They are **not recommended for production use**. Users may use these codes as a 
-basis for developing their own applications.
-
-[View the README.md](https://git.xia.com/pixie/pixie_sdk/-/blob/master/utilities/README.md) 
-
-## Testing the software
-TO BE FILLED IN LATER
-
-### Procedure for making Pixie-16 testing programs
-*NOTE:* Pixie-16 testing programs should ONLY be compiled with Pixie-16
-static libraries.
-
-1. Open a command line window, go to C:\Program Files\Microsoft Visual Studio 8\VC\bin, and then type 'vcvars32.bat' to set up VC tools environment.
-2. Go to C:\path\to\project\root\software, and type 'make clean'
-3. Go to C:\path\to\project\root\software\testing, and type 'rm *.exe'
-4. Go back to C:\path\to\project\root\software, and type 'make tests'.
 
 ## Copyright
-Copyright (c) 2005 - 2020, XIA LLC
+Copyright (c) 2005 - 2021, XIA LLC
 All rights reserved.
 
 ## License
