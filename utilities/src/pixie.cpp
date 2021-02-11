@@ -37,7 +37,7 @@
 /// @author H. Tan and S. V. Paulauskas
 /// @date November 14, 2020
 #include "args.hxx"
-#include "functions.hpp"
+#include "configuration.hpp"
 #include "pixie16app_export.h"
 
 #include <chrono>
@@ -85,7 +85,7 @@ bool execute_adjust_offsets(const unsigned int& numModules, const std::string& s
     return true;
 }
 
-bool execute_list_mode_run(const xia::Configuration& cfg, const double& runtime_in_seconds) {
+bool execute_list_mode_run(const xia::configuration::Configuration& cfg, const double& runtime_in_seconds) {
     cout << "INFO - Starting list mode data run for " << runtime_in_seconds << " s." << endl;
 
     if (!execute_adjust_offsets(cfg.numModules, cfg.DSPParFile))
@@ -331,9 +331,9 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    xia::Configuration cfg;
+    xia::configuration::Configuration cfg;
     try {
-        cfg = xia::read_configuration_file(configuration.Get());
+        cfg = xia::configuration::read_configuration_file(configuration.Get());
     } catch (invalid_argument& invalidArgument) {
         cerr << invalidArgument.what() << endl;
         return EXIT_FAILURE;
