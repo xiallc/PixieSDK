@@ -8,10 +8,10 @@
 #
 
 find_path(PLX_LIBRARY_DIR
-        NAMES PlxApi.a PlxApi.so
+        NAMES PlxApi.a PlxApi.so PlxApi.lib
         HINTS $ENV{PLX_SDK_DIR}
-        PATHS /usr/local/broadcom/current /usr/src/PlxSdk
-        PATH_SUFFIXES PlxApi/Library Linux/PlxApi/Library)
+        PATHS /usr/local/broadcom/current /usr/src/PlxSdk C:/PlxApi
+        PATH_SUFFIXES PlxApi/Library Linux/PlxApi/Library PlxApi/Release)
 
 find_path(PLX_INCLUDE_DIR
         NAMES Plx.h PlxTypes.h PlxApi.h
