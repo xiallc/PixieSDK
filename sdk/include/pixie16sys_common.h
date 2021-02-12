@@ -56,29 +56,29 @@
 extern "C" {
 #endif
 
-unsigned short SYS16_SetBit(unsigned short bit, unsigned short value);
-unsigned short SYS16_ClrBit(unsigned short bit, unsigned short value);
-unsigned short SYS16_TstBit(unsigned short bit, unsigned short value);
-unsigned int SYS32_SetBit(unsigned short bit, unsigned int value);
-unsigned int SYS32_ClrBit(unsigned short bit, unsigned int value);
-unsigned int SYS32_TstBit(unsigned short bit, unsigned int value);
+#ifndef __PIXIE16APP_DEFS_H
+#include "pixie16sys_defs.h"
+#endif
 
+PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_SetBit(unsigned short bit, unsigned short value);
+PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_ClrBit(unsigned short bit, unsigned short value);
+PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_TstBit(unsigned short bit, unsigned short value);
+PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_SetBit(unsigned short bit, unsigned int value);
+PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_ClrBit(unsigned short bit, unsigned int value);
+PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_TstBit(unsigned short bit, unsigned int value);
 
-int get_ns_per_cycle(double* ns_per_cycle);
-void wait_for_a_short_time(int cycles);
+PIXIE16SYS_EXPORT int PIXIE16SYS_API get_ns_per_cycle(double* ns_per_cycle);
+PIXIE16SYS_EXPORT void PIXIE16SYS_API wait_for_a_short_time(int cycles);
 
 int Pixie_DSP_Memory_Burst_Read(unsigned int* dsp_data,  // DSP data for the I/O
                                 unsigned int dsp_address,  // DSP data memory address
                                 unsigned int nWords,  // Number of DSP data words for the I/O
                                 unsigned short ModNum);  // The Pixie module for the I/O
 
-
 int I2CM24C64_start(unsigned short ModNum);
-
-int I2CM24C64_stop(unsigned short ModNum);
-int I2CM24C64_byte_write(unsigned short ModNum, char ByteToSend);
-int I2CM24C64_byte_read(unsigned short ModNum, char* ByteToReceive);
-
+int  I2CM24C64_stop(unsigned short ModNum);
+int  I2CM24C64_byte_write(unsigned short ModNum, char ByteToSend);
+int  I2CM24C64_byte_read(unsigned short ModNum, char* ByteToReceive);
 char I2CM24C64_getACK(unsigned short ModNum);
 char I2CM24C64_sendACK(unsigned short ModNum);
 

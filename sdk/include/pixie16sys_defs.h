@@ -77,6 +77,7 @@ extern "C" {
 
 #if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
 #define PIXIE16SYS_EXPORT __declspec(dllexport)
+#define PIXIE16SYS_API _stdcall
 #elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI
 #define PIXIE16SYS_EXPORT
 #endif
