@@ -13,7 +13,7 @@ target_include_directories(test PUBLIC
         ${PROJECT_SOURCE_DIR}/sys
         ${PROJECT_SOURCE_DIR}/vendor/analog_devices
         ${PLX_INCLUDE_DIR})
-target_link_libraries(test PUBLIC Pixie16App Pixie16Sys ${PLX_STATIC_LIB} dl m)
+target_link_libraries(test PUBLIC PixieSDK ${PLX_STATIC_LIB} dl m)
 IF(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.13")
     target_link_directories(test PUBLIC PLX_LIBRARY_DIR)
 ENDIF()
