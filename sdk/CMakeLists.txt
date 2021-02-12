@@ -15,13 +15,11 @@ IF (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.13")
     target_link_directories(PixieSDK PUBLIC ${PLX_LIBRARY_DIR})
 ENDIF ()
 
-
-if (LINUX)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     target_link_libraries(PixieSDK PUBLIC ${PLX_SHARED_LIB})
     target_compile_definitions(PixieSDK PUBLIC PLX_LITTLE_ENDIAN PCI_CODE PLX_LINUX PRINT_DEBUG_MSG)
     target_compile_options(PixieSDK PUBLIC -g -Wall)
-
-else ()
+elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     target_link_libraries(PixieSDK PUBLIC ${PLX_SHARED_LIB} winmm)
     target_compile_definitions(PixieSDK PUBLIC PLX_LITTLE_ENDIAN PCI_CODE PLX_WINDOWS PRINT_DEBUG_MSG)
 endif ()
