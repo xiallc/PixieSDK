@@ -5,7 +5,7 @@
 # XIA_LIBRARIES
 
 find_path(XIA_LIBRARY_DIR
-        NAMES libPixie16App.so libPixie16Sys.so
+        NAMES libPixieSDK.so
         HINTS $ENV{XIA_PIXIE_SDK}
         PATHS /usr/local/xia/pixie_sdk
         PATH_SUFFIXES lib
@@ -22,5 +22,5 @@ include(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(PIXIE_SDK DEFAULT_MSG XIA_LIBRARY_DIR)
 
 if (PIXIE_SDK_FOUND)
-    set(XIA_LIBRARIES -lPixie16App -lPixie16Sys)
+    set(XIA_LIBRARIES -lPixieSDK)
 endif ()

@@ -24,7 +24,6 @@ IF(${CMAKE_VERSION} VERSION_LESS "3.13")
 ENDIF(${CMAKE_VERSION} VERSION_LESS "3.13")
 
 #---- Build everything
-add_subdirectory(sys)
-add_subdirectory(app)
-add_subdirectory(utilities)
+add_subdirectory(sdk)
 add_subdirectory(tests)
+add_subdirectory(utilities)
