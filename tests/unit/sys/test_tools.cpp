@@ -9,6 +9,7 @@
 #include <chrono>
 #include <fstream>
 #include <random>
+#include <string>
 
 TEST_SUITE("sys/tools.c") {
     TEST_CASE("get_ns_per_cycle") {
