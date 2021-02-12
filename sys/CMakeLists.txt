@@ -3,7 +3,8 @@ add_library(Pixie16Sys SHARED
         ${PROJECT_SOURCE_DIR}/sys/communication.c
         ${PROJECT_SOURCE_DIR}/sys/i2cm24c64.c
         ${PROJECT_SOURCE_DIR}/sys/pixie16sys.c
-        ${PROJECT_SOURCE_DIR}/sys/tools.c)
+        ${PROJECT_SOURCE_DIR}/sys/tools.c
+        ${PROJECT_SOURCE_DIR}/sys/pcf8574.c)
 target_include_directories(Pixie16Sys PUBLIC
         ${PROJECT_SOURCE_DIR}/sys
         ${PROJECT_SOURCE_DIR}/vendor/analog_devices

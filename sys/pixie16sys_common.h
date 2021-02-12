@@ -83,6 +83,13 @@ char I2CM24C64_getACK(unsigned short ModNum);
 char I2CM24C64_sendACK(unsigned short ModNum);
 
 
+int PCF8574_start(unsigned short ModNum);
+int PCF8574_stop(unsigned short ModNum);
+int PCF8574_byte_write(unsigned short ModNum, char ByteToSend);
+int PCF8574_byte_read(unsigned short ModNum, char *ByteToReceive);
+char PCF8574_getACK(unsigned short ModNum);
+char PCF8574_sendACK(unsigned short ModNum);
+
 #ifdef __cplusplus
 }
 #endif  // End of notice for C++ compilers

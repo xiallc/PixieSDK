@@ -164,9 +164,9 @@ extern "C" {
 #define CFG_CTRLCS 0x04
 #define CFG_RDCS 0x08
 #define I2CM24C64_ADDR 0x10
+#define PCF8574_ADDR	0x10
 #define CFG_DCMRST 0x14
 #define CSR_ADDR 0x48
-
 #define REQUEST_HBR 0x80
 #define HBR_DONE 0x84
 #define WRT_EXT_MEM 0xC0

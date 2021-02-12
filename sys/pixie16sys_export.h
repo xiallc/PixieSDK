@@ -131,6 +131,8 @@ I2CM24C64_Sequential_Read(unsigned short ModNum,  // Pixie module number
                           unsigned short NumBytesToRead,  // Number of bytes to read (maximum 32 bytes)
                           char* ByteValue);  // The byte values
 
+PIXIE16SYS_EXPORT int PCF8574_Read_One_Byte (unsigned short ModNum, char *ByteValue );
+
 #ifdef __cplusplus
 }
 #endif  // End of notice for C++ compilers

@@ -67,50 +67,51 @@
 #include <unistd.h>
 #endif
 
-char* PCISysIniFile = {"pxisys.ini"};
-
-
 /****************************************************************
 *	Pixie_InitSystem:
 *		Initialize Pixie16 system by mapping PXI slots to Pixie16
-*		modules and assigning vitural addresses to the PLX9054 chips
+*		modules and assigning virtual addresses to the PLX9054 chips
 *		of those modules.
 *
 *		Return Value:
 *			 0 - Successful
 *			-1 - Failed to measure host computer speed (ns per cycle)
-*			-2 - Can't open PXI system initialization file
-*			-3 - Unable to close the PLX device
-*			-4 - Unable to find module 0 in the system
-*			-5 - Could not open PCI Device
-*			-6 - Unable to map a PCI BAR and obtain a virtual address
+*			-2 - Can't find any PLX device in the system
+*           -3 - Can't find all Pixie-16 modules that were specified
+*           -4 - Could not open a PCI Device when trying find all devices
+*           -5 - Unable to map a PCI BAR into user virtual space
+*           -6 - Could not read chassis slot number in which a module is installed
+*           -7 - Failed to find PCI device when trying to read its chassis slot number
+*			-8 - Unable to unmap the PCI BAR while closing those all opened PCI devices
+*			-9 - Unable to close the PLX9054 device while closing those all opened PCI devices
+*			-10- Can't match a module with one found by the PLX driver
+*			-11- Could not open PCI Device after finishing mapping modules
+*           -12- Could not close PCI device for all opened modules
+*           -13- Could not find PCI device after finishing mapping modules
 *
 ****************************************************************/
 
-int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap, unsigned short OfflineMode) {
+int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
+                     unsigned short OfflineMode) {
     PLX_DEVICE_KEY DeviceKey;
     PLX_STATUS rc;
 
-    FILE* pci_ini_file = NULL;  // File pointer
-    char sbuffer[100] = {0};  // Temporary buffer
-    char ErrMSG[MAX_ERRMSG_LENGTH], BusNoOffset;
+    char sbuffer[100] = {0};   // Temporary buffer
+    char ErrMSG[MAX_ERRMSG_LENGTH];
     unsigned int ModSerNum;
-    unsigned char PCIDeviceNum[SYS_MAX_NUM_MODULES], PCIBusNum[SYS_MAX_NUM_MODULES];
     unsigned char PlxBusNum[SYS_MAX_NUM_MODULES], PlxDeviceNum[SYS_MAX_NUM_MODULES];
-    unsigned char Bus_Number[SYS_MAX_NUM_MODULES];  // PCI bus number for each module
-    unsigned char Device_Number[SYS_MAX_NUM_MODULES];  // PCI device number for each module
+    unsigned char Bus_Number[SYS_MAX_NUM_MODULES];        // PCI bus number for each module
+    unsigned char Device_Number[SYS_MAX_NUM_MODULES];     // PCI device number for each module
+    unsigned char Slot_Number[SYS_MAX_NUM_MODULES];
     unsigned char TotalPlx9054Devices, PlxModIndex[SYS_MAX_NUM_MODULES], DeviceSearchCount;
     unsigned int i;
-    unsigned char slotnum, minPCIBusNum, minPLXBusNum, minSlotNum, maxSlotNum;
-    unsigned char MappedPCIBusCount, FoundPCIBusCount, CurPCIBus;
     unsigned short k, m;
-    unsigned char Wiener_PXIe_Crate_Detected, pci_device_found_earlier;
+    unsigned char pci_device_found_earlier;
     int retval;
-    char pxie_crate_identifier[] = "** WIENER 6023 series PXIe 14-slot Pixie-16 crate **\n";
 
     // First, update a few global variables
     SYS_Number_Modules = NumModules;  // the total number modules in the crate
-    SYS_Offline = OfflineMode;  // SYS_Offline = 1: offline mode; SYS_Offline = 0: Online mode
+    SYS_Offline = OfflineMode;        // SYS_Offline = 1: offline mode; SYS_Offline = 0: Online mode
 
     if (SYS_Offline == 1)  // Returns immediately for offline analysis
     {
@@ -120,97 +121,20 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap, unsi
     // Measure host computer speed (ns per cycle)
     retval = get_ns_per_cycle(&Ns_Per_Cycle);
     if (retval < 0) {
-        sprintf(ErrMSG, "*ERROR* (Pixie_InitSystem): Failed to measure host computer speed (ns per cycle), retval = %d",
+        sprintf(ErrMSG,
+                "*ERROR* (Pixie_InitSystem): Failed to measure host computer speed (ns per cycle), retval = %d",
                 retval);
         Pixie_Print_MSG(ErrMSG);
         return (-1);
     }
 
-#if (PRINT_DEBUG_MSG == 1)
+#if(PRINT_DEBUG_MSG == 1)
     sprintf(ErrMSG, "(Pixie_InitSystem): Host computer speed (ns per cycle) = %f", Ns_Per_Cycle);
     Pixie_Print_MSG(ErrMSG);
 #endif
 
-    // Open input file for reading
-    pci_ini_file = fopen(PCISysIniFile, "r");
-    if (pci_ini_file == NULL)  // File can not be opened
-    {
-        sprintf(ErrMSG, "*ERROR* (Pixie_InitSystem): Could not open PXI system initialization file %s for reading",
-                PCISysIniFile);
-        Pixie_Print_MSG(ErrMSG);
-        return (-2);
-    }
-
-    // Read PCIDeviceNumber from the pxisys.ini file
-    // Also detect if this is a Wiener PXIe crate
-    Wiener_PXIe_Crate_Detected = 0;
-    do {
-        fgets(sbuffer, 100, pci_ini_file);
-        if (strcmp(sbuffer, pxie_crate_identifier) == 0) {
-            Wiener_PXIe_Crate_Detected = 1;
-        } else {
-            if (sbuffer[0] == '[') {
-                if (sbuffer[6] == ']') {
-                    sbuffer[6] = '\0';
-                    slotnum = (unsigned char) atoi(&sbuffer[5]);
-                } else {
-                    sbuffer[7] = '\0';
-                    slotnum = (unsigned char) atoi(&sbuffer[5]);
-                }
-
-                fgets(sbuffer, 100, pci_ini_file);
-                fgets(sbuffer, 100, pci_ini_file);
-                fgets(sbuffer, 100, pci_ini_file);
-                fgets(sbuffer, 100, pci_ini_file);
-                PCIBusNum[slotnum] = (unsigned char) atoi(&sbuffer[15]);
-                fgets(sbuffer, 100, pci_ini_file);
-                PCIDeviceNum[slotnum] = (unsigned char) atoi(&sbuffer[18]);
-            }
-        }
-
-        if (feof(pci_ini_file))
-            break;
-
-    } while (1);
-    fclose(pci_ini_file);
-
-    // Set the Device_Number and Bus_Number for each Pixie-16 module installed in the system
-    minPCIBusNum = 255;
-    k = 0;
-    MappedPCIBusCount = 0;
-    CurPCIBus = 0xFF;
-    minSlotNum = 14;
-    maxSlotNum = 0;
-    do {
-        Bus_Number[k] = PCIBusNum[*(PXISlotMap + k)];
-        Device_Number[k] = PCIDeviceNum[*(PXISlotMap + k)];
-
-        // Update minPLXBusNum
-        if (minPCIBusNum > Bus_Number[k]) {
-            minPCIBusNum = Bus_Number[k];
-        }
-
-        // Check if there is a new PCI bus
-        if (CurPCIBus != Bus_Number[k]) {
-            CurPCIBus = Bus_Number[k];
-            MappedPCIBusCount++;
-
-            if (minSlotNum > (unsigned char) *(PXISlotMap + k)) {
-                minSlotNum = (unsigned char) *(PXISlotMap + k);
-            }
-
-            if (maxSlotNum < (unsigned char) *(PXISlotMap + k)) {
-                maxSlotNum = (unsigned char) *(PXISlotMap + k);
-            }
-        }
-        k++;
-    } while (k < SYS_Number_Modules);
-
     // Find all the PLX devices installed in the system
     TotalPlx9054Devices = 0;
-    minPLXBusNum = 255;
-    FoundPCIBusCount = 0;
-    CurPCIBus = 0xFF;
     pci_device_found_earlier = 0;
     DeviceSearchCount = 0;
     do {
@@ -244,20 +168,10 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap, unsi
                 // Record PLX device information
                 PlxBusNum[TotalPlx9054Devices] = DeviceKey.bus;
                 PlxDeviceNum[TotalPlx9054Devices] = DeviceKey.slot;
-                sprintf(ErrMSG, "Device ID = 0x%04x, Vendor ID = 0x%04x, Bus Number = 0x%02x, Device number = 0x%02x",
+                sprintf(ErrMSG,
+                        "Device ID = 0x%04x, Vendor ID = 0x%04x, Bus Number = 0x%02x, Device number = 0x%02x",
                         DeviceKey.DeviceId, DeviceKey.VendorId, DeviceKey.bus, DeviceKey.slot);
                 Pixie_Print_MSG(ErrMSG);
-
-                // Update minPLXBusNum
-                if (minPLXBusNum > DeviceKey.bus) {
-                    minPLXBusNum = DeviceKey.bus;
-                }
-
-                // Check if there is a new PCI bus
-                if (CurPCIBus != PlxBusNum[TotalPlx9054Devices]) {
-                    CurPCIBus = PlxBusNum[TotalPlx9054Devices];
-                    FoundPCIBusCount++;
-                }
 
                 // Increment found Plx9054 devices by 1
                 TotalPlx9054Devices++;
@@ -271,9 +185,11 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap, unsi
     } while (1);
 
     if (TotalPlx9054Devices == 0) {
-        sprintf(ErrMSG, "*ERROR* (Pixie_InitSystem): Can't find any PLX devices, PlxPci_DeviceFind rc=%d", rc);
+        sprintf(ErrMSG,
+                "*ERROR* (Pixie_InitSystem): Can't find any PLX devices, PlxPci_DeviceFind rc=%d",
+                rc);
         Pixie_Print_MSG(ErrMSG);
-        return (-3);
+        return (-2);
     }
 
     if (TotalPlx9054Devices < SYS_Number_Modules) {
@@ -281,68 +197,214 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap, unsi
                 "*ERROR* (Pixie_InitSystem): Can't find all Pixie-16 modules that were specified (#found = %d, #specified = %d)",
                 TotalPlx9054Devices, SYS_Number_Modules);
         Pixie_Print_MSG(ErrMSG);
-        return (-4);
+        return (-3);
     }
 
-    // Map user specified modules to modules found by PlxPci_DeviceFind
-    // They are not necessary in the same order
+    // Open all found PLX9054 devices
+    for (k = 0; k < TotalPlx9054Devices; k++) {
+        // Clear key structure
+        memset(&DeviceKey, PCI_FIELD_IGNORE, sizeof(PLX_DEVICE_KEY));
 
-    // First compute BusNoOffset
-    if (MappedPCIBusCount == FoundPCIBusCount) {
-        BusNoOffset = minPLXBusNum - minPCIBusNum;
-    }
-    // This is the case where MappedPCIBusCount < FoundPCIBusCount.
-    // This could happen if a user does not want to boot all the
-    // modules installed in the system.
-    else {
-        if (Wiener_PXIe_Crate_Detected == 1) {
-            // Special handling for PXIe crate
-            if (maxSlotNum < 8) {
-                // Mapped module with minimum PCI bus number is in the first PCI bus segment of a 14-slot crate
-                BusNoOffset = minPLXBusNum - (minPCIBusNum - 3);
+        // Specify Vendor ID (PLX Vendor ID is 0x10b5)
+        DeviceKey.VendorId = 0x10b5;
+        // Specify Device ID (PLX Device ID is 0x9054)
+        DeviceKey.DeviceId = 0x9054;
+
+        // Open each PLX9054 device
+        rc = PlxPci_DeviceFind(&DeviceKey, k);
+        if (rc == ApiSuccess) {
+            rc = PlxPci_DeviceOpen(&DeviceKey, &SYS_hDevice[k]);
+            if (rc != ApiSuccess) // Print error if failure
+            {
+                sprintf(ErrMSG,
+                        "*ERROR* (Pixie_InitSystem): Could not open PCI Device Number (%d) at Bus Number %d; rc=%d",
+                        Device_Number[k], Bus_Number[k], rc);
+                Pixie_Print_MSG(ErrMSG);
+
+                // Before return, we need to close those PCI devices that are already opened
+                for (m = 0; m < k; m++) {
+                    // Unmaps a previously mapped PCI BAR from user virtual space
+                    rc = PlxPci_PciBarUnmap(&SYS_hDevice[m], (VOID**) &VAddr[m]);
+                    if (rc != ApiSuccess) {
+                        sprintf(ErrMSG,
+                                "*ERROR* (Pixie_InitSystem): Unable to unmap the PCI BAR for PLX9054 Device #%d; rc=%d",
+                                m, rc);
+                        Pixie_Print_MSG(ErrMSG);
+                    }
+
+                    // Release the PLX device
+                    rc = PlxPci_DeviceClose(&SYS_hDevice[m]);
+                    if (rc != ApiSuccess) {
+                        sprintf(ErrMSG,
+                                "*ERROR* (Pixie_InitSystem): Unable to close the PLX9054 device #%d; rc=%d",
+                                m, rc);
+                        Pixie_Print_MSG(ErrMSG);
+                    }
+                }
+
+                return (-4);
             } else {
-                // Mapped module with minimum PCI bus number is in the second PCI bus segment of a 14-slot crate
-                BusNoOffset = minPLXBusNum - minPCIBusNum;
+#if(PRINT_DEBUG_MSG == 1)
+                sprintf(ErrMSG,
+                        "(Pixie_InitSystem): Successfully opened Device Number (%d) at Bus Number %d",
+                        DeviceKey.slot, DeviceKey.bus);
+                Pixie_Print_MSG(ErrMSG);
+                sprintf(ErrMSG,
+                        "Device ID = 0x%04x, Vendor ID = 0x%04x, Bus Number = 0x%02x, Device number = 0x%02x",
+                        DeviceKey.DeviceId, DeviceKey.VendorId, DeviceKey.bus, DeviceKey.slot);
+                Pixie_Print_MSG(ErrMSG);
+#endif
+
+                // Map a PCI BAR into user virtual space and return the virtual address
+                // for the opened PCI device. For PLX 9054, Space 0 is at PCI BAR 2.
+                rc = PlxPci_PciBarMap(&SYS_hDevice[k], 2, (VOID**) &VAddr[k]);
+                if (rc != ApiSuccess) {
+                    sprintf(ErrMSG,
+                            "*ERROR* (Pixie_InitSystem): Unable to map a PCI BAR and obtain a virtual address for Device %d; rc=%d",
+                            k, rc);
+                    Pixie_Print_MSG(ErrMSG);
+
+                    // Before return, we need to close those PCI devices that are already opened
+                    for (m = 0; m < k; m++) {
+                        // Unmaps a previously mapped PCI BAR from user virtual space
+                        rc = PlxPci_PciBarUnmap(&SYS_hDevice[m], (VOID**) &VAddr[m]);
+                        if (rc != ApiSuccess) {
+                            sprintf(ErrMSG,
+                                    "*ERROR* (Pixie_InitSystem): Unable to unmap the PCI BAR for PLX9054 device #%d; rc=%d",
+                                    m, rc);
+                            Pixie_Print_MSG(ErrMSG);
+                        }
+
+                        // Release the PLX device
+                        rc = PlxPci_DeviceClose(&SYS_hDevice[m]);
+                        if (rc != ApiSuccess) {
+                            sprintf(ErrMSG,
+                                    "*ERROR* (Pixie_InitSystem): Unable to close the PLX9054 device #%d; rc=%d",
+                                    m, rc);
+                            Pixie_Print_MSG(ErrMSG);
+                        }
+                    }
+
+                    return (-5);
+                } else {
+#if(PRINT_DEBUG_MSG == 1)
+                    sprintf(ErrMSG, "VAddr[%d][%d]=0x%lx", Bus_Number[k], k, VAddr[k]);
+                    Pixie_Print_MSG(ErrMSG);
+#endif
+                }
+
+                // Read the slot number in which this PLX9054 device is installed
+                retval = PCF8574_Read_One_Byte(k, sbuffer);
+                if (retval < 0) {
+                    sprintf(ErrMSG,
+                            "*ERROR* (Pixie_InitSystem): Could not read chassis slot number for Device %d; retval=%d",
+                            k, retval);
+                    Pixie_Print_MSG(ErrMSG);
+
+                    // Before return, we need to close those PCI devices that are already opened
+                    for (m = 0; m < k; m++) {
+                        // Unmaps a previously mapped PCI BAR from user virtual space
+                        rc = PlxPci_PciBarUnmap(&SYS_hDevice[m], (VOID**) &VAddr[m]);
+                        if (rc != ApiSuccess) {
+                            sprintf(ErrMSG,
+                                    "*ERROR* (Pixie_InitSystem): Unable to unmap the PCI BAR for PLX9054 device #%d; rc=%d",
+                                    m, rc);
+                            Pixie_Print_MSG(ErrMSG);
+                        }
+
+                        // Release the PLX device
+                        rc = PlxPci_DeviceClose(&SYS_hDevice[m]);
+                        if (rc != ApiSuccess) {
+                            sprintf(ErrMSG,
+                                    "*ERROR* (Pixie_InitSystem): Unable to close the PLX9054 device #%d; rc=%d",
+                                    m, rc);
+                            Pixie_Print_MSG(ErrMSG);
+                        }
+                    }
+
+                    return (-6);
+                } else {
+                    Slot_Number[k] = (unsigned char) ((sbuffer[0] & 0xF8) / 8);
+                }
+#if(PRINT_DEBUG_MSG == 1)
+                sprintf(ErrMSG, "(Pixie_InitSystem): Device # %d Slot_Number = %d", k,
+                        Slot_Number[k]);
+                Pixie_Print_MSG(ErrMSG);
+#endif
             }
         } else {
-            if (minSlotNum < 8) {
-                // Mapped module with minimum PCI bus number is in the first PCI bus segment of a 14-slot crate
-                BusNoOffset = minPLXBusNum - minPCIBusNum;
-            } else {
-                // Mapped module with minimum PCI bus number is in the second PCI bus segment of a 14-slot crate
-                BusNoOffset = minPLXBusNum - (minPCIBusNum - 1);
+            sprintf(ErrMSG,
+                    "*ERROR* (Pixie_InitSystem): PlxPci_DeviceFind failed for PCI Device Number (%d) at Bus Number %d; rc=%d",
+                    Device_Number[k], Bus_Number[k], rc);
+            Pixie_Print_MSG(ErrMSG);
+
+            // Before return, we need to close those PCI devices that are already opened
+            for (m = 0; m < k; m++) {
+                // Unmaps a previously mapped PCI BAR from user virtual space
+                rc = PlxPci_PciBarUnmap(&SYS_hDevice[m], (VOID**) &VAddr[m]);
+                if (rc != ApiSuccess) {
+                    sprintf(ErrMSG,
+                            "*ERROR* (Pixie_InitSystem): Unable to unmap the PCI BAR for PLX9054 Device #%d; rc=%d",
+                            m, rc);
+                    Pixie_Print_MSG(ErrMSG);
+                }
+
+                // Release the PLX device
+                rc = PlxPci_DeviceClose(&SYS_hDevice[m]);
+                if (rc != ApiSuccess) {
+                    sprintf(ErrMSG,
+                            "*ERROR* (Pixie_InitSystem): Unable to close the PLX9054 device #%d; rc=%d",
+                            m, rc);
+                    Pixie_Print_MSG(ErrMSG);
+                }
             }
+
+            return (-7);
         }
     }
 
-    // Now map modules
-    for (k = 0; k < SYS_Number_Modules; k++) {
-        // Update PCI bus number for each Pixie-16 module
-        Bus_Number[k] += BusNoOffset;
+    // Close those all opened PCI devices
+    for (m = 0; m < TotalPlx9054Devices; m++) {
+        // Unmaps a previously mapped PCI BAR from user virtual space
+        rc = PlxPci_PciBarUnmap(&SYS_hDevice[m], (VOID**) &VAddr[m]);
+        if (rc != ApiSuccess) {
+            sprintf(ErrMSG,
+                    "*ERROR* (Pixie_InitSystem): Unable to unmap the PCI BAR for PLX9054 device #%d; rc=%d",
+                    m, rc);
+            Pixie_Print_MSG(ErrMSG);
+            return (-8);
+        }
 
+        // Release the PLX device
+        rc = PlxPci_DeviceClose(&SYS_hDevice[m]);
+        if (rc != ApiSuccess) {
+            sprintf(ErrMSG,
+                    "*ERROR* (Pixie_InitSystem): Unable to close the PLX9054 device #%d; rc=%d", m,
+                    rc);
+            Pixie_Print_MSG(ErrMSG);
+            return (-9);
+        }
+    }
+
+    // Map user specified modules to modules found by PlxPci_DeviceFind using the matched slot number
+    for (k = 0; k < SYS_Number_Modules; k++) {
         i = 0;
         PlxModIndex[k] = SYS_MAX_NUM_MODULES;
         do {
-            if ((Bus_Number[k] == PlxBusNum[i]) && (Device_Number[k] == PlxDeviceNum[i])) {
+            if (((unsigned char) *(PXISlotMap + k)) == Slot_Number[i]) {
                 PlxModIndex[k] = (unsigned char) i;
                 break;
             }
             i++;
         } while (i < TotalPlx9054Devices);
         if (PlxModIndex[k] == SYS_MAX_NUM_MODULES) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_InitSystem): Can't match module # %d with one found by the PLX driver", k);
+            sprintf(ErrMSG,
+                    "*ERROR* (Pixie_InitSystem): Can't match module # %d with one found by the PLX driver",
+                    k);
             Pixie_Print_MSG(ErrMSG);
-            return (-5);
+            return (-10);
         }
     }
-
-#if (PRINT_DEBUG_MSG == 1)
-    for (k = 0; k < SYS_Number_Modules; k++) {
-        sprintf(ErrMSG, "PXI module number %d =>  PCI bus number %d, PCI device number %d", k, Bus_Number[k],
-                Device_Number[k]);
-        Pixie_Print_MSG(ErrMSG);
-    }
-#endif
 
     // Open PCI devices for all modules
     for (k = 0; k < SYS_Number_Modules; k++) {
@@ -358,7 +420,7 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap, unsi
         rc = PlxPci_DeviceFind(&DeviceKey, PlxModIndex[k]);
         if (rc == ApiSuccess) {
             rc = PlxPci_DeviceOpen(&DeviceKey, &SYS_hDevice[k]);
-            if (rc != ApiSuccess)  // Print error if failure
+            if (rc != ApiSuccess) // Print error if failure
             {
                 sprintf(ErrMSG,
                         "*ERROR* (Pixie_InitSystem): Could not open PCI Device Number (%d) at Bus Number %d; rc=%d",
@@ -369,20 +431,22 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap, unsi
                 for (m = 0; m < k; m++) {
                     retval = Pixie_ClosePCIDevices(m);
                     if (retval < 0) {
-                        sprintf(ErrMSG, "*ERROR* (Pixie_InitSystem): Could not unmap PCI BAR for Module=%d; rc=%d", m,
-                                rc);
+                        sprintf(ErrMSG,
+                                "*ERROR* (Pixie_InitSystem): Could not unmap PCI BAR for Module=%d; rc=%d",
+                                m, rc);
                         Pixie_Print_MSG(ErrMSG);
                     }
                 }
 
-                return (-6);
+                return (-11);
             } else {
-#if (PRINT_DEBUG_MSG == 1)
+#if(PRINT_DEBUG_MSG == 1)
                 sprintf(ErrMSG,
                         "(Pixie_InitSystem): Successfully opened Device Number (%d) at Bus Number %d for Module # %d",
                         Device_Number[k], Bus_Number[k], k);
                 Pixie_Print_MSG(ErrMSG);
-                sprintf(ErrMSG, "Device ID = 0x%04x, Vendor ID = 0x%04x, Bus Number = 0x%02x, Slot number = 0x%02x",
+                sprintf(ErrMSG,
+                        "Device ID = 0x%04x, Vendor ID = 0x%04x, Bus Number = 0x%02x, Device Number = 0x%02x",
                         DeviceKey.DeviceId, DeviceKey.VendorId, DeviceKey.bus, DeviceKey.slot);
                 Pixie_Print_MSG(ErrMSG);
 #endif
@@ -400,15 +464,16 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap, unsi
                     for (m = 0; m < k; m++) {
                         retval = Pixie_ClosePCIDevices(m);
                         if (retval < 0) {
-                            sprintf(ErrMSG, "*ERROR* (Pixie_InitSystem): Could not unmap PCI BAR for Module=%d; rc=%d",
+                            sprintf(ErrMSG,
+                                    "*ERROR* (Pixie_InitSystem): Could not close PCI device for Module=%d; rc=%d",
                                     m, rc);
                             Pixie_Print_MSG(ErrMSG);
                         }
                     }
 
-                    return (-7);
+                    return (-12);
                 } else {
-#if (PRINT_DEBUG_MSG == 1)
+#if(PRINT_DEBUG_MSG == 1)
                     sprintf(ErrMSG, "VAddr[%d][%d]=0x%lx", Bus_Number[k], k, VAddr[k]);
                     Pixie_Print_MSG(ErrMSG);
 #endif
@@ -418,11 +483,12 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap, unsi
                 // First three words of EEPROM stores serial number and revision number
                 retval = I2CM24C64_Sequential_Read(k, 0, 3, sbuffer);
                 if (retval < 0) {
-                    sprintf(ErrMSG, "*ERROR* (Pixie_InitSystem): Could not read serial number for Module=%d; retval=%d",
+                    sprintf(ErrMSG,
+                            "*ERROR* (Pixie_InitSystem): Could not read serial number for Module=%d; retval=%d",
                             k, retval);
                     Pixie_Print_MSG(ErrMSG);
                 }
-                // Starting with serial number 256, serial number is stored in the first two bytes of EEPROM, follwed by
+                // Starting with serial number 256, serial number is stored in the first two bytes of EEPROM, followed by
                 // revision number, which is at least 11 (i.e. Rev-B)
                 if (sbuffer[2] >= 11) {
                     ModSerNum = (unsigned short) (unsigned char) sbuffer[0] +
@@ -430,7 +496,7 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap, unsi
                 } else {
                     ModSerNum = (unsigned short) (unsigned char) sbuffer[0];
                 }
-#if (PRINT_DEBUG_MSG == 1)
+#if(PRINT_DEBUG_MSG == 1)
                 sprintf(ErrMSG, "(Pixie_InitSystem): Module # %d SERIAL NUMBER = %d", k, ModSerNum);
                 Pixie_Print_MSG(ErrMSG);
 #endif
@@ -445,15 +511,16 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap, unsi
             for (m = 0; m < k; m++) {
                 retval = Pixie_ClosePCIDevices(m);
                 if (retval < 0) {
-                    sprintf(ErrMSG, "*ERROR* (Pixie_InitSystem): Could not unmap PCI BAR for Module=%d; rc=%d", m, rc);
+                    sprintf(ErrMSG,
+                            "*ERROR* (Pixie_InitSystem): Could not close PCI device for Module=%d; rc=%d",
+                            m, rc);
                     Pixie_Print_MSG(ErrMSG);
                 }
             }
 
-            return (-8);
+            return (-13);
         }
     }
-
     return (0);
 }
 
@@ -485,7 +552,9 @@ int Pixie_ClosePCIDevices(unsigned short ModNum) {
             // Unmaps a previously mapped PCI BAR from user virtual space
             rc = PlxPci_PciBarUnmap(&SYS_hDevice[k], (VOID**) &VAddr[k]);
             if (rc != ApiSuccess) {
-                sprintf(ErrMSG, "*ERROR* (Pixie_ClosePCIDevices): Unable to unmap the PCI BAR for module %d; rc=%d", k,
+                sprintf(ErrMSG,
+                        "*ERROR* (Pixie_ClosePCIDevices): Unable to unmap the PCI BAR for module %d; rc=%d",
+                        k,
                         rc);
                 Pixie_Print_MSG(ErrMSG);
                 return (-1);
@@ -494,7 +563,8 @@ int Pixie_ClosePCIDevices(unsigned short ModNum) {
             // Release the PLX device
             rc = PlxPci_DeviceClose(&SYS_hDevice[k]);
             if (rc != ApiSuccess) {
-                sprintf(ErrMSG, "*ERROR* (Pixie_ClosePCIDevices): Unable to close the PLX device for module %d; rc=%d",
+                sprintf(ErrMSG,
+                        "*ERROR* (Pixie_ClosePCIDevices): Unable to close the PLX device for module %d; rc=%d",
                         k, rc);
                 Pixie_Print_MSG(ErrMSG);
                 return (-2);
@@ -505,7 +575,9 @@ int Pixie_ClosePCIDevices(unsigned short ModNum) {
         // Unmaps a previously mapped PCI BAR from user virtual space
         rc = PlxPci_PciBarUnmap(&SYS_hDevice[ModNum], (VOID**) &VAddr[ModNum]);
         if (rc != ApiSuccess) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_ClosePCIDevices): Unable to unmap the PCI BAR for module %d; rc=%d", ModNum,
+            sprintf(ErrMSG,
+                    "*ERROR* (Pixie_ClosePCIDevices): Unable to unmap the PCI BAR for module %d; rc=%d",
+                    ModNum,
                     rc);
             Pixie_Print_MSG(ErrMSG);
             return (-1);
@@ -514,7 +586,8 @@ int Pixie_ClosePCIDevices(unsigned short ModNum) {
         // Release the PLX device
         rc = PlxPci_DeviceClose(&SYS_hDevice[ModNum]);
         if (rc != ApiSuccess) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_ClosePCIDevices): Unable to close the PLX device for module %d; rc=%d",
+            sprintf(ErrMSG,
+                    "*ERROR* (Pixie_ClosePCIDevices): Unable to close the PLX device for module %d; rc=%d",
                     ModNum, rc);
             Pixie_Print_MSG(ErrMSG);
             return (-2);
@@ -536,7 +609,8 @@ int Pixie_ClosePCIDevices(unsigned short ModNum) {
 *
 ****************************************************************/
 
-int Pixie_Boot_CompFPGA(unsigned short ModNum, unsigned int* Com_FPGA_conf, unsigned int NumComFPGAconf) {
+int Pixie_Boot_CompFPGA(unsigned short ModNum, unsigned int* Com_FPGA_conf,
+                        unsigned int NumComFPGAconf) {
     unsigned int buffer[8];
     unsigned int k, counter0, counter1;
     char ErrMSG[MAX_ERRMSG_LENGTH];
@@ -578,7 +652,8 @@ ReadINIT:
             wait_for_a_short_time((int) (200000.0 / Ns_Per_Cycle));
             goto ReadINIT;
         } else {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Boot_ComFPGA): Clearing communication FPGA in module %d timed out.",
+            sprintf(ErrMSG,
+                    "*ERROR* (Pixie_Boot_ComFPGA): Clearing communication FPGA in module %d timed out.",
                     ModNum);
             Pixie_Print_MSG(ErrMSG);
             return (-2);
@@ -600,7 +675,8 @@ ReadINIT:
         if (counter0 < 10) {
             goto StartSys;
         } else {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Boot_ComFPGA): Downloading communication FPGA to module %d timed out",
+            sprintf(ErrMSG,
+                    "*ERROR* (Pixie_Boot_ComFPGA): Downloading communication FPGA to module %d timed out",
                     ModNum);
             Pixie_Print_MSG(ErrMSG);
             return (-3);
@@ -625,7 +701,8 @@ ReadINIT:
 *
 ****************************************************************/
 
-int Pixie_Boot_FIPPI(unsigned short ModNum, unsigned int* SP_FPGA_conf, unsigned int NumSPFPGAconf) {
+int
+Pixie_Boot_FIPPI(unsigned short ModNum, unsigned int* SP_FPGA_conf, unsigned int NumSPFPGAconf) {
     unsigned int buffer[4];
     unsigned int k, counter0, counter1;
     char ErrMSG[MAX_ERRMSG_LENGTH];
@@ -672,7 +749,8 @@ ReadINITf12:
             wait_for_a_short_time((int) (200000.0 / Ns_Per_Cycle));
             goto ReadINITf12;
         } else {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Boot_FIPPI): Clearing FIPPI configuration 1&2 timed out in module %d",
+            sprintf(ErrMSG,
+                    "*ERROR* (Pixie_Boot_FIPPI): Clearing FIPPI configuration 1&2 timed out in module %d",
                     ModNum);
             Pixie_Print_MSG(ErrMSG);
             return (-2);
@@ -691,11 +769,14 @@ ReadINITf12:
     {
         counter0++;
         if (counter0 < 10) {
-            sprintf(ErrMSG, "(Pixie_Boot_FIPPI): Downloading SP FPGAs 1&2, CFG_RDCS=0x%x", buffer[0]);
+            sprintf(ErrMSG, "(Pixie_Boot_FIPPI): Downloading SP FPGAs 1&2, CFG_RDCS=0x%x",
+                    buffer[0]);
             Pixie_Print_MSG(ErrMSG);
             goto StartFip12;
         } else {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Boot_FIPPI): Downloading SP FPGAs 1&2 timed out in module %d", ModNum);
+            sprintf(ErrMSG,
+                    "*ERROR* (Pixie_Boot_FIPPI): Downloading SP FPGAs 1&2 timed out in module %d",
+                    ModNum);
             Pixie_Print_MSG(ErrMSG);
             return (-3);
         }
@@ -741,7 +822,8 @@ ReadINITf34:
             wait_for_a_short_time((int) (200000.0 / Ns_Per_Cycle));
             goto ReadINITf34;
         } else {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Boot_FIPPI): Clearing FIPPI configuration 3&4 timed out in module %d",
+            sprintf(ErrMSG,
+                    "*ERROR* (Pixie_Boot_FIPPI): Clearing FIPPI configuration 3&4 timed out in module %d",
                     ModNum);
             Pixie_Print_MSG(ErrMSG);
             return (-2);
@@ -760,11 +842,14 @@ ReadINITf34:
     {
         counter0++;
         if (counter0 < 10) {
-            sprintf(ErrMSG, "(Pixie_Boot_FIPPI): Downloading SP FPGAs 3&4, CFG_RDCS=0x%x", buffer[0]);
+            sprintf(ErrMSG, "(Pixie_Boot_FIPPI): Downloading SP FPGAs 3&4, CFG_RDCS=0x%x",
+                    buffer[0]);
             Pixie_Print_MSG(ErrMSG);
             goto StartFip34;
         } else {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Boot_FIPPI): Downloading SP FPGAs 3&4 timed out in module %d", ModNum);
+            sprintf(ErrMSG,
+                    "*ERROR* (Pixie_Boot_FIPPI): Downloading SP FPGAs 3&4 timed out in module %d",
+                    ModNum);
             Pixie_Print_MSG(ErrMSG);
             return (-3);
         }
@@ -880,7 +965,8 @@ RetryS:
 
             trytimes++;
             if (trytimes > 5) {
-                sprintf(ErrMSG, "Set DSP SYSCON in module #%d failed, SYSCON=0x%x", ModNum, buffer[0]);
+                sprintf(ErrMSG, "Set DSP SYSCON in module #%d failed, SYSCON=0x%x", ModNum,
+                        buffer[0]);
                 Pixie_Print_MSG(ErrMSG);
                 return (-2);
             }
@@ -893,11 +979,13 @@ RetryD:
 
             buffer[0] = DMAC10;
             Pixie_Register_IO(ModNum, EXT_MEM_TEST, SYS_MOD_WRITE, buffer);
-            Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_READ, buffer);  // read data from DSP DMAC10
+            Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_READ,
+                              buffer);  // read data from DSP DMAC10
             if (buffer[0] != 0xA1) {
                 trytimes++;
                 if (trytimes > 5) {
-                    sprintf(ErrMSG, "Set DSP DMAC10 in module #%d failed, DMAC10=0x%x", ModNum, buffer[0]);
+                    sprintf(ErrMSG, "Set DSP DMAC10 in module #%d failed, DMAC10=0x%x", ModNum,
+                            buffer[0]);
                     Pixie_Print_MSG(ErrMSG);
                     return (-3);
                 }
@@ -912,9 +1000,12 @@ RetryD:
 
                 // Download the boot kernel
                 for (i = 0; i < 256; i++) {
-                    Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE, &DSP_code[i * 3]);  // write to EPB0
-                    Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE, &DSP_code[i * 3 + 1]);  // write to EPB0
-                    Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE, &DSP_code[i * 3 + 2]);  // write to EPB0
+                    Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
+                                      &DSP_code[i * 3]);  // write to EPB0
+                    Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
+                                      &DSP_code[i * 3 + 1]);  // write to EPB0
+                    Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
+                                      &DSP_code[i * 3 + 2]);  // write to EPB0
 
                     count += 3;
                 }
@@ -935,9 +1026,11 @@ RetryD:
                         case ZERO_DM64:
                         case ZERO_PM64:
 
-                            Pixie_Register_IO(ModNum, REQUEST_HBR, SYS_MOD_WRITE, buffer);  // HBR request
+                            Pixie_Register_IO(ModNum, REQUEST_HBR, SYS_MOD_WRITE,
+                                              buffer);  // HBR request
 
-                            Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE, &DSP_code[count]);  // write to EPB0
+                            Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
+                                              &DSP_code[count]);  // write to EPB0
                             Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
                                               &DSP_code[count + 1]);  // write to EPB0
                             Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
@@ -949,9 +1042,11 @@ RetryD:
                             // wordcount shows the number of DSP_code word for this section
                             wordcount = DSP_code[count];
 
-                            Pixie_Register_IO(ModNum, REQUEST_HBR, SYS_MOD_WRITE, buffer);  // HBR request
+                            Pixie_Register_IO(ModNum, REQUEST_HBR, SYS_MOD_WRITE,
+                                              buffer);  // HBR request
 
-                            Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE, &DSP_code[count]);  // write to EPB0
+                            Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
+                                              &DSP_code[count]);  // write to EPB0
                             Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
                                               &DSP_code[count + 1]);  // write to EPB0
                             Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
@@ -978,9 +1073,11 @@ RetryD:
                         case INIT_PM32:
                         case INIT_PM48:
 
-                            Pixie_Register_IO(ModNum, REQUEST_HBR, SYS_MOD_WRITE, buffer);  // HBR request
+                            Pixie_Register_IO(ModNum, REQUEST_HBR, SYS_MOD_WRITE,
+                                              buffer);  // HBR request
 
-                            Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE, &DSP_code[count]);  // write to EPB0
+                            Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
+                                              &DSP_code[count]);  // write to EPB0
                             Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
                                               &DSP_code[count + 1]);  // write to EPB0
                             Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
@@ -992,9 +1089,11 @@ RetryD:
                             // wordcount shows the number of DSP_code word for this section
                             wordcount = DSP_code[count];
 
-                            Pixie_Register_IO(ModNum, REQUEST_HBR, SYS_MOD_WRITE, buffer);  // HBR request
+                            Pixie_Register_IO(ModNum, REQUEST_HBR, SYS_MOD_WRITE,
+                                              buffer);  // HBR request
 
-                            Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE, &DSP_code[count]);  // write to EPB0
+                            Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
+                                              &DSP_code[count]);  // write to EPB0
                             Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
                                               &DSP_code[count + 1]);  // write to EPB0
                             Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
@@ -1006,7 +1105,8 @@ RetryD:
 
                             for (i = 0; i < wordcount; i++) {
 
-                                Pixie_Register_IO(ModNum, REQUEST_HBR, SYS_MOD_WRITE, buffer);  // HBR request
+                                Pixie_Register_IO(ModNum, REQUEST_HBR, SYS_MOD_WRITE,
+                                                  buffer);  // HBR request
 
                                 Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
                                                   &DSP_code[count + i * 3]);  // write to EPB0
@@ -1015,7 +1115,8 @@ RetryD:
                                 Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
                                                   &DSP_code[count + i * 3 + 2]);  // write to EPB0
 
-                                Pixie_Register_IO(ModNum, HBR_DONE, SYS_MOD_WRITE, buffer);  // HBR done
+                                Pixie_Register_IO(ModNum, HBR_DONE, SYS_MOD_WRITE,
+                                                  buffer);  // HBR done
                             }
 
                             count += 3 * wordcount;
@@ -1025,9 +1126,11 @@ RetryD:
                         case INIT_DM64:
                         case INIT_PM64:
 
-                            Pixie_Register_IO(ModNum, REQUEST_HBR, SYS_MOD_WRITE, buffer);  // HBR request
+                            Pixie_Register_IO(ModNum, REQUEST_HBR, SYS_MOD_WRITE,
+                                              buffer);  // HBR request
 
-                            Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE, &DSP_code[count]);  // write to EPB0
+                            Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
+                                              &DSP_code[count]);  // write to EPB0
                             Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
                                               &DSP_code[count + 1]);  // write to EPB0
                             Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
@@ -1039,9 +1142,11 @@ RetryD:
                             // wordcount shows the number of DSP_code word for this section
                             wordcount = DSP_code[count];
 
-                            Pixie_Register_IO(ModNum, REQUEST_HBR, SYS_MOD_WRITE, buffer);  // HBR request
+                            Pixie_Register_IO(ModNum, REQUEST_HBR, SYS_MOD_WRITE,
+                                              buffer);  // HBR request
 
-                            Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE, &DSP_code[count]);  // write to EPB0
+                            Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
+                                              &DSP_code[count]);  // write to EPB0
                             Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
                                               &DSP_code[count + 1]);  // write to EPB0
                             Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
@@ -1053,7 +1158,8 @@ RetryD:
 
                             for (i = 0; i < wordcount; i++) {
 
-                                Pixie_Register_IO(ModNum, REQUEST_HBR, SYS_MOD_WRITE, buffer);  // HBR request
+                                Pixie_Register_IO(ModNum, REQUEST_HBR, SYS_MOD_WRITE,
+                                                  buffer);  // HBR request
 
                                 Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
                                                   &DSP_code[count + i * 6]);  // write to EPB0
@@ -1062,9 +1168,11 @@ RetryD:
                                 Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
                                                   &DSP_code[count + i * 6 + 2]);  // write to EPB0
 
-                                Pixie_Register_IO(ModNum, HBR_DONE, SYS_MOD_WRITE, buffer);  // HBR done
+                                Pixie_Register_IO(ModNum, HBR_DONE, SYS_MOD_WRITE,
+                                                  buffer);  // HBR done
 
-                                Pixie_Register_IO(ModNum, REQUEST_HBR, SYS_MOD_WRITE, buffer);  // HBR request
+                                Pixie_Register_IO(ModNum, REQUEST_HBR, SYS_MOD_WRITE,
+                                                  buffer);  // HBR request
 
                                 Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
                                                   &DSP_code[count + i * 6 + 3]);  // write to EPB0
@@ -1073,7 +1181,8 @@ RetryD:
                                 Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
                                                   &DSP_code[count + i * 6 + 5]);  // write to EPB0
 
-                                Pixie_Register_IO(ModNum, HBR_DONE, SYS_MOD_WRITE, buffer);  // HBR done
+                                Pixie_Register_IO(ModNum, HBR_DONE, SYS_MOD_WRITE,
+                                                  buffer);  // HBR done
                             }
 
                             count += 6 * wordcount;
@@ -1083,7 +1192,8 @@ RetryD:
 
                         case FINAL_INIT:
 
-                            Pixie_Register_IO(ModNum, REQUEST_HBR, SYS_MOD_WRITE, buffer);  // HBR request
+                            Pixie_Register_IO(ModNum, REQUEST_HBR, SYS_MOD_WRITE,
+                                              buffer);  // HBR request
 
                             for (i = 0; i < 258; i++) {
                                 Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_WRITE,
@@ -1133,7 +1243,8 @@ RetryD:
             trytimes++;
         } while (trytimes < 10);
         if (bootsuccess == 0) {
-            sprintf(ErrMSG, "PowerUpInitDone stuck at 0 in the DSP of module %d - can't finish reset initialization",
+            sprintf(ErrMSG,
+                    "PowerUpInitDone stuck at 0 in the DSP of module %d - can't finish reset initialization",
                     ModNum);
             Pixie_Print_MSG(ErrMSG);
         }
@@ -1147,7 +1258,8 @@ RetryD:
 
     if (bootsuccess == 1) {
         if (looptimes > 1) {
-            sprintf(ErrMSG, "After %d tries, downloaded DSP code in module #%d successfully", looptimes, ModNum);
+            sprintf(ErrMSG, "After %d tries, downloaded DSP code in module #%d successfully",
+                    looptimes, ModNum);
             Pixie_Print_MSG(ErrMSG);
         } else {
             sprintf(ErrMSG, "Downloaded DSP code in module #%d successfully", ModNum);
@@ -1155,7 +1267,8 @@ RetryD:
         }
         return (0);
     } else {
-        sprintf(ErrMSG, "Failed to download DSP code in module #%d after %d tries", ModNum, looptimes);
+        sprintf(ErrMSG, "Failed to download DSP code in module #%d after %d tries", ModNum,
+                looptimes);
         Pixie_Print_MSG(ErrMSG);
         return (-5);
     }
