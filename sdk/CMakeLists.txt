@@ -10,12 +10,23 @@ target_include_directories(PixieSDK PUBLIC
         include/
         ${PROJECT_SOURCE_DIR}/vendor/analog_devices
         ${PLX_INCLUDE_DIR})
-target_link_libraries(PixieSDK PUBLIC ${PLX_SHARED_LIB})
+
 IF (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.13")
-    target_link_directories(PixieSDK PUBLIC PLX_LIBRARY_DIR)
+    target_link_directories(PixieSDK PUBLIC ${PLX_LIBRARY_DIR})
 ENDIF ()
-target_compile_definitions(PixieSDK PUBLIC PLX_LITTLE_ENDIAN PCI_CODE PLX_LINUX PRINT_DEBUG_MSG)
-target_compile_options(PixieSDK PUBLIC -g -Wall)
+
+
+if (LINUX)
+    target_link_libraries(PixieSDK PUBLIC ${PLX_SHARED_LIB})
+    target_compile_definitions(PixieSDK PUBLIC PLX_LITTLE_ENDIAN PCI_CODE PLX_LINUX PRINT_DEBUG_MSG)
+    target_compile_options(PixieSDK PUBLIC -g -Wall)
+
+else ()
+    target_link_libraries(PixieSDK PUBLIC ${PLX_SHARED_LIB} kernel32.lib user32.lib gdi32.lib
+            winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
+            odbccp32.lib winmm.lib)
+    target_compile_definitions(PixieSDK PUBLIC PLX_LITTLE_ENDIAN PCI_CODE PLX_WINDOWS PRINT_DEBUG_MSG)
+endif ()
 
 file(GLOB PIXIESDK_PUBLIC_HEADERS *.h)
 set_target_properties(PixieSDK PROPERTIES PUBLIC_HEADER "${PIXIESDK_PUBLIC_HEADERS}")
