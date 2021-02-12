@@ -22,9 +22,7 @@ if (LINUX)
     target_compile_options(PixieSDK PUBLIC -g -Wall)
 
 else ()
-    target_link_libraries(PixieSDK PUBLIC ${PLX_SHARED_LIB} kernel32.lib user32.lib gdi32.lib
-            winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
-            odbccp32.lib winmm.lib)
+    target_link_libraries(PixieSDK PUBLIC ${PLX_SHARED_LIB} winmm)
     target_compile_definitions(PixieSDK PUBLIC PLX_LITTLE_ENDIAN PCI_CODE PLX_WINDOWS PRINT_DEBUG_MSG)
 endif ()
 
