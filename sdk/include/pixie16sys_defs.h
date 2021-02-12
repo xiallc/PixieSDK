@@ -80,6 +80,7 @@ extern "C" {
 #define PIXIE16SYS_API _stdcall
 #elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI
 #define PIXIE16SYS_EXPORT
+#define PIXIE16SYS_API
 #endif
 
 
