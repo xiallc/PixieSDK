@@ -41,13 +41,12 @@
 #include "pixie16app_export.h"
 
 #include <chrono>
-#include <iomanip>
 #include <iostream>
 #include <vector>
 
 #include <cstring>
 
-#ifdef _WIN64
+#if defined(_WIN64)  || defined(_WIN32)
 #include <Windows.h>
 #else
 #include <unistd.h>
@@ -105,7 +104,13 @@ bool execute_list_mode_run(const xia::Configuration& cfg, const double& runtime_
         return false;
 
     cout << "INFO - Waiting for DSP to boot....";
+
+#if defined(_WIN32) || defined(_WIN64)
+    Sleep(1000);
+#else
     sleep(1);
+#endif
+
     cout << "OK" << endl;
 
     unsigned int* lmdata;

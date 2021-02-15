@@ -108,7 +108,7 @@ static void USleep(double nanoseconds) {
 *
 ****************************************************************/
 
-int get_ns_per_cycle(double* ns_per_cycle) {
+PIXIE16SYS_EXPORT int PIXIE16SYS_API get_ns_per_cycle(double* ns_per_cycle) {
 #if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
     TIMECAPS resolution;
     DWORD start, finish, duration;
@@ -206,7 +206,7 @@ int get_ns_per_cycle(double* ns_per_cycle) {
 *
 ****************************************************************/
 
-void wait_for_a_short_time(int cycles) {
+PIXIE16SYS_EXPORT void PIXIE16SYS_API wait_for_a_short_time(int cycles) {
 
 #if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
 
@@ -239,7 +239,7 @@ void wait_for_a_short_time(int cycles) {
 *
 ****************************************************************/
 
-unsigned short SYS16_SetBit(unsigned short bit, unsigned short value) {
+PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_SetBit(unsigned short bit, unsigned short value) {
     return (value | (unsigned short) (pow(2.0, (double) bit)));
 }
 
@@ -250,7 +250,7 @@ unsigned short SYS16_SetBit(unsigned short bit, unsigned short value) {
 *
 ****************************************************************/
 
-unsigned short SYS16_ClrBit(unsigned short bit, unsigned short value) {
+PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_ClrBit(unsigned short bit, unsigned short value) {
     value = SYS16_SetBit(bit, value);
     return (value ^ (unsigned short) (pow(2.0, (double) bit)));
 }
@@ -262,7 +262,7 @@ unsigned short SYS16_ClrBit(unsigned short bit, unsigned short value) {
 *
 ****************************************************************/
 
-unsigned short SYS16_TstBit(unsigned short bit, unsigned short value) {
+PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_TstBit(unsigned short bit, unsigned short value) {
     return (((value & (unsigned short) (pow(2.0, (double) bit))) >> bit));
 }
 
@@ -273,7 +273,7 @@ unsigned short SYS16_TstBit(unsigned short bit, unsigned short value) {
 *
 ****************************************************************/
 
-unsigned int SYS32_SetBit(unsigned short bit, unsigned int value) {
+PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_SetBit(unsigned short bit, unsigned int value) {
     return (value | (unsigned int) (pow(2.0, (double) bit)));
 }
 
@@ -284,7 +284,7 @@ unsigned int SYS32_SetBit(unsigned short bit, unsigned int value) {
 *
 ****************************************************************/
 
-unsigned int SYS32_ClrBit(unsigned short bit, unsigned int value) {
+PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_ClrBit(unsigned short bit, unsigned int value) {
     value = SYS32_SetBit(bit, value);
     return (value ^ (unsigned int) (pow(2.0, (double) bit)));
 }
@@ -296,7 +296,7 @@ unsigned int SYS32_ClrBit(unsigned short bit, unsigned int value) {
 *
 ****************************************************************/
 
-unsigned int SYS32_TstBit(unsigned short bit, unsigned int value) {
+PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_TstBit(unsigned short bit, unsigned int value) {
     return (((value & (unsigned int) (pow(2.0, (double) bit))) >> bit));
 }
 

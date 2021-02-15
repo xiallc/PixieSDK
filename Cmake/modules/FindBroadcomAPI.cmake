@@ -8,10 +8,10 @@
 #
 
 find_path(PLX_LIBRARY_DIR
-        NAMES PlxApi.a PlxApi.so
+        NAMES PlxApi.a PlxApi.so PlxApi.lib
         HINTS $ENV{PLX_SDK_DIR}
-        PATHS /usr/local/broadcom/current /usr/src/PlxSdk
-        PATH_SUFFIXES PlxApi/Library Linux/PlxApi/Library)
+        PATHS /usr/local/broadcom/current /usr/src/PlxSdk C:/PlxApi
+        PATH_SUFFIXES PlxApi/Library Linux/PlxApi/Library PlxApi/Release)
 
 find_path(PLX_INCLUDE_DIR
         NAMES Plx.h PlxTypes.h PlxApi.h
@@ -23,8 +23,12 @@ include(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(BroadcomAPI DEFAULT_MSG PLX_LIBRARY_DIR PLX_INCLUDE_DIR)
 
 if (BroadcomAPI_FOUND)
-    set(PLX_SHARED_LIB -l:PlxApi.so)
-    set(PLX_STATIC_LIB -l:PlxApi.a)
+    if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+        set(PLX_SHARED_LIB -l:PlxApi.so)
+        set(PLX_STATIC_LIB -l:PlxApi.a)
+    elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+        set(PLX_SHARED_LIB PlxApi.lib)
+    endif ()
 endif (BroadcomAPI_FOUND)
 
 mark_as_advanced(PLX_SHARED_LIB PLX_STATIC_LIB PLX_LIBRARY_DIR PLX_INCLUDE_DIR)
