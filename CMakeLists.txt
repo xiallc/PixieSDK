@@ -3,7 +3,7 @@ project(pixie_sdk)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     message(STATUS "${CMAKE_SYSTEM_NAME} is a supported environment.")
-else()
+else ()
     message(FATAL_ERROR "${CMAKE_SYSTEM_NAME} is an unsupported environment!")
 endif ()
 
@@ -23,9 +23,9 @@ message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/Cmake/modules/")
 
 find_package(BroadcomAPI REQUIRED)
-IF(${CMAKE_VERSION} VERSION_LESS "3.13")
+IF (${CMAKE_VERSION} VERSION_LESS "3.13")
     link_directories(${PLX_LIBRARY_DIR})
-ENDIF(${CMAKE_VERSION} VERSION_LESS "3.13")
+ENDIF (${CMAKE_VERSION} VERSION_LESS "3.13")
 
 add_subdirectory(sdk)
 add_subdirectory(tests)
