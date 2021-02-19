@@ -1,4 +1,4 @@
-list(APPEND SYSTEM_TESTS test_memory_reads_and_writes)
+list(APPEND SYSTEM_TESTS test_direct_communication test_memory_reads_and_writes)
 
 foreach (PROG IN LISTS SYSTEM_TESTS)
     add_executable(${PROG} src/${PROG}.cpp)
@@ -17,3 +17,4 @@ foreach (PROG IN LISTS SYSTEM_TESTS)
         target_compile_definitions(${PROG} PUBLIC PLX_LITTLE_ENDIAN PCI_CODE PLX_WINDOWS PRINT_DEBUG_MSG)
     endif ()
 endforeach()
+
