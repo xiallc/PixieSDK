@@ -37,6 +37,7 @@
 #include "pixie16sys_export.h"
 #include "configuration.hpp"
 
+#include <array>
 #include <iostream>
 #include <string>
 #include <thread>
@@ -52,6 +53,60 @@
 
 using namespace std;
 
+enum class DATA_PATTERN {
+    HI_LO,
+    FLIP_FLOP,
+    RAMP_UP,
+    RAMP_DOWN,
+    CONSTANT,
+    EVEN_BITS,
+    ODD_BITS,
+    ZERO
+};
+
+std::array<unsigned int, 65536> prepare_data_to_write(const DATA_PATTERN& data_pattern) {
+    std::array<unsigned int, 65536> data{};
+    for (unsigned int entry = 0; entry < 65536; entry += 2) {
+        switch (data_pattern) {
+            case DATA_PATTERN::HI_LO:
+                data[entry] = 0xAAAA5555;
+                data[entry + 1] = 0x5555AAAA;
+                break;
+            case DATA_PATTERN::FLIP_FLOP:
+                data[entry] = 0xA0500A05;
+                data[entry + 1] = 0x50A0050A;
+                break;
+            case DATA_PATTERN::RAMP_UP:
+                data[entry] = entry;
+                data[entry + 1] = entry + 1;
+                break;
+            case DATA_PATTERN::RAMP_DOWN:
+                data[entry] = 65536 - entry;
+                data[entry + 1] = 65536 - entry - 1;
+                break;
+            case DATA_PATTERN::CONSTANT:
+                data[entry] = 0x50f750fa;
+                data[entry + 1] = 0x50f750fa;
+                break;
+            case DATA_PATTERN::EVEN_BITS:
+                data[entry] = 0xA5A5A5A5;
+                data[entry + 1] = 0xA5A5A5A5;
+                break;
+            case DATA_PATTERN::ODD_BITS:
+                data[entry] = 0x5A5A5A5A;
+                data[entry + 1] = 0x5A5A5A5A;
+                break;
+            case DATA_PATTERN::ZERO:
+                data[entry] = 0;
+                data[entry + 1] = 0;
+                break;
+            default:
+                break;
+        }
+    }
+    return data;
+}
+
 bool verify_api_return_value(const int& val, const std::string& func_name,
                              const std::string& okmsg = "OK") {
     if (val < 0) {
@@ -63,63 +118,139 @@ bool verify_api_return_value(const int& val, const std::string& func_name,
     return true;
 }
 
-int test_dspim_repeated(const int& number_of_modules, const std::size_t& number_of_loops,
-                        const string& type) {
+int clear_external_memory(const int& number_of_modules) {
+    cout << "INFO - Starting to clear the External Memory...";
+    for (int modnum = 0; modnum < number_of_modules; modnum++) {
+        if (verify_api_return_value(Pixie_Clear_Main_Memory(0, 32768 * 16, modnum),
+                                    "Pixie Clear Main Memory")) {
+            return -1;
+        }
+    }
+    return 0;
+}
+
+int verify_data_read(const unsigned int* expected, const unsigned int* returned,
+                     const int& module_number, const unsigned int& size) {
     char ErrMSG[256];
-    int retval = 0;
-    unsigned int errorcounts, rd_wr_errors;
-    unsigned int rd_data[65536], wr_data[65536];
-    unsigned int count;
-    unsigned short numtries;
-    errorcounts = 0;
+    unsigned int error_count = 0;
+    for (unsigned int idx = 0; idx < size; idx++) {
+        if (expected[idx] != returned[idx]) {
+            sprintf(ErrMSG,
+                    "RD_WR data mismatch in module %d, rd_data=0x%x, wr_data=0x%x, count=%d",
+                    module_number, returned[idx], expected[idx], idx);
+            Pixie_Print_MSG(ErrMSG);
+            error_count++;
+        }
+    }
+    return error_count;
+}
+
+int test_external_memory_reads_and_writes(const int& number_of_modules,
+                                          const std::size_t& number_of_loops,
+                                          const std::string& write_type) {
+    char ErrMSG[256];
+    unsigned int rd_wr_errors = 0;
+    unsigned int rd_data[65536];
+    unsigned int errorcounts = 0;
+
+    vector<std::array<unsigned int, 65536> > test_data;
+
+    if (write_type == "single") {
+        for (int segment = 0; segment < 8; segment++) {
+            auto data = prepare_data_to_write(DATA_PATTERN::RAMP_UP);
+            for (int modnum = 0; modnum < number_of_modules; modnum++) {
+                if (!verify_api_return_value(
+                        Pixie_Main_Memory_IO(data.begin(), 65536 * segment, 65536, MOD_WRITE,
+                                             modnum), "Pixie_Main_Memory_IO", "")) {
+                    return (-1);
+                }
+            }
+        }
+        test_data = {prepare_data_to_write(DATA_PATTERN::RAMP_UP)};
+    } else if (write_type == "clear") {
+        clear_external_memory(number_of_modules);
+        test_data = {prepare_data_to_write(DATA_PATTERN::ZERO)};
+    } else {
+        test_data = {prepare_data_to_write(DATA_PATTERN::HI_LO),
+                     prepare_data_to_write(DATA_PATTERN::FLIP_FLOP),
+                     prepare_data_to_write(DATA_PATTERN::RAMP_UP),
+                     prepare_data_to_write(DATA_PATTERN::RAMP_DOWN)};
+    }
+
 
     for (std::size_t loop_num = 0; loop_num < number_of_loops; loop_num++) {
-        for (numtries = 0; numtries < 4; numtries++) {
-            for (count = 0; count < 65536; count += 2) {
-                if (numtries == 0)
-                    wr_data[count] = 0xAAAA5555;
-                else if (numtries == 1)
-                    wr_data[count] = 0xA0500A05;
-                else if (numtries == 2)
-                    wr_data[count] = count;
-                else
-                    wr_data[count] = 65536 - count;
+        for (auto data: test_data) {
+            for (int modnum = 0; modnum < number_of_modules; modnum++) {
+                for (int emwrites = 0; emwrites < 8; emwrites++) {
+                    if (write_type == "repeated") {
+                        if (!verify_api_return_value(
+                                Pixie_Main_Memory_IO(data.begin(), 65536 * emwrites, 65536,
+                                                     MOD_WRITE, modnum),
+                                "Pixie_Main_Memory_IO", ""))
+                            return -1;
+                    }
+
+                    for (unsigned int idx = 0; idx < 65535; idx++) {
+                        if (write_type != "clear")
+                            rd_data[idx] = 0;
+                        else
+                            rd_data[idx] = 0xA5A5A5A5;
+                    }
+
+                    if (!verify_api_return_value(
+                            Pixie_Main_Memory_IO(rd_data, 65536 * emwrites, 65536, MOD_READ,
+                                                 modnum),
+                            "Pixie_Main_Memory_IO", ""))
+                        return -1;
+
+                    rd_wr_errors += verify_data_read(data.begin(), rd_data, modnum, 65536);
+                }
+                if (rd_wr_errors > 0) {
+                    sprintf(ErrMSG, "RD_WR data mismatch in module %d, rd_wr_errors=%d", modnum,
+                            rd_wr_errors);
+                    Pixie_Print_MSG(ErrMSG);
+                    printf("RD_WR data mismatch in module %d, rd_wr_errors=%d\n", modnum,
+                           rd_wr_errors);
+
+                }
+                errorcounts += rd_wr_errors;
             }
-            for (count = 1; count < 65536; count += 2) {
-                if (numtries == 0)
-                    wr_data[count] = 0x5555AAAA;
-                else if (numtries == 1)
-                    wr_data[count] = 0x50A0050A;
-                else if (numtries == 2)
-                    wr_data[count] = count;
-                else
-                    wr_data[count] = 65536 - count;
-            }
+        } // for (auto data:test-data
+        printf("INFO - Number of External Memory write & read tests = %lu, error counts = %d\n", loop_num,
+               errorcounts);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }// for (std::size_t loop_num
+    return 0;
+}
+
+
+int test_dsp_reads_and_writes(const int& number_of_modules, const std::size_t& number_of_loops,
+                              const std::string& write_type, const string& read_type) {
+    char ErrMSG[256];
+    unsigned int rd_wr_errors = 0;
+    unsigned int rd_data[65536];
+    unsigned int errorcounts = 0;
+    vector<DATA_PATTERN> test_data_patterns = {DATA_PATTERN::HI_LO, DATA_PATTERN::FLIP_FLOP,
+                                               DATA_PATTERN::RAMP_UP, DATA_PATTERN::RAMP_DOWN};
+
+    for (std::size_t loop_num = 0; loop_num < number_of_loops; loop_num++) {
+        for (auto data_pattern: test_data_patterns) {
+            auto wr_data = prepare_data_to_write(data_pattern);
 
             for (int modnum = 0; modnum < number_of_modules; modnum++) {
-                retval = Pixie_DSP_Memory_IO(wr_data, 0x50000, 65535, MOD_WRITE, modnum);
-                if (retval < 0) {
-                    sprintf(ErrMSG,
-                            "*ERROR* Pixie16_DSP_Memory_IO WRITE failed in module %d, retval = %d",
-                            modnum, retval);
-                    Pixie_Print_MSG(ErrMSG);
-                }
+                if (!verify_api_return_value(
+                        Pixie_DSP_Memory_IO(wr_data.begin(), 0x50000, 65535, MOD_WRITE, modnum),
+                        "Pixie_DSP_Memory_IO", ""))
+                    return -1;
 
-                if (type == "burst") {
-                    retval = Pixie_DSP_Memory_IO(rd_data, 0x50000, 65535, MOD_READ, modnum);
-                    if (retval < 0) {
-                        sprintf(ErrMSG,
-                                "*ERROR* Pixie16_DSP_Memory_IO READ failed in module %d, retval = %d",
-                                modnum, retval);
-                        Pixie_Print_MSG(ErrMSG);
-                        return (-1);
-                    }
-                }
+                if (read_type == "burst")
+                    if (!verify_api_return_value(
+                            Pixie_DSP_Memory_IO(rd_data, 0x50000, 65535, MOD_READ, modnum),
+                            "Pixie_DSP_Memory_IO", ""))
+                        return -1;
 
-                rd_wr_errors = 0;
-
-                for (count = 0; count < 65535; count++) {
-                    if (type == "burst") {
+                for (unsigned int count = 0; count < 65535; count++) {
+                    if (read_type == "burst") {
                         if (wr_data[count] != rd_data[count]) {
                             sprintf(ErrMSG,
                                     "RD_WR data mismatch in module %d, rd_data=0x%x, wr_data=0x%x, count=%d",
@@ -128,15 +259,11 @@ int test_dspim_repeated(const int& number_of_modules, const std::size_t& number_
                             rd_wr_errors++;
                         }
                     } else {
-                        retval = Pixie_DSP_Memory_IO(&rd_data[count], 0x50000 + count, 1, MOD_READ,
-                                                     modnum);
-                        if (retval < 0) {
-                            sprintf(ErrMSG,
-                                    "*ERROR* Pixie16_DSP_Memory_IO READ failed in module %d, retval = %d",
-                                    modnum, retval);
-                            Pixie_Print_MSG(ErrMSG);
+                        if (!verify_api_return_value(
+                                Pixie_DSP_Memory_IO(&rd_data[count], 0x50000 + count, 1, MOD_READ,
+                                                    modnum),
+                                "Pixie_DSP_Memory_IO", ""))
                             return (-1);
-                        }
                         if (wr_data[count] != rd_data[count]) {
                             sprintf(ErrMSG,
                                     "RD_WR data mismatch in module %d, rd_data=0x%x, wr_data=0x%x, count=%d",
@@ -158,7 +285,7 @@ int test_dspim_repeated(const int& number_of_modules, const std::size_t& number_
                 errorcounts += rd_wr_errors;
             }
         }
-        printf("Number of DSP write & read tests = %lu, error counts = %d\n", loop_num,
+        printf("INFO - Number of DSP write & read tests = %lu, error counts = %d\n", loop_num,
                errorcounts);
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
@@ -173,7 +300,9 @@ int main(int argc, char* argv[]) {
     parser.LongSeparator("=");
 
     args::Group commands(parser, "commands");
-    args::Command dsp(commands, "dsp", "Boots the crate of modules.");
+    args::Command dsp(commands, "dsp", "Tests related to the DSP.");
+    args::Command external_memory(commands, "external_memory",
+                                  "Tests related to the external memory.");
 
     args::Group arguments(parser, "arguments", args::Group::Validators::AtLeastOne,
                           args::Options::Global);
@@ -188,8 +317,8 @@ int main(int argc, char* argv[]) {
                                       "The type of read we'll do from the DSP - burst (default) or single.",
                                       {'r', "read_type"}, "burst");
     args::ValueFlag<string> write_type(arguments, "write_type",
-                                       "The type of write we'll do - single (default).",
-                                       {'r', "write_type"}, "single");
+                                       "The type of write we'll do - single (default), repeated, clear.",
+                                       {'w', "write_type"}, "single");
 
     try {
         parser.ParseCLI(argc, argv);
@@ -227,7 +356,7 @@ int main(int argc, char* argv[]) {
                               cfg.TrigFPGAConfigFile.c_str(), cfg.DSPCodeFile.c_str(),
                               cfg.DSPParFile.c_str(), cfg.DSPVarFile.c_str(), cfg.numModules,
                               boot_pattern),
-            "Pixie16BootModule", "Finished booting!"))
+            "Pixie16BootModule", "INFO - Finished booting!"))
         return EXIT_FAILURE;
 
     cout << "INFO - Performing a " << args::get(write_type) << " Write with "
@@ -235,6 +364,16 @@ int main(int argc, char* argv[]) {
          << args::get(num_loops) << " and the ";
     if (dsp) {
         cout << "DSP" << endl;
-        test_dspim_repeated(cfg.numModules, args::get(num_loops), args::get(read_type));
+        if (args::get(write_type) == "clear") {
+            cout << "ERROR - Clear is not a valid write type for the DSP." << endl;
+            return -1;
+        }
+        test_dsp_reads_and_writes(cfg.numModules, args::get(num_loops),
+                                  args::get(write_type), args::get(read_type));
+    }
+    if (external_memory) {
+        cout << "External Memory" << endl;
+        test_external_memory_reads_and_writes(cfg.numModules, args::get(num_loops),
+                                              args::get(write_type));
     }
 }
