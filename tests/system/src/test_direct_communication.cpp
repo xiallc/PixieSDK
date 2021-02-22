@@ -190,15 +190,15 @@ int main(int argc, char* argv[]) {
                                                    "The boot pattern used for booting.",
                                                    {'b', "boot_pattern"}, "0x7F");
     args::ValueFlag<std::string> address_flag(arguments, "address",
-                                              "The memory address in hex.",
+                                              "The memory address to operate on in hex.",
                                               {'a', "address"}, "0x0");
     args::ValueFlag<unsigned int> module_number_flag(arguments, "module_number",
-                                                     "The module number to act against.",
+                                                     "The module number to work with.",
                                                      {'m', "module"}, 0);
-    args::Flag write(arguments, "write", "Flag to perform a write procedure", {'w', "write"});
-    args::Flag read(arguments, "read", "Flag to perform a read procedure", {'r', "read"});
-    args::Flag verbose(arguments, "verbose", "Flag to control verbosity", {'v', "verbose"});
-    args::Flag is_dry_run(arguments, "dry_run", "Flag to control actual execution of procedures.",
+    args::Flag write(arguments, "write", "Perform a write procedure", {'w', "write"});
+    args::Flag read(arguments, "read", "Perform a read procedure", {'r', "read"});
+    args::Flag verbose(arguments, "verbose", "Control verbosity", {'v', "verbose"});
+    args::Flag is_dry_run(arguments, "dry_run", "Control command execution.",
                           {"dry_run"});
 
     args::Group data_arguments(parser, "data_arguments", args::Group::Validators::AtLeastOne,
@@ -223,6 +223,8 @@ int main(int argc, char* argv[]) {
                                                  "The number of 32-bit words to put into the buffer.",
                                                  {'s', "data_size"}, 65536);
 
+    if (is_dry_run)
+        cout << "INFO - Performing a dry run, none of these commands actually execute." << endl;
 
     try {
         parser.ParseCLI(argc, argv);
@@ -279,19 +281,19 @@ int main(int argc, char* argv[]) {
                  << " with a size of " << args::get(data_size_flag) << " on Module "
                  << args::get(module_number_flag) << endl;
             if (!is_dry_run)
-                Pixie_DSP_Memory_IO(data.data(), address, args::get(data_size_flag) - 1,
+                Pixie_DSP_Memory_IO(data.data(), address, args::get(data_size_flag),
                                     static_cast<std::underlying_type<DATA_IO>::type>(data_io),
                                     args::get(module_number_flag));
         }
 
         if (read) {
-            data_io = DATA_IO::READ;
-            vector<unsigned int> read_data(args::get(data_size_flag), 0);
             cout << "INFO - Performing a read from memory address " << args::get(address_flag)
                  << " with a size of " << args::get(data_size_flag) << " on Module "
                  << args::get(module_number_flag) << endl;
             if (!is_dry_run) {
-                Pixie_DSP_Memory_IO(data.data(), address, args::get(data_size_flag) - 1,
+                vector<unsigned int> read_data(args::get(data_size_flag), 0);
+                data_io = DATA_IO::READ;
+                Pixie_DSP_Memory_IO(read_data.data(), address, args::get(data_size_flag),
                                     static_cast<std::underlying_type<DATA_IO>::type>(data_io),
                                     args::get(module_number_flag));
 
