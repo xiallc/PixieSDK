@@ -1,8 +1,9 @@
 #------------- BUILD pixie.cpp --------------------------
 add_executable(pixie src/pixie.cpp)
 target_include_directories(pixie PUBLIC
-        include/
+        ${PROJECT_SOURCE_DIR}/common/
         ${PROJECT_SOURCE_DIR}/vendor/analog_devices
+        ${PROJECT_SOURCE_DIR}/vendor/args
         ${PLX_INCLUDE_DIR})
 
 IF(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.13")
