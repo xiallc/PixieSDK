@@ -178,8 +178,8 @@ int main(int argc, char* argv[]) {
     args::Group commands(parser, "commands");
     args::Command boot(commands, "boot", "Just boots the system");
     args::Command dsp(commands, "dsp", "Tests related to the DSP.");
-    args::Command main_memory(commands, "external_memory",
-                              "Tests related to the external memory.");
+    args::Command mca(commands, "mca",
+                      "Tests related to the external memory.");
     args::Command external_fifo(commands, "external_fifo",
                                 "Reads external FIFO status and returns the number of 32-bit"
                                 " words it contains.");
@@ -200,7 +200,7 @@ int main(int argc, char* argv[]) {
     args::ValueFlag<std::string> boot_pattern_flag(arguments, "boot_pattern",
                                                    "The boot pattern used for booting.",
                                                    {'b', "boot_pattern"}, "0x7F");
-    args::Flag clear(main_memory, "clear", "Clears the main memory", {'c', "clear"});
+    args::Flag clear(mca, "clear", "Clears the main memory", {'c', "clear"});
     args::Flag is_dry_run(arguments, "dry_run", "Control command execution.",
                           {"dry_run"});
     args::Flag status(arguments, "status", "Provides the status of the specified component",
@@ -229,7 +229,7 @@ int main(int argc, char* argv[]) {
                                                                DATA_PATTERN::CONSTANT);
     args::ValueFlag<unsigned int> data_size_flag(data_arguments, "data_size",
                                                  "The number of 32-bit words to put into the buffer.",
-                                                 {'s', "data_size"}, 65536);
+                                                 {'s', "data_size"}, 32768);
 
     external_fifo.Add(module_number_flag);
 
@@ -248,7 +248,7 @@ int main(int argc, char* argv[]) {
         cout << "INFO - Performing a dry run, none of these commands actually execute." << endl;
 
     unsigned int address;
-    if (args::get(address_flag) == "0x10073D" && !csr && !external_fifo && !boot) {
+    if (args::get(address_flag) == "0x10073D" && !csr && !external_fifo && !boot && !mca) {
         cout << "ERROR - You must provide us with a memory address!" << endl;
         return EXIT_FAILURE;
     } else
@@ -328,8 +328,73 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    if (main_memory) {
-        cout << "Main Memory" << endl;
+    if (mca) {
+        cout << "MCA" << endl;
+
+        auto data = prepare_data_to_write(args::get(data_pattern_flag), 32768);
+
+        if (write) {
+            if (!is_dry_run) {
+                for (unsigned int channel = 0; channel < NUMBER_OF_CHANNELS; channel++) {
+                    cout << "INFO - Writing Channel " << channel << "'s MCA spectrum on Module "
+                         << args::get(module_number_flag) << "....";
+                    if (!verify_api_return_value(
+                            Pixie_Main_Memory_IO(data.data(), data.size() * channel, data.size(),
+                                                 static_cast<std::underlying_type<DATA_IO>::type>(DATA_IO::WRITE),
+                                                 args::get(module_number_flag)),
+                            "Pixie_Main_Memory_IO", "OK")) {
+                        cout << "ERROR - Had a problem writing the MCA spectrum for Channel "
+                             << channel << "! Aborting!" << endl;
+                        return EXIT_FAILURE;
+                    }
+                }
+            }
+        }
+
+        if (read) {
+            cout << "INFO - Reading MCA spectrum from Module " << args::get(module_number_flag)
+                 << endl;
+            if (!is_dry_run) {
+                for (unsigned int channel = 0; channel < NUMBER_OF_CHANNELS; channel++) {
+                    cout << "INFO - Reading Channel " << channel << "'s MCA spectrum on Module "
+                         << args::get(module_number_flag) << "....";
+
+                    vector<unsigned int> read_data(data.size(), 0x1a1a1a1a);
+
+                    if (!verify_api_return_value(
+                            Pixie_Main_Memory_IO(read_data.data(), address, data.size(),
+                                                 static_cast<std::underlying_type<DATA_IO>::type>(DATA_IO::READ),
+                                                 args::get(module_number_flag)),
+                            "Pixie_Main_Memory_IO", "OK")) {
+                        cout << "ERROR - Had a problem writing the MCA spectrum for Channel "
+                             << channel << "! Aborting!" << endl;
+                        return EXIT_FAILURE;
+                    }
+
+                    auto error_count = verify_data_read(data.data(), read_data.data(),
+                                                        args::get(module_number_flag),
+                                                        data.size());
+                    if (error_count == 0)
+                        cout << "INFO - Data read was the same as data written!" << endl;
+                    if (verbose) {
+                        cout << "INFO - Outputting read data to terminal:";
+                        cout << hex;
+                        for (const auto& it: read_data) {
+                            cout << it;
+                            cout << dec;
+                        }
+                    }
+                }
+            }
+        }
+        if (!is_dry_run && clear) {
+            cout << "INFO - Clearing MCA memory" << endl;
+            if (!verify_api_return_value(Pixie_Clear_Main_Memory(0, 32768 * 16, args::get(module_number_flag)),
+                                        "Pixie Clear Main Memory")) {
+                cerr << "ERROR - Couldn't clear the main memory in Module " << args::get(module_number_flag) << endl;
+                return EXIT_FAILURE;
+            }
+        }
     }
 
     if (raw) {
