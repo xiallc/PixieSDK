@@ -408,20 +408,25 @@ int main(int argc, char* argv[]) {
 
             cout << "INFO - Writing " << args::get(data_flag) << " to " << args::get(address_flag)
                  << " in Module " << args::get(module_number_flag) << endl;
-            Pixie_Register_IO(args::get(module_number_flag), address,
-                              static_cast<std::underlying_type<DATA_IO>::type>(DATA_IO::WRITE),
-                              &data);
+            if (!is_dry_run)
+                Pixie_Register_IO(args::get(module_number_flag), address,
+                                  static_cast<std::underlying_type<DATA_IO>::type>(DATA_IO::WRITE),
+                                  &data);
         }
 
         if (read) {
             unsigned int data;
             cout << "INFO - Reading from" << args::get(address_flag) << " in Module "
                  << args::get(module_number_flag) << endl;
-            Pixie_Register_IO(args::get(module_number_flag), address,
-                              static_cast<std::underlying_type<DATA_IO>::type>(DATA_IO::READ),
-                              &data);
-            cout << "INFO - Read " << data << " from " << args::get(address_flag)
-                 << " in Module " << args::get(module_number_flag) << endl;
+            if (!is_dry_run) {
+                Pixie_Register_IO(args::get(module_number_flag), address,
+                                  static_cast<std::underlying_type<DATA_IO>::type>(DATA_IO::READ),
+                                  &data);
+                cout << "INFO - Read " << data << " from " << args::get(address_flag)
+                     << " in Module " << args::get(module_number_flag) << endl;
+            } else {
+                cout << "INFO - Dry run active didn't perform the read!" << endl;
+            }
         }
     }
 
