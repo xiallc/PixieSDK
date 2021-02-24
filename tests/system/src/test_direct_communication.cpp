@@ -43,12 +43,12 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <exception>
 #include <iostream>
 #include <string>
+#include <thread>
 #include <type_traits>
-
-#include <cstdio>
 
 #ifdef _WINDOWS
 #include <windows.h>
@@ -176,36 +176,44 @@ int main(int argc, char* argv[]) {
     parser.helpParams.addChoices = true;
 
     args::Group commands(parser, "commands");
+    args::Command boot(commands, "boot", "Just boots the system");
     args::Command dsp(commands, "dsp", "Tests related to the DSP.");
-    args::Command external_memory(commands, "external_memory",
-                                  "Tests related to the external memory.");
+    args::Command main_memory(commands, "external_memory",
+                              "Tests related to the external memory.");
+    args::Command external_fifo(commands, "external_fifo",
+                                "Reads external FIFO status and returns the number of 32-bit"
+                                " words it contains.");
+    args::Command raw(commands, "raw", "Access the raw register IO on the system");
+    args::Command csr(commands, "csr", "Access the CSR");
 
     args::Group arguments(parser, "arguments", args::Group::Validators::AtLeastOne,
                           args::Options::Global);
     args::Positional<std::string> configuration(arguments, "cfg", "The configuration file to load.",
                                                 args::Options::Required);
     args::HelpFlag help_flag(arguments, "help", "Displays this message", {'h', "help"});
-
-    args::ValueFlag<std::string> boot_pattern_flag(arguments, "boot_pattern",
-                                                   "The boot pattern used for booting.",
-                                                   {'b', "boot_pattern"}, "0x7F");
-    args::ValueFlag<std::string> address_flag(arguments, "address",
-                                              "The memory address to operate on in hex.",
-                                              {'a', "address"}, "0x0");
     args::ValueFlag<unsigned int> module_number_flag(arguments, "module_number",
                                                      "The module number to work with.",
                                                      {'m', "module"}, 0);
-    args::Flag write(arguments, "write", "Perform a write procedure", {'w', "write"});
-    args::Flag read(arguments, "read", "Perform a read procedure", {'r', "read"});
-    args::Flag verbose(arguments, "verbose", "Control verbosity", {'v', "verbose"});
+    args::ValueFlag<std::string> address_flag(arguments, "address",
+                                              "The memory address to operate on in hex.",
+                                              {'a', "address"}, "0x10073D");
+    args::ValueFlag<std::string> boot_pattern_flag(arguments, "boot_pattern",
+                                                   "The boot pattern used for booting.",
+                                                   {'b', "boot_pattern"}, "0x7F");
+    args::Flag clear(main_memory, "clear", "Clears the main memory", {'c', "clear"});
     args::Flag is_dry_run(arguments, "dry_run", "Control command execution.",
                           {"dry_run"});
+    args::Flag status(arguments, "status", "Provides the status of the specified component",
+                      {'s', "status"});
+    args::Flag read(arguments, "read", "Perform a read procedure", {'r', "read"});
+    args::Flag write(arguments, "write", "Perform a write procedure", {'w', "write"});
+    args::Flag verbose(arguments, "verbose", "Control verbosity", {'v', "verbose"});
 
-    args::Group data_arguments(parser, "data_arguments", args::Group::Validators::AtLeastOne,
+    args::Group data_arguments(parser, "data_arguments", args::Group::Validators::DontCare,
                                args::Options::Global);
     args::ValueFlag<std::string> data_flag(data_arguments, "data",
                                            "The data that we want to write to the register.",
-                                           {'d', "data"}, "0x0");
+                                           {'d', "data"}, "0x70FFE3");
     args::MapFlag<std::string, DATA_PATTERN> data_pattern_flag(data_arguments, "test_data_pattern",
                                                                "The type of test data to generate as 32-bit words."
                                                                "\nDefault: CONSTANT",
@@ -223,8 +231,7 @@ int main(int argc, char* argv[]) {
                                                  "The number of 32-bit words to put into the buffer.",
                                                  {'s', "data_size"}, 65536);
 
-    if (is_dry_run)
-        cout << "INFO - Performing a dry run, none of these commands actually execute." << endl;
+    external_fifo.Add(module_number_flag);
 
     try {
         parser.ParseCLI(argc, argv);
@@ -236,6 +243,16 @@ int main(int argc, char* argv[]) {
         cout << parser;
         return EXIT_FAILURE;
     }
+
+    if (is_dry_run)
+        cout << "INFO - Performing a dry run, none of these commands actually execute." << endl;
+
+    unsigned int address;
+    if (args::get(address_flag) == "0x10073D" && !csr && !external_fifo && !boot) {
+        cout << "ERROR - You must provide us with a memory address!" << endl;
+        return EXIT_FAILURE;
+    } else
+        address = stoul(args::get(address_flag), nullptr, 0);
 
     xia::configuration::Configuration cfg;
     try {
@@ -252,11 +269,12 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
 
     unsigned int boot_pattern = stoul(args::get(boot_pattern_flag), nullptr, 0);
-    cout << "INFO - Calling Pixie16BootModule with boot pattern: " << showbase << hex
-         << boot_pattern << dec
-         << "............" << endl;
+    if (boot_pattern == 0 || is_dry_run || external_fifo) {
+        cout << "INFO - Will not boot the module!" << endl;
+    } else {
+        cout << "INFO - Calling Pixie16BootModule with boot pattern: " << showbase << hex
+             << boot_pattern << dec << endl;
 
-    if (!is_dry_run) {
         if (!verify_api_return_value(
                 Pixie16BootModule(cfg.ComFPGAConfigFile.c_str(), cfg.SPFPGAConfigFile.c_str(),
                                   cfg.TrigFPGAConfigFile.c_str(), cfg.DSPCodeFile.c_str(),
@@ -264,11 +282,9 @@ int main(int argc, char* argv[]) {
                                   boot_pattern),
                 "Pixie16BootModule", "INFO - Finished booting!"))
             return EXIT_FAILURE;
+        if (boot)
+            return EXIT_SUCCESS;
     }
-
-    unsigned int address = stoul(args::get(address_flag), nullptr, 0);
-
-    DATA_IO data_io;
 
     cout << "INFO - Performing a test with the ";
     if (dsp) {
@@ -276,13 +292,12 @@ int main(int argc, char* argv[]) {
         auto data = prepare_data_to_write(args::get(data_pattern_flag), args::get(data_size_flag));
 
         if (write) {
-            data_io = DATA_IO::WRITE;
             cout << "INFO - Performing a write to memory address " << args::get(address_flag)
                  << " with a size of " << args::get(data_size_flag) << " on Module "
                  << args::get(module_number_flag) << endl;
             if (!is_dry_run)
                 Pixie_DSP_Memory_IO(data.data(), address, args::get(data_size_flag),
-                                    static_cast<std::underlying_type<DATA_IO>::type>(data_io),
+                                    static_cast<std::underlying_type<DATA_IO>::type>(DATA_IO::WRITE),
                                     args::get(module_number_flag));
         }
 
@@ -292,9 +307,8 @@ int main(int argc, char* argv[]) {
                  << args::get(module_number_flag) << endl;
             if (!is_dry_run) {
                 vector<unsigned int> read_data(args::get(data_size_flag), 0);
-                data_io = DATA_IO::READ;
                 Pixie_DSP_Memory_IO(read_data.data(), address, args::get(data_size_flag),
-                                    static_cast<std::underlying_type<DATA_IO>::type>(data_io),
+                                    static_cast<std::underlying_type<DATA_IO>::type>(DATA_IO::READ),
                                     args::get(module_number_flag));
 
                 auto error_count = verify_data_read(data.data(), read_data.data(),
@@ -313,7 +327,78 @@ int main(int argc, char* argv[]) {
             }
         }
     }
-    if (external_memory) {
-        cout << "External Memory" << endl;
+
+    if (main_memory) {
+        cout << "Main Memory" << endl;
+    }
+
+    if (raw) {
+        cout << "raw memory access." << endl;
+        if (write) {
+            if (!data_flag) {
+                cout << "ERROR - Must define the data that you'd like to write!" << endl;
+                return EXIT_FAILURE;
+            }
+            unsigned int data = stoul(args::get(data_flag), nullptr, 0);
+
+            cout << "INFO - Writing " << args::get(data_flag) << " to " << args::get(address_flag)
+                 << " in Module " << args::get(module_number_flag) << endl;
+            Pixie_Register_IO(args::get(module_number_flag), address,
+                              static_cast<std::underlying_type<DATA_IO>::type>(DATA_IO::WRITE),
+                              &data);
+        }
+
+        if (read) {
+            unsigned int data;
+            cout << "INFO - Reading from" << args::get(address_flag) << " in Module "
+                 << args::get(module_number_flag) << endl;
+            Pixie_Register_IO(args::get(module_number_flag), address,
+                              static_cast<std::underlying_type<DATA_IO>::type>(DATA_IO::READ),
+                              &data);
+            cout << "INFO - Read " << data << " from " << args::get(address_flag)
+                 << " in Module " << args::get(module_number_flag) << endl;
+        }
+    }
+
+    if (external_fifo) {
+        cout << "External FIFO" << endl;
+        unsigned int number_of_words_in_fifo = 0;
+        Pixie_Read_ExtFIFOStatus(&number_of_words_in_fifo, args::get(module_number_flag));
+        cout << "INFO - Number of 32-bit words in the external FIFO of Module"
+             << args::get(module_number_flag) << ": "
+             << number_of_words_in_fifo << endl;
+        if (read && number_of_words_in_fifo > 0) {
+            vector<unsigned int> data = {number_of_words_in_fifo, 0};
+            if (!verify_api_return_value(Pixie_ExtFIFO_Read(data.data(), number_of_words_in_fifo,
+                                                            args::get(module_number_flag)),
+                                         "Pixie_ExtFIFO_Read", ""))
+                return EXIT_FAILURE;
+            cout << "INFO - Read " << number_of_words_in_fifo
+                 << " 32-bit words from the External FIFO." << endl;
+        } else {
+            cout << "INFO - External FIFO doesn't have anything to read!" << endl;
+        }
+    }
+
+    if (csr) {
+        cout << "CSR on Module " << args::get(module_number_flag) << "..." << endl;
+        if (write) {
+            if (args::get(data_flag) == "0x70FFE3") {
+                cout << "ERROR - Must define the data that you'd like to write!" << endl;
+                return EXIT_FAILURE;
+            }
+            unsigned int data = stoul(args::get(data_flag), nullptr, 0);
+            cout << "INFO - Writing " << args::get(data_flag) << " to CSR in Module "
+                 << args::get(module_number_flag) << endl;
+            Pixie_WrtCSR(args::get(module_number_flag), data);
+        }
+        if (read) {
+            unsigned int data;
+            cout << "INFO - Reading from to CSR in Module " << args::get(module_number_flag)
+                 << endl;
+            Pixie_ReadCSR(args::get(module_number_flag), &data);
+            cout << "INFO - Read " << data << " from Module " << args::get(module_number_flag)
+                 << " CSR." << endl;
+        }
     }
 }
