@@ -302,6 +302,9 @@ int main(int argc, char** argv) {
     args::Flag is_fast_boot(boot, "fast-boot", "Performs a partial boot of the system.", {'f', "fast-boot"});
     args::Flag is_offline(arguments, "Offline Mode", "Tells the API to use Offline mode when running.",
                           {'o', "offline"});
+    args::ValueFlag<std::string> boot_pattern_flag(arguments, "boot_pattern",
+                                                   "The boot pattern used for booting.",
+                                                   {'b', "boot_pattern"}, "0x7F");
     args::ValueFlag<double> run_time(list_mode, "time", "The amount of time that a list mode run will take in seconds.",
                                      {'t', "run-time"}, 10.);
     args::ValueFlag<string> parameter(read, "parameter", "The parameter we want to read from the system.",
@@ -347,18 +350,30 @@ int main(int argc, char** argv) {
     if (!verify_api_return_value(Pixie16InitSystem(cfg.numModules, cfg.slot_map, offline_mode), "Pixie16InitSystem"))
         return EXIT_FAILURE;
 
-    unsigned short boot_pattern = 0x7F;
+    unsigned int boot_pattern = stoul(args::get(boot_pattern_flag), nullptr, 0);
     if (is_fast_boot)
         boot_pattern = 0x70;
 
-    cout << "INFO - Calling Pixie16BootModule with boot pattern: " << showbase << hex << boot_pattern << dec
-         << "............" << endl;
-    if (!verify_api_return_value(Pixie16BootModule(cfg.ComFPGAConfigFile.c_str(), cfg.SPFPGAConfigFile.c_str(),
-                                                   cfg.TrigFPGAConfigFile.c_str(), cfg.DSPCodeFile.c_str(),
-                                                   cfg.DSPParFile.c_str(), cfg.DSPVarFile.c_str(), cfg.numModules,
-                                                   boot_pattern),
-                                 "Pixie16BootModule", ""))
-        return EXIT_FAILURE;
+    if (boot_pattern == 0) {
+        cout << "INFO - Will not boot the module!" << endl;
+    } else {
+        cout << "INFO - Calling Pixie16BootModule with boot pattern: " << showbase << hex
+             << boot_pattern << dec << endl;
+
+        if (!verify_api_return_value(
+                Pixie16BootModule(cfg.ComFPGAConfigFile.c_str(), cfg.SPFPGAConfigFile.c_str(),
+                                  cfg.TrigFPGAConfigFile.c_str(), cfg.DSPCodeFile.c_str(),
+                                  cfg.DSPParFile.c_str(), cfg.DSPVarFile.c_str(), cfg.numModules,
+                                  boot_pattern),
+                "Pixie16BootModule", "INFO - Finished booting!"))
+            return EXIT_FAILURE;
+        cout << "INFO - Finished Pixie16BootModule in "
+             << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s." << endl;
+        if (boot) {
+            execute_close_module_connection(cfg.numModules);
+            return EXIT_SUCCESS;
+        }
+    }
 
     if (read) {
         if (!execute_parameter_read(parameter, crate, module, channel))
