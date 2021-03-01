@@ -100,8 +100,8 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
     char ErrMSG[MAX_ERRMSG_LENGTH];
     unsigned int ModSerNum;
     unsigned char PlxBusNum[SYS_MAX_NUM_MODULES], PlxDeviceNum[SYS_MAX_NUM_MODULES];
-    unsigned char Bus_Number[SYS_MAX_NUM_MODULES];        // PCI bus number for each module
-    unsigned char Device_Number[SYS_MAX_NUM_MODULES];     // PCI device number for each module
+    unsigned char Bus_Number[SYS_MAX_NUM_MODULES] = { 0 };        // PCI bus number for each module
+    unsigned char Device_Number[SYS_MAX_NUM_MODULES] = { 0 };     // PCI device number for each module
     unsigned char Slot_Number[SYS_MAX_NUM_MODULES];
     unsigned char TotalPlx9054Devices, PlxModIndex[SYS_MAX_NUM_MODULES], DeviceSearchCount;
     unsigned int i;

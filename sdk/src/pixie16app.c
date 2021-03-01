@@ -2,34 +2,34 @@
 * Copyright (c) 2005 - 2020, XIA LLC
 * All rights reserved.
 *
-* Redistribution and use in source and binary forms, 
-* with or without modification, are permitted provided 
+* Redistribution and use in source and binary forms,
+* with or without modification, are permitted provided
 * that the following conditions are met:
 *
-*   * Redistributions of source code must retain the above 
-*     copyright notice, this list of conditions and the 
+*   * Redistributions of source code must retain the above
+*     copyright notice, this list of conditions and the
 *     following disclaimer.
-*   * Redistributions in binary form must reproduce the 
-*     above copyright notice, this list of conditions and the 
-*     following disclaimer in the documentation and/or other 
+*   * Redistributions in binary form must reproduce the
+*     above copyright notice, this list of conditions and the
+*     following disclaimer in the documentation and/or other
 *     materials provided with the distribution.
 *   * Neither the name of XIA LLC nor the names of its
 *     contributors may be used to endorse or promote
-*     products derived from this software without 
+*     products derived from this software without
 *     specific prior written permission.
 *
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
-* CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, 
-* INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
-* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
-* IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE 
-* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
-* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
-* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
-* DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-* ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR 
-* TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF 
-* THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+* CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+* INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+* IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+* DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+* ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+* TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+* THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
@@ -60,6 +60,7 @@
 #include <unistd.h>
 #endif
 
+#include <errno.h>
 #include <stdio.h>
 
 
@@ -332,16 +333,16 @@ Pixie16ReadModuleInfo(unsigned short ModNum,  // module number
 *			-6 - Size of TrigFPGAConfigFile is invalid
 *			-7 - Failed to boot trigger FPGA
 *			-8 - Failed to allocate memory to store TrigFPGAConfigFile
-*			-9 - Failed to open TrigFPGAConfigFile 
+*			-9 - Failed to open TrigFPGAConfigFile
 *
 *			-10 - Size of SPFPGAConfigFile is invalid
 *			-11 - Failed to boot signal processing FPGA
 *			-12 - Failed to allocate memory to store SPFPGAConfigFile
-*			-13 - Failed to open SPFPGAConfigFile 
+*			-13 - Failed to open SPFPGAConfigFile
 *
 *			-14 - Failed to boot DSP
 *			-15 - Failed to allocate memory to store DSP executable code
-*			-16 - Failed to open DSPCodeFile 
+*			-16 - Failed to open DSPCodeFile
 *
 *			-17 - Size of DSPParFile is invalid
 *			-18 - Failed to open DSPParFile
@@ -377,6 +378,8 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
     unsigned int FPGA_ConfigSize;
     unsigned short sourcemodule;
 
+    (void) TrigFPGAConfigFile;
+
     // Check if ModNum is valid
     if (ModNum > Number_Modules) {
         sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): invalid Pixie module number %d", ModNum);
@@ -410,23 +413,52 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                 FPGA_ConfigSize = N_COM_FPGA_CONF_REVF;
 
             // Check if file size is consistent with predefined length FPGA_ConfigSize
-            fseek(configfil, 0, SEEK_END);
+            retval = fseek(configfil, 0, SEEK_END);
+            if (retval < 0) {
+                sprintf(ErrMSG,
+                        "*ERROR* (Pixie16BootModule): failed to seek config, error=%d",
+                        errno);
+                Pixie_Print_MSG(ErrMSG);
+                (void) fclose(configfil);
+                return (-3);
+            }
+
             TotalWords = (ftell(configfil) + 1) / 4;
 
             if (TotalWords != FPGA_ConfigSize) {
                 sprintf(ErrMSG,
                         "*ERROR* (Pixie16BootModule): size of ComFPGAConfigFile is invalid. Check ComFPGAConfigFile name");
                 Pixie_Print_MSG(ErrMSG);
+                (void) fclose(configfil);
                 return (-2);
             }
 
             // Allocate memory
             if ((configuration = (unsigned int*) malloc(sizeof(unsigned int) * FPGA_ConfigSize)) != NULL) {
                 // Point configfil to the beginning of file
-                fseek(configfil, 0, SEEK_SET);
+                retval = fseek(configfil, 0, SEEK_SET);
+                if (retval < 0) {
+                  sprintf(ErrMSG,
+                          "*ERROR* (Pixie16BootModule): failed to seek config, error=%d",
+                          errno);
+                  Pixie_Print_MSG(ErrMSG);
+                  free(configuration);
+                  (void) fclose(configfil);
+                  return (-3);
+                }
 
                 // Read communication FPGA configuration
-                fread(configuration, sizeof(unsigned int), FPGA_ConfigSize, configfil);
+                retval = fread(configuration, sizeof(unsigned int), FPGA_ConfigSize, configfil);
+                if (retval < 0) {
+                  sprintf(ErrMSG,
+                          "*ERROR* (Pixie16BootModule): failed to ead config, error=%d",
+                          errno);
+                  Pixie_Print_MSG(ErrMSG);
+                  free(configuration);
+                  (void) fclose(configfil);
+
+                  return (-3);
+                }
 
                 if (ModNum == Number_Modules)  // Download to all modules
                 {
@@ -439,11 +471,8 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                                     "*ERROR* (Pixie16BootModule): failed to boot Communication FPGA in module %d, retval=%d",
                                     k, retval);
                             Pixie_Print_MSG(ErrMSG);
-
-                            // free allocated memory and close opened files
                             free(configuration);
-                            fclose(configfil);
-
+                            (void) fclose(configfil);
                             return (-3);
                         }
                     }
@@ -457,11 +486,8 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                                 "*ERROR* (Pixie16BootModule): failed to boot Communication FPGA in module %d, retval=%d",
                                 ModNum, retval);
                         Pixie_Print_MSG(ErrMSG);
-
-                        // free allocated memory and close opened files
                         free(configuration);
-                        fclose(configfil);
-
+                        (void) fclose(configfil);
                         return (-3);
                     }
                 }
@@ -475,7 +501,7 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
             }
 
             // close opened files
-            fclose(configfil);
+            (void) fclose(configfil);
         } else {
             sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed to open ComFPGAConfigFile %s", ComFPGAConfigFile);
             Pixie_Print_MSG(ErrMSG);
@@ -522,10 +548,28 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
             // Allocate memory
             if ((configuration = (unsigned int*) malloc(sizeof(unsigned int) * FPGA_ConfigSize)) != NULL) {
                 // Point configfil to the beginning of file
-                fseek(configfil, 0, SEEK_SET);
+                retval = fseek(configfil, 0, SEEK_SET);
+                if (retval < 0) {
+                    sprintf(ErrMSG,
+                            "*ERROR* (Pixie16BootModule): failed to seek config, error=%d",
+                            errno);
+                    Pixie_Print_MSG(ErrMSG);
+                    free(configuration);
+                    (void) fclose(configfil);
+                    return (-11);
+                }
 
                 // Read trigger FPGA configuration
-                fread(configuration, sizeof(unsigned int), FPGA_ConfigSize, configfil);
+                retval = fread(configuration, sizeof(unsigned int), FPGA_ConfigSize, configfil);
+                if (retval < 0) {
+                    sprintf(ErrMSG,
+                            "*ERROR* (Pixie16BootModule): failed to read config, error=%d",
+                            errno);
+                    Pixie_Print_MSG(ErrMSG);
+                    free(configuration);
+                    (void) fclose(configfil);
+                    return (-11);
+                }
 
                 // Download to one or all modules
                 if (ModNum == Number_Modules)  // Download to all modules
@@ -539,11 +583,8 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                                     "*ERROR* (Pixie16BootModule): failed to boot signal processing FPGA in module %d, retval=%d",
                                     k, retval);
                             Pixie_Print_MSG(ErrMSG);
-
-                            // free allocated memory and close opened files
                             free(configuration);
-                            fclose(configfil);
-
+                            (void) fclose(configfil);
                             return (-11);
                         }
                     }
@@ -557,11 +598,8 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                                 "*ERROR* (Pixie16BootModule): failed to boot signal processing FPGA in module %d, retval=%d",
                                 ModNum, retval);
                         Pixie_Print_MSG(ErrMSG);
-
-                        // free allocated memory and close opened files
                         free(configuration);
-                        fclose(configfil);
-
+                        (void) fclose(configfil);
                         return (-11);
                     }
                 }
@@ -597,11 +635,33 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
             // Allocate memory
             if ((configuration = (unsigned int*) malloc(sizeof(unsigned int) * TotalWords)) != NULL) {
                 // Point configfil to the beginning of file
-                fseek(configfil, 0, SEEK_SET);
+                retval = fseek(configfil, 0, SEEK_SET);
+                if (retval < 0) {
+                    sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed config seek, error=%d",
+                            errno);
+                    Pixie_Print_MSG(ErrMSG);
+
+                    // free allocated memory and close opened files
+                    free(configuration);
+                    (void) fclose(configfil);
+
+                    return (-14);
+                }
 
                 // Read DSP executable code
                 for (k = 0; k < TotalWords; k++) {
-                    fread(&dspcode, sizeof(unsigned short), 1, configfil);
+                    retval = fread(&dspcode, sizeof(unsigned short), 1, configfil);
+                    if (retval < 0) {
+                        sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed config read for module %d, error=%d",
+                                k, errno);
+                        Pixie_Print_MSG(ErrMSG);
+
+                        // free allocated memory and close opened files
+                        free(configuration);
+                        (void) fclose(configfil);
+
+                        return (-14);
+                    }
 
                     // Rearrange byte order
                     configuration[k] = (unsigned int) ((dspcode >> 8) + (dspcode & 0xFF) * 256);
@@ -621,7 +681,7 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
 
                             // free allocated memory and close opened files
                             free(configuration);
-                            fclose(configfil);
+                            (void) fclose(configfil);
 
                             return (-14);
                         }
@@ -638,7 +698,7 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
 
                         // free allocated memory and close opened files
                         free(configuration);
-                        fclose(configfil);
+                        (void) fclose(configfil);
 
                         return (-14);
                     }
@@ -670,22 +730,43 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
         if ((configfil = fopen(DSPParFile, "rb")) != NULL)  // Make sure DSPParFile is opened successfully
         {
             // Check if file size is consistent with predefined length (N_DSP_PAR * PRESET_MAX_MODULES)
-            fseek(configfil, 0, SEEK_END);
+            retval = fseek(configfil, 0, SEEK_END);
+            if (retval < 0) {
+                sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed config seek, error=%d",
+                        errno);
+                Pixie_Print_MSG(ErrMSG);
+                (void) fclose(configfil);
+                return (-14);
+            }
+
             TotalWords = (ftell(configfil) + 1) / 4;
             if (TotalWords != (N_DSP_PAR * PRESET_MAX_MODULES)) {
                 sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): size of DSPParFile is invalid. Check DSPParFile name");
                 Pixie_Print_MSG(ErrMSG);
-                // close opened files
                 fclose(configfil);
                 return (-17);
             }
 
             // Point configfil to the beginning of file
-            fseek(configfil, 0, SEEK_SET);
+            retval = fseek(configfil, 0, SEEK_SET);
+            if (retval < 0) {
+                sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed config seek, error=%d",
+                        errno);
+                Pixie_Print_MSG(ErrMSG);
+                (void) fclose(configfil);
+                return (-14);
+            }
 
             // Read DSP parameters
             for (k = 0; k < PRESET_MAX_MODULES; k++) {
-                fread(Pixie_Devices[k].DSP_Parameter_Values, sizeof(unsigned int), N_DSP_PAR, configfil);
+                retval = fread(Pixie_Devices[k].DSP_Parameter_Values, sizeof(unsigned int), N_DSP_PAR, configfil);
+                if (retval < 0) {
+                    sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed config read for module %d, error=%d",
+                            k, errno);
+                    Pixie_Print_MSG(ErrMSG);
+                    (void) fclose(configfil);
+                    return (-14);
+                }
 
                 // Force correct module number
                 Pixie_Devices[k].DSP_Parameter_Values[0] = k;
@@ -705,7 +786,7 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
             }
 
             // close opened files
-            fclose(configfil);
+            (void) fclose(configfil);
         } else {
             sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed to open DSPParFile %s", DSPParFile);
             Pixie_Print_MSG(ErrMSG);
@@ -1209,7 +1290,14 @@ Pixie16EMbufferIO(unsigned int* Buffer,  // buffer data
     }
 
     // Check if Address is valid
-    if ((Address < DSP_EMBUFFER_START_ADDR) || (Address > DSP_EMBUFFER_END_ADDR)) {
+#if DSP_EMBUFFER_START_ADDR > 0
+    if (Address < DSP_EMBUFFER_START_ADDR) {
+        sprintf(ErrMSG, "*ERROR* (Pixie16EMbufferIO): invalid DSP internal memory address %u", Address);
+        Pixie_Print_MSG(ErrMSG);
+        return (-3);
+    }
+#endif
+    if (Address > DSP_EMBUFFER_END_ADDR) {
         sprintf(ErrMSG, "*ERROR* (Pixie16EMbufferIO): invalid DSP internal memory address %u", Address);
         Pixie_Print_MSG(ErrMSG);
         return (-3);
@@ -1388,7 +1476,6 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16CheckRunStatus(unsigned short ModNum
 
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16EndRun(unsigned short ModNum)  // Pixie module number
 {
-    int retval;  // return values
     char ErrMSG[MAX_ERRMSG_LENGTH];
     unsigned short modulenumber, k;
     unsigned int dummy, CSR;
@@ -1404,7 +1491,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16EndRun(unsigned short ModNum)  // Pi
     // to stop run in all modules simultaneously, if DSP parameter SynchWait is set to 1.
     // If SynchWait is set to 0, then CSR bit 0 is cleared to stop the run.
     modulenumber = 0;
-    retval = Pixie_Register_IO(modulenumber, PCI_STOPRUN_REGADDR, MOD_WRITE, &dummy);
+    (void) Pixie_Register_IO(modulenumber, PCI_STOPRUN_REGADDR, MOD_WRITE, &dummy);
 
     if (ModNum == Number_Modules)  // Stop run in all modules
     {
@@ -1842,7 +1929,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AcquireBaselines(unsigned short ModN
 *			-1 - Invalid Pixie module number
 *			-2 - Requested number of baselines exceeded the limit
 *			-3 - Failed to allocate memory to store baselines
-*			-4 - Failed to read baselines 
+*			-4 - Failed to read baselines
 *
 ****************************************************************/
 
@@ -2060,7 +2147,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BLcutFinder(unsigned short ModNum,  
 
     /*****************************************************
 	*
-	*	Set proper DSP parameters for collecting baselines 
+	*	Set proper DSP parameters for collecting baselines
 	*
 	*****************************************************/
 
@@ -2080,7 +2167,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BLcutFinder(unsigned short ModNum,  
 
     /*****************************************************
 	*
-	*	Start to collect baselines 
+	*	Start to collect baselines
 	*
 	*****************************************************/
 
@@ -2256,7 +2343,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BLcutFinder(unsigned short ModNum,  
 *	Pixie16TauFinder:
 *		Find the exponential decay constant of the detector/preamplifier
 *		signals connected to a Pixie module.
-*			
+*
 *		Tau is used to return the newly found Tau values of 16 channels, and
 *		should be a 16-element array in double data format. A '-1.0' Tau value
 *		for a channel means the Tau_Finder was not successful for such a channel.
@@ -2526,6 +2613,7 @@ Pixie16WriteSglModPar(const char* ModParName,  // the name of the module paramet
                     fastfilterrange);
             Pixie_Print_MSG(ErrMSG);
         }
+#if FASTFILTERRANGE_MIN > 0
         if (fastfilterrange < FASTFILTERRANGE_MIN) {
             fastfilterrange = FASTFILTERRANGE_MIN;
 
@@ -2534,6 +2622,7 @@ Pixie16WriteSglModPar(const char* ModParName,  // the name of the module paramet
                     fastfilterrange);
             Pixie_Print_MSG(ErrMSG);
         }
+#endif
 
         // Update the new DSP parameter FastFilterRange
         Pixie_Devices[ModNum].DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS] =
@@ -3251,6 +3340,13 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         else if (Module_Information[ModNum].Module_ADCMSPS == 500)
             tracedelay = (unsigned int) (ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5) /
                                          pow(2.0, (double) FastFilterRange));
+        else {
+            sprintf(ErrMSG,
+                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d, no valid tracedelay",
+                    ModNum, ChanNum);
+            Pixie_Print_MSG(ErrMSG);
+            return (-4);
+        }
 
         tracelength =
                 Pixie_Devices[ModNum].DSP_Parameter_Values[TraceLength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
@@ -3977,9 +4073,11 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
                     (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
 
         // Range check for ExternDelayLen
+#if EXTDELAYLEN_MIN > 0
         if (externdelaylen < EXTDELAYLEN_MIN) {
             externdelaylen = EXTDELAYLEN_MIN;
         }
+#endif
 
         if ((Module_Information[ModNum].Module_Rev == 0xB) || (Module_Information[ModNum].Module_Rev == 0xC) ||
             (Module_Information[ModNum].Module_Rev == 0xD)) {
@@ -4021,9 +4119,11 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
                     (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
 
         // Range check for FtrigoutDelay
+#if FASTTRIGBACKDELAY_MIN > 0
         if (ftrigoutdelay < FASTTRIGBACKDELAY_MIN) {
             ftrigoutdelay = FASTTRIGBACKDELAY_MIN;
         }
+#endif
 
         if ((Module_Information[ModNum].Module_Rev == 0xB) || (Module_Information[ModNum].Module_Rev == 0xC) ||
             (Module_Information[ModNum].Module_Rev == 0xD)) {
@@ -4801,7 +4901,14 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* File
     // Generate histogram output file name
     strlength = strlen(FileName);
 
-    strncpy(outfilename, FileName, strlength - 3);
+    if (strlength >= (sizeof(outfilename) - 4)) {
+        sprintf(ErrMSG, "*Error* (Pixie16SaveHistogramToFile): file name too long");
+        Pixie_Print_MSG(ErrMSG);
+        return (-5);
+    }
+
+    memset(outfilename, 0, sizeof(outfilename));
+    strncpy(outfilename, FileName, sizeof(outfilename) - 4);
     outfilename[strlength - 3] = '\0';
     strcat(outfilename, "asc");
     outfil_mca = fopen(outfilename, "w");
@@ -4940,6 +5047,7 @@ Pixie16GetModuleEvents(const char* FileName,  // the list mode data file name (w
     unsigned int TotalWords, TotalSkippedWords;
     char ErrMSG[MAX_ERRMSG_LENGTH];
     FILE* ListModeFile = NULL;
+    int retval;
 
     // Check if ModuleEvents is valid
     if (ModuleEvents == NULL) {
@@ -4952,24 +5060,53 @@ Pixie16GetModuleEvents(const char* FileName,  // the list mode data file name (w
     ListModeFile = fopen(FileName, "rb");
     if (ListModeFile != NULL) {
         // Get file length
-        fseek(ListModeFile, 0, SEEK_END);
+        retval = fseek(ListModeFile, 0, SEEK_END);
+        if (retval < 0) {
+            sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed listmode seek, error=%d",
+                     errno);
+            Pixie_Print_MSG(ErrMSG);
+            (void) fclose(ListModeFile);
+            return (-1);
+        }
+
         TotalWords = (ftell(ListModeFile) + 1) / 4;
 
         // Point ListModeFile to the beginning of file
-        fseek(ListModeFile, 0, SEEK_SET);
+        retval = fseek(ListModeFile, 0, SEEK_SET);
+        if (retval < 0) {
+            sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed listmode seek, error=%d",
+                    errno);
+            Pixie_Print_MSG(ErrMSG);
+            (void) fclose(ListModeFile);
+            return (-1);
+        }
 
         // Initialize indicator and counter
         TotalSkippedWords = 0;
 
         do {
-            fread(&eventdata, 4, 1, ListModeFile);
+            retval = fread(&eventdata, 4, 1, ListModeFile);
+            if (retval < 0) {
+                sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed listmode read, error=%d",
+                        errno);
+                Pixie_Print_MSG(ErrMSG);
+                (void) fclose(ListModeFile);
+                return (-1);
+            }
             eventlength = (eventdata & 0x7FFE0000) >> 17;
             TotalSkippedWords += eventlength;
-            fseek(ListModeFile, (eventlength - 1) * 4, SEEK_CUR);
+            retval = fseek(ListModeFile, (eventlength - 1) * 4, SEEK_CUR);
+            if (retval < 0) {
+                sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed listmode seek, error=%d",
+                        errno);
+                Pixie_Print_MSG(ErrMSG);
+                (void) fclose(ListModeFile);
+                return (-1);
+            }
             ModuleEvents[0]++;
         } while (TotalSkippedWords < TotalWords);
 
-        fclose(ListModeFile);
+        (void) fclose(ListModeFile);
     } else {
         sprintf(ErrMSG, "*ERROR* (Pixie16GetModuleEvents): can't open list mode data file %s", FileName);
         Pixie_Print_MSG(ErrMSG);
@@ -5003,6 +5140,7 @@ Pixie16GetEventsInfo(const char* FileName,  // the list mode data file name (wit
     unsigned int TotalWords, TotalSkippedWords, NumEvents;
     char ErrMSG[MAX_ERRMSG_LENGTH];
     FILE* ListModeFile = NULL;
+    int retval;
 
     // Check if EventInformation is valid
     if (EventInformation == NULL) {
@@ -5021,17 +5159,38 @@ Pixie16GetEventsInfo(const char* FileName,  // the list mode data file name (wit
     ListModeFile = fopen(FileName, "rb");
     if (ListModeFile != NULL) {
         // Get file length
-        fseek(ListModeFile, 0, SEEK_END);
+        retval = fseek(ListModeFile, 0, SEEK_END);
+        if (retval < 0) {
+            sprintf(ErrMSG, "*ERROR* (Pixie16GetEventsInfo): failed listmode seek for module %d, error=%d",
+                    ModuleNumber, errno);
+            Pixie_Print_MSG(ErrMSG);
+            (void) fclose(ListModeFile);
+            return (-1);
+        }
         TotalWords = (ftell(ListModeFile) + 1) / 4;
         // Point ListModeFile to the beginning of file
-        fseek(ListModeFile, 0, SEEK_SET);
+        retval = fseek(ListModeFile, 0, SEEK_SET);
+        if (retval < 0) {
+            sprintf(ErrMSG, "*ERROR* (Pixie16GetEventsInfo): failed listmode seek for module %d, error=%d",
+                    ModuleNumber, errno);
+            Pixie_Print_MSG(ErrMSG);
+            (void) fclose(ListModeFile);
+            return (-1);
+        }
 
         // Initialize indicator and counter
         TotalSkippedWords = 0;
         NumEvents = 0;
 
         do {
-            fread(&eventdata, 4, 1, ListModeFile);
+            retval = fread(&eventdata, 4, 1, ListModeFile);
+            if (retval < 0) {
+                sprintf(ErrMSG, "*ERROR* (Pixie16GetEventsInfo): failed listmode read for module %d, error=%d",
+                        ModuleNumber, errno);
+                Pixie_Print_MSG(ErrMSG);
+                (void) fclose(ListModeFile);
+                return (-1);
+            }
 
             // Event #
             EventInformation[EVENT_INFO_LENGTH * NumEvents] = NumEvents;
@@ -5050,15 +5209,31 @@ Pixie16GetEventsInfo(const char* FileName,  // the list mode data file name (wit
             // Finish code
             EventInformation[EVENT_INFO_LENGTH * NumEvents + 6] = (eventdata & 0x80000000) >> 31;
 
-            fread(&eventdata, 4, 1, ListModeFile);
+            retval = fread(&eventdata, 4, 1, ListModeFile);
             // EventTime_Low
             EventInformation[EVENT_INFO_LENGTH * NumEvents + 7] = eventdata;
 
-            fread(&eventdata, 4, 1, ListModeFile);
+            retval = fread(&eventdata, 4, 1, ListModeFile);
+            if (retval < 0) {
+                sprintf(ErrMSG, "*ERROR* (Pixie16GetEventsInfo): failed listmode read for module %d, error=%d",
+                        ModuleNumber, errno);
+                Pixie_Print_MSG(ErrMSG);
+                (void) fclose(ListModeFile);
+                return (-1);
+            }
+
             // EventTime_High
             EventInformation[EVENT_INFO_LENGTH * NumEvents + 8] = (eventdata & 0xFFFF);
 
-            fread(&eventdata, 4, 1, ListModeFile);
+            retval = fread(&eventdata, 4, 1, ListModeFile);
+            if (retval < 0) {
+                sprintf(ErrMSG, "*ERROR* (Pixie16GetEventsInfo): failed listmode read for module %d, error=%d",
+                        ModuleNumber, errno);
+                Pixie_Print_MSG(ErrMSG);
+                (void) fclose(ListModeFile);
+                return (-1);
+            }
+
             // Event Energy
             EventInformation[EVENT_INFO_LENGTH * NumEvents + 9] = (eventdata & 0xFFFF);
             // Trace Length
@@ -5068,10 +5243,18 @@ Pixie16GetEventsInfo(const char* FileName,  // the list mode data file name (wit
 
             TotalSkippedWords += eventlength;
             NumEvents++;
-            fseek(ListModeFile, (eventlength - 4) * 4, SEEK_CUR);
+
+            retval = fseek(ListModeFile, (eventlength - 4) * 4, SEEK_CUR);
+            if (retval < 0) {
+                sprintf(ErrMSG, "*ERROR* (Pixie16GetEventsInfo): failed listmode seek for module %d, error=%d",
+                        ModuleNumber, errno);
+                Pixie_Print_MSG(ErrMSG);
+                (void) fclose(ListModeFile);
+                return (-1);
+            }
         } while (TotalSkippedWords < TotalWords);
 
-        fclose(ListModeFile);
+        (void) fclose(ListModeFile);
     } else {
         sprintf(ErrMSG, "*ERROR* (Pixie16GetEventsInfo): can't open list mode data file %s", FileName);
         Pixie_Print_MSG(ErrMSG);
@@ -5105,13 +5288,30 @@ Pixie16ReadListModeTrace(const char* FileName,  // list mode data file name
     // Open the list mode file
     ListModeFile = fopen(FileName, "rb");
     if (ListModeFile != NULL) {
+        int retval;
+
         // Position ListModeFile to the requested trace location
-        fseek(ListModeFile, FileLocation * 4, SEEK_SET);
+        retval = fseek(ListModeFile, FileLocation * 4, SEEK_SET);
+        if (retval < 0) {
+            sprintf(ErrMSG, "*ERROR* (Pixie16ReadListModeTrace): failed listmode data seek, error=%d",
+                    errno);
+            Pixie_Print_MSG(ErrMSG);
+            (void) fclose(ListModeFile);
+            return (-1);
+        }
 
         // Read trace
-        fread(Trace_Data, 2, NumWords, ListModeFile);
+        retval = fread(Trace_Data, 2, NumWords, ListModeFile);
+        if (retval < 0) {
+            sprintf(ErrMSG, "*ERROR* (Pixie16ReadListModeTrace): failed listmode read, error=%d",
+                    errno);
+            Pixie_Print_MSG(ErrMSG);
+            (void) fclose(ListModeFile);
+            return (-1);
+        }
 
-        fclose(ListModeFile);
+        (void) fclose(ListModeFile);
+
     } else {
         sprintf(ErrMSG, "*ERROR* (Pixie16ReadListModeTrace): can't open list mode file %s", FileName);
         Pixie_Print_MSG(ErrMSG);
@@ -5148,11 +5348,27 @@ Pixie16ReadHistogramFromFile(const char* FileName,  // the histogram data file n
     // Open the histogram data file
     HistogramFile = fopen(FileName, "rb");
     if (HistogramFile != NULL) {
+        int retval;
+
         // Get file length
-        fseek(HistogramFile, 0, SEEK_END);
+        retval = fseek(HistogramFile, 0, SEEK_END);
+        if (retval < 0) {
+            sprintf(ErrMSG, "*ERROR* (Pixie16ReadHistogramFromFile): failed histogram seek, error=%d",
+                    errno);
+            Pixie_Print_MSG(ErrMSG);
+            (void) fclose(HistogramFile);
+            return (-1);
+        }
         TotalWords = (ftell(HistogramFile) + 1) / 4;
         // Point HistogramFile to the beginning of file
-        fseek(HistogramFile, 0, SEEK_SET);
+        retval = fseek(HistogramFile, 0, SEEK_SET);
+        if (retval < 0) {
+            sprintf(ErrMSG, "*ERROR* (Pixie16ReadHistogramFromFile): failed histogram seek, error=%d",
+                    errno);
+            Pixie_Print_MSG(ErrMSG);
+            (void) fclose(HistogramFile);
+            return (-1);
+        }
 
         Histo_Address = MAX_HISTOGRAM_LENGTH * ChanNum;
         if (Histo_Address > (TotalWords - NumWords)) {
@@ -5160,24 +5376,40 @@ Pixie16ReadHistogramFromFile(const char* FileName,  // the histogram data file n
                     "*ERROR* (Pixie16ReadHistogramFromFile): no histogram data is available in file %s for channel %d of module %d",
                     FileName, ChanNum, ModNum);
             Pixie_Print_MSG(ErrMSG);
+            (void) fclose(HistogramFile);
             return (-2);
         }
 
         // Read the data
 
         // Point HistogramFile to the right location of the histogram data file
-        fseek(HistogramFile, Histo_Address * 4, SEEK_CUR);
-        fread(Histogram, 4, NumWords, HistogramFile);
+        retval = fseek(HistogramFile, Histo_Address * 4, SEEK_CUR);
+        if (retval < 0) {
+            sprintf(ErrMSG, "*ERROR* (Pixie16ReadHistogramFromFile): failed histogram seek, error=%d",
+                    errno);
+            Pixie_Print_MSG(ErrMSG);
+            (void) fclose(HistogramFile);
+            return (-1);
+        }
+
+        retval = fread(Histogram, 4, NumWords, HistogramFile);
+        if (retval < 0) {
+            sprintf(ErrMSG, "*ERROR* (Pixie16ReadHistogramFromFile): failed histogram read, error=%d",
+                    errno);
+            Pixie_Print_MSG(ErrMSG);
+            (void) fclose(HistogramFile);
+            return (-1);
+        }
 
         // Close the file
-        fclose(HistogramFile);
-
-        return (0);
+        (void) fclose(HistogramFile);
     } else {
         sprintf(ErrMSG, "*ERROR* (Pixie16ReadHistogramFromFile): failed to open histogram file %s", FileName);
         Pixie_Print_MSG(ErrMSG);
         return (-1);
     }
+
+    return (0);
 }
 
 
@@ -5212,24 +5444,33 @@ Pixie16SaveDSPParametersToFile(const char* FileName)  // the DSP parameters file
                         "*ERROR* (Pixie16SaveDSPParametersToFile): failed to read DSP parameter values from module %d, retval = %d",
                         ModNum, retval);
                 Pixie_Print_MSG(ErrMSG);
+                (void) fclose(DSPSettingsFile);
                 return (-1);
             }
         }
 
         // Write DSP parameter values to the settings file
         for (ModNum = 0; ModNum < PRESET_MAX_MODULES; ModNum++) {
-            fwrite(Pixie_Devices[ModNum].DSP_Parameter_Values, sizeof(unsigned int), N_DSP_PAR, DSPSettingsFile);
+            retval = fwrite(Pixie_Devices[ModNum].DSP_Parameter_Values, sizeof(unsigned int), N_DSP_PAR, DSPSettingsFile);
+            if (retval < 0) {
+                sprintf(ErrMSG,
+                        "*ERROR* (Pixie16SaveDSPParametersToFile): failed to write DSP parameter values from module %d, error=%d",
+                        ModNum, errno);
+                Pixie_Print_MSG(ErrMSG);
+                (void) fclose(DSPSettingsFile);
+                return (-1);
+            }
         }
 
         // Close the file
-        fclose(DSPSettingsFile);
-
-        return (0);
+        (void) fclose(DSPSettingsFile);
     } else {
         sprintf(ErrMSG, "*ERROR* (Pixie16SaveDSPParametersToFile): failed to open DSP parameters file %s", FileName);
         Pixie_Print_MSG(ErrMSG);
         return (-2);
     }
+
+    return (0);
 }
 
 
@@ -5259,28 +5500,53 @@ Pixie16LoadDSPParametersFromFile(const char* FileName)  // the DSP parameters fi
     if ((DSPSettingsFile = fopen(FileName, "rb")) != NULL)  // Make sure DSPSettingsFile is opened successfully
     {
         // Check if file size is consistent with predefined length (N_DSP_PAR * PRESET_MAX_MODULES)
-        fseek(DSPSettingsFile, 0, SEEK_END);
+        retval = fseek(DSPSettingsFile, 0, SEEK_END);
+        if (retval < 0) {
+            sprintf(ErrMSG,
+                    "*ERROR* (Pixie16LoadDSPParametersFromFile): failed seek Fippi settings, error=%d",
+                    errno);
+            Pixie_Print_MSG(ErrMSG);
+            (void) fclose(DSPSettingsFile);
+            return (-2);
+        }
+
         TotalWords = (ftell(DSPSettingsFile) + 1) / 4;
         if (TotalWords != (N_DSP_PAR * PRESET_MAX_MODULES)) {
             sprintf(ErrMSG,
                     "*ERROR* (Pixie16LoadDSPParametersFromFile): size of DSPParFile is invalid. Check DSPParFile name %s",
                     FileName);
             Pixie_Print_MSG(ErrMSG);
-            // close opened files
-            fclose(DSPSettingsFile);
+            (void) fclose(DSPSettingsFile);
             return (-1);
         }
 
         // Point configfil to the beginning of file
-        fseek(DSPSettingsFile, 0, SEEK_SET);
+        retval = fseek(DSPSettingsFile, 0, SEEK_SET);
+        if (retval < 0) {
+            sprintf(ErrMSG,
+                    "*ERROR* (Pixie16LoadDSPParametersFromFile): failed seek Fippi settings, error=%d",
+                    errno);
+            Pixie_Print_MSG(ErrMSG);
+            (void) fclose(DSPSettingsFile);
+            return (-2);
+        }
 
         // Read DSP parameters
         for (k = 0; k < PRESET_MAX_MODULES; k++) {
-            fread(&Pixie_Devices[k].DSP_Parameter_Values[0], sizeof(unsigned int), N_DSP_PAR, DSPSettingsFile);
-
+            retval = fread(&Pixie_Devices[k].DSP_Parameter_Values[0], sizeof(unsigned int), N_DSP_PAR, DSPSettingsFile);
+            if (retval < 0) {
+                sprintf(ErrMSG,
+                        "*ERROR* (Pixie16LoadDSPParametersFromFile): failed to read Fippi settings in module %d, error=%d",
+                        k, errno);
+                Pixie_Print_MSG(ErrMSG);
+                (void) fclose(DSPSettingsFile);
+                return (-2);
+            }
             // Force correct module number
             Pixie_Devices[k].DSP_Parameter_Values[0] = k;
         }
+
+        fclose(DSPSettingsFile);
 
         // Download to all modules
         for (k = 0; k < Number_Modules; k++) {
@@ -5294,8 +5560,6 @@ Pixie16LoadDSPParametersFromFile(const char* FileName)  // the DSP parameters fi
                         "*ERROR* (Pixie16LoadDSPParametersFromFile): failed to program Fippi in module %d, retval=%d",
                         k, retval);
                 Pixie_Print_MSG(ErrMSG);
-                // close opened files
-                fclose(DSPSettingsFile);
                 return (-2);
             }
 
@@ -5305,8 +5569,6 @@ Pixie16LoadDSPParametersFromFile(const char* FileName)  // the DSP parameters fi
                         "*ERROR* (Pixie16LoadDSPParametersFromFile): failed to set DACs in module %d, retval=%d", k,
                         retval);
                 Pixie_Print_MSG(ErrMSG);
-                // close opened files
-                fclose(DSPSettingsFile);
                 return (-3);
             }
         }
@@ -5388,7 +5650,7 @@ Pixie16CopyDSPParameters(unsigned short BitMask,  // copy items bit mask
 *			-2 - Failed to allocate memory to store list mode data
 *			-3 - Failed to open list mode data file
 *			-4 - Failed to read external FIFO status
-*			-5 - Failed to read data from external FIFO 
+*			-5 - Failed to read data from external FIFO
 *
 ****************************************************************/
 
@@ -5634,7 +5896,7 @@ Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO_Data,  // To receive the e
 ****************************************************************/
 
 PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16ComputeFastFiltersOffline(char* FileName,  // the list mode data file name (with complete path)
+Pixie16ComputeFastFiltersOffline(const char* FileName,  // the list mode data file name (with complete path)
                                  unsigned short ModuleNumber,  // the module whose events are to be analyzed
                                  unsigned short ChannelNumber,  // the channel whose events are to be analyzed
                                  unsigned int FileLocation,  // the location of the trace in the file
@@ -5651,6 +5913,7 @@ Pixie16ComputeFastFiltersOffline(char* FileName,  // the list mode data file nam
     unsigned int offset, x, y;
     double cfdscale;
     unsigned short B, D;
+    int retval;
 
     // Check if RcdTrace is valid
     if (RcdTrace == NULL) {
@@ -5715,13 +5978,27 @@ Pixie16ComputeFastFiltersOffline(char* FileName,  // the list mode data file nam
     ListModeFile = fopen(FileName, "rb");
     if (ListModeFile != NULL) {
         // Position ListModeFile to the requested trace location
-        fseek(ListModeFile, FileLocation * 4, SEEK_SET);
+        retval = fseek(ListModeFile, FileLocation * 4, SEEK_SET);
+        if (retval < 0) {
+            sprintf(ErrMSG, "*Error* (Pixie16ComputeFastFiltersOffline): failed to seek listmode file for module %d, error=%d",
+                    ModuleNumber, errno);
+            Pixie_Print_MSG(ErrMSG);
+            (void) fclose(ListModeFile);
+            return (-1);
+        }
 
         // Read trace
-        fread(RcdTrace, 2, RcdTraceLength, ListModeFile);
+        retval = fread(RcdTrace, 2, RcdTraceLength, ListModeFile);
+        if (retval < 0) {
+            sprintf(ErrMSG, "*Error* (Pixie16ComputeFastFiltersOffline): failed to read listmode file for module %d, error=%d",
+                    ModuleNumber, errno);
+            Pixie_Print_MSG(ErrMSG);
+            (void) fclose(ListModeFile);
+            return (-1);
+        }
 
         // Close file
-        fclose(ListModeFile);
+        (void) fclose(ListModeFile);
 
         // Compute fast filter response
         offset = 2 * FastLen + FastGap - 1;
@@ -5758,7 +6035,7 @@ Pixie16ComputeFastFiltersOffline(char* FileName,  // the list mode data file nam
             // fixed CFD parameter values: w = 1.0, B = 5. D = 5, L = 1
             B = 5;
             D = 5;
-            for (x = (B + D); x < (RcdTraceLength - 1); x++) {
+            for (x = (B + D); x < (unsigned int) (RcdTraceLength - 1); x++) {
                 cfd[x] = (RcdTrace[x] + RcdTrace[x + 1]) - (RcdTrace[x - B] + RcdTrace[x - B + 1]) -
                          (RcdTrace[x - D] + RcdTrace[x - D + 1]) + (RcdTrace[x - B - D] + RcdTrace[x - B - D + 1]);
             }
@@ -5796,7 +6073,7 @@ Pixie16ComputeFastFiltersOffline(char* FileName,  // the list mode data file nam
 ****************************************************************/
 
 PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16ComputeSlowFiltersOffline(char* FileName,  // the list mode data file name (with complete path)
+Pixie16ComputeSlowFiltersOffline(const char* FileName,  // the list mode data file name (with complete path)
                                  unsigned short ModuleNumber,  // the module whose events are to be analyzed
                                  unsigned short ChannelNumber,  // the channel whose events are to be analyzed
                                  unsigned int FileLocation,  // the location of the trace in the file
@@ -5870,14 +6147,30 @@ Pixie16ComputeSlowFiltersOffline(char* FileName,  // the list mode data file nam
     // Open the list mode file
     ListModeFile = fopen(FileName, "rb");
     if (ListModeFile != NULL) {
+        int retval;
+
         // Position ListModeFile to the requested trace location
-        fseek(ListModeFile, FileLocation * 4, SEEK_SET);
+        retval = fseek(ListModeFile, FileLocation * 4, SEEK_SET);
+        if (retval < 0) {
+            sprintf(ErrMSG, "*Error* (Pixie16ComputeSlowFiltersOffline): failure seek listmode data, error=%d",
+                errno);
+            Pixie_Print_MSG(ErrMSG);
+            (void) fclose(ListModeFile);
+            return (-4);
+        }
 
         // Read trace
-        fread(RcdTrace, 2, RcdTraceLength, ListModeFile);
+        retval = fread(RcdTrace, 2, RcdTraceLength, ListModeFile);
+        if (retval < 0) {
+            sprintf(ErrMSG, "*Error* (Pixie16ComputeSlowFiltersOffline): failure read listmode data, error=%d",
+                errno);
+            Pixie_Print_MSG(ErrMSG);
+            (void) fclose(ListModeFile);
+            return (-4);
+        }
 
         // Close file
-        fclose(ListModeFile);
+        (void) fclose(ListModeFile);
 
         //Assign coef_scaling_factor based on module's ADC bits
         if (Module_Information[ModuleNumber].Module_ADCBits == 12)
@@ -5886,6 +6179,11 @@ Pixie16ComputeSlowFiltersOffline(char* FileName,  // the list mode data file nam
             coef_scaling_factor = 4.0;
         else if (Module_Information[ModuleNumber].Module_ADCBits == 16)
             coef_scaling_factor = 1.0;
+        else {
+            sprintf(ErrMSG, "*Error* (Pixie16ComputeSlowFiltersOffline): invalid ADC number of bits");
+            Pixie_Print_MSG(ErrMSG);
+            return (-4);
+        }
 
         // Compute slow filter coefficients
         deltaT = 1.0 / ((double) Module_Information[ModuleNumber].Module_ADCMSPS);
