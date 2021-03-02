@@ -84,14 +84,12 @@ Pixie16InitSystem(unsigned short NumModules,  // total number of Pixie16 modules
                   unsigned short OfflineMode)  // specify if the system is in offline mode
 {
     int retval;  // return value
-    char ErrMSG[MAX_ERRMSG_LENGTH];  // message
     unsigned short k;
 
     // Check the validity of total number of Pixie16 modules
     if ((NumModules < 1) || (NumModules > PRESET_MAX_MODULES))  // At least one module is necessary
     {
-        sprintf(ErrMSG, "*ERROR* (Pixie16InitSystem): invalid total number (%d) of Pixie16 modules", NumModules);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid total number (%d) of Pixie16 modules", NumModules);
         return (-1);
     } else {
         Number_Modules = NumModules;  // Number_Modules is a global variable
@@ -110,15 +108,13 @@ Pixie16InitSystem(unsigned short NumModules,  // total number of Pixie16 modules
     // The physical address (slot number) of each Pixie16 module is in PXISlotMap
     if (PXISlotMap == NULL)  // Check if PXISlotMap is valid
     {
-        sprintf(ErrMSG, "*ERROR* (Pixie16InitSystem): null pointer *PXISlotMap");
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "null pointer *PXISlotMap");
         return (-2);
     } else {
         // Scan PCI devices and assign address
         retval = Pixie_InitSystem(Number_Modules, PXISlotMap, Offline);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16InitSystem): failed to initialize system, retval=%d", retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed to initialize system, retval=%d", retval);
             return (-3);
         }
 
@@ -128,10 +124,9 @@ Pixie16InitSystem(unsigned short NumModules,  // total number of Pixie16 modules
                     Pixie16ReadModuleInfo(k, &Module_Information[k].Module_Rev, &Module_Information[k].Module_SerNum,
                                           &Module_Information[k].Module_ADCBits, &Module_Information[k].Module_ADCMSPS);
             if (retval < 0) {
-                sprintf(ErrMSG,
-                        "*ERROR* (Pixie16InitSystem): failed to read module information in module %d, retval=%d", k,
-                        retval);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "failed to read module information in module %d, retval=%d", k,
+                                  retval);
                 return (-3);
             }
         }
@@ -157,19 +152,16 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ExitSystem(unsigned short ModNum)  /
 {
 
     int retval;  // return values
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ExitSystem): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
     retval = Pixie_ClosePCIDevices(ModNum);
     if (retval < 0) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ExitSystem): failed to close PCI device, retval=%d", retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "failed to close PCI device, retval=%d", retval);
         return (-2);
     }
 
@@ -198,14 +190,12 @@ Pixie16ReadModuleInfo(unsigned short ModNum,  // module number
 {
 
     int retval;  // return values
-    char ErrMSG[MAX_ERRMSG_LENGTH];
     char sbuffer[100] = {0};  // Temporary buffer
     unsigned short startaddr;
 
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ReadModuleInfo): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
@@ -262,9 +252,8 @@ Pixie16ReadModuleInfo(unsigned short ModNum,  // module number
     startaddr = 0;
     retval = I2CM24C64_Sequential_Read(ModNum, startaddr, 3, sbuffer);
     if (retval < 0) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ReadModuleInfo): Could not read serial number for Module=%d; retval=%d",
-                ModNum, retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "Could not read serial number for Module=%d; retval=%d",
+                          ModNum, retval);
         return (-2);
     }
     // Starting with serial number 256, serial number is stored in the first two bytes of EEPROM, follwed by
@@ -292,10 +281,9 @@ Pixie16ReadModuleInfo(unsigned short ModNum,  // module number
 
             retval = I2CM24C64_Sequential_Read(ModNum, startaddr, 3, sbuffer);
             if (retval < 0) {
-                sprintf(ErrMSG,
-                        "*ERROR* (Pixie16ReadModuleInfo): Could not read ADC information for Module=%d; retval=%d",
-                        ModNum, retval);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "Could not read ADC information for Module=%d; retval=%d",
+                                  ModNum, retval);
                 return (-2);
             }
 
@@ -369,7 +357,6 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                   unsigned short BootPattern)  // boot pattern bit mask
 {
     int retval;  // return values
-    char ErrMSG[MAX_ERRMSG_LENGTH];
     FILE* configfil;
     unsigned int* configuration;
     unsigned short k, dspcode;
@@ -382,8 +369,7 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
 
     // Check if ModNum is valid
     if (ModNum > Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
@@ -415,10 +401,9 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
             // Check if file size is consistent with predefined length FPGA_ConfigSize
             retval = fseek(configfil, 0, SEEK_END);
             if (retval < 0) {
-                sprintf(ErrMSG,
-                        "*ERROR* (Pixie16BootModule): failed to seek config, error=%d",
-                        errno);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "failed to seek config, error=%d",
+                                  errno);
                 (void) fclose(configfil);
                 return (-3);
             }
@@ -426,9 +411,8 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
             TotalWords = (ftell(configfil) + 1) / 4;
 
             if (TotalWords != FPGA_ConfigSize) {
-                sprintf(ErrMSG,
-                        "*ERROR* (Pixie16BootModule): size of ComFPGAConfigFile is invalid. Check ComFPGAConfigFile name");
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "size of ComFPGAConfigFile is invalid. Check ComFPGAConfigFile name");
                 (void) fclose(configfil);
                 return (-2);
             }
@@ -438,10 +422,9 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                 // Point configfil to the beginning of file
                 retval = fseek(configfil, 0, SEEK_SET);
                 if (retval < 0) {
-                  sprintf(ErrMSG,
-                          "*ERROR* (Pixie16BootModule): failed to seek config, error=%d",
-                          errno);
-                  Pixie_Print_MSG(ErrMSG);
+                    Pixie_Print_Error(PIXIE_FUNC,
+                                      "failed to seek config, error=%d",
+                                      errno);
                   free(configuration);
                   (void) fclose(configfil);
                   return (-3);
@@ -450,10 +433,9 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                 // Read communication FPGA configuration
                 retval = fread(configuration, sizeof(unsigned int), FPGA_ConfigSize, configfil);
                 if (retval < 0) {
-                  sprintf(ErrMSG,
-                          "*ERROR* (Pixie16BootModule): failed to ead config, error=%d",
-                          errno);
-                  Pixie_Print_MSG(ErrMSG);
+                    Pixie_Print_Error(PIXIE_FUNC,
+                                      "failed to ead config, error=%d",
+                                      errno);
                   free(configuration);
                   (void) fclose(configfil);
 
@@ -467,10 +449,9 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
 
                         retval = Pixie_Boot_CompFPGA(k, configuration, FPGA_ConfigSize);
                         if (retval < 0) {
-                            sprintf(ErrMSG,
-                                    "*ERROR* (Pixie16BootModule): failed to boot Communication FPGA in module %d, retval=%d",
-                                    k, retval);
-                            Pixie_Print_MSG(ErrMSG);
+                            Pixie_Print_Error(PIXIE_FUNC,
+                                              "failed to boot Communication FPGA in module %d, retval=%d",
+                                              k, retval);
                             free(configuration);
                             (void) fclose(configfil);
                             return (-3);
@@ -482,10 +463,9 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
 
                     retval = Pixie_Boot_CompFPGA(ModNum, configuration, FPGA_ConfigSize);
                     if (retval < 0) {
-                        sprintf(ErrMSG,
-                                "*ERROR* (Pixie16BootModule): failed to boot Communication FPGA in module %d, retval=%d",
-                                ModNum, retval);
-                        Pixie_Print_MSG(ErrMSG);
+                        Pixie_Print_Error(PIXIE_FUNC,
+                                          "failed to boot Communication FPGA in module %d, retval=%d",
+                                          ModNum, retval);
                         free(configuration);
                         (void) fclose(configfil);
                         return (-3);
@@ -495,16 +475,14 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                 // free allocated memory
                 free(configuration);
             } else {
-                sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed to allocate memory to store ComFPGAConfig");
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "failed to allocate memory to store ComFPGAConfig");
                 return (-4);
             }
 
             // close opened files
             (void) fclose(configfil);
         } else {
-            sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed to open ComFPGAConfigFile %s", ComFPGAConfigFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed to open ComFPGAConfigFile %s", ComFPGAConfigFile);
             return (-5);
         }
     }
@@ -539,9 +517,8 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
             TotalWords = (ftell(configfil) + 1) / 4;
 
             if (TotalWords != FPGA_ConfigSize) {
-                sprintf(ErrMSG,
-                        "*ERROR* (Pixie16BootModule): size of SPFPGAConfigFile is invalid. Check SPFPGAConfigFile name");
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "size of SPFPGAConfigFile is invalid. Check SPFPGAConfigFile name");
                 return (-10);
             }
 
@@ -550,10 +527,9 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                 // Point configfil to the beginning of file
                 retval = fseek(configfil, 0, SEEK_SET);
                 if (retval < 0) {
-                    sprintf(ErrMSG,
-                            "*ERROR* (Pixie16BootModule): failed to seek config, error=%d",
-                            errno);
-                    Pixie_Print_MSG(ErrMSG);
+                    Pixie_Print_Error(PIXIE_FUNC,
+                                      "failed to seek config, error=%d",
+                                      errno);
                     free(configuration);
                     (void) fclose(configfil);
                     return (-11);
@@ -562,10 +538,9 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                 // Read trigger FPGA configuration
                 retval = fread(configuration, sizeof(unsigned int), FPGA_ConfigSize, configfil);
                 if (retval < 0) {
-                    sprintf(ErrMSG,
-                            "*ERROR* (Pixie16BootModule): failed to read config, error=%d",
-                            errno);
-                    Pixie_Print_MSG(ErrMSG);
+                    Pixie_Print_Error(PIXIE_FUNC,
+                                      "failed to read config, error=%d",
+                                      errno);
                     free(configuration);
                     (void) fclose(configfil);
                     return (-11);
@@ -579,10 +554,9 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
 
                         retval = Pixie_Boot_FIPPI(k, configuration, FPGA_ConfigSize);
                         if (retval < 0) {
-                            sprintf(ErrMSG,
-                                    "*ERROR* (Pixie16BootModule): failed to boot signal processing FPGA in module %d, retval=%d",
-                                    k, retval);
-                            Pixie_Print_MSG(ErrMSG);
+                            Pixie_Print_Error(PIXIE_FUNC,
+                                              "failed to boot signal processing FPGA in module %d, retval=%d",
+                                              k, retval);
                             free(configuration);
                             (void) fclose(configfil);
                             return (-11);
@@ -594,10 +568,9 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
 
                     retval = Pixie_Boot_FIPPI(ModNum, configuration, FPGA_ConfigSize);
                     if (retval < 0) {
-                        sprintf(ErrMSG,
-                                "*ERROR* (Pixie16BootModule): failed to boot signal processing FPGA in module %d, retval=%d",
-                                ModNum, retval);
-                        Pixie_Print_MSG(ErrMSG);
+                        Pixie_Print_Error(PIXIE_FUNC,
+                                          "failed to boot signal processing FPGA in module %d, retval=%d",
+                                          ModNum, retval);
                         free(configuration);
                         (void) fclose(configfil);
                         return (-11);
@@ -607,16 +580,14 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                 // free allocated memory
                 free(configuration);
             } else {
-                sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed to allocate memory to store SPFPGAConfig");
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "failed to allocate memory to store SPFPGAConfig");
                 return (-12);
             }
 
             // close opened files
             fclose(configfil);
         } else {
-            sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed to open SPFPGAConfigFile %s", SPFPGAConfigFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed to open SPFPGAConfigFile %s", SPFPGAConfigFile);
             return (-13);
         }
     }
@@ -637,9 +608,8 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                 // Point configfil to the beginning of file
                 retval = fseek(configfil, 0, SEEK_SET);
                 if (retval < 0) {
-                    sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed config seek, error=%d",
-                            errno);
-                    Pixie_Print_MSG(ErrMSG);
+                    Pixie_Print_Error(PIXIE_FUNC, "failed config seek, error=%d",
+                                      errno);
 
                     // free allocated memory and close opened files
                     free(configuration);
@@ -652,9 +622,8 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                 for (k = 0; k < TotalWords; k++) {
                     retval = fread(&dspcode, sizeof(unsigned short), 1, configfil);
                     if (retval < 0) {
-                        sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed config read for module %d, error=%d",
-                                k, errno);
-                        Pixie_Print_MSG(ErrMSG);
+                        Pixie_Print_Error(PIXIE_FUNC, "failed config read for module %d, error=%d",
+                                          k, errno);
 
                         // free allocated memory and close opened files
                         free(configuration);
@@ -675,9 +644,8 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
 
                         retval = Pixie_Boot_DSP(k, configuration, TotalWords);
                         if (retval < 0) {
-                            sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed to boot DSP in module %d, retval=%d",
-                                    k, retval);
-                            Pixie_Print_MSG(ErrMSG);
+                            Pixie_Print_Error(PIXIE_FUNC, "failed to boot DSP in module %d, retval=%d",
+                                              k, retval);
 
                             // free allocated memory and close opened files
                             free(configuration);
@@ -692,9 +660,8 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
 
                     retval = Pixie_Boot_DSP(ModNum, configuration, TotalWords);
                     if (retval < 0) {
-                        sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed to boot DSP in module %d, retval=%d",
-                                ModNum, retval);
-                        Pixie_Print_MSG(ErrMSG);
+                        Pixie_Print_Error(PIXIE_FUNC, "failed to boot DSP in module %d, retval=%d",
+                                          ModNum, retval);
 
                         // free allocated memory and close opened files
                         free(configuration);
@@ -707,16 +674,14 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                 // free allocated memory
                 free(configuration);
             } else {
-                sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed to allocate memory to store DSP executable code");
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "failed to allocate memory to store DSP executable code");
                 return (-15);
             }
 
             // close opened files
             fclose(configfil);
         } else {
-            sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed to open DSPCodeFile %s", DSPCodeFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed to open DSPCodeFile %s", DSPCodeFile);
             return (-16);
         }
     }
@@ -732,17 +697,15 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
             // Check if file size is consistent with predefined length (N_DSP_PAR * PRESET_MAX_MODULES)
             retval = fseek(configfil, 0, SEEK_END);
             if (retval < 0) {
-                sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed config seek, error=%d",
-                        errno);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "failed config seek, error=%d",
+                                  errno);
                 (void) fclose(configfil);
                 return (-14);
             }
 
             TotalWords = (ftell(configfil) + 1) / 4;
             if (TotalWords != (N_DSP_PAR * PRESET_MAX_MODULES)) {
-                sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): size of DSPParFile is invalid. Check DSPParFile name");
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "size of DSPParFile is invalid. Check DSPParFile name");
                 fclose(configfil);
                 return (-17);
             }
@@ -750,9 +713,8 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
             // Point configfil to the beginning of file
             retval = fseek(configfil, 0, SEEK_SET);
             if (retval < 0) {
-                sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed config seek, error=%d",
-                        errno);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "failed config seek, error=%d",
+                                  errno);
                 (void) fclose(configfil);
                 return (-14);
             }
@@ -761,9 +723,8 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
             for (k = 0; k < PRESET_MAX_MODULES; k++) {
                 retval = fread(Pixie_Devices[k].DSP_Parameter_Values, sizeof(unsigned int), N_DSP_PAR, configfil);
                 if (retval < 0) {
-                    sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed config read for module %d, error=%d",
-                            k, errno);
-                    Pixie_Print_MSG(ErrMSG);
+                    Pixie_Print_Error(PIXIE_FUNC, "failed config read for module %d, error=%d",
+                                      k, errno);
                     (void) fclose(configfil);
                     return (-14);
                 }
@@ -788,8 +749,7 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
             // close opened files
             (void) fclose(configfil);
         } else {
-            sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed to open DSPParFile %s", DSPParFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed to open DSPParFile %s", DSPParFile);
             return (-18);
         }
     }
@@ -803,8 +763,7 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
         // First read DSP variable indices for Module #0
         retval = Pixie_Init_DSPVarAddress(DSPVarFile, 0);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): can't initialize DSP variable indices for module 0");
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "can't initialize DSP variable indices for module 0");
             return (-19);
         }
 
@@ -812,9 +771,8 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
         for (k = 1; k < Number_Modules; k++) {
             retval = Pixie_Copy_DSPVarAddress(0, k);
             if (retval < 0) {
-                sprintf(ErrMSG,
-                        "*ERROR* (Pixie16BootModule): can't copy DSP variable indices from module 0 to module %d", k);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "can't copy DSP variable indices from module 0 to module %d", k);
                 return (-20);
             }
         }
@@ -823,19 +781,17 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
         if (ModNum == 0) {
             retval = Pixie_Init_DSPVarAddress(DSPVarFile, ModNum);
             if (retval < 0) {
-                sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): can't initialize DSP variable indices for module %d",
-                        ModNum);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "can't initialize DSP variable indices for module %d",
+                                  ModNum);
                 return (-19);
             }
         } else  // Copy DSP variable indices from Module #0 to other modules
         {
             retval = Pixie_Copy_DSPVarAddress(0, ModNum);
             if (retval < 0) {
-                sprintf(ErrMSG,
-                        "*ERROR* (Pixie16BootModule): can't copy DSP variable indices from module 0 to module %d",
-                        ModNum);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "can't copy DSP variable indices from module 0 to module %d",
+                                  ModNum);
                 return (-20);
             }
         }
@@ -851,9 +807,8 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
             for (k = 0; k < Number_Modules; k++) {
                 retval = Pixie16ProgramFippi(k);
                 if (retval < 0) {
-                    sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed to program Fippi in module %d, retval=%d", k,
-                            retval);
-                    Pixie_Print_MSG(ErrMSG);
+                    Pixie_Print_Error(PIXIE_FUNC, "failed to program Fippi in module %d, retval=%d", k,
+                                      retval);
                     return (-21);
                 }
             }
@@ -861,9 +816,8 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
         {
             retval = Pixie16ProgramFippi(ModNum);
             if (retval < 0) {
-                sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed to program Fippi in module %d, retval=%d", ModNum,
-                        retval);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "failed to program Fippi in module %d, retval=%d", ModNum,
+                                  retval);
                 return (-21);
             }
         }
@@ -879,9 +833,8 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
             for (k = 0; k < Number_Modules; k++) {
                 retval = Pixie16SetDACs(k);
                 if (retval < 0) {
-                    sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed to set DACs in module %d, retval=%d", k,
-                            retval);
-                    Pixie_Print_MSG(ErrMSG);
+                    Pixie_Print_Error(PIXIE_FUNC, "failed to set DACs in module %d, retval=%d", k,
+                                      retval);
                     return (-22);
                 }
             }
@@ -889,9 +842,8 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
         {
             retval = Pixie16SetDACs(ModNum);
             if (retval < 0) {
-                sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed to set DACs in module %d, retval=%d", ModNum,
-                        retval);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "failed to set DACs in module %d, retval=%d", ModNum,
+                                  retval);
                 return (-22);
             }
         }
@@ -986,15 +938,13 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
             if (Module_Information[k].Module_Rev == 0xF) {
                 retval = Pixie_Control_Task_Run(k, RESET_ADC, 10000);
                 if (retval == -1) {
-                    sprintf(ErrMSG,
-                            "*ERROR* (Pixie16BootModule): failed to start RESET_ADC run in module %d; retval=%d", k,
-                            retval);
-                    Pixie_Print_MSG(ErrMSG);
+                    Pixie_Print_Error(PIXIE_FUNC,
+                                      "failed to start RESET_ADC run in module %d; retval=%d", k,
+                                      retval);
                     return (-23);
                 } else if (retval == -2) {
-                    sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): RESET_ADC run timed out in module %d; retval=%d", k,
-                            retval);
-                    Pixie_Print_MSG(ErrMSG);
+                    Pixie_Print_Error(PIXIE_FUNC, "RESET_ADC run timed out in module %d; retval=%d", k,
+                                      retval);
                     return (-24);  // Time Out
                 }
             }
@@ -1004,14 +954,12 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
         if (Module_Information[ModNum].Module_Rev == 0xF) {
             retval = Pixie_Control_Task_Run(ModNum, RESET_ADC, 10000);
             if (retval == -1) {
-                sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed to start RESET_ADC run in module %d; retval=%d",
-                        ModNum, retval);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "failed to start RESET_ADC run in module %d; retval=%d",
+                                  ModNum, retval);
                 return (-23);
             } else if (retval == -2) {
-                sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): RESET_ADC run timed out in module %d; retval=%d", ModNum,
-                        retval);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "RESET_ADC run timed out in module %d; retval=%d", ModNum,
+                                  retval);
                 return (-24);  // Time Out
             }
         }
@@ -1037,7 +985,6 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AcquireADCTrace(unsigned short ModNu
 {
     int retval;  // return values
     unsigned int count;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     // Check if running in OFFLINE mode
     if (Offline == 1)  // Returns immediately for offline analysis
@@ -1047,15 +994,13 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AcquireADCTrace(unsigned short ModNu
 
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16AcquireADCTrace): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
     retval = Pixie_Start_Run(NEW_RUN, 0, GET_TRACES, ModNum);
     if (retval < 0) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16AcquireADCTrace): failed to start run; retval=%d", retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "failed to start run; retval=%d", retval);
         return (-2);
     }
 
@@ -1072,8 +1017,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AcquireADCTrace(unsigned short ModNu
     } while ((retval != 0) && (count < 10000));  // The maximal waiting time is 10 s
 
     if (count >= 10000) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16AcquireADCTrace): acquiring ADC traces in module #%d timed out", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "acquiring ADC traces in module #%d timed out", ModNum);
         return (-3);  // Time Out
     }
 
@@ -1101,29 +1045,25 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanADCTrace(unsigned short* 
                                                                 unsigned short ChanNum)  // channel number
 {
     unsigned int count;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
     unsigned int* ADCData;
     int retval;
 
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ReadSglChanADCTrace): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
     // Check if ChanNum is valid
     if (ChanNum >= NUMBER_OF_CHANNELS) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ReadSglChanADCTrace): invalid Pixie channel number %d", ChanNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie channel number %d", ChanNum);
         return (-2);
     }
 
     // Check if Trace_Length is valid
     if (Trace_Length > MAX_ADC_TRACE_LEN) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ReadSglChanADCTrace): invalid ADC trace length %u for channel %d",
-                Trace_Length, ChanNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid ADC trace length %u for channel %d",
+                          Trace_Length, ChanNum);
         return (-3);
     }
 
@@ -1133,9 +1073,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanADCTrace(unsigned short* 
         retval = Pixie_DSP_Memory_IO(ADCData, (IO_BUFFER_ADDRESS + MAX_ADC_TRACE_LEN / 2 * ChanNum), (Trace_Length / 2),
                                      MOD_READ, ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16ReadSglChanADCTrace): reading ADC trace failed for module %d, retval=%d",
-                    ModNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "reading ADC trace failed for module %d, retval=%d",
+                              ModNum, retval);
 
             // Release memory
             free(ADCData);
@@ -1150,10 +1089,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanADCTrace(unsigned short* 
         // Release memory
         free(ADCData);
     } else {
-        sprintf(ErrMSG,
-                "*ERROR* (Pixie16ReadSglChanADCTrace): failed to allocate memory to store ADC trace data for module %d",
-                ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC,
+                          "failed to allocate memory to store ADC trace data for module %d",
+                          ModNum);
         return (-4);
     }
 
@@ -1185,43 +1123,37 @@ Pixie16IMbufferIO(unsigned int* Buffer,  // buffer data
                   unsigned short ModNum)  // module number
 {
     int retval;  // return values
-    char ErrMSG[MAX_ERRMSG_LENGTH];
     unsigned int k;
 
     // Check if Buffer is a valid pointer
     if (Buffer == NULL) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16IMbufferIO): null pointer for buffer data");
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "null pointer for buffer data");
         return (-1);
     }
 
     // Check if NumWords is valid
     if (NumWords > (DSP_IMBUFFER_END_ADDR - DSP_IMBUFFER_START_ADDR + 1)) {
-        sprintf(ErrMSG,
-                "*ERROR* (Pixie16IMbufferIO): %u (number of buffer words to read or write) exceeds the limit %d",
-                NumWords, (DSP_IMBUFFER_END_ADDR - DSP_IMBUFFER_START_ADDR + 1));
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC,
+                          "%u (number of buffer words to read or write) exceeds the limit %d",
+                          NumWords, (DSP_IMBUFFER_END_ADDR - DSP_IMBUFFER_START_ADDR + 1));
         return (-2);
     }
 
     // Check if Address is valid
     if ((Address < DSP_IMBUFFER_START_ADDR) || (Address > DSP_IMBUFFER_END_ADDR)) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16IMbufferIO): invalid DSP internal memory address %u", Address);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid DSP internal memory address %u", Address);
         return (-3);
     }
 
     // Check if Direction is valid
     if ((Direction != MOD_READ) && (Direction != MOD_WRITE)) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16IMbufferIO): invalid I/O direction %d", Direction);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid I/O direction %d", Direction);
         return (-4);
     }
 
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16IMbufferIO): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-5);
     }
 
@@ -1238,8 +1170,7 @@ Pixie16IMbufferIO(unsigned int* Buffer,  // buffer data
     // I/O
     retval = Pixie_DSP_Memory_IO(Buffer, Address, NumWords, Direction, ModNum);
     if (retval < 0) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16IMbufferIO): IMbuffer I/O failed for module %d, retval=%d", ModNum, retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "IMbuffer I/O failed for module %d, retval=%d", ModNum, retval);
         return (-6);
     }
 
@@ -1271,57 +1202,49 @@ Pixie16EMbufferIO(unsigned int* Buffer,  // buffer data
                   unsigned short ModNum)  // module number
 {
     int retval;  // return values
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     // Check if Buffer is a valid pointer
     if (Buffer == NULL) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16EMbufferIO): null pointer for buffer data");
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "null pointer for buffer data");
         return (-1);
     }
 
     // Check if NumWords is valid
     if (NumWords > (DSP_EMBUFFER_END_ADDR - DSP_EMBUFFER_START_ADDR + 1)) {
-        sprintf(ErrMSG,
-                "*ERROR* (Pixie16EMbufferIO): %u (number of buffer words to read or write) exceeds the limit %d",
-                NumWords, (DSP_EMBUFFER_END_ADDR - DSP_EMBUFFER_START_ADDR + 1));
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC,
+                          "%u (number of buffer words to read or write) exceeds the limit %d",
+                          NumWords, (DSP_EMBUFFER_END_ADDR - DSP_EMBUFFER_START_ADDR + 1));
         return (-2);
     }
 
     // Check if Address is valid
 #if DSP_EMBUFFER_START_ADDR > 0
     if (Address < DSP_EMBUFFER_START_ADDR) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16EMbufferIO): invalid DSP internal memory address %u", Address);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid DSP internal memory address %u", Address);
         return (-3);
     }
 #endif
     if (Address > DSP_EMBUFFER_END_ADDR) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16EMbufferIO): invalid DSP internal memory address %u", Address);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid DSP internal memory address %u", Address);
         return (-3);
     }
 
     // Check if Direction is valid
     if ((Direction != MOD_READ) && (Direction != MOD_WRITE)) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16EMbufferIO): invalid I/O direction %d", Direction);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid I/O direction %d", Direction);
         return (-4);
     }
 
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16EMbufferIO): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-5);
     }
 
     // I/O
     retval = Pixie_Main_Memory_IO(Buffer, Address, NumWords, Direction, ModNum);
     if (retval < 0) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16EMbufferIO): EMbuffer I/O failed for module %d, retval=%d", ModNum, retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "EMbuffer I/O failed for module %d, retval=%d", ModNum, retval);
         return (-6);
     }
 
@@ -1347,7 +1270,6 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16StartListModeRun(unsigned short ModN
                                                              unsigned short mode)  // run mode
 {
     int retval;  // return values
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     // Check if running in OFFLINE mode
     if (Offline == 1)  // Returns immediately for offline analysis
@@ -1357,28 +1279,24 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16StartListModeRun(unsigned short ModN
 
     // Check if ModNum is valid
     if (ModNum > Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16StartListModeRun): Invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "Invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
     if ((mode != NEW_RUN) && (mode != RESUME_RUN)) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16StartListModeRun): Invalid mode %d", mode);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "Invalid mode %d", mode);
         return (-2);
     }
 
     if (RunType != LIST_MODE_RUN) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16StartListModeRun): Invalid run type %d", mode);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "Invalid run type %d", mode);
         return (-4);
     }
 
     // Start the list mode run now
     retval = Pixie_Start_Run(mode, RunType, 0, ModNum);
     if (retval < 0) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16StartListModeRun): failed to start list mode run, retval=%d", retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "failed to start list mode run, retval=%d", retval);
         return (-3);
     }
 
@@ -1402,7 +1320,6 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16StartHistogramRun(unsigned short Mod
                                                               unsigned short mode)  // run mode
 {
     int retval;  // return values
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     // Check if running in OFFLINE mode
     if (Offline == 1)  // Returns immediately for offline analysis
@@ -1412,22 +1329,19 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16StartHistogramRun(unsigned short Mod
 
     // Check if ModNum is valid
     if (ModNum > Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16StartHistogramRun): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
     if ((mode != NEW_RUN) && (mode != RESUME_RUN)) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16StartHistogramRun): Invalid mode %d", mode);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "Invalid mode %d", mode);
         return (-2);
     }
 
     // Start the histogram run now
     retval = Pixie_Start_Run(mode, HISTOGRAM_RUN, 0, ModNum);
     if (retval < 0) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16StartHistogramRun): failed to start histogram run, retval=%d", retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "failed to start histogram run, retval=%d", retval);
         return (-3);
     }
 
@@ -1449,12 +1363,10 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16StartHistogramRun(unsigned short Mod
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16CheckRunStatus(unsigned short ModNum)  // Pixie module number
 {
     int retval;  // return values
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16CheckRunStatus): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
@@ -1476,14 +1388,12 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16CheckRunStatus(unsigned short ModNum
 
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16EndRun(unsigned short ModNum)  // Pixie module number
 {
-    char ErrMSG[MAX_ERRMSG_LENGTH];
     unsigned short modulenumber, k;
     unsigned int dummy, CSR;
 
     // Check if ModNum is valid
     if (ModNum > Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16EndRun): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
@@ -1761,24 +1671,20 @@ PIXIE16APP_EXPORT unsigned int PIXIE16APP_API APP32_TstBit(unsigned short bit, u
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SetDACs(unsigned short ModNum) {
     int retval;
     unsigned int Max_Poll;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     // Check if ModNum is valid
     if (ModNum > Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16SetDACs): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
     Max_Poll = 10000;  // The maximal waiting time is 10 s
     retval = Pixie_Control_Task_Run(ModNum, SET_DACS, Max_Poll);
     if (retval == -1) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16SetDACs): failed to start SET_DACS run; retval=%d", retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "failed to start SET_DACS run; retval=%d", retval);
         return (-2);
     } else if (retval == -2) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16SetDACs): SET_DACS run timed out; retval=%d", retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "SET_DACS run timed out; retval=%d", retval);
         return (-3);  // Time Out
     }
 
@@ -1801,24 +1707,20 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SetDACs(unsigned short ModNum) {
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ProgramFippi(unsigned short ModNum) {
     int retval;
     unsigned int Max_Poll;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     // Check if ModNum is valid
     if (ModNum > Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ProgramFippi): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
     Max_Poll = 10000;  // The maximal waiting time is 10 s
     retval = Pixie_Control_Task_Run(ModNum, PROGRAM_FIPPI, Max_Poll);
     if (retval == -1) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ProgramFippi): failed to start PROGRAM_FIPPI run; retval=%d", retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "failed to start PROGRAM_FIPPI run; retval=%d", retval);
         return (-2);
     } else if (retval == -2) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ProgramFippi): PROGRAM_FIPPI run timed out; retval=%d", retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "PROGRAM_FIPPI run timed out; retval=%d", retval);
         return (-3);  // Time Out
     }
 
@@ -1841,24 +1743,20 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ProgramFippi(unsigned short ModNum) 
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AdjustOffsets(unsigned short ModNum) {
     int retval;
     unsigned int Max_Poll;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     // Check if ModNum is valid
     if (ModNum > Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16AdjustOffsets): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
     Max_Poll = 10000;  // The maximal waiting time is 10 s
     retval = Pixie_Control_Task_Run(ModNum, ADJUST_OFFSETS, Max_Poll);
     if (retval == -1) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16AdjustOffsets): failed to start ADJUST_OFFSETS run; retval=%d", retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "failed to start ADJUST_OFFSETS run; retval=%d", retval);
         return (-2);
     } else if (retval == -2) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16AdjustOffsets): ADJUST_OFFSETS run timed out; retval=%d", retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "ADJUST_OFFSETS run timed out; retval=%d", retval);
         return (-3);  // Time Out
     }
 
@@ -1882,12 +1780,10 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AcquireBaselines(unsigned short ModN
 {
     int retval;
     unsigned int Max_Poll, sfr;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     // Check if ModNum is valid
     if (ModNum > Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16AcquireBaselines): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
@@ -1907,12 +1803,10 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AcquireBaselines(unsigned short ModN
     // Acquire the baselines
     retval = Pixie_Control_Task_Run(ModNum, GET_BASELINES, Max_Poll);
     if (retval == -1) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16AcquireBaselines): failed to start GET_BASELINES run; retval=%d", retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "failed to start GET_BASELINES run; retval=%d", retval);
         return (-2);
     } else if (retval == -2) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16AcquireBaselines): GET_BASELINES run timed out; retval=%d", retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "GET_BASELINES run timed out; retval=%d", retval);
         return (-3);  // Time Out
     }
 
@@ -1943,22 +1837,19 @@ Pixie16ReadSglChanBaselines(double* Baselines,  // returned baselines values
     unsigned int k;
     unsigned int* buffer;
     double startbasetime;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
     int retval;
 
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ReadSglChanBaselines): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
     // Check if NumBases is within limit
     if (NumBases > MAX_NUM_BASELINES) {
-        sprintf(ErrMSG,
-                "*ERROR* (Pixie16ReadSglChanBaselines): requested number of baselines (%d) exceeded the limit (%d)",
-                NumBases, MAX_NUM_BASELINES);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC,
+                          "requested number of baselines (%d) exceeded the limit (%d)",
+                          NumBases, MAX_NUM_BASELINES);
         return (-2);
     }
 
@@ -1967,9 +1858,8 @@ Pixie16ReadSglChanBaselines(double* Baselines,  // returned baselines values
 
         retval = Pixie_DSP_Memory_IO(buffer, IO_BUFFER_ADDRESS, IO_BUFFER_LENGTH, MOD_READ, ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16ReadSglChanBaselines): reading baselines failed for module %d, retval=%d",
-                    ModNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "reading baselines failed for module %d, retval=%d",
+                              ModNum, retval);
 
             // Release memory
             free(buffer);
@@ -1994,10 +1884,9 @@ Pixie16ReadSglChanBaselines(double* Baselines,  // returned baselines values
         // Release memory
         free(buffer);
     } else {
-        sprintf(ErrMSG,
-                "*ERROR* (Pixie16ReadSglChanBaselines): failed to allocate memory to store baselines for module %d",
-                ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC,
+                          "failed to allocate memory to store baselines for module %d",
+                          ModNum);
         return (-3);
     }
 
@@ -2026,48 +1915,41 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16RampOffsetDACs(double* DCValues,  //
     int retval;
     unsigned int Max_Poll, k;
     unsigned int buffer[MAX_NUM_DCVALUES];
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16RampOffsetDACs): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
     // Check if DCValues is valid
     if (DCValues == NULL) {
-        sprintf(ErrMSG, "*Error* (Pixie16RampOffsetDACs): Null pointer *DCValues");
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "Null pointer *DCValues");
         return (-2);
     }
 
     // Check if NumDCVals is within limit
     if (NumDCVals > MAX_NUM_DCVALUES) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16RampOffsetDACs): requested number of DC values (%d) exceeded the limit (%d)",
-                NumDCVals, MAX_NUM_DCVALUES);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "requested number of DC values (%d) exceeded the limit (%d)",
+                          NumDCVals, MAX_NUM_DCVALUES);
         return (-3);
     }
 
     Max_Poll = 10000;  // The maximal waiting time is 10 s
     retval = Pixie_Control_Task_Run(ModNum, RAMP_OFFSETDACS, Max_Poll);
     if (retval == -1) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16RampOffsetDACs): failed to start RAMP_OFFSETDACS run; retval=%d", retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "failed to start RAMP_OFFSETDACS run; retval=%d", retval);
         return (-4);
     } else if (retval == -2) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16RampOffsetDACs): RAMP_OFFSETDACS run timed out; retval=%d", retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "RAMP_OFFSETDACS run timed out; retval=%d", retval);
         return (-5);  // Time Out
     }
 
     // Read out data memory
     retval = Pixie_DSP_Memory_IO(buffer, IO_BUFFER_ADDRESS, MAX_NUM_DCVALUES, MOD_READ, ModNum);
     if (retval < 0) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16RampOffsetDACs): reading OffsetDAC values failed for module %d, retval=%d",
-                ModNum, retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "reading OffsetDAC values failed for module %d, retval=%d",
+                          ModNum, retval);
         return (-6);
     }
 
@@ -2095,19 +1977,16 @@ Pixie16ControlTaskRun(unsigned short ModNum,  // Pixie module number
                       unsigned int Max_Poll)  // Timeout control in unit of ms for control task run
 {
     int retval;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     // Check if ModNum is valid
     if (ModNum > Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ControlTaskRun): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
     retval = Pixie_Control_Task_Run(ModNum, ControlTask, Max_Poll);
     if (retval < 0) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ControlTaskRun): control task run %d failed", ControlTask);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "control task run %d failed", ControlTask);
         return (-2);
     }
 
@@ -2136,12 +2015,10 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BLcutFinder(unsigned short ModNum,  
     double baseline[MAX_NUM_BASELINES], ts[MAX_NUM_BASELINES];
     double sdev, sdevCount, BLsigma, val;
     int retval;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16BLcutFinder): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
@@ -2180,8 +2057,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BLcutFinder(unsigned short ModNum,  
         // Start Control Task COLLECT_BASES to collect baselines
         retval = Pixie16AcquireBaselines(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16BLcutFinder): failed to collect baselines in module %d", ModNum);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed to collect baselines in module %d", ModNum);
 
             // Restore DSP parameter Log2BWeight
             Pixie_Devices[ModNum].DSP_Parameter_Values[Log2Bweight_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
@@ -2199,9 +2075,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BLcutFinder(unsigned short ModNum,  
         // Read the baselines from the data memory
         retval = Pixie16ReadSglChanBaselines(baseline, ts, MAX_NUM_BASELINES, ModNum, ChanNum);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16BLcutFinder): failed to read baselines in module %d channel %d", ModNum,
-                    ChanNum);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed to read baselines in module %d channel %d", ModNum,
+                              ChanNum);
 
             return (-3);  // failed to read baselines from the data memory
         }
@@ -2259,8 +2134,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BLcutFinder(unsigned short ModNum,  
         // Start Control Task COLLECT_BASES to collect baselines
         retval = Pixie16AcquireBaselines(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16BLcutFinder): failed to collect baselines in module %d", ModNum);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed to collect baselines in module %d", ModNum);
 
             // Restore DSP parameter Log2BWeight
             Pixie_Devices[ModNum].DSP_Parameter_Values[Log2Bweight_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
@@ -2278,9 +2152,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BLcutFinder(unsigned short ModNum,  
         // Read the baselines from the data memory
         retval = Pixie16ReadSglChanBaselines(baseline, ts, MAX_NUM_BASELINES, ModNum, ChanNum);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16BLcutFinder): failed to read baselines in module %d channel %d", ModNum,
-                    ChanNum);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed to read baselines in module %d channel %d", ModNum,
+                              ChanNum);
 
             return (-3);  // failed to read baselines from the data memory
         }
@@ -2361,7 +2234,6 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16TauFinder(unsigned short ModNum,  //
                                                       double* Tau)  // 16 returned Tau values, in �s
 {
 
-    char ErrMSG[MAX_ERRMSG_LENGTH];
     unsigned int Max_Poll;
     unsigned int autotau[NUMBER_OF_CHANNELS];
     unsigned short k;
@@ -2369,20 +2241,17 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16TauFinder(unsigned short ModNum,  //
 
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16TauFinder): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
     Max_Poll = 10000;  // The maximal waiting time is 10 s
     retval = Pixie_Control_Task_Run(ModNum, TAU_FINDER, Max_Poll);
     if (retval == -1) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16TauFinder): failed to start TAU_FINDER run; retval=%d", retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "failed to start TAU_FINDER run; retval=%d", retval);
         return (-2);
     } else if (retval == -2) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16TauFinder): TAU_FINDER run timed out; retval=%d", retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "TAU_FINDER run timed out; retval=%d", retval);
         return (-3);  // Time Out
     }
 
@@ -2423,14 +2292,12 @@ Pixie16WriteSglModPar(const char* ModParName,  // the name of the module paramet
     unsigned short k;
     unsigned int paflength, triggerdelay, tracedelay, fastfilterrange, LastFastFilterRange, baselinecut;
     unsigned int CSR, slowfilterrange;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
     int retval;
     unsigned int CPLD_CSR;
 
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16WriteSglModPar): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
@@ -2446,9 +2313,8 @@ Pixie16WriteSglModPar(const char* ModParName,  // the name of the module paramet
         // Program FiPPI to apply ModCSRA settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16WriteSglModPar): ProgramFippi failed after downloading ModCSRA, retval=%d",
-                    retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "ProgramFippi failed after downloading ModCSRA, retval=%d",
+                              retval);
             return (-3);
         }
     } else if (strcmp(ModParName, "MODULE_CSRB") == 0) {
@@ -2461,9 +2327,8 @@ Pixie16WriteSglModPar(const char* ModParName,  // the name of the module paramet
         // Program FiPPI to apply ModCSRB settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16WriteSglModPar): ProgramFippi failed after downloading ModCSRB, retval=%d",
-                    retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "ProgramFippi failed after downloading ModCSRB, retval=%d",
+                              retval);
             return (-3);
         }
 
@@ -2537,18 +2402,16 @@ Pixie16WriteSglModPar(const char* ModParName,  // the name of the module paramet
         if (slowfilterrange > SLOWFILTERRANGE_MAX) {
             slowfilterrange = SLOWFILTERRANGE_MAX;
 
-            sprintf(ErrMSG,
-                    "*WARNING* (Pixie16WriteSglModPar): Maximum SlowFilterRange that is currently supported is %d",
-                    slowfilterrange);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Warning(PIXIE_FUNC,
+                                "Maximum SlowFilterRange that is currently supported is %d",
+                                slowfilterrange);
         }
         if (slowfilterrange < SLOWFILTERRANGE_MIN) {
             slowfilterrange = SLOWFILTERRANGE_MIN;
 
-            sprintf(ErrMSG,
-                    "*WARNING* (Pixie16WriteSglModPar): Minimum SlowFilterRange that is currently supported is %d",
-                    slowfilterrange);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Warning(PIXIE_FUNC,
+                                "Minimum SlowFilterRange that is currently supported is %d",
+                                slowfilterrange);
         }
 
         // Update the DSP parameter SlowFilterRange
@@ -2577,10 +2440,9 @@ Pixie16WriteSglModPar(const char* ModParName,  // the name of the module paramet
         // Program FiPPI to apply settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglModPar): ProgramFippi failed after downloading SlowFilterRange, retval=%d",
-                    retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed after downloading SlowFilterRange, retval=%d",
+                              retval);
             return (-3);
         }
 
@@ -2590,10 +2452,9 @@ Pixie16WriteSglModPar(const char* ModParName,  // the name of the module paramet
         for (k = 0; k < NUMBER_OF_CHANNELS; k++) {
             retval = Pixie16BLcutFinder(ModNum, k, &baselinecut);
             if (retval < 0) {
-                sprintf(ErrMSG,
-                        "*ERROR* (Pixie16WriteSglModPar): BLcutFinder failed in module %d after downloading SlowFilterRange, retval=%d",
-                        k, retval);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "BLcutFinder failed in module %d after downloading SlowFilterRange, retval=%d",
+                                  k, retval);
                 return (-4);
             }
         }
@@ -2608,19 +2469,17 @@ Pixie16WriteSglModPar(const char* ModParName,  // the name of the module paramet
         if (fastfilterrange > FASTFILTERRANGE_MAX) {
             fastfilterrange = FASTFILTERRANGE_MAX;
 
-            sprintf(ErrMSG,
-                    "*WARNING* (Pixie16WriteSglModPar): Maximum FastFilterRange that is currently supported is %d",
-                    fastfilterrange);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Warning(PIXIE_FUNC,
+                                "Maximum FastFilterRange that is currently supported is %d",
+                                fastfilterrange);
         }
 #if FASTFILTERRANGE_MIN > 0
         if (fastfilterrange < FASTFILTERRANGE_MIN) {
             fastfilterrange = FASTFILTERRANGE_MIN;
 
-            sprintf(ErrMSG,
-                    "*WARNING* (Pixie16WriteSglModPar): Minimum FastFilterRange that is currently supported is %d",
-                    fastfilterrange);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Warning(PIXIE_FUNC,
+                                "Minimum FastFilterRange that is currently supported is %d",
+                                fastfilterrange);
         }
 #endif
 
@@ -2648,10 +2507,9 @@ Pixie16WriteSglModPar(const char* ModParName,  // the name of the module paramet
         // Program FiPPI to apply settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglModPar): ProgramFippi failed after downloading FastFilterRange, retval=%d",
-                    retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed after downloading FastFilterRange, retval=%d",
+                              retval);
             return (-3);
         }
     } else if (strcmp(ModParName, "FastTrigBackplaneEna") == 0) {
@@ -2665,10 +2523,9 @@ Pixie16WriteSglModPar(const char* ModParName,  // the name of the module paramet
         // Program FiPPI to apply settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglModPar): ProgramFippi failed after downloading FastTrigBackplaneEna, retval=%d",
-                    retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed after downloading FastTrigBackplaneEna, retval=%d",
+                              retval);
             return (-3);
         }
     } else if (strcmp(ModParName, "CrateID") == 0) {
@@ -2681,9 +2538,8 @@ Pixie16WriteSglModPar(const char* ModParName,  // the name of the module paramet
         // Program FiPPI to apply settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16WriteSglModPar): ProgramFippi failed after downloading CrateID, retval=%d",
-                    retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "ProgramFippi failed after downloading CrateID, retval=%d",
+                              retval);
             return (-3);
         }
     } else if (strcmp(ModParName, "SlotID") == 0) {
@@ -2696,9 +2552,8 @@ Pixie16WriteSglModPar(const char* ModParName,  // the name of the module paramet
         // Program FiPPI to apply settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16WriteSglModPar): ProgramFippi failed after downloading SlotID, retval=%d",
-                    retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "ProgramFippi failed after downloading SlotID, retval=%d",
+                              retval);
             return (-3);
         }
     } else if (strcmp(ModParName, "ModID") == 0) {
@@ -2711,9 +2566,8 @@ Pixie16WriteSglModPar(const char* ModParName,  // the name of the module paramet
         // Program FiPPI to apply settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16WriteSglModPar): ProgramFippi failed after downloading ModID, retval=%d",
-                    retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "ProgramFippi failed after downloading ModID, retval=%d",
+                              retval);
             return (-3);
         }
     } else if (strcmp(ModParName, "TrigConfig0") == 0) {
@@ -2726,10 +2580,9 @@ Pixie16WriteSglModPar(const char* ModParName,  // the name of the module paramet
         // Program FiPPI to apply settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglModPar): ProgramFippi failed after downloading TrigConfig0, retval=%d",
-                    retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed after downloading TrigConfig0, retval=%d",
+                              retval);
             return (-3);
         }
     } else if (strcmp(ModParName, "TrigConfig1") == 0) {
@@ -2742,10 +2595,9 @@ Pixie16WriteSglModPar(const char* ModParName,  // the name of the module paramet
         // Program FiPPI to apply settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglModPar): ProgramFippi failed after downloading TrigConfig1, retval=%d",
-                    retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed after downloading TrigConfig1, retval=%d",
+                              retval);
             return (-3);
         }
     } else if (strcmp(ModParName, "TrigConfig2") == 0) {
@@ -2758,10 +2610,9 @@ Pixie16WriteSglModPar(const char* ModParName,  // the name of the module paramet
         // Program FiPPI to apply settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglModPar): ProgramFippi failed after downloading TrigConfig2, retval=%d",
-                    retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed after downloading TrigConfig2, retval=%d",
+                              retval);
             return (-3);
         }
     } else if (strcmp(ModParName, "TrigConfig3") == 0) {
@@ -2774,10 +2625,9 @@ Pixie16WriteSglModPar(const char* ModParName,  // the name of the module paramet
         // Program FiPPI to apply settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglModPar): ProgramFippi failed after downloading TrigConfig3, retval=%d",
-                    retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed after downloading TrigConfig3, retval=%d",
+                              retval);
             return (-3);
         }
     } else if (strcmp(ModParName, "HOST_RT_PRESET") == 0) {
@@ -2790,8 +2640,7 @@ Pixie16WriteSglModPar(const char* ModParName,  // the name of the module paramet
         // When changing HostRunTimePreset in one Pixie module, we need to broadcast it to all other modules as well
         Pixie_Broadcast("HOST_RT_PRESET", ModNum);
     } else {
-        sprintf(ErrMSG, "*ERROR* (Pixie16WriteSglModPar): invalid module parameter name %s", ModParName);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid module parameter name %s", ModParName);
         return (-2);
     }
 
@@ -2816,12 +2665,9 @@ Pixie16ReadSglModPar(const char* ModParName,  // the name of the module paramete
                      unsigned short ModNum)  // module number
 {
 
-    char ErrMSG[MAX_ERRMSG_LENGTH];
-
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ReadSglModPar): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
@@ -2937,8 +2783,7 @@ Pixie16ReadSglModPar(const char* ModParName,  // the name of the module paramete
         // Update module parameter HostRTPreset
         Pixie_Devices[ModNum].DSP_Parameter_Values[HRTP_Address[ModNum] - DATA_MEMORY_ADDRESS] = *ModParData;
     } else {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ReadSglModPar): invalid module parameter name %s", ModParName);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid module parameter name %s", ModParName);
         return (-2);
     }
     return (0);
@@ -2966,9 +2811,6 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
                        unsigned short ModNum,  // module number
                        unsigned short ChanNum)  // channel number
 {
-
-    char ErrMSG[MAX_ERRMSG_LENGTH];
-
     unsigned int FL, FG, SL, SG, FastFilterRange, SlowFilterRange, FifoLength;
     unsigned int fastthresh, peaksample, peaksep, preamptau, tracelength, tracedelay;
     unsigned int paflength, triggerdelay, offsetdac;
@@ -2982,14 +2824,12 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
 
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16WriteSglChanPar): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
     // Check if ChanNum is valid
     if (ChanNum >= NUMBER_OF_CHANNELS) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16WriteSglChanPar): invalid Pixie channel number %d", ChanNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie channel number %d", ChanNum);
         return (-2);
     }
 
@@ -3037,10 +2877,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply FastLength settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading TriggerRiseTime, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading TriggerRiseTime, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "TRIGGER_FLATTOP") == 0) {
@@ -3073,10 +2912,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply FastGap settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading TriggerFlatTop, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading TriggerFlatTop, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "TRIGGER_THRESHOLD") == 0) {
@@ -3106,10 +2944,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply FastThresh settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading TriggerThreshold, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading TriggerThreshold, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else if ((strcmp(ChanParName, "ENERGY_RISETIME") == 0) || (strcmp(ChanParName, "ENERGY_FLATTOP") == 0)) {
@@ -3230,20 +3067,18 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading EnergyRiseTime or EnergyFlatTop, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading EnergyRiseTime or EnergyFlatTop, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
 
         // Update baseline cut value
         retval = Pixie16BLcutFinder(ModNum, ChanNum, &baselinecut);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): BLcutFinder failed in module %d channel %d after downloading EnergyRiseTime or EnergyFlatTop, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "BLcutFinder failed in module %d channel %d after downloading EnergyRiseTime or EnergyFlatTop, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-5);
         }
     } else if (strcmp(ChanParName, "TAU") == 0) {
@@ -3260,20 +3095,18 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Use Program_FiPPI to recompute the coefficients
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading Tau, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading Tau, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
 
         // Update baseline cut value
         retval = Pixie16BLcutFinder(ModNum, ChanNum, &baselinecut);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): BLcutFinder failed in module %d channel %d after downloading Tau, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "BLcutFinder failed in module %d channel %d after downloading Tau, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-5);
         }
     } else if (strcmp(ChanParName, "TRACE_LENGTH") == 0) {
@@ -3318,10 +3151,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply TraceLength settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading TraceLength, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading TraceLength, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "TRACE_DELAY") == 0) {
@@ -3341,10 +3173,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
             tracedelay = (unsigned int) (ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5) /
                                          pow(2.0, (double) FastFilterRange));
         else {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d, no valid tracedelay",
-                    ModNum, ChanNum);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d, no valid tracedelay",
+                              ModNum, ChanNum);
             return (-4);
         }
 
@@ -3365,10 +3196,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading TraceDelay, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading TraceDelay, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "VOFFSET") == 0) {
@@ -3389,10 +3219,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Set DACs to apply the new DAC settings
         retval = Pixie16SetDACs(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): SetDACs failed in module %d channel %d after downloading OffsetDACs, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "SetDACs failed in module %d channel %d after downloading OffsetDACs, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-6);
         }
     } else if (strcmp(ChanParName, "XDT") == 0) {
@@ -3526,20 +3355,18 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading ChanCSRA, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading ChanCSRA, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
 
         // Set DACs to apply the new DAC settings
         retval = Pixie16SetDACs(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): SetDACs failed in module %d channel %d after downloading ChanCSRA, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "SetDACs failed in module %d channel %d after downloading ChanCSRA, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-6);
         }
 
@@ -3547,10 +3374,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         if (APP32_TstBit(CCSRA_ENARELAY, newchancsra) != APP32_TstBit(CCSRA_ENARELAY, oldchancsra)) {
             retval = Pixie16BLcutFinder(ModNum, ChanNum, &baselinecut);
             if (retval < 0) {
-                sprintf(ErrMSG,
-                        "*ERROR* (Pixie16WriteSglChanPar): BLcutFinder failed in module %d channel %d after downloading ChanCSRA, retval=%d",
-                        ModNum, ChanNum, retval);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "BLcutFinder failed in module %d channel %d after downloading ChanCSRA, retval=%d",
+                                  ModNum, ChanNum, retval);
                 return (-5);
             }
         }
@@ -3593,10 +3419,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply FastTrigBackLen settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading Integrator, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading Integrator, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "FASTTRIGBACKLEN") == 0) {
@@ -3636,10 +3461,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply FastTrigBackLen settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading FastTrigBackLen, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading FastTrigBackLen, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "CFDDelay") == 0) {
@@ -3667,10 +3491,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply CFDDelay settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading CFDDelay, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading CFDDelay, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "CFDScale") == 0) {
@@ -3690,10 +3513,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply CFDScale settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading CFDScale, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading CFDScale, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "CFDThresh") == 0) {
@@ -3711,16 +3533,14 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
             // Program FiPPI to apply CFDThresh settings to the FPGA
             retval = Pixie16ProgramFippi(ModNum);
             if (retval < 0) {
-                sprintf(ErrMSG,
-                        "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading CFDThresh, retval=%d",
-                        ModNum, ChanNum, retval);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "ProgramFippi failed in module %d channel %d after downloading CFDThresh, retval=%d",
+                                  ModNum, ChanNum, retval);
                 return (-4);
             }
         } else {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): Value of CFDThresh being set was out of its valid range");
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "Value of CFDThresh being set was out of its valid range");
         }
     } else if (strcmp(ChanParName, "QDCLen0") == 0) {
         // Get the new QDCLen0
@@ -3745,10 +3565,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply QDCLen0 settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading QDCLen0, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading QDCLen0, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "QDCLen1") == 0) {
@@ -3774,10 +3593,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply QDCLen1 settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading QDCLen1, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading QDCLen1, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "QDCLen2") == 0) {
@@ -3803,10 +3621,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply QDCLen2 settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading QDCLen2, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading QDCLen2, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "QDCLen3") == 0) {
@@ -3832,10 +3649,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply QDCLen3 settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading QDCLen3, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading QDCLen3, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "QDCLen4") == 0) {
@@ -3861,10 +3677,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply QDCLen4 settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading QDCLen4, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading QDCLen4, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "QDCLen5") == 0) {
@@ -3890,10 +3705,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply QDCLen5 settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading QDCLen5, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading QDCLen5, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "QDCLen6") == 0) {
@@ -3919,10 +3733,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply QDCLen6 settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading QDCLen6, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading QDCLen6, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "QDCLen7") == 0) {
@@ -3948,10 +3761,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply QDCLen7 settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading QDCLen7, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading QDCLen7, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "ExtTrigStretch") == 0) {
@@ -3983,10 +3795,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply ExtTrigStretch settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading ExtTrigStretch, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading ExtTrigStretch, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "VetoStretch") == 0) {
@@ -4015,10 +3826,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply VetoStretch settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading VetoStretch, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading VetoStretch, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "MultiplicityMaskL") == 0) {
@@ -4035,10 +3845,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply MultiplicityMaskL settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading MultiplicityMaskL, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading MultiplicityMaskL, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "MultiplicityMaskH") == 0) {
@@ -4055,10 +3864,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply MultiplicityMaskH settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading MultiplicityMaskH, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading MultiplicityMaskH, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "ExternDelayLen") == 0) {
@@ -4101,10 +3909,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply ExternDelayLen settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading ExternDelayLen, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading ExternDelayLen, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "FtrigoutDelay") == 0) {
@@ -4146,10 +3953,9 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply FtrigoutDelay settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading FtrigoutDelay, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading FtrigoutDelay, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "ChanTrigStretch") == 0) {
@@ -4181,15 +3987,13 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
         // Program FiPPI to apply ChanTrigStretch settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16WriteSglChanPar): ProgramFippi failed in module %d channel %d after downloading ChanTrigStretch, retval=%d",
-                    ModNum, ChanNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed in module %d channel %d after downloading ChanTrigStretch, retval=%d",
+                              ModNum, ChanNum, retval);
             return (-4);
         }
     } else {
-        sprintf(ErrMSG, "*ERROR* (Pixie16WriteSglChanPar): invalid channel parameter name %s", ChanParName);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid channel parameter name %s", ChanParName);
         return (-3);
     }
 
@@ -4216,8 +4020,6 @@ Pixie16ReadSglChanPar(const char* ChanParName,  // the name of the channel param
                       unsigned short ChanNum)  // channel number
 {
 
-    char ErrMSG[MAX_ERRMSG_LENGTH];
-
     unsigned int FL, FG, SL, SG, FastFilterRange, SlowFilterRange;
     unsigned int fastthresh, preamptau, tracelength;
     unsigned int paflength, triggerdelay, offsetdac;
@@ -4230,14 +4032,12 @@ Pixie16ReadSglChanPar(const char* ChanParName,  // the name of the channel param
 
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ReadSglChanPar): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
     // Check if ChanNum is valid
     if (ChanNum >= NUMBER_OF_CHANNELS) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ReadSglChanPar): invalid Pixie channel number %d", ChanNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie channel number %d", ChanNum);
         return (-2);
     }
 
@@ -4700,8 +4500,7 @@ Pixie16ReadSglChanPar(const char* ChanParName,  // the name of the channel param
         else if (Module_Information[ModNum].Module_ADCMSPS == 500)
             *ChanParData = (double) chantrigstretch / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
     } else {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ReadSglChanPar): invalid channel parameter name %s", ChanParName);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid channel parameter name %s", ChanParName);
         return (-3);
     }
 
@@ -4729,27 +4528,23 @@ Pixie16ReadHistogramFromModule(unsigned int* Histogram,  // histogram data
 {
     int retval;  // return values
     unsigned int Histo_Address;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ReadHistogramFromModule): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
     if (ChanNum >= NUMBER_OF_CHANNELS) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ReadHistogramFromModule): invalid Pixie channel number %d", ChanNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie channel number %d", ChanNum);
         return (-2);
     }
 
     Histo_Address = MAX_HISTOGRAM_LENGTH * ChanNum + HISTOGRAM_MEMORY_ADDRESS;
     retval = Pixie_Main_Memory_IO(Histogram, Histo_Address, NumWords, MOD_READ, ModNum);
     if (retval < 0) {
-        sprintf(ErrMSG,
-                "*ERROR* (Pixie16ReadHistogramFromModule): failed to get histogram data from module %d, retval=%d",
-                ModNum, retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC,
+                          "failed to get histogram data from module %d, retval=%d",
+                          ModNum, retval);
         return (-3);
     }
 
@@ -4774,12 +4569,10 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadStatisticsFromModule(unsigned in
     int retval;  // return values
     unsigned short nWords, k;  // number of words
     unsigned int DSP_address;  // Start address in DSP memory
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ReadStatisticsFromModule): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
@@ -4794,10 +4587,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadStatisticsFromModule(unsigned in
         DSP_address = DATA_MEMORY_ADDRESS + DSP_IO_BORDER;
         retval = Pixie_DSP_Memory_IO(Statistics, DSP_address, nWords, MOD_READ, ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16ReadStatisticsFromModule): failed to get statistics data from module %d, retval=%d",
-                    ModNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "failed to get statistics data from module %d, retval=%d",
+                              ModNum, retval);
             return (-2);
         }
     }
@@ -4827,8 +4619,6 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadStatisticsFromModule(unsigned in
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* FileName,  // histogram data file name
                                                                 unsigned short ModNum)  // module number
 {
-
-    char ErrMSG[MAX_ERRMSG_LENGTH];
     FILE* HistFile = NULL;
     unsigned int* histdata;
     unsigned int histo_addr;
@@ -4845,8 +4635,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* File
 
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16SaveHistogramToFile): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
@@ -4864,10 +4653,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* File
                     // Close HistFile
                     fclose(HistFile);
 
-                    sprintf(ErrMSG,
-                            "*ERROR* (Pixie16SaveHistogramToFile): failed to get histogram data from module %d, retval=%d",
-                            ModNum, retval);
-                    Pixie_Print_MSG(ErrMSG);
+                    Pixie_Print_Error(PIXIE_FUNC,
+                                      "failed to get histogram data from module %d, retval=%d",
+                                      ModNum, retval);
                     return (-2);
                 }
 
@@ -4880,18 +4668,16 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* File
             // Close HistFile
             fclose(HistFile);
 
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16SaveHistogramToFile): failed to allocate memory to store list mode data for module %d",
-                    ModNum);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "failed to allocate memory to store list mode data for module %d",
+                              ModNum);
             return (-3);
         }
 
         // Close HistFile
         fclose(HistFile);
     } else {
-        sprintf(ErrMSG, "*ERROR* (Pixie16SaveHistogramToFile): failed to open histogram data file %s", FileName);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "failed to open histogram data file %s", FileName);
         return (-4);
     }
 
@@ -4902,8 +4688,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* File
     strlength = strlen(FileName);
 
     if (strlength >= (sizeof(outfilename) - 4)) {
-        sprintf(ErrMSG, "*Error* (Pixie16SaveHistogramToFile): file name too long");
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "file name too long");
         return (-5);
     }
 
@@ -4913,16 +4698,14 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* File
     strcat(outfilename, "asc");
     outfil_mca = fopen(outfilename, "w");
     if (outfil_mca == NULL) {
-        sprintf(ErrMSG, "*Error* (Pixie16SaveHistogramToFile): open mca output file %s failed", outfilename);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "open mca output file %s failed", outfilename);
         return (-5);
     }
 
     for (ChannelNumber = 0; ChannelNumber < NUMBER_OF_CHANNELS; ChannelNumber++) {
         MCAData[ChannelNumber] = (unsigned int*) malloc(sizeof(unsigned int) * MAX_HISTOGRAM_LENGTH);
         if (MCAData[ChannelNumber] == NULL) {
-            sprintf(ErrMSG, "*Error* (Pixie16SaveHistogramToFile): failed to allocate memory for MCA data");
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed to allocate memory for MCA data");
 
             for (index = 0; index < ChannelNumber; index++) { free(MCAData[index]); }
 
@@ -4938,9 +4721,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* File
         retval = Pixie16ReadHistogramFromFile(FileName, MCAData[ChannelNumber], MAX_HISTOGRAM_LENGTH, ModuleNumber,
                                               ChannelNumber);
         if (retval < 0) {
-            sprintf(ErrMSG, "*Error* (Pixie16SaveHistogramToFile): Pixie16ReadHistogramFromFile failed, retval=%d",
-                    retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "Pixie16ReadHistogramFromFile failed, retval=%d",
+                              retval);
             fclose(outfil_mca);
             for (index = 0; index < NUMBER_OF_CHANNELS; index++) { free(MCAData[index]); }
             return (-7);
@@ -4967,9 +4749,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* File
     // Read raw run statistics data from the module
     retval = Pixie16ReadStatisticsFromModule(run_statistics, ModNum);
     if (retval < 0) {
-        sprintf(ErrMSG, "*Error* (Pixie16SaveHistogramToFile): Pixie16ReadStatisticsFromModule failed, retval=%d",
-                retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "Pixie16ReadStatisticsFromModule failed, retval=%d",
+                          retval);
         fclose(outfil_mca);
         return (-8);
     }
@@ -5045,14 +4826,12 @@ Pixie16GetModuleEvents(const char* FileName,  // the list mode data file name (w
 
     unsigned int eventdata, eventlength;
     unsigned int TotalWords, TotalSkippedWords;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
     FILE* ListModeFile = NULL;
     int retval;
 
     // Check if ModuleEvents is valid
     if (ModuleEvents == NULL) {
-        sprintf(ErrMSG, "*Error* (Pixie16GetModuleEvents): Null pointer *ModuleEvents");
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "Null pointer *ModuleEvents");
         return (-1);
     }
 
@@ -5062,9 +4841,8 @@ Pixie16GetModuleEvents(const char* FileName,  // the list mode data file name (w
         // Get file length
         retval = fseek(ListModeFile, 0, SEEK_END);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed listmode seek, error=%d",
-                     errno);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed listmode seek, error=%d",
+                              errno);
             (void) fclose(ListModeFile);
             return (-1);
         }
@@ -5074,9 +4852,8 @@ Pixie16GetModuleEvents(const char* FileName,  // the list mode data file name (w
         // Point ListModeFile to the beginning of file
         retval = fseek(ListModeFile, 0, SEEK_SET);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed listmode seek, error=%d",
-                    errno);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed listmode seek, error=%d",
+                              errno);
             (void) fclose(ListModeFile);
             return (-1);
         }
@@ -5087,9 +4864,8 @@ Pixie16GetModuleEvents(const char* FileName,  // the list mode data file name (w
         do {
             retval = fread(&eventdata, 4, 1, ListModeFile);
             if (retval < 0) {
-                sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed listmode read, error=%d",
-                        errno);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "failed listmode read, error=%d",
+                                  errno);
                 (void) fclose(ListModeFile);
                 return (-1);
             }
@@ -5097,9 +4873,8 @@ Pixie16GetModuleEvents(const char* FileName,  // the list mode data file name (w
             TotalSkippedWords += eventlength;
             retval = fseek(ListModeFile, (eventlength - 1) * 4, SEEK_CUR);
             if (retval < 0) {
-                sprintf(ErrMSG, "*ERROR* (Pixie16BootModule): failed listmode seek, error=%d",
-                        errno);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "failed listmode seek, error=%d",
+                                  errno);
                 (void) fclose(ListModeFile);
                 return (-1);
             }
@@ -5108,8 +4883,7 @@ Pixie16GetModuleEvents(const char* FileName,  // the list mode data file name (w
 
         (void) fclose(ListModeFile);
     } else {
-        sprintf(ErrMSG, "*ERROR* (Pixie16GetModuleEvents): can't open list mode data file %s", FileName);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "can't open list mode data file %s", FileName);
         return (-2);
     }
 
@@ -5138,20 +4912,17 @@ Pixie16GetEventsInfo(const char* FileName,  // the list mode data file name (wit
 
     unsigned int eventdata, headerlength, eventlength;
     unsigned int TotalWords, TotalSkippedWords, NumEvents;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
     FILE* ListModeFile = NULL;
     int retval;
 
     // Check if EventInformation is valid
     if (EventInformation == NULL) {
-        sprintf(ErrMSG, "*Error* (Pixie16GetEventsInfo): Null pointer *EventInformation");
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "Null pointer *EventInformation");
         return (-1);
     }
 
     if (ModuleNumber >= PRESET_MAX_MODULES) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16GetEventsInfo): Target module number is invalid %d", ModuleNumber);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "Target module number is invalid %d", ModuleNumber);
         return (-2);
     }
 
@@ -5161,9 +4932,8 @@ Pixie16GetEventsInfo(const char* FileName,  // the list mode data file name (wit
         // Get file length
         retval = fseek(ListModeFile, 0, SEEK_END);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16GetEventsInfo): failed listmode seek for module %d, error=%d",
-                    ModuleNumber, errno);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed listmode seek for module %d, error=%d",
+                              ModuleNumber, errno);
             (void) fclose(ListModeFile);
             return (-1);
         }
@@ -5171,9 +4941,8 @@ Pixie16GetEventsInfo(const char* FileName,  // the list mode data file name (wit
         // Point ListModeFile to the beginning of file
         retval = fseek(ListModeFile, 0, SEEK_SET);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16GetEventsInfo): failed listmode seek for module %d, error=%d",
-                    ModuleNumber, errno);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed listmode seek for module %d, error=%d",
+                              ModuleNumber, errno);
             (void) fclose(ListModeFile);
             return (-1);
         }
@@ -5185,9 +4954,8 @@ Pixie16GetEventsInfo(const char* FileName,  // the list mode data file name (wit
         do {
             retval = fread(&eventdata, 4, 1, ListModeFile);
             if (retval < 0) {
-                sprintf(ErrMSG, "*ERROR* (Pixie16GetEventsInfo): failed listmode read for module %d, error=%d",
-                        ModuleNumber, errno);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "failed listmode read for module %d, error=%d",
+                                  ModuleNumber, errno);
                 (void) fclose(ListModeFile);
                 return (-1);
             }
@@ -5215,9 +4983,8 @@ Pixie16GetEventsInfo(const char* FileName,  // the list mode data file name (wit
 
             retval = fread(&eventdata, 4, 1, ListModeFile);
             if (retval < 0) {
-                sprintf(ErrMSG, "*ERROR* (Pixie16GetEventsInfo): failed listmode read for module %d, error=%d",
-                        ModuleNumber, errno);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "failed listmode read for module %d, error=%d",
+                                  ModuleNumber, errno);
                 (void) fclose(ListModeFile);
                 return (-1);
             }
@@ -5227,9 +4994,8 @@ Pixie16GetEventsInfo(const char* FileName,  // the list mode data file name (wit
 
             retval = fread(&eventdata, 4, 1, ListModeFile);
             if (retval < 0) {
-                sprintf(ErrMSG, "*ERROR* (Pixie16GetEventsInfo): failed listmode read for module %d, error=%d",
-                        ModuleNumber, errno);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "failed listmode read for module %d, error=%d",
+                                  ModuleNumber, errno);
                 (void) fclose(ListModeFile);
                 return (-1);
             }
@@ -5246,9 +5012,8 @@ Pixie16GetEventsInfo(const char* FileName,  // the list mode data file name (wit
 
             retval = fseek(ListModeFile, (eventlength - 4) * 4, SEEK_CUR);
             if (retval < 0) {
-                sprintf(ErrMSG, "*ERROR* (Pixie16GetEventsInfo): failed listmode seek for module %d, error=%d",
-                        ModuleNumber, errno);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "failed listmode seek for module %d, error=%d",
+                                  ModuleNumber, errno);
                 (void) fclose(ListModeFile);
                 return (-1);
             }
@@ -5256,8 +5021,7 @@ Pixie16GetEventsInfo(const char* FileName,  // the list mode data file name (wit
 
         (void) fclose(ListModeFile);
     } else {
-        sprintf(ErrMSG, "*ERROR* (Pixie16GetEventsInfo): can't open list mode data file %s", FileName);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "can't open list mode data file %s", FileName);
         return (-3);
     }
 
@@ -5281,8 +5045,6 @@ Pixie16ReadListModeTrace(const char* FileName,  // list mode data file name
                          unsigned short NumWords,  // number of 16-bit words to be read out
                          unsigned int FileLocation)  // the location of the trace in the file
 {
-
-    char ErrMSG[MAX_ERRMSG_LENGTH];
     FILE* ListModeFile = NULL;
 
     // Open the list mode file
@@ -5293,9 +5055,8 @@ Pixie16ReadListModeTrace(const char* FileName,  // list mode data file name
         // Position ListModeFile to the requested trace location
         retval = fseek(ListModeFile, FileLocation * 4, SEEK_SET);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16ReadListModeTrace): failed listmode data seek, error=%d",
-                    errno);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed listmode data seek, error=%d",
+                              errno);
             (void) fclose(ListModeFile);
             return (-1);
         }
@@ -5303,9 +5064,8 @@ Pixie16ReadListModeTrace(const char* FileName,  // list mode data file name
         // Read trace
         retval = fread(Trace_Data, 2, NumWords, ListModeFile);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16ReadListModeTrace): failed listmode read, error=%d",
-                    errno);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed listmode read, error=%d",
+                              errno);
             (void) fclose(ListModeFile);
             return (-1);
         }
@@ -5313,8 +5073,7 @@ Pixie16ReadListModeTrace(const char* FileName,  // list mode data file name
         (void) fclose(ListModeFile);
 
     } else {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ReadListModeTrace): can't open list mode file %s", FileName);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "can't open list mode file %s", FileName);
         return (-1);
     }
 
@@ -5342,7 +5101,6 @@ Pixie16ReadHistogramFromFile(const char* FileName,  // the histogram data file n
 {
 
     unsigned int Histo_Address, TotalWords;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
     FILE* HistogramFile = NULL;
 
     // Open the histogram data file
@@ -5353,9 +5111,8 @@ Pixie16ReadHistogramFromFile(const char* FileName,  // the histogram data file n
         // Get file length
         retval = fseek(HistogramFile, 0, SEEK_END);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16ReadHistogramFromFile): failed histogram seek, error=%d",
-                    errno);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed histogram seek, error=%d",
+                              errno);
             (void) fclose(HistogramFile);
             return (-1);
         }
@@ -5363,19 +5120,17 @@ Pixie16ReadHistogramFromFile(const char* FileName,  // the histogram data file n
         // Point HistogramFile to the beginning of file
         retval = fseek(HistogramFile, 0, SEEK_SET);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16ReadHistogramFromFile): failed histogram seek, error=%d",
-                    errno);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed histogram seek, error=%d",
+                              errno);
             (void) fclose(HistogramFile);
             return (-1);
         }
 
         Histo_Address = MAX_HISTOGRAM_LENGTH * ChanNum;
         if (Histo_Address > (TotalWords - NumWords)) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16ReadHistogramFromFile): no histogram data is available in file %s for channel %d of module %d",
-                    FileName, ChanNum, ModNum);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "no histogram data is available in file %s for channel %d of module %d",
+                              FileName, ChanNum, ModNum);
             (void) fclose(HistogramFile);
             return (-2);
         }
@@ -5385,18 +5140,16 @@ Pixie16ReadHistogramFromFile(const char* FileName,  // the histogram data file n
         // Point HistogramFile to the right location of the histogram data file
         retval = fseek(HistogramFile, Histo_Address * 4, SEEK_CUR);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16ReadHistogramFromFile): failed histogram seek, error=%d",
-                    errno);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed histogram seek, error=%d",
+                              errno);
             (void) fclose(HistogramFile);
             return (-1);
         }
 
         retval = fread(Histogram, 4, NumWords, HistogramFile);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16ReadHistogramFromFile): failed histogram read, error=%d",
-                    errno);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed histogram read, error=%d",
+                              errno);
             (void) fclose(HistogramFile);
             return (-1);
         }
@@ -5404,8 +5157,7 @@ Pixie16ReadHistogramFromFile(const char* FileName,  // the histogram data file n
         // Close the file
         (void) fclose(HistogramFile);
     } else {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ReadHistogramFromFile): failed to open histogram file %s", FileName);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "failed to open histogram file %s", FileName);
         return (-1);
     }
 
@@ -5428,7 +5180,6 @@ PIXIE16APP_EXPORT int PIXIE16APP_API
 Pixie16SaveDSPParametersToFile(const char* FileName)  // the DSP parameters file name (with complete path)
 {
     unsigned short ModNum;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
     FILE* DSPSettingsFile = NULL;
     int retval;
 
@@ -5440,10 +5191,9 @@ Pixie16SaveDSPParametersToFile(const char* FileName)  // the DSP parameters file
             retval = Pixie16IMbufferIO(Pixie_Devices[ModNum].DSP_Parameter_Values, N_DSP_PAR, DATA_MEMORY_ADDRESS,
                                        MOD_READ, ModNum);
             if (retval < 0) {
-                sprintf(ErrMSG,
-                        "*ERROR* (Pixie16SaveDSPParametersToFile): failed to read DSP parameter values from module %d, retval = %d",
-                        ModNum, retval);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "failed to read DSP parameter values from module %d, retval = %d",
+                                  ModNum, retval);
                 (void) fclose(DSPSettingsFile);
                 return (-1);
             }
@@ -5453,10 +5203,9 @@ Pixie16SaveDSPParametersToFile(const char* FileName)  // the DSP parameters file
         for (ModNum = 0; ModNum < PRESET_MAX_MODULES; ModNum++) {
             retval = fwrite(Pixie_Devices[ModNum].DSP_Parameter_Values, sizeof(unsigned int), N_DSP_PAR, DSPSettingsFile);
             if (retval < 0) {
-                sprintf(ErrMSG,
-                        "*ERROR* (Pixie16SaveDSPParametersToFile): failed to write DSP parameter values from module %d, error=%d",
-                        ModNum, errno);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "failed to write DSP parameter values from module %d, error=%d",
+                                  ModNum, errno);
                 (void) fclose(DSPSettingsFile);
                 return (-1);
             }
@@ -5465,8 +5214,7 @@ Pixie16SaveDSPParametersToFile(const char* FileName)  // the DSP parameters file
         // Close the file
         (void) fclose(DSPSettingsFile);
     } else {
-        sprintf(ErrMSG, "*ERROR* (Pixie16SaveDSPParametersToFile): failed to open DSP parameters file %s", FileName);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "failed to open DSP parameters file %s", FileName);
         return (-2);
     }
 
@@ -5493,7 +5241,6 @@ Pixie16LoadDSPParametersFromFile(const char* FileName)  // the DSP parameters fi
     unsigned short k;
     unsigned int TotalWords;
     int retval;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
     FILE* DSPSettingsFile = NULL;
 
     // Open DSP parameters file
@@ -5502,20 +5249,18 @@ Pixie16LoadDSPParametersFromFile(const char* FileName)  // the DSP parameters fi
         // Check if file size is consistent with predefined length (N_DSP_PAR * PRESET_MAX_MODULES)
         retval = fseek(DSPSettingsFile, 0, SEEK_END);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16LoadDSPParametersFromFile): failed seek Fippi settings, error=%d",
-                    errno);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "failed seek Fippi settings, error=%d",
+                              errno);
             (void) fclose(DSPSettingsFile);
             return (-2);
         }
 
         TotalWords = (ftell(DSPSettingsFile) + 1) / 4;
         if (TotalWords != (N_DSP_PAR * PRESET_MAX_MODULES)) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16LoadDSPParametersFromFile): size of DSPParFile is invalid. Check DSPParFile name %s",
-                    FileName);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "size of DSPParFile is invalid. Check DSPParFile name %s",
+                              FileName);
             (void) fclose(DSPSettingsFile);
             return (-1);
         }
@@ -5523,10 +5268,9 @@ Pixie16LoadDSPParametersFromFile(const char* FileName)  // the DSP parameters fi
         // Point configfil to the beginning of file
         retval = fseek(DSPSettingsFile, 0, SEEK_SET);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16LoadDSPParametersFromFile): failed seek Fippi settings, error=%d",
-                    errno);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "failed seek Fippi settings, error=%d",
+                              errno);
             (void) fclose(DSPSettingsFile);
             return (-2);
         }
@@ -5535,10 +5279,9 @@ Pixie16LoadDSPParametersFromFile(const char* FileName)  // the DSP parameters fi
         for (k = 0; k < PRESET_MAX_MODULES; k++) {
             retval = fread(&Pixie_Devices[k].DSP_Parameter_Values[0], sizeof(unsigned int), N_DSP_PAR, DSPSettingsFile);
             if (retval < 0) {
-                sprintf(ErrMSG,
-                        "*ERROR* (Pixie16LoadDSPParametersFromFile): failed to read Fippi settings in module %d, error=%d",
-                        k, errno);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "failed to read Fippi settings in module %d, error=%d",
+                                  k, errno);
                 (void) fclose(DSPSettingsFile);
                 return (-2);
             }
@@ -5556,25 +5299,22 @@ Pixie16LoadDSPParametersFromFile(const char* FileName)  // the DSP parameters fi
             // Always re-program fippi after downloading DSP parameters
             retval = Pixie16ProgramFippi(k);
             if (retval < 0) {
-                sprintf(ErrMSG,
-                        "*ERROR* (Pixie16LoadDSPParametersFromFile): failed to program Fippi in module %d, retval=%d",
-                        k, retval);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "failed to program Fippi in module %d, retval=%d",
+                                  k, retval);
                 return (-2);
             }
 
             retval = Pixie16SetDACs(k);
             if (retval < 0) {
-                sprintf(ErrMSG,
-                        "*ERROR* (Pixie16LoadDSPParametersFromFile): failed to set DACs in module %d, retval=%d", k,
-                        retval);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "failed to set DACs in module %d, retval=%d", k,
+                                  retval);
                 return (-3);
             }
         }
     } else {
-        sprintf(ErrMSG, "*ERROR* (Pixie16LoadDSPParametersFromFile): failed to open DSP parameters file %s", FileName);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "failed to open DSP parameters file %s", FileName);
         return (-4);
     }
 
@@ -5601,7 +5341,6 @@ Pixie16CopyDSPParameters(unsigned short BitMask,  // copy items bit mask
 {
     unsigned short i, j, k;
     int retval;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     // Copy settings to the destination modules and channels
     for (i = 0; i < Number_Modules; i++) {
@@ -5620,17 +5359,15 @@ Pixie16CopyDSPParameters(unsigned short BitMask,  // copy items bit mask
         // Always re-program fippi after downloading DSP parameters
         retval = Pixie16ProgramFippi(k);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16CopyDSPParameters): failed to program Fippi in module %d, retval=%d", k,
-                    retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed to program Fippi in module %d, retval=%d", k,
+                              retval);
             return (-1);
         }
 
         retval = Pixie16SetDACs(k);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie16CopyDSPParameters): failed to set DACs in module %d, retval=%d", k,
-                    retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed to set DACs in module %d, retval=%d", k,
+                              retval);
             return (-2);
         }
     }
@@ -5661,25 +5398,22 @@ Pixie16SaveExternalFIFODataToFile(const char* FileName,  // list mode data file 
                                   unsigned short EndOfRunRead)  // indicator whether this is the end of run read
 {
     unsigned int nWords;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
     FILE* ListFile = NULL;
     unsigned int* lmdata;
     int retval;
 
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16SaveExternalFIFODataToFile): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         *nFIFOWords = 0;
         return (-1);
     }
 
     // Allocate memory
     if ((lmdata = (unsigned int*) malloc(sizeof(unsigned int) * EXTERNAL_FIFO_LENGTH)) == NULL) {
-        sprintf(ErrMSG,
-                "*ERROR* (Pixie16SaveExternalFIFODataToFile): failed to allocate memory to store list mode data for module %d",
-                ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC,
+                          "failed to allocate memory to store list mode data for module %d",
+                          ModNum);
         *nFIFOWords = 0;
         return (-2);
     }
@@ -5689,10 +5423,9 @@ Pixie16SaveExternalFIFODataToFile(const char* FileName,  // list mode data file 
         // Check how many words are in the external FIFO
         retval = Pixie_Read_ExtFIFOStatus(&nWords, ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie16SaveExternalFIFODataToFile): failed to read external FIFO status in module %d, retval = %d",
-                    ModNum, retval);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "failed to read external FIFO status in module %d, retval = %d",
+                              ModNum, retval);
             fclose(ListFile);
             free(lmdata);
             *nFIFOWords = 0;
@@ -5704,10 +5437,9 @@ Pixie16SaveExternalFIFODataToFile(const char* FileName,  // list mode data file 
         if (((EndOfRunRead == 0) && (nWords > EXTFIFO_READ_THRESH)) || ((EndOfRunRead == 1) && (nWords > 0))) {
             retval = Pixie_ExtFIFO_Read(lmdata, nWords, ModNum);
             if (retval < 0) {
-                sprintf(ErrMSG,
-                        "*ERROR* (Pixie16SaveExternalFIFODataToFile): failed to read data from external FIFO in module %d, retval = %d",
-                        ModNum, retval);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "failed to read data from external FIFO in module %d, retval = %d",
+                                  ModNum, retval);
                 fclose(ListFile);
                 free(lmdata);
                 *nFIFOWords = 0;
@@ -5720,8 +5452,7 @@ Pixie16SaveExternalFIFODataToFile(const char* FileName,  // list mode data file 
             *nFIFOWords = 0;
         }
     } else {
-        sprintf(ErrMSG, "*ERROR* (Pixie16SaveExternalFIFODataToFile): failed to open list mode data file %s", FileName);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "failed to open list mode data file %s", FileName);
         free(lmdata);
         *nFIFOWords = 0;
         return (-3);
@@ -5749,12 +5480,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16RegisterIO(unsigned short ModNum,  /
                                                        unsigned short direction,  // either MOD_READ or MOD_WRITE
                                                        unsigned int* value)  // holds or receives the data
 {
-    char ErrMSG[MAX_ERRMSG_LENGTH];
-
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16RegisterIO): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
@@ -5774,12 +5502,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16RegisterIO(unsigned short ModNum,  /
 ****************************************************************/
 
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadCSR(unsigned short ModNum, unsigned int* CSR) {
-    char ErrMSG[MAX_ERRMSG_LENGTH];
-
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ReadCSR): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
@@ -5799,12 +5524,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadCSR(unsigned short ModNum, unsig
 ****************************************************************/
 
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteCSR(unsigned short ModNum, unsigned int CSR) {
-    char ErrMSG[MAX_ERRMSG_LENGTH];
-
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16WriteCSR): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
@@ -5826,12 +5548,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteCSR(unsigned short ModNum, unsi
 
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16CheckExternalFIFOStatus(unsigned int* nFIFOWords, unsigned short ModNum) {
     int retval;  // return values
-    char ErrMSG[MAX_ERRMSG_LENGTH];
-
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16CheckExternalFIFOStatus): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
@@ -5857,21 +5576,18 @@ Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO_Data,  // To receive the e
                                 unsigned short ModNum)  // module number
 {
     int retval;  // return values
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ReadDataFromExternalFIFO): invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
 
     retval = Pixie_ExtFIFO_Read(ExtFIFO_Data, nFIFOWords, ModNum);
     if (retval < 0) {
-        sprintf(ErrMSG,
-                "*ERROR* (Pixie16ReadDataFromExternalFIFO): failed to read data from external FIFO in module %d, retval=%d",
-                ModNum, retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC,
+                          "failed to read data from external FIFO in module %d, retval=%d",
+                          ModNum, retval);
         return (-2);
     }
 
@@ -5906,7 +5622,6 @@ Pixie16ComputeFastFiltersOffline(const char* FileName,  // the list mode data fi
                                  double* cfd)  // cfd response
 {
 
-    char ErrMSG[MAX_ERRMSG_LENGTH];
     FILE* ListModeFile = NULL;
     unsigned int FastLen, FastGap, FastFilterRange, CFD_Delay, CFD_W;
     unsigned int fsum0[32768], fsum1[32768];
@@ -5917,28 +5632,24 @@ Pixie16ComputeFastFiltersOffline(const char* FileName,  // the list mode data fi
 
     // Check if RcdTrace is valid
     if (RcdTrace == NULL) {
-        sprintf(ErrMSG, "*Error* (Pixie16ComputeFastFiltersOffline): Null pointer *RcdTrace");
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "Null pointer *RcdTrace");
         return (-1);
     }
 
     // Check if fastfilter is valid
     if (fastfilter == NULL) {
-        sprintf(ErrMSG, "*Error* (Pixie16ComputeFastFiltersOffline): Null pointer *fastfilter");
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "Null pointer *fastfilter");
         return (-2);
     }
 
     // Check if cfd is valid
     if (cfd == NULL) {
-        sprintf(ErrMSG, "*Error* (Pixie16ComputeFastFiltersOffline): Null pointer *cfd");
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "Null pointer *cfd");
         return (-3);
     }
 
     if (ModuleNumber >= PRESET_MAX_MODULES) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ComputeFastFiltersOffline): Target module number is invalid %d", ModuleNumber);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "Target module number is invalid %d", ModuleNumber);
         return (-4);
     }
 
@@ -5969,8 +5680,7 @@ Pixie16ComputeFastFiltersOffline(const char* FileName,  // the list mode data fi
 
     // Check if trace length is sufficiently long
     if (RcdTraceLength < ((2 * FastLen + FastGap) * 2)) {
-        sprintf(ErrMSG, "*Error* (Pixie16ComputeFastFiltersOffline): the length of recorded trace is too short");
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "the length of recorded trace is too short");
         return (-5);
     }
 
@@ -5980,9 +5690,8 @@ Pixie16ComputeFastFiltersOffline(const char* FileName,  // the list mode data fi
         // Position ListModeFile to the requested trace location
         retval = fseek(ListModeFile, FileLocation * 4, SEEK_SET);
         if (retval < 0) {
-            sprintf(ErrMSG, "*Error* (Pixie16ComputeFastFiltersOffline): failed to seek listmode file for module %d, error=%d",
-                    ModuleNumber, errno);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed to seek listmode file for module %d, error=%d",
+                              ModuleNumber, errno);
             (void) fclose(ListModeFile);
             return (-1);
         }
@@ -5990,9 +5699,8 @@ Pixie16ComputeFastFiltersOffline(const char* FileName,  // the list mode data fi
         // Read trace
         retval = fread(RcdTrace, 2, RcdTraceLength, ListModeFile);
         if (retval < 0) {
-            sprintf(ErrMSG, "*Error* (Pixie16ComputeFastFiltersOffline): failed to read listmode file for module %d, error=%d",
-                    ModuleNumber, errno);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed to read listmode file for module %d, error=%d",
+                              ModuleNumber, errno);
             (void) fclose(ListModeFile);
             return (-1);
         }
@@ -6048,8 +5756,7 @@ Pixie16ComputeFastFiltersOffline(const char* FileName,  // the list mode data fi
             for (x = 0; x < RcdTraceLength; x++) { cfd[x] = 0.0; }
         }
     } else {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ComputeFastFiltersOffline): can't open list mode file %s", FileName);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "can't open list mode file %s", FileName);
         return (-6);
     }
 
@@ -6082,7 +5789,6 @@ Pixie16ComputeSlowFiltersOffline(const char* FileName,  // the list mode data fi
                                  double* slowfilter)  // slow filter response
 {
 
-    char ErrMSG[MAX_ERRMSG_LENGTH];
     FILE* ListModeFile = NULL;
     unsigned int SlowLen, SlowGap, SlowFilterRange, PreampTau_IEEE;
     unsigned int esum0[32768], esum1[32768], esum2[32768];
@@ -6095,21 +5801,18 @@ Pixie16ComputeSlowFiltersOffline(const char* FileName,  // the list mode data fi
 
     // Check if RcdTrace is valid
     if (RcdTrace == NULL) {
-        sprintf(ErrMSG, "*Error* (Pixie16ComputeSlowFiltersOffline): Null pointer *RcdTrace");
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "Null pointer *RcdTrace");
         return (-1);
     }
 
     // Check if slowfilter is valid
     if (slowfilter == NULL) {
-        sprintf(ErrMSG, "*Error* (Pixie16ComputeSlowFiltersOffline): Null pointer *slowfilter");
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "Null pointer *slowfilter");
         return (-2);
     }
 
     if (ModuleNumber >= PRESET_MAX_MODULES) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ComputeSlowFiltersOffline): Target module number is invalid %d", ModuleNumber);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "Target module number is invalid %d", ModuleNumber);
         return (-3);
     }
 
@@ -6139,8 +5842,7 @@ Pixie16ComputeSlowFiltersOffline(const char* FileName,  // the list mode data fi
 
     // Check if trace length is sufficiently long
     if (RcdTraceLength < ((2 * SlowLen + SlowGap) * 2)) {
-        sprintf(ErrMSG, "*Error* (Pixie16ComputeSlowFiltersOffline): the length of recorded trace is too short");
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "the length of recorded trace is too short");
         return (-4);
     }
 
@@ -6152,9 +5854,8 @@ Pixie16ComputeSlowFiltersOffline(const char* FileName,  // the list mode data fi
         // Position ListModeFile to the requested trace location
         retval = fseek(ListModeFile, FileLocation * 4, SEEK_SET);
         if (retval < 0) {
-            sprintf(ErrMSG, "*Error* (Pixie16ComputeSlowFiltersOffline): failure seek listmode data, error=%d",
-                errno);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failure seek listmode data, error=%d",
+                              errno);
             (void) fclose(ListModeFile);
             return (-4);
         }
@@ -6162,9 +5863,8 @@ Pixie16ComputeSlowFiltersOffline(const char* FileName,  // the list mode data fi
         // Read trace
         retval = fread(RcdTrace, 2, RcdTraceLength, ListModeFile);
         if (retval < 0) {
-            sprintf(ErrMSG, "*Error* (Pixie16ComputeSlowFiltersOffline): failure read listmode data, error=%d",
-                errno);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failure read listmode data, error=%d",
+                              errno);
             (void) fclose(ListModeFile);
             return (-4);
         }
@@ -6180,8 +5880,7 @@ Pixie16ComputeSlowFiltersOffline(const char* FileName,  // the list mode data fi
         else if (Module_Information[ModuleNumber].Module_ADCBits == 16)
             coef_scaling_factor = 1.0;
         else {
-            sprintf(ErrMSG, "*Error* (Pixie16ComputeSlowFiltersOffline): invalid ADC number of bits");
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "invalid ADC number of bits");
             return (-4);
         }
 
@@ -6218,8 +5917,7 @@ Pixie16ComputeSlowFiltersOffline(const char* FileName,  // the list mode data fi
         // Extend the value of slowfilter[offset] to all non-computed ones from index 0 to offset-1
         for (x = 0; x < offset; x++) { slowfilter[x] = slowfilter[offset]; }
     } else {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ComputeSlowFiltersOffline): can't open list mode file %s", FileName);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "can't open list mode file %s", FileName);
         return (-5);
     }
 
@@ -6242,19 +5940,15 @@ PIXIE16APP_EXPORT int PIXIE16APP_API
 Pixie16SetOfflineVariant(unsigned short ModuleNumber,  // the module to be set offline variant
                          unsigned short ModuleOfflineVariant)  // module's offline variant
 {
-    char ErrMSG[MAX_ERRMSG_LENGTH];
-
     //check if module number is valid
     if (ModuleNumber >= PRESET_MAX_MODULES) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16SetOfflineVariant): module number is invalid %d", ModuleNumber);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "module number is invalid %d", ModuleNumber);
         return (-1);
     }
 
     //check if offline variant is valid
     if (ModuleOfflineVariant > 7) {
-        sprintf(ErrMSG, "*ERROR* (Pixie16SetOfflineVariant): variant is invalid %d", ModuleOfflineVariant);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "variant is invalid %d", ModuleOfflineVariant);
         return (-2);
     }
 

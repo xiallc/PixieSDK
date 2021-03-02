@@ -23,9 +23,7 @@ TEST_SUITE("sys/tools.c") {
     TEST_CASE("Pixie_Print_MSG") {
         std::random_device rd;
         auto random_val = std::fabs(rd());
-        char msg[1024];
-        sprintf(msg, "Unit test: %f", random_val);
-        CHECK(Pixie_Print_MSG(msg) == 0);
+        Pixie_Print_MSG("Unit test: %f", random_val);
         std::ifstream file("Pixie16msg.txt", std::ios::in);
         REQUIRE(file.is_open());
         //From: http://cplusplus.com/forum/general/108679/#msg591060

@@ -76,14 +76,13 @@ int PCF8574_Read_One_Byte (
         unsigned short ModNum,		// Pixie module number
         char *ByteValue )			// The byte value
 {
-    char ErrMSG[256], IOByte;
+    char IOByte;
     char ackvalue;
 
     // Check if ModNum is valid
     if(ModNum >= SYS_MAX_NUM_MODULES)
     {
-        sprintf(ErrMSG, "*ERROR* (PCF8574_Read_One_Byte): Invalid Pixie module number %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "Invalid Pixie module number %d", ModNum);
         return(-1);
     }
 
@@ -98,16 +97,14 @@ int PCF8574_Read_One_Byte (
     ackvalue = PCF8574_getACK(ModNum);
     if(ackvalue != 0)
     {
-        sprintf(ErrMSG, "*ERROR* (PCF8574_Read_One_Byte): Failed to get Acknowledge after sending DevSel byte");
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "Failed to get Acknowledge after sending DevSel byte");
         return(-2);
     }
 
     // Receive one byte
     PCF8574_byte_read(ModNum, ByteValue);
 
-    sprintf(ErrMSG, "*INFO* (PCF8574_Read_One_Byte): ByteValue read = %x", *ByteValue);
-    Pixie_Print_MSG(ErrMSG);
+    Pixie_Print_Info(PIXIE_FUNC, "ByteValue read = %x", *ByteValue);
 
     // Send Acknowledge
     PCF8574_sendACK(ModNum);
