@@ -714,7 +714,7 @@ ReadINITf12:
             return (-3);
         }
     } else {
-        Pixie_Print_Error(PIXIE_FUNC, "Downloaded SP FPGAs 1&2 successfully in module %d", ModNum);
+        Pixie_Print_Info(PIXIE_FUNC, "Downloaded SP FPGAs 1&2 successfully in module %d", ModNum);
     }
 
     // Initialize counter0 to 0
