@@ -24,7 +24,7 @@ endif()
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     target_compile_definitions(PixieSDK PUBLIC PLX_LINUX)
-    target_compile_options(PixieSDK PUBLIC -g -Wall)
+    target_compile_options(PixieSDK PUBLIC -g -Wall -Wextra)
 elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     target_link_libraries(PixieSDK PUBLIC winmm)
     target_compile_definitions(PixieSDK PUBLIC PLX_WINDOWS )

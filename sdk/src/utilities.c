@@ -2,34 +2,34 @@
 * Copyright (c) 2005 - 2020, XIA LLC
 * All rights reserved.
 *
-* Redistribution and use in source and binary forms, 
-* with or without modification, are permitted provided 
+* Redistribution and use in source and binary forms,
+* with or without modification, are permitted provided
 * that the following conditions are met:
 *
-*   * Redistributions of source code must retain the above 
-*     copyright notice, this list of conditions and the 
+*   * Redistributions of source code must retain the above
+*     copyright notice, this list of conditions and the
 *     following disclaimer.
-*   * Redistributions in binary form must reproduce the 
-*     above copyright notice, this list of conditions and the 
-*     following disclaimer in the documentation and/or other 
+*   * Redistributions in binary form must reproduce the
+*     above copyright notice, this list of conditions and the
+*     following disclaimer in the documentation and/or other
 *     materials provided with the distribution.
 *   * Neither the name of XIA LLC nor the names of its
 *     contributors may be used to endorse or promote products
 *     derived from this software without specific prior
 *     written permission.
 *
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
-* CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, 
-* INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
-* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
-* IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE 
-* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
-* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
-* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
-* DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-* ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR 
-* TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF 
-* THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+* CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+* INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+* IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+* DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+* ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+* TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+* THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
@@ -82,7 +82,6 @@ int Pixie_Start_Run(unsigned short mode,  // mode = NEW_RUN or RESUME_RUN
     unsigned int value, CSR;
     unsigned int buffer[MAX_HISTOGRAM_LENGTH * 4] = {0};
     unsigned short k;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
     int retval;
 
     if (ModNum == Number_Modules)  // Start run in all modules
@@ -95,9 +94,8 @@ int Pixie_Start_Run(unsigned short mode,  // mode = NEW_RUN or RESUME_RUN
                 retval = Pixie_End_Run(k);
                 // Check if Pixie_End_Run returned without errors
                 if (retval < 0) {
-                    sprintf(ErrMSG, "*ERROR* (Pixie_Start_Run): Pixie_End_Run failed in module %d; retval=%d", k,
-                            retval);
-                    Pixie_Print_MSG(ErrMSG);
+                  Pixie_Print_Error(PIXIE_FUNC, "Pixie_End_Run failed in module %d; retval=%d", k,
+                                    retval);
                     return (-1);
                 }
             }
@@ -139,9 +137,8 @@ int Pixie_Start_Run(unsigned short mode,  // mode = NEW_RUN or RESUME_RUN
             retval = Pixie_End_Run(ModNum);
             // Check if Pixie_End_Run returned without errors
             if (retval < 0) {
-                sprintf(ErrMSG, "*ERROR* (Pixie_Start_Run): Pixie_End_Run failed in module %d; retval=%d", ModNum,
-                        retval);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "Pixie_End_Run failed in module %d; retval=%d", ModNum,
+                                  retval);
                 return (-1);
             }
         }
@@ -191,7 +188,6 @@ int Pixie_End_Run(unsigned short ModNum) {
     unsigned int CSR, tcount;
     unsigned short k, sumActive, Active[PRESET_MAX_MODULES];
     int retval;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     if (ModNum == Number_Modules)  // Stop run in all modules
     {
@@ -237,8 +233,7 @@ int Pixie_End_Run(unsigned short ModNum) {
         // Check if there is any module whose run has not ended
         for (k = 0; k < Number_Modules; k++) {
             if (Active[k] == 1) {
-                sprintf(ErrMSG, "*ERROR* (Pixie_End_Run): module %d failed to stop its run", k);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "module %d failed to stop its run", k);
             }
         }
 
@@ -272,8 +267,7 @@ int Pixie_End_Run(unsigned short ModNum) {
 
         if (tcount == 100)  // Timed out
         {
-            sprintf(ErrMSG, "*ERROR* (Pixie_End_Run): module %d failed to stop its run", ModNum);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "module %d failed to stop its run", ModNum);
             return (-1);
         } else {
             return (0);  // The module stopped the run successfully
@@ -320,7 +314,6 @@ int Pixie_Control_Task_Run(unsigned short ModNum,  // Pixie module number
     unsigned int tcount;
     unsigned short k, sumActive, Active[PRESET_MAX_MODULES];
     int retval;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     // Check if running in OFFLINE mode
     if (Offline == 1)  // Returns immediately for offline analysis
@@ -333,9 +326,8 @@ int Pixie_Control_Task_Run(unsigned short ModNum,  // Pixie module number
         // Start control task run: NEW_RUN and RunTask = 0
         retval = Pixie_Start_Run(NEW_RUN, 0, ControlTask, Number_Modules);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Control_Task_Run): failed to start control task %d in all modules",
-                    ControlTask);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed to start control task %d in all modules",
+                              ControlTask);
             return (-1);
         }
 
@@ -381,9 +373,8 @@ int Pixie_Control_Task_Run(unsigned short ModNum,  // Pixie module number
         // Check if there is any module whose run has not ended
         for (k = 0; k < Number_Modules; k++) {
             if (Active[k] == 1) {
-                sprintf(ErrMSG, "*ERROR* (Pixie_Control_Task_Run): control task %d in module %d timed out", ControlTask,
-                        k);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "control task %d in module %d timed out", ControlTask,
+                                  k);
             }
         }
 
@@ -397,9 +388,8 @@ int Pixie_Control_Task_Run(unsigned short ModNum,  // Pixie module number
         // Start control task run: NEW_RUN and RunTask = 0
         retval = Pixie_Start_Run(NEW_RUN, 0, ControlTask, ModNum);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Control_Task_Run): failed to start control task %d in module %d",
-                    ControlTask, ModNum);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "failed to start control task %d in module %d",
+                              ControlTask, ModNum);
             return (-1);
         }
 
@@ -426,9 +416,8 @@ int Pixie_Control_Task_Run(unsigned short ModNum,  // Pixie module number
 
 
         if (tcount >= Max_Poll) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Control_Task_Run): control task %d in module %d timed out", ControlTask,
-                    ModNum);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "control task %d in module %d timed out", ControlTask,
+                              ModNum);
             return (-2);  // Time Out
         } else {
             return (0);  // Normal finish
@@ -454,7 +443,6 @@ int Pixie_Broadcast(const char* str,  // variable name whose value is to be broa
 {
     unsigned int value;
     unsigned short i;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     if (strcmp(str, "SYNCH_WAIT") == 0) {
         // Get SynchWait
@@ -490,8 +478,7 @@ int Pixie_Broadcast(const char* str,  // variable name whose value is to be broa
             Pixie16IMbufferIO(&value, 1, HRTP_Address[i], MOD_WRITE, i);
         }
     } else {
-        sprintf(ErrMSG, "*ERROR* (Pixie_Broadcast): invalid global parameter %s", str);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid global parameter %s", str);
         return (-1);
     }
 
@@ -713,7 +700,7 @@ int Pixie_Init_DSPVarAddress(const char* DSPVarFile, unsigned short ModNum) {
     char DSP_Parameter_Names[N_DSP_PAR][MAX_PAR_NAME_LENGTH];
     char* DSP_Parameter_AddrStr;
     unsigned int DSP_Parameter_Addr[N_DSP_PAR];
-    char DSPParaName[MAX_PAR_NAME_LENGTH], str[MAX_PAR_NAME_LENGTH], ErrMSG[MAX_ERRMSG_LENGTH];
+    char DSPParaName[MAX_PAR_NAME_LENGTH], str[MAX_PAR_NAME_LENGTH];
     unsigned short k;
     FILE* namesFile = NULL;
 
@@ -1124,149 +1111,125 @@ int Pixie_Init_DSPVarAddress(const char* DSPVarFile, unsigned short ModNum) {
         //--------------------
 
         if (ModNum_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): ModNum was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "ModNum was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (ModCSRA_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): ModCSRA was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "ModCSRA was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (ModCSRB_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): ModCSRB was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "ModCSRB was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (ModFormat_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): ModFormat was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "ModFormat was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (RunTask_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): RunTask was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "RunTask was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (ControlTask_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): ControlTask was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "ControlTask was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (MaxEvents_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): MaxEvents was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "MaxEvents was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (CoincPattern_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): CoincPattern was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "CoincPattern was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (CoincWait_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): CoincWait was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "CoincWait was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (SynchWait_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): SynchWait was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "SynchWait was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (InSynch_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): InSynch was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "InSynch was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (Resume_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): Resume was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "Resume was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (SlowFilterRange_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): SlowFilterRange was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "SlowFilterRange was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (FastFilterRange_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): FastFilterRange was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "FastFilterRange was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (ChanNum_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): ChanNum was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "ChanNum was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (HostIO_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): HostIO was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "HostIO was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (UserIn_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): UserIn was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "UserIn was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (U00_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): U00 was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "U00 was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (FastTrigBackplaneEna_Address[ModNum] == 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie_Init_DSPVarAddress): FastTrigBackplaneEna was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "FastTrigBackplaneEna was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (CrateID_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): CrateID was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "CrateID was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (SlotID_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): SlotID was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "SlotID was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (ModID_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): ModID was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "ModID was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (TrigConfig_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): TrigConfig was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "TrigConfig was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (HRTP_Address[ModNum] == 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie_Init_DSPVarAddress): HostRunTimePreset was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "HostRunTimePreset was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
 
@@ -1275,305 +1238,255 @@ int Pixie_Init_DSPVarAddress(const char* DSPVarFile, unsigned short ModNum) {
         //--------------------
 
         if (ChanCSRa_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): ChanCSRa was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "ChanCSRa was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (ChanCSRb_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): ChanCSRb was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "ChanCSRb was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (GainDAC_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): GainDAC was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "GainDAC was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (OffsetDAC_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): OffsetDAC was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "OffsetDAC was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (DigGain_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): DigGain was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "DigGain was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (SlowLength_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): SlowLength was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "SlowLength was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (SlowGap_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): SlowGap was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "SlowGap was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (FastLength_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): FastLength was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "FastLength was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (FastGap_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): FastGap was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "FastGap was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (PeakSample_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): PeakSample was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "PeakSample was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (PeakSep_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): PeakSep was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "PeakSep was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (CFDThresh_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): CFDThresh was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "CFDThresh was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (FastThresh_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): FastThresh was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "FastThresh was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (ThreshWidth_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): ThreshWidth was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "ThreshWidth was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (PAFlength_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): PAFlength was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "PAFlength was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (TriggerDelay_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): TriggerDelay was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "TriggerDelay was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (ResetDelay_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): ResetDelay was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "ResetDelay was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (ChanTrigStretch_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): ChanTrigStretch was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "ChanTrigStretch was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (TraceLength_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): TraceLength was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "TraceLength was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (TrigOutLen_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): TrigOutLen was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "TrigOutLen was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (EnergyLow_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): EnergyLow was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "EnergyLow was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (Log2Ebin_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): Log2Ebin was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "Log2Ebin was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (Log2Bweight_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): Log2Bweight was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "Log2Bweight was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (EnergyLow_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): EnergyLow was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "EnergyLow was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (MultiplicityMaskL_Address[ModNum] == 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie_Init_DSPVarAddress): MultiplicityMaskL was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "MultiplicityMaskL was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (PSAoffset_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): PSAoffset was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "PSAoffset was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (PSAlength_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): PSAlength was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "PSAlength was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (Integrator_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): Integrator was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "Integrator was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (BLcut_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): BLcut was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "BLcut was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (Integrator_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): Integrator was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "Integrator was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (BaselinePercent_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): BaselinePercent was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "BaselinePercent was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (FtrigoutDelay_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): FtrigoutDelay was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "FtrigoutDelay was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (Log2Bweight_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): Log2Bweight was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "Log2Bweight was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (PreampTau_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): PreampTau was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "PreampTau was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (MultiplicityMaskH_Address[ModNum] == 0) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie_Init_DSPVarAddress): MultiplicityMaskH was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "MultiplicityMaskH was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (FastTrigBackLen_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): FastTrigBackLen was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "FastTrigBackLen was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (Xwait_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): Xait was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "Xait was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (CFDDelay_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): CFDDelay was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "CFDDelay was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (CFDScale_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): CFDScale was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "CFDScale was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (ExternDelayLen_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): ExternDelayLen was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "ExternDelayLen was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (ExtTrigStretch_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): ExtTrigStretch was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "ExtTrigStretch was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (VetoStretch_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): VetoStretch was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "VetoStretch was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (QDCLen0_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): QDCLen0 was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "QDCLen0 was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (QDCLen1_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): QDCLen1 was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "QDCLen1 was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (QDCLen2_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): QDCLen2 was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "QDCLen2 was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (QDCLen3_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): QDCLen3 was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "QDCLen3 was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (QDCLen4_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): QDCLen4 was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "QDCLen4 was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (QDCLen5_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): QDCLen5 was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "QDCLen5 was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (QDCLen6_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): QDCLen6 was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "QDCLen6 was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (QDCLen7_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): QDCLen7 was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "QDCLen7 was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
 
@@ -1583,266 +1496,222 @@ int Pixie_Init_DSPVarAddress(const char* DSPVarFile, unsigned short ModNum) {
 
 
         if (RealTimeA_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): RealTimeA was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "RealTimeA was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (RealTimeB_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): RealTimeB was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "RealTimeB was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (RunTimeA_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): RunTimeA was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "RunTimeA was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (RunTimeB_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): RunTimeB was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "RunTimeB was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (GSLTtime_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): GSLTtime was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "GSLTtime was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (NumEventsA_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): NumEventsA was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "NumEventsA was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (NumEventsB_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): NumEventsB was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "NumEventsB was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (DSPerror_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): DSPerror was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "DSPerror was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (NumEventsB_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): NumEventsB was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "NumEventsB was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (SynchDone_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): SynchDone was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "SynchDone was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (BufHeadLen_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): BufHeadLen was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "BufHeadLen was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (EventHeadLen_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): EventHeadLen was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "EventHeadLen was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (ChanHeadLen_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): ChanHeadLen was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "ChanHeadLen was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (UserOut_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): UserOut was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "UserOut was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (AOutBuffer_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): AOutBuffer was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "AOutBuffer was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (UserOut_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): UserOut was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "UserOut was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (LOutBuffer_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): LOutBuffer was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "LOutBuffer was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (AECorr_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): AECorr was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "AECorr was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (LECorr_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): LECorr was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "LECorr was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (HardwareID_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): HardwareID was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "HardwareID was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (HardVariant_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): HardVariant was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "HardVariant was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (FIFOLength_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): FIFOLength was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "FIFOLength was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (FippiID_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): FippiID was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "FippiID was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (FippiVariant_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): FippiVariant was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "FippiVariant was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (FippiID_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): FippiID was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "FippiID was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (DSPrelease_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): DSPrelease was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "DSPrelease was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (DSPbuild_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): DSPbuild was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "DSPbuild was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (DSPVariant_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): DSPVariant was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "DSPVariant was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (U20_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): U20 was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "U20 was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (LiveTimeA_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): LiveTimeA was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "LiveTimeA was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (LiveTimeB_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): LiveTimeB was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "LiveTimeB was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (FastPeaksA_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): FastPeaksA was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "FastPeaksA was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (FastPeaksB_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): FastPeaksB was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "FastPeaksB was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (OverflowA_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): OverflowA was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "OverflowA was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (OverflowB_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): OverflowB was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "OverflowB was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (InSpecA_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): InSpecA was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "InSpecA was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (InSpecB_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): InSpecB was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "InSpecB was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (UnderflowA_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): UnderflowA was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "UnderflowA was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (UnderflowB_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): UnderflowB was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "UnderflowB was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (ChanEventsA_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): ChanEventsA was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "ChanEventsA was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (ChanEventsB_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): ChanEventsB was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "ChanEventsB was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (AutoTau_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): AutoTau was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "AutoTau was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
         if (U30_Address[ModNum] == 0) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): U30 was not found in the DSP .var file %s",
-                    DSPVarFile);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "U30 was not found in the DSP .var file %s",
+                              DSPVarFile);
             return (-2);
         }
     } else {
-        sprintf(ErrMSG, "*ERROR* (Pixie_Init_DSPVarAddress): DSP .var file %s can't be opened", DSPVarFile);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "DSP .var file %s can't be opened", DSPVarFile);
         return (-3);
     }
 
@@ -1862,18 +1731,14 @@ int Pixie_Init_DSPVarAddress(const char* DSPVarFile, unsigned short ModNum) {
 ****************************************************************/
 
 int Pixie_Copy_DSPVarAddress(unsigned short SourceModNum, unsigned short DestinationModNum) {
-    char ErrMSG[MAX_ERRMSG_LENGTH];
-
     // Check if SourceModNum is valid
     if (SourceModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie_Copy_DSPVarAddress): invalid source module number %d", SourceModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid source module number %d", SourceModNum);
         return (-1);
     }
     // Check if DestinationModNum is valid
     if (DestinationModNum >= Number_Modules) {
-        sprintf(ErrMSG, "*ERROR* (Pixie_Copy_DSPVarAddress): invalid destination module number %d", DestinationModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid destination module number %d", DestinationModNum);
         return (-2);
     }
 
@@ -2039,14 +1904,17 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadMSGFile(char* ReturnMsgStr) {
     int n, len, firstline, totalchars;
     FILE* msgfil;
     char *data, *b, *e, *end;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     // Check if ReturnMsgStr is valid
     if (ReturnMsgStr == NULL) {
-        sprintf(ErrMSG, "*Error* (Pixie16ReadMSGFile): Null pointer *ReturnMsgStr");
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "Null pointer *ReturnMsgStr");
         return (-1);
     }
+
+    /*
+     * This code looks suspect because any errors will update the file that is
+     * open and being read.
+     */
 
     msgfil = fopen("Pixie16msg.txt", "rb");
     if (msgfil != NULL) {
@@ -2055,24 +1923,21 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadMSGFile(char* ReturnMsgStr) {
             rewind(msgfil);
             if (len == 0) {
                 fclose(msgfil);
-                sprintf(ErrMSG, "*ERROR* (Pixie16ReadMSGFile): Pixie-16 message file Pixie16msg.txt is empty");
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "Pixie-16 message file Pixie16msg.txt is empty");
                 return (-2);
             }
 
             // Allocate memory
             if ((data = (char*) malloc(sizeof(char) * (len + 1))) == NULL) {
                 fclose(msgfil);
-                sprintf(ErrMSG, "*ERROR* (Pixie16ReadMSGFile): failed to allocate memory");
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "failed to allocate memory");
                 return (-3);
             }
 
             // Read all bytes
             if ((n = fread(data, 1, len, msgfil)) < len) {
                 fclose(msgfil);
-                sprintf(ErrMSG, "*ERROR* (Pixie16ReadMSGFile): expected %d, got %d bytes from Pixie16msg.txt", len, n);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "expected %d, got %d bytes from Pixie16msg.txt", len, n);
                 return (-4);
             }
 
@@ -2116,15 +1981,13 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadMSGFile(char* ReturnMsgStr) {
             }
         } else {
             fclose(msgfil);
-            sprintf(ErrMSG, "*ERROR* (Pixie16ReadMSGFile): could not seek to end of Pixie16msg.txt");
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "could not seek to end of Pixie16msg.txt");
             return (-5);
         }
 
         fclose(msgfil);
     } else {
-        sprintf(ErrMSG, "*ERROR* (Pixie16ReadMSGFile): could not open Pixie16msg.txt");
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "could not open Pixie16msg.txt");
         return (-6);
     }
 

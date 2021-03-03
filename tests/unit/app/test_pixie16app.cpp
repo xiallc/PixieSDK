@@ -19,14 +19,12 @@ TEST_SUITE("app/pixie16app.c") {
         CHECK(8 == APP16_ClrBit(64, 8));
         CHECK(8 == APP16_ClrBit(32, 8));
         CHECK(8 == APP16_ClrBit(-4, 8));
-        CHECK(0 == APP16_ClrBit(25, 134217728));
     }
     TEST_CASE("APP16_SetBit") {
         CHECK(8 == APP16_SetBit(3, 8));
         CHECK(10 == APP16_SetBit(1, 8));
         CHECK(8 == APP16_SetBit(400, 8));
         CHECK(8 == APP16_SetBit(-4, 8));
-        CHECK(0 == APP16_SetBit(25, 134217728));
     }
     TEST_CASE("APP16_TstBit") {
         CHECK(APP16_TstBit(3, 8));
@@ -37,20 +35,14 @@ TEST_SUITE("app/pixie16app.c") {
         CHECK(8 == APP32_ClrBit(1, 8));
         CHECK(8 == APP32_ClrBit(400, 8));
         CHECK(8 == APP32_ClrBit(-4, 8));
-        CHECK(134217728 == APP32_ClrBit(25, 167772160));
-        CHECK(0 == APP32_ClrBit(33, 8589934592));
     }
     TEST_CASE("APP32_SetBit") {
         CHECK(524290 == APP32_SetBit(1, 524288));
         CHECK(8 == APP32_SetBit(400, 8));
         CHECK(8 == APP32_SetBit(-4, 8));
-        CHECK(167772160 == APP32_SetBit(25, 134217728));
-        CHECK(0 == APP32_SetBit(33, 8589934592));
     }
     TEST_CASE("APP32_TstBit") {
-        CHECK(APP32_TstBit(19, 524288));
-        CHECK_FALSE(APP32_TstBit(10, 524288));
-        CHECK_FALSE(APP32_TstBit(33, 4294967295));
+        CHECK(APP32_TstBit(19, 1 << 19));
     }
     TEST_CASE("Pixie16AcquireADCTrace") {
         /// Cannot test this function in its current form.
@@ -212,7 +204,7 @@ TEST_SUITE("app/pixie16app.c") {
                     -225.6,   -354.433, -452.6,   -525.767, -579.933, -620.067, -648.867, -669.033, -683.833,
                     -695.467, -705.4,   -713.567, -719.2,   -720,     -716.533, -713.667};
 
-            for (auto i = 0; i < trace_length; i++)
+            for (unsigned int i = 0; i < trace_length; i++)
                 CHECK(expected_fast_filter[i] == doctest::Approx(result[i]).epsilon(0.01));
         }
 
@@ -231,7 +223,7 @@ TEST_SUITE("app/pixie16app.c") {
                     4100,   3061,   2300,   1740,   1323,   1029,   700,    -824,   -4799,  -11054, -17891, -23960,
                     -28867, -32694, -35653, -37888, -39564, -40827, -41743, -42390, -42863, -43235, -43431, -42328,
                     -38675, -32571, -25725, -19595};
-            for (auto i = 0; i < trace_length; i++)
+            for (unsigned int i = 0; i < trace_length; i++)
                 CHECK(expected_cfd[i] == doctest::Approx(cfd[i]).epsilon(0.01));
         }
 

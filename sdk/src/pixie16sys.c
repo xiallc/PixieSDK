@@ -2,34 +2,34 @@
 * Copyright (c) 2005 - 2020, XIA LLC
 * All rights reserved.
 *
-* Redistribution and use in source and binary forms, 
-* with or without modification, are permitted provided 
+* Redistribution and use in source and binary forms,
+* with or without modification, are permitted provided
 * that the following conditions are met:
 *
-*   * Redistributions of source code must retain the above 
-*     copyright notice, this list of conditions and the 
+*   * Redistributions of source code must retain the above
+*     copyright notice, this list of conditions and the
 *     following disclaimer.
-*   * Redistributions in binary form must reproduce the 
-*     above copyright notice, this list of conditions and the 
-*     following disclaimer in the documentation and/or other 
+*   * Redistributions in binary form must reproduce the
+*     above copyright notice, this list of conditions and the
+*     following disclaimer in the documentation and/or other
 *     materials provided with the distribution.
 *   * Neither the name of XIA LLC nor the names of its
 *     contributors may be used to endorse or promote
-*     products derived from this software without 
+*     products derived from this software without
 *     specific prior written permission.
 *
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
-* CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, 
-* INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
-* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
-* IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE 
-* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
-* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
-* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
-* DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-* ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR 
-* TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF 
-* THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+* CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+* INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+* IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+* DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+* ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+* TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+* THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
@@ -97,11 +97,10 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
     PLX_STATUS rc;
 
     char sbuffer[100] = {0};   // Temporary buffer
-    char ErrMSG[MAX_ERRMSG_LENGTH];
     unsigned int ModSerNum;
     unsigned char PlxBusNum[SYS_MAX_NUM_MODULES], PlxDeviceNum[SYS_MAX_NUM_MODULES];
-    unsigned char Bus_Number[SYS_MAX_NUM_MODULES];        // PCI bus number for each module
-    unsigned char Device_Number[SYS_MAX_NUM_MODULES];     // PCI device number for each module
+    unsigned char Bus_Number[SYS_MAX_NUM_MODULES] = { 0 };        // PCI bus number for each module
+    unsigned char Device_Number[SYS_MAX_NUM_MODULES] = { 0 };     // PCI device number for each module
     unsigned char Slot_Number[SYS_MAX_NUM_MODULES];
     unsigned char TotalPlx9054Devices, PlxModIndex[SYS_MAX_NUM_MODULES], DeviceSearchCount;
     unsigned int i;
@@ -121,17 +120,13 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
     // Measure host computer speed (ns per cycle)
     retval = get_ns_per_cycle(&Ns_Per_Cycle);
     if (retval < 0) {
-        sprintf(ErrMSG,
-                "*ERROR* (Pixie_InitSystem): Failed to measure host computer speed (ns per cycle), retval = %d",
-                retval);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC,
+                          "Failed to measure host computer speed (ns per cycle), retval = %d",
+                          retval);
         return (-1);
     }
 
-#if(PRINT_DEBUG_MSG == 1)
-    sprintf(ErrMSG, "(Pixie_InitSystem): Host computer speed (ns per cycle) = %f", Ns_Per_Cycle);
-    Pixie_Print_MSG(ErrMSG);
-#endif
+    Pixie_Print_Debug(PIXIE_FUNC, "Host computer speed (ns per cycle) = %f", Ns_Per_Cycle);
 
     // Find all the PLX devices installed in the system
     TotalPlx9054Devices = 0;
@@ -168,11 +163,9 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
                 // Record PLX device information
                 PlxBusNum[TotalPlx9054Devices] = DeviceKey.bus;
                 PlxDeviceNum[TotalPlx9054Devices] = DeviceKey.slot;
-                sprintf(ErrMSG,
-                        "Device ID = 0x%04x, Vendor ID = 0x%04x, Bus Number = 0x%02x, Device number = 0x%02x",
-                        DeviceKey.DeviceId, DeviceKey.VendorId, DeviceKey.bus, DeviceKey.slot);
-                Pixie_Print_MSG(ErrMSG);
-
+                Pixie_Print_Debug(PIXIE_FUNC,
+                                  "Device ID = 0x%04x, Vendor ID = 0x%04x, Bus Number = 0x%02x, Device number = 0x%02x",
+                                  DeviceKey.DeviceId, DeviceKey.VendorId, DeviceKey.bus, DeviceKey.slot);
                 // Increment found Plx9054 devices by 1
                 TotalPlx9054Devices++;
             }
@@ -185,18 +178,16 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
     } while (1);
 
     if (TotalPlx9054Devices == 0) {
-        sprintf(ErrMSG,
-                "*ERROR* (Pixie_InitSystem): Can't find any PLX devices, PlxPci_DeviceFind rc=%d",
-                rc);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC,
+                          "Can't find any PLX devices, PlxPci_DeviceFind rc=%d",
+                          rc);
         return (-2);
     }
 
     if (TotalPlx9054Devices < SYS_Number_Modules) {
-        sprintf(ErrMSG,
-                "*ERROR* (Pixie_InitSystem): Can't find all Pixie-16 modules that were specified (#found = %d, #specified = %d)",
-                TotalPlx9054Devices, SYS_Number_Modules);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC,
+                        "Can't find all Pixie-16 modules that were specified (#found = %d, #specified = %d)",
+                        TotalPlx9054Devices, SYS_Number_Modules);
         return (-3);
     }
 
@@ -216,109 +207,93 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
             rc = PlxPci_DeviceOpen(&DeviceKey, &SYS_hDevice[k]);
             if (rc != ApiSuccess) // Print error if failure
             {
-                sprintf(ErrMSG,
-                        "*ERROR* (Pixie_InitSystem): Could not open PCI Device Number (%d) at Bus Number %d; rc=%d",
-                        Device_Number[k], Bus_Number[k], rc);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "Could not open PCI Device Number (%d) at Bus Number %d; rc=%d",
+                                  Device_Number[k], Bus_Number[k], rc);
 
                 // Before return, we need to close those PCI devices that are already opened
                 for (m = 0; m < k; m++) {
                     // Unmaps a previously mapped PCI BAR from user virtual space
                     rc = PlxPci_PciBarUnmap(&SYS_hDevice[m], (VOID**) &VAddr[m]);
                     if (rc != ApiSuccess) {
-                        sprintf(ErrMSG,
-                                "*ERROR* (Pixie_InitSystem): Unable to unmap the PCI BAR for PLX9054 Device #%d; rc=%d",
-                                m, rc);
-                        Pixie_Print_MSG(ErrMSG);
+                        Pixie_Print_Error(PIXIE_FUNC,
+                                          "Unable to unmap the PCI BAR for PLX9054 Device #%d; rc=%d",
+                                          m, rc);
                     }
 
                     // Release the PLX device
                     rc = PlxPci_DeviceClose(&SYS_hDevice[m]);
                     if (rc != ApiSuccess) {
-                        sprintf(ErrMSG,
-                                "*ERROR* (Pixie_InitSystem): Unable to close the PLX9054 device #%d; rc=%d",
-                                m, rc);
-                        Pixie_Print_MSG(ErrMSG);
+                        Pixie_Print_Error(PIXIE_FUNC,
+                                          "Unable to close the PLX9054 device #%d; rc=%d",
+                                          m, rc);
                     }
                 }
 
                 return (-4);
             } else {
-#if(PRINT_DEBUG_MSG == 1)
-                sprintf(ErrMSG,
-                        "(Pixie_InitSystem): Successfully opened Device Number (%d) at Bus Number %d",
-                        DeviceKey.slot, DeviceKey.bus);
-                Pixie_Print_MSG(ErrMSG);
-                sprintf(ErrMSG,
-                        "Device ID = 0x%04x, Vendor ID = 0x%04x, Bus Number = 0x%02x, Device number = 0x%02x",
-                        DeviceKey.DeviceId, DeviceKey.VendorId, DeviceKey.bus, DeviceKey.slot);
-                Pixie_Print_MSG(ErrMSG);
-#endif
+                Pixie_Print_Debug(PIXIE_FUNC,
+                                  "(Pixie_InitSystem): Successfully opened Device Number (%d) at Bus Number %d",
+                                  DeviceKey.slot, DeviceKey.bus);
+                Pixie_Print_Debug(PIXIE_FUNC,
+                                  "Device ID = 0x%04x, Vendor ID = 0x%04x, Bus Number = 0x%02x, Device number = 0x%02x",
+                                  DeviceKey.DeviceId, DeviceKey.VendorId, DeviceKey.bus, DeviceKey.slot);
 
                 // Map a PCI BAR into user virtual space and return the virtual address
                 // for the opened PCI device. For PLX 9054, Space 0 is at PCI BAR 2.
                 rc = PlxPci_PciBarMap(&SYS_hDevice[k], 2, (VOID**) &VAddr[k]);
                 if (rc != ApiSuccess) {
-                    sprintf(ErrMSG,
-                            "*ERROR* (Pixie_InitSystem): Unable to map a PCI BAR and obtain a virtual address for Device %d; rc=%d",
-                            k, rc);
-                    Pixie_Print_MSG(ErrMSG);
+                    Pixie_Print_Error(PIXIE_FUNC,
+                                      "Unable to map a PCI BAR and obtain a virtual address for Device %d; rc=%d",
+                                      k, rc);
 
                     // Before return, we need to close those PCI devices that are already opened
                     for (m = 0; m < k; m++) {
                         // Unmaps a previously mapped PCI BAR from user virtual space
                         rc = PlxPci_PciBarUnmap(&SYS_hDevice[m], (VOID**) &VAddr[m]);
                         if (rc != ApiSuccess) {
-                            sprintf(ErrMSG,
-                                    "*ERROR* (Pixie_InitSystem): Unable to unmap the PCI BAR for PLX9054 device #%d; rc=%d",
-                                    m, rc);
-                            Pixie_Print_MSG(ErrMSG);
+                            Pixie_Print_Error(PIXIE_FUNC,
+                                              "Unable to unmap the PCI BAR for PLX9054 device #%d; rc=%d",
+                                              m, rc);
                         }
 
                         // Release the PLX device
                         rc = PlxPci_DeviceClose(&SYS_hDevice[m]);
                         if (rc != ApiSuccess) {
-                            sprintf(ErrMSG,
-                                    "*ERROR* (Pixie_InitSystem): Unable to close the PLX9054 device #%d; rc=%d",
-                                    m, rc);
-                            Pixie_Print_MSG(ErrMSG);
+                            Pixie_Print_Error(PIXIE_FUNC,
+                                              "Unable to close the PLX9054 device #%d; rc=%d",
+                                              m, rc);
                         }
                     }
 
                     return (-5);
                 } else {
-#if(PRINT_DEBUG_MSG == 1)
-                    sprintf(ErrMSG, "VAddr[%d][%d]=0x%lx", Bus_Number[k], k, VAddr[k]);
-                    Pixie_Print_MSG(ErrMSG);
-#endif
+                    Pixie_Print_Debug(PIXIE_FUNC, "VAddr[%d][%d]=0x%lx", Bus_Number[k], k, VAddr[k]);
                 }
 
                 // Read the slot number in which this PLX9054 device is installed
                 retval = PCF8574_Read_One_Byte(k, sbuffer);
                 if (retval < 0) {
-                    sprintf(ErrMSG,
-                            "*ERROR* (Pixie_InitSystem): Could not read chassis slot number for Device %d; retval=%d",
-                            k, retval);
-                    Pixie_Print_MSG(ErrMSG);
+                    Pixie_Print_Error(PIXIE_FUNC,
+                                      "Could not read chassis slot number for Device %d; retval=%d",
+                                      k, retval);
 
                     // Before return, we need to close those PCI devices that are already opened
                     for (m = 0; m < k; m++) {
                         // Unmaps a previously mapped PCI BAR from user virtual space
                         rc = PlxPci_PciBarUnmap(&SYS_hDevice[m], (VOID**) &VAddr[m]);
                         if (rc != ApiSuccess) {
-                            sprintf(ErrMSG,
-                                    "*ERROR* (Pixie_InitSystem): Unable to unmap the PCI BAR for PLX9054 device #%d; rc=%d",
-                                    m, rc);
-                            Pixie_Print_MSG(ErrMSG);
+                            Pixie_Print_Error(PIXIE_FUNC,
+                                              "Unable to unmap the PCI BAR for PLX9054 device #%d; rc=%d",
+                                              m, rc);
                         }
 
                         // Release the PLX device
                         rc = PlxPci_DeviceClose(&SYS_hDevice[m]);
                         if (rc != ApiSuccess) {
-                            sprintf(ErrMSG,
-                                    "*ERROR* (Pixie_InitSystem): Unable to close the PLX9054 device #%d; rc=%d",
-                                    m, rc);
-                            Pixie_Print_MSG(ErrMSG);
+                            Pixie_Print_Error(PIXIE_FUNC,
+                                              "Unable to close the PLX9054 device #%d; rc=%d",
+                                              m, rc);
                         }
                     }
 
@@ -326,36 +301,30 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
                 } else {
                     Slot_Number[k] = (unsigned char) ((sbuffer[0] & 0xF8) / 8);
                 }
-#if(PRINT_DEBUG_MSG == 1)
-                sprintf(ErrMSG, "(Pixie_InitSystem): Device # %d Slot_Number = %d", k,
-                        Slot_Number[k]);
-                Pixie_Print_MSG(ErrMSG);
-#endif
+                Pixie_Print_Debug(PIXIE_FUNC, "Device # %d Slot_Number = %d", k,
+                                  Slot_Number[k]);
             }
         } else {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie_InitSystem): PlxPci_DeviceFind failed for PCI Device Number (%d) at Bus Number %d; rc=%d",
-                    Device_Number[k], Bus_Number[k], rc);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "PlxPci_DeviceFind failed for PCI Device Number (%d) at Bus Number %d; rc=%d",
+                              Device_Number[k], Bus_Number[k], rc);
 
             // Before return, we need to close those PCI devices that are already opened
             for (m = 0; m < k; m++) {
                 // Unmaps a previously mapped PCI BAR from user virtual space
                 rc = PlxPci_PciBarUnmap(&SYS_hDevice[m], (VOID**) &VAddr[m]);
                 if (rc != ApiSuccess) {
-                    sprintf(ErrMSG,
-                            "*ERROR* (Pixie_InitSystem): Unable to unmap the PCI BAR for PLX9054 Device #%d; rc=%d",
-                            m, rc);
-                    Pixie_Print_MSG(ErrMSG);
+                    Pixie_Print_Error(PIXIE_FUNC,
+                                      "Unable to unmap the PCI BAR for PLX9054 Device #%d; rc=%d",
+                                      m, rc);
                 }
 
                 // Release the PLX device
                 rc = PlxPci_DeviceClose(&SYS_hDevice[m]);
                 if (rc != ApiSuccess) {
-                    sprintf(ErrMSG,
-                            "*ERROR* (Pixie_InitSystem): Unable to close the PLX9054 device #%d; rc=%d",
-                            m, rc);
-                    Pixie_Print_MSG(ErrMSG);
+                    Pixie_Print_Error(PIXIE_FUNC,
+                                      "Unable to close the PLX9054 device #%d; rc=%d",
+                                      m, rc);
                 }
             }
 
@@ -368,20 +337,18 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
         // Unmaps a previously mapped PCI BAR from user virtual space
         rc = PlxPci_PciBarUnmap(&SYS_hDevice[m], (VOID**) &VAddr[m]);
         if (rc != ApiSuccess) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie_InitSystem): Unable to unmap the PCI BAR for PLX9054 device #%d; rc=%d",
-                    m, rc);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "Unable to unmap the PCI BAR for PLX9054 device #%d; rc=%d",
+                              m, rc);
             return (-8);
         }
 
         // Release the PLX device
         rc = PlxPci_DeviceClose(&SYS_hDevice[m]);
         if (rc != ApiSuccess) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie_InitSystem): Unable to close the PLX9054 device #%d; rc=%d", m,
-                    rc);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "Unable to close the PLX9054 device #%d; rc=%d", m,
+                              rc);
             return (-9);
         }
     }
@@ -398,10 +365,9 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
             i++;
         } while (i < TotalPlx9054Devices);
         if (PlxModIndex[k] == SYS_MAX_NUM_MODULES) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie_InitSystem): Can't match module # %d with one found by the PLX driver",
-                    k);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "Can't match module # %d with one found by the PLX driver",
+                              k);
             return (-10);
         }
     }
@@ -422,71 +388,59 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
             rc = PlxPci_DeviceOpen(&DeviceKey, &SYS_hDevice[k]);
             if (rc != ApiSuccess) // Print error if failure
             {
-                sprintf(ErrMSG,
-                        "*ERROR* (Pixie_InitSystem): Could not open PCI Device Number (%d) at Bus Number %d; rc=%d",
-                        Device_Number[k], Bus_Number[k], rc);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "Could not open PCI Device Number (%d) at Bus Number %d; rc=%d",
+                                  Device_Number[k], Bus_Number[k], rc);
 
                 // Before return, we need to close those PCI devices that are already opened
                 for (m = 0; m < k; m++) {
                     retval = Pixie_ClosePCIDevices(m);
                     if (retval < 0) {
-                        sprintf(ErrMSG,
-                                "*ERROR* (Pixie_InitSystem): Could not unmap PCI BAR for Module=%d; rc=%d",
-                                m, rc);
-                        Pixie_Print_MSG(ErrMSG);
+                        Pixie_Print_Error(PIXIE_FUNC,
+                                          "Could not unmap PCI BAR for Module=%d; rc=%d",
+                                          m, rc);
                     }
                 }
 
                 return (-11);
             } else {
-#if(PRINT_DEBUG_MSG == 1)
-                sprintf(ErrMSG,
-                        "(Pixie_InitSystem): Successfully opened Device Number (%d) at Bus Number %d for Module # %d",
-                        Device_Number[k], Bus_Number[k], k);
-                Pixie_Print_MSG(ErrMSG);
-                sprintf(ErrMSG,
-                        "Device ID = 0x%04x, Vendor ID = 0x%04x, Bus Number = 0x%02x, Device Number = 0x%02x",
-                        DeviceKey.DeviceId, DeviceKey.VendorId, DeviceKey.bus, DeviceKey.slot);
-                Pixie_Print_MSG(ErrMSG);
-#endif
+                Pixie_Print_Debug(PIXIE_FUNC,
+                                  "Successfully opened Device Number (%d) at Bus Number %d for Module # %d",
+                                  Device_Number[k], Bus_Number[k], k);
+                Pixie_Print_Debug(PIXIE_FUNC,
+                                  "Device ID = 0x%04x, Vendor ID = 0x%04x, Bus Number = 0x%02x, Device Number = 0x%02x",
+                                  DeviceKey.DeviceId, DeviceKey.VendorId, DeviceKey.bus, DeviceKey.slot);
 
                 // Map a PCI BAR into user virtual space and return the virtual address
                 // for the opened PCI device. For PLX 9054, Space 0 is at PCI BAR 2.
                 rc = PlxPci_PciBarMap(&SYS_hDevice[k], 2, (VOID**) &VAddr[k]);
                 if (rc != ApiSuccess) {
-                    sprintf(ErrMSG,
-                            "*ERROR* (Pixie_InitSystem): Unable to map a PCI BAR and obtain a virtual address for Module=%d; rc=%d",
-                            k, rc);
-                    Pixie_Print_MSG(ErrMSG);
+                    Pixie_Print_Error(PIXIE_FUNC,
+                                      "Unable to map a PCI BAR and obtain a virtual address for Module=%d; rc=%d",
+                                      k, rc);
 
                     // Before return, we need to close those PCI devices that are already opened
                     for (m = 0; m < k; m++) {
                         retval = Pixie_ClosePCIDevices(m);
                         if (retval < 0) {
-                            sprintf(ErrMSG,
-                                    "*ERROR* (Pixie_InitSystem): Could not close PCI device for Module=%d; rc=%d",
-                                    m, rc);
-                            Pixie_Print_MSG(ErrMSG);
+                            Pixie_Print_Error(PIXIE_FUNC,
+                                              "Could not close PCI device for Module=%d; rc=%d",
+                                              m, rc);
                         }
                     }
 
                     return (-12);
                 } else {
-#if(PRINT_DEBUG_MSG == 1)
-                    sprintf(ErrMSG, "VAddr[%d][%d]=0x%lx", Bus_Number[k], k, VAddr[k]);
-                    Pixie_Print_MSG(ErrMSG);
-#endif
+                    Pixie_Print_Debug(PIXIE_FUNC, "VAddr[%d][%d]=0x%lx", Bus_Number[k], k, VAddr[k]);
                 }
 
                 // Read module serial number which is stored in the beginning of the I2C serial EEPROM.
                 // First three words of EEPROM stores serial number and revision number
                 retval = I2CM24C64_Sequential_Read(k, 0, 3, sbuffer);
                 if (retval < 0) {
-                    sprintf(ErrMSG,
-                            "*ERROR* (Pixie_InitSystem): Could not read serial number for Module=%d; retval=%d",
-                            k, retval);
-                    Pixie_Print_MSG(ErrMSG);
+                    Pixie_Print_Error(PIXIE_FUNC,
+                                      "Could not read serial number for Module=%d; retval=%d",
+                                      k, retval);
                 }
                 // Starting with serial number 256, serial number is stored in the first two bytes of EEPROM, followed by
                 // revision number, which is at least 11 (i.e. Rev-B)
@@ -496,25 +450,20 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
                 } else {
                     ModSerNum = (unsigned short) (unsigned char) sbuffer[0];
                 }
-#if(PRINT_DEBUG_MSG == 1)
-                sprintf(ErrMSG, "(Pixie_InitSystem): Module # %d SERIAL NUMBER = %d", k, ModSerNum);
-                Pixie_Print_MSG(ErrMSG);
-#endif
+                Pixie_Print_Debug(PIXIE_FUNC, "Module # %d SERIAL NUMBER = %d", k, ModSerNum);
             }
         } else {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie_InitSystem): PlxPci_DeviceFind failed for PCI Device Number (%d) at Bus Number %d; rc=%d",
-                    Device_Number[k], Bus_Number[k], rc);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "PlxPci_DeviceFind failed for PCI Device Number (%d) at Bus Number %d; rc=%d",
+                              Device_Number[k], Bus_Number[k], rc);
 
             // Before return, we need to close those PCI devices that are already opened
             for (m = 0; m < k; m++) {
                 retval = Pixie_ClosePCIDevices(m);
                 if (retval < 0) {
-                    sprintf(ErrMSG,
-                            "*ERROR* (Pixie_InitSystem): Could not close PCI device for Module=%d; rc=%d",
-                            m, rc);
-                    Pixie_Print_MSG(ErrMSG);
+                    Pixie_Print_Error(PIXIE_FUNC,
+                                      "Could not close PCI device for Module=%d; rc=%d",
+                                      m, rc);
                 }
             }
 
@@ -539,7 +488,6 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
 int Pixie_ClosePCIDevices(unsigned short ModNum) {
     PLX_STATUS rc;
     unsigned short k;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     if (SYS_Offline == 1)  // Returns immediately for offline analysis
     {
@@ -552,21 +500,18 @@ int Pixie_ClosePCIDevices(unsigned short ModNum) {
             // Unmaps a previously mapped PCI BAR from user virtual space
             rc = PlxPci_PciBarUnmap(&SYS_hDevice[k], (VOID**) &VAddr[k]);
             if (rc != ApiSuccess) {
-                sprintf(ErrMSG,
-                        "*ERROR* (Pixie_ClosePCIDevices): Unable to unmap the PCI BAR for module %d; rc=%d",
-                        k,
-                        rc);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "Unable to unmap the PCI BAR for module %d; rc=%d",
+                                  k, rc);
                 return (-1);
             }
 
             // Release the PLX device
             rc = PlxPci_DeviceClose(&SYS_hDevice[k]);
             if (rc != ApiSuccess) {
-                sprintf(ErrMSG,
-                        "*ERROR* (Pixie_ClosePCIDevices): Unable to close the PLX device for module %d; rc=%d",
-                        k, rc);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "Unable to close the PLX device for module %d; rc=%d",
+                                  k, rc);
                 return (-2);
             }
         }
@@ -575,21 +520,18 @@ int Pixie_ClosePCIDevices(unsigned short ModNum) {
         // Unmaps a previously mapped PCI BAR from user virtual space
         rc = PlxPci_PciBarUnmap(&SYS_hDevice[ModNum], (VOID**) &VAddr[ModNum]);
         if (rc != ApiSuccess) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie_ClosePCIDevices): Unable to unmap the PCI BAR for module %d; rc=%d",
-                    ModNum,
-                    rc);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "Unable to unmap the PCI BAR for module %d; rc=%d",
+                              ModNum, rc);
             return (-1);
         }
 
         // Release the PLX device
         rc = PlxPci_DeviceClose(&SYS_hDevice[ModNum]);
         if (rc != ApiSuccess) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie_ClosePCIDevices): Unable to close the PLX device for module %d; rc=%d",
-                    ModNum, rc);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "Unable to close the PLX device for module %d; rc=%d",
+                              ModNum, rc);
             return (-2);
         }
     }
@@ -613,7 +555,6 @@ int Pixie_Boot_CompFPGA(unsigned short ModNum, unsigned int* Com_FPGA_conf,
                         unsigned int NumComFPGAconf) {
     unsigned int buffer[8];
     unsigned int k, counter0, counter1;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     if (SYS_Offline == 1)  // Returns immediately for offline analysis
     {
@@ -652,10 +593,9 @@ ReadINIT:
             wait_for_a_short_time((int) (200000.0 / Ns_Per_Cycle));
             goto ReadINIT;
         } else {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie_Boot_ComFPGA): Clearing communication FPGA in module %d timed out.",
-                    ModNum);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "Clearing communication FPGA in module %d timed out.",
+                              ModNum);
             return (-2);
         }
     } else {
@@ -675,15 +615,13 @@ ReadINIT:
         if (counter0 < 10) {
             goto StartSys;
         } else {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie_Boot_ComFPGA): Downloading communication FPGA to module %d timed out",
-                    ModNum);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "Downloading communication FPGA to module %d timed out",
+                              ModNum);
             return (-3);
         }
     } else {
-        sprintf(ErrMSG, "Downloaded communication FPGA successfully in module %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Info(PIXIE_FUNC, "Downloaded communication FPGA successfully in module %d", ModNum);
     }
 
     return (0);
@@ -705,7 +643,6 @@ int
 Pixie_Boot_FIPPI(unsigned short ModNum, unsigned int* SP_FPGA_conf, unsigned int NumSPFPGAconf) {
     unsigned int buffer[4];
     unsigned int k, counter0, counter1;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     if (SYS_Offline == 1)  // Returns immediately for offline analysis
     {
@@ -742,17 +679,15 @@ ReadINITf12:
     {
         counter1++;
         if (counter1 < 100) {
-            sprintf(ErrMSG, "(Pixie_Boot_FIPPI): Clearing SP FPGAs 1&2, CFG_RDCS=0x%x", buffer[0]);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Info(PIXIE_FUNC, "Clearing SP FPGAs 1&2, CFG_RDCS=0x%x", buffer[0]);
 
             // A very short wait - 200 us
             wait_for_a_short_time((int) (200000.0 / Ns_Per_Cycle));
             goto ReadINITf12;
         } else {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie_Boot_FIPPI): Clearing FIPPI configuration 1&2 timed out in module %d",
-                    ModNum);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "Clearing FIPPI configuration 1&2 timed out in module %d",
+                              ModNum);
             return (-2);
         }
     } else {
@@ -769,20 +704,17 @@ ReadINITf12:
     {
         counter0++;
         if (counter0 < 10) {
-            sprintf(ErrMSG, "(Pixie_Boot_FIPPI): Downloading SP FPGAs 1&2, CFG_RDCS=0x%x",
-                    buffer[0]);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Info(PIXIE_FUNC, "Downloading SP FPGAs 1&2, CFG_RDCS=0x%x",
+                             buffer[0]);
             goto StartFip12;
         } else {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie_Boot_FIPPI): Downloading SP FPGAs 1&2 timed out in module %d",
-                    ModNum);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "Downloading SP FPGAs 1&2 timed out in module %d",
+                              ModNum);
             return (-3);
         }
     } else {
-        sprintf(ErrMSG, "Downloaded SP FPGAs 1&2 successfully in module %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Info(PIXIE_FUNC, "Downloaded SP FPGAs 1&2 successfully in module %d", ModNum);
     }
 
     // Initialize counter0 to 0
@@ -815,17 +747,15 @@ ReadINITf34:
     {
         counter1++;
         if (counter1 < 100) {
-            sprintf(ErrMSG, "(Pixie_Boot_FIPPI): Clearing SP FPGAs 3&4, CFG_RDCS=0x%x", buffer[0]);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Info(PIXIE_FUNC, "Clearing SP FPGAs 3&4, CFG_RDCS=0x%x", buffer[0]);
 
             // A very short wait - 200 us
             wait_for_a_short_time((int) (200000.0 / Ns_Per_Cycle));
             goto ReadINITf34;
         } else {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie_Boot_FIPPI): Clearing FIPPI configuration 3&4 timed out in module %d",
-                    ModNum);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "Clearing FIPPI configuration 3&4 timed out in module %d",
+                              ModNum);
             return (-2);
         }
     } else {
@@ -842,20 +772,17 @@ ReadINITf34:
     {
         counter0++;
         if (counter0 < 10) {
-            sprintf(ErrMSG, "(Pixie_Boot_FIPPI): Downloading SP FPGAs 3&4, CFG_RDCS=0x%x",
-                    buffer[0]);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Info(PIXIE_FUNC, "Downloading SP FPGAs 3&4, CFG_RDCS=0x%x",
+                             buffer[0]);
             goto StartFip34;
         } else {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie_Boot_FIPPI): Downloading SP FPGAs 3&4 timed out in module %d",
-                    ModNum);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "Downloading SP FPGAs 3&4 timed out in module %d",
+                              ModNum);
             return (-3);
         }
     } else {
-        sprintf(ErrMSG, "Downloaded SP FPGAs 3&4 successfully in module %d", ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Info(PIXIE_FUNC, "Downloaded SP FPGAs 3&4 successfully in module %d", ModNum);
     }
 
 #if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
@@ -887,7 +814,6 @@ ReadINITf34:
 int Pixie_Boot_DSP(unsigned short ModNum, unsigned int* DSP_code, unsigned int NumDSPCodeWords) {
     unsigned int buffer[0x5];  // Temporary buffer
     unsigned int i, count;  // Index and counters
-    char ErrMSG[MAX_ERRMSG_LENGTH];  // Output message
     unsigned int tagnum, trytimes, wordcount, CSR;
 #if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
     DWORD start;
@@ -902,8 +828,7 @@ int Pixie_Boot_DSP(unsigned short ModNum, unsigned int* DSP_code, unsigned int N
 #if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
     // Set timer resolution to 1 ms
     if (timeBeginPeriod(1) != TIMERR_NOERROR) {
-        sprintf(ErrMSG, "Can not set timer resolution to 1 ms");
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "Can not set timer resolution to 1 ms");
         return (-1);
     }
 #endif
@@ -965,9 +890,8 @@ RetryS:
 
             trytimes++;
             if (trytimes > 5) {
-                sprintf(ErrMSG, "Set DSP SYSCON in module #%d failed, SYSCON=0x%x", ModNum,
-                        buffer[0]);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC, "Set DSP SYSCON in module #%d failed, SYSCON=0x%x", ModNum,
+                                  buffer[0]);
                 return (-2);
             }
 
@@ -984,9 +908,8 @@ RetryD:
             if (buffer[0] != 0xA1) {
                 trytimes++;
                 if (trytimes > 5) {
-                    sprintf(ErrMSG, "Set DSP DMAC10 in module #%d failed, DMAC10=0x%x", ModNum,
-                            buffer[0]);
-                    Pixie_Print_MSG(ErrMSG);
+                    Pixie_Print_Error(PIXIE_FUNC, "Set DSP DMAC10 in module #%d failed, DMAC10=0x%x", ModNum,
+                                      buffer[0]);
                     return (-3);
                 }
 
@@ -1211,8 +1134,7 @@ RetryD:
                             break;
 
                         default:
-                            sprintf(ErrMSG, "tagnum=%u, check if it is valid", tagnum);
-                            Pixie_Print_MSG(ErrMSG);
+                            Pixie_Print_Error(PIXIE_FUNC, "tagnum=%u, check if it is valid", tagnum);
                             return (-4);
                     }
 
@@ -1243,10 +1165,9 @@ RetryD:
             trytimes++;
         } while (trytimes < 10);
         if (bootsuccess == 0) {
-            sprintf(ErrMSG,
-                    "PowerUpInitDone stuck at 0 in the DSP of module %d - can't finish reset initialization",
-                    ModNum);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "PowerUpInitDone stuck at 0 in the DSP of module %d - can't finish reset initialization",
+                              ModNum);
         }
 
         looptimes++;
@@ -1258,18 +1179,15 @@ RetryD:
 
     if (bootsuccess == 1) {
         if (looptimes > 1) {
-            sprintf(ErrMSG, "After %d tries, downloaded DSP code in module #%d successfully",
-                    looptimes, ModNum);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Warning(PIXIE_FUNC, "After %d tries, downloaded DSP code in module #%d successfully",
+                                looptimes, ModNum);
         } else {
-            sprintf(ErrMSG, "Downloaded DSP code in module #%d successfully", ModNum);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Info(PIXIE_FUNC, "Downloaded DSP code in module #%d successfully", ModNum);
         }
         return (0);
     } else {
-        sprintf(ErrMSG, "Failed to download DSP code in module #%d after %d tries", ModNum,
-                looptimes);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "Failed to download DSP code in module #%d after %d tries", ModNum,
+                          looptimes);
         return (-5);
     }
 }

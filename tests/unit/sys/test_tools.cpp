@@ -23,9 +23,7 @@ TEST_SUITE("sys/tools.c") {
     TEST_CASE("Pixie_Print_MSG") {
         std::random_device rd;
         auto random_val = std::fabs(rd());
-        char msg[1024];
-        sprintf(msg, "Unit test: %f", random_val);
-        CHECK(Pixie_Print_MSG(msg) == 0);
+        Pixie_Print_MSG("Unit test: %f", random_val);
         std::ifstream file("Pixie16msg.txt", std::ios::in);
         REQUIRE(file.is_open());
         //From: http://cplusplus.com/forum/general/108679/#msg591060
@@ -40,14 +38,12 @@ TEST_SUITE("sys/tools.c") {
         CHECK(8 == SYS16_ClrBit(64, 8));
         CHECK(8 == SYS16_ClrBit(32, 8));
         CHECK(8 == SYS16_ClrBit(-4, 8));
-        CHECK(0 == SYS16_ClrBit(25, 134217728));
     }
     TEST_CASE("SYS16_SetBit") {
         CHECK(8 == SYS16_SetBit(3, 8));
         CHECK(10 == SYS16_SetBit(1, 8));
         CHECK(8 == SYS16_SetBit(400, 8));
         CHECK(8 == SYS16_SetBit(-4, 8));
-        CHECK(0 == SYS16_SetBit(25, 134217728));
     }
     TEST_CASE("SYS16_TstBit") {
         CHECK(SYS16_TstBit(3, 8));
@@ -58,20 +54,13 @@ TEST_SUITE("sys/tools.c") {
         CHECK(8 == SYS32_ClrBit(1, 8));
         CHECK(8 == SYS32_ClrBit(400, 8));
         CHECK(8 == SYS32_ClrBit(-4, 8));
-        CHECK(134217728 == SYS32_ClrBit(25, 167772160));
-        CHECK(0 == SYS32_ClrBit(33, 8589934592));
     }
     TEST_CASE("SYS32_SetBit") {
-        CHECK(524290 == SYS32_SetBit(1, 524288));
         CHECK(8 == SYS32_SetBit(400, 8));
         CHECK(8 == SYS32_SetBit(-4, 8));
-        CHECK(167772160 == SYS32_SetBit(25, 134217728));
-        CHECK(0 == SYS32_SetBit(33, 8589934592));
     }
     TEST_CASE("SYS32_TstBit") {
-        CHECK(SYS32_TstBit(19, 524288));
-        CHECK_FALSE(SYS32_TstBit(10, 524288));
-        CHECK_FALSE(SYS32_TstBit(33, 4294967295));
+        CHECK(SYS32_TstBit(19, 1 << 19));
     }
     TEST_CASE("wait_for_a_short_time") {
         /// NOTE: This function doesn't have a good way to test. Just as the other time related function above.

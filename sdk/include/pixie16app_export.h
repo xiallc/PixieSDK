@@ -272,7 +272,7 @@ Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO_Data,  // To receive the e
                                 unsigned short ModNum);  // module number
 
 PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16ComputeFastFiltersOffline(char* FileName,  // the list mode data file name (with complete path)
+Pixie16ComputeFastFiltersOffline(const char* FileName,  // the list mode data file name (with complete path)
                                  unsigned short ModuleNumber,  // the module whose events are to be analyzed
                                  unsigned short ChannelNumber,  // the channel whose events are to be analyzed
                                  unsigned int FileLocation,  // the location of the trace in the file
@@ -282,7 +282,7 @@ Pixie16ComputeFastFiltersOffline(char* FileName,  // the list mode data file nam
                                  double* cfd);  // cfd response
 
 PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16ComputeSlowFiltersOffline(char* FileName,  // the list mode data file name (with complete path)
+Pixie16ComputeSlowFiltersOffline(const char* FileName,  // the list mode data file name (with complete path)
                                  unsigned short ModuleNumber,  // the module whose events are to be analyzed
                                  unsigned short ChannelNumber,  // the channel whose events are to be analyzed
                                  unsigned int FileLocation,  // the location of the trace in the file

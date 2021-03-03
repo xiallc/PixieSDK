@@ -2,34 +2,34 @@
 * Copyright (c) 2005 - 2020 XIA LLC
 * All rights reserved.
 *
-* Redistribution and use in source and binary forms, 
-* with or without modification, are permitted provided 
+* Redistribution and use in source and binary forms,
+* with or without modification, are permitted provided
 * that the following conditions are met:
 *
-*   * Redistributions of source code must retain the above 
-*     copyright notice, this list of conditions and the 
+*   * Redistributions of source code must retain the above
+*     copyright notice, this list of conditions and the
 *     following disclaimer.
-*   * Redistributions in binary form must reproduce the 
-*     above copyright notice, this list of conditions and the 
-*     following disclaimer in the documentation and/or other 
+*   * Redistributions in binary form must reproduce the
+*     above copyright notice, this list of conditions and the
+*     following disclaimer in the documentation and/or other
 *     materials provided with the distribution.
 *   * Neither the name of XIA LLC nor the names of its
 *     contributors may be used to endorse or promote
-*     products derived from this software without 
+*     products derived from this software without
 *     specific prior written permission.
 *
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND 
-* CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, 
-* INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
-* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
-* IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE 
-* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR 
-* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
-* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
-* DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON 
-* ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR 
-* TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF 
-* THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+* CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+* INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+* MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+* IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+* PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+* DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+* ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+* TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+* THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
@@ -83,7 +83,6 @@ int Pixie_DSP_Memory_IO(unsigned int* dsp_data,  // DSP data for the I/O
                         unsigned short ModNum)  // The Pixie module for the I/O
 {
     unsigned int numBlocks, remainWords;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
     int retval;
     unsigned int buffer[128], CSR, k;
     unsigned int blockSize = 8192;
@@ -136,9 +135,8 @@ int Pixie_DSP_Memory_IO(unsigned int* dsp_data,  // DSP data for the I/O
                 retval = Pixie_DSP_Memory_Burst_Read(dsp_data + k * blockSize, dsp_address + k * blockSize, blockSize,
                                                      ModNum);
                 if (retval < 0) {
-                    sprintf(ErrMSG, "*ERROR* (Pixie_DSP_Memory_IO) - Reading DSP memory blocks failed, retval=%d",
-                            retval);
-                    Pixie_Print_MSG(ErrMSG);
+                    Pixie_Print_Error(PIXIE_FUNC, "Reading DSP memory blocks failed, retval=%d",
+                                      retval);
                     return (-1);
                 }
             }
@@ -165,10 +163,8 @@ int Pixie_DSP_Memory_IO(unsigned int* dsp_data,  // DSP data for the I/O
                     retval = Pixie_DSP_Memory_Burst_Read(dsp_data + numBlocks * blockSize,
                                                          dsp_address + numBlocks * blockSize, remainWords, ModNum);
                     if (retval < 0) {
-                        sprintf(ErrMSG,
-                                "*ERROR* (Pixie_DSP_Memory_IO) - Reading DSP memory remaining words failed, retval=%d",
-                                retval);
-                        Pixie_Print_MSG(ErrMSG);
+                        Pixie_Print_Error(PIXIE_FUNC, "Reading DSP memory remaining words failed, retval=%d",
+                                          retval);
                         return (-2);
                     }
                 }
@@ -200,7 +196,6 @@ int Pixie_DSP_Memory_Burst_Read(unsigned int* dsp_data,  // DSP data for the I/O
                                 unsigned short ModNum)  // The Pixie module for the I/O
 {
     unsigned int buffer[128];
-    char ErrMSG[MAX_ERRMSG_LENGTH];
     unsigned int dummy[8];
     unsigned int csr, count;
 
@@ -226,10 +221,8 @@ int Pixie_DSP_Memory_Burst_Read(unsigned int* dsp_data,  // DSP data for the I/O
     Pixie_Register_IO(ModNum, EXT_MEM_TEST, SYS_MOD_WRITE, buffer);
     Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_READ, buffer);  // read DSP DMASTAT
     if (SYS32_TstBit(11, buffer[0]) == 1) {
-        sprintf(ErrMSG,
-                "*ERROR* (Pixie_DSP_Memory_Burst_Read) - DSP DMAC11 is still active so can't start a new one, ModNum=%d",
-                ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC, "DSP DMAC11 is still active so can't start a new one, ModNum=%d",
+                          ModNum);
         return (-1);
     }
 
@@ -279,10 +272,8 @@ int Pixie_DSP_Memory_Burst_Read(unsigned int* dsp_data,  // DSP data for the I/O
 
     rc = PlxPci_DmaChannelOpen(&SYS_hDevice[ModNum], 0, &DmaProp);
     if (rc != ApiSuccess) {
-        sprintf(ErrMSG, "*ERROR* (Pixie_DSP_Memory_Burst_Read) - Failed to open PLX DMA channel in module %d, rc=%d",
-                ModNum, rc);
-        Pixie_Print_MSG(ErrMSG);
-
+        Pixie_Print_Error(PIXIE_FUNC, "Failed to open PLX DMA channel in module %d, rc=%d",
+                          ModNum, rc);
         //*********************************
         //	Disable DSP DMA
         //*********************************
@@ -308,20 +299,16 @@ int Pixie_DSP_Memory_Burst_Read(unsigned int* dsp_data,  // DSP data for the I/O
     } while (count < 1000);
 
     if (count == 1000) {
-        sprintf(ErrMSG,
-                "*ERROR* (Pixie_DSP_Memory_Burst_Read) - Failed to read FIFO watermark in System FPGA in module %d",
-                ModNum);
-        Pixie_Print_MSG(ErrMSG);
-
+        Pixie_Print_Error(PIXIE_FUNC, "Failed to read FIFO watermark in System FPGA in module %d",
+                          ModNum);
         //*********************************
         //	Close PLX SGL DMA channel
         //*********************************
         rc = PlxPci_DmaChannelClose(&SYS_hDevice[ModNum], 0);
         if (rc != ApiSuccess) {
-            sprintf(ErrMSG,
-                    "ERROR (Pixie_DSP_Memory_Burst_Read) - PlxPci_DmaChannelClose failed after reading FIFO watermark failed in System FPGA in module %d, rc=%d",
-                    ModNum, rc);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "PlxPci_DmaChannelClose failed after reading FIFO watermark failed in System FPGA in module %d, rc=%d",
+                              ModNum, rc);
         }
 
         //*********************************
@@ -354,10 +341,9 @@ int Pixie_DSP_Memory_Burst_Read(unsigned int* dsp_data,  // DSP data for the I/O
 
     rc = PlxPci_DmaTransferUserBuffer(&SYS_hDevice[ModNum], 0, &DmaParams, DMATRANSFER_TIMEOUT);
     if (rc != ApiSuccess) {
-        sprintf(ErrMSG,
-                "*ERROR* (Pixie_DSP_Memory_Burst_Read) - PlxPci_DmaTransferUserBuffer failed while reading from DSP memory in module %d, rc=%d",
-                ModNum, rc);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC,
+                          "PlxPci_DmaTransferUserBuffer failed while reading from DSP memory in module %d, rc=%d",
+                          ModNum, rc);
 
         //*********************************
         //	Disable DSP DMA
@@ -378,10 +364,9 @@ int Pixie_DSP_Memory_Burst_Read(unsigned int* dsp_data,  // DSP data for the I/O
             // Attempt to close again
             PlxPci_DmaChannelClose(&SYS_hDevice[ModNum], 0);
         } else {
-            sprintf(ErrMSG,
-                    "ERROR (Pixie_DSP_Memory_Burst_Read) - PlxPci_DmaChannelClose failed after reading from DSP memory in module %d, rc=%d",
-                    ModNum, rc);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "PlxPci_DmaChannelClose failed after reading from DSP memory in module %d, rc=%d",
+                              ModNum, rc);
 
             //*********************************
             //	Disable DSP DMA
@@ -450,7 +435,6 @@ int Pixie_ExtFIFO_Read(unsigned int* extfifo_data,  // To receive the external F
                        unsigned int nWords,  // Number of external FIFO data words to read
                        unsigned short ModNum)  // The Pixie module for the I/O
 {
-    char ErrMSG[MAX_ERRMSG_LENGTH];
     unsigned int count, wml;
 
     PLX_STATUS rc;
@@ -480,10 +464,8 @@ int Pixie_ExtFIFO_Read(unsigned int* extfifo_data,  // To receive the external F
 
     rc = PlxPci_DmaChannelOpen(&SYS_hDevice[ModNum], 0, &DmaProp);
     if (rc != ApiSuccess) {
-        sprintf(ErrMSG, "*ERROR* (Pixie_ExtFIFO_Read) - Failed to open PLX DMA channel in module %d, rc=%d", ModNum,
-                rc);
-        Pixie_Print_MSG(ErrMSG);
-
+        Pixie_Print_Error(PIXIE_FUNC, "Failed to open PLX DMA channel in module %d, rc=%d", ModNum,
+                          rc);
         return (-1);
     }
 
@@ -501,20 +483,18 @@ int Pixie_ExtFIFO_Read(unsigned int* extfifo_data,  // To receive the external F
     } while (count < 1000);
 
     if (count == 1000) {
-        sprintf(ErrMSG,
-                "*ERROR* (Pixie_ExtFIFO_Read) - Failed to read FIFO watermark in System FPGA in module %d, nWords=%u, wml=%u",
-                ModNum, nWords, wml);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC,
+                          "Failed to read FIFO watermark in System FPGA in module %d, nWords=%u, wml=%u",
+                          ModNum, nWords, wml);
 
         //*********************************
         //	Close PLX SGL DMA channel
         //*********************************
         rc = PlxPci_DmaChannelClose(&SYS_hDevice[ModNum], 0);
         if (rc != ApiSuccess) {
-            sprintf(ErrMSG,
-                    "ERROR (Pixie_DSP_Memory_Burst_Read) - PlxPci_DmaChannelClose failed after reading FIFO watermark failed in System FPGA in module %d, rc=%d",
-                    ModNum, rc);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "PlxPci_DmaChannelClose failed after reading FIFO watermark failed in System FPGA in module %d, rc=%d",
+                              ModNum, rc);
         }
 
         return (-2);
@@ -538,11 +518,9 @@ int Pixie_ExtFIFO_Read(unsigned int* extfifo_data,  // To receive the external F
 
     rc = PlxPci_DmaTransferUserBuffer(&SYS_hDevice[ModNum], 0, &DmaParams, DMATRANSFER_TIMEOUT);
     if (rc != ApiSuccess) {
-        sprintf(ErrMSG,
-                "*ERROR* (Pixie_ExtFIFO_Read) - PlxPci_DmaTransferUserBuffer failed while reading from external FIFO in module %d, rc=%d",
-                ModNum, rc);
-        Pixie_Print_MSG(ErrMSG);
-
+        Pixie_Print_Error(PIXIE_FUNC,
+                          "PlxPci_DmaTransferUserBuffer failed while reading from external FIFO in module %d, rc=%d",
+                          ModNum, rc);
         return (-3);
     }
 
@@ -554,11 +532,9 @@ int Pixie_ExtFIFO_Read(unsigned int* extfifo_data,  // To receive the external F
             // Attempt to close again
             PlxPci_DmaChannelClose(&SYS_hDevice[ModNum], 0);
         } else {
-            sprintf(ErrMSG,
-                    "ERROR (Pixie_ExtFIFO_Read) - PlxPci_DmaChannelClose failed after reading from DSP memory in module %d, rc=%d",
-                    ModNum, rc);
-            Pixie_Print_MSG(ErrMSG);
-
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "PlxPci_DmaChannelClose failed after reading from DSP memory in module %d, rc=%d",
+                              ModNum, rc);
             return (-4);
         }
     }
@@ -595,7 +571,6 @@ int Pixie_Main_Memory_IO(unsigned int* memory_data,  // Memory data for the I/O
     PLX_DMA_PROP DmaProp;
     PLX_DMA_PARAMS DmaParams;
     unsigned int localAddress = 0x400000;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     if (SYS_Offline == 1)  // Returns immediately for offline analysis
     {
@@ -641,9 +616,8 @@ int Pixie_Main_Memory_IO(unsigned int* memory_data,  // Memory data for the I/O
 
         rc = PlxPci_DmaChannelOpen(&SYS_hDevice[ModNum], 0, &DmaProp);
         if (rc != ApiSuccess) {
-            sprintf(ErrMSG, "*ERROR* (Pixie_Main_Memory_IO) - Failed to open PLX DMA channel in module %d, rc=%d",
-                    ModNum, rc);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC, "Failed to open PLX DMA channel in module %d, rc=%d",
+                              ModNum, rc);
 
             // Clear bit 2 of CSR to release PCI's control of external memory
             CSR &= 0xFFFB;
@@ -670,10 +644,9 @@ int Pixie_Main_Memory_IO(unsigned int* memory_data,  // Memory data for the I/O
 
         rc = PlxPci_DmaTransferUserBuffer(&SYS_hDevice[ModNum], 0, &DmaParams, DMATRANSFER_TIMEOUT);
         if (rc != ApiSuccess) {
-            sprintf(ErrMSG,
-                    "*ERROR* (Pixie_Main_Memory_IO) - PlxPci_DmaTransferUserBuffer failed while reading from external memory in module %d, rc=%d",
-                    ModNum, rc);
-            Pixie_Print_MSG(ErrMSG);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "PlxPci_DmaTransferUserBuffer failed while reading from external memory in module %d, rc=%d",
+                              ModNum, rc);
 
             // Clear bit 2 of CSR to release PCI's control of external memory
             CSR &= 0xFFFB;
@@ -690,10 +663,9 @@ int Pixie_Main_Memory_IO(unsigned int* memory_data,  // Memory data for the I/O
                 // Attempt to close again
                 PlxPci_DmaChannelClose(&SYS_hDevice[ModNum], 0);
             } else {
-                sprintf(ErrMSG,
-                        "ERROR (Pixie_Main_Memory_IO) - PlxPci_DmaChannelClose failed after reading from external memory in module %d, rc=%d",
-                        ModNum, rc);
-                Pixie_Print_MSG(ErrMSG);
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "PlxPci_DmaChannelClose failed after reading from external memory in module %d, rc=%d",
+                                  ModNum, rc);
 
                 // Clear bit 2 of CSR to release PCI's control of external memory
                 CSR &= 0xFFFB;
@@ -734,7 +706,6 @@ int Pixie_Clear_Main_Memory(unsigned int memory_address,  // Main memory address
                             unsigned short ModNum)  // The Pixie module for the I/O
 {
     unsigned int CSR, count;
-    char ErrMSG[MAX_ERRMSG_LENGTH];
 
     if (SYS_Offline == 1)  // Returns immediately for offline analysis
     {
@@ -774,10 +745,9 @@ int Pixie_Clear_Main_Memory(unsigned int memory_address,  // Main memory address
 
     if (count == 1000)  // Timed out
     {
-        sprintf(ErrMSG,
-                "*ERROR* (Pixie_Clear_Main_Memory) - Clearing external memory by System FPGA timedout in Module %d",
-                ModNum);
-        Pixie_Print_MSG(ErrMSG);
+        Pixie_Print_Error(PIXIE_FUNC,
+                          "Clearing external memory by System FPGA timedout in Module %d",
+                          ModNum);
 
         // Clear bit 2 of CSR to release PCI's control of external memory
         CSR &= 0xFFFB;
