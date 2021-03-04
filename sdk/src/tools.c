@@ -1,5 +1,5 @@
-/*----------------------------------------------------------------------
-* Copyright (c) 2005 - 2020, XIA LLC
+/**----------------------------------------------------------------------
+* Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms,
@@ -31,21 +31,12 @@
 * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
-*----------------------------------------------------------------------*/
+*----------------------------------------------------------------------**/
+/// @file tools.cpp
+/// @brief This file contains several tool functions.
+/// @author H. Tan
+/// @date July 31, 2006
 
-/******************************************************************************
-*
-* File Name:
-*
-*		tools.c
-*
-* Description:
-*
-*		This file contains several tool functions.
-*
-* $Rev$
-* $Id$
-******************************************************************************/
 
 #include "pixie16sys_common.h"
 #include "pixie16sys_defs.h"

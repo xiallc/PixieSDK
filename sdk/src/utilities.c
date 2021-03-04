@@ -1,5 +1,5 @@
-/*----------------------------------------------------------------------
-* Copyright (c) 2005 - 2020, XIA LLC
+/**----------------------------------------------------------------------
+* Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms,
@@ -14,9 +14,9 @@
 *     following disclaimer in the documentation and/or other
 *     materials provided with the distribution.
 *   * Neither the name of XIA LLC nor the names of its
-*     contributors may be used to endorse or promote products
-*     derived from this software without specific prior
-*     written permission.
+*     contributors may be used to endorse or promote
+*     products derived from this software without
+*     specific prior written permission.
 *
 * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
 * CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -31,22 +31,11 @@
 * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
-*----------------------------------------------------------------------*/
-
-/******************************************************************************
-*
-* File Name:
-*
-*		utilities.c
-*
-* Description:
-*
-*		This file contains all the utility funtions used for memory I/O or
-*		data acquisition runs.
-*
-* $Rev$
-* $Id$
-*****************************************************************************/
+*----------------------------------------------------------------------**/
+/// @file utilities.cpp
+/// @brief This file contains all the utility functions used for memory I/O or data acquisition runs.
+/// @author H. Tan
+/// @date July 31, 2006
 
 #include "pixie16app_common.h"
 #include "pixie16app_export.h"

@@ -1,5 +1,5 @@
-/*----------------------------------------------------------------------
-* Copyright (c) 2005 - 2020, XIA LLC
+/**----------------------------------------------------------------------
+* Copyright (c) 2004 - 2021, XIA LLC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms,
@@ -31,21 +31,11 @@
 * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
-*----------------------------------------------------------------------*/
-
-/******************************************************************************
-*
-* File Name:
-*
-*		pixie16app.c
-*
-* Description:
-*
-*		This file contains all the Pixie16 interface routines.
-*
-* $Rev$
-* $Id$
-******************************************************************************/
+*----------------------------------------------------------------------**/
+/// @file pixie16app.cpp
+/// @brief This file contains all the Pixie16 interface routines.
+/// @author H. Tan
+/// @date October 10, 2004
 
 #include "pixie16app_common.h"
 #include "pixie16app_export.h"

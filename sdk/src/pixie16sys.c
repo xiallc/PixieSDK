@@ -1,5 +1,5 @@
-/*----------------------------------------------------------------------
-* Copyright (c) 2005 - 2020, XIA LLC
+/**----------------------------------------------------------------------
+* Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms,
@@ -31,22 +31,13 @@
 * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
-*----------------------------------------------------------------------*/
+*----------------------------------------------------------------------**/
+/// @file pixie16sys.cpp
+/// @brief This file contains all the Pixie16 library functions that can be accessed
+/// 		externally by the user application library code.
+/// @author H. Tan
+/// @date July 31, 2006
 
-/******************************************************************************
-*
-* File Name:
-*
-*		pixie16sys.c
-*
-* Description:
-*
-*		This file contains all the Pixie16 library functions that can be accessed
-*		externally by the user application library code.
-*
-* $Rev$
-* $Id$
-******************************************************************************/
 
 #include "PlxApi.h"
 #include "def21160.h"

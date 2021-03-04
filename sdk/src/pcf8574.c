@@ -1,5 +1,5 @@
-/*----------------------------------------------------------------------
-* Copyright (c) 2005 - 2020, XIA LLC
+/**----------------------------------------------------------------------
+* Copyright (c) 2020 - 2021, XIA LLC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms,
@@ -31,23 +31,13 @@
 * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
-*----------------------------------------------------------------------*/
-
-/******************************************************************************
-*
-* File Name:
-*
-*		pcf8574.c
-*
-* Description:
-*
-*		This file contains functions to access the I2C to Parallel-Port Expander
-*		PCF8574 on Pixie-16. PCF8574 is connected to the 4-bit Rev ID and 4-bit
-*       Slot ID of each slot of the crate.
-*
-* $Rev: 44596 $
-* $Id: pcf8574.c 44596 2020-06-29 07:02:09Z htan $
-******************************************************************************/
+*----------------------------------------------------------------------**/
+/// @file pcf8574.cpp
+/// @brief This file contains functions to access the I2C to Parallel-Port Expander
+/// 		PCF8574 on Pixie-16. PCF8574 is connected to the 4-bit Rev ID and 4-bit
+///         Slot ID of each slot of the crate.
+/// @author H. Tan
+/// @date June 29, 2020
 
 #include <stdio.h>
 #include <math.h>
