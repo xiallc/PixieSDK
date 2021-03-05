@@ -36,9 +36,11 @@
 /// @brief This file contains the code necessary to boot a crate of Pixie modules.
 /// @author H.Tan and S.V.Paulauskas
 /// @date November 14, 2020
+
 #include "args.hxx"
 #include "configuration.hpp"
 #include "pixie16app_export.h"
+#include "pixie16sys_export.h"
 #include "easylogging++.h"
 
 #include <chrono>
@@ -96,9 +98,6 @@ bool execute_list_mode_run(const xia::configuration::Configuration& cfg,
                            const double& runtime_in_seconds) {
     LOG(INFO) << "Starting list mode data run for " << runtime_in_seconds << " s.";
 
-    if (!execute_adjust_offsets(cfg.numModules, cfg.DSPParFile))
-        return false;
-
     LOG(INFO) << "Calling Pixie16WriteSglModPar to write SYNCH_WAIT = 1 in Module 0.";
     if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", 1, 0),
                                  "Pixie16WriteSglModPar - SYNC_WAIT"))
@@ -110,7 +109,7 @@ bool execute_list_mode_run(const xia::configuration::Configuration& cfg,
         return false;
 
     LOG(INFO) << "Calling Pixie16StartListModeRun.";
-    if (!verify_api_return_value(Pixie16StartListModeRun(cfg.numModules, 0x100, NEW_RUN),
+    if (!verify_api_return_value(Pixie16StartListModeRun(cfg.numModules, LIST_MODE_RUN, NEW_RUN),
                                  "Pixie16StartListModeRun"))
         return false;
 
@@ -136,6 +135,7 @@ bool execute_list_mode_run(const xia::configuration::Configuration& cfg,
     while (duration_cast<duration<double>>(steady_clock::now() - run_start_time).count() <
            runtime_in_seconds) {
         for (int k = 0; k < cfg.numModules; k++) {
+            Pixie_Read_ExtFIFOStatus(&mod_numwordsread, k);
             if (!verify_api_return_value(
                     Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(),
                                                       &mod_numwordsread, k, 0),
@@ -161,10 +161,12 @@ bool execute_list_mode_run(const xia::configuration::Configuration& cfg,
         return false;
 
     // Make sure all modules indeed finish their run successfully.
+    const unsigned int number_of_finalize_attempts = 10;
     for (int k = 0; k < cfg.numModules; k++) {
         size_t finalize_attempt_number = 0;
-        while (finalize_attempt_number < 10) {
-            if (Pixie16CheckRunStatus(k) != 0) {
+        while (finalize_attempt_number < number_of_finalize_attempts) {
+            if (Pixie16CheckRunStatus(k) == 0) {
+                Pixie_Read_ExtFIFOStatus(&mod_numwordsread, k);
                 if (!verify_api_return_value(
                         Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(),
                                                           &mod_numwordsread, k, 1),
@@ -177,8 +179,8 @@ bool execute_list_mode_run(const xia::configuration::Configuration& cfg,
 
             finalize_attempt_number++;
         }
-        if (finalize_attempt_number == 10)
-            LOG(FATAL) << "End run in module " << k << " failed";
+        if (finalize_attempt_number == number_of_finalize_attempts)
+            LOG(ERROR) << "End run in module " << k << " failed";
     }
 
     LOG(INFO) << "Finished collecting data in "
@@ -187,6 +189,7 @@ bool execute_list_mode_run(const xia::configuration::Configuration& cfg,
 
     // All modules have their run stopped successfully.Now read out the possible last words from the external FIFO
     for (int k = 0; k < cfg.numModules; k++) {
+        Pixie_Read_ExtFIFOStatus(&mod_numwordsread, k);
         if (!verify_api_return_value(
                 Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(), &mod_numwordsread,
                                                   k, 1),
