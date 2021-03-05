@@ -30,6 +30,7 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     target_compile_definitions(PixieSDK PUBLIC PLX_WINDOWS )
 endif ()
 
-file(GLOB PIXIESDK_PUBLIC_HEADERS *.h)
+file(GLOB PIXIESDK_PUBLIC_HEADERS include/*.h
+        ${PROJECT_SOURCE_DIR}/vendor/analog_devices/def21160.h)
 set_target_properties(PixieSDK PROPERTIES PUBLIC_HEADER "${PIXIESDK_PUBLIC_HEADERS}")
 install(TARGETS PixieSDK LIBRARY DESTINATION lib PUBLIC_HEADER DESTINATION include)
