@@ -5,7 +5,9 @@ add_library(PixieSDK SHARED
         src/pixie16app.c
         src/pixie16sys.c
         src/tools.c
-        src/utilities.c)
+        src/utilities.c
+        src/pixie16_param.cpp
+        src/pixie16_module.cpp)
 target_include_directories(PixieSDK PUBLIC
         include/
         ${PROJECT_SOURCE_DIR}/vendor/analog_devices
