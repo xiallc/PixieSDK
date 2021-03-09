@@ -23,6 +23,7 @@ if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
 endif()
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    target_link_libraries(PixieSDK PUBLIC dl m)
     target_compile_definitions(PixieSDK PUBLIC PLX_LINUX)
     target_compile_options(PixieSDK PUBLIC -g -Wall -Wextra)
 elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
