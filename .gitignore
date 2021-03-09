@@ -9,6 +9,8 @@ sourcetrail/
 waf3-*
 build/
 
+# Python files
+venv/
 
 # Created by .ignore support plugin (hsz.mobi)
 ### VisualStudioCode template
