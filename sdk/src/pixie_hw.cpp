@@ -1,8 +1,5 @@
-#ifndef PIXIE_MODULE_H
-#define PIXIE_MODULE_H
-
 /*----------------------------------------------------------------------
-* Copyright (c) 2005 - 2020, XIA LLC
+* Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms,
@@ -36,86 +33,34 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
-#include <memory>
-#include <stdexcept>
-#include <vector>
+#include <chrono>
+#include <thread>
 
 #include <pixie_hw.hpp>
-#include <pixie_param.hpp>
 
 namespace xia
 {
 namespace pixie
 {
-namespace module
+namespace hw
 {
-    /*
-     * Module errors
-     */
-    class error
-        : public std::runtime_error {
-    public:
-        explicit error(const std::string& what);
-        explicit error(const char* what);
-    };
+    bool offline;
 
-    struct pci_bus_handle;
-    typedef std::unique_ptr<pci_bus_handle> bus_handle;
+    error::error(const std::string& what)
+        : runtime_error(what) {
+    }
 
-    bus_handle make_bus_handle();
+    error::error(const char* what)
+        : runtime_error(what) {
+    }
 
-    struct module
+    void
+    wait(size_t microseconds)
     {
-        bus_handle bus;
-
-        /*
-         * Slot in the crate.
-         */
-        int slot;
-
-        /*
-         * Logical module mapping for this instance of the
-         * SDK.
-         */
-        int index;
-
-        /*
-         * Module's register VM address.
-         */
-        void* vmaddr;
-
-        param::module_var_descs module_var_descriptors;
-        param::channel_var_descs channel_var_descriptors;
-
-        std::string varsdef;
-
-        module(bus_handle& bus);
-        ~module();
-
-        void open();
-        void close();
-
-        void initialize(const std::string varsdef_);
-
-        /*
-         * IO read 32 bits value.
-         */
-        inline uint32_t read_32(int reg) {
-            return hw::read_32(vmaddr, reg);
-        }
-
-        /*
-         * IO write 32 bits value.
-         */
-        inline void write_32(int reg,
-                             const uint32_t value) {
-            hw::write_32(vmaddr, reg, value);
-        }
-    };
-
-    typedef std::vector<module> modules;
-}
-}
-}
-
-#endif  // PIXIE_MODULE_H
+        std::this_thread::sleep_for(
+            std::chrono::microseconds(microseconds)
+        );
+    }
+};
+};
+};

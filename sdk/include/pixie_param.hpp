@@ -1,5 +1,5 @@
-#ifndef PIXIE16_PARAM_H
-#define PIXIE16_PARAM_H
+#ifndef PIXIE_PARAM_H
+#define PIXIE1_PARAM_H
 
 /*----------------------------------------------------------------------
 * Copyright (c) 2005 - 2020, XIA LLC
@@ -346,4 +346,4 @@ namespace param
 };
 };
 
-#endif  // PIXIE16_PARAM_H
+#endif  // PIXIE_PARAM_H

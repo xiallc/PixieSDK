@@ -1,5 +1,5 @@
-#ifndef PIXIE_MODULE_H
-#define PIXIE_MODULE_H
+#ifndef PIXIE_HW_H
+#define PIXIE_HW_H
 
 /*----------------------------------------------------------------------
 * Copyright (c) 2005 - 2020, XIA LLC
@@ -36,21 +36,18 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
-#include <memory>
 #include <stdexcept>
-#include <vector>
 
-#include <pixie_hw.hpp>
-#include <pixie_param.hpp>
+#include <stdint.h>
 
 namespace xia
 {
 namespace pixie
 {
-namespace module
+namespace hw
 {
     /*
-     * Module errors
+     * Hardware errors
      */
     class error
         : public std::runtime_error {
@@ -59,63 +56,36 @@ namespace module
         explicit error(const char* what);
     };
 
-    struct pci_bus_handle;
-    typedef std::unique_ptr<pci_bus_handle> bus_handle;
+    /*
+     * Offline?
+     */
+    extern bool offline;
 
-    bus_handle make_bus_handle();
+    /*
+     * Wait in microseconds. We need to check how well this works.
+     */
+    void wait(size_t microseconds);
 
-    struct module
-    {
-        bus_handle bus;
+    /*
+     * Bus interface calls.
+     */
+    static inline uint32_t
+    read_32(void* addr, int offset) {
+        if (offline)
+            return 0;
+        volatile uint32_t* p = static_cast<volatile uint32_t*>(addr);
+        return *(p + offset);
+    }
 
-        /*
-         * Slot in the crate.
-         */
-        int slot;
-
-        /*
-         * Logical module mapping for this instance of the
-         * SDK.
-         */
-        int index;
-
-        /*
-         * Module's register VM address.
-         */
-        void* vmaddr;
-
-        param::module_var_descs module_var_descriptors;
-        param::channel_var_descs channel_var_descriptors;
-
-        std::string varsdef;
-
-        module(bus_handle& bus);
-        ~module();
-
-        void open();
-        void close();
-
-        void initialize(const std::string varsdef_);
-
-        /*
-         * IO read 32 bits value.
-         */
-        inline uint32_t read_32(int reg) {
-            return hw::read_32(vmaddr, reg);
+    static inline void
+    write_32(void* addr, int offset, const uint32_t value) {
+        if (!offline) {
+            volatile uint32_t* p = static_cast<volatile uint32_t*>(addr);
+            *(p + offset) = value;
         }
-
-        /*
-         * IO write 32 bits value.
-         */
-        inline void write_32(int reg,
-                             const uint32_t value) {
-            hw::write_32(vmaddr, reg, value);
-        }
-    };
-
-    typedef std::vector<module> modules;
+    }
 }
 }
 }
 
-#endif  // PIXIE_MODULE_H
+#endif  // PIXIE_HW_H

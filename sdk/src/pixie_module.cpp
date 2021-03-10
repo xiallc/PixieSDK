@@ -36,7 +36,7 @@
 #include <iostream>
 #include <sstream>
 
-#include <pixie16_module.hpp>
+#include <pixie_module.hpp>
 
 #include <PlxApi.h>
 

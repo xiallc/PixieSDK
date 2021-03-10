@@ -1,8 +1,8 @@
-#ifndef PIXIE_MODULE_H
-#define PIXIE_MODULE_H
+#ifndef PIXIE_HW_I2CM24C64_H
+#define PIXIE_HW_I2CM24C64_H
 
 /*----------------------------------------------------------------------
-* Copyright (c) 2005 - 2020, XIA LLC
+* Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms,
@@ -36,12 +36,9 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
-#include <memory>
-#include <stdexcept>
 #include <vector>
 
-#include <pixie_hw.hpp>
-#include <pixie_param.hpp>
+#include <stdint.h>
 
 namespace xia
 {
@@ -49,73 +46,74 @@ namespace pixie
 {
 namespace module
 {
-    /*
-     * Module errors
-     */
-    class error
-        : public std::runtime_error {
-    public:
-        explicit error(const std::string& what);
-        explicit error(const char* what);
-    };
-
-    struct pci_bus_handle;
-    typedef std::unique_ptr<pci_bus_handle> bus_handle;
-
-    bus_handle make_bus_handle();
-
-    struct module
+    class module;
+}
+namespace hw
+{
+namespace i2c
+{
+    struct i2cm24c64
     {
-        bus_handle bus;
+        module::module& module;
 
         /*
-         * Slot in the crate.
+         * The register offset in the module's address space.
          */
-        int slot;
+        const int reg;
 
         /*
-         * Logical module mapping for this instance of the
-         * SDK.
+         * Bit mask of the signals.
          */
-        int index;
+        const uint32_t SDA;
+        const uint32_t SCL;
+        const uint32_t CTRL;
+
+        i2cm24c64(module::module& module,
+                  int reg,
+                  uint32_t SDA,
+                  uint32_t SCL,
+                  uint32_t CTRL);
 
         /*
-         * Module's register VM address.
+         * Read the EEPROM.
          */
-        void* vmaddr;
-
-        param::module_var_descs module_var_descriptors;
-        param::channel_var_descs channel_var_descriptors;
-
-        std::string varsdef;
-
-        module(bus_handle& bus);
-        ~module();
-
-        void open();
-        void close();
-
-        void initialize(const std::string varsdef_);
+        void sequential_read(int address,
+                             size_t length,
+                             std::vector<uint8_t> data);
 
         /*
-         * IO read 32 bits value.
+         * Bus control
          */
-        inline uint32_t read_32(int reg) {
-            return hw::read_32(vmaddr, reg);
-        }
+        void start();
+        void stop();
 
         /*
-         * IO write 32 bits value.
+         * Byte level writes and reads with ACKs
          */
-        inline void write_32(int reg,
-                             const uint32_t value) {
-            hw::write_32(vmaddr, reg, value);
-        }
+        void write_ack(uint8_t data, const char* what);
+        uint8_t read_ack(bool ack);
+
+        /*
+         * Low level byte wide access.
+         */
+        void write(uint8_t data);
+        uint8_t read();
+
+        /*
+         * ACK control
+         */
+        bool get_ack();
+        void send_ack();
+
+        /*
+         * Low level I2C access.
+         */
+        void bus_write(uint8_t data);
+        uint8_t bus_read();
     };
+}
+}
+}
+}
 
-    typedef std::vector<module> modules;
-}
-}
-}
-
-#endif  // PIXIE_MODULE_H
+#endif  // PIXIE_HW_I2CM24C64_H

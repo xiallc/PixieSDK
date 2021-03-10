@@ -42,7 +42,7 @@
 
 #include <pixie16app_defs.h>
 
-#include <pixie16_param.hpp>
+#include <pixie_param.hpp>
 
 namespace xia
 {
