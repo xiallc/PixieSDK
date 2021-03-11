@@ -34,7 +34,9 @@
 *----------------------------------------------------------------------*/
 
 #include <algorithm>
+#include <cstring>
 #include <iostream>
+#include <fstream>
 #include <sstream>
 
 #include <pixie_crate.hpp>
@@ -45,6 +47,30 @@
 #include "pixie16sys_defs.h"
 #include "pixie16sys_export.h"
 #include "pixie16sys_globals.h"
+
+void
+load_crate_firmware(const char* file,
+                    xia::pixie::firmware::crate& firmwares)
+{
+    std::ifstream input(file, std::ios::in | std::ios::binary);
+    if (!input) {
+        throw std::runtime_error(
+            std::string("crate firmware file open: ") + file +
+            ": " + std::strerror(errno)
+        );
+    }
+    for (std::string line; std::getline(input, line); ) {
+        if (!line.empty()) {
+            auto fw = xia::pixie::firmware::parse(line, ':');
+            if (xia::pixie::firmware::check(firmwares, fw)) {
+                std::string what("duplicate firmware option: ");
+                what += line;
+                throw std::runtime_error(what);
+            }
+            xia::pixie::firmware::add(firmwares, fw);
+        }
+    }
+}
 
 int
 main(int argc, char* argv[])
@@ -87,12 +113,12 @@ main(int argc, char* argv[])
         if(bit_file_flag) {
             for (const auto &firmware: args::get(bit_file_flag)) {
                 auto fw = xia::pixie::firmware::parse(firmware, ':');
-                if (xia::pixie::firmware::check(firmwares, fw)) {
+            if (xia::pixie::firmware::check(firmwares, fw)) {
                     std::string what("duplicate bitfile option: ");
                     what += firmware;
-                    throw std::runtime_error(what);
-                }
-                xia::pixie::firmware::add(firmwares, fw);
+                throw std::runtime_error(what);
+            }
+            xia::pixie::firmware::add(firmwares, fw);
             }
         }
 
@@ -112,14 +138,13 @@ main(int argc, char* argv[])
             std::cout << "Total Modules found: " << crate.modules.size()
                       << std::endl;
             crate.set(firmwares);
-            std::cout << "Crate:" << std::endl
-                      << crate << std::endl;
             crate.boot();
+            std::cout << "Crate:" << std::endl << crate << std::endl;
         }
     } catch (std::runtime_error& e) {
         std::cerr << "error: " << e.what() << std::endl;
-        return 1;
+        return EXIT_FAILURE;
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }
