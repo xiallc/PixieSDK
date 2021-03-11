@@ -6,8 +6,9 @@ add_library(PixieSDK SHARED
         src/pixie16sys.c
         src/tools.c
         src/utilities.c
-        src/pixie_param.cpp
+        src/pixie_crate.cpp
         src/pixie_module.cpp
+        src/pixie_param.cpp
         src/pixie_hw.cpp
         src/hw/i2cm24c64.cpp)
 target_include_directories(PixieSDK PUBLIC

@@ -73,6 +73,17 @@ namespace module
         return std::make_unique<pci_bus_handle>();
     }
 
+    bool
+    pci_find_module(int device_number, bus_handle& device)
+    {
+        device->device_number = -1;
+        PLX_STATUS ps = ::PlxPci_DeviceFind(&device->key, device_number);
+        if (ps == PLX_STATUS_OK) {
+            device->device_number = device_number;
+        }
+        return ps == PLX_STATUS_OK;
+    }
+
     error::error(const std::string& what)
         : runtime_error(what) {
     }
@@ -81,14 +92,45 @@ namespace module
         : runtime_error(what) {
     }
 
-    module::module(bus_handle& bus_)
-        : bus(std::move(bus_)),
+    int
+    pci_bus(const bus_handle& device)
+    {
+        if (device) {
+            return device->key.bus;
+        }
+        return -1;
+    }
+
+    int
+    pci_slot(const bus_handle& device)
+    {
+        if (device) {
+            return device->key.slot;
+        }
+        return -1;
+    }
+
+    module::module()
+        : device(std::make_unique<pci_bus_handle>()),
           slot(0),
           index(-1),
-          vmaddr(0),
+          vmaddr(nullptr),
           module_var_descriptors(param::get_module_var_descriptors()),
           channel_var_descriptors(param::get_channel_var_descriptors())
     {
+    }
+
+    module::module(module&& m)
+        : device(std::move(m.device)),
+          slot(m.slot),
+          index(m.index),
+          vmaddr(m.vmaddr),
+          module_var_descriptors(std::move(m.module_var_descriptors)),
+          channel_var_descriptors(std::move(m.channel_var_descriptors))
+    {
+        m.slot = 0;
+        m.index = -1;
+        m.vmaddr = nullptr;
     }
 
     module::~module()
@@ -96,38 +138,53 @@ namespace module
         /*
          * Lets not throw from a desctructor, just log any errors.
          */
-        if (bus) {
+        if (device) {
+            bus_handle device_ = std::move(device);
             PLX_STATUS ps;
-            bus_handle bus_ = std::move(bus);
 
-            if (vmaddr != 0) {
-                ps = ::PlxPci_PciBarUnmap(&bus_->handle, &vmaddr);
+            if (vmaddr != nullptr) {
+                ps = ::PlxPci_PciBarUnmap(&device_->handle, &vmaddr);
                 if (ps != PLX_STATUS_OK) {
                 std::cout << "error: Pixie PCI BAR unmap: "
-                          << bus_->device_number << " : " << ps
+                          << device_->device_number << " : " << ps
                           << std::endl;
                 }
             }
 
-            ps = ::PlxPci_DeviceClose(&bus_->handle);
+            ps = ::PlxPci_DeviceClose(&device_->handle);
             if (ps != PLX_STATUS_OK) {
                 /*
                  * Lets not throw from a desctructor, just log the issue.
                  */
                 std::cout << "error: Pixie PCI close: "
-                          << bus_->device_number << " : " << ps
+                          << device_->device_number << " : " << ps
                           << std::endl;
             }
         }
     }
 
+    module&
+    module::operator-(module&& m)
+    {
+        device = std::move(m.device);
+        slot = m.slot;
+        index = m.index;
+        vmaddr = m.vmaddr;
+        module_var_descriptors = std::move(m.module_var_descriptors);
+        channel_var_descriptors = std::move(m.channel_var_descriptors);
+        m.slot = 0;
+        m.index = -1;
+        m.vmaddr = nullptr;
+        return *this;
+    }
+
     void
     module::open()
     {
-        PLX_STATUS ps = ::PlxPci_DeviceOpen(&bus->key, &bus->handle);
+        PLX_STATUS ps = ::PlxPci_DeviceOpen(&device->key, &device->handle);
         if (ps != PLX_STATUS_OK) {
             std::ostringstream oss;
-            oss << "Pixie PCI open: device: " << bus->device_number
+            oss << "Pixie PCI open: device: " << device->device_number
                 << " : " << ps;
             throw error(oss.str());
         }
@@ -135,13 +192,18 @@ namespace module
         /*
          * For PLX 9054, Space 0 is at PCI BAR 2.
          */
-        ps = PlxPci_PciBarMap(&bus->handle, 2, (VOID**) &vmaddr);
+        ps = PlxPci_PciBarMap(&device->handle, 2, (VOID**) &vmaddr);
         if (ps != PLX_STATUS_OK) {
             std::ostringstream oss;
-            oss << "Pixie PCI BAR map: device: " << bus->device_number
+            oss << "Pixie PCI BAR map: device: " << device->device_number
                 << " : " << ps;
             throw error(oss.str());
         }
+    }
+
+    void
+    module::close()
+    {
     }
 
     void
@@ -151,17 +213,6 @@ namespace module
         param::load(varsdef,
                     module_var_descriptors,
                     channel_var_descriptors);
-    }
-
-    bool
-    pci_find_module(int device_number, bus_handle& bus)
-    {
-        bus->device_number = -1;
-        PLX_STATUS ps = ::PlxPci_DeviceFind(&bus->key, device_number);
-        if (ps == PLX_STATUS_OK) {
-            bus->device_number = device_number;
-        }
-        return ps == PLX_STATUS_OK;
     }
 };
 };

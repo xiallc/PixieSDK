@@ -59,14 +59,36 @@ namespace module
         explicit error(const char* what);
     };
 
+    /*
+     * PCI bus handle is opaque. No direct access as it is
+     * specific to the PCI drivers.
+     */
     struct pci_bus_handle;
     typedef std::unique_ptr<pci_bus_handle> bus_handle;
 
     bus_handle make_bus_handle();
+    bool pci_find_module(int device_number, bus_handle& device);
+    int pci_bus(const bus_handle& device);
+    int pci_slot(const bus_handle& device);
 
+    /*
+     * Module
+     *
+     * A module can only be a single specific instance and it is designed to
+     * live in a container of modules in a crate. There are limitations on
+     * the type of things you can do with a module object. It contains a
+     * unique pointer to the opaque bus handle and there can only ever be
+     * one instance of a bus handle. If the handle in a module is initialised
+     * the handle will be closed when the module destructs. If an instance of
+     * a module could be copied and that instance destructs the handle would
+     * close the module's device.
+     */
     struct module
     {
-        bus_handle bus;
+        /*
+         * The type is opaque.
+         */
+        bus_handle device;
 
         /*
          * Slot in the crate.
@@ -89,8 +111,11 @@ namespace module
 
         std::string varsdef;
 
-        module(bus_handle& bus);
+        module();
+        module(module&& m);
         ~module();
+
+        module& operator-(module&& m);
 
         void open();
         void close();
