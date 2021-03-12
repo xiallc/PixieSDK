@@ -55,8 +55,6 @@ namespace crate
     crate::crate(size_t num_modules_)
         : num_modules(num_modules_)
     {
-        if (num_modules != 0)
-            throw error("crate already initialised");
     }
 
     crate::~crate()
@@ -64,7 +62,7 @@ namespace crate
     }
 
     void
-    crate::initialize()
+    crate::initialize(bool reg_trace)
     {
         for (size_t device_number = 0;
              device_number < num_modules;
@@ -74,34 +72,9 @@ namespace crate
 
             module::module& module = modules.back();
 
-            if (!module::pci_find_module(device_number, module.device))
-                break;
+            module.reg_trace = reg_trace;
 
-            /*
-             * I am not sure this extra scan is needed.
-             */
-            auto mi = std::find_if(modules.begin(),
-                                   modules.end(),
-                                   [&module](const module::module& m) {
-                                       return (module::pci_bus(m.device) ==
-                                               module::pci_bus(module.device) &&
-                                               module::pci_slot(m.device) ==
-                                               module::pci_slot(module.device));
-                                   });
-            if (mi != modules.end()) {
-                std::ostringstream oss;
-                oss << "duplicate Pixie16 module found (found " << modules.size()
-                    << " of " << num_modules << ')';
-                throw error(oss.str());
-            }
-
-        }
-
-        if (modules.size() != num_modules) {
-            std::ostringstream oss;
-            oss << "Pixie16 module(s) not found (found " << modules.size()
-                << " of " << num_modules << ')';
-            throw error(oss.str());
+            module.open(device_number);
         }
     }
 };

@@ -36,6 +36,7 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <vector>
@@ -65,9 +66,6 @@ namespace module
      */
     struct pci_bus_handle;
     typedef std::unique_ptr<pci_bus_handle> bus_handle;
-
-    bus_handle make_bus_handle();
-    bool pci_find_module(int device_number, bus_handle& device);
     int pci_bus(const bus_handle& device);
     int pci_slot(const bus_handle& device);
 
@@ -96,6 +94,16 @@ namespace module
         int slot;
 
         /*
+         * Serial number.
+         */
+        int serial_num;
+
+        /*
+         * Revision of the board
+         */
+        int revision;
+
+        /*
          * Logical module mapping for this instance of the
          * SDK.
          */
@@ -111,13 +119,13 @@ namespace module
 
         std::string varsdef;
 
+        bool reg_trace;
+
         module();
         module(module&& m);
         ~module();
 
-        module& operator-(module&& m);
-
-        void open();
+        void open(size_t device_number);
         void close();
 
         void initialize(const std::string varsdef_);
@@ -126,7 +134,13 @@ namespace module
          * IO read 32 bits value.
          */
         inline uint32_t read_32(int reg) {
-            return hw::read_32(vmaddr, reg);
+            uint32_t value = hw::read_32(vmaddr, reg);
+            if (reg_trace) {
+                std::cout << "M r " << std::hex
+                          << vmaddr << ':' << reg << " => " << value
+                          << std::dec << std::endl;
+            }
+            return value;
         }
 
         /*
@@ -134,6 +148,11 @@ namespace module
          */
         inline void write_32(int reg,
                              const uint32_t value) {
+            if (reg_trace) {
+                std::cout << "M w " << std::hex
+                          << vmaddr << ':' << reg << " <= " << value
+                          << std::dec << std::endl;
+            }
             hw::write_32(vmaddr, reg, value);
         }
     };

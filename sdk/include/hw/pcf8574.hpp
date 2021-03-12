@@ -1,8 +1,8 @@
-#ifndef PIXIE_HW_H
-#define PIXIE_HW_H
+#ifndef PIXIE_HW_PCF8574_H
+#define PIXIE_HW_PCF8574_H
 
 /*----------------------------------------------------------------------
-* Copyright (c) 2005 - 2020, XIA LLC
+* Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms,
@@ -36,9 +36,7 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
-#include <stdexcept>
-
-#include <stdint.h>
+#include <hw/i2c_bitbash.hpp>
 
 namespace xia
 {
@@ -46,37 +44,25 @@ namespace pixie
 {
 namespace hw
 {
-    /*
-     * Hardware errors
-     */
-    class error
-        : public std::runtime_error {
-    public:
-        explicit error(const std::string& what);
-        explicit error(const char* what);
+namespace i2c
+{
+    struct pcf8574
+        : public bitbash
+    {
+        pcf8574(module::module& module,
+                int reg,
+                uint32_t SDA,
+                uint32_t SCL,
+                uint32_t CTRL);
+
+        /*
+         * Read a byte.
+         */
+        uint8_t read_a_byte();
     };
-
-    /*
-     * Wait in microseconds. We need to check how well this works.
-     */
-    void wait(size_t microseconds);
-
-    /*
-     * Bus interface calls.
-     */
-    static inline uint32_t
-    read_32(void* addr, int offset) {
-        volatile uint32_t* p = static_cast<volatile uint32_t*>(addr);
-        return *(p + (offset / 4));
-    }
-
-    static inline void
-    write_32(void* addr, int offset, const uint32_t value) {
-        volatile uint32_t* p = static_cast<volatile uint32_t*>(addr);
-        *(p + (offset / 4)) = value;
-    }
+}
 }
 }
 }
 
-#endif  // PIXIE_HW_H
+#endif  // PIXIE_HW_PCF8574_H

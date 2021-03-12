@@ -36,38 +36,19 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
-#include <vector>
-
-#include <stdint.h>
+#include <hw/i2c_bitbash.hpp>
 
 namespace xia
 {
 namespace pixie
 {
-namespace module
-{
-    class module;
-}
 namespace hw
 {
 namespace i2c
 {
     struct i2cm24c64
+        : public bitbash
     {
-        module::module& module;
-
-        /*
-         * The register offset in the module's address space.
-         */
-        const int reg;
-
-        /*
-         * Bit mask of the signals.
-         */
-        const uint32_t SDA;
-        const uint32_t SCL;
-        const uint32_t CTRL;
-
         i2cm24c64(module::module& module,
                   int reg,
                   uint32_t SDA,
@@ -79,37 +60,7 @@ namespace i2c
          */
         void sequential_read(int address,
                              size_t length,
-                             std::vector<uint8_t> data);
-
-        /*
-         * Bus control
-         */
-        void start();
-        void stop();
-
-        /*
-         * Byte level writes and reads with ACKs
-         */
-        void write_ack(uint8_t data, const char* what);
-        uint8_t read_ack(bool ack);
-
-        /*
-         * Low level byte wide access.
-         */
-        void write(uint8_t data);
-        uint8_t read();
-
-        /*
-         * ACK control
-         */
-        bool get_ack();
-        void send_ack();
-
-        /*
-         * Low level I2C access.
-         */
-        void bus_write(uint8_t data);
-        uint8_t bus_read();
+                             std::vector<uint8_t>& data);
     };
 }
 }

@@ -68,7 +68,7 @@ namespace crate
         crate(size_t num_modules);
         ~crate();
 
-        void initialize();
+        void initialize(bool reg_trace = false);
     };
 }
 }

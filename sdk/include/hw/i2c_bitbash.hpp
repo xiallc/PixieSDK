@@ -1,8 +1,8 @@
-#ifndef PIXIE_HW_H
-#define PIXIE_HW_H
+#ifndef PIXIE_HW_I2C_BITBASH_H
+#define PIXIE_HW_I2C_BITBASH_H
 
 /*----------------------------------------------------------------------
-* Copyright (c) 2005 - 2020, XIA LLC
+* Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms,
@@ -36,7 +36,7 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
-#include <stdexcept>
+#include <vector>
 
 #include <stdint.h>
 
@@ -44,39 +44,74 @@ namespace xia
 {
 namespace pixie
 {
+namespace module
+{
+    class module;
+}
 namespace hw
 {
-    /*
-     * Hardware errors
-     */
-    class error
-        : public std::runtime_error {
-    public:
-        explicit error(const std::string& what);
-        explicit error(const char* what);
+namespace i2c
+{
+    struct bitbash
+    {
+        module::module& module;
+
+        /*
+         * The register offset in the module's address space.
+         */
+        const int reg;
+
+        /*
+         * Bit mask of the signals.
+         */
+        const uint32_t SDA;
+        const uint32_t SCL;
+        const uint32_t CTRL;
+
+        const bool trace;
+
+        bitbash(module::module& module,
+                int reg,
+                uint32_t SDA,
+                uint32_t SCL,
+                uint32_t CTRL,
+                bool trace = false);
+        virtual ~bitbash();
+
+        /*
+         * Bus control
+         */
+        void start();
+        void stop();
+
+        /*
+         * Byte level writes and reads with ACKs
+         */
+        void write_ack(uint8_t data, const char* what);
+        uint8_t read_ack(bool ack = true);
+
+        /*
+         * Low level byte wide access.
+         */
+        void write(uint8_t data);
+        uint8_t read();
+
+        /*
+         * ACK control
+         */
+        bool get_ack();
+        void send_ack();
+        void send_nack();
+
+        /*
+         * Low level I2C access.
+         */
+        void bus_write(uint8_t data);
+        uint8_t bus_read();
     };
-
-    /*
-     * Wait in microseconds. We need to check how well this works.
-     */
-    void wait(size_t microseconds);
-
-    /*
-     * Bus interface calls.
-     */
-    static inline uint32_t
-    read_32(void* addr, int offset) {
-        volatile uint32_t* p = static_cast<volatile uint32_t*>(addr);
-        return *(p + (offset / 4));
-    }
-
-    static inline void
-    write_32(void* addr, int offset, const uint32_t value) {
-        volatile uint32_t* p = static_cast<volatile uint32_t*>(addr);
-        *(p + (offset / 4)) = value;
-    }
+}
 }
 }
 }
 
-#endif  // PIXIE_HW_H
+#endif  // PIXIE_HW_I2C_BITBASH_H

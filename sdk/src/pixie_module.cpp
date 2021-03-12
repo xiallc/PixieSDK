@@ -34,9 +34,15 @@
 *----------------------------------------------------------------------*/
 
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 
 #include <pixie_module.hpp>
+
+#include <hw/i2cm24c64.hpp>
+#include <hw/pcf8574.hpp>
+
+#include <pixie16sys_defs.h>
 
 #include <PlxApi.h>
 
@@ -46,6 +52,14 @@ namespace pixie
 {
 namespace module
 {
+    error::error(const std::string& what)
+        : runtime_error(what) {
+    }
+
+    error::error(const char* what)
+        : runtime_error(what) {
+    }
+
     /*
      * PLX PCI vendor and device id
      */
@@ -65,31 +79,6 @@ namespace module
         ::memset(&key, PCI_FIELD_IGNORE, sizeof(PLX_DEVICE_KEY));
         key.VendorId = vendor_id;
         key.DeviceId = device_id;
-    }
-
-    bus_handle
-    make_bus_handle()
-    {
-        return std::make_unique<pci_bus_handle>();
-    }
-
-    bool
-    pci_find_module(int device_number, bus_handle& device)
-    {
-        device->device_number = -1;
-        PLX_STATUS ps = ::PlxPci_DeviceFind(&device->key, device_number);
-        if (ps == PLX_STATUS_OK) {
-            device->device_number = device_number;
-        }
-        return ps == PLX_STATUS_OK;
-    }
-
-    error::error(const std::string& what)
-        : runtime_error(what) {
-    }
-
-    error::error(const char* what)
-        : runtime_error(what) {
     }
 
     int
@@ -113,75 +102,63 @@ namespace module
     module::module()
         : device(std::make_unique<pci_bus_handle>()),
           slot(0),
+          serial_num(0),
+          revision(0),
           index(-1),
           vmaddr(nullptr),
           module_var_descriptors(param::get_module_var_descriptors()),
-          channel_var_descriptors(param::get_channel_var_descriptors())
+          channel_var_descriptors(param::get_channel_var_descriptors()),
+          reg_trace(false)
     {
     }
 
     module::module(module&& m)
         : device(std::move(m.device)),
           slot(m.slot),
+          serial_num(m.serial_num),
+          revision(m.revision),
           index(m.index),
           vmaddr(m.vmaddr),
           module_var_descriptors(std::move(m.module_var_descriptors)),
-          channel_var_descriptors(std::move(m.channel_var_descriptors))
+          channel_var_descriptors(std::move(m.channel_var_descriptors)),
+          reg_trace(m.reg_trace)
     {
         m.slot = 0;
+        m.serial_num = 0;
+        m.revision = 0;
         m.index = -1;
         m.vmaddr = nullptr;
+        m.reg_trace = false;
     }
 
     module::~module()
     {
         /*
-         * Lets not throw from a desctructor, just log any errors.
+         * Catch an error here and log.
          */
-        if (device) {
-            bus_handle device_ = std::move(device);
-            PLX_STATUS ps;
-
-            if (vmaddr != nullptr) {
-                ps = ::PlxPci_PciBarUnmap(&device_->handle, &vmaddr);
-                if (ps != PLX_STATUS_OK) {
-                std::cout << "error: Pixie PCI BAR unmap: "
-                          << device_->device_number << " : " << ps
-                          << std::endl;
-                }
-            }
-
-            ps = ::PlxPci_DeviceClose(&device_->handle);
-            if (ps != PLX_STATUS_OK) {
-                /*
-                 * Lets not throw from a desctructor, just log the issue.
-                 */
-                std::cout << "error: Pixie PCI close: "
-                          << device_->device_number << " : " << ps
-                          << std::endl;
-            }
+        try {
+            close();
+        } catch(error& e) {
+            std::cout << "error: " << e.what() << std::endl;
         }
     }
 
-    module&
-    module::operator-(module&& m)
-    {
-        device = std::move(m.device);
-        slot = m.slot;
-        index = m.index;
-        vmaddr = m.vmaddr;
-        module_var_descriptors = std::move(m.module_var_descriptors);
-        channel_var_descriptors = std::move(m.channel_var_descriptors);
-        m.slot = 0;
-        m.index = -1;
-        m.vmaddr = nullptr;
-        return *this;
-    }
-
     void
-    module::open()
+    module::open(size_t device_number)
     {
-        PLX_STATUS ps = ::PlxPci_DeviceOpen(&device->key, &device->handle);
+        PLX_STATUS ps;
+
+        ps = ::PlxPci_DeviceFind(&device->key, device_number);
+        if (ps != PLX_STATUS_OK) {
+            std::ostringstream oss;
+            oss << "Pixie PCI find: device: " << device->device_number
+                << " : " << ps;
+            throw error(oss.str());
+        }
+
+        device->device_number = device_number;
+
+        ps = ::PlxPci_DeviceOpen(&device->key, &device->handle);
         if (ps != PLX_STATUS_OK) {
             std::ostringstream oss;
             oss << "Pixie PCI open: device: " << device->device_number
@@ -199,11 +176,79 @@ namespace module
                 << " : " << ps;
             throw error(oss.str());
         }
+
+        hw::i2c::pcf8574 pio(*this, PCF8574_ADDR, 1 << 0, 1 << 1, 1 << 2);
+        slot = pio.read_a_byte() & 0xf8 >> 3;
+
+        hw::i2c::i2cm24c64 eeprom(*this, I2CM24C64_ADDR, 1 << 0, 1 << 1, 1 << 2);
+        std::vector<uint8_t> data;
+
+        eeprom.sequential_read(0, 3, data);
+
+        if (data.size() != 3) {
+            std::ostringstream oss;
+            oss << "Pixie EEPROM read: device: " << device->device_number
+                << " : invalid data length:" << data.size();
+            throw error(oss.str());
+        }
+
+        /*
+         *  Starting with serial number 256, serial number is stored in the
+         *  first two bytes of EEPROM, followed by revision number, which is at
+         *  least 11 (i.e. Rev-B)
+         */
+        revision = data[2];
+
+        if (revision >= 11) {
+            serial_num = ((int) data[1] << 8) | (int) data[0];
+        } else {
+            serial_num = (unsigned int) data[0];
+        }
+
+        std::cout << "module: slot:" << slot
+                  << " serial-number:" << serial_num
+                  << " revision:" << revision
+                  << "  PCI: device=" << device->device_number
+                  << std::hex
+                  << " device-id=0x" << device->key.DeviceId
+                  << " vendor-id=0x" << device->key.VendorId
+                  << " pci-bus=0x" << (unsigned int) device->key.bus
+                  << " pci-slot=0x" << (unsigned int) device->key.slot
+                  << std::dec << std::endl;
     }
 
     void
     module::close()
     {
+        if (device) {
+            bus_handle device_ = std::move(device);
+            PLX_STATUS ps_unmap_bar = PLX_STATUS_OK;
+            PLX_STATUS ps_close;
+
+            if (vmaddr != nullptr) {
+                ps_unmap_bar = ::PlxPci_PciBarUnmap(&device_->handle, &vmaddr);
+            }
+
+            ps_close = ::PlxPci_DeviceClose(&device_->handle);
+
+            /*
+             * A single error for both operations and the device is always
+             * closed..
+             */
+            if (ps_unmap_bar != PLX_STATUS_OK || ps_close != PLX_STATUS_OK) {
+                std::ostringstream oss;
+                oss << "Pixie PCI ";
+                if (ps_unmap_bar != PLX_STATUS_OK)
+                    oss << "BAR unmap";
+                if (ps_unmap_bar != PLX_STATUS_OK && ps_close != PLX_STATUS_OK)
+                    oss << " and ";
+                if (ps_close != PLX_STATUS_OK)
+                    oss << "close";
+                oss << ": device: " << device->device_number
+                    << " : " << ps_unmap_bar << ", " << ps_close;
+                throw error(oss.str());
+            }
+        }
     }
 
     void

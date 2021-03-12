@@ -10,7 +10,9 @@ add_library(PixieSDK SHARED
         src/pixie_module.cpp
         src/pixie_param.cpp
         src/pixie_hw.cpp
-        src/hw/i2cm24c64.cpp)
+        src/hw/i2c_bitbash.cpp
+        src/hw/i2cm24c64.cpp
+        src/hw/pcf8574.cpp)
 target_include_directories(PixieSDK PUBLIC
         include/
         ${PROJECT_SOURCE_DIR}/vendor/analog_devices

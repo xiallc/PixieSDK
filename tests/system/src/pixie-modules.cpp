@@ -34,49 +34,96 @@
 *----------------------------------------------------------------------*/
 
 #include <iostream>
+#include <sstream>
 
-#include "args.hxx"
+#include <getopt.h>
 
 #include <pixie_crate.hpp>
+
+#include "PlxApi.h"
+#include "pixie16sys_common.h"
+#include "pixie16sys_defs.h"
+#include "pixie16sys_export.h"
+#include "pixie16sys_globals.h"
+
+static struct option opts[] = {
+  { "help",        no_argument,            NULL,           'h' },
+  { "num-modules", required_argument,      NULL,           'n' },
+  { "csys",        no_argument,            NULL,           'S' },
+  { "reg-trace",   no_argument,            NULL,           'R' },
+  { NULL,          0,                      NULL,            0 }
+};
+
+void
+usage (int exit_code)
+{
+  std::cout << "pixie-modules [options]" << std::endl
+            << "Options and arguments:" << std::endl
+            << " -h        : help (also --help)" << std::endl
+            << " -n num    : number of modules to report" << std::endl
+            << " -S        : use C sys API" << std::endl
+            << " -R        : register trace" << std::endl;
+  ::exit (exit_code);
+}
 
 int
 main(int argc, char* argv[])
 {
-    args::ArgumentParser parser("Pixie Modules Report");
+    size_t num_modules = 0;
+    bool csys_api = false;
+    bool reg_trace = false;
 
-    parser.LongSeparator("=");
+    while (true)
+    {
+      int opt = ::getopt_long(argc, argv, "hn:SR", opts, NULL);
+      if (opt < 0)
+        break;
 
-    args::Group arguments(parser,
-                          "arguments",
-                          args::Group::Validators::AtLeastOne,
-                          args::Options::Global);
-    args::HelpFlag help_flag(arguments,
-                             "help", "Displays this message",
-                             {'h', "help"});
-
-    args::ValueFlag<std::size_t> num_modules(arguments, "num-modules",
-                                           "The number of modules in the crate",
-                                             {'n', "num-modules"},
-                                             0);
-
-    try {
-        parser.ParseCLI(argc, argv);
-    } catch (args::Help& help) {
-        std::cout << parser;
-        return EXIT_SUCCESS;
-    } catch (args::ValidationError& e) {
-        std::cerr << e.what() << std::endl;
-        return EXIT_FAILURE;
+      switch (opt)
+      {
+      case 'n':
+      {
+          std::istringstream iss(optarg);
+          iss >> num_modules;
+          break;
+      }
+      case 'S':
+          csys_api = true;
+          break;
+      case 'R':
+          reg_trace = true;
+          break;
+      case '?':
+          return 2;
+      case 'h':
+          usage (0);
+          break;
+      }
     }
 
-    if (args::get(num_modules) == 0) {
-        std::cerr << "error: no number of modules" << std::endl;
-        return EXIT_FAILURE;
+    if (num_modules == 0) {
+        std::cerr << "error: no number of modules option provides; see -h" << std::endl;
+        return 1;
     }
 
-    xia::pixie::crate::crate crate(args::get(num_modules));
+    if (csys_api) {
+      unsigned short mod_map[num_modules];
+      for (size_t m = 0; m < num_modules; ++m)
+          mod_map[m] = m;
+      std:: cout << "init-system: " << Pixie_InitSystem(num_modules, mod_map, 0) << std::endl;
+      for (size_t m = 0; m < num_modules; ++m)
+          std::cout << "module close:  " << m
+                    << ": " << Pixie_ClosePCIDevices(m) << std::endl;
+    } else {
+        try {
+            xia::pixie::crate::crate crate(num_modules);
+            crate.initialize(reg_trace);
+            std::cout << "Modules found: " << crate.modules.size() << std::endl;
+        } catch (std::runtime_error& e) {
+            std::cerr << "error: " << e.what() << std::endl;
+            return 1;
+        }
+    }
 
-    std::cout << "Modules found: " << crate.modules.size() << std::endl;
-
-    return EXIT_SUCCESS;
+    return 0;
 }
