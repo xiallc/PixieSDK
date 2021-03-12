@@ -32,7 +32,7 @@
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
 *----------------------------------------------------------------------**/
-/// @file pixie16sys.cpp
+/// @file pixie16sys.c
 /// @brief This file contains all the Pixie16 library functions that can be accessed
 /// 		externally by the user application library code.
 /// @author H. Tan

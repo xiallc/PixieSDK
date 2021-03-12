@@ -32,7 +32,7 @@
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
 *----------------------------------------------------------------------**/
-/// @file pcf8574.cpp
+/// @file pcf8574.c
 /// @brief This file contains functions to access the I2C to Parallel-Port Expander
 /// 		PCF8574 on Pixie-16. PCF8574 is connected to the 4-bit Rev ID and 4-bit
 ///         Slot ID of each slot of the crate.

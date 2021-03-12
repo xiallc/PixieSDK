@@ -32,7 +32,7 @@
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
 *----------------------------------------------------------------------**/
-/// @file tools.cpp
+/// @file tools.c
 /// @brief This file contains several tool functions.
 /// @author H. Tan
 /// @date July 31, 2006

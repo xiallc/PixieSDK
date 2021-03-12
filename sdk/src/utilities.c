@@ -32,7 +32,7 @@
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
 *----------------------------------------------------------------------**/
-/// @file utilities.cpp
+/// @file utilities.c
 /// @brief This file contains all the utility functions used for memory I/O or data acquisition runs.
 /// @author H. Tan
 /// @date July 31, 2006

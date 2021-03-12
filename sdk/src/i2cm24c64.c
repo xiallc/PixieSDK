@@ -32,7 +32,7 @@
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
 *----------------------------------------------------------------------**/
-/// @file i2cm24c64.cpp
+/// @file i2cm24c64.c
 /// @brief This file contains functions to access the 64 Kb serial I2C bus EEPROM on Pixie-16.
 /// @author H. Tan
 /// @date April 3, 2007

@@ -32,7 +32,7 @@
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
 *----------------------------------------------------------------------**/
-/// @file communication.cpp
+/// @file communication.c
 /// @brief This file contains all the Pixie16 library functions that can be used to directly access the hardware.
 /// @author H. Tan
 /// @date July 31, 2006

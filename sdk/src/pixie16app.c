@@ -32,7 +32,7 @@
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
 *----------------------------------------------------------------------**/
-/// @file pixie16app.cpp
+/// @file pixie16app.c
 /// @brief This file contains all the Pixie16 interface routines.
 /// @author H. Tan
 /// @date October 10, 2004
