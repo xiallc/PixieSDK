@@ -19,6 +19,7 @@ if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
 endif()
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    target_link_libraries(pixie PUBLIC -Wl,--no-as-needed dl m)
     target_compile_definitions(pixie PUBLIC PLX_LINUX)
     target_compile_options(pixie PUBLIC -g -Wall -Wextra)
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
