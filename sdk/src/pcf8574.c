@@ -39,16 +39,10 @@
 /// @author H. Tan
 /// @date June 29, 2020
 
-#include <stdio.h>
-#include <math.h>
-
-#include "PlxApi.h"
-
 #include "pixie16sys_common.h"
 #include "pixie16sys_defs.h"
-#include "pixie16sys_globals.h"
 #include "pixie16sys_export.h"
-
+#include "pixie16sys_globals.h"
 
 /****************************************************************
  *	PCF8574_Read_One_Byte:

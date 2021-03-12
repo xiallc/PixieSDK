@@ -37,10 +37,13 @@
 /// @author H. Tan
 /// @date October 10, 2004
 
+#include <errno.h>
+#include <stdio.h>
+
 #include "pixie16app_common.h"
 #include "pixie16app_export.h"
-#include "pixie16app_globals.h"
 #include "pixie16sys_export.h"
+#include "pixie16app_globals.h"
 #include "xia_common.h"
 
 #if PIXIE16_APPAPI_VER == PIXIE16_WINDOWS_APPAPI
@@ -49,9 +52,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #endif
-
-#include <errno.h>
-#include <stdio.h>
 
 
 /****************************************************************

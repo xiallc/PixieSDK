@@ -38,19 +38,18 @@
 /// @author H. Tan
 /// @date July 31, 2006
 
+#include <math.h>
+#include <string.h>
 
-#include "PlxApi.h"
+#include <PlxApi.h>
+
 #include "def21160.h"
-
 #include "pixie16sys_common.h"
 #include "pixie16sys_defs.h"
 #include "pixie16sys_export.h"
 #include "pixie16sys_globals.h"
 
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+
 #if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
 #include <windows.h>
 #elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI

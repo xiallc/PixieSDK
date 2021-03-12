@@ -39,9 +39,9 @@
 
 #include <stdio.h>
 
-#include "PlxApi.h"
-#include "def21160.h"
+#include <PlxApi.h>
 
+#include "def21160.h"
 #include "pixie16sys_common.h"
 #include "pixie16sys_defs.h"
 #include "pixie16sys_export.h"
@@ -53,17 +53,6 @@
 #include <ctype.h>
 #include <unistd.h>
 #endif
-
-/****************************************************************
-*	Pixie_DSP_Memory_IO:
-*		Write to or read from Pixie DSP data memory.
-*
-*		Return Value:
-*			 0 - I/O successful
-*			-1 - Reading DSP memory blocks failed
-*			-2 - Reading DSP memory remaining words failed
-*
-****************************************************************/
 
 int Pixie_DSP_Memory_IO(unsigned int* dsp_data,  // DSP data for the I/O
                         unsigned int dsp_address,  // DSP data memory address

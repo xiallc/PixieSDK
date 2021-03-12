@@ -37,15 +37,15 @@
 /// @author H. Tan
 /// @date July 31, 2006
 
-#include "pixie16app_common.h"
-#include "pixie16app_export.h"
-#include "pixie16app_globals.h"
-#include "pixie16sys_export.h"
-#include "xia_common.h"
-
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
+
+#include "pixie16app_common.h"
+#include "pixie16app_export.h"
+#include "pixie16sys_export.h"
+#include "pixie16app_globals.h"
+#include "xia_common.h"
+
 #if PIXIE16_APPAPI_VER == PIXIE16_WINDOWS_APPAPI
 #include <windows.h>
 #elif PIXIE16_APPAPI_VER == PIXIE16_LINUX_APPAPI

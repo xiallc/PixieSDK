@@ -38,9 +38,6 @@
 /// @date April 3, 2007
 
 #include <math.h>
-#include <stdio.h>
-
-#include "PlxApi.h"
 
 #include "pixie16sys_common.h"
 #include "pixie16sys_defs.h"

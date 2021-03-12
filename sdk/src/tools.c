@@ -37,17 +37,17 @@
 /// @author H. Tan
 /// @date July 31, 2006
 
-
-#include "pixie16sys_common.h"
-#include "pixie16sys_defs.h"
-#include "pixie16sys_export.h"
-
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+#include "pixie16sys_common.h"
+#include "pixie16sys_defs.h"
+#include "pixie16sys_export.h"
+
 #if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
 #include <windows.h>
 #elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI

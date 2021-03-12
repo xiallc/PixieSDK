@@ -39,6 +39,9 @@
 
 #ifndef XIA_PIXIE16SYS_GLOBALS_H
 #define XIA_PIXIE16SYS_GLOBALS_H
+
+#include <PlxApi.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
