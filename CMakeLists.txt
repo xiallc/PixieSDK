@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.11)
-project(pixie_sdk)
+project(PixieSDK)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     message(STATUS "${CMAKE_SYSTEM_NAME} is a supported environment.")
