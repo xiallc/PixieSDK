@@ -388,7 +388,6 @@ void Pixie_Print_Debug(const char* func, char* format, ...) {
     va_list args;
     va_start(args, format);
     Pixie_Print_Type_MGS("debug", func, format, args);
-    Pixie_Print_VMSG(format, args);
     va_end(args);
 #endif
 }
