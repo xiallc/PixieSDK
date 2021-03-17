@@ -327,6 +327,7 @@ int main(int argc, char** argv) {
     args::Command export_settings(commands, "export-settings",
                                   "Boots the system and dumps the settings to the file defined in the config.");
     args::Command histogram(commands, "histogram", "Save histograms from the module.");
+    args::Command init(commands, "init", "Initializes the system without going any farther.");
     args::Command list_mode(commands, "list-mode", "Starts a list mode data run");
     args::Command read(commands, "read", "Read a parameter from the module.");
     args::Command write(commands, "write", "Write a parameter to the module.");
@@ -403,6 +404,8 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     LOG(INFO) << "Finished Pixie16InitSystem in "
               << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s.";
+    if(init)
+        return EXIT_SUCCESS;
 
     start = std::chrono::system_clock::now();
     unsigned int boot_pattern = stoul(args::get(boot_pattern_flag), nullptr, 0);
