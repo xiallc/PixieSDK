@@ -197,6 +197,13 @@ extern "C" {
 -------------------------------------*/
 #define DMATRANSFER_TIMEOUT 5 * 1000  // PLX DMA transfer timeout limit, in ms
 
+/*-------------------------------------
+	I2C control bits as OR-able hex patterns
+-------------------------------------*/
+#define SDA  0x9     // bit 3 is used in PXlarge instead of bit 0
+#define SCL  0x2
+#define CTRL 0x4
+
 
 #ifdef __cplusplus
 }
