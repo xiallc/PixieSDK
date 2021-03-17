@@ -18,7 +18,6 @@ TOC_INCLUDE_HEADINGS   = 5
 AUTOLINK_SUPPORT       = YES
 BUILTIN_STL_SUPPORT    = YES
 CPP_CLI_SUPPORT        = YES
-NUM_PROC_THREADS       = 4
 #---------------------------------------------------------------------------
 # Build related configuration options
 #---------------------------------------------------------------------------
@@ -35,7 +34,7 @@ INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          =
 RECURSIVE              = YES
 EXCLUDE                =
-EXCLUDE_PATTERNS       =
+EXCLUDE_PATTERNS       = CMakeLists.txt
 EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       = *
 EXAMPLE_RECURSIVE      = NO
