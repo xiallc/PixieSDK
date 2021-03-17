@@ -128,7 +128,7 @@ int PCF8574_start(unsigned short ModNum)
     //	Set SCL and SDA to 1
     //***************************
 
-    buffer[0] = 0x7;	/* SDA = 1; SCL = 1; CTRL = 1 */
+    buffer[0] = SDA | SCL | CTRL;
     Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
     /* Wait for 6000 ns */
@@ -138,7 +138,7 @@ int PCF8574_start(unsigned short ModNum)
     //	Set SDA to 0 while keep SCL at 1
     //***************************
 
-    buffer[0] = 0x6;	/* SDA = 0; SCL = 1; CTRL = 1 */
+    buffer[0] = SCL | CTRL;
     Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
     /* Wait for 6000 ns */
@@ -161,7 +161,7 @@ int PCF8574_stop(unsigned short ModNum)
     //	Set SCL to 1 and SDA to 0
     //***************************
 
-    buffer[0] = 0x6;	/* SDA = 0; SCL = 1; CTRL = 1 */
+    buffer[0] = SCL | CTRL;
     Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
     /* Wait for 6000 ns */
@@ -171,7 +171,7 @@ int PCF8574_stop(unsigned short ModNum)
     //	Set SDA to 1 while keep SCL at 1
     //***************************
 
-    buffer[0] = 0x7;	/* SDA = 1; SCL = 1; CTRL = 1 */
+    buffer[0] = SDA | SCL | CTRL;
     Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
     /* Wait for 6000 ns */
@@ -193,7 +193,7 @@ int PCF8574_byte_write(unsigned short ModNum, char ByteToSend)
 
     /* Initialize buffer[0] */
 
-    buffer[0] = 0x4;	/* SDA = 0; SCL = 0; CTRL = 1 */
+    buffer[0] = CTRL;
 
     for(i = 7; i >= 0; i --)
     {
@@ -212,9 +212,9 @@ int PCF8574_byte_write(unsigned short ModNum, char ByteToSend)
         //***************************
 
         if(SYS16_TstBit((unsigned short)i, (unsigned short)ByteToSend) == 1)
-            buffer[0] = 0x5;	/* SDA = 1; SCL = 0; CTRL = 1 */
+            buffer[0] = SDA | CTRL;
         else
-            buffer[0] = 0x4;	/* SDA = 0; SCL = 0; CTRL = 1 */
+            buffer[0] = CTRL;
 
         Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
@@ -256,7 +256,7 @@ int PCF8574_byte_read(unsigned short ModNum, char *ByteToReceive)
     unsigned int buffer[4];
     char ByteReceived;
 
-    buffer[0] = 0x0;	/* SDA = 0; SCL = 0; CTRL = 0 */
+    buffer[0] = 0x0;
 
     for(i = 7; i >= 0; i --)
     {
@@ -313,7 +313,7 @@ char PCF8574_getACK(unsigned short ModNum)
     //	Set SCL to 1
     //***************************
 
-    buffer[0] = 0x2;	/* SDA = 0; SCL = 1; CTRL = 0 */
+    buffer[0] = SCL;
     Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
     /* Wait for 6000 ns */
@@ -328,7 +328,7 @@ char PCF8574_getACK(unsigned short ModNum)
     //	Set SCL to 0
     //***************************
 
-    buffer[0] = 0x0;	/* SDA = 0; SCL = 0; CTRL = 0 */
+    buffer[0] = 0x0;
     Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
     /* Wait for 6000 ns */
@@ -351,7 +351,7 @@ char PCF8574_sendACK(unsigned short ModNum)
     //***************************
     //	Pull SDA down to LOW
     //***************************
-    buffer[0] = 0x4;	/* SDA = 0; SCL = 0; CTRL = 1 */
+    buffer[0] = CTRL;
     Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
     /* Wait for 1000 ns */
@@ -361,7 +361,7 @@ char PCF8574_sendACK(unsigned short ModNum)
     //	Set SCL to 1 while keep SDA LOW
     //***************************
 
-    buffer[0] = 0x6;	/* SDA = 0; SCL = 1; CTRL = 1 */
+    buffer[0] = SCL | CTRL;
     Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
     /* Wait for 6000 ns */
@@ -371,7 +371,7 @@ char PCF8574_sendACK(unsigned short ModNum)
     //	Set SCL to 0
     //***************************
 
-    buffer[0] = 0x0;	/* SDA = 0; SCL = 0; CTRL = 0 */
+    buffer[0] = 0x0;
     Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
     /* Wait for 6000 ns */

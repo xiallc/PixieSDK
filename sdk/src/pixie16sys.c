@@ -88,6 +88,7 @@
 *			-11- Could not open PCI Device after finishing mapping modules
 *           -12- Could not close PCI device for all opened modules
 *           -13- Could not find PCI device after finishing mapping modules
+*           -20- Found an unsupported revision during initialization
 *
 ****************************************************************/
 
@@ -372,7 +373,7 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
         }
     }
 
-    // Open PCI devices for all modules
+    // Open PCI devices for all modules requested by the user
     for (k = 0; k < SYS_Number_Modules; k++) {
         // Clear key structure
         memset(&DeviceKey, PCI_FIELD_IGNORE, sizeof(PLX_DEVICE_KEY));
@@ -444,13 +445,35 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
                 }
                 // Starting with serial number 256, serial number is stored in the first two bytes of EEPROM, followed by
                 // revision number, which is at least 11 (i.e. Rev-B)
-                if (sbuffer[2] >= 11) {
+                unsigned int rev = sbuffer[2];
+                if (rev >= 0x0b) {
                     ModSerNum = (unsigned short) (unsigned char) sbuffer[0] +
                                 256 * (unsigned short) (unsigned char) sbuffer[1];
                 } else {
                     ModSerNum = (unsigned short) (unsigned char) sbuffer[0];
                 }
-                Pixie_Print_Debug(PIXIE_FUNC, "Module # %d SERIAL NUMBER = %d", k, ModSerNum);
+                Pixie_Print_Debug(PIXIE_FUNC,
+                                  "Module # %d: Serial Number = %d and Revision = 0x%02x",
+                                  k, ModSerNum, rev);
+
+                if(rev > 0xF) {
+                    Pixie_Print_Error(PIXIE_FUNC,
+                                      "Module %d (SN = %d) is an unsupported revision (0x%02x)!!",
+                                      k, ModSerNum, rev);
+                    Pixie_Print_Info(PIXIE_FUNC,
+                                     "Please remove SN %d in Slot %d from your configuration!",
+                                     ModSerNum, Slot_Number[PlxModIndex[k]]);
+
+                    for (m = 0; m < k; m++) {
+                        retval = Pixie_ClosePCIDevices(m);
+                        if (retval < 0)
+                            Pixie_Print_Error(PIXIE_FUNC,
+                                              "Could not close PCI device for Module=%d; rc=%d",
+                                              m, rc);
+                    }
+
+                    return (-20);
+                }
             }
         } else {
             Pixie_Print_Error(PIXIE_FUNC,
