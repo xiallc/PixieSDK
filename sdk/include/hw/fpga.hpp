@@ -1,8 +1,8 @@
-#ifndef PIXIE_CRATE_H
-#define PIXIE_CRATE_H
+#ifndef PIXIE_HW_FPGA_H
+#define PIXIE_HW_FPGA_H
 
 /*----------------------------------------------------------------------
-* Copyright (c) 2005 - 2020, XIA LLC
+* Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms,
@@ -36,75 +36,87 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
+#include <stdint.h>
+
 #include <pixie_fw.hpp>
-#include <pixie_module.hpp>
-#include <hw/fpga.hpp>
+#include <pixie_hw.hpp>
 
 namespace xia
 {
 namespace pixie
 {
-namespace crate
+namespace module
 {
-    /*
-     * Crate errors
-     */
-    class error
-        : public std::runtime_error {
-    public:
-        explicit error(const std::string& what);
-        explicit error(const char* what);
-    };
-
-    /*
-     * Number of slots in a crate.
-     */
-    static const int slots = 12;
-
-    /*
-     * Crate
-     *
-     * A crate is a series of slots that contain modules.
-     */
-    struct crate
+    class module;
+}
+namespace hw
+{
+namespace fpga
+{
+    struct control
     {
         /*
-         * Number of modules present in the crate.
+         * Controls.
          */
-        size_t num_modules;
+        struct controls {
+            const uint32_t clear;
+            const uint32_t set;
+            const uint32_t done;
+
+            controls(const uint32_t clear,
+                     const uint32_t set,
+                     const uint32_t done);
+        };
 
         /*
-         * A crate contains a number of modules in slots.
+         * Registers.
          */
-        module::modules modules;
+        struct regs {
+            const int DATACS;
+            const int CTRLCS;
+            const int RDCS;
+
+            regs(const int DATACS,
+                 const int CTRLCS,
+                 const int RDCS);
+        };
+
+        module::module& module;
+        const std::string name;
+        const controls load_ctrl;
+        const controls clear_ctrl;
+        const regs reg;
 
         /*
-         * Firmware for the crate. Check the modules for the ones they have
-         * loaded.
+         * Trace the load operation
          */
-        firmware::crate firmware;
+        const bool trace;
 
-        crate(size_t num_modules = slots);
-        ~crate();
-
-        void initialize(bool reg_trace = false);
-        void boot();
-
-        void set(firmware::crate& firmwares);
+        control(module::module& module,
+                const std::string name,
+                const controls& load_ctrl,
+                const controls& clear_ctrl,
+                const regs& reg,
+                bool trace = false);
 
         /*
-         * Output the crate details.
+         * Load
          */
-        void output(std::ostream& out) const;
+        void load(const firmware::image& image, int retries = 10);
+
+        /*
+         * Low level access.
+         */
+        void bus_write(int reg, uint32_t data);
+        uint32_t bus_read(int reg);
+
+    private:
+
+        std::string make_what(const char* msg);
     };
 }
 }
 }
+}
 
-/*
- * Output stream operator.
- */
-std::ostream&
-operator<<(std::ostream& out, const xia::pixie::crate::crate& crate);
-
-#endif  // PIXIE_CRATE_H
+#endif  // PIXIE_HW_FPGA_H

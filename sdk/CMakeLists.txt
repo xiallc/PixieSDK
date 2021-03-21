@@ -8,8 +8,12 @@ add_library(PixieSDK SHARED
         src/utilities.c
         src/pixie_crate.cpp
         src/pixie_module.cpp
+        src/pixie_fw.cpp
         src/pixie_param.cpp
         src/pixie_hw.cpp
+        src/hw/fpga_comms.cpp
+        src/hw/fpga_fippi.cpp
+        src/hw/fpga.cpp
         src/hw/i2c_bitbash.cpp
         src/hw/i2cm24c64.cpp
         src/hw/pcf8574.cpp)

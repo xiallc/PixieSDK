@@ -65,7 +65,8 @@ namespace i2c
 
     bitbash::~bitbash()
     {
-        stop();
+        if (module.online)
+            stop();
     }
 
     void
@@ -75,7 +76,9 @@ namespace i2c
             std::cout << "i2c-bb: start" << std::endl;
 
         /*
-         * Set SCL and SDA to 1, then set SDA to 0 while keep SCL at 1
+         * Set SCL and SDA to 1, then set SDA to 0 while keeping SCL at 1
+         *
+         * The CTRL is a tristate enable control bit for SDA
          */
         bus_write(SDA | SCL | CTRL);
         bus_write(SCL | CTRL);
@@ -185,7 +188,7 @@ namespace i2c
             bus_write(SCL);
 
             /*
-             * Get the bit to send, MSB to LSB.
+             * Read the bit, MSB to LSB.
              */
             data_bit = bus_read() & SDA;
             if (data_bit != 0) {
@@ -229,7 +232,8 @@ namespace i2c
         bus_write(0);
 
         if (trace)
-            std::cout << "i2c-bb: get_ack " << ((data & 0x1) == 0) << std::endl;
+            std::cout << "i2c-bb: get_ack " << ((data & 0x1) == 0)
+                      << std::endl;
 
         return (data & 0x1) == 0;
     }
@@ -265,6 +269,7 @@ namespace i2c
         /*
          * SDA = 1; SCL = 0; CTRL = 1
          */
+        bus_write(CTRL);
         bus_write(SDA | CTRL);
 
         /*

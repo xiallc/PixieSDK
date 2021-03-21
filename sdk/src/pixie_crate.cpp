@@ -64,8 +64,14 @@ namespace crate
     void
     crate::initialize(bool reg_trace)
     {
+        size_t max_modules = num_modules;
+
+        if (max_modules == 0) {
+            max_modules = slots;
+        }
+
         for (size_t device_number = 0;
-             device_number < num_modules;
+             device_number < max_modules;
              ++device_number) {
 
             modules.push_back(module::module());
@@ -74,9 +80,83 @@ namespace crate
 
             module.reg_trace = reg_trace;
 
-            module.open(device_number);
+            try {
+                module.open(device_number);
+            } catch (std::runtime_error& e) {
+                if (module.present) {
+                    std::cout << "module: device " << device_number
+                              << ": error: " << e.what()
+                              << std::endl;
+                }
+            }
+
+            if (module.present) {
+                std::cout << "module: device " << device_number
+                          << ": slot:" << module.slot
+                          << " serial-number:" << module.serial_num
+                          << " revision:" << module.revision
+                          << std::endl;
+            } else {
+                modules.pop_back();
+            }
+        }
+
+        if (num_modules == 0) {
+            num_modules = modules.size();
+        }
+    }
+
+    void
+    crate::boot()
+    {
+        firmware::load(firmware);
+        for (auto& module : modules) {
+            if (module.revision != 0) {
+                module.boot();
+            }
+        }
+        firmware::clear(firmware);
+    }
+
+    void
+    crate::set(firmware::crate& firmwares)
+    {
+        firmware = firmwares;
+        for (auto& module : modules) {
+            auto mod_fw = firmware.find(module.revision);
+            if (mod_fw != firmware.end()) {
+                auto& fw = firmware[module.revision];
+                std::copy(fw.begin(), fw.end(),
+                          std::back_inserter(module.firmware));
+            }
+        }
+    }
+
+    void
+    crate::output(std::ostream& out) const {
+        out << "fw:" << firmware.size() << std::endl;
+        for (auto fw : firmware) {
+            out << ' ' << std::get<0>(fw) << ' ' << std::get<1>(fw)
+                << std::endl;
+        }
+        out << "modules:" << modules.size() << std::endl;
+        bool first = true;
+        for (auto& mod : modules) {
+            if (first) {
+                first = false;
+            } else {
+                out << std::endl;
+            }
+            out << ' ' << mod;
         }
     }
 };
 };
 };
+
+std::ostream&
+operator<<(std::ostream& out, const xia::pixie::crate::crate& crate)
+{
+    crate.output(out);
+    return out;
+}

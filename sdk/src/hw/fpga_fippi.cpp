@@ -1,8 +1,5 @@
-#ifndef PIXIE_CRATE_H
-#define PIXIE_CRATE_H
-
 /*----------------------------------------------------------------------
-* Copyright (c) 2005 - 2020, XIA LLC
+* Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms,
@@ -36,75 +33,46 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
-#include <pixie_fw.hpp>
 #include <pixie_module.hpp>
-#include <hw/fpga.hpp>
+
+#include <hw/fpga_fippi.hpp>
+
+#include <pixie16sys_defs.h>
 
 namespace xia
 {
 namespace pixie
 {
-namespace crate
+namespace hw
 {
-    /*
-     * Crate errors
-     */
-    class error
-        : public std::runtime_error {
-    public:
-        explicit error(const std::string& what);
-        explicit error(const char* what);
-    };
-
-    /*
-     * Number of slots in a crate.
-     */
-    static const int slots = 12;
-
-    /*
-     * Crate
-     *
-     * A crate is a series of slots that contain modules.
-     */
-    struct crate
+namespace fpga
+{
+    fippi::fippi(module::module& module_, bool trace)
+        : module(module_),
+          ctrl_1_2(module,
+                   "fippi-1-2",
+                   control::controls(0xfffff000, 0x000000f2, 0x0a3),
+                   control::controls(0xfffff000, 0x00000052, 0x053),
+                   control::regs(CFG_DATACS, CFG_CTRLCS, CFG_RDCS),
+                   trace),
+          ctrl_3_4(module,
+                   "fippi-3-4",
+                   control::controls(0xfffff000, 0x00000fa2, 0xaa3),
+                   control::controls(0xfffff000, 0x000005a2, 0x5a3),
+                   control::regs(CFG_DATACS, CFG_CTRLCS, CFG_RDCS),
+                   trace)
     {
-        /*
-         * Number of modules present in the crate.
-         */
-        size_t num_modules;
+    }
 
-        /*
-         * A crate contains a number of modules in slots.
-         */
-        module::modules modules;
-
-        /*
-         * Firmware for the crate. Check the modules for the ones they have
-         * loaded.
-         */
-        firmware::crate firmware;
-
-        crate(size_t num_modules = slots);
-        ~crate();
-
-        void initialize(bool reg_trace = false);
-        void boot();
-
-        void set(firmware::crate& firmwares);
-
-        /*
-         * Output the crate details.
-         */
-        void output(std::ostream& out) const;
-    };
-}
-}
-}
-
-/*
- * Output stream operator.
- */
-std::ostream&
-operator<<(std::ostream& out, const xia::pixie::crate::crate& crate);
-
-#endif  // PIXIE_CRATE_H
+    void
+    fippi::boot(const firmware::image& image, int retries)
+    {
+        ctrl_1_2.load(image, retries);
+        ctrl_3_4.load(image, retries);
+        wait(10000);
+        module.write_32(CFG_DCMRST, 0);
+    }
+};
+};
+};
+};

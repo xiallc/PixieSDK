@@ -1,8 +1,8 @@
-#ifndef PIXIE_CRATE_H
-#define PIXIE_CRATE_H
+#ifndef PIXIE_HW_FPGA_FIPPI_H
+#define PIXIE_HW_FPGA_FIPPI_H
 
 /*----------------------------------------------------------------------
-* Copyright (c) 2005 - 2020, XIA LLC
+* Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms,
@@ -36,75 +36,33 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
-#include <pixie_fw.hpp>
-#include <pixie_module.hpp>
 #include <hw/fpga.hpp>
 
 namespace xia
 {
 namespace pixie
 {
-namespace crate
+namespace hw
 {
-    /*
-     * Crate errors
-     */
-    class error
-        : public std::runtime_error {
-    public:
-        explicit error(const std::string& what);
-        explicit error(const char* what);
-    };
-
-    /*
-     * Number of slots in a crate.
-     */
-    static const int slots = 12;
-
-    /*
-     * Crate
-     *
-     * A crate is a series of slots that contain modules.
-     */
-    struct crate
+namespace fpga
+{
+    struct fippi
     {
-        /*
-         * Number of modules present in the crate.
-         */
-        size_t num_modules;
+        module::module& module;
 
         /*
-         * A crate contains a number of modules in slots.
+         * 4 FPGA devices grouped in pairs.
          */
-        module::modules modules;
+        control ctrl_1_2;
+        control ctrl_3_4;
 
-        /*
-         * Firmware for the crate. Check the modules for the ones they have
-         * loaded.
-         */
-        firmware::crate firmware;
+        fippi(module::module& module, bool trace = false);
 
-        crate(size_t num_modules = slots);
-        ~crate();
-
-        void initialize(bool reg_trace = false);
-        void boot();
-
-        void set(firmware::crate& firmwares);
-
-        /*
-         * Output the crate details.
-         */
-        void output(std::ostream& out) const;
+        void boot(const firmware::image& image, int retries = 10);
     };
 }
 }
 }
+}
 
-/*
- * Output stream operator.
- */
-std::ostream&
-operator<<(std::ostream& out, const xia::pixie::crate::crate& crate);
-
-#endif  // PIXIE_CRATE_H
+#endif  // PIXIE_HW_FPGA_FIPPI_H

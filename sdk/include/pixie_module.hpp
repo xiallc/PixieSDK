@@ -37,10 +37,12 @@
 *----------------------------------------------------------------------*/
 
 #include <iostream>
+#include <list>
 #include <memory>
 #include <stdexcept>
 #include <vector>
 
+#include <pixie_fw.hpp>
 #include <pixie_hw.hpp>
 #include <pixie_param.hpp>
 
@@ -84,9 +86,14 @@ namespace module
     struct module
     {
         /*
-         * The type is opaque.
+         * Present in the rack.
          */
-        bus_handle device;
+        bool present;
+
+        /*
+         * Online and ready to use.
+         */
+        bool online;
 
         /*
          * Slot in the crate.
@@ -114,11 +121,30 @@ namespace module
          */
         void* vmaddr;
 
+        /*
+         * Parameter descriptors
+         */
         param::module_var_descs module_var_descriptors;
         param::channel_var_descs channel_var_descriptors;
 
+        /*
+         * Firmware
+         */
+        firmware::module firmware;
+
+        /*
+         * PCI bus. The type is opaque.
+         */
+        bus_handle device;
+
+        /*
+         * Set up status
+         */
         std::string varsdef;
 
+        /*
+         * Diagnostics
+         */
         bool reg_trace;
 
         module();
@@ -129,6 +155,16 @@ namespace module
         void close();
 
         void initialize(const std::string varsdef_);
+
+        void boot(bool boot_comms = true,
+                  bool boot_fippi = true);
+
+        firmware::firmware_ref get(const std::string device);
+
+        /*
+         * Output the crate details.
+         */
+        void output(std::ostream& out) const;
 
         /*
          * IO read 32 bits value.
@@ -161,5 +197,11 @@ namespace module
 }
 }
 }
+
+/*
+ * Output stream operator.
+ */
+std::ostream&
+operator<<(std::ostream& out, const xia::pixie::module::module& module);
 
 #endif  // PIXIE_MODULE_H

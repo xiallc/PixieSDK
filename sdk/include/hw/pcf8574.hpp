@@ -53,7 +53,8 @@ namespace i2c
                 int reg,
                 uint32_t SDA,
                 uint32_t SCL,
-                uint32_t CTRL);
+                uint32_t CTRL,
+                bool trace = false);
 
         /*
          * Read a byte.
