@@ -6177,17 +6177,28 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteCSR(unsigned short ModNum, unsi
 }
 
 
-/****************************************************************
-*	Pixie16CheckExternalFIFOStatus:
-*		Read the number of 32-bit words that the external FIFO
-*		currently has.
-*
-*		Return Value:
-*			 0 - Successful
-*			-1 - Invalid Pixie module number
-*
-****************************************************************/
-
+/**
+ * @ingroup LIST_MODE_DATA_PROCESSING
+ * @brief Read the number of 32-bit words that the external FIFO currently has.
+ *
+ * Use this function to check the status of the external FIFO of a Pixie-16 module while a
+ * list-mode data acquisition run is in progress. The function returns the number of words
+ * (32-bit) that the external FIFO currently has. If the number of words is greater than a
+ * user-set threshold, function Pixie16ReadDataFromExternalFIFO can then be used to read the data
+ * from the external FIFO. The threshold can be set by the user to either minimize reading
+ * overhead or to read data out of the FIFO as quickly as possible. The Pixie-16 API
+ * (pixie16app_defs.h) has defined a threshold with value of 1024 for external FIFO read out
+ * (EXTFIFO_READ_THRESH).
+ *
+ * @see Pixie16ReadDataFromExternalFIFO
+ *
+ * @param[out] nFIFOWords: The number of 32-bit unsigned integer words contained in the module's
+ *     External FIFO
+ * @param[in] ModNum: The module number to read from. Numbering starts counting at 0.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Successful
+ * @retval -1 - Invalid Pixie module number
+ */
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16CheckExternalFIFOStatus(unsigned int* nFIFOWords, unsigned short ModNum) {
     int retval;  // return values
     // Check if ModNum is valid
@@ -6201,21 +6212,29 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16CheckExternalFIFOStatus(unsigned int
 }
 
 
-/****************************************************************
-*	Pixie16ReadDataFromExternalFIFO:
-*		Read data from the external FIFO.
-*
-*		Return Value:
-*			 0 - Successful
-*			-1 - Invalid Pixie module number
-*			-2 - Failed to read data from external FIFO
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO_Data,  // To receive the external FIFO data
-                                unsigned int nFIFOWords,  // number of words to read from external FIFO
-                                unsigned short ModNum)  // module number
+/**
+ * @ingroup LIST_MODE_DATA_PROCESSING
+ * @brief Read data from the external FIFO.
+ *
+ * This function reads list mode data from the external FIFO of a Pixie-16 module. The data are
+ * 32-bit unsigned integers. Normally, function Pixie16CheckExternalFIFOStatus is called first to
+ * see how many words the external FIFO currently has, and then this function is called to read
+ * the data from the FIFO.
+ *
+ * @see Pixie16CheckExternalFIFOStatus
+ *
+ * @param[out] ExtFIFO_Data: A pointer to a memory block containing enough space for `nFIFOWords`
+ *    worth of 32-bit unsigned integers.
+ * @param[in] nFIFOWords: The number of words that we're going to be reading.
+ * @param[in] ModNum: The module number that we'll read from. Numbering starts at 0.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Successful
+ * @retval -1 - Invalid Pixie module number
+ * @retval -2 - Failed to read data from external FIFO
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO_Data,
+                                                                     unsigned int nFIFOWords,
+                                                                     unsigned short ModNum)
 {
     int retval;  // return values
 
@@ -6237,31 +6256,59 @@ Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO_Data,  // To receive the e
 }
 
 
-/****************************************************************
-*	Pixie16ComputeFastFiltersOffline:
-*		Compute fast filter responses of each event in the list
-*		mode data file for offline analysis
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Null pointer *RcdTrace
-*			-2 - Null pointer *fastfilter
-*			-3 - Null pointer *cfd
-*			-4 - Target module number is invalid
-*			-5 - Trace length is too short
-*			-6 - Failed to open list mode data file
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16ComputeFastFiltersOffline(const char* FileName,  // the list mode data file name (with complete path)
-                                 unsigned short ModuleNumber,  // the module whose events are to be analyzed
-                                 unsigned short ChannelNumber,  // the channel whose events are to be analyzed
-                                 unsigned int FileLocation,  // the location of the trace in the file
-                                 unsigned short RcdTraceLength,  // recorded trace length
-                                 unsigned short* RcdTrace,  // recorded trace
-                                 double* fastfilter,  // fast filter response
-                                 double* cfd)  // cfd response
+/**
+ * @ingroup LIST_MODE_DATA_PROCESSING
+ * @brief Compute the fast-filter response of a trace listed in a list-mode data file.
+ *
+ * Use this function to compute fast filter response of a single event in the list-mode data file.
+ * The algorithm implemented in this offline analysis function is equivalent to
+ * the one implemented in the Pixie-16 hardware. So this function can be used to analyze how the
+ * leading edge fast trigger filter and the CFD filter implemented in the hardware respond to the
+ * shape of recorded traces. By analyzing the response of these filters, it is possible to
+ * optimize the performance of the leading-edge trigger or CFD trigger by adjusting the
+ * fast-filter and CFD parameters offline. Such optimized parameters can then be saved to a
+ * settings file to be used for online data acquisition.
+ *
+ * This function uses the globally defined configuration arrays to obtain the filter parameters.
+ * These parameters need to be loaded from a configuration file using
+ * Pixie16LoadDSPParametersFromFile. Users will also need to set the module's offline variant with
+ * the function Pixie16SetOfflineVariant.
+ *
+ * @see Pixie16SaveExternalFIFODataToFile
+ * @see Pixie16SetOfflineVariant
+ * @see Pixie16LoadDSPParametersFromFile
+ *
+ * @param[in] FileName: Absolute path to a file containing list-mode data written by
+ *     Pixie16SaveExternalFIFODataToFile
+ * @param[in] ModuleNumber: The module number that we'd like to analyze. Numbering starts at 0.
+ * @param[in] ChannelNumber: The channel that we'd like to analyze. Numbering starts at 0.
+ * @param[in] FileLocation: The memory address of the beginning of the trace in the file.
+ * @param[in] RcdTraceLength: The length of the trace in the file. Maximum of 32768.
+ * @param[in] RcdTrace: The recorded trace that we'll be analyzing. Maximum length of 32768.
+ * @param[out] fastfilter: Pointer to an array of 32-bit unsigned integers with length matching
+ *    `RcdTraceLength`. Maximum length of 32768.
+ * @param[out] cfd: Pointer to an array of 32-bit unsigned integers with length matching
+ *    `RcdTraceLength`. Maximum length of 32768.
+ *
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Null pointer *RcdTrace
+ * @retval -2 - Null pointer *fastfilter
+ * @retval -3 - Null pointer *cfd
+ * @retval -4 - Target module number is invalid
+ * @retval -5 - Trace length is too short
+ * @retval -6 - Failed to open list-mode data file
+ * @retval -7 - Failed to seek to the trace in the file
+ * @retval -8 - Failed to read the trace from the file
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ComputeFastFiltersOffline(const char* FileName,
+                                                                      unsigned short ModuleNumber,
+                                                                      unsigned short ChannelNumber,
+                                                                      unsigned int FileLocation,
+                                                                      unsigned short RcdTraceLength,
+                                                                      unsigned short* RcdTrace,
+                                                                      double* fastfilter,
+                                                                      double* cfd)
 {
 
     FILE* ListModeFile = NULL;
@@ -6326,7 +6373,7 @@ Pixie16ComputeFastFiltersOffline(const char* FileName,  // the list mode data fi
         return (-5);
     }
 
-    // Open the list mode file
+    // Open the list-mode file
     ListModeFile = fopen(FileName, "rb");
     if (ListModeFile != NULL) {
         // Position ListModeFile to the requested trace location
@@ -6335,7 +6382,7 @@ Pixie16ComputeFastFiltersOffline(const char* FileName,  // the list mode data fi
             Pixie_Print_Error(PIXIE_FUNC, "failed to seek listmode file for module %d, error=%d",
                               ModuleNumber, errno);
             (void) fclose(ListModeFile);
-            return (-1);
+            return (-7);
         }
 
         // Read trace
@@ -6344,7 +6391,7 @@ Pixie16ComputeFastFiltersOffline(const char* FileName,  // the list mode data fi
             Pixie_Print_Error(PIXIE_FUNC, "failed to read listmode file for module %d, error=%d",
                               ModuleNumber, errno);
             (void) fclose(ListModeFile);
-            return (-1);
+            return (-8);
         }
 
         // Close file
@@ -6365,7 +6412,7 @@ Pixie16ComputeFastFiltersOffline(const char* FileName,  // the list mode data fi
         // Extend the value of fastfilter[offset] to all non-computed ones from index 0 to offset-1
         for (x = 0; x < offset; x++) { fastfilter[x] = fastfilter[offset]; }
 
-        // Compute CFD values - 100 MHz and 250 MHz modules use different algorthm than 500 MHz modules
+        // Compute CFD values - 100 MHz and 250 MHz modules use different algorithm than 500 MHz modules
 
         if ((Module_Information[ModuleNumber].Module_ADCMSPS == 100) ||
             (Module_Information[ModuleNumber].Module_ADCMSPS == 250)) {
@@ -6398,7 +6445,7 @@ Pixie16ComputeFastFiltersOffline(const char* FileName,  // the list mode data fi
             for (x = 0; x < RcdTraceLength; x++) { cfd[x] = 0.0; }
         }
     } else {
-        Pixie_Print_Error(PIXIE_FUNC, "can't open list mode file %s", FileName);
+        Pixie_Print_Error(PIXIE_FUNC, "can't open list-mode file %s", FileName);
         return (-6);
     }
 
@@ -6406,29 +6453,55 @@ Pixie16ComputeFastFiltersOffline(const char* FileName,  // the list mode data fi
 }
 
 
-/****************************************************************
-*	Pixie16ComputeSlowFiltersOffline:
-*		Compute slow filter responses of each event in the list
-*		mode data file for offline analysis
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Null pointer *RcdTrace
-*			-2 - Null pointer *slowfilter
-*			-3 - Target module number is invalid
-*			-4 - Trace length is too short
-*			-5 - Failed to open list mode data file
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16ComputeSlowFiltersOffline(const char* FileName,  // the list mode data file name (with complete path)
-                                 unsigned short ModuleNumber,  // the module whose events are to be analyzed
-                                 unsigned short ChannelNumber,  // the channel whose events are to be analyzed
-                                 unsigned int FileLocation,  // the location of the trace in the file
-                                 unsigned short RcdTraceLength,  // recorded trace length
-                                 unsigned short* RcdTrace,  // recorded trace
-                                 double* slowfilter)  // slow filter response
+/**
+ * @ingroup LIST_MODE_DATA_PROCESSING
+ * @brief Compute the slow-filter response of a trace listed in a list-mode data file.
+ *
+ * Use this function to compute slow-filter response of a single event in the list-mode data file.
+ * The algorithm implemented in this offline analysis function is equivalent to
+ * the one implemented in the Pixie-16 hardware. So this function can be used to analyze how the
+ * leading edge fast trigger filter and the CFD filter implemented in the hardware respond to the
+ * shape of recorded traces. By analyzing the response of these filters, it is possible to
+ * optimize the performance of the leading-edge trigger or CFD trigger by adjusting the
+ * fast-filter and CFD parameters offline. Such optimized parameters can then be saved to a
+ * settings file to be used for online data acquisition.
+ *
+ * This function uses the globally defined configuration arrays to obtain the filter parameters.
+ * These parameters need to be loaded from a configuration file using
+ * Pixie16LoadDSPParametersFromFile. Users will also need to set the module's offline variant with
+ * the function Pixie16SetOfflineVariant.
+ *
+ * @see Pixie16SaveExternalFIFODataToFile
+ * @see Pixie16SetOfflineVariant
+ * @see Pixie16LoadDSPParametersFromFile
+ *
+ * @param[in] FileName: Absolute path to a file containing list-mode data written by
+ *     Pixie16SaveExternalFIFODataToFile
+ * @param[in] ModuleNumber: The module number that we'd like to analyze. Numbering starts at 0.
+ * @param[in] ChannelNumber: The channel that we'd like to analyze. Numbering starts at 0.
+ * @param[in] FileLocation: The memory address of the beginning of the trace in the file.
+ * @param[in] RcdTraceLength: The length of the trace in the file. Maximum of 32768.
+ * @param[in] RcdTrace: The recorded trace that we'll be analyzing. Maximum length of 32768.
+ * @param[out] slowfilter: Pointer to an array of 32-bit unsigned integers with length matching
+ *    `RcdTraceLength`. Maximum length of 32768.
+ *
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Null pointer *RcdTrace
+ * @retval -2 - Null pointer *slowfilter
+ * @retval -3 - Target module number is invalid
+ * @retval -4 - Trace length is too short
+ * @retval -5 - Failed to open list-mode data file
+ * @retval -6 - Failed to seek to the trace in the file
+ * @retval -7 - Failed to read the trace from the file
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ComputeSlowFiltersOffline(const char* FileName,
+                                                                      unsigned short ModuleNumber,
+                                                                      unsigned short ChannelNumber,
+                                                                      unsigned int FileLocation,
+                                                                      unsigned short RcdTraceLength,
+                                                                      unsigned short* RcdTrace,
+                                                                      double* slowfilter)
 {
 
     FILE* ListModeFile = NULL;
@@ -6488,7 +6561,7 @@ Pixie16ComputeSlowFiltersOffline(const char* FileName,  // the list mode data fi
         return (-4);
     }
 
-    // Open the list mode file
+    // Open the list-mode file
     ListModeFile = fopen(FileName, "rb");
     if (ListModeFile != NULL) {
         int retval;
@@ -6499,7 +6572,7 @@ Pixie16ComputeSlowFiltersOffline(const char* FileName,  // the list mode data fi
             Pixie_Print_Error(PIXIE_FUNC, "failure seek listmode data, error=%d",
                               errno);
             (void) fclose(ListModeFile);
-            return (-4);
+            return (-6);
         }
 
         // Read trace
@@ -6508,7 +6581,7 @@ Pixie16ComputeSlowFiltersOffline(const char* FileName,  // the list mode data fi
             Pixie_Print_Error(PIXIE_FUNC, "failure read listmode data, error=%d",
                               errno);
             (void) fclose(ListModeFile);
-            return (-4);
+            return (-7);
         }
 
         // Close file
@@ -6559,7 +6632,7 @@ Pixie16ComputeSlowFiltersOffline(const char* FileName,  // the list mode data fi
         // Extend the value of slowfilter[offset] to all non-computed ones from index 0 to offset-1
         for (x = 0; x < offset; x++) { slowfilter[x] = slowfilter[offset]; }
     } else {
-        Pixie_Print_Error(PIXIE_FUNC, "can't open list mode file %s", FileName);
+        Pixie_Print_Error(PIXIE_FUNC, "can't open list-mode file %s", FileName);
         return (-5);
     }
 
@@ -6567,20 +6640,32 @@ Pixie16ComputeSlowFiltersOffline(const char* FileName,  // the list mode data fi
 }
 
 
-/****************************************************************
-*	Pixie16SetOfflineVariant:
-*		Set a module's offline variant to be used for offline analysis
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Module number is invalid
-*			-2 - module offline vairant is invalid
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16SetOfflineVariant(unsigned short ModuleNumber,  // the module to be set offline variant
-                         unsigned short ModuleOfflineVariant)  // module's offline variant
+/**
+ * @ingroup LIST_MODE_DATA_PROCESSING
+ * @brief Set a module's offline variant to be used for offline analysis
+ *
+ * This function sets the offline variant for the provided module number. This function **must**
+ * be called before Pixie16InitSystem to ensure that the correct variant is set.
+ *
+ * @param[in] ModuleNumber: The module number that we want to set
+ * @param[in] ModuleOfflineVariant: The variant of the module that we'd like to use for offline
+ *     analysis.
+ *     | Variant ID | Rev | SN | ADC Bits | ADC Sampling |
+ *     |-|-|-|-|-|
+ *     | 1 | 0xd | 275 | 12 | 100 |
+ *     | 2 | 0xf | 1000 | 14 | 100 |
+ *     | 3 | 0xf | 1000 | 12 | 250 |
+ *     | 4 | 0xf | 1000 | 14 | 250 |
+ *     | 5 | 0xf | 1000 | 12 | 500 |
+ *     | 6 | 0xf | 1000 | 14 | 500 |
+ *     | 7 | 0xf | 1000 | 16 | 250 |
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Module number is invalid
+ * @retval -2 - module offline variant is invalid
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SetOfflineVariant(unsigned short ModuleNumber,
+                                                              unsigned short ModuleOfflineVariant)
 {
     //check if module number is valid
     if (ModuleNumber >= PRESET_MAX_MODULES) {
