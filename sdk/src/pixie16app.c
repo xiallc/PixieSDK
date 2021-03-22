@@ -5632,23 +5632,43 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadListModeTrace(const char* FileNa
 }
 
 
-/****************************************************************
-*	Pixie16ReadHistogramFromFile:
-*		Retrieve histogram data from a file.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Failed to open the histogram file
-*			-2 - No histogram data is available for this channel
-*
-****************************************************************/
+/**
+* @defgroup HISTOGRAM_DATA_PROCESSING Histogram Data Processing
+* @ingroup PUBLIC_API
+* A group of functions used to process Histogram data from the modules
+*/
 
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16ReadHistogramFromFile(const char* FileName,  // the histogram data file name (with complete path)
-                             unsigned int* Histogram,  // histogram data
-                             unsigned int NumWords,  // number of words to be read out
-                             unsigned short ModNum,  // module number
-                             unsigned short ChanNum)  // channel number
+/**
+ * @ingroup HISTOGRAM_DATA_PROCESSING
+ * @brief Retrieve histogram data from a file.
+ *
+ * Use this function to read histogram data from a histogram data file. Before calling this
+ * function, the host code should allocate appropriate amount of memory to store the histogram
+ * data. The default histogram length is 32768. Histogram data are 32-bit unsigned integers.
+ *
+ * @see Pixie16SaveHistogramToFile
+ *
+ * @param[in] FileName: Absolute path to the list-mode data file written with
+ *     Pixie16SavehistogramToFile
+ * @param[out] Histogram: Pointer to an array of 32-bit unsigned integers to hold the
+ *     histogram data read from the file. It should contain `NumWords` elements.
+ * @param[in] NumWords: The number of words to be read out.
+ * @param[in] ModNum: The module number that we'll process with counting starting at 0.
+ * @param[in] ChanNum: The channel number that we'll process with counting starting at 0.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Failed to open the histogram file
+ * @retval -2 - No histogram data is available for this channel
+ * @retval -3 - Failed to seek to the end of the histogram file
+ * @retval -4 - Failed to seek to the beginning of the histogram file
+ * @retval -5 - Failed to seek to the histogram data in the file
+ * @retval -6 - Failed to read the histogram data from the file.
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadHistogramFromFile(const char* FileName,
+                                                                  unsigned int* Histogram,
+                                                                  unsigned int NumWords,
+                                                                  unsigned short ModNum,
+                                                                  unsigned short ChanNum)
 {
 
     unsigned int Histo_Address, TotalWords;
@@ -5665,7 +5685,7 @@ Pixie16ReadHistogramFromFile(const char* FileName,  // the histogram data file n
             Pixie_Print_Error(PIXIE_FUNC, "failed histogram seek, error=%d",
                               errno);
             (void) fclose(HistogramFile);
-            return (-1);
+            return (-3);
         }
         TotalWords = (ftell(HistogramFile) + 1) / 4;
         // Point HistogramFile to the beginning of file
@@ -5674,7 +5694,7 @@ Pixie16ReadHistogramFromFile(const char* FileName,  // the histogram data file n
             Pixie_Print_Error(PIXIE_FUNC, "failed histogram seek, error=%d",
                               errno);
             (void) fclose(HistogramFile);
-            return (-1);
+            return (-4);
         }
 
         Histo_Address = MAX_HISTOGRAM_LENGTH * ChanNum;
@@ -5694,7 +5714,7 @@ Pixie16ReadHistogramFromFile(const char* FileName,  // the histogram data file n
             Pixie_Print_Error(PIXIE_FUNC, "failed histogram seek, error=%d",
                               errno);
             (void) fclose(HistogramFile);
-            return (-1);
+            return (-5);
         }
 
         retval = fread(Histogram, 4, NumWords, HistogramFile);
@@ -5702,7 +5722,7 @@ Pixie16ReadHistogramFromFile(const char* FileName,  // the histogram data file n
             Pixie_Print_Error(PIXIE_FUNC, "failed histogram read, error=%d",
                               errno);
             (void) fclose(HistogramFile);
-            return (-1);
+            return (-6);
         }
 
         // Close the file
