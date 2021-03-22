@@ -1914,7 +1914,7 @@ PIXIE16APP_EXPORT unsigned int PIXIE16APP_API APP32_TstBit(unsigned short bit, u
 /**
  * @defgroup CONTROL_TASK_RUN Control Task functions
  * @ingroup PUBLIC_API
- * A group of functions used to setup and configure the modules
+ * A group of functions used to execute specific tasks on the module.
  */
 
 /**
@@ -2066,7 +2066,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AdjustOffsets(unsigned short ModNum)
  * @retval -2 - Failed to start the GET_BASELINES run
  * @retval -3 - GET_BASELINES run timed out
  */
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AcquireBaselines(unsigned short ModNum) {
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AcquireBaselines(unsigned short ModNum)
+{
     int retval;
     unsigned int Max_Poll, sfr;
 
@@ -2102,9 +2103,14 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AcquireBaselines(unsigned short ModN
     return (0);  // Normal finish
 }
 
+/**
+ * @defgroup CONFIGURATION Configuration Management
+ * @ingroup PUBLIC_API
+ * A group of functions used to setup and configure the modules
+ */
 
 /**
- * @ingroup CONTROL_TASK_RUN
+ * @ingroup CONFIGURATION
  * @brief Read baselines from a channel in a module
  *
  * Use this function to read baseline data from a Pixie-16 module. Before calling this function,
@@ -2325,7 +2331,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ControlTaskRun(unsigned short ModNum
 
 
 /**
- * @ingroup CONTROL_TASK_RUN
+ * @ingroup CONFIGURATION
  * @brief Find the BLcut value for the selected channel and return it using pointer *BLcut.
  *
  * Use this function to find the Baseline Cut value for one channel of a Pixie-16 module. The
@@ -2610,7 +2616,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16TauFinder(unsigned short ModNum, dou
 
 
 /**
- * @ingroup CONTROL_TASK_RUN
+ * @ingroup CONFIGURATION
  * @brief Write a module parameter to a Pixie module
  *
  * #### List of module parameters
@@ -3009,7 +3015,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParNam
 
 
 /**
- * @ingroup CONTROL_TASK_RUN
+ * @ingroup CONFIGURATION
  * @brief Read a module parameter from a Pixie module
  *
  * #### List of module parameters
@@ -3173,7 +3179,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglModPar(const char* ModParName
 
 
 /**
- * @ingroup CONTROL_TASK_RUN
+ * @ingroup CONFIGURATION
  * @brief Write a channel parameter to a Pixie module.
  *
  * #### List of Channel Parameters
@@ -4426,7 +4432,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
 
 
 /**
- * @ingroup CONTROL_TASK_RUN
+ * @ingroup CONFIGURATION
  * @brief Read a channel parameter from a module.
  *
  * #### List of Channel Parameters
@@ -4973,9 +4979,14 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanPar(const char* ChanParNa
     return (0);
 }
 
+/**
+ * @defgroup DATA_PROCESSING Data Processing
+ * @ingroup PUBLIC_API
+ * A group of functions used to process data received from the Pixie modules.
+ */
 
 /**
- * @ingroup CONTROL_TASK_RUN
+ * @ingroup DATA_PROCESSING
  * @brief Retrieve a channel's histogram data from a Pixie module.
  *
  * Use this function to read out the histogram data from a Pixie-16 module’s histogram memory.
@@ -5025,7 +5036,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadHistogramFromModule(unsigned int
 
 
 /**
- * @ingroup CONTROL_TASK_RUN
+ * @ingroup DATA_PROCESSING
  * @brief Retrieve statistics data from a module.
  *
  * Use this function to read out statistics data from a Pixie-16 module. Before calling this
@@ -5077,7 +5088,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadStatisticsFromModule(unsigned in
 
 
 /**
- * @ingroup CONTROL_TASK_RUN
+ * @ingroup DATA_PROCESSING
  * @brief Retrieve histogram data from a Pixie module and then save the data to a file.
  *
  * Use this function to read histogram data from a Pixie-16 module and save the histogram data to
@@ -5289,11 +5300,6 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* File
 }
 
 
-/**
- * @defgroup DATA_PROCESSING Data Processing
- * @ingroup PUBLIC_API
- * A group of functions used to process data received from the Pixie modules.
- */
  /**
  * @defgroup LIST_MODE_DATA_PROCESSING List-Mode Data Processing
  * @ingroup PUBLIC_API
