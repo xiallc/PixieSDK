@@ -5289,21 +5289,41 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* File
 }
 
 
-/****************************************************************
-*	Pixie16GetModuleEvents:
-*		Parse the list mode events from the list mode data file to
-*		get the number of events for each module
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Null pointer *ModuleEvents
-*			-2 - Failed to open list mode data file
-*
-****************************************************************/
+/**
+ * @defgroup DATA_PROCESSING Data Processing
+ * @ingroup PUBLIC_API
+ * A group of functions used to process data received from the Pixie modules.
+ */
+ /**
+ * @defgroup LIST_MODE_DATA_PROCESSING List-Mode Data Processing
+ * @ingroup PUBLIC_API
+ * A group of functions used to process List-Mode data from the modules
+ */
 
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16GetModuleEvents(const char* FileName,  // the list mode data file name (with complete path)
-                       unsigned int* ModuleEvents)  // receives number of events for each module
+ /**
+  * @ingroup LIST_MODE_DATA_PROCESSING
+  * @brief Parse list-mode events from the data file to get the number of events for each module.
+  *
+  * The data file must be written with the Pixie16SaveExternalFIFODataToFile to ensure the proper
+  * format.
+  *
+  * @see Pixie16SaveExternalFIFODataToFile
+  *
+  * @param[in] FileName: An absolute path to the file that we'll parse for events written with
+  *     Pixie16SaveExternalFIFODataToFile.
+  * @param[out] ModuleEvents: A pointer to an array containing the number of events each module
+  *     recorded.
+  * @returns A status code indicating the result of the operation
+  * @retval  0 - Success
+  * @retval -1 - Null pointer *ModuleEvents
+  * @retval -2 - Failed to open list-mode data file
+  * @retval -3 - Failed to seek to the end of the file.
+  * @retval -4 - Failed to seek to beginning of file.
+  * @retval -5 - Failed to read event from file
+  * @retval -6 - Failed to find next event in file.
+  */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16GetModuleEvents(const char* FileName,
+                                                            unsigned int* ModuleEvents)
 {
 
     unsigned int eventdata, eventlength;
@@ -5317,7 +5337,7 @@ Pixie16GetModuleEvents(const char* FileName,  // the list mode data file name (w
         return (-1);
     }
 
-    // Open the list mode file
+    // Open the list-mode file
     ListModeFile = fopen(FileName, "rb");
     if (ListModeFile != NULL) {
         // Get file length
@@ -5326,7 +5346,7 @@ Pixie16GetModuleEvents(const char* FileName,  // the list mode data file name (w
             Pixie_Print_Error(PIXIE_FUNC, "failed listmode seek, error=%d",
                               errno);
             (void) fclose(ListModeFile);
-            return (-1);
+            return (-3);
         }
 
         TotalWords = (ftell(ListModeFile) + 1) / 4;
@@ -5337,7 +5357,7 @@ Pixie16GetModuleEvents(const char* FileName,  // the list mode data file name (w
             Pixie_Print_Error(PIXIE_FUNC, "failed listmode seek, error=%d",
                               errno);
             (void) fclose(ListModeFile);
-            return (-1);
+            return (-4);
         }
 
         // Initialize indicator and counter
@@ -5349,7 +5369,7 @@ Pixie16GetModuleEvents(const char* FileName,  // the list mode data file name (w
                 Pixie_Print_Error(PIXIE_FUNC, "failed listmode read, error=%d",
                                   errno);
                 (void) fclose(ListModeFile);
-                return (-1);
+                return (-5);
             }
             eventlength = (eventdata & 0x7FFE0000) >> 17;
             TotalSkippedWords += eventlength;
@@ -5358,14 +5378,14 @@ Pixie16GetModuleEvents(const char* FileName,  // the list mode data file name (w
                 Pixie_Print_Error(PIXIE_FUNC, "failed listmode seek, error=%d",
                                   errno);
                 (void) fclose(ListModeFile);
-                return (-1);
+                return (-6);
             }
             ModuleEvents[0]++;
         } while (TotalSkippedWords < TotalWords);
 
         (void) fclose(ListModeFile);
     } else {
-        Pixie_Print_Error(PIXIE_FUNC, "can't open list mode data file %s", FileName);
+        Pixie_Print_Error(PIXIE_FUNC, "can't open list-mode data file %s", FileName);
         return (-2);
     }
 
@@ -5373,23 +5393,60 @@ Pixie16GetModuleEvents(const char* FileName,  // the list mode data file name (w
 }
 
 
-/****************************************************************
-*	Pixie16GetEventsInfo:
-*		Retrieve the detailed information of each event in the list
-*		mode data file
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Null pointer *EventInformation
-*			-2 - Target module number is invalid
-*			-3 - Failed to open list mode data file
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16GetEventsInfo(const char* FileName,  // the list mode data file name (with complete path)
-                     unsigned int* EventInformation,  // to hold event information
-                     unsigned short ModuleNumber)  // the module whose events are to be retrieved
+/**
+ * @ingroup LIST_MODE_DATA_PROCESSING
+ * @brief Retrieve the detailed information of each event in the list-mode data file
+ *
+ * Use this function to retrieve the detailed information (except waveforms) of each event in the
+ * list-mode data file for the designated module.
+ * Before calling this function to get the individual events information, another function
+ * Pixie16GetModuleEvents should be called first to determine the number of events that have been
+ * recorded for each module. If the number of events for a given module is nEvents, a memory
+ * block `*EventInformation` should be allocated with a length of (`nEvents*68`):
+ * ```
+ * EventInformation = (unsigned int *)malloc(sizeof(unsigned int) * nEvents * 68);
+ * ```
+ * where 68 is the length of the information records of each event (energy, timestamps, etc.) and
+ * has the following structure.
+ *
+ * | Index | Value |
+ * |-|-|
+ * | EventInformation [0] | Event number  |
+ * | EventInformation [1] | Channel number |
+ * | EventInformation [2] | Slot number |
+ * | EventInformation [3] | Crate number |
+ * | EventInformation [4] | Header length |
+ * | EventInformation [5] | Event length |
+ * | EventInformation [6] | Finish code |
+ * | EventInformation [7] | Event timestamp (lower 32-bit) |
+ * | EventInformation [8] | Event timestamp (upper 16-bit) |
+ * | EventInformation [9] | Event energy |
+ * | EventInformation [10] | Trace length |
+ * | EventInformation [11] | Trace location |
+ * | EventInformation [67:12] | Not used |
+ *
+ * @see Pixie16SaveExternalFIFODataToFile
+ * @see Pixie16GetModuleEvents
+ *
+ * @param[in] FileName: Absolute path to the file containing list-mode data written with
+ *     Pixie16SaveExternalFIFODataToFile
+ * @param[out] EventInformation: Pointer to an array with size `number_of_events * 68`.
+ * @param[in] ModuleNumber: The module number that we'll retrieve information about
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Null pointer *EventInformation
+ * @retval -2 - Target module number is invalid
+ * @retval -3 - Failed to open list-mode data file
+ * @retval -4 - Failed to seek to the end of the file.
+ * @retval -5 - Failed to seek to beginning of file.
+ * @retval -6 - Failed to read Word 0 from the event
+ * @retval -7 - Failed to read Word 1 from the event
+ * @retval -8 - Failed to read Word 2 from the event
+ * @retval -9 - Failed to read Word 3 from the event
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16GetEventsInfo(const char* FileName,
+                                                          unsigned int* EventInformation,
+                                                          unsigned short ModuleNumber)
 {
 
     unsigned int eventdata, headerlength, eventlength;
@@ -5408,7 +5465,7 @@ Pixie16GetEventsInfo(const char* FileName,  // the list mode data file name (wit
         return (-2);
     }
 
-    // Open the list mode file
+    // Open the list-mode file
     ListModeFile = fopen(FileName, "rb");
     if (ListModeFile != NULL) {
         // Get file length
@@ -5417,7 +5474,7 @@ Pixie16GetEventsInfo(const char* FileName,  // the list mode data file name (wit
             Pixie_Print_Error(PIXIE_FUNC, "failed listmode seek for module %d, error=%d",
                               ModuleNumber, errno);
             (void) fclose(ListModeFile);
-            return (-1);
+            return (-4);
         }
         TotalWords = (ftell(ListModeFile) + 1) / 4;
         // Point ListModeFile to the beginning of file
@@ -5426,7 +5483,7 @@ Pixie16GetEventsInfo(const char* FileName,  // the list mode data file name (wit
             Pixie_Print_Error(PIXIE_FUNC, "failed listmode seek for module %d, error=%d",
                               ModuleNumber, errno);
             (void) fclose(ListModeFile);
-            return (-1);
+            return (-5);
         }
 
         // Initialize indicator and counter
@@ -5439,7 +5496,7 @@ Pixie16GetEventsInfo(const char* FileName,  // the list mode data file name (wit
                 Pixie_Print_Error(PIXIE_FUNC, "failed listmode read for module %d, error=%d",
                                   ModuleNumber, errno);
                 (void) fclose(ListModeFile);
-                return (-1);
+                return (-6);
             }
 
             // Event #
@@ -5468,7 +5525,7 @@ Pixie16GetEventsInfo(const char* FileName,  // the list mode data file name (wit
                 Pixie_Print_Error(PIXIE_FUNC, "failed listmode read for module %d, error=%d",
                                   ModuleNumber, errno);
                 (void) fclose(ListModeFile);
-                return (-1);
+                return (-7);
             }
 
             // EventTime_High
@@ -5479,7 +5536,7 @@ Pixie16GetEventsInfo(const char* FileName,  // the list mode data file name (wit
                 Pixie_Print_Error(PIXIE_FUNC, "failed listmode read for module %d, error=%d",
                                   ModuleNumber, errno);
                 (void) fclose(ListModeFile);
-                return (-1);
+                return (-8);
             }
 
             // Event Energy
@@ -5497,13 +5554,13 @@ Pixie16GetEventsInfo(const char* FileName,  // the list mode data file name (wit
                 Pixie_Print_Error(PIXIE_FUNC, "failed listmode seek for module %d, error=%d",
                                   ModuleNumber, errno);
                 (void) fclose(ListModeFile);
-                return (-1);
+                return (-9);
             }
         } while (TotalSkippedWords < TotalWords);
 
         (void) fclose(ListModeFile);
     } else {
-        Pixie_Print_Error(PIXIE_FUNC, "can't open list mode data file %s", FileName);
+        Pixie_Print_Error(PIXIE_FUNC, "can't open list-mode data file %s", FileName);
         return (-3);
     }
 
@@ -5511,25 +5568,37 @@ Pixie16GetEventsInfo(const char* FileName,  // the list mode data file name (wit
 }
 
 
-/****************************************************************
-*	Pixie16ReadListModeTrace:
-*		Retrieve list mode data from a file.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Failed to open list mode data file
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16ReadListModeTrace(const char* FileName,  // list mode data file name
-                         unsigned short* Trace_Data,  // list mode trace data (16-bit words)
-                         unsigned short NumWords,  // number of 16-bit words to be read out
-                         unsigned int FileLocation)  // the location of the trace in the file
+/**
+ * @ingroup LIST_MODE_DATA_PROCESSING
+ * @brief Retrieve a trace from list-mode data in a file.
+ *
+ * It uses the trace length and file location information obtained from function
+ * Pixie16GetEventsInfo for the selected event. This function will only retrieve a single trace at
+ * a time.
+ *
+ * @see Pixie16GetEventsInfo
+ * @see Pixie16SaveExternalFIFODataToFile
+ *
+ * @param[in] FileName: Absolute path to the list-mode data file written with
+ *     Pixie16SaveExternalFIFODataToFile
+ * @param[out] Trace_Data: A pointer to an array of 16-bit unsigned integers that will hold the
+ *     traces. The array should have enough elements to hold NumWords entries.
+ * @param[in] NumWords: The number of 16-bit unsigned integers we'll read from the data file.
+ * @param[in] FileLocation: The location of the trace in the file.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Failed to open list-mode data file
+ * @retval -2 - Failed to seek to the provided trace location
+ * @retval -3 - Failed to read the trace from the file
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadListModeTrace(const char* FileName,
+                                                              unsigned short* Trace_Data,
+                                                              unsigned short NumWords,
+                                                              unsigned int FileLocation)
 {
     FILE* ListModeFile = NULL;
 
-    // Open the list mode file
+    // Open the list-mode file
     ListModeFile = fopen(FileName, "rb");
     if (ListModeFile != NULL) {
         int retval;
@@ -5540,7 +5609,7 @@ Pixie16ReadListModeTrace(const char* FileName,  // list mode data file name
             Pixie_Print_Error(PIXIE_FUNC, "failed listmode data seek, error=%d",
                               errno);
             (void) fclose(ListModeFile);
-            return (-1);
+            return (-2);
         }
 
         // Read trace
@@ -5549,13 +5618,13 @@ Pixie16ReadListModeTrace(const char* FileName,  // list mode data file name
             Pixie_Print_Error(PIXIE_FUNC, "failed listmode read, error=%d",
                               errno);
             (void) fclose(ListModeFile);
-            return (-1);
+            return (-3);
         }
 
         (void) fclose(ListModeFile);
 
     } else {
-        Pixie_Print_Error(PIXIE_FUNC, "can't open list mode file %s", FileName);
+        Pixie_Print_Error(PIXIE_FUNC, "can't open list-mode file %s", FileName);
         return (-1);
     }
 
