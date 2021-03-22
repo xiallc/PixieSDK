@@ -1755,10 +1755,25 @@ PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeRealTime(unsigned int* Sta
 }
 
 
-/****************************************************************
-*	Tools functions
-****************************************************************/
+/**
+ * @defgroup HELPER_FUNCTIONS Helper Functions
+ * @ingroup PUBLIC_API
+ * A group of functions used to support other functionality in the API.
+ */
 
+/**
+ * @ingroup HELPER_FUNCTIONS
+ * @brief Computes the Complex FFT of a trace using Cooley-Turkey algorithm
+ *
+ * Implementation based on Numerical Recipes in C.
+ *
+ * @see https://en.wikipedia.org/wiki/Cooley%E2%80%93Tukey_FFT_algorithm
+ *
+ * @param[in,out] data: A pointer to an array containing the data we'll transform with the
+ *    complex FFT. This array is overwritten with the results of the transformation.
+ * @param[in] length: The length of the data array, which **must** be a power of 2. Ex. 8192, 16384
+ * @returns Zero, always.
+ */
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16complexFFT(double* data, unsigned int length) {
     double tempR;
     double tempI;
@@ -1828,64 +1843,70 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16complexFFT(double* data, unsigned in
     return 0;
 }
 
-/****************************************************************
-*	APP16_TstBit:
-*		Test a bit in a 16-bit unsigned integer.
-*
-****************************************************************/
-
+/**
+ * @ingroup HELPER_FUNCTIONS
+ * @brief Test a bit in a 16-bit unsigned integer.
+ * @param[in] bit: The bit position to test, which starts counting at 0.
+ * @param[in] value: A 16-bit number that we'll test to see if the requested bit is true.
+ * @return 0 if the bit was set, 1 otherwise.
+ */
 PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_TstBit(unsigned short bit, unsigned short value) {
     return (((value & (unsigned short) (pow(2.0, (double) bit))) >> bit));
 }
 
-/****************************************************************
-*	APP16_SetBit:
-*		Set a bit in a 16-bit unsigned integer.
-*
-****************************************************************/
-
+/**
+ * @ingroup HELPER_FUNCTIONS
+ * @brief Set a bit in a 16-bit unsigned integer.
+ * @param[in] bit: The bit position to test, which starts counting at 0.
+ * @param[in] value: A 16-bit number that will have its bit set to true.
+ * @return The new integer after the bit has been toggled.
+ */
 PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_SetBit(unsigned short bit, unsigned short value) {
     return (value | (unsigned short) (pow(2.0, (double) bit)));
 }
 
-/****************************************************************
-*	APP16_ClrBit:
-*		Clear a bit in a 16-bit unsigned integer.
-*
-****************************************************************/
-
+/**
+ * @ingroup HELPER_FUNCTIONS
+ * @brief Clear a bit in a 16-bit unsigned integer.
+ * @param[in] bit: The bit position to test, which starts counting at 0.
+ * @param[in] value: A 16-bit number that will have its bit set to false.
+ * @return The new integer after the bit has been toggled.
+ */
 PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_ClrBit(unsigned short bit, unsigned short value) {
     value = APP16_SetBit(bit, value);
     return (value ^ (unsigned short) (pow(2.0, (double) bit)));
 }
 
-/****************************************************************
-*	APP32_SetBit:
-*		Set a bit in a 32-bit unsigned integer.
-*
-****************************************************************/
-
+/**
+ * @ingroup HELPER_FUNCTIONS
+ * @brief Set a bit in a 32-bit unsigned integer.
+ * @param[in] bit: The bit position to test, which starts counting at 0.
+ * @param[in] value: A 32-bit number that will have its bit set to true.
+ * @return The new integer after the bit has been toggled.
+ */
 PIXIE16APP_EXPORT unsigned int PIXIE16APP_API APP32_SetBit(unsigned short bit, unsigned int value) {
     return (value | (unsigned int) (pow(2.0, (double) bit)));
 }
 
-/****************************************************************
-*	APP32_ClrBit:
-*		Clear a bit in a 32-bit unsigned integer.
-*
-****************************************************************/
-
+/**
+ * @ingroup HELPER_FUNCTIONS
+ * @brief Clear a bit in a 32-bit unsigned integer.
+ * @param[in] bit: The bit position to test, which starts counting at 0.
+ * @param[in] value: A 32-bit number that will have its bit set to false.
+ * @return The new integer after the bit has been toggled.
+ */
 PIXIE16APP_EXPORT unsigned int PIXIE16APP_API APP32_ClrBit(unsigned short bit, unsigned int value) {
     value = APP32_SetBit(bit, value);
     return (value ^ (unsigned int) (pow(2.0, (double) bit)));
 }
 
-/****************************************************************
-*	APP32_TstBit:
-*		Test a bit in a 32-bit unsigned integer.
-*
-****************************************************************/
-
+/**
+ * @ingroup HELPER_FUNCTIONS
+ * @brief Test a bit in a 32-bit unsigned integer.
+ * @param[in] bit: The bit position to test, which starts counting at 0.
+ * @param[in] value: A 32-bit number that we'll test to see if the requested bit is true.
+ * @return 0 if the bit was set, 1 otherwise.
+ */
 PIXIE16APP_EXPORT unsigned int PIXIE16APP_API APP32_TstBit(unsigned short bit, unsigned int value) {
     return (((value & (unsigned int) (pow(2.0, (double) bit))) >> bit));
 }
