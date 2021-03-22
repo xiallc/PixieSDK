@@ -1552,10 +1552,37 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16EndRun(unsigned short ModNum)  // Pi
 }
 
 
-/****************************************************************
-*	Run statistics functions
-****************************************************************/
+/**
+ * @defgroup RUN_STATISTICS Run Statistics
+ * @ingroup PUBLIC_API
+ * A group of functions used calculate run statistics from the return of
+ * Pixie16ReadStatisticsFromModule.
+ * @see Pixie16ReadStatisticsFromModule
+ */
 
+/**
+ * @ingroup RUN_STATISTICS
+ * @brief Compute input count rate of a channel
+ *
+ * Use this function to calculate the input count rate on one channel of a Pixie-16 module. This
+ * function does not communicate with Pixie-16 modules. Before calling this function, another
+ * function, Pixie16ReadStatisticsFromModule, should be called to read statistics data from the
+ * module.
+ *
+ * The *Statistics array is filled with data from a Pixie-16 module after calling function
+ * Pixie16ReadStatisticsFromModule.
+ *
+ * @note The units on the return value are triggers per second.
+ *
+ * @see Pixie16ReadStatisticsFromModule
+ *
+ * @param[in] Statistics: A pointer to the statistics array whose size is exactly 448 unsigned
+ *    integer words (32-bit).
+ * @param[in] ModNum: ModNum is the module number which starts counting at 0.
+ * @param[in] ChanNum: ChanNum is the channel number which starts counting at 0.
+ * @return 0 if the live time was 0. The number of triggers divided by the live time in seconds
+ *     otherwise.
+ */
 PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeInputCountRate(unsigned int* Statistics, unsigned short ModNum,
                                                                      unsigned short ChanNum) {
     double FastPeaks, LiveTime;
@@ -1583,6 +1610,29 @@ PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeInputCountRate(unsigned in
         return (FastPeaks / LiveTime);
 }
 
+/**
+ * @ingroup RUN_STATISTICS
+ * @brief Compute output count rate of a channel
+ *
+ * Use this function to calculate the output count rate on one channel of a Pixie-16 module. This
+ * function does not communicate with Pixie-16 modules. Before calling this function, another
+ * function, Pixie16ReadStatisticsFromModule, should be called to read statistics data from the
+ * module.
+ *
+ * The *Statistics array is filled with data from a Pixie-16 module after calling function
+ * Pixie16ReadStatisticsFromModule.
+ *
+ * @note The return value's units are channel events per second.
+ *
+ * @see Pixie16ReadStatisticsFromModule
+ *
+ * @param[in] Statistics: A pointer to the statistics array whose size is exactly 448 unsigned
+ *    integer words (32-bit).
+ * @param[in] ModNum: ModNum is the module number which starts counting at 0.
+ * @param[in] ChanNum: ChanNum is the channel number which starts counting at 0.
+ * @return 0 if the live time was 0. Otherwise, the number of channel events divided by the
+ *     live time in seconds.
+ */
 PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeOutputCountRate(unsigned int* Statistics, unsigned short ModNum,
                                                                       unsigned short ChanNum) {
     double ChanEvents, RealTime;
@@ -1603,6 +1653,26 @@ PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeOutputCountRate(unsigned i
         return (ChanEvents / RealTime);
 }
 
+/**
+ * @ingroup RUN_STATISTICS
+ * @brief Compute live time that a channel accumulated in a run
+ *
+ * Use this function to calculate the live time that one channel of a Pixie-16 module has spent on
+ * data acquisition. This function does not communicate with Pixie-16 modules. Before calling this
+ * function, another function, Pixie16ReadStatisticsFromModule, should be called to read
+ * statistics data from the module.
+ *
+ * The *Statistics array is filled with data from a Pixie-16 module after calling function
+ * Pixie16ReadStatisticsFromModule.
+ *
+ * @see Pixie16ReadStatisticsFromModule
+ *
+ * @param[in] Statistics: A pointer to the statistics array whose size is exactly 448 unsigned
+ *    integer words (32-bit).
+ * @param[in] ModNum: ModNum is the module number, which starts counting at 0.
+ * @param[in] ChanNum: ChanNum is the channel number, which starts counting at 0.
+ * @return The live time of the module in seconds.
+ */
 PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeLiveTime(unsigned int* Statistics, unsigned short ModNum,
                                                                unsigned short ChanNum) {
     double LiveTime;
@@ -1622,6 +1692,27 @@ PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeLiveTime(unsigned int* Sta
     return (LiveTime);
 }
 
+/**
+ * @ingroup RUN_STATISTICS
+ * @brief Compute number of events processed by a module
+ *
+ * @note This function is only used by Rev-A modules.
+ *
+ * Use this function to calculate the number of events that have been processed by a Pixie-16
+ * module during a data acquisition run. This function does not communicate with Pixie-16 modules.
+ * Before calling this function, another function, Pixie16ReadStatisticsFromModule, should be
+ * called to read statistics data from the module first.
+ *
+ * The *Statistics array is filled with data from a Pixie-16 module after calling function
+ * Pixie16ReadStatisticsFromModule.
+ *
+ * @see Pixie16ReadStatisticsFromModule
+ *
+ * @param[in] Statistics: A pointer to the statistics array whose size is exactly 448 unsigned
+ *    integer words (32-bit).
+ * @param[in] ModNum: ModNum is the module number, which starts counting at 0.
+ * @return The number of events processed by the module.
+ */
 PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeProcessedEvents(unsigned int* Statistics, unsigned short ModNum) {
     double ProcessedEvents;
 
@@ -1633,6 +1724,25 @@ PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeProcessedEvents(unsigned i
     return (ProcessedEvents);
 }
 
+/**
+ * @ingroup RUN_STATISTICS
+ * @brief Compute real time that a module accumulated in a run
+ *
+ * Use this function to calculate the real time that a Pixie-16 module has spent on data
+ * acquisition.This function does not communicate with Pixie-16 modules.
+ * Before calling this function, another function, Pixie16ReadStatisticsFromModule, should be
+ * called to read statistics data from the module first.
+ *
+ * The *Statistics array is filled with data from a Pixie-16 module after calling function
+ * Pixie16ReadStatisticsFromModule.
+ *
+ * @see Pixie16ReadStatisticsFromModule
+ *
+ * @param[in] Statistics: A pointer to the statistics array whose size is exactly 448 unsigned
+ *    integer words (32-bit).
+ * @param[in] ModNum: The module number, which starts counting at 0.
+ * @return The number of seconds that the module spent on data acquisition.
+ */
 PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeRealTime(unsigned int* Statistics, unsigned short ModNum) {
     double RealTime;
 
