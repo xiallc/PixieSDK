@@ -192,7 +192,7 @@ namespace module
             }
 
             hw::i2c::i2cm24c64 eeprom(*this, I2CM24C64_ADDR,
-                                      1 << 0, 1 << 1, 1 << 2);
+                                      (1 << 0) | (1 << 3), 1 << 1, 1 << 2);
             std::vector<uint8_t> data;
 
             eeprom.sequential_read(0, 3, data);
@@ -218,7 +218,7 @@ namespace module
             }
 
             hw::i2c::pcf8574 pio(*this, PCF8574_ADDR,
-                                 1 << 0, 1 << 1, 1 << 2);
+                                 (1 << 0) | (1 << 3), 1 << 1, 1 << 2);
 
             slot = (pio.read_a_byte() & 0xf8) >> 3;
         }
