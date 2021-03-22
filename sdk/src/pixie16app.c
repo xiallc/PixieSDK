@@ -1911,23 +1911,27 @@ PIXIE16APP_EXPORT unsigned int PIXIE16APP_API APP32_TstBit(unsigned short bit, u
     return (((value & (unsigned int) (pow(2.0, (double) bit))) >> bit));
 }
 
+/**
+ * @defgroup CONTROL_TASK_RUN Control Task functions
+ * @ingroup PUBLIC_API
+ * A group of functions used to setup and configure the modules
+ */
 
-/****************************************************************
-*	Control_Task_Run functions
-****************************************************************/
-
-/****************************************************************
-*	Pixie16SetDACs:
-*		Set all DACs.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Invalid Pixie module number
-*			-2 - Failed to start the SET_DACs run
-*			-3 - SET_DACs run timed out
-*
-****************************************************************/
-
+/**
+ * @ingroup CONTROL_TASK_RUN
+ * @brief Set all DACs.
+ *
+ * Use this function to reprogram the on-board digital to analog converters (DAC) of the Pixie-16
+ * modules. In this operation the DSP uses data from the DSP parameters that were previously
+ * downloaded.
+ *
+ * @param[in] ModNum: The module number, which starts counting at 0.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Invalid Pixie module number
+ * @retval -2 - Failed to start the SET_DACs run
+ * @retval -3 - SET_DACs run timed out after 10 seconds of trying.
+ */
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SetDACs(unsigned short ModNum) {
     int retval;
     unsigned int Max_Poll;
@@ -1952,18 +1956,20 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SetDACs(unsigned short ModNum) {
 }
 
 
-/****************************************************************
-*	Pixie16ProgramFippi:
-*		Program Fippi.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Invalid Pixie module number
-*			-2 - Failed to start the PROGRAM_FIPPI run
-*			-3 - PROGRAM_FIPPI run timed out
-*
-****************************************************************/
-
+/**
+ * @ingroup CONTROL_TASK_RUN
+ * @brief Program Fippi
+ *
+ * Use this function to program the on-board signal processing FPGAs of the Pixie-16 modules.
+ * After the host computer has written the DSP parameters to the DSP memory, the DSP needs to
+ * write some of these parameters to the FPGAs. This function makes the DSP perform that action.
+ *
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Invalid Pixie module number
+ * @retval -2 - Failed to start the PROGRAM_FIPPI run
+ * @retval -3 - PROGRAM_FIPPI run timed out after 10 seconds of trying.
+ */
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ProgramFippi(unsigned short ModNum) {
     int retval;
     unsigned int Max_Poll;
@@ -1988,18 +1994,32 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ProgramFippi(unsigned short ModNum) 
 }
 
 
-/****************************************************************
-*	Pixie16AdjustOffsets:
-*		Adjust DC-Offsets.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Invalid Pixie module number
-*			-2 - Failed to start the ADJUST_OFFSETS run
-*			-3 - ADJUST_OFFSETS run timed out
-*
-****************************************************************/
-
+/**
+ * @ingroup CONTROL_TASK_RUN
+ * @brief Adjust DC-Offsets
+ *
+ * Use this function to adjust the DC-offsets of Pixie-16 modules. Specify the module using ModNum
+ * which starts counting at 0. If ModNum is set to be less than the total number of modules in the
+ * system, only the module specified by ModNum will have its DC-offsets adjusted. But if ModNum is
+ * set to be equal to the total number of modules in the system, then all modules in the system
+ * will have their DC-offsets adjusted.
+ *
+ * After the DC-offset levels have been adjusted, the baseline level of the digitized input
+ * signals will be determined by the DSP parameter BaselinePercent. For instance, if
+ * BaselinePercent is set to 10(%), the baseline level of the input signals will be ~ 409 on the
+ * 12-bit ADC scale (minimum: 0; maximum: 4095).
+ *
+ * The main purpose of this function is to ensure the input signals fall within the voltage range
+ * of the ADCs so that all input signals can be digitized by the ADCs properly.
+ *
+ * @param[in] ModNum: The module number to adjust baselines for
+ *
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Invalid Pixie module number
+ * @retval -2 - Failed to start the ADJUST_OFFSETS run
+ * @retval -3 - ADJUST_OFFSETS run timed out after 10 seconds of attempts
+ */
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AdjustOffsets(unsigned short ModNum) {
     int retval;
     unsigned int Max_Poll;
@@ -2017,27 +2037,36 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AdjustOffsets(unsigned short ModNum)
         return (-2);
     } else if (retval == -2) {
         Pixie_Print_Error(PIXIE_FUNC, "ADJUST_OFFSETS run timed out; retval=%d", retval);
-        return (-3);  // Time Out
+        return (-3);
     }
 
-    return (0);  // Normal finish
+    return (0);
 }
 
-
-/****************************************************************
-*	Pixie16AcquireBaselines:
-*		Acquire baselines.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Invalid Pixie module number
-*			-2 - Failed to start the GET_BASELINES run
-*			-3 - GET_BASELINES run timed out
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AcquireBaselines(unsigned short ModNum)  // module number
-{
+/**
+ * @ingroup CONTROL_TASK_RUN
+ * @brief Acquire baselines
+ *
+ * Use this function to acquire baselines from Pixie-16 modules. Specify the module using ModNum
+ * which starts counting at 0. If ModNum is set to be less than the total number of modules in the
+ * system, only the module specified by ModNum will have its baselines acquired. But if ModNum is
+ * set to be equal to the total number of modules in the system, then all modules in the system
+ * will have their baselines acquired.
+ *
+ * After the successful return of this function, the DSP’s internal memory will be filled with
+ * baselines data. Users should then call the function Pixie16ReadSglChanBaselines to read the
+ * baselines data out to the host computer, channel by channel.
+ *
+ * @see Pixie16ReadSglChanBaselines
+ *
+ * @param[in] ModNum: The module number to get baselines from
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Invalid Pixie module number
+ * @retval -2 - Failed to start the GET_BASELINES run
+ * @retval -3 - GET_BASELINES run timed out
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AcquireBaselines(unsigned short ModNum) {
     int retval;
     unsigned int Max_Poll, sfr;
 
@@ -2074,25 +2103,38 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AcquireBaselines(unsigned short ModN
 }
 
 
-/****************************************************************
-*	Pixie16ReadSglChanBaselines:
-*		Read baselines for a given channel.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Invalid Pixie module number
-*			-2 - Requested number of baselines exceeded the limit
-*			-3 - Failed to allocate memory to store baselines
-*			-4 - Failed to read baselines
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16ReadSglChanBaselines(double* Baselines,  // returned baselines values
-                            double* TimeStamps,  // time stamp for each baseline value
-                            unsigned short NumBases,  // number of baseline values to read
-                            unsigned short ModNum,  // module number
-                            unsigned short ChanNum)  // channel number
+/**
+ * @ingroup CONTROL_TASK_RUN
+ * @brief Read baselines from a channel in a module
+ *
+ * Use this function to read baseline data from a Pixie-16 module. Before calling this function,
+ * another function Pixie16AcquireBaselines should be called to fill the DSP internal memory first.
+ * Also, the host code should allocate appropriate amount of memory to store the baseline data.
+ * The number of baselines for each channel is 3640. In the DSP internal memory, each baseline is
+ * a 32-bit IEEE floating point number. After being read out to the host, this function will
+ * convert each baseline data to a decimal number. In addition to baseline values, timestamps
+ * corresponding to each baseline are also returned after this function call.
+ *
+ * @see Pixie16AcquireBaselines
+ *
+ * @param[out] Baselines: Buffer to hold the baseline values
+ * @param[in] TimeStamps: The timestamp that the baselines were obtained at
+ * @param[in] NumBases: The number of baselines values read
+ * @param[in] ModNum: The module number to read the baselines from, counting from 0.
+ * @param[in] ChanNum: The channel number to read the baselines from, counting from 0.
+ *
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Invalid Pixie module number
+ * @retval -2 - Requested number of baselines exceeded the limit
+ * @retval -3 - Failed to allocate memory to store baselines
+ * @retval -4 - Failed to read baselines
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanBaselines(double* Baselines,
+                                                                 double* TimeStamps,
+                                                                 unsigned short NumBases,
+                                                                 unsigned short ModNum,
+                                                                 unsigned short ChanNum)
 {
     unsigned int k;
     unsigned int* buffer;
@@ -2154,23 +2196,45 @@ Pixie16ReadSglChanBaselines(double* Baselines,  // returned baselines values
 }
 
 
-/****************************************************************
-*	Pixie16RampOffsetDACs:
-*		Ramp OffsetDACs.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Invalid Pixie module number
-*			-2 - Null pointer *DCValues
-*			-3 - requested number of DC values exceeded the limit
-*			-4 - Failed to start the RAMP_OFFSETDACS run
-*			-5 - RAMP_OFFSETDACS run timed out
-*			-6 - Failed to read DC values
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16RampOffsetDACs(double* DCValues,  // returned DC offset values
-                                                           unsigned short NumDCVals,  // number of DC values to read
+/**
+ * @ingroup CONTROL_TASK_RUN
+ * @brief Ramp Offset DACs of a module and record the baselines
+ *
+ * @note However, this function is no longer needed due to the introduction of function
+ *     Pixie16AdjustOffsets.
+ *
+ * Use this function to execute the RAMP_OFFSETDACS control task run. Each Offset DAC has 65536
+ * steps, and the RAMP_OFFSETDACS control task ramps the DAC from 0 to 65335 with a step size of
+ * 64, i.e., a total of 1024 steps. At each DAC step, the control task computes the baseline value
+ * as the representation of the signal baseline and stores it in the DSP memory. After the control
+ * task is finished, the stored baseline values are read out to the host computer and saved to a
+ * binary file called “rampdacs.bin” in the form of IEEE 32-bit floating point numbers. Users can
+ * then plot the baseline values vs. DAC steps to determine the appropriate DAC value to be set in
+ * the DSP in order to bring the input signals into the voltage range of the ADCs. However, this
+ * function is no longer needed due to the introduction of function Pixie16AdjustOffsets.
+ *
+ * If ModNum is set to less than the total number of modules in the system, only the module
+ * specified by ModNum will start the RAMP_OFFSETDACS control task run. But if ModNum is equal to
+ * the total number of modules in the system, e.g. there are 5 modules in the chassis and
+ * ModNum = 5, then all modules in the system will start the RAMP_OFFSETDACS control task run.
+ *
+ * @see Pixie16AdjustOffsets
+ *
+ * @param[out] DCValues: The final values for the DC offsets
+ * @param[in] NumDCVals: The number of DC values to read
+ * @param[in] ModNum: The module number we'll query for the DACs, counting starts at 0.
+ *
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Invalid Pixie module number
+ * @retval -2 - Null pointer *DCValues
+ * @retval -3 - requested number of DC values exceeded the limit
+ * @retval -4 - Failed to start the RAMP_OFFSETDACS run
+ * @retval -5 - RAMP_OFFSETDACS run timed out
+ * @retval -6 - Failed to read DC values
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16RampOffsetDACs(double* DCValues,
+                                                           unsigned short NumDCVals,
                                                            unsigned short ModNum) {
     int retval;
     unsigned int Max_Poll, k;
@@ -2220,21 +2284,27 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16RampOffsetDACs(double* DCValues,  //
 }
 
 
-/****************************************************************
-*	Pixie16ControlTaskRun:
-*		Perform a control task run.
-*
-*		Return Value:
-*			 0 - successful
-*			-1 - Invalid Pixie module number
-*			-2 - control task run failed
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16ControlTaskRun(unsigned short ModNum,  // Pixie module number
-                      unsigned short ControlTask,  // Control task number
-                      unsigned int Max_Poll)  // Timeout control in unit of ms for control task run
+/**
+ * @ingroup CONTROL_TASK_RUN
+ * @brief  Execute special control tasks
+ *
+ * Use this function to execute special control tasks. This may include programming the Fippi or
+ * setting the DACs after downloading DSP parameters.
+ *
+ * @see Control Tasks
+ *
+ * @param[in] ModNum: The module number to execute the control task against. Starts counting with 0.
+ * @param[in] ControlTask : The control task number that we're going to execute.
+ * @param[in] Max_Poll: The time in milliseconds that we should wait before considering the task
+ *   timed out.
+ * @returns A status code indicating the result of the operation
+ * @retval   0 - successful
+ * @retval  -1 - Invalid Pixie module number
+ * @retval  -2 - control task run failed
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ControlTaskRun(unsigned short ModNum,
+                                                           unsigned short ControlTask,
+                                                           unsigned int Max_Poll)
 {
     int retval;
 
@@ -2254,22 +2324,29 @@ Pixie16ControlTaskRun(unsigned short ModNum,  // Pixie module number
 }
 
 
-/****************************************************************
-*	Pixie16BLcutFinder:
-*		Find the BLcut value for the selected channel and return it
-*		using pointer *BLcut.
-*
-*		Return Value:
-*			 0 - successful
-*			-1 - Invalid Pixie module number
-*			-2 - failed to collect baselines
-*			-3 - failed to read baselines from the data memory
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BLcutFinder(unsigned short ModNum,  // Pixie module number
-                                                        unsigned short ChanNum,  // Pixie channel number
-                                                        unsigned int* BLcut)  // BLcut return value
+/**
+ * @ingroup CONTROL_TASK_RUN
+ * @brief Find the BLcut value for the selected channel and return it using pointer *BLcut.
+ *
+ * Use this function to find the Baseline Cut value for one channel of a Pixie-16 module. The
+ * baseline cut value is then downloaded to the DSP, where baselines are captured and averaged
+ * over time. The cut value would prevent a bad baseline value from being used in the averaging
+ * process, i.e., if a baseline value is outside the baseline cut range, it will not be used for
+ * computing the baseline average. Averaging baselines over time improves energy resolution
+ * measurement.
+ *
+ * @param[in] ModNum: The module number to work with, starts counting at 0.
+ * @param[in] ChanNum: The channel number to work with, starts counting at 0.
+ * @param[out] BLcut: The Baseline cut as determined by the calculation.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - successful
+ * @retval -1 - Invalid Pixie module number
+ * @retval -2 - failed to collect baselines
+ * @retval -3 - failed to read baselines from the data memory
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BLcutFinder(unsigned short ModNum,
+                                                        unsigned short ChanNum,
+                                                        unsigned int* BLcut)
 {
     unsigned int value, KeepLog, KeepBLCut, localBlCut, LC, k;
     double baseline[MAX_NUM_BASELINES], ts[MAX_NUM_BASELINES];
@@ -2472,26 +2549,26 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BLcutFinder(unsigned short ModNum,  
 }
 
 
-/****************************************************************
-*	Pixie16TauFinder:
-*		Find the exponential decay constant of the detector/preamplifier
-*		signals connected to a Pixie module.
-*
-*		Tau is used to return the newly found Tau values of 16 channels, and
-*		should be a 16-element array in double data format. A '-1.0' Tau value
-*		for a channel means the Tau_Finder was not successful for such a channel.
-*
-*		Return Value:
-*			 0 - success
-*			-1 - invalid Pixie module number
-*			-2 - failed to start TAU_FINDER run
-*			-3 - TAU_FINDER run timed out
-*			-5 - failed to find sufficient number of pulses
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16TauFinder(unsigned short ModNum,  // Pixie module number
-                                                      double* Tau)  // 16 returned Tau values, in �s
+/**
+ * @ingroup CONTROL_TASK_RUN
+ * @brief Find the exponential decay constant of the detector/preamplifier signals.
+ *
+ * Use this function to find the exponential decay time constants (Tau value) of the detector or
+ * preamplifier signal that is connected to each of the 16 channels of a Pixie-16 module. Tau
+ * is used as part of the on-board energy calculations.
+ *
+ * @see [High Rate Pulse Processing Algorithms for Microcalorimeters](https://xia.com/wp-content/uploads/2021/03/High-Rate-Pulse-Processing-Algorithms-for-Microcalorimeters-Tan-2008-.pdf)
+ *
+ * @param[in] ModNum: The module number to work with. Starts counting at 0.
+ * @param[out] Tau: Pointer to the array containing the calculated tau values. A value of -1.0
+ *     indicates a failed calculation for that channel. Units are microseconds.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - success
+ * @retval -1 - invalid Pixie module number
+ * @retval -2 - failed to start TAU_FINDER run
+ * @retval -3 - TAU_FINDER run timed out
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16TauFinder(unsigned short ModNum, double* Tau)
 {
 
     unsigned int Max_Poll;
@@ -2531,23 +2608,46 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16TauFinder(unsigned short ModNum,  //
     return (0);
 }
 
-/****************************************************************
-*	Pixie16WriteSglModPar:
-*		Write a module parameter to a Pixie module.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Invalid Pixie module number
-*			-2 - Invalid module parameter name
-*			-3 - Failed to program Fippi after downloading module parameter
-*			-4 - Failed to find BLcut after downloading module parameter
-*
-****************************************************************/
 
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16WriteSglModPar(const char* ModParName,  // the name of the module parameter
-                      unsigned int ModParData,  // the module parameter value to be written to the module
-                      unsigned short ModNum)  // module number
+/**
+ * @ingroup CONTROL_TASK_RUN
+ * @brief Write a module parameter to a Pixie module
+ *
+ * #### List of module parameters
+ * | Name | Unit | Type | DSP Name |
+ * |-|-|-|-|
+ * | MODULE_CSRA | bit pattern | user set | MODCSRA |
+ * | MODULE_CSRB | bit pattern | user set | MODCSRB |
+ * | MODULE_FORMAT | None | auto DSP | MODFORMAT |
+ * | MAX_EVENTS | None | user set/auto DSP | MAXEVENTS |
+ * | SYNCH_WAIT | logic (0, 1) | user set | SYNCHWAIT |
+ * | IN_SYNCH | logic (0, 1) | user/DSP set | INSYNCH |
+ * | SLOW_FILTER_RANGE | None | user set | SLOWFILTERRANGE |
+ * | FAST_FILTER_RANGE | None | user set | FASTFILTERRANGE |
+ * | FastTrigBackplaneEna | bit pattern | user set | FASTTRIGBACKPLANEENA |
+ * | CrateID | None | user set | CRATEID |
+ * | SlotID | None | user set | SLOTID |
+ * | ModID | None | user set | MODID |
+ * | TrigConfig0 | None | user set | TRIGCONFIG[0] |
+ * | TrigConfig1 | None | user set | TRIGCONFIG[1] |
+ * | TrigConfig2 | None | user set | TRIGCONFIG[2] |
+ * | TrigConfig3 | None | user set | TRIGCONFIG[3] |
+ * | HOST_RT_PRESET | seconds | user set | HOSTRUNTIMEPRESET |
+ *
+ * @param[in] ModParName: The name of the module parameter that we'll write
+ * @param[in] ModParData: The value of the module parameter that we'll write
+ * @param[in] ModNum: The module number we'll write to. Numbering starts counting at 0.
+ *
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Invalid Pixie module number
+ * @retval -2 - Invalid module parameter name
+ * @retval -3 - Failed to program Fippi after downloading module parameter
+ * @retval -4 - Failed to find BLcut after downloading module parameter
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParName,
+                                                           unsigned int ModParData,
+                                                           unsigned short ModNum)
 {
     unsigned short k;
     unsigned int paflength, triggerdelay, tracedelay, fastfilterrange, LastFastFilterRange, baselinecut;
@@ -2908,21 +3008,43 @@ Pixie16WriteSglModPar(const char* ModParName,  // the name of the module paramet
 }
 
 
-/****************************************************************
-*	Pixie16ReadSglModPar:
-*		Read a module parameter from a Pixie module.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Invalid Pixie module number
-*			-2 - Invalid module parameter name
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16ReadSglModPar(const char* ModParName,  // the name of the module parameter
-                     unsigned int* ModParData,  // the module parameter value to be read from the module
-                     unsigned short ModNum)  // module number
+/**
+ * @ingroup CONTROL_TASK_RUN
+ * @brief Read a module parameter from a Pixie module
+ *
+ * #### List of module parameters
+ * | Name | Unit | Type | DSP Name |
+ * |-|-|-|-|
+ * | MODULE_CSRA | bit pattern | user set | MODCSRA |
+ * | MODULE_CSRB | bit pattern | user set | MODCSRB |
+ * | MODULE_FORMAT | None | auto DSP | MODFORMAT |
+ * | MAX_EVENTS | None | user set/auto DSP | MAXEVENTS |
+ * | SYNCH_WAIT | logic (0, 1) | user set | SYNCHWAIT |
+ * | IN_SYNCH | logic (0, 1) | user/DSP set | INSYNCH |
+ * | SLOW_FILTER_RANGE | None | user set | SLOWFILTERRANGE |
+ * | FAST_FILTER_RANGE | None | user set | FASTFILTERRANGE |
+ * | FastTrigBackplaneEna | bit pattern | user set | FASTTRIGBACKPLANEENA |
+ * | CrateID | None | user set | CRATEID |
+ * | SlotID | None | user set | SLOTID |
+ * | ModID | None | user set | MODID |
+ * | TrigConfig0 | None | user set | TRIGCONFIG[0] |
+ * | TrigConfig1 | None | user set | TRIGCONFIG[1] |
+ * | TrigConfig2 | None | user set | TRIGCONFIG[2] |
+ * | TrigConfig3 | None | user set | TRIGCONFIG[3] |
+ * | HOST_RT_PRESET | seconds | user set | HOSTRUNTIMEPRESET |
+ *
+ * @param[in] ModParName: The name of the module parameter that we'll read
+ * @param[out] ModParData: Contains the value of the requested parameters.
+ * @param[in] ModNum: The module number we'll write to. Numbering starts counting at 0.
+ *
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Invalid Pixie module number
+ * @retval -2 - Invalid module parameter name
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglModPar(const char* ModParName,  // the name of the module parameter
+                                                          unsigned int* ModParData,  // the module parameter value to be read from the module
+                                                          unsigned short ModNum)  // module number
 {
 
     // Check if ModNum is valid
@@ -3050,26 +3172,68 @@ Pixie16ReadSglModPar(const char* ModParName,  // the name of the module paramete
 }
 
 
-/****************************************************************
-*	Pixie16WriteSglChanPar:
-*		Write a channel parameter to a Pixie module.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Invalid Pixie module number
-*			-2 - Invalid Pixie channel number
-*			-3 - Invalid channel parameter name
-*			-4 - Programing Fippi failed downloading channel parameter
-*			-5 - BLcutFinder failed downloading channel parameter
-*			-6 - SetDACs failed downloading channel parameter
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel parameter
-                       double ChanParData,  // the channel parameter value to be written to the module
-                       unsigned short ModNum,  // module number
-                       unsigned short ChanNum)  // channel number
+/**
+ * @ingroup CONTROL_TASK_RUN
+ * @brief Write a channel parameter to a Pixie module.
+ *
+ * #### List of Channel Parameters
+ * | Name | Unit | Type | DSP Name |
+ * |-|-|-|-|
+ * | TRIGGER_RISETIME | &mu;s | user set | FASTLENGTH |
+ * | TRIGGER_FLATTOP | &mu;s | user set | FASTGAP |
+ * | TRIGGER_THRESHOLD | ADC units | user set | FASTTHRESH |
+ * | ENERGY_RISETIME | &mu;s | user set | SLOWLENGTH |
+ * | ENERGY_FLATTOP | &mu;s | user set | SLOWGAP |
+ * | TAU | &mu;s | user set | PREAMPTAU |
+ * | TRACE_LENGTH | &mu;s | user set | TRACELENGTH |
+ * | TRACE_DELAY | &mu;s | user set | TRIGGERDELAY, PAFLENGTH |
+ * | VOFFSET | V | user set | OFFSETDAC |
+ * | XDT | &mu;s | user set | XWAIT |
+ * | BASELINE_PERCENT | % | user set | BASELINEPERCENT |
+ * | EMIN | None | user set | ENERGYLOW |
+ * | BINFACTOR | None | user set | LOG2EBIN |
+ * | BASELINE_AVERAGE | None | user set | LOG2BWEIGHT |
+ * | CHANNEL_CSRA | bit pattern | user set | CHANCSRA |
+ * | CHANNEL_CSRB | bit pattern | user set | CHANCSRB |
+ * | BLCUT | None | user set/auto API | BLCUT |
+ * | INTEGRATOR | None | user set | INTEGRATOR |
+ * | FASTTRIGBACKLEN | &mu;s | user set | FASTTRIGBACKLEN |
+ * | CFDDelay | &mu;s | user set | CFDDELAY |
+ * | CFDScale | None | user set | CFDSCALE |
+ * | CFDThresh | ADC units | user set | CFDTHRESH |
+ * | QDCLen0 | &mu;s | user set | QDCLEN0 |
+ * | QDCLen1 | &mu;s | user set | QDCLEN1 |
+ * | QDCLen2 | &mu;s | user set | QDCLEN2 |
+ * | QDCLen3 | &mu;s | user set | QDCLEN3 |
+ * | QDCLen4 | &mu;s | user set | QDCLEN4 |
+ * | QDCLen5 | &mu;s | user set | QDCLEN5 |
+ * | QDCLen6 | &mu;s | user set | QDCLEN6 |
+ * | QDCLen7 | &mu;s | user set | QDCLEN7 |
+ * | ExtTrigStretch | &mu;s | user set | EXTTRIGSTRETCH |
+ * | VetoStretch | &mu;s | user set | VETOSTRETCH |
+ * | MultiplicityMaskL | bit pattern | user set | MULTIPLICITYMASKL |
+ * | MultiplicityMaskH | bit pattern | user set | MULTIPLICITYMASKH |
+ * | ExternDelayLen | &mu;s | user set | EXTERNDELAYLEN |
+ * | FtrigoutDelay | &mu;s | user set | FTRIGOUTDELAY |
+ * | ChanTrigStretch | &mu;s | user set | CHANTRIGSTRETCH |
+ *
+ * @param[in] ChanParName: The name of the channel parameter that we'll write
+ * @param[in] ChanParData: The value that we'll write to the provided channel
+ * @param[in] ModNum: The module number we'll write to. Counting starts at 0.
+ * @param[in] ChanNum: The channel number we'll write to. Counting starts at 0.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Invalid Pixie module number
+ * @retval -2 - Invalid Pixie channel number
+ * @retval -3 - Invalid channel parameter name
+ * @retval -4 - Programing Fippi failed downloading channel parameter
+ * @retval -5 - BLcutFinder failed downloading channel parameter
+ * @retval -6 - SetDACs failed downloading channel parameter
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParName,
+                                                            double ChanParData,
+                                                            unsigned short ModNum,
+                                                            unsigned short ChanNum)
 {
     unsigned int FL, FG, SL, SG, FastFilterRange, SlowFilterRange, FifoLength;
     unsigned int fastthresh, peaksample, peaksep, preamptau, tracelength, tracedelay;
@@ -4261,23 +4425,65 @@ Pixie16WriteSglChanPar(const char* ChanParName,  // the name of the channel para
 }
 
 
-/****************************************************************
-*	Pixie16ReadSglChanPar:
-*		Read a channel parameter from a Pixie module.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Invalid Pixie module number
-*			-2 - Invalid Pixie channel number
-*			-3 - Invalid channel parameter name
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16ReadSglChanPar(const char* ChanParName,  // the name of the channel parameter
-                      double* ChanParData,  // the channel parameter value to be read from the module
-                      unsigned short ModNum,  // module number
-                      unsigned short ChanNum)  // channel number
+/**
+ * @ingroup CONTROL_TASK_RUN
+ * @brief Read a channel parameter from a module.
+ *
+ * #### List of Channel Parameters
+ * | Name | Unit | Type | DSP Name |
+ * |-|-|-|-|
+ * | TRIGGER_RISETIME | &mu;s | user set | FASTLENGTH |
+ * | TRIGGER_FLATTOP | &mu;s | user set | FASTGAP |
+ * | TRIGGER_THRESHOLD | ADC units | user set | FASTTHRESH |
+ * | ENERGY_RISETIME | &mu;s | user set | SLOWLENGTH |
+ * | ENERGY_FLATTOP | &mu;s | user set | SLOWGAP |
+ * | TAU | &mu;s | user set | PREAMPTAU |
+ * | TRACE_LENGTH | &mu;s | user set | TRACELENGTH |
+ * | TRACE_DELAY | &mu;s | user set | TRIGGERDELAY, PAFLENGTH |
+ * | VOFFSET | V | user set | OFFSETDAC |
+ * | XDT | &mu;s | user set | XWAIT |
+ * | BASELINE_PERCENT | % | user set | BASELINEPERCENT |
+ * | EMIN | None | user set | ENERGYLOW |
+ * | BINFACTOR | None | user set | LOG2EBIN |
+ * | BASELINE_AVERAGE | None | user set | LOG2BWEIGHT |
+ * | CHANNEL_CSRA | bit pattern | user set | CHANCSRA |
+ * | CHANNEL_CSRB | bit pattern | user set | CHANCSRB |
+ * | BLCUT | None | user set/auto API | BLCUT |
+ * | INTEGRATOR | None | user set | INTEGRATOR |
+ * | FASTTRIGBACKLEN | &mu;s | user set | FASTTRIGBACKLEN |
+ * | CFDDelay | &mu;s | user set | CFDDELAY |
+ * | CFDScale | None | user set | CFDSCALE |
+ * | CFDThresh | ADC units | user set | CFDTHRESH |
+ * | QDCLen0 | &mu;s | user set | QDCLEN0 |
+ * | QDCLen1 | &mu;s | user set | QDCLEN1 |
+ * | QDCLen2 | &mu;s | user set | QDCLEN2 |
+ * | QDCLen3 | &mu;s | user set | QDCLEN3 |
+ * | QDCLen4 | &mu;s | user set | QDCLEN4 |
+ * | QDCLen5 | &mu;s | user set | QDCLEN5 |
+ * | QDCLen6 | &mu;s | user set | QDCLEN6 |
+ * | QDCLen7 | &mu;s | user set | QDCLEN7 |
+ * | ExtTrigStretch | &mu;s | user set | EXTTRIGSTRETCH |
+ * | VetoStretch | &mu;s | user set | VETOSTRETCH |
+ * | MultiplicityMaskL | bit pattern | user set | MULTIPLICITYMASKL |
+ * | MultiplicityMaskH | bit pattern | user set | MULTIPLICITYMASKH |
+ * | ExternDelayLen | &mu;s | user set | EXTERNDELAYLEN |
+ * | FtrigoutDelay | &mu;s | user set | FTRIGOUTDELAY |
+ * | ChanTrigStretch | &mu;s | user set | CHANTRIGSTRETCH |
+ *
+ * @param[in] ChanParName: The name of the channel parameter that we'll read
+ * @param[out] ChanParData: Contains the value we read from the channel.
+ * @param[in] ModNum: The module number we'll read from. Counting starts at 0.
+ * @param[in] ChanNum: The channel number we'll read from. Counting starts at 0.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Invalid Pixie module number
+ * @retval -2 - Invalid Pixie channel number
+ * @retval -3 - Invalid channel parameter name
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanPar(const char* ChanParName,
+                                                           double* ChanParData,
+                                                           unsigned short ModNum,
+                                                           unsigned short ChanNum)
 {
 
     unsigned int FL, FG, SL, SG, FastFilterRange, SlowFilterRange;
@@ -4768,23 +4974,29 @@ Pixie16ReadSglChanPar(const char* ChanParName,  // the name of the channel param
 }
 
 
-/****************************************************************
-*	Pixie16ReadHistogramFromModule:
-*		Retrieve histogram data from a Pixie module.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Invalid Pixie module number
-*			-2 - Invalid Pixie channel number
-*			-3 - Failed to get the histogram data
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16ReadHistogramFromModule(unsigned int* Histogram,  // histogram data
-                               unsigned int NumWords,  // number of words to be read out
-                               unsigned short ModNum,  // module number
-                               unsigned short ChanNum)  // channel number
+/**
+ * @ingroup CONTROL_TASK_RUN
+ * @brief Retrieve a channel's histogram data from a Pixie module.
+ *
+ * Use this function to read out the histogram data from a Pixie-16 module’s histogram memory.
+ * Before calling this function, the host code should allocate appropriate amount of memory to
+ * store the histogram data. The default histogram length is 32768. Histogram data are 32-bit
+ * unsigned integers.
+ *
+ * @param[out] Histogram: The histogram data that we read from the module.
+ * @param[in] NumWords: The number of words we'll read out of the histogram memory.
+ * @param[in] ModNum: The module number that we want the histogram from
+ * @param[in] ChanNum: The channel number that we'd like to read from
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Invalid Pixie module number
+ * @retval -2 - Invalid Pixie channel number
+ * @retval -3 - Failed to get the histogram data. If this happens reboot the module.
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadHistogramFromModule(unsigned int* Histogram,
+                                                                    unsigned int NumWords,
+                                                                    unsigned short ModNum,
+                                                                    unsigned short ChanNum)
 {
     int retval;  // return values
     unsigned int Histo_Address;
@@ -4812,19 +5024,25 @@ Pixie16ReadHistogramFromModule(unsigned int* Histogram,  // histogram data
 }
 
 
-/****************************************************************
-*	Pixie16ReadStatisticsFromModule:
-*		Retrieve statistics data from a Pixie module.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Invalid Pixie module number
-*			-2 - Failed to get statistics data
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadStatisticsFromModule(unsigned int* Statistics,  // run statistics data
-                                                                     unsigned short ModNum)  // module number
+/**
+ * @ingroup CONTROL_TASK_RUN
+ * @brief Retrieve statistics data from a module.
+ *
+ * Use this function to read out statistics data from a Pixie-16 module. Before calling this
+ * function, the host code should allocate appropriate amount of memory to store the statistics
+ * data. The number of statistics data for each module is fixed at 448. Statistics data are 32-bit
+ * unsigned integers.
+ *
+ * @param[out] Statistics: Pointer to a data block with size 448 32-bit unsigned integers to hold
+ *    the data read from the module.
+ * @param[in] ModNum: The module number that we want statistics data from.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Invalid Pixie module number
+ * @retval -2 - Failed to get statistics data. If this happens, then reboot the module.
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadStatisticsFromModule(unsigned int* Statistics,
+                                                                     unsigned short ModNum)
 {
     int retval;  // return values
     unsigned short nWords, k;  // number of words
@@ -4858,26 +5076,30 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadStatisticsFromModule(unsigned in
 }
 
 
-/****************************************************************
-*	Pixie16SaveHistogramToFile:
-*		Retrieve histogram data from a Pixie module and then save
-*		the data to a file.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Invalid Pixie module number
-*			-2 - Failed to get histogram data from module
-*			-3 - Failed to allocate memory to store histogram data for binary file
-*			-4 - Failed to open histogram data file
-*			-5 - Failed to open mca ascii output file
-*			-6 - Failed to allocate memory to store histogram data for ascii text file
-*			-7 - Failed to read histogram data from file
-*			-8 - Failed to read run statistics data from module
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* FileName,  // histogram data file name
-                                                                unsigned short ModNum)  // module number
+/**
+ * @ingroup CONTROL_TASK_RUN
+ * @brief Retrieve histogram data from a Pixie module and then save the data to a file.
+ *
+ * Use this function to read histogram data from a Pixie-16 module and save the histogram data to
+ * a file with file name specified by the user. First this function saves the histogram data to a
+ * binary file, and it then saves the histogram data to an ASCII file with run statistics data
+ * appended to the end of the ASCII file. **Existing files will be overwritten.**
+ *
+ * @param[in] FileName: The file name for the file containing the histogram data
+ * @param[in] ModNum: The module number we'll read histogram data from. Counting from 0.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Invalid Pixie module number
+ * @retval -2 - Failed to get histogram data from module
+ * @retval -3 - Failed to allocate memory to store histogram data for binary file
+ * @retval -4 - Failed to open histogram data file
+ * @retval -5 - Failed to open mca ascii output file
+ * @retval -6 - Failed to allocate memory to store histogram data for ascii text file
+ * @retval -7 - Failed to read histogram data from file
+ * @retval -8 - Failed to read run statistics data from module
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* FileName,
+                                                                unsigned short ModNum)
 {
     FILE* HistFile = NULL;
     unsigned int* histdata;
@@ -4929,7 +5151,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* File
             fclose(HistFile);
 
             Pixie_Print_Error(PIXIE_FUNC,
-                              "failed to allocate memory to store list mode data for module %d",
+                              "failed to allocate memory to store list-mode data for module %d",
                               ModNum);
             return (-3);
         }
