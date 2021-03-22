@@ -42,8 +42,8 @@
 
 #include "pixie16app_common.h"
 #include "pixie16app_export.h"
-#include "pixie16sys_export.h"
 #include "pixie16app_globals.h"
+#include "pixie16sys_export.h"
 #include "xia_common.h"
 
 #if PIXIE16_APPAPI_VER == PIXIE16_WINDOWS_APPAPI
