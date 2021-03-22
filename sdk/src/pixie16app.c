@@ -53,26 +53,45 @@
 #include <unistd.h>
 #endif
 
-
-/****************************************************************
-*	Pixie16InitSystem:
-*		Initialize Pixie16 system by mapping PXI slots to Pixie16
-*		modules and assigning vitural addresses to the PLX9054 chips
-*		of those modules.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Invalid total number of Pixie16 modules
-*			-2 - Null pointer *PXISlotMap
-*			-3 - Failed to initialize system
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16InitSystem(unsigned short NumModules,  // total number of Pixie16 modules in the system
-                  unsigned short* PXISlotMap,  // an array containing the PXI slot number for each pixie16 module
-                  unsigned short OfflineMode)  // specify if the system is in offline mode
-{
+/**
+ * @defgroup PUBLIC_API Public API
+ * Functions for use in end-user software.
+ */
+/**
+ * @ingroup PUBLIC_API
+ * @brief Initializes the system by mapping PXI slots to modules
+ *
+ * Use this function to configure the Pixie-16 modules in the PXI chassis.
+ *
+ * NumModules is the total number of Pixie-16 modules installed in the system. PXISlotMap is the
+ * pointer to an array that must have at least as many entries as there are Pixie-16 modules in the
+ * chassis.
+ *
+ * PXISlotMap serves as a simple mapping of the logical module number and the physical slot number
+ * that the modules reside in. The logical module number runs from 0. For instance, in a system
+ * with 5 Pixie-16 modules, these 5 modules may occupy slots 3 through 7. The user must fill
+ * PXISlotMap as follows: PXISlotMap = {3, 4, 5, 6, 7 ...} since module number 0 resides in slot
+ * number 3, etc. To find out in which slot a module is located, any piece of subsequent code can
+ * use the expression PXISlotMap[ModNum], where ModNum is the logic module number.
+ * OfflineMode is used to indicate to the API whether the system is running in OFFLINE mode (1) or
+ * ONLINE mode (0). OFFLINE mode is useful for situations where no Pixie-16 modules are present but
+ * users can still test their calls to the API functions in their application software.
+ * This function must be called as the first step in the boot process. It makes the modules known
+ * to the system and “opens” each module for communication.
+ *
+ * @param[in] NumModules: The total number of Pixie16 modules in the system provided by the user.
+ * @param[in] PXISlotMap: An array containing the PXI slot number for each module. The array index
+ *     indicates which module number the slot number takes. The first slot number is Module 0.
+ * @param[in] OfflineMode: Used to tell the API that there are no modules connected to the system.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Invalid total number of Pixie16 modules
+ * @retval -2 - Null pointer *PXISlotMap.
+ * @retval -3 - Failed to initialize system
+ * @retval -4 - Failed to read the module's information
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
+                                                       unsigned short OfflineMode) {
     int retval;  // return value
     unsigned short k;
 
@@ -117,7 +136,7 @@ Pixie16InitSystem(unsigned short NumModules,  // total number of Pixie16 modules
                 Pixie_Print_Error(PIXIE_FUNC,
                                   "failed to read module information in module %d, retval=%d", k,
                                   retval);
-                return (-3);
+                return (-4);
             }
         }
 
@@ -126,20 +145,16 @@ Pixie16InitSystem(unsigned short NumModules,  // total number of Pixie16 modules
 }
 
 
-/****************************************************************
-*	Pixie16ExitSystem:
-*		Release resources used by Pixie-16 PCI devices before existing
-*		the Pixie16 application.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Invalid Pixie module number
-*			-2 - Failed to close Pixie module
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ExitSystem(unsigned short ModNum)  // module number
-{
+/**
+ * @ingroup PUBLIC_API
+ * @brief Release resources used by PCI devices before exiting the application.
+ * @param[in] ModNum: The module number that we'll be closing.
+ * @returns A status code indicating the result of the operation
+ * @retval:  0 - Success
+ * @retval: -1 - Invalid Pixie module number
+ * @retval: -2 - Failed to close Pixie module
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ExitSystem(unsigned short ModNum) {
 
     int retval;  // return values
 
@@ -159,25 +174,29 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ExitSystem(unsigned short ModNum)  /
 }
 
 
-/****************************************************************
-*	Pixie16ReadModuleInfo:
-*		Read information stored on each module, including its
-*		revision, serial number, ADC characteristics.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Invalid Pixie module number
-*			-2 - Failed to read from I2C serial EEPROM
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16ReadModuleInfo(unsigned short ModNum,  // module number
-                      unsigned short* ModRev,  // returned module revision
-                      unsigned int* ModSerNum,  // returned module serial number
-                      unsigned short* ModADCBits,  // returned module ADC bits
-                      unsigned short* ModADCMSPS)  // returned module ADC sampling rate
-{
+/**
+ * @ingroup PUBLIC_API
+ * @brief Read information stored on each module, including its revision, serial number, and ADC.
+ *
+ * Use this function to read information stored on each module, including its revision, serial
+ * number, ADC bits and sampling rate. This should be done after initializing the PCI communication.
+ * Information from the module can be used to select the appropriate firmware, DSP, and
+ * configuration parameters files before booting the module.
+ *
+ * @param[in] ModNum: The module number (counts from 0) that we'll read information
+ * @param[out] ModRev: The revision read from the on-board EEPROM
+ * @param[out] ModSerNum: The serial number read from the on-board EEPROM
+ * @param[out] ModADCBits: The ADC bit resolution read from the on-board EEPROM
+ * @param[out] ModADCMSPS: The ADC sampling frequency read from the on-board EEPROM
+ * @returns A status code indicating the result of the operation
+ * @retval:  0 - Success
+ * @retval: -1 - Invalid Pixie module number
+ * @retval: -2 - Failed to read the serial number from I2C serial EEPROM
+ * @retval: -3 - Failed to read the ADC information from I2C serial EEPROM
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned short* ModRev,
+                                                           unsigned int* ModSerNum, unsigned short* ModADCBits,
+                                                           unsigned short* ModADCMSPS) {
 
     int retval;  // return values
     char sbuffer[100] = {0};  // Temporary buffer
@@ -274,7 +293,7 @@ Pixie16ReadModuleInfo(unsigned short ModNum,  // module number
                 Pixie_Print_Error(PIXIE_FUNC,
                                   "Could not read ADC information for Module=%d; retval=%d",
                                   ModNum, retval);
-                return (-2);
+                return (-3);
             }
 
             *ModADCBits = (unsigned short) (unsigned char) sbuffer[0];
@@ -295,57 +314,79 @@ Pixie16ReadModuleInfo(unsigned short ModNum,  // module number
 }
 
 
-/****************************************************************
-*	Pixie16BootModule
-*		Boot one Pixie16 module or all modules.
-*
-*		Return Value:
-*			 0 - Success
-*
-*			-1 - Invalid pixie16 module number
-*			-2 - Size of ComFPGAConfigFile is invalid
-*			-3 - Failed to boot Communication FPGA
-*			-4 - Failed to allocate memory to store ComFPGAConfig
-*			-5 - Failed to open ComFPGAConfigFile
-*
-*			-6 - Size of TrigFPGAConfigFile is invalid
-*			-7 - Failed to boot trigger FPGA
-*			-8 - Failed to allocate memory to store TrigFPGAConfigFile
-*			-9 - Failed to open TrigFPGAConfigFile
-*
-*			-10 - Size of SPFPGAConfigFile is invalid
-*			-11 - Failed to boot signal processing FPGA
-*			-12 - Failed to allocate memory to store SPFPGAConfigFile
-*			-13 - Failed to open SPFPGAConfigFile
-*
-*			-14 - Failed to boot DSP
-*			-15 - Failed to allocate memory to store DSP executable code
-*			-16 - Failed to open DSPCodeFile
-*
-*			-17 - Size of DSPParFile is invalid
-*			-18 - Failed to open DSPParFile
-*
-*			-19 - Can't initialize DSP variable indices
-*			-20 - Can't copy DSP variable indices
-*
-*			-21 - Failed to program Fippi in a module
-*			-22 - Failed to set DACs in a module
-*
-*			-23 - Failed to start RESET_ADC run in a module
-*			-24 - RESET_ADC run timed out in a module
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA configuration file
-                  const char* SPFPGAConfigFile,  // name of signal processing FPGA configuration file
-                  const char* TrigFPGAConfigFile,  // name of trigger FPGA configuration file
-                  const char* DSPCodeFile,  // name of executable code file for digital signal processor (DSP)
-                  const char* DSPParFile,  // name of DSP parameter file
-                  const char* DSPVarFile,  // name of DSP variable names file
-                  unsigned short ModNum,  // pixie module number
-                  unsigned short BootPattern)  // boot pattern bit mask
-{
+/**
+ * @ingroup PUBLIC_API
+ * @brief Boot one or more modules in the system.
+ *
+ * Use this function to boot Pixie-16 modules so that they can be set up for data taking. The
+ * function downloads to the Pixie-16 modules the communication (or system) FPGA configurations,
+ * signal processing FPGA configurations, trigger FPGA configurations (Revision A modules only),
+ * executable code for the digital signal processor (DSP), and DSP parameters.
+ *
+ * The FPGA configurations consist of a fixed number of words depending on the hardware mounted on
+ * the modules; the DSP codes have a length which depends on the actual compiled code; and the set
+ * of DSP parameters always consists of 1280 32-bit words for each module. The host software has to
+ * make the names of those boot data files on the hard disk available to the boot function.
+ *
+ * ModNum is the module number which starts counting at 0. If ModNum is set to be less than the
+ * total number of modules in the system, only the module specified by ModNum will be booted. But
+ * if ModNum is equal to the total number of modules in the system, e.g. there are 5 modules in
+ * the chassis and ModNum = 5, then all modules in the system will be booted.
+ *
+ * #### Boot Pattern Bits
+ * The boot pattern is a bit mask (shown below) indicating which on-board chip will be booted.
+ * Under normal circumstances, all on-board chips should be booted, i.e. the boot pattern would
+ * be 0x7F. For Rev-B, C, D, F modules, bit 1, i.e., “Boot trigger FPGA”, will be ignored even if
+ * that bit is set to 1.
+ * | Bit | Description | Applicable Hardware |
+ * |---|---|---|
+ * | 0 | Boot communication FPGA  | All Pixie-16 Revisions  |
+ * | 1 | Boot trigger FPGA  | Revision A - Ignored  |
+ * | 2 | Boot signal processing FPGA  | All Pixie-16 Revisions  |
+ * | 3 | Boot digital signal processor (DSP)  | All Pixie-16 Revisions  |
+ * | 4 | Download DSP I/O parameters  | All Pixie-16 Revisions  |
+ * | 5 | Program on-board FPGAs  | All Pixie-16 Revisions  |
+ * | 6 | Set on-board DACs  | All Pixie-16 Revisions  |
+ *
+ * @param[in] ComFPGAConfigFile: name of communications FPGA configuration file
+ * @param[in] SPFPGAConfigFile: name of signal processing FPGA configuration file
+ * @param[in] TrigFPGAConfigFile: name of trigger FPGA configuration file (!!! IGNORED)
+ * @param[in] DSPCodeFile: name of executable code file for digital signal processor (DSP)
+ * @param[in] DSPParFile: name of DSP parameter file
+ * @param[in] DSPVarFile: name of DSP variable names file
+ * @param[in] ModNum: The module number. If set to Number_Modules we'll boot all modules.
+ * @param[in] BootPattern: boot pattern bit mask
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Invalid module number
+ * @retval -2 - Size of ComFPGAConfigFile is invalid
+ * @retval -3 - Could not read the ComFPGAConfig file
+ * @retval -4 - Failed to allocate memory to store ComFPGAConfig
+ * @retval -5 - Failed to open ComFPGAConfigFile
+ * @retval -10 - Size of SPFPGAConfigFile is invalid
+ * @retval -11 - Failed to read SPFPGAConfigFile
+ * @retval -12 - Failed to allocate memory to store SPFPGAConfigFile
+ * @retval -13 - Failed to open SPFPGAConfigFile
+ * @retval -14 - Failed to read DSPCodeFile
+ * @retval -15 - Failed to allocate memory to store DSP executable code
+ * @retval -16 - Failed to open DSPCodeFile
+ * @retval -17 - Size of DSPParFile is invalid
+ * @retval -18 - Failed to open DSPParFile
+ * @retval -19 - Can't initialize DSP variable indices
+ * @retval -20 - Can't copy DSP variable indices
+ * @retval -21 - Failed to program Fippi in a module
+ * @retval -22 - Failed to set DACs in a module
+ * @retval -23 - Failed to start RESET_ADC run in a module
+ * @retval -24 - RESET_ADC run timed out in a module
+ * @retval -25 - Failed to boot the Communication FPGA
+ * @retval -26 - Failed to boot signal processing FPGA
+ * @retval -27 - Failed to boot DSP
+ * @retval -28 - Failed to read DSPParFile
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfigFile, const char* SPFPGAConfigFile,
+                                                       const char* TrigFPGAConfigFile, const char* DSPCodeFile,
+                                                       const char* DSPParFile, const char* DSPVarFile,
+                                                       unsigned short ModNum, unsigned short BootPattern) {
     int retval;  // return values
     FILE* configfil;
     unsigned int* configuration;
@@ -424,7 +465,7 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                 retval = fread(configuration, sizeof(unsigned int), FPGA_ConfigSize, configfil);
                 if (retval < 0) {
                     Pixie_Print_Error(PIXIE_FUNC,
-                                      "failed to ead config, error=%d",
+                                      "failed to read config, error=%d",
                                       errno);
                   free(configuration);
                   (void) fclose(configfil);
@@ -444,7 +485,7 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                                               k, retval);
                             free(configuration);
                             (void) fclose(configfil);
-                            return (-3);
+                            return (-25);
                         }
                     }
                 } else  // Download to a single module only
@@ -458,7 +499,7 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                                           ModNum, retval);
                         free(configuration);
                         (void) fclose(configfil);
-                        return (-3);
+                        return (-25);
                     }
                 }
 
@@ -549,7 +590,7 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                                               k, retval);
                             free(configuration);
                             (void) fclose(configfil);
-                            return (-11);
+                            return (-26);
                         }
                     }
                 } else  // Download to a single module only
@@ -563,7 +604,7 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                                           ModNum, retval);
                         free(configuration);
                         (void) fclose(configfil);
-                        return (-11);
+                        return (-26);
                     }
                 }
 
@@ -641,7 +682,7 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                             free(configuration);
                             (void) fclose(configfil);
 
-                            return (-14);
+                            return (-27);
                         }
                     }
                 } else  // Download to a single module only
@@ -657,7 +698,7 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                         free(configuration);
                         (void) fclose(configfil);
 
-                        return (-14);
+                        return (-27);
                     }
                 }
 
@@ -690,7 +731,7 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                 Pixie_Print_Error(PIXIE_FUNC, "failed config seek, error=%d",
                                   errno);
                 (void) fclose(configfil);
-                return (-14);
+                return (-28);
             }
 
             TotalWords = (ftell(configfil) + 1) / 4;
@@ -706,7 +747,7 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                 Pixie_Print_Error(PIXIE_FUNC, "failed config seek, error=%d",
                                   errno);
                 (void) fclose(configfil);
-                return (-14);
+                return (-28);
             }
 
             // Read DSP parameters
@@ -716,7 +757,7 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
                     Pixie_Print_Error(PIXIE_FUNC, "failed config read for module %d, error=%d",
                                       k, errno);
                     (void) fclose(configfil);
-                    return (-14);
+                    return (-28);
                 }
 
                 // Force correct module number
@@ -958,21 +999,31 @@ Pixie16BootModule(const char* ComFPGAConfigFile,  // name of communications FPGA
     return (0);  // success
 }
 
-
-/****************************************************************
-*	Pixie16AcquireADCTrace:
-*		Acquire ADC traces from a Pixie module.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Invalid Pixie module number
-*			-2 - Failed to start run
-*			-3 - Acquiring ADC traces timed out
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AcquireADCTrace(unsigned short ModNum)  // module number
-{
+/**
+ * @ingroup PUBLIC_API
+ * @brief Acquire ADC traces from a Pixie module.
+ *
+ * Use this function to acquire ADC traces from Pixie-16 modules. Specify the module using ModNum
+ * which starts counting at 0. If ModNum is set to be less than the total number of modules in the
+ * system, only the module specified by ModNum will have its ADC traces acquired. But if ModNum is
+ * equal to the total number of modules in the system, then all modules in the system will have
+ * their ADC traces acquired.
+ *
+ * After the successful return of this function, the DSP’s internal memory will be filled with ADC
+ * trace data. A user’s application software should then call the function
+ * Pixie16ReadSglChanADCTrace to read the ADC trace data out to the host computer,
+ * channel by channel.
+ *
+ * @see Pixie16ReadSglChanADCTrace
+ *
+ * @param[in] ModNum: The module number that we'll be working with
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Invalid Pixie module number
+ * @retval -2 - Failed to start run
+ * @retval -3 - Acquiring ADC traces timed out
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AcquireADCTrace(unsigned short ModNum) {
     int retval;  // return values
     unsigned int count;
 
@@ -1015,24 +1066,40 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AcquireADCTrace(unsigned short ModNu
 }
 
 
-/****************************************************************
-*	Pixie16ReadSglChanADCTrace:
-*		Acquire ADC traces from a Pixie module.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Invalid Pixie module number
-*			-2 - Invalid Pixie channel number
-*			-3 - Invalid trace length
-*			-4 - Failed to allocate memory to store ADC traces
-*			-5 - Failed to read ADC traces
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buffer,  // trace data
-                                                                unsigned int Trace_Length,  // trace length
-                                                                unsigned short ModNum,  // module number
-                                                                unsigned short ChanNum)  // channel number
+/**
+ * @ingroup PUBLIC_API
+ * @brief Acquire ADC traces from a Pixie module.
+ *
+ * Use this function to read ADC trace data from a Pixie-16 module. Before calling this function,
+ * another function Pixie16AcquireADCTrace should be called to fill the DSP internal memory first.
+ * Also, the host code should allocate appropriate amount of memory to store the trace data. The
+ * ADC trace data length for each channel is 8192. Since the trace data are 16-bit unsigned
+ * integers (for hardware variants with less than 16-bit ADCs only the lower 12-bit or 14-bit
+ * contain real data), two consecutive 16-bit words are packed into one 32-bit word in the DSP
+ * internal memory. So for each channel, 4096 32-bit words are read out first from the DSP, and
+ * then each 32-bit word is unpacked to form two 16-bit words.
+ *
+ * Specify the module using ModNum and the channel on the module using ChanNum. Note that both the
+ * modules and channels are counted starting at 0.
+ *
+ * @see Pixie16AcquireADCTrace
+ *
+ * @param[out] Trace_Buffer: Pointer to the data buffer that will hold the data.
+ * @param[in] Trace_Length: Length of the traces for the module.
+ * @param[in] ModNum: The module that we want to read
+ * @param[in] ChanNum: The channel that we want to read
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Invalid Pixie module number
+ * @retval -2 - Invalid Pixie channel number
+ * @retval -3 - Invalid trace length
+ * @retval -4 - Failed to allocate memory to store ADC traces
+ * @retval -5 - Failed to read ADC traces
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buffer,
+                                                                unsigned int Trace_Length,
+                                                                unsigned short ModNum,
+                                                                unsigned short ChanNum)
 {
     unsigned int count;
     unsigned int* ADCData;
@@ -1089,28 +1156,41 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanADCTrace(unsigned short* 
 }
 
 
-/****************************************************************
-*	Pixie16IMbufferIO:
-*		Read or write data from/to the DSP internal memory of
-*		a Pixie module.
-*
-*		Return Value:
-*			 0 - success
-*			-1 - null pointer for buffer data
-*			-2 - number of buffer words exceeds the limit
-*			-3 - invalid DSP internal memory address
-*			-4 - invalid I/O direction
-*			-5 - invalid Pixie module number
-*			-6 - I/O Failure
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16IMbufferIO(unsigned int* Buffer,  // buffer data
-                  unsigned int NumWords,  // number of buffer words to read or write
-                  unsigned int Address,  // buffer address
-                  unsigned short Direction,  // I/O direction
-                  unsigned short ModNum)  // module number
+/**
+ * @ingroup PUBLIC_API
+ * @brief Read or write data from/to the DSP internal memory of a Pixie module.
+ *
+ * Use this function to directly transfer data between the host and the DSP internal memory of a
+ * Pixie-16 module.
+ *
+ * The DSP internal memory is split into two blocks with address range 0x40000 to 0x4FFFF for the
+ * first block and address range 0x50000 to 0x5FFFF for the second block. Within the first block,
+ * address range 0x40000 to 0x49FFF is reserved for program memory and shouldn’t be accessed
+ * directly by the host computer. Address range 0x4A000 to 0x4A4FF is used by the DSP I/O parameters
+ * which are stored in the configuration files (.set files) in the host. Within this range, 0x4A000
+ * to 0x4A33F can be both read and written, but 0x4A340 to 0x4A4FF can only be read but not written.
+ * The remaining address range (0x4A500 to 4FFFF) in the first block and the entire second block
+ * (0x50000 to 0x5FFFF) should only be read but not written by the host.
+ *
+ * @param[in,out] Buffer: Memory block used to hold the data for read or write
+ * @param[in] NumWords: Number of words that we're going to read or write.
+ * @param[in] Address: The address that we'd like to perform the operation against
+ * @param[in] Direction: 0 for writes and 1 for reads.
+ * @param[in] ModNum: The module number that we'd like to work against. Starts counting at 0.
+ *
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - success
+ * @retval -1 - null pointer for buffer data
+ * @retval -2 - number of buffer words exceeds the limit
+ * @retval -3 - invalid DSP internal memory address
+ * @retval -4 - invalid I/O direction
+ * @retval -5 - invalid Pixie module number
+ * @retval -6 - I/O Failure
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16IMbufferIO(unsigned int* Buffer, unsigned int NumWords,
+                                                       unsigned int Address,
+                                                       unsigned short Direction,
+                                                       unsigned short ModNum)
 {
     int retval;  // return values
     unsigned int k;
@@ -1168,38 +1248,49 @@ Pixie16IMbufferIO(unsigned int* Buffer,  // buffer data
 }
 
 
-/****************************************************************
-*	Pixie16EMbufferIO:
-*		Read or write data from/to the external memory of a
-*		Pixie module.
-*
-*		Return Value:
-*			 0 - success
-*			-1 - null pointer for buffer data
-*			-2 - number of buffer words exceeds the limit
-*			-3 - invalid DSP external memory address
-*			-4 - invalid I/O direction
-*			-5 - invalid Pixie module number
-*			-6 - I/O Failure
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16EMbufferIO(unsigned int* Buffer,  // buffer data
-                  unsigned int NumWords,  // number of buffer words to read or write
-                  unsigned int Address,  // buffer address
-                  unsigned short Direction,  // I/O direction
-                  unsigned short ModNum)  // module number
+/**
+ * @ingroup PUBLIC_API
+ * @brief Read or write data from/to the external memory of a Pixie module.
+ *
+ * Use this function to directly read data from or write data to the on-board external memory of a
+ * Pixie-16 module. The valid memory address is from 0x0 to 0x7FFFF (32-bit wide).
+ *
+ * The external memory is used to store the histogram data accumulated for each of the 16 channels
+ * of a Pixie-16 module. Each channel has a fixed histogram length of 32768 words (32-bit wide),
+ * and the placement of the histogram data in the memory is in the same order of the channel
+ * number, i.e. channel 0 occupies memory address 0x0 to 0x7FFF, channel 1 occupies 0x8000 to
+ * 0xFFFF, and so on.
+ *
+ * NOTE: another function Pixie16ReadHistogramFromModule can also be used to read out the
+ * histograms except that it needs to be called channel by channel.
+ *
+ * @param[in,out] Buffer: Memory block used to hold the data for read or write
+ * @param[in] NumWords: Number of words that we're going to read or write.
+ * @param[in] Address: The address that we'd like to perform the operation against
+ * @param[in] Direction: 0 for writes and 1 for reads.
+ * @param[in] ModNum: The module number that we'd like to work against. Starts counting at 0.
+ *
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - success
+ * @retval -1 - null pointer for buffer data
+ * @retval -2 - number of buffer words exceeds the limit
+ * @retval -3 - invalid System FPGA internal memory address
+ * @retval -4 - invalid I/O direction
+ * @retval -5 - invalid Pixie module number
+ * @retval -6 - I/O Failure
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16EMbufferIO(unsigned int* Buffer, unsigned int NumWords,
+                                                       unsigned int Address,
+                                                       unsigned short Direction,
+                                                       unsigned short ModNum)
 {
     int retval;  // return values
 
-    // Check if Buffer is a valid pointer
     if (Buffer == NULL) {
         Pixie_Print_Error(PIXIE_FUNC, "null pointer for buffer data");
         return (-1);
     }
 
-    // Check if NumWords is valid
     if (NumWords > (DSP_EMBUFFER_END_ADDR - DSP_EMBUFFER_START_ADDR + 1)) {
         Pixie_Print_Error(PIXIE_FUNC,
                           "%u (number of buffer words to read or write) exceeds the limit %d",
@@ -1207,31 +1298,27 @@ Pixie16EMbufferIO(unsigned int* Buffer,  // buffer data
         return (-2);
     }
 
-    // Check if Address is valid
 #if DSP_EMBUFFER_START_ADDR > 0
     if (Address < DSP_EMBUFFER_START_ADDR) {
-        Pixie_Print_Error(PIXIE_FUNC, "invalid DSP internal memory address %u", Address);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid System FPGA internal memory address %u", Address);
         return (-3);
     }
 #endif
     if (Address > DSP_EMBUFFER_END_ADDR) {
-        Pixie_Print_Error(PIXIE_FUNC, "invalid DSP internal memory address %u", Address);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid System FPGA internal memory address %u", Address);
         return (-3);
     }
 
-    // Check if Direction is valid
     if ((Direction != MOD_READ) && (Direction != MOD_WRITE)) {
         Pixie_Print_Error(PIXIE_FUNC, "invalid I/O direction %d", Direction);
         return (-4);
     }
 
-    // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
         Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-5);
     }
 
-    // I/O
     retval = Pixie_Main_Memory_IO(Buffer, Address, NumWords, Direction, ModNum);
     if (retval < 0) {
         Pixie_Print_Error(PIXIE_FUNC, "EMbuffer I/O failed for module %d, retval=%d", ModNum, retval);
@@ -1242,19 +1329,41 @@ Pixie16EMbufferIO(unsigned int* Buffer,  // buffer data
 }
 
 
-/****************************************************************
-*	Pixie16StartListModeRun:
-*		Start or resume a list mode run.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Invalid Pixie module number
-*			-2 - Invalid mode
-*			-3 - Failed to start list mode run
-*			-4 - Invalid run type
-*
-****************************************************************/
-
+/**
+ * @ingroup PUBLIC_API
+ * @brief Start or resume a list-mode run.
+ *
+ * Use this function to start a list-mode data acquisition run in Pixie-16 modules. list-mode runs
+ * are used to collect data on an event-by-event basis, gathering energies, timestamps, pulse shape
+ * analysis values, and waveforms for each event. Runs will continue until the user terminates the
+ * run by calling function Pixie16EndRun. To start the data acquisition this function has to be
+ * called for every Pixie-16 module in the system. If all modules are to run synchronously, the
+ * last module addressed will release all others and the acquisition starts then. The first module
+ * to end the run will immediately stop the run in all other modules if run synchronization has
+ * been set up among these modules.
+ *
+ * There is only one list-mode run type supported, that is, 0x100. However, different output data
+ * options can be chosen by enabling or disabling different CHANCSRA bits.
+ *
+ * ModNum is the module number which starts counting at 0. If ModNum is set to be less than the
+ * total number of modules in the system, only the module specified by ModNum will have its list
+ * mode run started. But if ModNum is set to equal to the total number of modules in the system,
+ * then all modules in the system will have their runs started together.
+ *
+ * @param[in] ModNum: The module number that we'd like to work against. Starts counting at 0.
+ * @param[in] RunType: The type of run that we're going to be executing. There's only one 0x100.
+ * @param[in] mode: How we'll handle existing data when starting up the run. Use mode=NEW_RUN (=1)
+ *     to erase histograms and statistics information before launching the new
+ *     run. Note that this will cause a startup delay of up to 1 millisecond.
+ *     Use mode=RESUME_RUN (=0) to resume an earlier run. This mode has a startup delay of only a
+ *     few microseconds.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Invalid Pixie module number
+ * @retval -2 - Invalid mode
+ * @retval -3 - Failed to start list-mode run
+ * @retval -4 - Invalid run type
+ */
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16StartListModeRun(unsigned short ModNum,  // module number
                                                              unsigned short RunType,  // run type
                                                              unsigned short mode)  // run mode
@@ -1283,10 +1392,10 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16StartListModeRun(unsigned short ModN
         return (-4);
     }
 
-    // Start the list mode run now
+    // Start the list-mode run now
     retval = Pixie_Start_Run(mode, RunType, 0, ModNum);
     if (retval < 0) {
-        Pixie_Print_Error(PIXIE_FUNC, "failed to start list mode run, retval=%d", retval);
+        Pixie_Print_Error(PIXIE_FUNC, "failed to start list-mode run, retval=%d", retval);
         return (-3);
     }
 
@@ -1294,18 +1403,36 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16StartListModeRun(unsigned short ModN
 }
 
 
-/****************************************************************
-*	Pixie16StartHistogramRun:
-*		Start or resume a histogram run.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Invalid Pixie module number
-*			-2 - Invalid mode
-*			-3 - Failed to start histogram run
-*
-****************************************************************/
-
+/**
+ * @ingroup PUBLIC_API
+ * @brief Start or resume a histogram run.
+ *
+ * Use this function to begin a data acquisition run that accumulates energy histograms, one for
+ * each channel. It launches a data acquisition run in which only energy information is preserved
+ * and histogrammed locally to each channel.
+ *
+ * Call this function for each Pixie-16 module in the system to initialize the run in each module.
+ * Actual data acquisition will start synchronously in all modules when the last module finished
+ * the initialization (requires the synchronization parameter to be set). Histogram runs can be
+ * self-terminating when the elapsed run time exceeds the preset run time, or the user can
+ * prematurely terminate the run by calling Pixie16EndRun. On completion, final histogram and
+ * statistics data will be available.
+ *
+ * ModNum is the module number which starts counting at 0. If ModNum is set to be less than the
+ * total number of modules in the system, only the module specified by ModNum will have its
+ * histogram run started. But if ModNum is set to be equal to the total number of modules in the
+ * system, then all modules in the system will have their runs started together.
+ *
+ * @param[in] ModNum: The module number that we'd like to work against. Starts counting at 0.
+ * @param[in] mode: How we'll handle existing data when starting up the run. Use mode=NEW_RUN (=1)
+ *     to erase histograms and statistics information before launching the new
+ *     run. Use mode=RESUME_RUN (=0) to resume an earlier run.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Invalid Pixie module number
+ * @retval -2 - Invalid mode
+ * @retval -3 - Failed to start histogram run
+ */
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16StartHistogramRun(unsigned short ModNum,  // module number
                                                               unsigned short mode)  // run mode
 {
@@ -1339,18 +1466,27 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16StartHistogramRun(unsigned short Mod
 }
 
 
-/****************************************************************
-*	Pixie16CheckRunStatus function:
-*		Poll the run status of a Pixie module.
-*
-*		Return Value:
-*			 0 - No run is in progress
-*			 1 - Run is still in progress
-*			-1 - Invalid Pixie module number
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16CheckRunStatus(unsigned short ModNum)  // Pixie module number
+/**
+ * @ingroup PUBLIC_API
+ * @brief Poll the run status of a Pixie module.
+ *
+ * Use this function to check the run status of a Pixie-16 module while a list-mode data
+ * acquisition run is in progress. If the run is still in progress continue polling.
+ *
+ * If the return code of this function indicates the run has finished, there might still be some
+ * data in the external FIFO (Rev-B, C, D, F modules) that need to be read out to the host
+ * computer. In addition, final run statistics and histogram data are available for reading out too.
+ *
+ * In MCA histogram run mode, this function can also be called to check if the run is still in
+ * progress even though it is normally self-terminating.
+ *
+ * @param[in] ModNum: The module number to interrogate and counting starts at 0.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - No run is in progress
+ * @retval  1 - Run is still in progress
+ * @retval -1 - Invalid Pixie module number
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16CheckRunStatus(unsigned short ModNum)
 {
     int retval;  // return values
 
@@ -1365,17 +1501,23 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16CheckRunStatus(unsigned short ModNum
 }
 
 
-/****************************************************************
-*	Pixie16EndRun:
-*		Stop the run in a Pixie module.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Invalid Pixie module number
-*			-2 - Failed to stop the run
-*
-****************************************************************/
-
+/**
+ * @ingroup PUBLIC_API
+ * @brief Stop the run in a Pixie module.
+ *
+ * Use this function to end a histogram run, or to force the end of a list-mode run. In a
+ * multi-module system, if all modules are running synchronously, only one module needs to be
+ * addressed this way. It will immediately stop the run in all other module in the system.
+ *
+ * When stopping the run in the Director module (module #0) - a SYNC interrupt should be generated
+ * to stop run in all modules simultaneously, if DSP parameter SynchWait is set to 1.
+ * If SynchWait is set to 0, then CSR bit 0 is cleared to stop the run.
+ *
+ * @param[in] ModNum: The module number to interrogate and counting starts at 0.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - No run is in progress
+ * @retval -1 - Invalid Pixie module number
+ */
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16EndRun(unsigned short ModNum)  // Pixie module number
 {
     unsigned short modulenumber, k;
@@ -1387,9 +1529,6 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16EndRun(unsigned short ModNum)  // Pi
         return (-1);
     }
 
-    // Stop run in the Director module (module #0) - a SYNC interrupt should be generated
-    // to stop run in all modules simultaneously, if DSP parameter SynchWait is set to 1.
-    // If SynchWait is set to 0, then CSR bit 0 is cleared to stop the run.
     modulenumber = 0;
     (void) Pixie_Register_IO(modulenumber, PCI_STOPRUN_REGADDR, MOD_WRITE, &dummy);
 
