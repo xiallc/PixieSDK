@@ -5742,19 +5742,25 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadHistogramFromFile(const char* Fi
 }
 
 
-/****************************************************************
-*	Pixie16SaveDSPParametersToFile:
-*		Save DSP parameters to a settings file.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Failed to read DSP parameter values from the Pixie-16 modules
-*			-2 - Failed to open the DSP parameters file
-*
-****************************************************************/
 
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16SaveDSPParametersToFile(const char* FileName)  // the DSP parameters file name (with complete path)
+/**
+ * @ingroup CONFIGURATION
+ * @brief Save DSP parameters to a settings file
+ *
+ * Use this function to save DSP parameters to a settings file. It will first read the values of
+ * DSP parameters on each Pixie-16 module and then write them to the settings file. Each module has
+ * exactly 1280 DSP parameter values (32-bit unsigned integers), and depending on the value of
+ * PRESET_MAX_MODULES (defined in pixie16app_defs.h), the settings file should have exactly
+ * `(1280 * PRESET_MAX_MODULES * 4)` bytes when stored on the computer hard drive.
+ *
+ * @param[in] FileName: Absolute path to where we will write the DSP parameter file.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Failed to read DSP parameter values from the Pixie-16 modules
+ * @retval -2 - Failed to open the DSP parameters file
+ * @retval -3 - Failed to write DSP parameter values
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveDSPParametersToFile(const char* FileName)
 {
     unsigned short ModNum;
     FILE* DSPSettingsFile = NULL;
@@ -5784,7 +5790,7 @@ Pixie16SaveDSPParametersToFile(const char* FileName)  // the DSP parameters file
                                   "failed to write DSP parameter values from module %d, error=%d",
                                   ModNum, errno);
                 (void) fclose(DSPSettingsFile);
-                return (-1);
+                return (-3);
             }
         }
 
@@ -5799,21 +5805,27 @@ Pixie16SaveDSPParametersToFile(const char* FileName)  // the DSP parameters file
 }
 
 
-/****************************************************************
-*	Pixie16LoadDSPParametersFromFile:
-*		Load DSP parameters from a settings file.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Size of DSPParFile is invalid
-*			-2 - Failed to program Fippi in module
-*			-3 - Failed to set DACs in module
-*			-4 - Failed to open the DSP parameters file
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16LoadDSPParametersFromFile(const char* FileName)  // the DSP parameters file name (with complete path)
+/**
+ * @ingroup CONFIGURATION
+ * @brief Load DSP parameters from a settings file
+ *
+ * Use this function to read DSP parameters from a settings file and then download the settings to
+ * Pixie-16 modules that are installed in the system. Each module has exactly 1280 DSP parameter
+ * values (32-bit unsigned integers), and depending on the value of PRESET_MAX_MODULES
+ * (defined in pixie16app_defs.h), the settings file should have exactly
+ * `(1280 * PRESET_MAX_MODULES * 4)` bytes when stored on the computer hard drive.
+ * @param[in] FileName: Absolute path to where we will write the DSP parameter file.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Size of DSPParFile is invalid
+ * @retval -2 - Failed to program Fippi in module
+ * @retval -3 - Failed to set DACs in module
+ * @retval -4 - Failed to open the DSP parameters file
+ * @retval -5 - Failed to seek to the end of the file
+ * @retval -6 - Failed to seek to the beginning of the file
+ * @retval -7 - Failed to read settings from the file
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16LoadDSPParametersFromFile(const char* FileName)
 {
     unsigned short k;
     unsigned int TotalWords;
@@ -5830,7 +5842,7 @@ Pixie16LoadDSPParametersFromFile(const char* FileName)  // the DSP parameters fi
                               "failed seek Fippi settings, error=%d",
                               errno);
             (void) fclose(DSPSettingsFile);
-            return (-2);
+            return (-5);
         }
 
         TotalWords = (ftell(DSPSettingsFile) + 1) / 4;
@@ -5849,7 +5861,7 @@ Pixie16LoadDSPParametersFromFile(const char* FileName)  // the DSP parameters fi
                               "failed seek Fippi settings, error=%d",
                               errno);
             (void) fclose(DSPSettingsFile);
-            return (-2);
+            return (-6);
         }
 
         // Read DSP parameters
@@ -5860,7 +5872,7 @@ Pixie16LoadDSPParametersFromFile(const char* FileName)  // the DSP parameters fi
                                   "failed to read Fippi settings in module %d, error=%d",
                                   k, errno);
                 (void) fclose(DSPSettingsFile);
-                return (-2);
+                return (-7);
             }
             // Force correct module number
             Pixie_Devices[k].DSP_Parameter_Values[0] = k;
@@ -5899,19 +5911,45 @@ Pixie16LoadDSPParametersFromFile(const char* FileName)  // the DSP parameters fi
 }
 
 
-/****************************************************************
-*	Pixie16CopyDSPParameters:
-*		Copy DSP parameters from one module to other modules.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Failed to program Fippi in a module
-*			-2 - Failed to set DACs in a module
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16CopyDSPParameters(unsigned short BitMask,  // copy items bit mask
+/**
+ * @ingroup CONFIGURATION
+ * @brief Copy DSP parameters from one module to other modules.
+ *
+ * Use this function to copy DSP parameters from one module to the others that are installed in
+ * the system.
+ *
+ * @param[in] BitMask: A bit pattern that designates what items should be copied from the source
+ *     module to the destination module(s). For example, a value of 4097
+ *     (2<sup>0</sup> + 2<sup>12</sup>) will copy the filter parameters and QDC.
+ *     | Bit | Item |
+ *     |-|-|
+ *     | 0 | Filter (energy and trigger) |
+ *     | 1 | Analog signal conditioning (polarity, dc-offset,   gain/attenuation) |
+ *     | 2 | Histogram control (minimum energy, binning factor) |
+ *     | 3 | Decay time |
+ *     | 4 | Pulse shape analysis (trace length and trace delay) |
+ *     | 5 | Baseline control (baseline cut, baseline percentage) |
+ *     | 7 | Channel CSRA register (good channel, trigger enabled, etc.)   |
+ *     | 8 | CFD trigger (CFD delay, scaling factor) |
+ *     | 9 | Trigger stretch lengths (veto, external trigger, etc.) |
+ *     | 10 | FIFO delays (analog input delay, fast trigger output delay,   etc.) |
+ *     | 11 | Multiplicity (bit masks, thresholds, etc.) |
+ *     | 12 | QDC (QDC sum lengths) |
+ * @param[in] SourceModule: The module that we'll read the settings from, starts counting at 0.
+ * @param[in] SourceChannel: The channel we'll read settings from, starts counting at 0.
+ * @param[in] DestinationMask: A pointer to an array that indicates the channel and module whose
+ *     settings will be copied from the source channel and module. For instance, if there are 5
+ *     modules (total 80 channels) in the system, DestinationMask would be defined as
+ *     `DestinationMask[80]`, where `DestinationMask[0]` to `DestinationMask[15]` would select
+ *     channel 0 to 15 of module 0, `DestinationMask[16]` to `DestinationMask[31]` would select
+ *     channel 0 to 15 of module 1, and so on. If a given channel i is to be copied,
+ *     then `DestinationMask[i]` should be set to 1, otherwise, it should be set to 0.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Failed to program Fippi in a module
+ * @retval -2 - Failed to set DACs in a module
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16CopyDSPParameters(unsigned short BitMask,  // copy items bit mask
                          unsigned short SourceModule,  // source module
                          unsigned short SourceChannel,  // source channel
                          unsigned short* DestinationMask)  // the destination module and channel bit mask
@@ -5953,26 +5991,38 @@ Pixie16CopyDSPParameters(unsigned short BitMask,  // copy items bit mask
 }
 
 
-/****************************************************************
-*	Pixie16SaveExternalFIFODataToFile:
-*		Read list mode data from the external FIFO of a Pixie module
-*		and then save the data to a file.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Invalid Pixie module number
-*			-2 - Failed to allocate memory to store list mode data
-*			-3 - Failed to open list mode data file
-*			-4 - Failed to read external FIFO status
-*			-5 - Failed to read data from external FIFO
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API
-Pixie16SaveExternalFIFODataToFile(const char* FileName,  // list mode data file name
-                                  unsigned int* nFIFOWords,  // number of words read from external FIFO
-                                  unsigned short ModNum,  // module number
-                                  unsigned short EndOfRunRead)  // indicator whether this is the end of run read
+/**
+ * @ingroup LIST_MODE_DATA_PROCESSING
+ * @brief Read list-mode data from the external FIFO of module and save the data to a file.
+ *
+ * This function first checks the status of the external FIFO of a Pixie-16 module. If the FIFO
+ * data exceeds the size of EXTFIFO_READ_THRESH then we read list-mode data (32-bit unsigned
+ * integers) from the external FIFO. This function essentially encapsulates both functions
+ * Pixie16CheckExternalFIFOStatus and Pixie16ReadDataFromExternalFIFO within one function. The
+ * number of words that are read from the external FIFO is recorded in variable `*nFIFOWords`.
+ *
+ * @see Pixie16CheckExternalFIFOStatus
+ * @see Pixie16ReadDataFromExternalFIFO
+ * @see EXTFIFO_READ_THRESH
+ *
+ * @param[in] FileName: Absolute path to the file that we'll write data into
+ * @param[in] nFIFOWords: The number of words read from the FIFO and written to the file.
+ * @param[in] ModNum: The module number for the module whose external FIFO we want to read.
+ * @param[in] EndOfRunRead: Provide a 1 if this is the final read of a run, 0 otherwise. This is
+ *     necessary since the external FIFO needs special treatment when the host reads the last few
+ *     words from the external FIFO due to its pipelined structure.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Invalid Pixie module number
+ * @retval -2 - Failed to allocate memory to store list-mode data
+ * @retval -3 - Failed to open list-mode data file
+ * @retval -4 - Failed to read external FIFO status
+ * @retval -5 - Failed to read data from external FIFO
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveExternalFIFODataToFile(const char* FileName,
+                                                                       unsigned int* nFIFOWords,
+                                                                       unsigned short ModNum,
+                                                                       unsigned short EndOfRunRead)
 {
     unsigned int nWords;
     FILE* ListFile = NULL;
@@ -5989,7 +6039,7 @@ Pixie16SaveExternalFIFODataToFile(const char* FileName,  // list mode data file 
     // Allocate memory
     if ((lmdata = (unsigned int*) malloc(sizeof(unsigned int) * EXTERNAL_FIFO_LENGTH)) == NULL) {
         Pixie_Print_Error(PIXIE_FUNC,
-                          "failed to allocate memory to store list mode data for module %d",
+                          "failed to allocate memory to store list-mode data for module %d",
                           ModNum);
         *nFIFOWords = 0;
         return (-2);
@@ -6029,7 +6079,7 @@ Pixie16SaveExternalFIFODataToFile(const char* FileName,  // list mode data file 
             *nFIFOWords = 0;
         }
     } else {
-        Pixie_Print_Error(PIXIE_FUNC, "failed to open list mode data file %s", FileName);
+        Pixie_Print_Error(PIXIE_FUNC, "failed to open list-mode data file %s", FileName);
         free(lmdata);
         *nFIFOWords = 0;
         return (-3);
