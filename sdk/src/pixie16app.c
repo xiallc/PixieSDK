@@ -5881,6 +5881,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16LoadDSPParametersFromFile(const char
         fclose(DSPSettingsFile);
 
         // Download to all modules
+        /// TODO: Add a flag here to turn off downloading parameters to modules if we're offline.
         for (k = 0; k < Number_Modules; k++) {
             Pixie_DSP_Memory_IO(&Pixie_Devices[k].DSP_Parameter_Values[0], DATA_MEMORY_ADDRESS, DSP_IO_BORDER,
                                 MOD_WRITE, k);
@@ -6092,20 +6093,22 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveExternalFIFODataToFile(const cha
 }
 
 
-/****************************************************************
-*	Pixie16RegisterIO:
-*		Read from or write to a register in a module.
-*
-*		Return Value:
-*			 0 - Successful
-*			-1 - Invalid Pixie module number
-*
-****************************************************************/
-
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16RegisterIO(unsigned short ModNum,  // the Pixie module to communicate to
-                                                       unsigned int address,  // register address
-                                                       unsigned short direction,  // either MOD_READ or MOD_WRITE
-                                                       unsigned int* value)  // holds or receives the data
+/**
+ * @ingroup PUBLIC_API
+ * @brief Read from or write to a register in a module.
+ * @param[in] ModNum: The module number that we'll be performing IO with. Numbered starting at 0.
+ * @param[in] address: The memory address that we'd like to access on the module.
+ * @param[in] direction: The direction of the access. Either MOD_READ (1) or MOD_WRITE (0)
+ * @param[in,out] value: A pointer to a 32-bit unsigned integer (or array of integers) that holds
+ *     the IO data.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Invalid module number
+ */
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16RegisterIO(unsigned short ModNum,
+                                                       unsigned int address,
+                                                       unsigned short direction,
+                                                       unsigned int* value)
 {
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
@@ -6118,16 +6121,22 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16RegisterIO(unsigned short ModNum,  /
 }
 
 
-/****************************************************************
-*	Pixie16ReadCSR:
-*		Read the value of the CSR of a module.
-*
-*		Return Value:
-*			 0 - Successful
-*			-1 - Invalid Pixie module number
-*
-****************************************************************/
+/**
+ * @ingroup PUBLIC_API
+ * @brief Read the value of the CSR of a module.
+ *
+ * @note Direct reading or writing by the host is not recommended!!
 
+ * Use this function to read the host Control & Status Register (CSR) value. This register is
+ * unrelated to the DSP parameters ModCSRA/B, ChanCSRA/B. It is used to control the operation of
+ * the module and read directly by the host.
+ *
+ * @param[in] ModNum: The module number that we want to query
+ * @param[out] CSR: Pointer to a 32-bit unsigned integer to hold the CSR value.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Successful
+ * @retval -1 - Invalid Pixie module number
+ */
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadCSR(unsigned short ModNum, unsigned int* CSR) {
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
@@ -6140,16 +6149,22 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadCSR(unsigned short ModNum, unsig
 }
 
 
-/****************************************************************
-*	Pixie16WriteCSR:
-*		Write a value to the CSR of a module.
-*
-*		Return Value:
-*			 0 - Successful
-*			-1 - Invalid Pixie module number
-*
-****************************************************************/
-
+/**
+ * @ingroup PUBLIC_API
+ * @brief Write a value to the CSR of a module.
+ *
+ * @note Direct reading or writing by the host is not recommended!!
+ *
+ * Use this function to write a value to the host Control & Status Register (CSR). This register
+ * is unrelated to the DSP parameters ModCSRA/B, ChanCSRA/B. It is used to control the operation
+ * of the module and read directly by the host.
+ *
+ * @param[in] ModNum
+ * @param[in] CSR: A 32-bit unsigned integer that we'll write to the CSR.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Successful
+ * @retval -1 - Invalid Pixie module number
+ */
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteCSR(unsigned short ModNum, unsigned int CSR) {
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
