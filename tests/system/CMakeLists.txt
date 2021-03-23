@@ -1,20 +1,22 @@
-list(APPEND SYSTEM_TESTS test_direct_communication test_memory_reads_and_writes)
+add_executable(test_direct_communication src/test_direct_communication.cpp
+        src/system_test_utilities.cpp
+        ${PROJECT_SOURCE_DIR}/vendor/easylogging/easylogging++.cc)
 
-foreach (PROG IN LISTS SYSTEM_TESTS)
-    add_executable(${PROG} src/${PROG}.cpp)
-    target_include_directories(${PROG} PUBLIC ${PROJECT_SOURCE_DIR}/common ${PROJECT_SOURCE_DIR}/vendor/args)
+target_include_directories(test_direct_communication PUBLIC include ${PROJECT_SOURCE_DIR}/common
+        ${PROJECT_SOURCE_DIR}/vendor/args ${PROJECT_SOURCE_DIR}/vendor/easylogging)
 
-    IF (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.13")
-        target_link_directories(${PROG} PUBLIC PLX_LIBRARY_DIR)
-    ENDIF ()
+IF (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.13")
+    target_link_directories(test_direct_communication PUBLIC PLX_LIBRARY_DIR)
+ENDIF ()
 
-    if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-        target_link_libraries(${PROG} PUBLIC PixieSDK ${PLX_SHARED_LIB} dl m)
-        target_compile_definitions(${PROG} PUBLIC PLX_LITTLE_ENDIAN PCI_CODE PLX_LINUX PRINT_DEBUG_MSG)
-        target_compile_options(${PROG} PUBLIC -g -Wall)
-    elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-        target_link_libraries(${PROG} PUBLIC PixieSDK ${PLX_SHARED_LIB} winmm)
-        target_compile_definitions(${PROG} PUBLIC PLX_LITTLE_ENDIAN PCI_CODE PLX_WINDOWS PRINT_DEBUG_MSG)
-    endif ()
-endforeach()
+target_link_libraries(test_direct_communication PUBLIC PixieSDK ${PLX_SHARED_LIB})
+target_compile_definitions(test_direct_communication PUBLIC PLX_LITTLE_ENDIAN PCI_CODE PRINT_DEBUG_MSG)
 
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    target_link_libraries(test_direct_communication PUBLIC dl m)
+    target_compile_definitions(test_direct_communication PUBLIC PLX_LINUX)
+    target_compile_options(test_direct_communication PUBLIC -g -Wall)
+elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    target_link_libraries(test_direct_communication PUBLIC winmm)
+    target_compile_definitions(test_direct_communication PUBLIC PLX_WINDOWS)
+endif ()
