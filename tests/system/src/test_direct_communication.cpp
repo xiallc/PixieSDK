@@ -179,7 +179,10 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    static const int offline_mode = 0;
+    int offline_mode = 0;
+    if(is_dry_run)
+        offline_mode = 1;
+
     LOG(INFO) << "Calling Pixie16InitSystem.";
     if (!verify_api_return_value(Pixie16InitSystem(cfg.numModules, cfg.slot_map, offline_mode),
                                  "Pixie16InitSystem"))
@@ -348,12 +351,13 @@ int main(int argc, char* argv[]) {
 
             if (read) {
                 unsigned int data;
-                LOG(INFO) << "Reading from" << args::get(address_flag) << " in Module "
+                LOG(INFO) << "Reading from " << args::get(address_flag) << " in Module "
                           << args::get(module_number_flag);
                 if (!is_dry_run) {
                     Pixie_Register_IO(args::get(module_number_flag), address,
                                       static_cast<std::underlying_type<DATA_IO>::type>(DATA_IO::READ), &data);
-                    LOG(INFO) << "Read " << data << " from " << args::get(address_flag) << " in Module "
+                    LOG(INFO) << "Read " << std::showbase << std::hex << data << " from "
+                              << args::get(address_flag) << " in Module " << std::dec
                               << args::get(module_number_flag);
                 } else {
                     LOG(INFO) << "Dry run active didn't perform the read!";
