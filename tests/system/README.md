@@ -16,7 +16,7 @@ use any of the functionality provided at the User API level. Users can test the 
 The program has a dry-run mode activated with the `--dry_run` switch. This switch disables any 
 communication with the modules and starts the API in the `Offline` setting. 
 
-## Configuration File
+### Configuration File
 For the moment, we're only allowing interaction with a single module type in the system. The 
 configuration file should take the following form:
 ```shell
@@ -40,7 +40,7 @@ modules in the system. **Note** This will only work if all modules have the same
 10
 ...
 ```
-## Test Data Patterns
+### Test Data Patterns
 The software recognizes a number of test data patterns. Each pattern may be useful to test different
 aspects of the system.
 * HI_LO
