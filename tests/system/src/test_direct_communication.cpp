@@ -153,6 +153,7 @@ int main(int argc, char* argv[]) {
     try {
         parser.ParseCLI(argc, argv);
     } catch (args::Help& help) {
+        LOG(INFO) << help.what();
         std::cout << parser;
         return EXIT_SUCCESS;
     } catch (args::Error& e) {
