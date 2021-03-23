@@ -310,6 +310,7 @@ void configure_logging(int argc, char** argv) {
     START_EASYLOGGINGPP(argc, argv);
     el::Configurations defaultConf;
     defaultConf.setToDefault();
+    defaultConf.setGlobally(el::ConfigurationType::Filename,"pixie-example.log");
     defaultConf.setGlobally(
             el::ConfigurationType::Format, "%datetime{%Y-%M-%dT%H:%m:%s.%g} - %level - %msg");
     el::Loggers::reconfigureLogger("default", defaultConf);
@@ -374,9 +375,10 @@ int main(int argc, char** argv) {
     try {
         parser.ParseCLI(argc, argv);
     } catch (args::Help& help) {
+        LOG(INFO) << help.what();
         cout << parser;
         return EXIT_SUCCESS;
-    } catch (args::ValidationError& e) {
+    } catch (args::Error& e) {
         LOG(FATAL) << e.what();
         cout << parser;
         return EXIT_FAILURE;

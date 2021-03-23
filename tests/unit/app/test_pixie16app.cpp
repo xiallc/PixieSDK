@@ -86,7 +86,7 @@ TEST_SUITE("app/pixie16app.c") {
                 0.42679, 0, 0.43035, 0, 0.4339,  0, 0.43745, 0, 0.44098, 0, 0.44451, 0, 0.44804, 0, 0.45155, 0,
                 0.45506, 0, 0.45856, 0, 0.46206, 0, 0.46555, 0, 0.46903, 0, 0.4725,  0, 0.47597, 0, 0.47943, 0};
 
-        CHECK(Pixie16complexFFT(&data[0], length * 0.5) == 0);
+        CHECK(Pixie16complexFFT(&data[0], (unsigned int)(length * 0.5)) == 0);
         std::vector<double> result;
         for (unsigned int i = 0; i < length - 1; i += 2)
             result.push_back(std::abs(std::complex<double>(data[i], data[i + 1])));
