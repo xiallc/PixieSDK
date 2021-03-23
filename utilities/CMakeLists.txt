@@ -8,11 +8,11 @@ target_include_directories(pixie PUBLIC
         ${PLX_INCLUDE_DIR})
 
 IF(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.13")
-    target_link_directories(pixie PUBLIC PLX_LIBRARY_DIR)
+    target_link_directories(pixie PUBLIC ${PLX_LIBRARY_DIR})
 ENDIF()
 
 target_link_libraries(pixie PUBLIC PixieSDK ${PLX_SHARED_LIB})
-target_compile_definitions(pixie PUBLIC PLX_LITTLE_ENDIAN PCI_CODE PLX_LINUX PRINT_DEBUG_MSG)
+target_compile_definitions(pixie PUBLIC PLX_LITTLE_ENDIAN PCI_CODE)
 
 if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
     target_compile_definitions(PixieSDK PUBLIC PRINT_DEBUG_MSG)
@@ -20,7 +20,7 @@ endif()
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     target_compile_definitions(pixie PUBLIC PLX_LINUX)
-    target_compile_options(pixie PUBLIC -g -Wall)
+    target_compile_options(pixie PUBLIC -g -Wall -Wextra)
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     target_link_libraries(pixie PUBLIC winmm)
     target_compile_definitions(pixie PUBLIC PLX_WINDOWS)
