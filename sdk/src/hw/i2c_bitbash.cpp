@@ -140,7 +140,7 @@ namespace i2c
 
         uint32_t data_bit = 0;
 
-        for (unsigned int bit = 7; bit >= 0; bit--) {
+        for (unsigned int bit = 8; bit-- != 0;) {
             /*
              * SDA = 0; SCL = 0; CTRL = 1
              */
@@ -181,7 +181,7 @@ namespace i2c
         uint32_t data_bit = 0;
         uint8_t data = 0;
 
-        for (unsigned int bit = 7; bit >= 0; bit--) {
+        for (unsigned int bit = 8; bit-- != 0;) {
             /*
              * SDA = 0; SCL = 1; CTRL = 0
              */
