@@ -245,7 +245,7 @@ namespace firmware
                 throw error(what);
             }
         } else {
-            std::string what("firmware module revision not found");
+            std::string what("firmware module revision not found ");
             what += fw_desc;
             throw error(what);
         }
