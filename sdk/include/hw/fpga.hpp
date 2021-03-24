@@ -47,7 +47,7 @@ namespace pixie
 {
 namespace module
 {
-    class module;
+    struct module;
 }
 namespace hw
 {
