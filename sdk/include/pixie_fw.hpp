@@ -43,6 +43,7 @@
 
 #include <pixie_hw.hpp>
 #include <pixie_param.hpp>
+#include <xia_windows_compat.hpp>
 
 namespace xia
 {
@@ -105,9 +106,9 @@ namespace firmware
          * The firmware's version, module revision (it can be loaded on) and
          * device are invariant.
          */
-        firmware(const std::string version,
-                 const int mod_revision,
-                 const std::string device);
+        WINDOWS_DLLEXPORT firmware(const std::string version,
+                                   const int mod_revision,
+                                   const std::string device);
 
         /*
          * Load the firmware from it's file.
@@ -160,12 +161,12 @@ namespace firmware
     /*
      * Add the firmware to a crate.
      */
-    void add(crate& firmwares, firmware& fw);
+    WINDOWS_DLLEXPORT void add(crate& firmwares, firmware& fw);
 
     /*
      * Check is a firmware is already in the crate.
      */
-    bool check(const crate& firmwares, const firmware& fw);
+    WINDOWS_DLLEXPORT bool check(const crate& firmwares, const firmware& fw);
 
     /*
      * Find the matching firmware. If a firmware has a specific slot it is
@@ -199,7 +200,7 @@ namespace firmware
      *   device: string
      *   filename: string
      */
-    firmware parse(const std::string fw_desc, const char delimiter = ':');
+    WINDOWS_DLLEXPORT firmware parse(const std::string fw_desc, const char delimiter = ':');
 }
 }
 }
@@ -207,9 +208,9 @@ namespace firmware
 /*
  * Output stream operators.
  */
-std::ostream&
+WINDOWS_DLLEXPORT std::ostream&
 operator<<(std::ostream& out, const xia::pixie::firmware::firmware& fw);
-std::ostream&
+WINDOWS_DLLEXPORT std::ostream&
 operator<<(std::ostream& out, const xia::pixie::firmware::module& mod_fw);
 
 #endif  // PIXIE_FW_H

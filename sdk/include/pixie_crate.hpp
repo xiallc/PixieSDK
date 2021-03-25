@@ -38,6 +38,7 @@
 
 #include <pixie_fw.hpp>
 #include <pixie_module.hpp>
+#include <xia_windows_compat.hpp>
 #include <hw/fpga.hpp>
 
 namespace xia
@@ -84,13 +85,13 @@ namespace crate
          */
         firmware::crate firmware;
 
-        crate(size_t num_modules = slots);
-        ~crate();
+        WINDOWS_DLLEXPORT crate(size_t num_modules = slots);
+        WINDOWS_DLLEXPORT ~crate();
 
-        void initialize(bool reg_trace = false);
-        void boot();
+        WINDOWS_DLLEXPORT void initialize(bool reg_trace = false);
+        WINDOWS_DLLEXPORT void boot();
 
-        void set(firmware::crate& firmwares);
+        WINDOWS_DLLEXPORT void set(firmware::crate& firmwares);
 
         /*
          * Output the crate details.
@@ -104,7 +105,7 @@ namespace crate
 /*
  * Output stream operator.
  */
-std::ostream&
+WINDOWS_DLLEXPORT std::ostream&
 operator<<(std::ostream& out, const xia::pixie::crate::crate& crate);
 
 #endif  // PIXIE_CRATE_H
