@@ -56,11 +56,15 @@ main(int argc, char* argv[])
     args::Group arguments(parser, "arguments", args::Group::Validators::AtLeastOne,
                           args::Options::Global);
     args::ValueFlag<size_t> num_modules_flag(arguments, "num_modules_flag",
-                                             "Number of modules to report", {'n', "num-modules"}, 1);
-    args::ValueFlag<std::string> bit_file_flag(arguments, "bit_file_flag",
-                                               "Bit file to load in the form. Ex. F:15:sys:syspixie16_revfgeneral_adc250mhz_r33339.bin",
-                                               {'B', "bitfile"});
-    args::Flag csys_api(arguments, "csys_api", "Use the Legacy C API", {'S', "csys_api"});
+                                             "Number of modules to report",
+                                             {'n', "num-modules"}, 1);
+    args::ValueFlagList<std::string> bit_file_flag(arguments, "bit_file_flag",
+                                                   "Bit file(s) to load. Can be repeated. "
+                                                   "Take the form rev:rev-num:type:name"
+                                                   "Ex. F:15:sys:syspixie16_revfgeneral_adc250mhz_r33339.bin",
+                                                   {'B', "bitfile"});
+    args::Flag csys_api(arguments, "csys_api", "Use the Legacy C API",
+                        {'S', "csys_api"});
     args::Flag reg_trace(arguments, "reg_trace",
                          "Registers debugging traces in the API.", {'R', "reg-trace"});
 
@@ -81,13 +85,15 @@ main(int argc, char* argv[])
 
     try {
         if(bit_file_flag) {
-            auto fw = xia::pixie::firmware::parse(args::get(bit_file_flag), ':');
-            if (xia::pixie::firmware::check(firmwares, fw)) {
-                std::string what("duplicate bitfile option: ");
-                what += args::get(bit_file_flag);
-                throw std::runtime_error(what);
+            for (const auto &firmware: args::get(bit_file_flag)) {
+                auto fw = xia::pixie::firmware::parse(firmware, ':');
+                if (xia::pixie::firmware::check(firmwares, fw)) {
+                    std::string what("duplicate bitfile option: ");
+                    what += firmware;
+                    throw std::runtime_error(what);
+                }
+                xia::pixie::firmware::add(firmwares, fw);
             }
-            xia::pixie::firmware::add(firmwares, fw);
         }
 
         if (csys_api) {
