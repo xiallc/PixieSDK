@@ -11,6 +11,7 @@ add_library(PixieSDK SHARED
         src/pixie_fw.cpp
         src/pixie_param.cpp
         src/pixie_hw.cpp
+        src/hw/dsp.cpp
         src/hw/fpga_comms.cpp
         src/hw/fpga_fippi.cpp
         src/hw/fpga.cpp

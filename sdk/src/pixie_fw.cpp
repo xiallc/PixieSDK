@@ -58,6 +58,59 @@ namespace firmware
         : runtime_error(what) {
     }
 
+    reader::reader(const image& img_, const size_t default_word_size_)
+        : img(img_),
+          default_word_size(default_word_size_),
+          offset(0)
+    {
+    }
+
+    image_value_type
+    reader::get(size_t word_size)
+    {
+        return read(word_size, true);
+    }
+
+    image_value_type
+    reader::peek(size_t word_size)
+    {
+        return read(word_size, false);
+    }
+
+    image_value_type
+    reader::read(size_t word_size, bool inc)
+    {
+        if (word_size > sizeof(image_value_type)) {
+            std::ostringstream oss;
+            oss << "word-size out of range: word-size=" << word_size;
+            throw error(oss.str());
+        }
+
+        if (word_size == 0) {
+            word_size = default_word_size;
+        }
+
+        if (offset > (img.size() - word_size)) {
+            std::ostringstream oss;
+            oss << "image get out of range: offset=" << offset
+                << " word-size=" << word_size
+                << " size=" << img.size();
+            throw error(oss.str());
+        }
+
+        image_value_type value = 0;
+
+        for (size_t w = 0; w < word_size; ++w) {
+            value = (value << 8) | img[offset + w];
+        }
+
+        if (inc) {
+            offset += word_size;
+        }
+
+        return value;
+    }
+
     firmware::firmware(const std::string version_,
                        const int mod_revision_,
                        const std::string device_)
@@ -116,8 +169,9 @@ namespace firmware
         out << "ver:" << version
             << " mod-rev:" << mod_revision
             << " dev:" << device
-            << " slots:" << slot.size() << ':';
+            << " slots:";
         if (slot.size() > 0) {
+            out << slot.size() << ':';
             const char* delimiter = "";
             for (auto s : slot) {
                 out << delimiter << s;

@@ -61,7 +61,7 @@ load_crate_firmware(const char* file,
     }
     for (std::string line; std::getline(input, line); ) {
         if (!line.empty()) {
-            auto fw = xia::pixie::firmware::parse(line, ':');
+            auto fw = xia::pixie::firmware::parse(line, ',');
             if (xia::pixie::firmware::check(firmwares, fw)) {
                 std::string what("duplicate firmware option: ");
                 what += line;

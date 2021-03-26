@@ -34,6 +34,7 @@
 *----------------------------------------------------------------------*/
 
 #include <algorithm>
+#include <iomanip>
 #include <sstream>
 
 #include <pixie_crate.hpp>
@@ -112,7 +113,13 @@ namespace crate
         firmware::load(firmware);
         for (auto& module : modules) {
             if (module.revision != 0) {
-                module.boot();
+                try {
+                    module.boot();
+                } catch (std::runtime_error& e) {
+                    std::cout << "module [slot " << module.slot
+                              << "]: " << e.what()
+                              << std::endl;
+                }
             }
         }
         firmware::clear(firmware);
@@ -134,10 +141,14 @@ namespace crate
 
     void
     crate::output(std::ostream& out) const {
-        out << "fw:" << firmware.size() << std::endl;
-        for (auto fw : firmware) {
-            out << ' ' << std::get<0>(fw) << ' ' << std::get<1>(fw)
-                << std::endl;
+        out << "fw: revs: " << firmware.size() << std::endl;
+        int c = 0;
+        for (auto fw_rev : firmware) {
+            for (auto& fw : std::get<1>(fw_rev)) {
+                out << ' ' << std::setw(3) << ++c << ". " << std::get<0>(fw_rev)
+                    << ' ' << *fw
+                    << std::endl;
+            }
         }
         out << "modules:" << modules.size() << std::endl;
         bool first = true;

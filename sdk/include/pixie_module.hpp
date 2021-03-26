@@ -36,6 +36,7 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
+#include <iomanip>
 #include <iostream>
 #include <list>
 #include <memory>
@@ -45,6 +46,8 @@
 #include <pixie_fw.hpp>
 #include <pixie_hw.hpp>
 #include <pixie_param.hpp>
+
+#include <hw/dsp.hpp>
 
 namespace xia
 {
@@ -147,6 +150,11 @@ namespace module
          */
         bool reg_trace;
 
+        /*
+         * DSP
+         */
+        hw::dsp::dsp dsp;
+
         module();
         module(module&& m);
         ~module();
@@ -157,7 +165,8 @@ namespace module
         void initialize(const std::string varsdef_);
 
         void boot(bool boot_comms = true,
-                  bool boot_fippi = true);
+                  bool boot_fippi = true,
+                  bool boot_dsp = true);
 
         firmware::firmware_ref get(const std::string device);
 
@@ -172,9 +181,12 @@ namespace module
         inline uint32_t read_32(int reg) {
             uint32_t value = hw::read_32(vmaddr, reg);
             if (reg_trace) {
-                std::cout << "M r " << std::hex
-                          << vmaddr << ':' << reg << " => " << value
-                          << std::dec << std::endl;
+                std::ios_base::fmtflags oflags(std::cout.flags());
+                std::cout << "M r " << std::setfill('0') << std::hex
+                          << vmaddr << ':' << std::setw(2) << reg
+                          << " => " << std::setw(8) << value
+                          << std::endl;
+                std::cout.flags(oflags);
             }
             return value;
         }
@@ -185,9 +197,12 @@ namespace module
         inline void write_32(int reg,
                              const uint32_t value) {
             if (reg_trace) {
-                std::cout << "M w " << std::hex
-                          << vmaddr << ':' << reg << " <= " << value
-                          << std::dec << std::endl;
+                std::ios_base::fmtflags oflags(std::cout.flags());
+                std::cout << "M w " << std::setfill('0') << std::hex
+                          << vmaddr << ':' << std::setw(2) << reg
+                          << " <= " << std::setw(8) << value
+                          << std::endl;
+                std::cout.flags(oflags);
             }
             hw::write_32(vmaddr, reg, value);
         }

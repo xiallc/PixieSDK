@@ -68,11 +68,46 @@ namespace firmware
 
     /*
      * Image data type. This is independent to the type used to hold the
-     * data. They cannot be the same as reading the data alignment issues come
-     * into play. This type matches the hardware requirements for loading the
-     * data across the bus hardware.
+     * data. They cannot be the same as data alignment issues come into
+     * play. This type matches the hardware requirements for loading the data
+     * across the bus hardware.
      */
     typedef uint32_t image_value_type;
+
+    /*
+     * Reader to handle reading image words from the image.
+     */
+    struct reader {
+        const image& img;
+        const size_t default_word_size;
+        size_t offset;
+
+        reader(const image& img,
+               size_t default_word_size = sizeof(image_value_type));
+
+        /*
+         * A word size of 0, the default, results in the default word size
+         * being used.
+         */
+        image_value_type get(size_t word_size = 0);
+        image_value_type peek(size_t word_size = 0);
+
+        void reset () {
+            offset = 0;
+        }
+
+        size_t size() {
+            return img.size();
+        }
+
+        size_t remaining() {
+            return img.size() - offset;
+        }
+
+    private:
+        image_value_type read(size_t word_size, bool inc);
+
+    };
 
     /*
      * Firmware image.

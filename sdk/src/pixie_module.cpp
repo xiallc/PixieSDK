@@ -41,6 +41,7 @@
 
 #include <pixie_module.hpp>
 
+#include <hw/dsp.hpp>
 #include <hw/fpga_comms.hpp>
 #include <hw/fpga_fippi.hpp>
 #include <hw/i2cm24c64.hpp>
@@ -114,7 +115,8 @@ namespace module
           module_var_descriptors(param::get_module_var_descriptors()),
           channel_var_descriptors(param::get_channel_var_descriptors()),
           device(std::make_unique<pci_bus_handle>()),
-          reg_trace(false)
+          reg_trace(false),
+          dsp(*this)
     {
     }
 
@@ -129,7 +131,8 @@ namespace module
           module_var_descriptors(std::move(m.module_var_descriptors)),
           channel_var_descriptors(std::move(m.channel_var_descriptors)),
           device(std::move(m.device)),
-          reg_trace(m.reg_trace)
+          reg_trace(m.reg_trace),
+          dsp(*this)
     {
         m.present = false;
         m.online = false;
@@ -276,7 +279,7 @@ namespace module
     }
 
     void
-    module::boot(bool boot_comms, bool boot_fippi)
+    module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp)
     {
         if (boot_comms) {
             firmware::firmware_ref fw = get("sys");
@@ -289,6 +292,13 @@ namespace module
             hw::fpga::fippi fippi(*this);
             fippi.boot(fw->data);
         }
+
+        if (boot_dsp) {
+            firmware::firmware_ref fw = get("dsp");
+            dsp.boot(fw->data);
+        }
+
+        online = true;
     }
 
     firmware::firmware_ref
