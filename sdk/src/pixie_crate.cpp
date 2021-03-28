@@ -102,6 +102,8 @@ namespace crate
             }
         }
 
+        module::set_index_by_slot(modules);
+
         if (num_modules == 0) {
             num_modules = modules.size();
         }
@@ -160,6 +162,13 @@ namespace crate
             }
             out << ' ' << mod;
         }
+    }
+
+    void
+    crate::assign(const module::index_slots& indexes)
+    {
+        module::assign(modules, indexes);
+        module::order_by_index(modules);
     }
 };
 };

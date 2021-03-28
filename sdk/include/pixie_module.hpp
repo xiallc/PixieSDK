@@ -158,6 +158,7 @@ namespace module
         module();
         module(module&& m);
         ~module();
+        module& operator=(module&& mod);
 
         void open(size_t device_number);
         void close();
@@ -208,7 +209,35 @@ namespace module
         }
     };
 
+    /*
+     * A list of indexes that can be assigned to modules by slots
+     */
+    typedef std::vector<std::pair<int, int>> index_slots;
+
+    /*
+     * A container of modules.
+     */
     typedef std::vector<module> modules;
+
+    /*
+     * Assign the index to the slots in the rack.
+     */
+    void assign(modules& mods, const index_slots& indexes);
+
+    /*
+     * Sort the modules by index.
+     */
+    void order_by_index(modules& mods);
+
+    /*
+     * Sort the modules by slot.
+     */
+    void order_by_slot(modules& mods);
+
+    /*
+     * Set the module index to the slot order.
+     */
+    void set_index_by_slot(modules& mods);
 }
 }
 }

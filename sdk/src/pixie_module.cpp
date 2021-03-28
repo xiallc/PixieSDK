@@ -157,6 +157,34 @@ namespace module
         device.release();
     }
 
+    module&
+    module::operator=(module&& m)
+    {
+        present = m.present;
+        online = m.online;
+        slot = m.slot;
+        serial_num = m.serial_num;
+        revision = m.revision;
+        index = m.index;
+        vmaddr = m.vmaddr;
+        module_var_descriptors = std::move(m.module_var_descriptors);
+        channel_var_descriptors = std::move(m.channel_var_descriptors);
+        device = std::move(m.device);
+        reg_trace = m.reg_trace;
+        dsp = std::move(m.dsp);
+
+        m.present = false;
+        m.online = false;
+        m.slot = 0;
+        m.serial_num = 0;
+        m.revision = 0;
+        m.index = -1;
+        m.vmaddr = nullptr;
+        m.reg_trace = false;
+
+        return *this;
+    }
+
     void
     module::open(size_t device_number)
     {
@@ -318,6 +346,48 @@ namespace module
             << ": device=" << device
             << " firmwares=" << firmware.size();
         throw error(oss.str());
+    }
+
+    void
+    assign(modules& modules_, const index_slots& indexes)
+    {
+        for (auto index_slot : indexes) {
+            for (auto& mod : modules_) {
+                if (mod.slot == index_slot.second) {
+                    mod.index = index_slot.first;
+                    break;
+                }
+            }
+        }
+    }
+
+    void
+    order_by_index(modules& mods)
+    {
+        std::sort(mods.begin(),
+                  mods.end(),
+                  [](module& a, module& b) {
+                      return a.index < b.index; } );
+    }
+
+    void
+    order_by_slot(modules& mods)
+    {
+        std::sort(mods.begin(),
+                  mods.end(),
+                  [](module& a, module& b) {
+                      return a.slot < b.slot; } );
+    }
+
+    void
+    set_index_by_slot(modules& mods)
+    {
+        order_by_slot(mods);
+        int index = 0;
+        for (auto& mod : mods) {
+            mod.index = index;
+            index++;
+        }
     }
 
     void

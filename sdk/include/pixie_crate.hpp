@@ -36,9 +36,10 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
+#include <xia_windows_compat.hpp>
+
 #include <pixie_fw.hpp>
 #include <pixie_module.hpp>
-#include <xia_windows_compat.hpp>
 #include <hw/fpga.hpp>
 
 namespace xia
@@ -92,6 +93,11 @@ namespace crate
         WINDOWS_DLLEXPORT void boot();
 
         WINDOWS_DLLEXPORT void set(firmware::crate& firmwares);
+
+        /*
+         * Assign indexes to the modules by slot.
+         */
+        void assign(const module::index_slots& indexes);
 
         /*
          * Output the crate details.

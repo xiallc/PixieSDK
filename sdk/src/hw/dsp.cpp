@@ -65,6 +65,14 @@ namespace dsp
     {
     }
 
+    dsp&
+    dsp::operator=(dsp&& d)
+    {
+        trace = d.trace;
+        d.trace = false;
+        return *this;
+    }
+
     void
     dsp::boot(const firmware::image& image, int retries)
     {

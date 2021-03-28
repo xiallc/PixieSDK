@@ -71,14 +71,14 @@ namespace dsp
         typedef uint16_t load_value_type;
 
         module::module& module;
-        const std::string name;
 
         /*
          * Trace the load operation
          */
-        const bool trace;
+        bool trace;
 
         dsp(module::module& module, bool trace = false);
+        dsp& operator=(dsp&& d);
 
         /*
          * Boot
