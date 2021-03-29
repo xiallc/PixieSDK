@@ -104,44 +104,57 @@ namespace module
         return -1;
     }
 
+    module::guard::guard(module& mod)
+        : guard_(mod.lock_)
+    {
+    }
+
     module::module()
-        : present(false),
-          online(false),
-          slot(0),
+        : slot(0),
           serial_num(0),
           revision(0),
           index(-1),
           vmaddr(nullptr),
+          dsp(*this),
           module_var_descriptors(param::get_module_var_descriptors()),
           channel_var_descriptors(param::get_channel_var_descriptors()),
-          device(std::make_unique<pci_bus_handle>()),
           reg_trace(false),
-          dsp(*this)
+          in_use(0),
+          present_(false),
+          online_(false),
+          comms_fpga(false),
+          fippi_fpga(false),
+          device(std::make_unique<pci_bus_handle>())
     {
     }
 
     module::module(module&& m)
-        : present(m.present),
-          online(m.online),
-          slot(m.slot),
+        : slot(m.slot),
           serial_num(m.serial_num),
           revision(m.revision),
           index(m.index),
           vmaddr(m.vmaddr),
+          dsp(*this),
           module_var_descriptors(std::move(m.module_var_descriptors)),
           channel_var_descriptors(std::move(m.channel_var_descriptors)),
-          device(std::move(m.device)),
           reg_trace(m.reg_trace),
-          dsp(*this)
+          in_use(0),
+          present_(m.present_),
+          online_(m.online_),
+          comms_fpga(m.comms_fpga),
+          fippi_fpga(m.fippi_fpga),
+          device(std::move(m.device))
     {
-        m.present = false;
-        m.online = false;
         m.slot = 0;
         m.serial_num = 0;
         m.revision = 0;
         m.index = -1;
         m.vmaddr = nullptr;
         m.reg_trace = false;
+        m.present_ = false;
+        m.online_ = false;
+        m.comms_fpga = false;
+        m.fippi_fpga = false;
     }
 
     module::~module()
@@ -160,34 +173,64 @@ namespace module
     module&
     module::operator=(module&& m)
     {
-        present = m.present;
-        online = m.online;
+        lock_guard guard(lock_);
+        lock_guard guard_m(m.lock_);
+
+        if (in_use != 0 || m.in_use != 0) {
+            throw error("cannot move modules when in use");
+        }
+
         slot = m.slot;
         serial_num = m.serial_num;
         revision = m.revision;
         index = m.index;
         vmaddr = m.vmaddr;
+        dsp = std::move(m.dsp);
         module_var_descriptors = std::move(m.module_var_descriptors);
         channel_var_descriptors = std::move(m.channel_var_descriptors);
-        device = std::move(m.device);
         reg_trace = m.reg_trace;
-        dsp = std::move(m.dsp);
+        present_ = m.present_;
+        online_ = m.online_;
+        comms_fpga = m.comms_fpga;
+        fippi_fpga = m.fippi_fpga;
 
-        m.present = false;
-        m.online = false;
+        device = std::move(m.device);
+
         m.slot = 0;
         m.serial_num = 0;
         m.revision = 0;
         m.index = -1;
         m.vmaddr = nullptr;
         m.reg_trace = false;
+        m.present_ = false;
+        m.online_ = false;
+        m.comms_fpga = false;
+        m.fippi_fpga = false;
 
         return *this;
+    }
+
+    bool
+    module::present()
+    {
+        lock_guard guard(lock_);
+        return present_;
+    }
+
+    bool
+    module::online()
+    {
+        lock_guard guard(lock_);
+        return online_;
     }
 
     void
     module::open(size_t device_number)
     {
+        if (online_) {
+            throw error("module already open");
+        }
+
         if (device->device_number < 0) {
             PLX_STATUS ps;
 
@@ -201,7 +244,7 @@ namespace module
 
             device->device_number = device_number;
 
-            present = true;
+            present_ = true;
 
             ps = ::PlxPci_DeviceOpen(&device->key, &device->handle);
             if (ps != PLX_STATUS_OK) {
@@ -270,8 +313,8 @@ namespace module
             ps_close = ::PlxPci_DeviceClose(&device->handle);
 
             device->device_number = -1;
-            online = false;
-            present = false;
+            online_ = false;
+            present_ = false;
 
             /*
              * A single error for both operations and the device is always
@@ -309,7 +352,14 @@ namespace module
     void
     module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp)
     {
+        if (online_) {
+            throw error("module is online");
+        }
+
         if (boot_comms) {
+            if (comms_fpga) {
+                throw error("comms already booted");
+            }
             firmware::firmware_ref fw = get("sys");
             hw::fpga::comms comms(*this);
             comms.boot(fw->data);
@@ -326,7 +376,18 @@ namespace module
             dsp.boot(fw->data);
         }
 
-        online = true;
+        online_ = comms_fpga && boot_fippi && dsp.online;
+    }
+
+    void
+    module::set(firmware::module& fw)
+    {
+        if (online_) {
+            throw error("module is online");
+        }
+        firmware.clear();
+        std::copy(fw.begin(), fw.end(),
+                  std::back_inserter(firmware));
     }
 
     firmware::firmware_ref
@@ -396,8 +457,8 @@ namespace module
 
         out << std::boolalpha
             << "slot: " << slot
-            << " present:" << present
-            << " online:" << online
+            << " present:" << present_
+            << " online:" << online_
             << " serial:" << serial_num
             << " rev:" << revision
             << " vaddr:" << vmaddr

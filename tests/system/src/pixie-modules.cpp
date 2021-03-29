@@ -133,11 +133,12 @@ main(int argc, char* argv[])
                 std::cout << "module close:  " << m
                           << ": " << Pixie_ClosePCIDevices((unsigned short)m) << std::endl;
         } else {
-            xia::pixie::crate::crate crate(num_modules);
-            crate.initialize(reg_trace);
-            std::cout << "Total Modules found: " << crate.modules.size()
+            xia::pixie::crate::crate crate;
+            crate.initialize(num_modules, reg_trace);
+            std::cout << "Modules found: " << crate.modules.size()
                       << std::endl;
-            crate.set(firmwares);
+            crate.firmware = firmwares;
+            crate.set_firmware();
             crate.boot();
             std::cout << "Crate:" << std::endl << crate << std::endl;
         }

@@ -73,6 +73,11 @@ namespace dsp
         module::module& module;
 
         /*
+         * Online?
+         */
+        bool online;
+
+        /*
          * Trace the load operation
          */
         bool trace;

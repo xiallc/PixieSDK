@@ -36,10 +36,12 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
+#include <atomic>
 #include <iomanip>
 #include <iostream>
 #include <list>
 #include <memory>
+#include <mutex>
 #include <stdexcept>
 #include <vector>
 
@@ -86,17 +88,25 @@ namespace module
      * a module could be copied and that instance destructs the handle would
      * close the module's device.
      */
-    struct module
+    class module
     {
         /*
-         * Present in the rack.
+         * Module lock.
          */
-        bool present;
+        typedef std::mutex lock_type;
+        typedef std::lock_guard<lock_type> lock_guard;
 
+    public:
         /*
-         * Online and ready to use.
+         * A handle holds the module locked. This is for transnational
+         * operations.
          */
-        bool online;
+        class guard {
+            lock_guard guard_;
+        public:
+            guard(module& mod);
+            ~guard() = default;
+        };
 
         /*
          * Slot in the crate.
@@ -125,6 +135,11 @@ namespace module
         void* vmaddr;
 
         /*
+         * DSP
+         */
+        hw::dsp::dsp dsp;
+
+        /*
          * Parameter descriptors
          */
         param::module_var_descs module_var_descriptors;
@@ -134,11 +149,6 @@ namespace module
          * Firmware
          */
         firmware::module firmware;
-
-        /*
-         * PCI bus. The type is opaque.
-         */
-        bus_handle device;
 
         /*
          * Set up status
@@ -151,28 +161,53 @@ namespace module
         bool reg_trace;
 
         /*
-         * DSP
+         * Modules are created by the crate.
          */
-        hw::dsp::dsp dsp;
-
         module();
         module(module&& m);
         ~module();
         module& operator=(module&& mod);
 
+        /*
+         * If the module present?
+         */
+        bool present();
+
+        /*
+         * Has the module been booted and is online?
+         */
+        bool online();
+
+        /*
+         * Open the module and find the device on the bus.
+         */
         void open(size_t device_number);
         void close();
 
-        void initialize(const std::string varsdef_);
-
+        /*
+         * Boot the module. If successful it will be online.
+         */
         void boot(bool boot_comms = true,
                   bool boot_fippi = true,
                   bool boot_dsp = true);
 
+        /*
+         * Initialise the module ready for use.
+         */
+        void initialize(const std::string varsdef_);
+
+        /*
+         * Set the firmware.
+         */
+        void set(firmware::module& fw);
+
+        /*
+         * Get the firmware
+         */
         firmware::firmware_ref get(const std::string device);
 
         /*
-         * Output the crate details.
+         * Output the module details.
          */
         void output(std::ostream& out) const;
 
@@ -207,12 +242,53 @@ namespace module
             }
             hw::write_32(vmaddr, reg, value);
         }
+
+        void lock() {
+            lock_.lock();
+        }
+
+        void unlock() {
+            lock_.unlock();
+        }
+
+    private:
+        /*
+         * Lock
+         */
+        lock_type lock_;
+
+        /*
+         * In use counter.
+         */
+        size_t in_use;
+
+        /*
+         * Present in the rack.
+         */
+        bool present_;
+
+        /*
+         * Online and ready to use.
+         */
+        bool online_;
+
+        /*
+         * System, FIPPI and DSP online.
+         */
+        bool comms_fpga;
+        bool fippi_fpga;
+
+        /*
+         * PCI bus. The type is opaque.
+         */
+        bus_handle device;
     };
 
     /*
      * A list of indexes that can be assigned to modules by slots
      */
-    typedef std::vector<std::pair<int, int>> index_slots;
+    typedef std::pair<int, int> index_slot;
+    typedef std::vector<index_slot> index_slots;
 
     /*
      * A container of modules.

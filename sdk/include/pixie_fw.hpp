@@ -119,6 +119,14 @@ namespace firmware
          */
         typedef std::vector<int> slots;
 
+        /*
+         * The firmware's file in a file system.
+         */
+        std::string filename;
+
+        /*
+         * The specification.
+         */
         const std::string version;
         const int mod_revision;
         const std::string device;
@@ -128,8 +136,6 @@ namespace firmware
          * loaded into a number of slots has no specific slots listed.
          */
         slots slot;
-
-        std::string filename;
 
         /*
          * The image data is a char buffer. See @ref words for the

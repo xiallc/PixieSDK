@@ -65,7 +65,7 @@ namespace i2c
 
     bitbash::~bitbash()
     {
-        if (module.online)
+        if (module.present())
             stop();
     }
 

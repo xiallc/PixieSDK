@@ -1,3 +1,5 @@
+#ifndef XIA_WINDOWS_COMPAT_HPP
+#define XIA_WINDOWS_COMPAT_HPP
 /**----------------------------------------------------------------------
 * Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
@@ -32,19 +34,18 @@
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
 *----------------------------------------------------------------------**/
-/// @file xia_windows_compat.hpp
-/// @brief A header used to ensure compatibility of our software with Windows.
-/// @author S. V. Paulauskas
-/// @date March 25, 2021
-
-
-#ifndef PIXIE_SDK_XIA_WINDOWS_COMPAT_HPP
-#define PIXIE_SDK_XIA_WINDOWS_COMPAT_HPP
 
 #if defined(_WIN64) || defined(_WIN32)
+#define PIXIE_EXPORT __declspec(dllexport)
+#define PIXIE_API _stdcall
+/*
+ * Here until removed.
+ */
 #define WINDOWS_DLLEXPORT __declspec(dllexport)
 #else
+#define PIXIE_EXPORT
+#define PIXIE_API
 #define WINDOWS_DLLEXPORT
 #endif
 
-#endif  //PIXIE_SDK_XIA_WINDOWS_COMPAT_HPP
+#endif  /* XIA_WINDOWS_COMPAT_HPP */

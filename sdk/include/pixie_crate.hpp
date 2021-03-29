@@ -38,6 +38,8 @@
 
 #include <xia_windows_compat.hpp>
 
+#include <atomic>
+
 #include <pixie_fw.hpp>
 #include <pixie_module.hpp>
 #include <hw/fpga.hpp>
@@ -71,6 +73,16 @@ namespace crate
     struct crate
     {
         /*
+         * Hold an instance while using a module.
+         */
+        class user {
+            crate& crate_;
+        public:
+            user(crate& crate_);
+            ~user();
+        };
+
+        /*
          * Number of modules present in the crate.
          */
         size_t num_modules;
@@ -86,13 +98,42 @@ namespace crate
          */
         firmware::crate firmware;
 
-        WINDOWS_DLLEXPORT crate(size_t num_modules = slots);
+        WINDOWS_DLLEXPORT crate();
         WINDOWS_DLLEXPORT ~crate();
 
-        WINDOWS_DLLEXPORT void initialize(bool reg_trace = false);
-        WINDOWS_DLLEXPORT void boot();
+        /*
+         * Check the crate has been intialised and ready for use. Throws an
+         * error is not ready.
+         */
+        void ready();
 
-        WINDOWS_DLLEXPORT void set(firmware::crate& firmwares);
+        /*
+         * Check if the crate is busy?
+         */
+        bool busy() const;
+
+        /*
+         * How many active users are in the crate when this call is made?
+         */
+        int users() const;
+
+        /*
+         * Range chekcing operators to index modules based on various index
+         * types.
+         */
+        template<typename T> module::module& operator[](T number);
+
+        /*
+         * Initialise the crate and get it ready. If the number of slots is 0
+         * all slots are probed.
+         */
+        WINDOWS_DLLEXPORT void initialize(size_t num_modules = 0,
+                                          bool reg_trace = false);
+
+        /*
+         * Boot all modules.
+         */
+        WINDOWS_DLLEXPORT void boot();
 
         /*
          * Assign indexes to the modules by slot.
@@ -100,9 +141,43 @@ namespace crate
         void assign(const module::index_slots& indexes);
 
         /*
+         * Set the firmwares into the modules in the crate.
+         */
+        WINDOWS_DLLEXPORT void set_firmware();
+
+        /*
          * Output the crate details.
          */
         void output(std::ostream& out) const;
+
+    private:
+        /*
+         * Crate ready.
+         */
+        std::atomic_bool ready_;
+
+        /*
+         * Number of active users in the
+         */
+        std::atomic_int users_;
+    };
+
+    /*
+     * Module handle. This allows you to access a module during while operating
+     * on it. The crate as a user register and the module is locked while this
+     * object exists.
+     */
+    struct module_handle
+    {
+        module_handle(crate& crate_, size_t number);
+        module_handle(crate& crate_, unsigned short number);
+        ~module_handle() = default;
+
+        module::module& handle;
+
+    private:
+        crate::user user;
+        module::module::guard guard;
     };
 }
 }

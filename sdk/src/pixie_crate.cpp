@@ -53,8 +53,20 @@ namespace crate
         : runtime_error(what) {
     }
 
-    crate::crate(size_t num_modules_)
-        : num_modules(num_modules_)
+    crate::user::user(crate& crate__)
+        : crate_(crate__)
+    {
+        ++crate_.users_;
+    }
+
+    crate::user::~user()
+    {
+        --crate_.users_;
+    }
+
+    crate::crate()
+        : num_modules(0),
+          ready_(false)
     {
     }
 
@@ -63,55 +75,94 @@ namespace crate
     }
 
     void
-    crate::initialize(bool reg_trace)
+    crate::ready()
     {
-        size_t max_modules = num_modules;
+        if (!ready_.load()) {
+            throw error("crate is not ready");
+        }
+    }
 
-        if (max_modules == 0) {
-            max_modules = slots;
+    bool
+    crate::busy() const
+    {
+        return users_.load() > 0;
+    }
+
+    int
+    crate::users() const
+    {
+        return users_.load();
+    }
+
+    template<typename T> module::module&
+    crate::operator[](T number_)
+    {
+        size_t number = static_cast<size_t>(number_);
+        if (number >= num_modules) {
+            throw error("number out of range");
+        }
+        return modules[number];
+    }
+
+    void
+    crate::initialize(size_t num_modules_, bool reg_trace)
+    {
+        if (ready_.exchange(true)) {
+            throw error("create already initialised");
         }
 
-        for (size_t device_number = 0;
-             device_number < max_modules;
-             ++device_number) {
+        try {
+            size_t max_modules = num_modules = num_modules_;
 
-            modules.push_back(module::module());
+            if (max_modules == 0) {
+                max_modules = slots;
+            }
 
-            module::module& module = modules.back();
+            for (size_t device_number = 0;
+                 device_number < max_modules;
+                 ++device_number) {
 
-            module.reg_trace = reg_trace;
+                modules.push_back(module::module());
 
-            try {
-                module.open(device_number);
-            } catch (std::runtime_error& e) {
-                if (module.present) {
+                module::module& module = modules.back();
+
+                try {
+                    module.open(device_number);
+                    module.reg_trace = reg_trace;
+                } catch (std::runtime_error& e) {
+                    if (module.present()) {
+                        std::cout << "module: device " << device_number
+                                  << ": error: " << e.what()
+                                  << std::endl;
+                    }
+                }
+
+                if (module.present()) {
                     std::cout << "module: device " << device_number
-                              << ": error: " << e.what()
+                              << ": slot:" << module.slot
+                              << " serial-number:" << module.serial_num
+                              << " revision:" << module.revision
                               << std::endl;
+                } else {
+                    modules.pop_back();
                 }
             }
 
-            if (module.present) {
-                std::cout << "module: device " << device_number
-                          << ": slot:" << module.slot
-                          << " serial-number:" << module.serial_num
-                          << " revision:" << module.revision
-                          << std::endl;
-            } else {
-                modules.pop_back();
+            module::set_index_by_slot(modules);
+
+            if (num_modules == 0) {
+                num_modules = modules.size();
             }
-        }
-
-        module::set_index_by_slot(modules);
-
-        if (num_modules == 0) {
-            num_modules = modules.size();
+        } catch (...) {
+            ready_ = false;
+            throw;
         }
     }
 
     void
     crate::boot()
     {
+        ready();
         firmware::load(firmware);
         for (auto& module : modules) {
             if (module.revision != 0) {
@@ -128,26 +179,29 @@ namespace crate
     }
 
     void
-    crate::set(firmware::crate& firmwares)
+    crate::set_firmware()
     {
-        firmware = firmwares;
+        ready();
         for (auto& module : modules) {
             auto mod_fw = firmware.find(module.revision);
             if (mod_fw != firmware.end()) {
-                auto& fw = firmware[module.revision];
-                std::copy(fw.begin(), fw.end(),
-                          std::back_inserter(module.firmware));
+                module.set(firmware[module.revision]);
             }
         }
     }
 
     void
     crate::output(std::ostream& out) const {
+        if (!ready_.load()) {
+            out << "not initialized";
+            return;
+        }
         out << "fw: revs: " << firmware.size() << std::endl;
         int c = 0;
         for (auto fw_rev : firmware) {
             for (auto& fw : std::get<1>(fw_rev)) {
-                out << ' ' << std::setw(3) << ++c << ". " << std::get<0>(fw_rev)
+                out << ' ' << std::setw(3) << ++c << ". "
+                    << std::get<0>(fw_rev)
                     << ' ' << *fw
                     << std::endl;
             }
@@ -167,8 +221,31 @@ namespace crate
     void
     crate::assign(const module::index_slots& indexes)
     {
+        ready();
         module::assign(modules, indexes);
         module::order_by_index(modules);
+    }
+
+    module_handle::module_handle(crate& crate_, size_t number)
+        : handle(crate_[number]),
+          user(crate_),
+          guard(handle)
+    {
+        crate_.ready();
+        if (!handle.online()) {
+            throw error("module not online");
+        }
+    }
+
+    module_handle::module_handle(crate& crate_, unsigned short number)
+        : handle(crate_[number]),
+          user(crate_),
+          guard(handle)
+    {
+        crate_.ready();
+        if (!handle.online()) {
+            throw error("module not online");
+        }
     }
 };
 };
