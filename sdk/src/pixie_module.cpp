@@ -40,6 +40,7 @@
 #include <sstream>
 
 #include <pixie_module.hpp>
+#include <pixie_util.hpp>
 
 #include <hw/dsp.hpp>
 #include <hw/fpga_comms.hpp>
@@ -453,8 +454,7 @@ namespace module
 
     void
     module::output(std::ostream& out) const {
-        std::ios_base::fmtflags oflags(out.flags());
-
+        ostream_guard flags(out);
         out << std::boolalpha
             << "slot: " << slot
             << " present:" << present_
@@ -463,8 +463,6 @@ namespace module
             << " rev:" << revision
             << " vaddr:" << vmaddr
             << " fw: " << firmware.size();
-
-        out.flags(oflags);
     }
 };
 };
