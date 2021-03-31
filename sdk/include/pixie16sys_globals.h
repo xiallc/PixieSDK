@@ -51,8 +51,8 @@ PLX_DEVICE_OBJECT SYS_hDevice[SYS_MAX_NUM_MODULES];  // PCI device handle
 unsigned short SYS_Number_Modules;  // Total number of modules in the crate
 unsigned short SYS_Offline;  // SYS_Offline = 1: offline mode; SYS_Offline = 0: Online mode
 
-double Ns_Per_Cycle;  // The time needed for each cycle, in ns
-
+/// The number of nanoseconds that a CPU cycle takes. Used to ensure that we wait for consistent times.
+double Ns_Per_Cycle;
 
 #ifdef __cplusplus
 }
