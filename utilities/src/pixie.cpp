@@ -64,7 +64,7 @@ using namespace std::chrono;
 bool verify_api_return_value(const int& val, const std::string& func_name,
                              const bool& print_success = true) {
     if (val < 0) {
-        LOG(FATAL) << func_name << " failed with Error Code " << val;
+        LOG(ERROR) << func_name << " failed with Error Code " << val;
         return false;
     }
     if (print_success)
@@ -119,7 +119,7 @@ bool execute_list_mode_run(const xia::configuration::Configuration& cfg,
 
     unsigned int* lmdata;
     if ((lmdata = (unsigned int*) malloc(sizeof(unsigned int) * 131072)) == nullptr) {
-        LOG(FATAL) << "Failed to allocate memory block (lmdata) for list mode data!";
+        LOG(ERROR) << "Failed to allocate memory block (lmdata) for list mode data!";
         return false;
     }
 
@@ -379,7 +379,7 @@ int main(int argc, char** argv) {
         cout << parser;
         return EXIT_SUCCESS;
     } catch (args::Error& e) {
-        LOG(FATAL) << e.what();
+        LOG(ERROR) << e.what();
         cout << parser;
         return EXIT_FAILURE;
     }
@@ -388,7 +388,7 @@ int main(int argc, char** argv) {
     try {
         cfg = xia::configuration::read_configuration_file(configuration.Get());
     } catch (invalid_argument& invalidArgument) {
-        LOG(FATAL) << invalidArgument.what();
+        LOG(ERROR) << invalidArgument.what();
         return EXIT_FAILURE;
     }
 
