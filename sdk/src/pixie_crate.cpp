@@ -111,6 +111,8 @@ namespace crate
             throw error("create already initialised");
         }
 
+        const bool autodetect = num_modules_ == 0;
+
         try {
             size_t max_modules = num_modules = num_modules_;
 
@@ -130,6 +132,9 @@ namespace crate
                     module.open(device_number);
                     module.reg_trace = reg_trace;
                 } catch (std::runtime_error& e) {
+                    if (!autodetect) {
+                        throw;
+                    }
                     if (module.present()) {
                         std::cout << "module: device " << device_number
                                   << ": error: " << e.what()

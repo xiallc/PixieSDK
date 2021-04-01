@@ -61,6 +61,7 @@ namespace dsp
 
     dsp::dsp(module::module& module_, bool trace_)
         : module(module_),
+          online(false),
           trace(trace_)
     {
     }
@@ -69,7 +70,9 @@ namespace dsp
     dsp::operator=(dsp&& d)
     {
         trace = d.trace;
+        online = d.online;
         d.trace = false;
+        d.online = false;
         return *this;
     }
 
@@ -236,6 +239,8 @@ namespace dsp
         if (trace)
             std::cout << "dsp [slot " << module.slot
                       << "] running" << std::endl;
+
+        online = true;
     }
 
     memory

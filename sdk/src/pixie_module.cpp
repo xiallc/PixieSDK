@@ -58,12 +58,32 @@ namespace pixie
 {
 namespace module
 {
-    error::error(const std::string& what)
-        : runtime_error(what) {
+    error::error(const int slot_, const code type, const std::ostringstream& what)
+        : pixie::error::error(type, what),
+          slot(slot_)
+    {
     }
 
-    error::error(const char* what)
-        : runtime_error(what) {
+    error::error(const int slot_, const code type, const std::string& what)
+        : pixie::error::error(type, what),
+          slot(slot_)
+    {
+    }
+
+    error::error(const int slot_, const code type, const char* what)
+        : pixie::error::error(type, what),
+          slot(slot_)
+    {
+    }
+
+    void
+    error::output(std::ostream& out)
+    {
+        ostream_guard flags(out);
+        out << std::setfill(' ')
+            << "error: module:" << std::setw(2) << slot
+            << " code:" << std::setw(2) << result()
+            << " : " << what();
     }
 
     /*
@@ -178,7 +198,8 @@ namespace module
         lock_guard guard_m(m.lock_);
 
         if (in_use != 0 || m.in_use != 0) {
-            throw error("cannot move modules when in use");
+            throw error(slot, error::code::internal_failure,
+                        "cannot move modules when in use");
         }
 
         slot = m.slot;
@@ -229,7 +250,9 @@ namespace module
     module::open(size_t device_number)
     {
         if (online_) {
-            throw error("module already open");
+            throw error(slot,
+                        error::code::module_alread_open,
+                        "module already open");
         }
 
         if (device->device_number < 0) {
@@ -238,9 +261,10 @@ namespace module
             ps = ::PlxPci_DeviceFind(&device->key, device_number);
             if (ps != PLX_STATUS_OK) {
                 std::ostringstream oss;
-                oss << "pixie PCI find: device: " << device->device_number
+                oss << "PCI find: device: " << device->device_number
                     << " : " << ps;
-                throw error(oss.str());
+                throw error(slot, error::code::module_initialize_failure,
+                            oss);
             }
 
             device->device_number = device_number;
@@ -250,9 +274,10 @@ namespace module
             ps = ::PlxPci_DeviceOpen(&device->key, &device->handle);
             if (ps != PLX_STATUS_OK) {
                 std::ostringstream oss;
-                oss << "pixie PCI open: device: " << device->device_number
+                oss << "PCI open: device: " << device->device_number
                     << " : " << ps;
-                throw error(oss.str());
+                throw error(slot, error::code::module_initialize_failure,
+                            oss);
             }
 
             /*
@@ -261,9 +286,10 @@ namespace module
             ps = PlxPci_PciBarMap(&device->handle, 2, (VOID**) &vmaddr);
             if (ps != PLX_STATUS_OK) {
                 std::ostringstream oss;
-                oss << "pixie PCI BAR map: device: " << device->device_number
+                oss << "PCI BAR map: device: " << device->device_number
                     << " : " << ps;
-                throw error(oss.str());
+                throw error(slot, error::code::module_initialize_failure,
+                            oss);
             }
 
             hw::i2c::i2cm24c64 eeprom(*this, I2CM24C64_ADDR,
@@ -274,9 +300,10 @@ namespace module
 
             if (data.size() != 3) {
                 std::ostringstream oss;
-                oss << "pixie EEPROM read: device: " << device->device_number
+                oss << "eeprom read: device: " << device->device_number
                     << " : invalid data length:" << data.size();
-                throw error(oss.str());
+                throw error(slot, error::code::module_info_failure,
+                            oss);
             }
 
             /*
@@ -336,7 +363,9 @@ namespace module
                 }
                 oss << ": device: " << device->device_number
                     << " : " << ps_unmap_bar << ", " << ps_close;
-                throw error(oss.str());
+                throw error(slot,
+                            error::code::module_close_failure,
+                            oss.str());
             }
         }
     }
@@ -354,25 +383,41 @@ namespace module
     module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp)
     {
         if (online_) {
-            throw error("module is online");
+            throw error(slot,
+                        error::code::module_invalid_operation,
+                        "module is online");
         }
 
         if (boot_comms) {
             if (comms_fpga) {
-                throw error("comms already booted");
+                throw error(slot,
+                            error::code::module_invalid_operation,
+                            "comms already booted");
             }
             firmware::firmware_ref fw = get("sys");
             hw::fpga::comms comms(*this);
             comms.boot(fw->data);
+            comms_fpga = true;
         }
 
         if (boot_fippi) {
+            if (fippi_fpga) {
+                throw error(slot,
+                            error::code::module_invalid_operation,
+                            "fippi already booted");
+            }
             firmware::firmware_ref fw = get("fippi");
             hw::fpga::fippi fippi(*this);
             fippi.boot(fw->data);
+            fippi_fpga = true;
         }
 
         if (boot_dsp) {
+            if (dsp.online) {
+                throw error(slot,
+                            error::code::module_invalid_operation,
+                            "dsp already booted");
+            }
             firmware::firmware_ref fw = get("dsp");
             dsp.boot(fw->data);
         }
@@ -384,7 +429,9 @@ namespace module
     module::set(firmware::module& fw)
     {
         if (online_) {
-            throw error("module is online");
+            throw error(slot,
+                        error::code::module_invalid_operation,
+                        "module is online");
         }
         firmware.clear();
         std::copy(fw.begin(), fw.end(),
@@ -407,7 +454,9 @@ namespace module
         oss << "firmware not found: slot=" << slot
             << ": device=" << device
             << " firmwares=" << firmware.size();
-        throw error(oss.str());
+        throw error(slot,
+                    error::code::module_invalid_firmware,
+                    oss.str());
     }
 
     void

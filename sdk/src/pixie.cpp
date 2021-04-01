@@ -36,6 +36,7 @@
 #include <pixie.h>
 
 #include <pixie_crate.hpp>
+#include <pixie_error.hpp>
 
 /*
  * Boot patterns
@@ -79,8 +80,9 @@ PixieInitSystem(unsigned short NumModules,
             }
             crate.assign(indexes);
         }
-    } catch (std::runtime_error& e) {
-        return -22222;
+    } catch (xia::pixie::error::error& e) {
+        std::cout << e << std::endl;
+        return e.return_code();;
     }
 
     return 0;
@@ -92,8 +94,9 @@ PixieExitSystem(unsigned short ModNum)
     try {
         xia::pixie::crate::module_handle module(crate, ModNum);
         module.handle.close();
-    } catch (std::runtime_error& e) {
-        return -22222;
+    } catch (xia::pixie::error::error& e) {
+        std::cout << e << std::endl;
+        return e.return_code();;
     }
 
     return 0;
@@ -148,8 +151,9 @@ PixieBootModule(const char* ComFPGAConfigFile,
         bool boot_dsp = (BootPattern & BOOTPATTERN_DSPCODE_BIT) != 0;
 
         module.handle.boot(boot_comm, boot_fippi, boot_dsp);
-    } catch (std::runtime_error& e) {
-        return -22222;
+    } catch (xia::pixie::error::error& e) {
+        std::cout << e << std::endl;
+        return e.return_code();;
     }
 
     (void) DSPParFile;

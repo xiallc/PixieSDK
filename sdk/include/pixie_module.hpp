@@ -42,9 +42,9 @@
 #include <list>
 #include <memory>
 #include <mutex>
-#include <stdexcept>
 #include <vector>
 
+#include <pixie_error.hpp>
 #include <pixie_fw.hpp>
 #include <pixie_hw.hpp>
 #include <pixie_param.hpp>
@@ -60,11 +60,17 @@ namespace module
     /*
      * Module errors
      */
-    class error
-        : public std::runtime_error {
-    public:
-        explicit error(const std::string& what);
-        explicit error(const char* what);
+    struct error
+        : public pixie::error::error {
+        typedef pixie::error::code code;
+        const int slot;
+        explicit error(const int slot, const code type,
+                       const std::ostringstream& what);
+        explicit error(const int slot, const code type,
+                       const std::string& what);
+        explicit error(const int slot, const code type,
+                       const char* what);
+        virtual void output(std::ostream& out);
     };
 
     /*
