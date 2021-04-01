@@ -37,18 +37,21 @@
 /// @author H.Tan and S.V.Paulauskas
 /// @date November 14, 2020
 
-#include "args.hxx"
-#include "configuration.hpp"
-#include "pixie16app_export.h"
-#include "pixie16sys_export.h"
-#include "easylogging++.h"
-
 #include <chrono>
+#include <cstring>
 #include <iostream>
 #include <vector>
 #include <thread>
 
-#include <cstring>
+#include <pixie.h>
+
+#include "pixie16app_export.h"
+#include "pixie16sys_export.h"
+
+#include "args.hxx"
+#include "easylogging++.h"
+
+#include "configuration.hpp"
 
 #if defined(_WIN64) || defined(_WIN32)
 #include <Windows.h>
