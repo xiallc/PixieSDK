@@ -58,7 +58,6 @@
 
 INITIALIZE_EASYLOGGINGPP
 
-using namespace std;
 using namespace std::chrono;
 
 bool verify_api_return_value(const int& val, const std::string& func_name,
@@ -84,7 +83,7 @@ bool execute_adjust_offsets(const unsigned int& numModules, const std::string& s
     for (unsigned int k = 0; k < numModules; k++) {
         LOG(INFO) << "Adjusting baseline offset for Module " << k << ".";
         if (!verify_api_return_value(Pixie16AdjustOffsets(k),
-                                     "Pixie16AdjustOffsets for Module" + to_string(k)))
+                                     "Pixie16AdjustOffsets for Module" + std::to_string(k)))
             return false;
     }
 
@@ -125,10 +124,10 @@ bool execute_list_mode_run(const xia::configuration::Configuration& cfg,
 
     unsigned int mod_numwordsread = 0;
 
-    vector<string> output_file_names;
+    std::vector<std::string> output_file_names;
     output_file_names.reserve(cfg.numModules);
     for (auto i = 0; i < cfg.numModules; i++)
-        output_file_names.push_back("module" + to_string(i) + ".lmd");
+      output_file_names.push_back("module" + std::to_string(i) + ".lmd");
 
     LOG(INFO) << "Collecting data for " << runtime_in_seconds << " s.";
     steady_clock::time_point run_start_time = steady_clock::now();
@@ -139,7 +138,7 @@ bool execute_list_mode_run(const xia::configuration::Configuration& cfg,
             if (!verify_api_return_value(
                     Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(),
                                                       &mod_numwordsread, k, 0),
-                    "Pixie16SaveExternalFIFODataToFile for Module " + to_string(k), false)) {
+                    "Pixie16SaveExternalFIFODataToFile for Module " + std::to_string(k), false)) {
                 free(lmdata);
                 break;
             }
@@ -170,7 +169,7 @@ bool execute_list_mode_run(const xia::configuration::Configuration& cfg,
                 if (!verify_api_return_value(
                         Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(),
                                                           &mod_numwordsread, k, 1),
-                        "Pixie16SaveExternalFIFODataToFile for Module " + to_string(k), false)) {
+                        "Pixie16SaveExternalFIFODataToFile for Module " + std::to_string(k), false)) {
                     free(lmdata);
                     return false;
                 }
@@ -193,7 +192,7 @@ bool execute_list_mode_run(const xia::configuration::Configuration& cfg,
         if (!verify_api_return_value(
                 Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(), &mod_numwordsread,
                                                   k, 1),
-                "Pixie16SaveExternalFIFODataToFile for Module " + to_string(k), false)) {
+                "Pixie16SaveExternalFIFODataToFile for Module " + std::to_string(k), false)) {
             free(lmdata);
             return false;
         }
@@ -202,7 +201,7 @@ bool execute_list_mode_run(const xia::configuration::Configuration& cfg,
     return true;
 }
 
-bool execute_parameter_read(args::ValueFlag<string>& parameter,
+bool execute_parameter_read(args::ValueFlag<std::string>& parameter,
                             args::ValueFlag<unsigned int>& crate,
                             args::ValueFlag<unsigned int>& module,
                             args::ValueFlag<unsigned int>& channel) {
@@ -230,7 +229,7 @@ bool execute_parameter_read(args::ValueFlag<string>& parameter,
     return true;
 }
 
-bool execute_parameter_write(args::ValueFlag<string>& parameter, args::ValueFlag<double>& value,
+bool execute_parameter_write(args::ValueFlag<std::string>& parameter, args::ValueFlag<double>& value,
                              args::ValueFlag<unsigned int>& crate,
                              args::ValueFlag<unsigned int>& module,
                              args::ValueFlag<unsigned int>& channel, const std::string& setfile) {
@@ -273,11 +272,11 @@ bool execute_trace_capture(args::ValueFlag<unsigned int>& module) {
             return false;
     }
 
-    ofstream ofstream1("traces-module" + to_string(module.Get()) + ".csv");
+    std::ofstream ofstream1("traces-module" + std::to_string(module.Get()) + ".csv");
     ofstream1 << "bin,";
     for (unsigned int i = 0; i < NUMBER_OF_CHANNELS; i++)
         ofstream1 << "Chan" << i << ",";
-    ofstream1 << endl;
+    ofstream1 << std::endl;
     for (unsigned int i = 0; i < MAX_ADC_TRACE_LEN; i++) {
         ofstream1 << i << ",";
         for (unsigned int k = 0; k < NUMBER_OF_CHANNELS; k++) {
@@ -286,7 +285,7 @@ bool execute_trace_capture(args::ValueFlag<unsigned int>& module) {
             else
                 ofstream1 << trace[k][i];
         }
-        ofstream1 << endl;
+        ofstream1 << std::endl;
     }
 
     return true;
@@ -296,7 +295,7 @@ bool execute_close_module_connection(const int& numModules) {
     for (int i = 0; i < numModules; i++) {
         LOG(INFO) << "Closing out connection to Module " << i << ".";
         verify_api_return_value(Pixie16ExitSystem(i),
-                                "Pixie16ExitSystem for Module" + to_string(i));
+                                "Pixie16ExitSystem for Module" + std::to_string(i));
     }
     return true;
 }
@@ -354,7 +353,7 @@ int main(int argc, char** argv) {
     args::ValueFlag<double> run_time(list_mode, "time",
                                      "The amount of time that a list mode run will take in seconds.",
                                      {'t', "run-time"}, 10.);
-    args::ValueFlag<string> parameter(read, "parameter",
+    args::ValueFlag<std::string> parameter(read, "parameter",
                                       "The parameter we want to read from the system.",
                                       {'n', "name"});
     args::ValueFlag<unsigned int> crate(read, "crate", "The crate", {"crate"}, 0);
@@ -376,18 +375,18 @@ int main(int argc, char** argv) {
         parser.ParseCLI(argc, argv);
     } catch (args::Help& help) {
         LOG(INFO) << help.what();
-        cout << parser;
+        std::cout << parser;
         return EXIT_SUCCESS;
     } catch (args::Error& e) {
         LOG(ERROR) << e.what();
-        cout << parser;
+        std::cout << parser;
         return EXIT_FAILURE;
     }
 
     xia::configuration::Configuration cfg;
     try {
         cfg = xia::configuration::read_configuration_file(configuration.Get());
-    } catch (invalid_argument& invalidArgument) {
+    } catch (std::invalid_argument& invalidArgument) {
         LOG(ERROR) << invalidArgument.what();
         return EXIT_FAILURE;
     }
@@ -417,8 +416,9 @@ int main(int argc, char** argv) {
     if (boot_pattern == 0) {
         LOG(INFO) << "Will not boot the module!";
     } else {
-        LOG(INFO) << "Calling Pixie16BootModule with boot pattern: " << showbase << hex
-                  << boot_pattern << dec;
+      LOG(INFO) << "Calling Pixie16BootModule with boot pattern: "
+                << std::showbase << std::hex
+                << boot_pattern << std::dec;
 
         if (!verify_api_return_value(
                 Pixie16BootModule(cfg.ComFPGAConfigFile.c_str(), cfg.SPFPGAConfigFile.c_str(),
@@ -481,7 +481,7 @@ int main(int argc, char** argv) {
     if (histogram) {
         LOG(INFO) << "Starting to write histograms from the module.";
         for (int i = 0; i < cfg.numModules; i++)
-            Pixie16SaveHistogramToFile(("module" + to_string(i) + ".his").c_str(), i);
+          Pixie16SaveHistogramToFile(("module" + std::to_string(i) + ".his").c_str(), i);
         LOG(INFO) << "Finished writing histograms from the module.";
     }
 
