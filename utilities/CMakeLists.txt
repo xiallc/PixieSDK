@@ -1,5 +1,8 @@
 #------------- BUILD pixie.cpp --------------------------
-add_executable(pixie src/pixie.cpp ${PROJECT_SOURCE_DIR}/vendor/easylogging/easylogging++.cc)
+add_executable(pixie
+       src/pixie.cpp
+       src/pixie_api_select.cpp
+	${PROJECT_SOURCE_DIR}/vendor/easylogging/easylogging++.cc)
 target_include_directories(pixie PUBLIC
         ${PROJECT_SOURCE_DIR}/common/
         ${PROJECT_SOURCE_DIR}/vendor/analog_devices
