@@ -15,7 +15,7 @@ target_link_libraries(pixie PUBLIC PixieSDK ${PLX_SHARED_LIB})
 target_compile_definitions(pixie PUBLIC PLX_LITTLE_ENDIAN PCI_CODE)
 
 if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
-    target_compile_definitions(PixieSDK PUBLIC PRINT_DEBUG_MSG)
+    target_compile_definitions(pixie PUBLIC PRINT_DEBUG_MSG)
 endif()
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
