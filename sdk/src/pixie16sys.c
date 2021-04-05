@@ -1,5 +1,5 @@
-/*----------------------------------------------------------------------
-* Copyright (c) 2005 - 2020, XIA LLC
+/**----------------------------------------------------------------------
+* Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms,
@@ -31,35 +31,25 @@
 * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
-*----------------------------------------------------------------------*/
+*----------------------------------------------------------------------**/
+/// @file pixie16sys.c
+/// @brief This file contains all the Pixie16 library functions that can be accessed
+/// 		externally by the user application library code.
+/// @author H. Tan
+/// @date July 31, 2006
 
-/******************************************************************************
-*
-* File Name:
-*
-*		pixie16sys.c
-*
-* Description:
-*
-*		This file contains all the Pixie16 library functions that can be accessed
-*		externally by the user application library code.
-*
-* $Rev$
-* $Id$
-******************************************************************************/
+#include <math.h>
+#include <string.h>
 
-#include "PlxApi.h"
+#include <PlxApi.h>
+
 #include "def21160.h"
-
 #include "pixie16sys_common.h"
 #include "pixie16sys_defs.h"
 #include "pixie16sys_export.h"
 #include "pixie16sys_globals.h"
 
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+
 #if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
 #include <windows.h>
 #elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI

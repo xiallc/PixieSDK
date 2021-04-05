@@ -1,5 +1,5 @@
-/*----------------------------------------------------------------------
-* Copyright (c) 2005 - 2020 XIA LLC
+/**----------------------------------------------------------------------
+* Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms,
@@ -31,28 +31,17 @@
 * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
-*----------------------------------------------------------------------*/
-
-/******************************************************************************
-*
-* File Name:
-*
-*		communication.c
-*
-* Description:
-*
-*		This file contains all the Pixie16 library functions that can be used
-*		to directly access the hardware.
-*
-* $Rev$
-* $Id$
-******************************************************************************/
+*----------------------------------------------------------------------**/
+/// @file communication.c
+/// @brief This file contains all the Pixie16 library functions that can be used to directly access the hardware.
+/// @author H. Tan
+/// @date July 31, 2006
 
 #include <stdio.h>
 
-#include "PlxApi.h"
-#include "def21160.h"
+#include <PlxApi.h>
 
+#include "def21160.h"
 #include "pixie16sys_common.h"
 #include "pixie16sys_defs.h"
 #include "pixie16sys_export.h"
@@ -64,17 +53,6 @@
 #include <ctype.h>
 #include <unistd.h>
 #endif
-
-/****************************************************************
-*	Pixie_DSP_Memory_IO:
-*		Write to or read from Pixie DSP data memory.
-*
-*		Return Value:
-*			 0 - I/O successful
-*			-1 - Reading DSP memory blocks failed
-*			-2 - Reading DSP memory remaining words failed
-*
-****************************************************************/
 
 int Pixie_DSP_Memory_IO(unsigned int* dsp_data,  // DSP data for the I/O
                         unsigned int dsp_address,  // DSP data memory address

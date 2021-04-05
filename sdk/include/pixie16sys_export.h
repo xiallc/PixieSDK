@@ -1,8 +1,5 @@
-#ifndef PIXIE16SYS_EXPORT_H
-#define PIXIE16SYS_EXPORT_H
-
-/*----------------------------------------------------------------------
-* Copyright (c) 2005 - 2020, XIA LLC
+/**----------------------------------------------------------------------
+* Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms,
@@ -34,24 +31,15 @@
 * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
-*----------------------------------------------------------------------*/
+*----------------------------------------------------------------------**/
+/// @file pixie16sys_export.h
+/// @brief Function prototypes seen by user applications.
+/// @author H. Tan
+/// @date August 11, 2006
 
-/******************************************************************************
-*
-* File Name:
-*
-*		pixie16sys_export.h
-*
-* Description:
-*
-*		Function prototypes seen by user applications.
-*
-* $Rev$
-* $Id$
-******************************************************************************/
+#ifndef XIA_PIXIE16SYS_EXPORT_H
+#define XIA_PIXIE16SYS_EXPORT_H
 
-// If this is compiled by a C++ compiler, make it
-// clear that these are C routines.
 #ifdef __cplusplus
 extern "C" {
 #endif

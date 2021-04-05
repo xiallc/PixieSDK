@@ -1,5 +1,5 @@
-/*----------------------------------------------------------------------
-* Copyright (c) 2005 - 2020, XIA LLC
+/**----------------------------------------------------------------------
+* Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms,
@@ -31,27 +31,13 @@
 * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
-*----------------------------------------------------------------------*/
-
-/******************************************************************************
-*
-* File Name:
-*
-*		i2cm24c64.c
-*
-* Description:
-*
-*		This file contains functions to access the 64Kbit serial I2C bus EEPROM
-*		on Pixie-16.
-*
-* $Rev$
-* $Id$
-******************************************************************************/
+*----------------------------------------------------------------------**/
+/// @file i2cm24c64.c
+/// @brief This file contains functions to access the 64 Kb serial I2C bus EEPROM on Pixie-16.
+/// @author H. Tan
+/// @date April 3, 2007
 
 #include <math.h>
-#include <stdio.h>
-
-#include "PlxApi.h"
 
 #include "pixie16sys_common.h"
 #include "pixie16sys_defs.h"

@@ -1,8 +1,5 @@
-#ifndef __PIXIE16APP_COMMON_H
-#define __PIXIE16APP_COMMON_H
-
-/*----------------------------------------------------------------------
- * Copyright (c) 2005 - 2020, XIA LLC
+/**----------------------------------------------------------------------
+ * Copyright (c) 2005 - 2021, XIA LLC
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, 
@@ -34,29 +31,20 @@
  * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF 
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  * SUCH DAMAGE.
- *----------------------------------------------------------------------*/
+*----------------------------------------------------------------------**/
+/// @file pixie16app_common.h
+/// @brief Function prototypes shared among multiple files.
+/// @author H. Tan
+/// @date October 10, 2004
 
-/******************************************************************************
- *
- * File Name:
- *
- *		pixie16app_common.h
- *
- * Description:
- *
- *		Function prototypes shared among multiple files.
- *
- * $Rev$
- * $Id$
- ******************************************************************************/
+#ifndef XIA_PIXIE16APP_COMMON_H
+#define XIA_PIXIE16APP_COMMON_H
 
-// If this is compiled by a C++ compiler, make it
-// clear that these are C routines.
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/*------------------------------------- 
+/*-------------------------------------
 	Functions that are only used locally
   -------------------------------------*/
 
