@@ -167,7 +167,7 @@ int main(int argc, char* argv[]) {
 
     unsigned int address;
     if (args::get(address_flag) == "0x10073D" && !csr && !external_fifo && !boot && !mca) {
-        LOG(FATAL) << " You must provide us with a memory address!";
+        LOG(ERROR) << " You must provide us with a memory address!";
         return EXIT_FAILURE;
     } else
         address = stoul(args::get(address_flag), nullptr, 0);
@@ -278,7 +278,7 @@ int main(int argc, char* argv[]) {
                                             static_cast<std::underlying_type<DATA_IO>::type>(DATA_IO::WRITE),
                                             args::get(module_number_flag)),
                                     "Pixie_Main_Memory_IO", "OK")) {
-                            LOG(FATAL) << " Had a problem writing the MCA spectrum for Channel "
+                            LOG(ERROR) << " Had a problem writing the MCA spectrum for Channel "
                                        << channel << "! Aborting!";
                             return EXIT_FAILURE;
                         }
@@ -303,7 +303,7 @@ int main(int argc, char* argv[]) {
                                             static_cast<std::underlying_type<DATA_IO>::type>(DATA_IO::READ),
                                             args::get(module_number_flag)),
                                     "Pixie_Main_Memory_IO", "OK")) {
-                            LOG(FATAL) << " Had a problem reading the MCA spectrum for Channel "
+                            LOG(ERROR) << " Had a problem reading the MCA spectrum for Channel "
                                        << channel << "! Aborting!";
                             return EXIT_FAILURE;
                         }
@@ -328,7 +328,7 @@ int main(int argc, char* argv[]) {
                                                     32768 * NUMBER_OF_CHANNELS,
                                                     args::get(module_number_flag)),
                                              "Pixie Clear Main Memory")) {
-                    LOG(FATAL) << "Couldn't clear the main memory in Module " << args::get(module_number_flag);
+                    LOG(ERROR) << "Couldn't clear the main memory in Module " << args::get(module_number_flag);
                     return EXIT_FAILURE;
                 }
             }
@@ -338,7 +338,7 @@ int main(int argc, char* argv[]) {
             LOG(INFO) << "Performing a test with raw memory access.";
             if (write) {
                 if (!data_flag) {
-                    LOG(FATAL) << " Must define the data that you'd like to write!";
+                    LOG(ERROR) << " Must define the data that you'd like to write!";
                     return EXIT_FAILURE;
                 }
                 unsigned int data = stoul(args::get(data_flag), nullptr, 0);
@@ -388,7 +388,7 @@ int main(int argc, char* argv[]) {
             LOG(INFO) << "CSR on Module " << args::get(module_number_flag) << ".";
             if (write) {
                 if (args::get(data_flag) == "0x70FFE3") {
-                    LOG(FATAL) << " Must define the data that you'd like to write!";
+                    LOG(ERROR) << " Must define the data that you'd like to write!";
                     return EXIT_FAILURE;
                 }
                 unsigned int data = stoul(args::get(data_flag), nullptr, 0);
