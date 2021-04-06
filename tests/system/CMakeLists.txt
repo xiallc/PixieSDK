@@ -23,22 +23,22 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 endif ()
 
 #------- System test for module construction
-add_executable(pixie-modules src/pixie-modules)
-target_include_directories(pixie-modules PUBLIC ${PROJECT_SOURCE_DIR}/common
+add_executable(test_api src/test_api)
+target_include_directories(test_api PUBLIC ${PROJECT_SOURCE_DIR}/common
         ${PROJECT_SOURCE_DIR}/vendor/args)
 
 IF (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.13")
-    target_link_directories(pixie-modules PUBLIC PLX_LIBRARY_DIR)
+    target_link_directories(test_api PUBLIC PLX_LIBRARY_DIR)
 ENDIF ()
 
-target_link_libraries(pixie-modules PUBLIC PixieSDK ${PLX_SHARED_LIB})
-target_compile_definitions(pixie-modules PUBLIC PLX_LITTLE_ENDIAN PCI_CODE PRINT_DEBUG_MSG)
+target_link_libraries(test_api PUBLIC PixieSDK ${PLX_SHARED_LIB})
+target_compile_definitions(test_api PUBLIC PLX_LITTLE_ENDIAN PCI_CODE PRINT_DEBUG_MSG)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    target_link_libraries(pixie-modules PUBLIC dl m)
-    target_compile_definitions(pixie-modules PUBLIC PLX_LINUX)
-    target_compile_options(pixie-modules PUBLIC -g -Wall)
+    target_link_libraries(test_api PUBLIC dl m)
+    target_compile_definitions(test_api PUBLIC PLX_LINUX)
+    target_compile_options(test_api PUBLIC -g -Wall)
 elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    target_link_libraries(pixie-modules PUBLIC winmm)
-    target_compile_definitions(pixie-modules PUBLIC PLX_WINDOWS)
+    target_link_libraries(test_api PUBLIC winmm)
+    target_compile_definitions(test_api PUBLIC PLX_WINDOWS)
 endif ()

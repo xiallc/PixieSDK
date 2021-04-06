@@ -42,14 +42,9 @@
 #include <pixie_crate.hpp>
 
 #include "args.hxx"
-#include "PlxApi.h"
-#include "pixie16sys_common.h"
-#include "pixie16sys_defs.h"
-#include "pixie16sys_export.h"
-#include "pixie16sys_globals.h"
 
 void
-load_crate_firmware(const char* file,
+load_crate_firmware(const std::string& file,
                     xia::pixie::firmware::crate& firmwares)
 {
     std::ifstream input(file, std::ios::in | std::ios::binary);
@@ -75,7 +70,7 @@ load_crate_firmware(const char* file,
 int
 main(int argc, char* argv[])
 {
-    args::ArgumentParser parser("Tests module initialization");
+    args::ArgumentParser parser("Tests C++ API");
     parser.helpParams.addDefault = true;
     parser.helpParams.addChoices = true;
 
@@ -84,13 +79,15 @@ main(int argc, char* argv[])
     args::ValueFlag<size_t> num_modules_flag(arguments, "num_modules_flag",
                                              "Number of modules to report",
                                              {'n', "num-modules"}, 1);
-    args::ValueFlagList<std::string> bit_file_flag(arguments, "bit_file_flag",
-                                                   "Bit file(s) to load. Can be repeated. "
-                                                   "Take the form rev:rev-num:type:name"
-                                                   "Ex. F:15:sys:syspixie16_revfgeneral_adc250mhz_r33339.bin",
-                                                   {'B', "bitfile"});
-    args::Flag csys_api(arguments, "csys_api", "Use the Legacy C API",
-                        {'S', "csys_api"});
+    args::ValueFlagList<std::string> fw_file_flag(arguments, "fw_file_flag",
+                                                  "Firmware file(s) to load. Can be repeated. "
+                                                  "Takes the form rev:rev-num:type:name"
+                                                  "Ex. r33339:15:sys:syspixie16_revfgeneral_adc250mhz_r33339.bin",
+                                                  {'F', "firmware"});
+    args::ValueFlagList<std::string> crate_file_flag(arguments, "crate_file_flag",
+                                                     "Crate firmware file to load. "
+                                                     "The contents is are firmware files.",
+                                                     {'C', "crate"});
     args::Flag reg_trace(arguments, "reg_trace",
                          "Registers debugging traces in the API.", {'R', "reg-trace"});
 
@@ -110,38 +107,32 @@ main(int argc, char* argv[])
     size_t num_modules = args::get(num_modules_flag);
 
     try {
-        if(bit_file_flag) {
-            for (const auto &firmware: args::get(bit_file_flag)) {
+        if (fw_file_flag) {
+            for (const auto& firmware: args::get(fw_file_flag)) {
                 auto fw = xia::pixie::firmware::parse(firmware, ':');
-            if (xia::pixie::firmware::check(firmwares, fw)) {
-                    std::string what("duplicate bitfile option: ");
+                if (xia::pixie::firmware::check(firmwares, fw)) {
+                    std::string what("duplicate firmware: ");
                     what += firmware;
-                throw std::runtime_error(what);
-            }
-            xia::pixie::firmware::add(firmwares, fw);
+                    throw std::runtime_error(what);
+                }
+                xia::pixie::firmware::add(firmwares, fw);
             }
         }
 
-        if (csys_api) {
-            std::vector<unsigned short> mod_map;
-            for (size_t m = 0; m < num_modules; ++m)
-                mod_map.emplace_back((unsigned short)m);
-            std:: cout << "init-system: "
-                       << Pixie_InitSystem((unsigned short)num_modules, mod_map.data(), 0)
-                       << std::endl;
-            for (size_t m = 0; m < num_modules; ++m)
-                std::cout << "module close:  " << m
-                          << ": " << Pixie_ClosePCIDevices((unsigned short)m) << std::endl;
-        } else {
-            xia::pixie::crate::crate crate;
-            crate.initialize(num_modules, reg_trace);
-            std::cout << "Modules found: " << crate.modules.size()
-                      << std::endl;
-            crate.firmware = firmwares;
-            crate.set_firmware();
-            crate.boot();
-            std::cout << "Crate:" << std::endl << crate << std::endl;
+        if (crate_file_flag) {
+            for (const auto& firmware: args::get(crate_file_flag)) {
+                load_crate_firmware(firmware, firmwares);
+            }
         }
+
+        xia::pixie::crate::crate crate;
+        crate.initialize(num_modules, reg_trace);
+        std::cout << "Modules found: " << crate.modules.size()
+                  << std::endl;
+        crate.firmware = firmwares;
+        crate.set_firmware();
+        crate.boot();
+        std::cout << "Crate:" << std::endl << crate << std::endl;
     } catch (std::runtime_error& e) {
         std::cerr << "error: " << e.what() << std::endl;
         return EXIT_FAILURE;
