@@ -37,6 +37,8 @@
 *----------------------------------------------------------------------*/
 
 #include <atomic>
+#include <list>
+#include <memory>
 #include <sstream>
 
 namespace xia
@@ -46,9 +48,13 @@ namespace pixie
 namespace logging
 {
 /*
- * Outputter to a log.
+ * An outputter outputs a log stream. Desctruct them last.
  */
 struct outputter;
+typedef std::list<outputter> outputters;
+typedef std::shared_ptr<outputters> outputters_ref;
+outputters_ref make_outputters();
+static outputters_ref outputs_ref = make_outputters();
 };
 
 /**
@@ -82,7 +88,7 @@ public:
     ~log();
 
     template <typename T>
-    std::ostringstream& operator<<(const T& item) {
+    std::ostringstream& operator<<(T& item) {
         output << item;
         return output;
     }

@@ -40,7 +40,6 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <list>
 #include <mutex>
 #include <thread>
 
@@ -103,7 +102,15 @@ private:
 
 };
 
-typedef std::list<outputter> outputters;
+static outputters_ref outputs;
+
+outputters_ref make_outputters()
+{
+    if (!outputs) {
+        outputs = std::make_shared<outputters>();
+    }
+    return outputs;
+}
 
 static const char* level_label[log::max_level] =
 {
@@ -176,6 +183,7 @@ outputter::~outputter()
     if (outfile) {
         write(log::info, "end " + name);
         outfile->close();
+        outfile.reset();
     } else {
         std::cout << std::flush;
     }
@@ -213,6 +221,7 @@ outputter::write(const log::level entry_level, const std::string entry)
         const auto now_ms =
             std::chrono::duration_cast<ms>(now.time_since_epoch());
         out << std::put_time(std::localtime(&as_time_t), "%Y-%m-%d %T")
+            << std::setfill('0')
             << '.' << std::setw(3) << now_ms.count() % 1000
             << ' ';
     }
@@ -228,12 +237,10 @@ outputter::write(const log::level entry_level, const std::string entry)
     }
 }
 
-static outputters outputs;
-
 static void
 write(const log& entry)
 {
-    for (auto& output : outputs) {
+    for (auto& output : *outputs) {
         output.write(entry);
     }
 }
@@ -244,15 +251,24 @@ start(const std::string name,
       log::level level,
       bool append)
 {
-    outputs.push_back(outputter(name, file, level, append));
+    /*
+     * If the log exists quietly return. Could be the API init call is
+     * called again.
+     */
+    for (auto& output : *outputs) {
+        if (output.name == name) {
+            return;
+        }
+    }
+    outputs->push_back(outputter(name, file, level, append));
 }
 
 void
 stop(const std::string name)
 {
-    for (auto it = outputs.begin(); it != outputs.end(); ++it) {
+    for (auto it = outputs->begin(); it != outputs->end(); ++it) {
         if ((*it).name == name) {
-            outputs.erase(it);
+            outputs->erase(it);
             return;
         }
     }
@@ -263,7 +279,7 @@ stop(const std::string name)
 void
 set_level(const std::string name, log::level level)
 {
-    for (auto& output : outputs) {
+    for (auto& output : *outputs) {
         if (output.name == name) {
             output.level = level;
             return;
@@ -276,7 +292,7 @@ set_level(const std::string name, log::level level)
 void
 set_level_stamp(const std::string name, bool level)
 {
-    for (auto& output : outputs) {
+    for (auto& output : *outputs) {
         if (output.name == name) {
             output.show_level = level;
             return;
@@ -289,7 +305,7 @@ set_level_stamp(const std::string name, bool level)
 void
 set_datetime_stamp(const std::string name, bool datetime)
 {
-    for (auto& output : outputs) {
+    for (auto& output : *outputs) {
         if (output.name == name) {
             output.show_datetime = datetime;
             return;
@@ -302,7 +318,7 @@ set_datetime_stamp(const std::string name, bool datetime)
 void
 set_line_numbers(const std::string name, bool line_numbers)
 {
-    for (auto& output : outputs) {
+    for (auto& output : *outputs) {
         if (output.name == name) {
             output.show_counts = line_numbers;
             return;
