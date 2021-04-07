@@ -192,7 +192,12 @@ namespace crate
         for (auto& module : modules) {
             auto mod_fw = firmware.find(module.revision);
             if (mod_fw != firmware.end()) {
+                log(log::info) << "crate: set module firmware: "
+                               << module.revision;
                 module.set(firmware[module.revision]);
+            } else {
+                log(log::debug) << "crate: module firmware alread set: "
+                                << module.revision;
             }
         }
     }

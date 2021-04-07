@@ -178,7 +178,7 @@ api_result_unknown_error()
 std::ostringstream&
 operator<<(std::ostringstream& out, xia::pixie::error::error& error)
 {
-    out << "result=" << error.result() << ' ' << error.what();
+    out << "result=" << error.result() << ", " << error.what();
     return out;
 }
 
