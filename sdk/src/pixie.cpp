@@ -64,6 +64,16 @@ static xia::pixie::crate::crate crate;
  */
 static bool throw_unhandled;
 
+/*
+ * Type safe subtraction of the module number, 0 means all.
+ */
+static size_t
+api_mod_num(unsigned short mod_num) {
+    if (mod_num == 0)
+        return 0;
+    return static_cast<size_t>(mod_num - 1);
+}
+
 PIXIE_EXPORT int PIXIE_API
 PixieInitSystem(unsigned short NumModules,
                 unsigned short* PXISlotMap,
@@ -97,7 +107,7 @@ PixieInitSystem(unsigned short NumModules,
             for (int i = 0; i < static_cast<int>(NumModules); ++i) {
                 typedef xia::pixie::module::index_slot index_slot;
                 log(log::info) << "PixieInitSystem: slot map: "
-                               << i << " => " << PXISlotMap[i];
+                               << i + 1 << " => " << PXISlotMap[i];
                 indexes.push_back(index_slot(i, PXISlotMap[i]));
             }
             crate.assign(indexes);
@@ -125,8 +135,14 @@ PixieExitSystem(unsigned short ModNum)
     log(log::info) << "PixieExitSystem: ModNum=" << ModNum;
 
     try {
-        xia::pixie::crate::module_handle module(crate, ModNum);
-        module.handle.close();
+        if (ModNum == 0) {
+            for (auto& module : crate.modules) {
+                module.close();
+            }
+        } else {
+            xia::pixie::crate::module_handle module(crate, api_mod_num(ModNum));
+            module.handle.close();
+        }
     } catch (xia::pixie::error::error& e) {
         log(log::error) << e;
         return e.return_code();
@@ -159,6 +175,42 @@ PixieReadModuleInfo(unsigned short ModNum,
     return -11111;
 }
 
+static void
+PixieBootModule(xia::pixie::module::module& module,
+                const char* ComFPGAConfigFile,
+                const char* SPFPGAConfigFile,
+                const char* DSPCodeFile,
+                const char* DSPParFile,
+                const char* DSPVarFile,
+                unsigned short BootPattern)
+{
+    typedef xia::pixie::firmware::firmware firmware;
+
+    (void) DSPParFile;
+    (void) DSPVarFile;
+
+    firmware comm_fw(0, module.revision, "sys");
+    firmware fippi_fw(0, module.revision, "fippi");
+    firmware dsp_fw(0, module.revision, "dsp");
+
+    comm_fw.filename = ComFPGAConfigFile;
+    fippi_fw.filename = SPFPGAConfigFile;
+    dsp_fw.filename = DSPCodeFile;
+
+    xia::pixie::firmware::add(crate.firmware, comm_fw);
+    xia::pixie::firmware::add(crate.firmware, fippi_fw);
+    xia::pixie::firmware::add(crate.firmware, dsp_fw);
+
+    crate.set_firmware();
+
+    bool boot_comm = (BootPattern & BOOTPATTERN_COMFPGA_BIT) != 0;
+    bool boot_fippi = (BootPattern & BOOTPATTERN_SPFPGA_BIT) != 0;
+    bool boot_dsp = (BootPattern & BOOTPATTERN_DSPCODE_BIT) != 0;
+
+    module.boot(boot_comm, boot_fippi, boot_dsp);
+}
+
+
 PIXIE_EXPORT int PIXIE_API
 PixieBootModule(const char* ComFPGAConfigFile,
                 const char* SPFPGAConfigFile,
@@ -184,29 +236,26 @@ PixieBootModule(const char* ComFPGAConfigFile,
                    << " DSPVarFile=" << DSPVarFile;
 
     try {
-        xia::pixie::crate::module_handle module(crate, ModNum);
-
-        typedef xia::pixie::firmware::firmware firmware;
-
-        firmware comm_fw(0, module.handle.revision, "sys");
-        firmware fippi_fw(0, module.handle.revision, "fippi");
-        firmware dsp_fw(0, module.handle.revision, "dsp");
-
-        comm_fw.filename = ComFPGAConfigFile;
-        fippi_fw.filename = SPFPGAConfigFile;
-        dsp_fw.filename = DSPCodeFile;
-
-        xia::pixie::firmware::add(crate.firmware, comm_fw);
-        xia::pixie::firmware::add(crate.firmware, fippi_fw);
-        xia::pixie::firmware::add(crate.firmware, dsp_fw);
-
-        crate.set_firmware();
-
-        bool boot_comm = (BootPattern & BOOTPATTERN_COMFPGA_BIT) != 0;
-        bool boot_fippi = (BootPattern & BOOTPATTERN_SPFPGA_BIT) != 0;
-        bool boot_dsp = (BootPattern & BOOTPATTERN_DSPCODE_BIT) != 0;
-
-        module.handle.boot(boot_comm, boot_fippi, boot_dsp);
+        if (ModNum == 0) {
+            for (auto& module : crate.modules) {
+                PixieBootModule(module,
+                                ComFPGAConfigFile,
+                                SPFPGAConfigFile,
+                                DSPCodeFile,
+                                DSPParFile,
+                                DSPVarFile,
+                                BootPattern);
+            }
+        } else {
+            xia::pixie::crate::module_handle module(crate, api_mod_num(ModNum));
+            PixieBootModule(module.handle,
+                            ComFPGAConfigFile,
+                            SPFPGAConfigFile,
+                            DSPCodeFile,
+                            DSPParFile,
+                            DSPVarFile,
+                            BootPattern);
+        }
     } catch (xia::pixie::error::error& e) {
         log(log::error) << e;
         return e.return_code();
@@ -221,9 +270,5 @@ PixieBootModule(const char* ComFPGAConfigFile,
         return xia::pixie::error::api_result_unknown_error();
     }
 
-    (void) DSPParFile;
-    (void) DSPVarFile;
-    (void) BootPattern;
-
-    return -11111;
+    return 0;
 }
