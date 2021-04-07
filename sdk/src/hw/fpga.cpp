@@ -37,6 +37,7 @@
 #include <iomanip>
 
 #include <pixie_module.hpp>
+#include <pixie_log.hpp>
 
 #include <hw/fpga.hpp>
 
@@ -84,20 +85,17 @@ namespace fpga
     void
     control::load(const firmware::image& image, int retries)
     {
-        if (trace)
-            std::cout << "fpga-" << name
-                      << " [slot " << module.slot
-                      << "] load: length=" << image.size()
-                      << " retries=" << retries
-                      << std::hex
-                      << " clear-controls: clear=0x" << clear_ctrl.clear
-                      << ",set=0x" << clear_ctrl.set
-                      << ",done=0x" << clear_ctrl.done
-                      << " load-controls: clear=0x" << load_ctrl.clear
-                      << ",set=0x" << load_ctrl.set
-                      << ",done=0x" << load_ctrl.done
-                      << std::dec
-                      << std::endl;
+        log(log::info) << "fpga-" << name
+                       << " [slot " << module.slot
+                       << "] load: length=" << image.size()
+                       << " retries=" << retries
+                       << std::hex
+                       << " clear-controls: clear=0x" << clear_ctrl.clear
+                       << ",set=0x" << clear_ctrl.set
+                       << ",done=0x" << clear_ctrl.done
+                       << " load-controls: clear=0x" << load_ctrl.clear
+                       << ",set=0x" << load_ctrl.set
+                       << ",done=0x" << load_ctrl.done;
 
         bool programmed = false;
 
@@ -108,11 +106,9 @@ namespace fpga
             int timeout_usec = 250;
 
             while (!cleared) {
-                if (trace)
-                    std::cout << "fpga-" << name
-                              << " [slot " << module.slot
-                              << "] clearing retries=" << retries
-                              << std::endl;
+                log(log::debug) << "fpga-" << name
+                                << " [slot " << module.slot
+                                << "] clearing retries=" << retries;
 
                 /*
                  * Clear the FPGA(s)
@@ -151,10 +147,9 @@ namespace fpga
                 }
             }
 
-            if (trace)
-                std::cout << "fpga-" << name
-                          << " [slot " << module.slot
-                          << "] programming" << std::endl;
+            log(log::debug) << "fpga-" << name
+                            << " [slot " << module.slot
+                            << "] programming";
 
             /*
              * Load the data.
@@ -169,10 +164,9 @@ namespace fpga
                 bus_write(reg.DATACS, value);
             }
 
-            if (trace)
-                std::cout << "fpga-" << name
-                          << " [slot " << module.slot
-                          << "] waiting for done" << std::endl;
+            log(log::debug) << "fpga-" << name
+                            << " [slot " << module.slot
+                            << "] waiting for done";
 
             timeout_usec = 250000;
 
@@ -197,10 +191,9 @@ namespace fpga
             }
         }
 
-        if (trace)
-            std::cout << "fpga-" << name
-                      << " [slot " << module.slot
-                      << "] done" << std::endl;
+        log(log::debug) << "fpga-" << name
+                        << " [slot " << module.slot
+                        << "] done";
     }
 
     void

@@ -261,7 +261,7 @@ namespace module
 
         if (online_) {
             throw error(slot,
-                        error::code::module_alread_open,
+                        error::code::module_already_open,
                         "module already open");
         }
 
@@ -342,6 +342,8 @@ namespace module
         if (device && device->device_number >= 0) {
             PLX_STATUS ps_unmap_bar = PLX_STATUS_OK;
             PLX_STATUS ps_close;
+
+            log(log::debug) << "module: close: device-number=" << device->device_number;
 
             if (vmaddr != nullptr) {
                 ps_unmap_bar = ::PlxPci_PciBarUnmap(&device->handle, &vmaddr);
@@ -431,6 +433,11 @@ namespace module
             firmware::firmware_ref fw = get("dsp");
             dsp.boot(fw->data);
         }
+
+        log(log::info) << std::boolalpha
+                       << "module: boot: sys-fpga=" << comms_fpga
+                       << " fippi-fpga=" << boot_fippi
+                       << " dsp=" << dsp.online;
 
         online_ = comms_fpga && boot_fippi && dsp.online;
     }

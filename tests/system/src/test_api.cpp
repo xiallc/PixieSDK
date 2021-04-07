@@ -112,7 +112,7 @@ main(int argc, char* argv[])
         if (log_file_flag) {
             log = args::get(log_file_flag);
         } else {
-            log = "pixie-log.txt";
+            log = "test-api-log.txt";
         }
 
         xia::pixie::logging::start("log", log, xia::pixie::log::debug, false);

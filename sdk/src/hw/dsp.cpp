@@ -37,6 +37,7 @@
 #include <iomanip>
 
 #include <pixie_module.hpp>
+#include <pixie_log.hpp>
 
 #include <hw/dsp.hpp>
 
@@ -79,11 +80,9 @@ namespace dsp
     void
     dsp::boot(const firmware::image& image, int retries)
     {
-        if (trace)
-            std::cout << "dsp [slot " << module.slot
-                      << "] load: length=" << image.size()
-                      << " retries=" << retries
-                      << std::endl;
+        log(log::info) << "dsp [slot " << module.slot
+                       << "] load: length=" << image.size()
+                       << " retries=" << retries;
 
         bool running = false;
 
@@ -229,16 +228,14 @@ namespace dsp
                 if (retries == 0) {
                     throw;
                 }
-                std::cout << "dsp [slot " << module.slot
-                          << "] retries: " << retries
-                          << ": " << e.what()
-                          << std::endl;
+                log(log::error) << "dsp [slot " << module.slot
+                                << "] retries: " << retries
+                                << ": " << e.what();
             }
         }
 
-        if (trace)
-            std::cout << "dsp [slot " << module.slot
-                      << "] running" << std::endl;
+        log(log::info) << "dsp [slot " << module.slot
+                       << "] running";
 
         online = true;
     }

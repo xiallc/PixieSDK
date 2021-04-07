@@ -46,13 +46,10 @@ namespace pixie
 {
 namespace crate
 {
-    error::error(const std::string& what)
-        : runtime_error(what) {
-    }
-
-    error::error(const char* what)
-        : runtime_error(what) {
-    }
+    /*
+     * Crate errors
+     */
+    typedef pixie::error::error error;
 
     crate::user::user(crate& crate__)
         : crate_(crate__)
@@ -79,7 +76,8 @@ namespace crate
     crate::ready()
     {
         if (!ready_.load()) {
-            throw error("crate is not ready");
+            throw error(pixie::error::code::crate_not_ready,
+                        "crate is not ready");
         }
     }
 
@@ -100,7 +98,8 @@ namespace crate
     {
         size_t number = static_cast<size_t>(number_);
         if (number >= num_modules) {
-            throw error("number out of range");
+            throw error(pixie::error::code::module_number_invalid,
+                        "number out of range");
         }
         return modules[number];
     }
@@ -114,7 +113,8 @@ namespace crate
                        << " auto-detect=" << std::boolalpha << autodetect;
 
         if (ready_.exchange(true)) {
-            throw error("create already initialised");
+            throw error(pixie::error::code::crate_already_open,
+                        "create already initialised");
         }
 
         try {
@@ -240,7 +240,8 @@ namespace crate
     {
         crate_.ready();
         if (!handle.online()) {
-            throw error("module not online");
+            throw error(pixie::error::code::module_offline,
+                        "module not online");
         }
     }
 
@@ -251,7 +252,8 @@ namespace crate
     {
         crate_.ready();
         if (!handle.online()) {
-            throw error("module not online");
+            throw error(pixie::error::code::module_offline,
+                        "module not online");
         }
     }
 };

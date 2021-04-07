@@ -42,6 +42,7 @@
 
 #include <pixie_fw.hpp>
 #include <pixie_module.hpp>
+#include <pixie_error.hpp>
 #include <hw/fpga.hpp>
 
 namespace xia
@@ -50,16 +51,6 @@ namespace pixie
 {
 namespace crate
 {
-    /*
-     * Crate errors
-     */
-    class error
-        : public std::runtime_error {
-    public:
-        explicit error(const std::string& what);
-        explicit error(const char* what);
-    };
-
     /*
      * Number of slots in a crate.
      */

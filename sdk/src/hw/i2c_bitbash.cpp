@@ -37,6 +37,7 @@
 #include <iomanip>
 
 #include <pixie_module.hpp>
+#include <pixie_log.hpp>
 
 #include <hw/i2c_bitbash.hpp>
 
@@ -72,8 +73,9 @@ namespace i2c
     void
     bitbash::start()
     {
-        if (trace)
-            std::cout << "i2c-bb: start" << std::endl;
+        if (trace) {
+            log(log::debug) << "i2c-bb: start";
+        }
 
         /*
          * Set SCL and SDA to 1, then set SDA to 0 while keeping SCL at 1
@@ -89,10 +91,9 @@ namespace i2c
     {
         uint32_t pins = bus_read() & (SDA | SCL | CTRL);
 
-        if (trace)
-            std::cout << "i2c-bb: stop "
-                      << std::hex << pins << std::dec
-                      << std::endl;
+        if (trace) {
+            log(log::debug) << "i2c-bb: stop " << std::hex << pins;
+        }
 
         /*
          * Set SCL and SDA to 1, then set SDA to 0 while keep SCL at 1
@@ -106,8 +107,9 @@ namespace i2c
     void
     bitbash::write_ack(uint8_t data, const char* what)
     {
-        if (trace)
-            std::cout << "i2c-bb: write_ack" << std::endl;
+        if (trace) {
+            log(log::debug) << "i2c-bb: write_ack";
+        }
 
         write(data);
         if (!get_ack()) {
@@ -119,8 +121,9 @@ namespace i2c
     uint8_t
     bitbash::read_ack(bool ack)
     {
-        if (trace)
-            std::cout << "i2c-bb: read_ack " << ack << std::endl;
+        if (trace) {
+            log(log::debug) << "i2c-bb: read_ack " << ack;
+        }
 
         uint8_t data = read();
         if (ack) {
@@ -134,9 +137,9 @@ namespace i2c
     void
     bitbash::write(uint8_t data)
     {
-        if (trace)
-            std::cout << "i2c-bb: write " <<
-                std::hex << (int) data << std::dec << std::endl;
+        if (trace) {
+            log(log::info) << "i2c-bb: write " << std::hex << (int) data;
+        }
 
         uint32_t data_bit = 0;
 
@@ -175,8 +178,9 @@ namespace i2c
     uint8_t
     bitbash::read()
     {
-        if (trace)
-            std::cout << "i2c-bb: read" << std::endl;
+        if (trace) {
+            log(log::debug) << "i2c-bb: read";
+        }
 
         uint32_t data_bit = 0;
         uint8_t data = 0;
@@ -201,9 +205,9 @@ namespace i2c
             bus_write(data_bit);
         }
 
-        if (trace)
-            std::cout << "i2c-bb: read "
-                      << std::hex << (int) data << std::dec << std::endl;
+        if (trace) {
+            log(log::debug) << "i2c-bb: read " << std::hex << (int) data;
+        }
 
         return data;
     }
@@ -211,8 +215,9 @@ namespace i2c
     bool
     bitbash::get_ack()
     {
-        if (trace)
-            std::cout << "i2c-bb: get_ack" << std::endl;
+        if (trace) {
+            log(log::debug) << "i2c-bb: get_ack";
+        }
 
         uint32_t data;
 
@@ -231,9 +236,9 @@ namespace i2c
         */
         bus_write(0);
 
-        if (trace)
-            std::cout << "i2c-bb: get_ack " << ((data & 0x1) == 0)
-                      << std::endl;
+        if (trace) {
+            log(log::debug) << "i2c-bb: get_ack " << ((data & 0x1) == 0);
+        }
 
         return (data & 0x1) == 0;
     }
@@ -241,8 +246,9 @@ namespace i2c
     void
     bitbash::send_ack()
     {
-        if (trace)
-            std::cout << "i2c-bb: send_ack" << std::endl;
+        if (trace) {
+            log(log::debug) << "i2c-bb: send_ack";
+        }
 
         /*
          * SDA = 0; SCL = 0; CTRL = 1
@@ -263,8 +269,9 @@ namespace i2c
     void
     bitbash::send_nack()
     {
-        if (trace)
-            std::cout << "i2c-bb: send_nack" << std::endl;
+        if (trace) {
+            log(log::debug) << "i2c-bb: send_nack";
+        }
 
         /*
          * SDA = 1; SCL = 0; CTRL = 1

@@ -36,7 +36,9 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
+#include <iostream>
 #include <stdexcept>
+#include <sstream>
 
 namespace xia
 {
@@ -53,12 +55,18 @@ enum struct code {
      */
     success = 0,
     /*
+     * Crate
+     */
+    crate_already_open,
+    crate_not_ready,
+    /*
      * Module
      */
     module_number_invalid,
     module_total_invalid,
-    module_alread_open,
+    module_already_open,
     module_close_failure,
+    module_offline,
     module_info_failure,
     module_invalid_operation,
     module_invalid_firmware,
@@ -85,6 +93,7 @@ enum struct code {
     /*
      * Catch all
      */
+    unknown_error,
     internal_failure,
     bad_error_code,
     last
@@ -115,10 +124,16 @@ struct error
  */
 int api_result(enum code type);
 std::string api_result_text(enum code type);
+
+/*
+ * Unknown error helper.
+ */
+int api_result_unknown_error();
 }
 }
 }
 
+std::ostringstream& operator<<(std::ostringstream& out, xia::pixie::error::error& error);
 std::ostream& operator<<(std::ostream& out, xia::pixie::error::error& error);
 
 #endif  // PIXIE16_ERROR_H

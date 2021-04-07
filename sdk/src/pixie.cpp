@@ -37,6 +37,12 @@
 
 #include <pixie_crate.hpp>
 #include <pixie_error.hpp>
+#include <pixie_log.hpp>
+
+/*
+ * Make a local type for the log.
+ */
+typedef xia::pixie::log log;
 
 /*
  * Boot patterns
@@ -53,11 +59,25 @@
  */
 static xia::pixie::crate::crate crate;
 
+/*
+ * Return an error code for an unhandled exception.
+ */
+static bool throw_unhandled;
+
 PIXIE_EXPORT int PIXIE_API
 PixieInitSystem(unsigned short NumModules,
                 unsigned short* PXISlotMap,
                 unsigned short OfflineMode)
 {
+    /*
+     * Create a log file.
+     */
+    xia::pixie::logging::start("log", "PixieMsg.txt", log::info, false);
+
+    log(log::info) << "PixieInitSystem: NumModules=" << NumModules
+                   << " PXISlotMap=" << PXISlotMap
+                   << " OfflineMode=" << OfflineMode;
+
     /*
      * Not supported. We now have tools that can access the DSP variables.
      */
@@ -76,13 +96,24 @@ PixieInitSystem(unsigned short NumModules,
             xia::pixie::module::index_slots indexes;
             for (int i = 0; i < static_cast<int>(NumModules); ++i) {
                 typedef xia::pixie::module::index_slot index_slot;
+                log(log::info) << "PixieInitSystem: slot map: "
+                               << i << " => " << PXISlotMap[i];
                 indexes.push_back(index_slot(i, PXISlotMap[i]));
             }
             crate.assign(indexes);
         }
     } catch (xia::pixie::error::error& e) {
-        std::cout << e << std::endl;
-        return e.return_code();;
+        log(log::error) << e;
+        return e.return_code();
+    } catch (std::exception& e) {
+        log(log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::api_result_unknown_error();
+    } catch (...) {
+        if (throw_unhandled) {
+            throw;
+        }
+        log(log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::api_result_unknown_error();
     }
 
     return 0;
@@ -91,12 +122,23 @@ PixieInitSystem(unsigned short NumModules,
 PIXIE_EXPORT int PIXIE_API
 PixieExitSystem(unsigned short ModNum)
 {
+    log(log::info) << "PixieExitSystem: ModNum=" << ModNum;
+
     try {
         xia::pixie::crate::module_handle module(crate, ModNum);
         module.handle.close();
     } catch (xia::pixie::error::error& e) {
-        std::cout << e << std::endl;
-        return e.return_code();;
+        log(log::error) << e;
+        return e.return_code();
+    } catch (std::exception& e) {
+        log(log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::api_result_unknown_error();
+    } catch (...) {
+        if (throw_unhandled) {
+            throw;
+        }
+        log(log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::api_result_unknown_error();
     }
 
     return 0;
@@ -127,6 +169,20 @@ PixieBootModule(const char* ComFPGAConfigFile,
                 unsigned short ModNum,
                 unsigned short BootPattern)
 {
+    log(log::info) << "PixieBootModule: ModNum=" << ModNum
+                   << std::hex
+                   << " BootPattern=0x" << BootPattern;
+    log(log::info) << "PixieBootModule: ModNum=" << ModNum
+                   << " ComFPGAConfigFile=" << ComFPGAConfigFile;
+    log(log::info) << "PixieBootModule: ModNum=" << ModNum
+                   << " SPFPGAConfigFile=" << SPFPGAConfigFile;
+    log(log::info) << "PixieBootModule: ModNum=" << ModNum
+                   << " DSPCodeFile=" << DSPCodeFile;
+    log(log::info) << "PixieBootModule: ModNum=" << ModNum
+                   << " DSPParFile=" << DSPParFile;
+    log(log::info) << "PixieBootModule: ModNum=" << ModNum
+                   << " DSPVarFile=" << DSPVarFile;
+
     try {
         xia::pixie::crate::module_handle module(crate, ModNum);
 
@@ -152,8 +208,17 @@ PixieBootModule(const char* ComFPGAConfigFile,
 
         module.handle.boot(boot_comm, boot_fippi, boot_dsp);
     } catch (xia::pixie::error::error& e) {
-        std::cout << e << std::endl;
-        return e.return_code();;
+        log(log::error) << e;
+        return e.return_code();
+    } catch (std::exception& e) {
+        log(log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::api_result_unknown_error();
+    } catch (...) {
+        if (throw_unhandled) {
+            throw;
+        }
+        log(log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::api_result_unknown_error();
     }
 
     (void) DSPParFile;
