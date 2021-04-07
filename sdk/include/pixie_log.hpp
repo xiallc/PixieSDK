@@ -48,13 +48,13 @@ namespace pixie
 namespace logging
 {
 /*
- * An outputter outputs a log stream. Desctruct them last.
+ * An outputter outputs a log stream. Destruct them last.
  */
 struct outputter;
 typedef std::list<outputter> outputters;
-typedef std::shared_ptr<outputters> outputters_ref;
-outputters_ref make_outputters();
-static outputters_ref outputs_ref = make_outputters();
+typedef std::shared_ptr<outputters> outputters_ptr;
+outputters_ptr make_outputters();
+static outputters_ptr outputs_ptr = make_outputters();
 };
 
 /**

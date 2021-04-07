@@ -102,9 +102,9 @@ private:
 
 };
 
-static outputters_ref outputs;
+static outputters_ptr outputs;
 
-outputters_ref make_outputters()
+outputters_ptr make_outputters()
 {
     if (!outputs) {
         outputs = std::make_shared<outputters>();
