@@ -1,5 +1,5 @@
-#ifndef PIXIE16_ERROR_H
-#define PIXIE16_ERROR_H
+#ifndef PIXIE_LOG_H
+#define PIXIE_LOG_H
 
 /*----------------------------------------------------------------------
 * Copyright (c) 2005 - 2021, XIA LLC
@@ -36,89 +36,87 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
-#include <stdexcept>
+#include <atomic>
+#include <sstream>
 
 namespace xia
 {
 namespace pixie
 {
-namespace error
+namespace logging
 {
 /*
- * Codes
+ * Outputter to a log.
  */
-enum struct code {
-    /*
-     * Success is always 0. Do not number any other enum entries.
-     */
-    success = 0,
-    /*
-     * Module
-     */
-    module_number_invalid,
-    module_total_invalid,
-    module_alread_open,
-    module_close_failure,
-    module_info_failure,
-    module_invalid_operation,
-    module_invalid_firmware,
-    module_initialize_failure,
-    /*
-     * Device
-     */
-    device_load_failure,
-    device_boot_failure,
-    device_initialize_failure,
-    device_copy_failure,
-    /*
-     * File handling
-     */
-    file_not_found,
-    file_read_failure,
-    file_size_invalid,
-    file_create_failure,
-    /*
-     * System
-     */
-    no_memory,
-    slot_map_invalid,
-    /*
-     * Catch all
-     */
-    internal_failure,
-    bad_error_code,
-    last
+struct outputter;
 };
 
-/*
- * All exceptions need to be based on this error.
+/**
+ * Log class.
+ *
+ * This class lives in the pixie namespace to make the references in the code
+ * simpler.
  */
-struct error
-    : public std::runtime_error {
-    const code type;
+class log
+{
+    friend logging::outputter;
+public:
+    /*
+     * A log level.
+     *
+     * The levels are ordered from high priority to lower priority with `off`
+     * always being first and 0.
+     */
+    enum level {
+        off = 0,
+        error,
+        warning,
+        info,
+        debug,
+        max_level
+    };
 
-    explicit error(const code type, const std::ostringstream& what);
-    explicit error(const code type, const std::string& what);
-    explicit error(const code type, const char* what);
-    virtual ~error() = default;
+    log(level level__)
+        : level_(level__) {
+    }
+    ~log();
 
-    virtual void output(std::ostream& out);
+    template <typename T>
+    std::ostringstream& operator<<(const T& item) {
+        output << item;
+        return output;
+    }
 
-    int result() const;
-    std::string result_text() const;
+    log::level get_level() const{
+        return level_.load();
+    }
 
-    int return_code() const;
+private:
+    std::atomic<level> level_;
+    std::ostringstream output;
 };
 
+namespace logging
+{
+ /*
+  * Start and stop a log output stream.
+  */
+void start(const std::string name,
+           const std::string file,
+           log::level level = log::warning,
+           bool append = true);
+void stop(const std::string name);
+
 /*
- * Get the API code for an error code.
+ * Output control.
  */
-int api_result(enum code type);
-std::string api_result_text(enum code type);
+void set_level(const std::string name, log::level level);
+void set_level_stamp(const std::string name, bool level);
+void set_datetime_stamp(const std::string name, bool datetime);
+void set_line_numbers(const std::string name, bool line_numbers);
+
 }
 }
 }
 
-std::ostream& operator<<(std::ostream& out, xia::pixie::error::error& error);
-
-#endif  // PIXIE16_ERROR_H
+#endif  // PIXIE_LOG_H

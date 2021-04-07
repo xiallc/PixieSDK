@@ -40,6 +40,7 @@
 #include <sstream>
 
 #include <pixie_module.hpp>
+#include <pixie_log.hpp>
 #include <pixie_util.hpp>
 
 #include <hw/dsp.hpp>
@@ -59,20 +60,20 @@ namespace pixie
 namespace module
 {
     error::error(const int slot_, const code type, const std::ostringstream& what)
-        : pixie::error::error(type, what),
+        : pixie::error::error(type, make_what(what.str().c_str())),
           slot(slot_)
     {
     }
 
     error::error(const int slot_, const code type, const std::string& what)
-        : pixie::error::error(type, what),
+        : pixie::error::error(type, make_what(what.c_str())),
           slot(slot_)
     {
     }
 
     error::error(const int slot_, const code type, const char* what)
-        : pixie::error::error(type, what),
-          slot(slot_)
+        : pixie::error::error(type, make_what(what)),
+        slot(slot_)
     {
     }
 
@@ -81,9 +82,16 @@ namespace module
     {
         ostream_guard flags(out);
         out << std::setfill(' ')
-            << "error: module:" << std::setw(2) << slot
-            << " code:" << std::setw(2) << result()
-            << " : " << what();
+            << "error: code=" << std::setw(2) << result()
+            << ' ' << what();
+    }
+
+    std::string
+    error::make_what(const char* what_)
+    {
+        std::ostringstream oss;
+        oss << "module: slot=" << slot << " : " << what_;
+        return oss.str();
     }
 
     /*
@@ -249,6 +257,8 @@ namespace module
     void
     module::open(size_t device_number)
     {
+        log(log::debug) << "module: open: device-number=" << device_number;
+
         if (online_) {
             throw error(slot,
                         error::code::module_alread_open,
@@ -261,7 +271,7 @@ namespace module
             ps = ::PlxPci_DeviceFind(&device->key, device_number);
             if (ps != PLX_STATUS_OK) {
                 std::ostringstream oss;
-                oss << "PCI find: device: " << device->device_number
+                oss << "PCI find: device: " << device_number
                     << " : " << ps;
                 throw error(slot, error::code::module_initialize_failure,
                             oss);
@@ -274,7 +284,7 @@ namespace module
             ps = ::PlxPci_DeviceOpen(&device->key, &device->handle);
             if (ps != PLX_STATUS_OK) {
                 std::ostringstream oss;
-                oss << "PCI open: device: " << device->device_number
+                oss << "PCI open: device: " << device_number
                     << " : " << ps;
                 throw error(slot, error::code::module_initialize_failure,
                             oss);
@@ -286,7 +296,7 @@ namespace module
             ps = PlxPci_PciBarMap(&device->handle, 2, (VOID**) &vmaddr);
             if (ps != PLX_STATUS_OK) {
                 std::ostringstream oss;
-                oss << "PCI BAR map: device: " << device->device_number
+                oss << "PCI BAR map: device: " << device_number
                     << " : " << ps;
                 throw error(slot, error::code::module_initialize_failure,
                             oss);
@@ -300,7 +310,7 @@ namespace module
 
             if (data.size() != 3) {
                 std::ostringstream oss;
-                oss << "eeprom read: device: " << device->device_number
+                oss << "eeprom read: device: " << device_number
                     << " : invalid data length:" << data.size();
                 throw error(slot, error::code::module_info_failure,
                             oss);

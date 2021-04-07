@@ -71,6 +71,8 @@ namespace module
         explicit error(const int slot, const code type,
                        const char* what);
         virtual void output(std::ostream& out);
+    private:
+        std::string make_what(const char* what);
     };
 
     /*

@@ -40,6 +40,7 @@
 #include <sstream>
 
 #include <pixie_crate.hpp>
+#include <pixie_log.hpp>
 
 #include "args.hxx"
 
@@ -78,7 +79,7 @@ main(int argc, char* argv[])
                           args::Options::Global);
     args::ValueFlag<size_t> num_modules_flag(arguments, "num_modules_flag",
                                              "Number of modules to report",
-                                             {'n', "num-modules"}, 1);
+                                             {'n', "num-modules"}, 0);
     args::ValueFlagList<std::string> fw_file_flag(arguments, "fw_file_flag",
                                                   "Firmware file(s) to load. Can be repeated. "
                                                   "Takes the form rev:rev-num:type:name"
@@ -88,6 +89,9 @@ main(int argc, char* argv[])
                                                      "Crate firmware file to load. "
                                                      "The contents is are firmware files.",
                                                      {'C', "crate"});
+    args::ValueFlag<std::string> log_file_flag(arguments, "log_file_flag",
+                                               "Log file. Use `stdout` for the console.",
+                                               {'l', "log"});
     args::Flag reg_trace(arguments, "reg_trace",
                          "Registers debugging traces in the API.", {'R', "reg-trace"});
 
@@ -103,10 +107,19 @@ main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-    xia::pixie::firmware::crate firmwares;
-    size_t num_modules = args::get(num_modules_flag);
-
     try {
+        std::string log;
+        if (log_file_flag) {
+            log = args::get(log_file_flag);
+        } else {
+            log = "pixie-log.txt";
+        }
+
+        xia::pixie::logging::start("log", log, xia::pixie::log::debug, false);
+
+        xia::pixie::firmware::crate firmwares;
+        size_t num_modules = args::get(num_modules_flag);
+
         if (fw_file_flag) {
             for (const auto& firmware: args::get(fw_file_flag)) {
                 auto fw = xia::pixie::firmware::parse(firmware, ':');

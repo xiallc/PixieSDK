@@ -38,6 +38,7 @@
 #include <map>
 
 #include <pixie_error.hpp>
+#include <pixie_log.hpp>
 #include <pixie_util.hpp>
 
 namespace xia
@@ -64,43 +65,47 @@ struct result_code
 static std::map<code, result_code> result_codes =
 {
     { code::success,                   {  0, "success" } },
-    { code::module_number_invalid,     { 10, "invalid module number" } },
-    { code::module_total_invalid,      { 11, "invalud module count" } },
-    { code::module_alread_open,        { 12, "module already open" } },
-    { code::module_close_failure,      { 13, "module failed to close" } },
-    { code::module_info_failure,       { 14, "module information failure" } },
-    { code::module_invalid_operation,  { 15, "invalid module operation" } },
-    { code::module_invalid_firmware,   { 16, "invalid module firmware" } },
-    { code::module_initialize_failure, { 17, "module initialization failure" } },
-    { code::device_load_failure,       { 70, "device failed to load" } },
-    { code::device_boot_failure,       { 71, "device failed to boot" } },
-    { code::device_initialize_failure, { 72, "device failed to initialize" } },
-    { code::device_copy_failure,       { 73, "device variable copy failed" } },
-    { code::file_not_found,            { 74, "file not found" } },
-    { code::file_read_failure,         { 75, "file read failure" } },
-    { code::file_size_invalid,         { 76, "invalid file size" } },
-    { code::no_memory,                 { 80, "no memory" } },
-    { code::slot_map_invalid,          { 80, "invalid slot map" } },
-    { code::internal_failure,          { 90, "internal failure" } },
-    { code::bad_error_code,            { 99, "bad error code" } },
+    { code::module_number_invalid,     { 100, "invalid module number" } },
+    { code::module_total_invalid,      { 101, "invalid module count" } },
+    { code::module_alread_open,        { 102, "module already open" } },
+    { code::module_close_failure,      { 103, "module failed to close" } },
+    { code::module_info_failure,       { 104, "module information failure" } },
+    { code::module_invalid_operation,  { 105, "invalid module operation" } },
+    { code::module_invalid_firmware,   { 106, "invalid module firmware" } },
+    { code::module_initialize_failure, { 107, "module initialization failure" } },
+    { code::device_load_failure,       { 700, "device failed to load" } },
+    { code::device_boot_failure,       { 701, "device failed to boot" } },
+    { code::device_initialize_failure, { 702, "device failed to initialize" } },
+    { code::device_copy_failure,       { 703, "device variable copy failed" } },
+    { code::file_not_found,            { 704, "file not found" } },
+    { code::file_read_failure,         { 705, "file read failure" } },
+    { code::file_size_invalid,         { 706, "invalid file size" } },
+    { code::file_create_failure,       { 707, "file create failure" } },
+    { code::no_memory,                 { 800, "no memory" } },
+    { code::slot_map_invalid,          { 801, "invalid slot map" } },
+    { code::internal_failure,          { 900, "internal failure" } },
+    { code::bad_error_code,            { 990, "bad error code" } },
 };
 
 error::error(const code type_, const std::ostringstream& what)
     : runtime_error(what.str()),
       type(type_)
 {
+    log(log::debug) << "error-except: " << what.str();
 }
 
 error::error(const code type_, const std::string& what)
     : runtime_error(what),
       type(type_)
 {
+    log(log::debug) << "error-except: " << what;
 }
 
 error::error(const code type_, const char* what)
     : runtime_error(what),
       type(type_)
 {
+    log(log::debug) << "error-except: " << what;
 }
 
 void

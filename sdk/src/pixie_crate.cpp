@@ -1,5 +1,5 @@
 /*----------------------------------------------------------------------
-* Copyright (c) 2005 - 2020, XIA LLC
+* Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms,
@@ -38,6 +38,7 @@
 #include <sstream>
 
 #include <pixie_crate.hpp>
+#include <pixie_log.hpp>
 
 namespace xia
 {
@@ -107,11 +108,14 @@ namespace crate
     void
     crate::initialize(size_t num_modules_, bool reg_trace)
     {
+        const bool autodetect = num_modules_ == 0;
+
+        log(log::info) << "crate: initialise: num-modules=" << num_modules_
+                       << " auto-detect=" << std::boolalpha << autodetect;
+
         if (ready_.exchange(true)) {
             throw error("create already initialised");
         }
-
-        const bool autodetect = num_modules_ == 0;
 
         try {
             size_t max_modules = num_modules = num_modules_;
@@ -136,20 +140,19 @@ namespace crate
                         throw;
                     }
                     if (module.present()) {
-                        std::cout << "module: device " << device_number
-                                  << ": error: " << e.what()
-                                  << std::endl;
+                        log(log::error) << "module: device " << device_number
+                                        << ": error: " << e.what();
                     }
                 }
 
                 if (module.present()) {
-                    std::cout << "module: device " << device_number
-                              << ": slot:" << module.slot
-                              << " serial-number:" << module.serial_num
-                              << " revision:" << module.revision
-                              << std::endl;
+                    log(log::info) << "module: device " << device_number
+                                   << ": slot:" << module.slot
+                                   << " serial-number:" << module.serial_num
+                                   << " revision:" << module.revision;
                 } else {
                     modules.pop_back();
+                    break;
                 }
             }
 
@@ -174,9 +177,8 @@ namespace crate
                 try {
                     module.boot();
                 } catch (std::runtime_error& e) {
-                    std::cout << "module [slot " << module.slot
-                              << "]: " << e.what()
-                              << std::endl;
+                    log(log::error) << "module [slot " << module.slot
+                                    << "]: " << e.what();
                 }
             }
         }
