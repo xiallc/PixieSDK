@@ -1,2 +1,2 @@
-add_subdirectory(unit)
+add_subdirectory(unit/legacy)
 add_subdirectory(system)

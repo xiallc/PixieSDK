@@ -21,14 +21,4 @@ TEST_SUITE("app/utilities.c") {
         CHECK(doctest::Approx(88.7365) == IEEEFloating2Decimal(1118927127));
         CHECK(doctest::Approx(-88.7365) == IEEEFloating2Decimal(3266410775));
     }
-    TEST_CASE("Pixie_Broadcast"){CHECK(false);}
-    TEST_CASE("Pixie_Check_Run_Status") {CHECK(false);}
-    TEST_CASE("Pixie_ComputeFIFO"){CHECK(false);}
-    TEST_CASE("Pixie_Control_Task_Run") {CHECK(false);}
-    TEST_CASE("Pixie_Copy_DSPParameters"){CHECK(false);}
-    TEST_CASE("Pixie_Copy_DSPVarAddress"){CHECK(false);}
-    TEST_CASE("Pixie_End_Run") {CHECK(false);}
-    TEST_CASE("Pixie_Init_DSPVarAddress"){CHECK(false);}
-    TEST_CASE("Pixie_Start_Run") {CHECK(false);}
-    TEST_CASE("Pixie16ReadMSGFile"){CHECK(false);}
 }
