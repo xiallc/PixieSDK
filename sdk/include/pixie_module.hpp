@@ -63,16 +63,20 @@ namespace module
     struct error
         : public pixie::error::error {
         typedef pixie::error::code code;
-        const int slot;
-        explicit error(const int slot, const code type,
+        explicit error(const int num, const int slot,
+                       const code type,
                        const std::ostringstream& what);
-        explicit error(const int slot, const code type,
+        explicit error(const int num, const int slot,
+                       const code type,
                        const std::string& what);
-        explicit error(const int slot, const code type,
+        explicit error(const int num, const int slot,
+                       const code type,
                        const char* what);
         virtual void output(std::ostream& out);
     private:
-        std::string make_what(const char* what);
+        std::string make_what(const int num,
+                              const int slot,
+                              const char* what);
     };
 
     /*
@@ -135,7 +139,7 @@ namespace module
          * Logical module mapping for this instance of the
          * SDK.
          */
-        int index;
+        int number;
 
         /*
          * Module's register VM address.
@@ -157,11 +161,6 @@ namespace module
          * Firmware
          */
         firmware::module firmware;
-
-        /*
-         * Set up status
-         */
-        std::string varsdef;
 
         /*
          * Diagnostics
@@ -202,7 +201,7 @@ namespace module
         /*
          * Initialise the module ready for use.
          */
-        void initialize(const std::string varsdef_);
+        void initialize();
 
         /*
          * Set the firmware.
@@ -293,10 +292,10 @@ namespace module
     };
 
     /*
-     * A list of indexes that can be assigned to modules by slots
+     * A list of numbers that can be assigned to modules by slots
      */
-    typedef std::pair<int, int> index_slot;
-    typedef std::vector<index_slot> index_slots;
+    typedef std::pair<int, int> number_slot;
+    typedef std::vector<number_slot> number_slots;
 
     /*
      * A container of modules.
@@ -304,14 +303,14 @@ namespace module
     typedef std::vector<module> modules;
 
     /*
-     * Assign the index to the slots in the rack.
+     * Assign the number to the slots in the rack.
      */
-    void assign(modules& mods, const index_slots& indexes);
+    void assign(modules& mods, const number_slots& numbers);
 
     /*
      * Sort the modules by index.
      */
-    void order_by_index(modules& mods);
+    void order_by_number(modules& mods);
 
     /*
      * Sort the modules by slot.
@@ -319,9 +318,9 @@ namespace module
     void order_by_slot(modules& mods);
 
     /*
-     * Set the module index to the slot order.
+     * Set the module numbers to the slot order.
      */
-    void set_index_by_slot(modules& mods);
+    void set_number_by_slot(modules& mods);
 }
 }
 }

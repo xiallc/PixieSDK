@@ -40,6 +40,8 @@
 #include <string>
 #include <vector>
 
+#include <pixie_fw.hpp>
+
 namespace xia
 {
 namespace pixie
@@ -79,6 +81,7 @@ namespace param
         ModID,
         TrigConfig,
         HRTP,
+        PUID,
         U00,
         /*
          * Out
@@ -152,6 +155,7 @@ namespace param
         FtrigoutDelay,
         Log2Bweight,
         PreampTau,
+        Xavg,
         FastTrigBackLen,
         CFDDelay,
         CFDScale,
@@ -210,16 +214,6 @@ namespace param
     enum enabledisable {
         enable,
         disable
-    };
-
-    /*
-     * Parameter errors
-     */
-    class error
-        : public std::runtime_error {
-    public:
-        explicit error(const std::string& what);
-        explicit error(const char* what);
     };
 
     /*
@@ -326,6 +320,12 @@ namespace param
      * descriptors.
      */
     void load(const std::string& dspvarfile,
+              module_var_descs& module_var_descriptors,
+              channel_var_descs& channel_var_descriptors);
+    void load(firmware::firmware_ref& dspvarfw,
+              module_var_descs& module_var_descriptors,
+              channel_var_descs& channel_var_descriptors);
+    void load(std::istream& input,
               module_var_descs& module_var_descriptors,
               channel_var_descs& channel_var_descriptors);
 

@@ -42,6 +42,7 @@
 #include <sstream>
 #include <utility>
 
+#include <pixie_error.hpp>
 #include <pixie_fw.hpp>
 
 namespace xia
@@ -50,13 +51,10 @@ namespace pixie
 {
 namespace firmware
 {
-    error::error(const std::string& what)
-        : runtime_error(what) {
-    }
-
-    error::error(const char* what)
-        : runtime_error(what) {
-    }
+    /*
+     * Param errors
+     */
+    typedef pixie::error::error error;
 
     reader::reader(const image& img_, const size_t default_word_size_)
         : img(img_),
@@ -82,8 +80,8 @@ namespace firmware
     {
         if (word_size > sizeof(image_value_type)) {
             std::ostringstream oss;
-            oss << "word-size out of range: word-size=" << word_size;
-            throw error(oss.str());
+            oss << "firmware: word-size out of range: word-size=" << word_size;
+            throw error(error::code::device_image_failure, oss.str());
         }
 
         if (word_size == 0) {
@@ -92,10 +90,10 @@ namespace firmware
 
         if (offset > (img.size() - word_size)) {
             std::ostringstream oss;
-            oss << "image get out of range: offset=" << offset
+            oss << "firmware: image get out of range: offset=" << offset
                 << " word-size=" << word_size
                 << " size=" << img.size();
-            throw error(oss.str());
+            throw error(error::code::device_image_failure, oss.str());
         }
 
         image_value_type value = 0;
@@ -164,8 +162,8 @@ namespace firmware
             fw.device == device;
     }
 
-    void
-    firmware::output(std::ostream& out) const {
+    template<typename T> void
+    firmware::output(T& out) const {
         out << "ver:" << version
             << " mod-rev:" << mod_revision
             << " dev:" << device
@@ -228,9 +226,9 @@ namespace firmware
                 return fwr;
             }
         }
-        std::string what("firmware not found: device=");
+        std::string what("firmware: device not found: device=");
         what += device;
-        throw error(what);
+        throw error(error::code::device_image_failure, what);
     }
 
     void
@@ -284,9 +282,9 @@ namespace firmware
         if (std::getline(field_stream, field, delimiter)) {
             version = field;
         } else {
-            std::string what("firmware version not found: ");
+            std::string what("firmware: version not found: ");
             what += fw_desc;
-            throw error(what);
+            throw error(error::code::device_image_failure, what);
         }
 
         int mod_revision;
@@ -294,32 +292,32 @@ namespace firmware
             try {
                 mod_revision = std::stoi(field);
             } catch (std::invalid_argument& e) {
-                std::string what("firmware module revision not a number: ");
+                std::string what("firmware: module revision not a number: ");
                 what += field;
-                throw error(what);
+                throw error(error::code::device_image_failure, what);
             }
         } else {
-            std::string what("firmware module revision not found ");
+            std::string what("firmware: module revision not found ");
             what += fw_desc;
-            throw error(what);
+            throw error(error::code::device_image_failure, what);
         }
 
         std::string device;
         if (std::getline(field_stream, field, delimiter)) {
             device = field;
         } else {
-            std::string what("firmware device found: ");
+            std::string what("firmware: device found: ");
             what += fw_desc;
-            throw error(what);
+            throw error(error::code::device_image_failure, what);
         }
 
         std::string filename;
         if (std::getline(field_stream, field, delimiter)) {
             filename = field;
         } else {
-            std::string what("firmware filename not found: ");
+            std::string what("firmware: filename not found: ");
             what += fw_desc;
-            throw error(what);
+            throw error(error::code::device_image_failure, what);
         }
 
         firmware fw(version, mod_revision, device);
@@ -330,6 +328,13 @@ namespace firmware
 };
 };
 };
+
+std::ostringstream&
+operator<<(std::ostringstream& out, const xia::pixie::firmware::firmware& fw)
+{
+    fw.output(out);
+    return out;
+}
 
 std::ostream&
 operator<<(std::ostream& out, const xia::pixie::firmware::firmware& fw)

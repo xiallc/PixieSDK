@@ -127,9 +127,9 @@ namespace crate
         WINDOWS_DLLEXPORT void boot();
 
         /*
-         * Assign indexes to the modules by slot.
+         * Assign numbers to the modules by slot.
          */
-        void assign(const module::index_slots& indexes);
+        void assign(const module::number_slots& numbers);
 
         /*
          * Set the firmwares into the modules in the crate.

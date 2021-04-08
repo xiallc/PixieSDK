@@ -42,7 +42,6 @@
 #include <vector>
 
 #include <pixie_hw.hpp>
-#include <pixie_param.hpp>
 #include <xia_windows_compat.hpp>
 
 namespace xia
@@ -51,16 +50,6 @@ namespace pixie
 {
 namespace firmware
 {
-    /*
-     * Firmware errors
-     */
-    class error
-        : public std::runtime_error {
-    public:
-        explicit error(const std::string& what);
-        explicit error(const char* what);
-    };
-
     /*
      * The image. We keep this as bytes because it makes using it simpler.
      */
@@ -180,7 +169,7 @@ namespace firmware
         /*
          * Output the firmware details.
          */
-        void output(std::ostream& out) const;
+        template <typename T> void output(T& out) const;
     };
 
     /*
@@ -249,6 +238,8 @@ namespace firmware
 /*
  * Output stream operators.
  */
+std::ostringstream&
+operator<<(std::ostringstream& out, const xia::pixie::firmware::firmware& fw);
 WINDOWS_DLLEXPORT std::ostream&
 operator<<(std::ostream& out, const xia::pixie::firmware::firmware& fw);
 WINDOWS_DLLEXPORT std::ostream&

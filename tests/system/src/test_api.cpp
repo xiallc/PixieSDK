@@ -44,6 +44,11 @@
 
 #include "args.hxx"
 
+/*
+ * Localize the log.
+ */
+typedef xia::pixie::log log;
+
 void
 load_crate_firmware(const std::string& file,
                     xia::pixie::firmware::crate& firmwares)
@@ -72,28 +77,60 @@ int
 main(int argc, char* argv[])
 {
     args::ArgumentParser parser("Tests C++ API");
+
     parser.helpParams.addDefault = true;
     parser.helpParams.addChoices = true;
 
-    args::Group arguments(parser, "arguments", args::Group::Validators::AtLeastOne,
-                          args::Options::Global);
-    args::ValueFlag<size_t> num_modules_flag(arguments, "num_modules_flag",
-                                             "Number of modules to report",
-                                             {'n', "num-modules"}, 0);
-    args::ValueFlagList<std::string> fw_file_flag(arguments, "fw_file_flag",
-                                                  "Firmware file(s) to load. Can be repeated. "
-                                                  "Takes the form rev:rev-num:type:name"
-                                                  "Ex. r33339:15:sys:syspixie16_revfgeneral_adc250mhz_r33339.bin",
-                                                  {'F', "firmware"});
-    args::ValueFlagList<std::string> crate_file_flag(arguments, "crate_file_flag",
-                                                     "Crate firmware file to load. "
-                                                     "The contents is are firmware files.",
-                                                     {'C', "crate"});
-    args::ValueFlag<std::string> log_file_flag(arguments, "log_file_flag",
-                                               "Log file. Use `stdout` for the console.",
-                                               {'l', "log"});
-    args::Flag reg_trace(arguments, "reg_trace",
-                         "Registers debugging traces in the API.", {'R', "reg-trace"});
+    args::Group options(parser, "Options");
+    args::HelpFlag
+        help(options,
+             "help",
+             "Display this help menu",
+             {'h', "help"});
+    args::Flag
+        debug_flag(options,
+                   "debug_flag",
+                   "Enable debug log level",
+                   {'d', "debug"}, false);
+    args::Flag
+        throw_unhandled_flag(options,
+                             "throw_unhandled_flag",
+                             "Throw an unhandled exception, it will detail the exception",
+                             {'t', "throw-unhandled"}, false);
+    args::Flag
+        reg_trace(options,
+                  "reg_trace",
+                  "Registers debugging traces in the API.", {'R', "reg-trace"});
+    args::ValueFlag<size_t>
+        num_modules_flag(options,
+                         "num_modules_flag",
+                         "Number of modules to report",
+                         {'n', "num-modules"}, 0);
+    args::ValueFlagList<std::string>
+        fw_file_flag(options,
+                     "fw_file_flag",
+                     "Firmware file(s) to load. Can be repeated. "
+                     "Takes the form rev:rev-num:type:name"
+                     "Ex. r33339:15:sys:syspixie16_revfgeneral_adc250mhz_r33339.bin",
+                     {'F', "firmware"});
+    args::ValueFlagList<std::string>
+        crate_file_flag(options,
+                        "crate_file_flag",
+                        "Crate firmware file to load. "
+                        "The contents is are firmware files.",
+                        {'C', "crate"});
+    args::ValueFlag<std::string>
+        log_file_flag(options,
+                      "log_file_flag",
+                      "Log file. Use `stdout` for the console.",
+                      {'l', "log"});
+
+    args::Group commands(parser, "Commands");
+    args::PositionalList<std::string>
+        cmd_flag(commands,
+                 "commands",
+                 "Commands to be performed in order. "
+                 "Commands are 'init', 'boot', 'set', 'get'.");
 
     try {
         parser.ParseCLI(argc, argv);
@@ -115,7 +152,11 @@ main(int argc, char* argv[])
             log = "test-api-log.txt";
         }
 
-        xia::pixie::logging::start("log", log, xia::pixie::log::debug, false);
+        auto log_level = log::info;
+        if (args::get(debug_flag)) {
+            log_level = log::debug;
+        }
+        xia::pixie::logging::start("log", log, log_level, false);
 
         xia::pixie::firmware::crate firmwares;
         size_t num_modules = args::get(num_modules_flag);
@@ -139,16 +180,45 @@ main(int argc, char* argv[])
         }
 
         xia::pixie::crate::crate crate;
+
+        std::cout << "detecting modules" << std::endl;
         crate.initialize(num_modules, reg_trace);
-        std::cout << "Modules found: " << crate.modules.size()
+        std::cout << "modules found: " << crate.modules.size()
                   << std::endl;
-        crate.firmware = firmwares;
-        crate.set_firmware();
-        crate.boot();
-        std::cout << "Crate:" << std::endl << crate << std::endl;
-    } catch (std::runtime_error& e) {
-        std::cerr << "error: " << e.what() << std::endl;
-        return EXIT_FAILURE;
+
+        if (cmd_flag) {
+            for (auto& cmd : args::get(cmd_flag)) {
+                if (cmd == "boot") {
+                    std::cout << "booting crate" << std::endl;
+                    crate.firmware = firmwares;
+                    crate.set_firmware();
+                    crate.boot();
+                    std::cout << "crate:" << std::endl
+                              << crate << std::endl;
+                } else {
+                    std::cerr << "error: invalid command: " << cmd
+                              << std::endl;
+                    return EXIT_FAILURE;
+                }
+            }
+        } else {
+            std::cout << "no commands; finishd" << std::endl;
+        }
+    } catch (xia::pixie::error::error& e) {
+        log(log::error) << e;
+        std::cerr << e << std::endl;
+        return e.return_code();
+    } catch (std::exception& e) {
+        log(log::error) << "unknown error: " << e.what();
+        std::cerr <<  "error: unknown error: " << e.what() << std::endl;
+        return xia::pixie::error::api_result_unknown_error();
+    } catch (...) {
+        if (args::get(throw_unhandled_flag)) {
+            throw;
+        }
+        log(log::error) << "unknown error: unhandled exception";
+        std::cerr <<  "error: unknown error: unhandled exception" << std::endl;
+        return xia::pixie::error::api_result_unknown_error();
     }
 
     return EXIT_SUCCESS;

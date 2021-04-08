@@ -41,6 +41,8 @@
 
 #include <stdint.h>
 
+#include <pixie_error.hpp>
+
 namespace xia
 {
 namespace pixie
@@ -50,12 +52,7 @@ namespace hw
     /*
      * Hardware errors
      */
-    class error
-        : public std::runtime_error {
-    public:
-        explicit error(const std::string& what);
-        explicit error(const char* what);
-    };
+    typedef error::error error;
 
     /*
      * Wait in microseconds. We need to check how well this works.

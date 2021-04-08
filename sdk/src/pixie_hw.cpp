@@ -46,14 +46,6 @@ namespace hw
 {
     bool offline;
 
-    error::error(const std::string& what)
-        : runtime_error(what) {
-    }
-
-    error::error(const char* what)
-        : runtime_error(what) {
-    }
-
     void
     wait(size_t microseconds)
     {

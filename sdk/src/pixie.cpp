@@ -103,14 +103,14 @@ PixieInitSystem(unsigned short NumModules,
          * number of modules (ie the length of the array) and the array.
          */
         if (NumModules > 0 && PXISlotMap != nullptr) {
-            xia::pixie::module::index_slots indexes;
+            xia::pixie::module::number_slots numbers;
             for (int i = 0; i < static_cast<int>(NumModules); ++i) {
-                typedef xia::pixie::module::index_slot index_slot;
+                typedef xia::pixie::module::number_slot number_slot;
                 log(log::info) << "PixieInitSystem: slot map: "
-                               << i + 1 << " => " << PXISlotMap[i];
-                indexes.push_back(index_slot(i, PXISlotMap[i]));
+                               << PXISlotMap[i] << " => " << i + 1;
+                numbers.push_back(number_slot(i, PXISlotMap[i]));
             }
-            crate.assign(indexes);
+            crate.assign(numbers);
         }
     } catch (xia::pixie::error::error& e) {
         log(log::error) << e;

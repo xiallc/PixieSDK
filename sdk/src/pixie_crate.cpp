@@ -156,7 +156,7 @@ namespace crate
                 }
             }
 
-            module::set_index_by_slot(modules);
+            module::set_number_by_slot(modules);
 
             if (num_modules == 0) {
                 num_modules = modules.size();
@@ -174,12 +174,7 @@ namespace crate
         firmware::load(firmware);
         for (auto& module : modules) {
             if (module.revision != 0) {
-                try {
-                    module.boot();
-                } catch (std::runtime_error& e) {
-                    log(log::error) << "module [slot " << module.slot
-                                    << "]: " << e.what();
-                }
+                module.boot();
             }
         }
         firmware::clear(firmware);
@@ -231,11 +226,11 @@ namespace crate
     }
 
     void
-    crate::assign(const module::index_slots& indexes)
+    crate::assign(const module::number_slots& numbers)
     {
         ready();
-        module::assign(modules, indexes);
-        module::order_by_index(modules);
+        module::assign(modules, numbers);
+        module::order_by_number(modules);
     }
 
     module_handle::module_handle(crate& crate_, size_t number)

@@ -134,7 +134,8 @@ namespace dsp
                  */
                 ok = checked_write(REQUEST_HBR, SYSCON, WRT_DSP_MMA, 0x10, 1000);
                 if (!ok) {
-                    throw error(make_what("DSP SYSCON set failure"));
+                    throw error(error::code::device_load_failure,
+                                make_what("DSP SYSCON set failure"));
                 }
 
                 /*
@@ -142,7 +143,8 @@ namespace dsp
                  */
                 ok = checked_write(EXT_MEM_TEST, DMAC10, WRT_DSP_MMA, 0xa1);
                 if (!ok) {
-                    throw error(make_what("DSP DMAC10 set failure"));
+                    throw error(error::code::device_load_failure,
+                                make_what("DSP DMAC10 set failure"));
                 }
 
                 /*
@@ -200,8 +202,10 @@ namespace dsp
                         break;
                     default: {
                         std::ostringstream oss;
-                        oss << "DSP image tag invalid: offset=" << reader.offset;
-                        throw error(make_what(oss.str().c_str()));
+                        oss << "DSP image tag invalid: offset="
+                            << reader.offset;
+                        throw error(error::code::device_image_failure,
+                                    make_what(oss.str().c_str()));
                     }
                     }
                 }
@@ -222,7 +226,8 @@ namespace dsp
                     wait(1000);
                 }
                 if (retry == 0) {
-                    throw error(make_what("DSP failed to start"));
+                    throw error(error::code::device_boot_failure,
+                                make_what("DSP failed to start"));
                 }
             } catch (error& e) {
                 if (retries == 0) {
@@ -286,7 +291,8 @@ namespace dsp
         bus_write(HBR_DONE, 0);
         if (wordsize != 0) {
             if ((reader.remaining()) < (wordcount * 3 * wordsize)) {
-                throw error(make_what("image section too small"));
+                throw error(error::code::device_image_failure,
+                            make_what("image section too small"));
             }
             wordcount *= wordsize / sizeof(load_value_type);
             for (size_t i = 0; i < wordcount; ++i) {

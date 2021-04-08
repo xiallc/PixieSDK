@@ -59,21 +59,21 @@ namespace pixie
 {
 namespace module
 {
-    error::error(const int slot_, const code type, const std::ostringstream& what)
-        : pixie::error::error(type, make_what(what.str().c_str())),
-          slot(slot_)
+    error::error(const int num, const int slot,
+                 const code type, const std::ostringstream& what)
+        : pixie::error::error(type, make_what(num, slot, what.str().c_str()))
     {
     }
 
-    error::error(const int slot_, const code type, const std::string& what)
-        : pixie::error::error(type, make_what(what.c_str())),
-          slot(slot_)
+    error::error(const int num, const int slot,
+                 const code type, const std::string& what)
+        : pixie::error::error(type, make_what(num, slot, what.c_str()))
     {
     }
 
-    error::error(const int slot_, const code type, const char* what)
-        : pixie::error::error(type, make_what(what)),
-        slot(slot_)
+    error::error(const int num, const int slot,
+                 const code type, const char* what)
+        : pixie::error::error(type, make_what(num, slot, what))
     {
     }
 
@@ -87,10 +87,10 @@ namespace module
     }
 
     std::string
-    error::make_what(const char* what_)
+    error::make_what(const int num, const int slot, const char* what_)
     {
         std::ostringstream oss;
-        oss << "module: slot=" << slot << " : " << what_;
+        oss << "module [num=" << num << ",slot=" << slot << "]: " << what_;
         return oss.str();
     }
 
@@ -142,7 +142,7 @@ namespace module
         : slot(0),
           serial_num(0),
           revision(0),
-          index(-1),
+          number(-1),
           vmaddr(nullptr),
           dsp(*this),
           module_var_descriptors(param::get_module_var_descriptors()),
@@ -161,7 +161,7 @@ namespace module
         : slot(m.slot),
           serial_num(m.serial_num),
           revision(m.revision),
-          index(m.index),
+          number(m.number),
           vmaddr(m.vmaddr),
           dsp(*this),
           module_var_descriptors(std::move(m.module_var_descriptors)),
@@ -177,7 +177,7 @@ namespace module
         m.slot = 0;
         m.serial_num = 0;
         m.revision = 0;
-        m.index = -1;
+        m.number = -1;
         m.vmaddr = nullptr;
         m.reg_trace = false;
         m.present_ = false;
@@ -194,7 +194,7 @@ namespace module
         try {
             close();
         } catch(error& e) {
-            std::cout << "error: " << e.what() << std::endl;
+            log(log::error) << e;
         }
         device.release();
     }
@@ -206,14 +206,14 @@ namespace module
         lock_guard guard_m(m.lock_);
 
         if (in_use != 0 || m.in_use != 0) {
-            throw error(slot, error::code::internal_failure,
+            throw error(number, slot, error::code::internal_failure,
                         "cannot move modules when in use");
         }
 
         slot = m.slot;
         serial_num = m.serial_num;
         revision = m.revision;
-        index = m.index;
+        number = m.number;
         vmaddr = m.vmaddr;
         dsp = std::move(m.dsp);
         module_var_descriptors = std::move(m.module_var_descriptors);
@@ -229,7 +229,7 @@ namespace module
         m.slot = 0;
         m.serial_num = 0;
         m.revision = 0;
-        m.index = -1;
+        m.number = -1;
         m.vmaddr = nullptr;
         m.reg_trace = false;
         m.present_ = false;
@@ -260,7 +260,7 @@ namespace module
         log(log::debug) << "module: open: device-number=" << device_number;
 
         if (online_) {
-            throw error(slot,
+            throw error(number, slot,
                         error::code::module_already_open,
                         "module already open");
         }
@@ -273,7 +273,8 @@ namespace module
                 std::ostringstream oss;
                 oss << "PCI find: device: " << device_number
                     << " : " << ps;
-                throw error(slot, error::code::module_initialize_failure,
+                throw error(number, slot,
+                            error::code::module_initialize_failure,
                             oss);
             }
 
@@ -286,7 +287,8 @@ namespace module
                 std::ostringstream oss;
                 oss << "PCI open: device: " << device_number
                     << " : " << ps;
-                throw error(slot, error::code::module_initialize_failure,
+                throw error(number, slot,
+                            error::code::module_initialize_failure,
                             oss);
             }
 
@@ -298,7 +300,8 @@ namespace module
                 std::ostringstream oss;
                 oss << "PCI BAR map: device: " << device_number
                     << " : " << ps;
-                throw error(slot, error::code::module_initialize_failure,
+                throw error(number, slot,
+                            error::code::module_initialize_failure,
                             oss);
             }
 
@@ -312,7 +315,8 @@ namespace module
                 std::ostringstream oss;
                 oss << "eeprom read: device: " << device_number
                     << " : invalid data length:" << data.size();
-                throw error(slot, error::code::module_info_failure,
+                throw error(number, slot,
+                            error::code::module_info_failure,
                             oss);
             }
 
@@ -375,7 +379,7 @@ namespace module
                 }
                 oss << ": device: " << device->device_number
                     << " : " << ps_unmap_bar << ", " << ps_close;
-                throw error(slot,
+                throw error(number, slot,
                             error::code::module_close_failure,
                             oss.str());
             }
@@ -383,26 +387,22 @@ namespace module
     }
 
     void
-    module::initialize(const std::string varsdef_)
+    module::initialize()
     {
-        varsdef = varsdef_;
-        param::load(varsdef,
-                    module_var_descriptors,
-                    channel_var_descriptors);
     }
 
     void
     module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp)
     {
         if (online_) {
-            throw error(slot,
+            throw error(number, slot,
                         error::code::module_invalid_operation,
                         "module is online");
         }
 
         if (boot_comms) {
             if (comms_fpga) {
-                throw error(slot,
+                throw error(number, slot,
                             error::code::module_invalid_operation,
                             "comms already booted");
             }
@@ -414,7 +414,7 @@ namespace module
 
         if (boot_fippi) {
             if (fippi_fpga) {
-                throw error(slot,
+                throw error(number, slot,
                             error::code::module_invalid_operation,
                             "fippi already booted");
             }
@@ -426,12 +426,16 @@ namespace module
 
         if (boot_dsp) {
             if (dsp.online) {
-                throw error(slot,
+                throw error(number, slot,
                             error::code::module_invalid_operation,
                             "dsp already booted");
             }
             firmware::firmware_ref fw = get("dsp");
             dsp.boot(fw->data);
+            firmware::firmware_ref vars = get("var");
+            param::load(vars,
+                        module_var_descriptors,
+                        channel_var_descriptors);
         }
 
         log(log::info) << std::boolalpha
@@ -446,7 +450,7 @@ namespace module
     module::set(firmware::module& fw)
     {
         if (online_) {
-            throw error(slot,
+            throw error(number, slot,
                         error::code::module_invalid_operation,
                         "module is online");
         }
@@ -471,18 +475,18 @@ namespace module
         oss << "firmware not found: slot=" << slot
             << ": device=" << device
             << " firmwares=" << firmware.size();
-        throw error(slot,
+        throw error(number, slot,
                     error::code::module_invalid_firmware,
                     oss.str());
     }
 
     void
-    assign(modules& modules_, const index_slots& indexes)
+    assign(modules& modules_, const number_slots& numbers)
     {
-        for (auto index_slot : indexes) {
+        for (auto number_slot : numbers) {
             for (auto& mod : modules_) {
-                if (mod.slot == index_slot.second) {
-                    mod.index = index_slot.first;
+                if (mod.slot == number_slot.second) {
+                    mod.number = number_slot.first;
                     break;
                 }
             }
@@ -490,12 +494,12 @@ namespace module
     }
 
     void
-    order_by_index(modules& mods)
+    order_by_number(modules& mods)
     {
         std::sort(mods.begin(),
                   mods.end(),
                   [](module& a, module& b) {
-                      return a.index < b.index; } );
+                      return a.number < b.number; } );
     }
 
     void
@@ -508,13 +512,13 @@ namespace module
     }
 
     void
-    set_index_by_slot(modules& mods)
+    set_number_by_slot(modules& mods)
     {
         order_by_slot(mods);
-        int index = 0;
+        int number = 0;
         for (auto& mod : mods) {
-            mod.index = index;
-            index++;
+            mod.number = number;
+            number++;
         }
     }
 
@@ -522,7 +526,8 @@ namespace module
     module::output(std::ostream& out) const {
         ostream_guard flags(out);
         out << std::boolalpha
-            << "slot: " << slot
+            << "number: " << number
+            << " slot: " << slot
             << " present:" << present_
             << " online:" << online_
             << " serial:" << serial_num

@@ -78,6 +78,8 @@ enum struct code {
     device_boot_failure,
     device_initialize_failure,
     device_copy_failure,
+    device_image_failure,
+    device_hw_failure,
     /*
      * File handling
      */
@@ -104,6 +106,7 @@ enum struct code {
  */
 struct error
     : public std::runtime_error {
+    typedef pixie::error::code code;
     const code type;
 
     explicit error(const code type, const std::ostringstream& what);

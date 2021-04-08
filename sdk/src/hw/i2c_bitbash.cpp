@@ -114,7 +114,7 @@ namespace i2c
         write(data);
         if (!get_ack()) {
             stop();
-            throw error(what);
+            throw error(error::code::device_hw_failure, what);
         }
     }
 

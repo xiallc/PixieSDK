@@ -97,6 +97,10 @@ namespace fpga
                        << ",set=0x" << load_ctrl.set
                        << ",done=0x" << load_ctrl.done;
 
+        if (image.empty()) {
+            throw error(error::code::device_image_failure, "no image loaded");
+        }
+
         bool programmed = false;
 
         while (!programmed) {
@@ -140,7 +144,8 @@ namespace fpga
                     if (timeout_usec <= 0) {
                         --retries;
                         if (retries <= 0) {
-                            throw error(make_what("clear failure"));
+                            throw error(error::code::device_load_failure,
+                                        make_what("clear failure"));
                         }
                         break;
                     }
@@ -184,7 +189,8 @@ namespace fpga
                 if (timeout_usec <= 0) {
                     --retries;
                     if (retries <= 0) {
-                        throw error(make_what("programming failure"));
+                        throw error(error::code::device_load_failure,
+                                    make_what("programming failure"));
                     }
                     break;
                 }

@@ -42,6 +42,8 @@
 
 #include <pixie16app_defs.h>
 
+#include <pixie_error.hpp>
+#include <pixie_log.hpp>
 #include <pixie_param.hpp>
 
 namespace xia
@@ -50,6 +52,11 @@ namespace pixie
 {
 namespace param
 {
+    /*
+     * Param errors
+     */
+    typedef pixie::error::error error;
+
     static const module_var_descs module_var_descriptors_default = {
         { module_var::ModNum,               enable,  rw,  1, "ModNum" },
         { module_var::ModCSRA,              disable, ro,  1, "ModCSRA" },
@@ -73,7 +80,8 @@ namespace param
         { module_var::SlotID,               enable,  rw,  1, "SlotID" },
         { module_var::ModID,                disable, rw,  1, "ModID" },
         { module_var::TrigConfig,           enable,  rw,  4, "TrigConfig" },
-        { module_var::HRTP,                 enable,  rw,  1, "HRTP" },
+        { module_var::HRTP,                 enable,  rw,  1, "HostRunTimePreset" },
+        { module_var::PUID,                 enable,  rw,  1, "PowerUpInitDone" },
         { module_var::U00,                  disable, rw,  1, "U00" },
         { module_var::RealTimeA,            enable,  ro,  1, "RealTimeA" },
         { module_var::RealTimeB,            enable,  ro,  1, "RealTimeB" },
@@ -131,6 +139,7 @@ namespace param
         { channel_var::FtrigoutDelay,     enable,  rw,  1, "FtrigoutDelay" },
         { channel_var::Log2Bweight,       enable,  rw,  1, "Log2Bweight" },
         { channel_var::PreampTau,         enable,  rw,  1, "PreampTau" },
+        { channel_var::Xavg,              disable, rw,  1, "Xavg" },
         { channel_var::FastTrigBackLen,   enable,  rw,  1, "FastTrigBackLen" },
         { channel_var::CFDDelay,          enable,  rw,  1, "CFDDelay" },
         { channel_var::CFDScale,          enable,  rw,  1, "CFDScale" },
@@ -250,14 +259,6 @@ namespace param
         channel_var::QDCLen7
     };
 
-    error::error(const std::string& what)
-        : runtime_error(what) {
-    }
-
-    error::error(const char* what)
-        : runtime_error(what) {
-    }
-
     const module_var_descs&
     get_module_var_descriptors() {
         return module_var_descriptors_default;
@@ -275,42 +276,12 @@ namespace param
     {
         std::ifstream input(dspvarfile, std::ios::in | std::ios::binary);
         if (!input) {
-            throw std::runtime_error(
-                std::string("channel_var file open: ") + dspvarfile +
-                ": " + std::strerror(errno)
-            );
+            throw error(error::code::file_read_failure,
+                        std::string("channel_var file open: ") + dspvarfile +
+                        ": " + std::strerror(errno));
         }
-
         try {
-            for (std::string line; std::getline(input, line); ) {
-                if (!line.empty()) {
-                    std::istringstream iss(line);
-                    uint32_t address;
-                    std::string name;
-                    iss >> std::hex >> address >> name;
-                    auto mvi = std::find_if(module_var_descriptors.begin(),
-                                            module_var_descriptors.end(),
-                                            [name](module_var_desc desc){
-                                                return desc.name == name;
-                                            });
-                    if (mvi != module_var_descriptors.end()) {
-                        (*mvi).address = address;
-                    } else {
-                        auto cvi = std::find_if(channel_var_descriptors.begin(),
-                                                channel_var_descriptors.end(),
-                                                [name](channel_var_desc desc){
-                                                    return desc.name == name;
-                                                });
-                        if (cvi != channel_var_descriptors.end()) {
-                            (*cvi).address = address;
-                        } else {
-                            std::string what = "DSP variable not found: ";
-                            what += name;
-                            throw error(what);
-                        }
-                    }
-                }
-            }
+            load(input, module_var_descriptors, channel_var_descriptors);
         } catch (...) {
             input.close();
             throw;
@@ -319,12 +290,82 @@ namespace param
     }
 
     void
+    load(firmware::firmware_ref& firmware,
+         module_var_descs& module_var_descriptors,
+         channel_var_descs& channel_var_descriptors)
+    {
+        log(log::info) << "firmware: load vars: " << *firmware;
+
+        if (firmware->device != "var") {
+            throw error(error::code::device_image_failure, "invalid image type");
+        }
+        if (firmware->data.empty()) {
+            throw error(error::code::device_image_failure, "no image loaded");
+        }
+
+        struct membuf
+            : std::streambuf {
+            membuf(char* base, std::ptrdiff_t size) {
+                this->setg(base, base, base + size);
+            }
+        };
+        char* data =
+            static_cast<char*>(static_cast<void*>(firmware->data.data()));
+        membuf sbuf(data, firmware->data.size());
+        std::istream input(&sbuf);
+        load(input, module_var_descriptors, channel_var_descriptors);
+    }
+
+    void
+    load(std::istream& input,
+         module_var_descs& module_var_descriptors,
+         channel_var_descs& channel_var_descriptors)
+    {
+        for (std::string line; std::getline(input, line); ) {
+            if (!line.empty()) {
+                std::istringstream iss(line);
+                uint32_t address;
+                std::string name;
+                iss >> std::hex >> address >> name;
+                auto mvi = std::find_if(module_var_descriptors.begin(),
+                                        module_var_descriptors.end(),
+                                        [name](module_var_desc desc){
+                                            return desc.name == name;
+                                        });
+                if (mvi != module_var_descriptors.end()) {
+                    (*mvi).address = address;
+                } else {
+                    auto cvi = std::find_if(channel_var_descriptors.begin(),
+                                            channel_var_descriptors.end(),
+                                            [name](channel_var_desc desc){
+                                                return desc.name == name;
+                                            });
+                    if (cvi != channel_var_descriptors.end()) {
+                        (*cvi).address = address;
+                    } else {
+                        std::string what = "DSP variable not found: ";
+                        what += name;
+                        throw error(error::code::device_image_failure,
+                                    what);
+                    }
+                }
+            }
+        }
+
+        log(log::info) << "firmware: var descriptions loaded: module="
+                       << module_var_descriptors.size()
+                       << " channel="
+                       << channel_var_descriptors.size();
+    }
+
+    void
     copy_parameters(const copy_filter& filter,
                     const channel_parameters& source,
                     channel_parameters& dest)
     {
         if (source.size() != dest.size())
-            throw error("copy source and dest size do not match");
+            throw error(error::code::device_copy_failure,
+                        "copy source and dest size do not match");
 
         for (auto f : filter) {
             int v = static_cast<int>(f.var);
