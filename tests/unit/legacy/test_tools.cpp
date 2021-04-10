@@ -17,7 +17,7 @@ TEST_SUITE("sys/tools.c") {
         //        under the assumption that we get a result that's greater than 0 and be happy with it.
         auto* result = new double;
         CHECK(0 == get_ns_per_cycle(result));
-        CHECK(*result > 0);
+        CHECK(*result >= 0.0);
         delete result;
     }
     TEST_CASE("Pixie_Print_MSG") {
