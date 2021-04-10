@@ -16,11 +16,6 @@ pipeline {
                 '''
             }
         }
-        stage('Check workspace') {
-            steps {
-                sh '''ls'''
-            }
-        }
         stage('PixieSDK') {
             steps{
                 dir('build') {
