@@ -1,4 +1,6 @@
 # Pixie SDK
+[![Build Status](https://travis-ci.com/xiallc/pixie_sdk.svg?branch=master)](https://travis-ci.com/xiallc/pixie_sdk)
+
 Software used to access Pixie hardware using the PLX 9054 driver. Provides
 user functions to perform common tasks on the hardware (ex. set parameters,
 start runs, load firmware).
