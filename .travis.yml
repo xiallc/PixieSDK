@@ -57,10 +57,10 @@ before_install:
   - test -e ./PlxApi/Library/PlxApi.so
   - test -e ./PlxApi/Library/PlxApi.a
   - cd ${ORIG_DIR}
+
+script:
   - mkdir build
   - cd build
   - cmake ../
   - make
-
-script:
   - ./tests/unit/legacy/legacy_unit_test_runner
