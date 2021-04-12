@@ -54,11 +54,31 @@
 #include <unistd.h>
 #endif
 
-int Pixie_DSP_Memory_IO(unsigned int* dsp_data,  // DSP data for the I/O
-                        unsigned int dsp_address,  // DSP data memory address
-                        unsigned int nWords,  // Number of DSP data words for the I/O
-                        unsigned short direction,  // I/O direction
-                        unsigned short ModNum)  // The Pixie module for the I/O
+/**
+ * @defgroup COMMUNICATION Communication
+ * @ingroup PRIVATE
+ * A series of functions that provide direct access to modules.
+ */
+
+/**
+ * @ingroup COMMUNICATION
+ * @brief Write/read data to/from the DSP memory.
+ *
+ * The function will always write one 32-bit word at a time. Reads depend on nWords. If nWords is
+ * greater than 1 then the entire block will be read at once using a burst read.
+ *
+ * @param[in,out] dsp_data: The data that we'll be writing to or reading from the DSP
+ * @param[in] dsp_address: The DSP memory address to perform the operation on
+ * @param[in] nWords: The data size that we'll read/write
+ * @param[in] direction: Whether this operation is a read or write. Uses MOD_READ or MOD_WRITE
+ * @param[in] ModNum: The module number that we'll be performing the operation against.
+ * @returns A status code indicating the result of the operation
+ * @retval 0 if successful
+ * @retval -1 if reading the DSP memory blocks failed
+ * @retval -2 if reading DSP memory remaining words failed
+*/
+int Pixie_DSP_Memory_IO(unsigned int* dsp_data, unsigned int dsp_address, unsigned int nWords,
+                        unsigned short direction, unsigned short ModNum)
 {
     unsigned int numBlocks, remainWords;
     int retval;
@@ -154,24 +174,24 @@ int Pixie_DSP_Memory_IO(unsigned int* dsp_data,  // DSP data for the I/O
 }
 
 
-/****************************************************************
-*	Pixie_DSP_Memory_Burst_Read:
-*		Read data from Pixie DSP data memory using DMA burst mode.
-*
-*		Return Value:
-*			 0 - I/O successful
-*			-1 - DSP DMAC11 is still active so can't start a new one
-*			-2 - Failed to open PLX DMA channel
-*			-3 - Failed to read FIFO watermark in System FPGA
-*			-4 - PlxPci_DmaTransferUserBuffer failed while reading from DSP memory
-*			-5 - PlxPci_DmaChannelClose failed after reading from DSP memory
-*
-****************************************************************/
-
-int Pixie_DSP_Memory_Burst_Read(unsigned int* dsp_data,  // DSP data for the I/O
-                                unsigned int dsp_address,  // DSP data memory address
-                                unsigned int nWords,  // Number of DSP data words for the I/O
-                                unsigned short ModNum)  // The Pixie module for the I/O
+/**
+ * @ingroup COMMUNICATION
+ * @brief Read data from Pixie DSP data memory using DMA burst mode.
+ * @note This function depends on the PLX major revision number!
+ * @param[out] dsp_data: DSP data for the I/O
+ * @param[in] dsp_address: DSP data memory address
+ * @param[in] nWords: Number of DSP data words for the I/O
+ * @param[in] ModNum: The Pixie module for the I/O
+ * @return A status code indicating the result of the operation
+ * @retval  0 - I/O successful
+ * @retval -1 - DSP DMAC11 is still active so can't start a new one
+ * @retval -2 - Failed to open PLX DMA channel
+ * @retval -3 - Failed to read FIFO watermark in System FPGA
+ * @retval -4 - PlxPci_DmaTransferUserBuffer failed while reading from DSP memory
+ * @retval -5 - PlxPci_DmaChannelClose failed after reading from DSP memory
+ */
+int Pixie_DSP_Memory_Burst_Read(unsigned int* dsp_data, unsigned int dsp_address,
+                                unsigned int nWords, unsigned short ModNum)
 {
     unsigned int buffer[128];
     unsigned int dummy[8];
@@ -371,18 +391,16 @@ int Pixie_DSP_Memory_Burst_Read(unsigned int* dsp_data,  // DSP data for the I/O
 }
 
 
-/****************************************************************
-*	Pixie_Read_ExtFIFOStatus:
-*		Check the external FIFO status and return the number of words
-*		that exist in the FIFO.
-*
-*		Return Value:
-*			 0 - Reading external FIFO status successful
-*
-****************************************************************/
-
-int Pixie_Read_ExtFIFOStatus(unsigned int* nFIFOWords,  // Return the number of 32-bit words in the external FIFO
-                             unsigned short ModNum)  // The Pixie module being addressed
+/**
+ * @ingroup COMMUNICATION
+ * @brief Check the external FIFO status and return the number of words that exist in the FIFO.
+ * @param nFIFOWords : A pointer to a 32-bit unsigned integer whose value will be the number of
+ *     32-bit words in the External FIFO.
+ * @param ModNum The Pixie module being addressed
+ * @return A status code indicating the result of the operation
+ * @retval  0 - I/O successful
+ */
+int Pixie_Read_ExtFIFOStatus(unsigned int* nFIFOWords, unsigned short ModNum)
 {
 
     if (SYS_Offline == 1)  // Returns immediately for offline analysis
@@ -396,22 +414,22 @@ int Pixie_Read_ExtFIFOStatus(unsigned int* nFIFOWords,  // Return the number of 
 }
 
 
-/****************************************************************
-*	Pixie_ExtFIFO_Read:
-*		Read data from the external FIFO using PCI burst mode.
-*
-*		Return Value:
-*			 0 - I/O successful
-*			-1 - Failed to open PLX DMA channel
-*			-2 - Failed to read FIFO watermark in System FPGA
-*			-3 - PlxPci_DmaTransferUserBuffer failed while reading from external FIFO
-*			-4 - PlxPci_DmaChannelClose failed after reading from DSP memory
-*
-****************************************************************/
-
-int Pixie_ExtFIFO_Read(unsigned int* extfifo_data,  // To receive the external FIFO data
-                       unsigned int nWords,  // Number of external FIFO data words to read
-                       unsigned short ModNum)  // The Pixie module for the I/O
+/**
+ * @ingroup COMMUNICATION
+ * @brief Read data from the external FIFO using PCI burst mode.
+ * @note This function depends on the PLX major version number!
+ * @param extfifo_data : Pointer to a memory block large enough to hold all of the external
+ *     FIFO data.
+ * @param nWords : The number of external FIFO words to be read.
+ * @param ModNum : The module number to read the external FIFO data from.
+ * @return A status code indicating the result of the operation
+ * @retval  0 - I/O successful
+ * @retval -1 - Failed to open PLX DMA channel
+ * @retval -2 - Failed to read FIFO watermark in System FPGA
+ * @retval -3 - PlxPci_DmaTransferUserBuffer failed while reading from external FIFO
+ * @retval -4 - PlxPci_DmaChannelClose failed after reading from DSP memory
+ */
+int Pixie_ExtFIFO_Read(unsigned int* extfifo_data, unsigned int nWords, unsigned short ModNum)
 {
     unsigned int count, wml;
 
@@ -521,23 +539,21 @@ int Pixie_ExtFIFO_Read(unsigned int* extfifo_data,  // To receive the external F
 }
 
 
-/********************************************************************************
-*	Pixie_Main_Memory_IO:
-*		Pixie external memory I/O communication (burst Read/Write)
-*
-*		memory_data:    holds or receives the data.
-*		memory_address: external memory address
-*		direction:      either SYS_MOD_READ or SYS_MOD_WRITE.
-*		nWords:         The number of 32-bit words to be transferred.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Failed to open PLX DMA channel
-*			-2 - PlxPci_DmaTransferUserBuffer failed while reading from external memory
-*			-3 - PlxPci_DmaChannelClose failed after reading from external memory
-*
-********************************************************************************/
-
+/**
+ * @ingoup COMMUNICATION
+ * @brief Pixie external memory I/O communication (burst Read/Write)
+ * @note This function depends on the PLX major revision number.
+ * @param memory_data : Pointer to a data block that will contain the data.
+ * @param memory_address : The main memory address that we'd like to put or receive data.
+ * @param nWords : The number of 32-bit unsigned integers to transfer
+ * @param direction : The direction of data flow. Either SYS_MOD_WRITE or SYS_MOD_READ).
+ * @param ModNum : The module index that we'll be working with. Counting from 0.
+ * @return A status code indicating the result of the operation
+ * @returns  0 - Success
+ * @returns -1 - Failed to open PLX DMA channel
+ * @returns -2 - PlxPci_DmaTransferUserBuffer failed while reading from external memory
+ * @returns -3 - PlxPci_DmaChannelClose failed after reading from external memory
+ */
 int Pixie_Main_Memory_IO(unsigned int* memory_data,  // Memory data for the I/O
                          unsigned int memory_address,  // Main memory address
                          unsigned int nWords,  // Number of data words for the I/O

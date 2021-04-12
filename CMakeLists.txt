@@ -35,3 +35,8 @@ ENDIF (${CMAKE_VERSION} VERSION_LESS "3.13")
 add_subdirectory(sdk)
 add_subdirectory(tests)
 add_subdirectory(utilities)
+
+option(PIXIESDK_DOCO "Tells CMake to build documentation" OFF)
+if(PIXIESDK_DOCO)
+    add_subdirectory(doc)
+endif()
