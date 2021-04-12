@@ -45,7 +45,7 @@ We provide some basic programs that you can use to test the functionality of the
 the full functionality of the API. They are **not recommended for production use**. Users may use these codes as a
 basis for developing their own applications.
 
-[View the README.md](https://git.xia.com/pixie/pixie_sdk/-/blob/master/utilities/README.md)
+[View the README.md](https://github.com/xiallc/pixie_sdk/blob/master/utilities/README.md)
 
 ## Testing the software
 We are in the process of building a robust test suite for the software. These tests are not installed
