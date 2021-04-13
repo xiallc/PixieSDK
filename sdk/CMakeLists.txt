@@ -28,6 +28,7 @@ set_target_properties(LegacyPixieSDK PROPERTIES PUBLIC_HEADER "${LEGACYPIXIESDK_
 install(TARGETS LegacyPixieSDK LIBRARY DESTINATION lib PUBLIC_HEADER DESTINATION include)
 
 set(PIXIE_SDK_SOURCES
+        src/configuration.cpp
         src/pixie16.cpp
         src/pixie_crate.cpp
         src/pixie_module.cpp

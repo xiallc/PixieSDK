@@ -38,3 +38,28 @@
 /// @date April 13, 2021
 
 #include "configuration.hpp"
+namespace xia {
+namespace config {
+Configuration read_configuration_file(const std::string& config_file_name) {
+    std::ifstream input(config_file_name, std::ios::in);
+
+    if (input.fail()) {
+        std::stringstream errmsg;
+        errmsg << "Could not open " << config_file_name << "!";
+        throw std::invalid_argument(errmsg.str());
+    }
+
+    xia::config::Configuration cfg;
+    input >> cfg.numModules;
+    cfg.slot_map = new unsigned short[cfg.numModules + 1];
+    for (size_t i = 0; i < cfg.numModules; i++)
+        input >> cfg.slot_map[i];
+
+    input >> cfg.ComFPGAConfigFile >> cfg.SPFPGAConfigFile >> cfg.TrigFPGAConfigFile >>
+          cfg.DSPCodeFile >> cfg.DSPParFile >> cfg.DSPVarFile;
+
+    input.close();
+    return cfg;
+}
+}  // namespace configuration
+}  // namespace xia

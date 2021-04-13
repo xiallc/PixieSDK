@@ -4,7 +4,8 @@ add_executable(pixie_sdk_example
         src/pixie_api_select.cpp
         $<TARGET_OBJECTS:EasyLoggingObjLib>)
 target_include_directories(pixie_sdk_example PUBLIC
-        ${PROJECT_SOURCE_DIR}/common/
+        include/
+        ${PROJECT_SOURCE_DIR}/sdk/include/
         ${PROJECT_SOURCE_DIR}/vendor/analog_devices
         ${PROJECT_SOURCE_DIR}/vendor/args
         ${PROJECT_SOURCE_DIR}/vendor/easylogging)

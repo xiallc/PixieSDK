@@ -100,7 +100,7 @@ bool execute_adjust_offsets(const unsigned int& numModules, const std::string& s
     return true;
 }
 
-bool execute_list_mode_run(const xia::configuration::Configuration& cfg,
+bool execute_list_mode_run(const xia::config::Configuration& cfg,
                            const double& runtime_in_seconds) {
     LOG(INFO) << "Starting list mode data run for " << runtime_in_seconds << " s.";
 
@@ -413,9 +413,9 @@ int main(int argc, char** argv) {
     }
     LOG(INFO) << "API: " << pixie->name;
 
-    xia::configuration::Configuration cfg;
+    xia::config::Configuration cfg;
     try {
-        cfg = xia::configuration::read_configuration_file(configuration.Get());
+        cfg = xia::config::read_configuration_file(configuration.Get());
     } catch (std::invalid_argument& invalidArgument) {
         LOG(ERROR) << invalidArgument.what();
         return EXIT_FAILURE;

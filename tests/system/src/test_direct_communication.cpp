@@ -172,9 +172,9 @@ int main(int argc, char* argv[]) {
     } else
         address = stoul(args::get(address_flag), nullptr, 0);
 
-    xia::configuration::Configuration cfg;
+    xia::config::Configuration cfg;
     try {
-        cfg = xia::configuration::read_configuration_file(configuration.Get());
+        cfg = xia::config::read_configuration_file(configuration.Get());
     } catch (std::invalid_argument& invalidArgument) {
         LOG(ERROR) << invalidArgument.what();
         return EXIT_FAILURE;
