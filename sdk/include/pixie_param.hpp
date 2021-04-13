@@ -184,9 +184,9 @@ namespace param
         SlotID,
         ModID,
         TrigConfig,
-        HRTP,
-        PUID,
         U00,
+        HostRunTimePreset,
+        PowerUpInitDone,
         /*
          * Out
          */
