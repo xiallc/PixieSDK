@@ -47,87 +47,15 @@ extern "C" {
  * Functions for use in end-user software.
  */
 
-/**
- * @ingroup PUBLIC_API
- *
- * @brief Initializes the system by mapping PXI slots to modules
- *
- * Use this function to configure the Pixie modules in the PXI chassis.
- *
- * NumModules is the total number of Pixie-16 modules installed in the system. PXISlotMap is the
- * pointer to an array that must have at least as many entries as there are Pixie-16 modules in the
- * chassis.
- *
- * PXISlotMap serves as a simple mapping of the logical module number and the physical slot number
- * that the modules reside in. The logical module number runs from 0. For instance, in a system
- * with 5 Pixie modules, these 5 modules may occupy slots 3 through 7. The user must fill
- * PXISlotMap as follows: PXISlotMap = {3, 4, 5, 6, 7 ...} since module number 0 resides in slot
- * number 3, etc. To find out in which slot a module is located, any piece of subsequent code can
- * use the expression PXISlotMap[ModNum], where ModNum is the logic module number.
- * OfflineMode is used to indicate to the API whether the system is running in OFFLINE mode (1) or
- * ONLINE mode (0). OFFLINE mode is useful for situations where no Pixie-16 modules are present but
- * users can still test their calls to the API functions in their application software.
- * This function must be called as the first step in the boot process. It makes the modules known
- * to the system and “opens” each module for communication.
- *
- * @param[in] NumModules: The total number of Pixie modules in the system provided by the user. If
- *     0 all slots are check for modules automatically.
- * @param[in] PXISlotMap: An array containing the PXI slot number for each module. The array index
- *     indicates which module number the slot number takes. The first slot number is Module 0.
- * @param[in] OfflineMode: Used to tell the API that there are no modules connected to the system.
- * @returns A status code indicating the result of the operation
- * @retval  0 - Success
- * @retval -1 - Invalid total number of Pixie modules
- * @retval -2 - Null pointer *PXISlotMap.
- * @retval -3 - Failed to initialize system
- * @retval -4 - Failed to read the module's information
- */
-PIXIE_EXPORT int PIXIE_API
-PixieInitSystem(unsigned short NumModules,
-                unsigned short* PXISlotMap,
-                unsigned short OfflineMode);
+PIXIE_EXPORT double PIXIE_API IEEEFloating2Decimal(unsigned int IEEEFloatingNumber);
 
-/**
- * @ingroup PUBLIC_API
- *
- * @brief Close the modules and release resources used by PCI devices before
- * exiting the application.
- *
- * @param[in] ModNum: The module number that we'll be closing.
- * @returns A status code indicating the result of the operation
- * @retval:  0 - Success
- * @retval: -1 - Invalid Pixie module number
- * @retval: -2 - Failed to close Pixie module
- */
-PIXIE_EXPORT int PIXIE_API
-PixieExitSystem(unsigned short ModNum);
+PIXIE_EXPORT unsigned int PIXIE_API Decimal2IEEEFloating(double DecimalNumber);
 
-/**
- * @ingroup PUBLIC_API
- * @brief Read information stored on each module, including its revision, serial number, and ADC.
- *
- * Use this function to read information stored on each module, including its revision, serial
- * number, ADC bits and sampling rate. This should be done after initializing the PCI communication.
- * Information from the module can be used to select the appropriate firmware, DSP, and
- * configuration parameters files before booting the module.
- *
- * @param[in] ModNum: The module number (counts from 0) that we'll read information
- * @param[out] ModRev: The revision read from the on-board EEPROM
- * @param[out] ModSerNum: The serial number read from the on-board EEPROM
- * @param[out] ModADCBits: The ADC bit resolution read from the on-board EEPROM
- * @param[out] ModADCMSPS: The ADC sampling frequency read from the on-board EEPROM
- * @returns A status code indicating the result of the operation
- * @retval:  0 - Success
- * @retval: -1 - Invalid Pixie module number
- * @retval: -2 - Failed to read the serial number from I2C serial EEPROM
- * @retval: -3 - Failed to read the ADC information from I2C serial EEPROM
- */
-PIXIE_EXPORT int PIXIE_API
-PixieReadModuleInfo(unsigned short ModNum,
-                      unsigned short* ModRev,
-                      unsigned int* ModSerNum,
-                      unsigned short* ModADCBits,
-                      unsigned short* ModADCMSPS);
+PIXIE_EXPORT int PIXIE_API PixieAcquireADCTrace(unsigned short ModNum);  // module number
+
+PIXIE_EXPORT int PIXIE_API PixieAcquireBaselines(unsigned short ModNum);  // module number
+
+PIXIE_EXPORT int PIXIE_API PixieAdjustOffsets(unsigned short ModNum);
 
 /**
  * @ingroup PUBLIC_API
@@ -199,18 +127,141 @@ PixieReadModuleInfo(unsigned short ModNum,
  * @retval -27 - Failed to boot DSP
  * @retval -28 - Failed to read DSPParFile
  */
-PIXIE_EXPORT int PIXIE_API
-PixieBootModule(const char* ComFPGAConfigFile,
-                  const char* SPFPGAConfigFile,
-                  const char* TrigFPGAConfigFile,
-                  const char* DSPCodeFile,
-                  const char* DSPParFile,
-                  const char* DSPVarFile,
-                  unsigned short ModNum,
-                  unsigned short BootPattern);
+PIXIE_EXPORT int PIXIE_API PixieBootModule(const char* ComFPGAConfigFile,
+                                           const char* SPFPGAConfigFile,
+                                           const char* TrigFPGAConfigFile, const char* DSPCodeFile,
+                                           const char* DSPParFile, const char* DSPVarFile,
+                                           unsigned short ModNum, unsigned short BootPattern);
+
+PIXIE_EXPORT int PIXIE_API PixieCheckExternalFIFOStatus(unsigned int* nFIFOWords, unsigned short ModNum);
+
+PIXIE_EXPORT int PIXIE_API PixieCheckRunStatus(unsigned short ModNum);
+
+PIXIE_EXPORT double PIXIE_API PixieComputeInputCountRate(unsigned int* Statistics, unsigned short ModNum,
+                                    unsigned short ChanNum);
+
+PIXIE_EXPORT double PIXIE_API PixieComputeLiveTime(unsigned int* Statistics, unsigned short ModNum,
+                              unsigned short ChanNum);
+
+PIXIE_EXPORT double PIXIE_API PixieComputeOutputCountRate(unsigned int* Statistics, unsigned short ModNum,
+                                     unsigned short ChanNum);
+
+PIXIE_EXPORT double PIXIE_API PixieComputeProcessedEvents(unsigned int* Statistics, unsigned short ModNum);
+
+PIXIE_EXPORT double PIXIE_API PixieComputeRealTime(unsigned int* Statistics, unsigned short ModNum);
+
+PIXIE_EXPORT int PIXIE_API PixieEndRun(unsigned short ModNum);
+
+/**
+ * @ingroup PUBLIC_API
+ *
+ * @brief Close the modules and release resources used by PCI devices before
+ * exiting the application.
+ *
+ * @param[in] ModNum: The module number that we'll be closing.
+ * @returns A status code indicating the result of the operation
+ * @retval:  0 - Success
+ * @retval: -1 - Invalid Pixie module number
+ * @retval: -2 - Failed to close Pixie module
+ */
+PIXIE_EXPORT int PIXIE_API PixieExitSystem(unsigned short ModNum);
+
+/**
+ * @ingroup PUBLIC_API
+ *
+ * @brief Initializes the system by mapping PXI slots to modules
+ *
+ * Use this function to configure the Pixie modules in the PXI chassis.
+ *
+ * NumModules is the total number of Pixie-16 modules installed in the system. PXISlotMap is the
+ * pointer to an array that must have at least as many entries as there are Pixie-16 modules in the
+ * chassis.
+ *
+ * PXISlotMap serves as a simple mapping of the logical module number and the physical slot number
+ * that the modules reside in. The logical module number runs from 0. For instance, in a system
+ * with 5 Pixie modules, these 5 modules may occupy slots 3 through 7. The user must fill
+ * PXISlotMap as follows: PXISlotMap = {3, 4, 5, 6, 7 ...} since module number 0 resides in slot
+ * number 3, etc. To find out in which slot a module is located, any piece of subsequent code can
+ * use the expression PXISlotMap[ModNum], where ModNum is the logic module number.
+ * OfflineMode is used to indicate to the API whether the system is running in OFFLINE mode (1) or
+ * ONLINE mode (0). OFFLINE mode is useful for situations where no Pixie-16 modules are present but
+ * users can still test their calls to the API functions in their application software.
+ * This function must be called as the first step in the boot process. It makes the modules known
+ * to the system and “opens” each module for communication.
+ *
+ * @param[in] NumModules: The total number of Pixie modules in the system provided by the user. If
+ *     0 all slots are check for modules automatically.
+ * @param[in] PXISlotMap: An array containing the PXI slot number for each module. The array index
+ *     indicates which module number the slot number takes. The first slot number is Module 0.
+ * @param[in] OfflineMode: Used to tell the API that there are no modules connected to the system.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Invalid total number of Pixie modules
+ * @retval -2 - Null pointer *PXISlotMap.
+ * @retval -3 - Failed to initialize system
+ * @retval -4 - Failed to read the module's information
+ */
+PIXIE_EXPORT int PIXIE_API PixieInitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
+                                           unsigned short OfflineMode);
+
+PIXIE_EXPORT int PIXIE_API PixieReadDataFromExternalFIFO(unsigned int* ExtFIFO_Data, unsigned int nFIFOWords,
+                                    unsigned short ModNum);
+
+PIXIE_EXPORT int PIXIE_API PixieReadHistogramFromModule(unsigned int* Histogram, unsigned int NumWords,
+                                   unsigned short ModNum, unsigned short ChanNum);
+
+/**
+ * @ingroup PUBLIC_API
+ * @brief Read information stored on each module, including its revision, serial number, and ADC.
+ *
+ * Use this function to read information stored on each module, including its revision, serial
+ * number, ADC bits and sampling rate. This should be done after initializing the PCI communication.
+ * Information from the module can be used to select the appropriate firmware, DSP, and
+ * configuration parameters files before booting the module.
+ *
+ * @param[in] ModNum: The module number (counts from 0) that we'll read information
+ * @param[out] ModRev: The revision read from the on-board EEPROM
+ * @param[out] ModSerNum: The serial number read from the on-board EEPROM
+ * @param[out] ModADCBits: The ADC bit resolution read from the on-board EEPROM
+ * @param[out] ModADCMSPS: The ADC sampling frequency read from the on-board EEPROM
+ * @returns A status code indicating the result of the operation
+ * @retval:  0 - Success
+ * @retval: -1 - Invalid Pixie module number
+ * @retval: -2 - Failed to read the serial number from I2C serial EEPROM
+ * @retval: -3 - Failed to read the ADC information from I2C serial EEPROM
+ */
+PIXIE_EXPORT int PIXIE_API PixieReadModuleInfo(unsigned short ModNum, unsigned short* ModRev,
+                                               unsigned int* ModSerNum, unsigned short* ModADCBits,
+                                               unsigned short* ModADCMSPS);
+
+PIXIE_EXPORT int PIXIE_API PixieReadSglChanADCTrace(unsigned short* Trace_Buffer, unsigned int Trace_Length,
+                               unsigned short ModNum, unsigned short ChanNum);
+
+PIXIE_EXPORT int PIXIE_API PixieReadSglChanBaselines(double* Baselines, double* TimeStamps, unsigned short NumBases,
+                                unsigned short ModNum, unsigned short ChanNum);
+
+PIXIE_EXPORT int PIXIE_API PixieReadSglChanPar(const char* ChanParName, double* ChanParData, unsigned short ModNum,
+                          unsigned short ChanNum);
+
+PIXIE_EXPORT int PIXIE_API PixieReadSglModPar(const char* ModParName, unsigned int* ModParData, unsigned short ModNum);
+
+PIXIE_EXPORT int PIXIE_API PixieReadStatisticsFromModule(unsigned int* Statistics, unsigned short ModNum);
+
+PIXIE_EXPORT int PIXIE_API PixieSaveDSPParametersToFile(const char* FileName);
+
+PIXIE_EXPORT int PIXIE_API PixieSaveHistogramToFile(const char* FileName, unsigned short ModNum);
+
+PIXIE_EXPORT int PIXIE_API PixieStartHistogramRun(unsigned short ModNum, unsigned short mode);
+
+PIXIE_EXPORT int PIXIE_API PixieStartListModeRun(unsigned short ModNum, unsigned short RunType, unsigned short mode);
+
+PIXIE_EXPORT int PIXIE_API PixieWriteSglChanPar(const char* ChanParName, double ChanParData, unsigned short ModNum,
+                           unsigned short ChanNum);
+
+PIXIE_EXPORT int PIXIE_API PixieWriteSglModPar(const char* ModParName, unsigned int ModParData, unsigned short ModNum);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif  /* PIXIE_H */
+#endif /* PIXIE_H */
