@@ -193,8 +193,6 @@ namespace module
           vmaddr(nullptr),
           dsp(*this),
           eeprom_format(-1),
-          module_var_descriptors(param::get_module_var_descriptors()),
-          channel_var_descriptors(param::get_channel_var_descriptors()),
           reg_trace(false),
           in_use(0),
           present_(false),
@@ -203,7 +201,6 @@ namespace module
           fippi_fpga(false),
           device(std::make_unique<pci_bus_handle>())
     {
-        module_values.resize(module_var_descriptors.size());
     }
 
     module::module(module&& m)
@@ -241,11 +238,9 @@ namespace module
         m.vmaddr = nullptr;
         m.eeprom.clear();
         m.eeprom_format = -1;
-        m.module_var_descriptors =
-            param::module_var_descs(param::get_module_var_descriptors());
-        m.module_values.resize(m.module_var_descriptors.size());
-        m.channel_var_descriptors =
-            param::channel_var_descs(param::get_channel_var_descriptors());
+        m.module_var_descriptors.clear();
+        m.module_values.clear();
+        m.channel_var_descriptors.clear();
         m.channel_values.clear();
         m.present_ = false;
         m.online_ = false;
@@ -338,6 +333,13 @@ namespace module
     {
         log(log::debug) << "module: open: device-number=" << device_number;
 
+        if (module_var_descriptors.empty() ||
+            channel_var_descriptors.empty()) {
+            throw error(number, slot,
+                        error::code::internal_failure,
+                        "no module or channel variable descriptors");
+        }
+
         if (online_) {
             throw error(number, slot,
                         error::code::module_already_open,
@@ -410,7 +412,7 @@ namespace module
                  */
                 revision = eeprom[2];
 
-                if (revision >= 0xB) {
+                if (revision >= rev_B) {
                     serial_num =
                         (static_cast<int>(eeprom[1]) << 8) |
                         static_cast<int>(eeprom[0]);
@@ -425,10 +427,16 @@ namespace module
                 }
 
                 if (serial_num > 1034) {
+                    eeprom_format = 1;
                     adc_bits = static_cast<int>(eeprom[99]);
                     adc_msps =
                         (static_cast<int>(eeprom[99 + 1]) << 8) |
                         static_cast<int>(eeprom[99 + 2]);
+                    if (revision <= rev_F) {
+                        num_channels = 16;
+                    } else {
+                        num_channels = 16;
+                    }
                 } else {
                     for (const auto& config : module_configs) {
                         if (serial_num >= std::get<0>(config.serial_num) &&
@@ -533,10 +541,7 @@ namespace module
         param::load(vars,
                     module_var_descriptors,
                     channel_var_descriptors);
-        module_values.clear();
-        module_values.resize(module_var_descriptors.size());
-        channel_values.clear();
-        channel_values.resize(channel_var_descriptors.size());
+        init_values();
     }
 
     void
@@ -600,6 +605,7 @@ namespace module
     void
     module::set(firmware::module& fw)
     {
+        lock_guard guard(lock_);
         if (online_) {
             throw error(number, slot,
                         error::code::module_invalid_operation,
@@ -645,7 +651,7 @@ namespace module
                         error::code::module_invalid_param,
                         "module param not found: " + var);
         }
-        return read((*mvi).var, hw);
+        return read((*mvi).par, hw);
 
     }
 
@@ -676,9 +682,9 @@ namespace module
         if (hw) {
             hw::dsp::memory mem = dsp.read(desc.address);
             hw::dsp::convert(mem, value);
-            module_values[index] = value;
+            module_values[index].value[0] = value;
         } else {
-            value = module_values[index];
+            value = module_values[index].value[0];
         }
         return value;
     }
@@ -696,7 +702,7 @@ namespace module
                         error::code::channel_invalid_param,
                         "channel param not found: " + var);
         }
-        return read((*cvi).var, channel, hw);
+        return read((*cvi).par, channel, hw);
 
     }
 
@@ -731,9 +737,9 @@ namespace module
         param::value_type value;
         if (hw) {
             hw::dsp::convert(dsp.read(channel, desc.address), value);
-            channel_values[channel][index] = value;
+            channel_values[channel][index].value[0] = value;
         } else {
-            value = channel_values[channel][index];
+            value = channel_values[channel][index].value[0];
         }
         return value;
     }
@@ -751,7 +757,7 @@ namespace module
                         error::code::module_invalid_param,
                         "module param not found: " + var);
         }
-        write((*mvi).var, value, hw);
+        write((*mvi).par, value, hw);
     }
 
     void
@@ -781,7 +787,7 @@ namespace module
             hw::dsp::convert(value, mem);
             dsp.write(desc.address, mem);
         }
-        module_values[index] = value;
+        module_values[index].value[0] = value;
     }
 
     void
@@ -798,7 +804,7 @@ namespace module
                         error::code::channel_invalid_param,
                         "channel param not found: " + var);
         }
-        write((*cvi).var, channel, value, hw);
+        write((*cvi).par, channel, value, hw);
     }
 
     void
@@ -835,7 +841,7 @@ namespace module
             hw::dsp::convert(value, mem);
             dsp.write(channel, desc.address, mem);
         }
-        channel_values[channel][index] = value;
+        channel_values[channel][index].value[0] = value;
     }
 
     void
@@ -857,6 +863,27 @@ namespace module
     module::revision_label() const
     {
         return static_cast<char>(revision + 55);
+    }
+
+    void
+    module::init_values()
+    {
+        if (num_channels == 0) {
+            throw error(number, slot,
+                        error::code::internal_failure,
+                        "number of channels is 0");
+        }
+        module_values.clear();
+        for (const auto& desc : module_var_descriptors) {
+            module_values.push_back(param::module_variable(desc));
+        }
+        channel_values.clear();
+        channel_values.resize(num_channels);
+        for (size_t channel = 0; channel < num_channels; ++channel) {
+            for (const auto& desc : channel_var_descriptors) {
+                channel_values[channel].push_back(param::channel_variable(desc));
+            }
+        }
     }
 
     bool

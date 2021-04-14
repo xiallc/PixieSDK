@@ -49,6 +49,103 @@ namespace pixie
 namespace param
 {
     /*
+     * System parameters
+     *
+     * Do not force any values onto the enum.
+     */
+    enum struct system_param
+    {
+        number_modules,
+        offline_analysis,
+        pxi_slot_map,
+        /*
+         * Size marker
+         */
+        END
+    };
+
+    /*
+     * Module parameters
+     *
+     * Do not force any values onto the enum.
+     */
+    enum struct module_param
+    {
+        module_number,
+        module_csra,
+        module_csrb,
+        module_format,
+        max_events,
+        synch_wait,
+        in_synch,
+        slow_filter_range,
+        fast_filter_range,
+        fasttrigbackplaneena,
+        crateid,
+        slotid,
+        modid,
+        trigconfig0,
+        trigconfig1,
+        trigconfig2,
+        trigconfig3,
+        host_rt_preset,
+        /*
+         * Size marker
+         */
+        END
+    };
+
+    /*
+     * Channel parameters
+     *
+     * Do not force any values onto the enum.
+     */
+    enum struct channel_param
+    {
+        trigger_risetime,
+        trigger_flattop,
+        trigger_threshold,
+        energy_risetime,
+        energy_flattop,
+        tau,
+        trace_length,
+        trace_delay,
+        voffset,
+        xdt,
+        baseline_percent,
+        emin,
+        binfactor,
+        baseline_average,
+        channel_csra,
+        channel_csrb,
+        blcut,
+        integrator,
+        fasttrigbacklen,
+        cfddelay,
+        cfdscale,
+        cfdthresh,
+        qdclen0,
+        qdclen1,
+        qdclen2,
+        qdclen3,
+        qdclen4,
+        qdclen5,
+        qdclen6,
+        qdclen7,
+        exttrigstretch,
+        vetostretch,
+        multiplicitymaskl,
+        multiplicitymaskh,
+        externdelaylen,
+        ftrigoutdelay,
+        chantrigstretch,
+        /*
+         * Size marker
+         */
+        END
+    };
+
+    /*
      * Module variables.
      *
      * Do not force any values onto the enum.
@@ -217,44 +314,76 @@ namespace param
     };
 
     /*
+     * Variable addressing.
+     */
+    enum addressing {
+        dsp_reg,
+        fpga_reg,
+        composite
+    };
+
+    /*
      * Value type.
      */
     typedef uint32_t value_type;
 
     /*
-     * Parameter values.
+     * Parameter descriptor.
      */
-    typedef std::vector<value_type> values;
-
-    /*
-     * Channel parameter values.
-     */
-    typedef std::vector<values> channel_values;
+    template<typename P>
+    struct parameter_desc {
+        const P par;                /* Parameter (index) */
+        const rwrowr mode;          /* In/out of the variable */
+        const size_t size;          /* Number of DSP words it covers */
+        enabledisable state;        /* Varirable's state */
+        const std::string name;     /* Name of the variable */
+        parameter_desc(const P par_,
+                       enabledisable state_,
+                       const rwrowr mode_,
+                       const size_t size_,
+                       const std::string name_)
+            : par(par_),
+              mode(mode_),
+              size(size_),
+              state(state_),
+              name(name_) {
+        }
+    };
 
     /*
      * Variable descriptor.
      */
     template<typename V>
-    struct variable_desc {
-        const V var;                /* Variable name (index) */
-        const rwrowr mode;          /* Inout of the variable */
-        const size_t size;          /* Number of DSP words it covers */
-        enabledisable state;        /* Varirable's state */
-        const std::string name;     /* Name of the variable */
+    struct variable_desc
+        : public parameter_desc<V> {
         uint32_t address;           /* DSP memory address */
         variable_desc(const V var_,
                       enabledisable state_,
                       const rwrowr mode_,
                       const size_t size_,
                       const std::string name_)
-            : var(var_),
-              mode(mode_),
-              size(size_),
-              state(state_),
-              name(name_),
+            : parameter_desc<V>(var_, state_, mode_, size_, name_),
               address(0) {
         }
     };
+
+    /*
+     * Parameter descriptor sets for the system, modules and channels
+     */
+    typedef parameter_desc<system_param> system_param_desc;
+    typedef std::vector<system_param_desc> system_param_descs;
+    typedef parameter_desc<module_param> module_param_desc;
+    typedef std::vector<module_param_desc> module_param_descs;
+    typedef parameter_desc<channel_param> channel_param_desc;
+    typedef std::vector<channel_param_desc> channel_param_descs;
+
+    /*
+     * Param name look up. A fast way to map a name to
+     * a parameter.
+     */
+    typedef std::map<std::string, system_param> system_param_map;
+    typedef std::map<std::string, module_param> module_param_map;
+    typedef std::map<std::string, channel_param> channel_param_map;
 
     /*
      * Variable descriptor sets for modules and channels
@@ -265,37 +394,31 @@ namespace param
     typedef std::vector<channel_var_desc> channel_var_descs;
 
     /*
-     * Get a copy of the defaults.
+     * A variable.
      */
-    const module_var_descs& get_module_var_descriptors();
-    const channel_var_descs& get_channel_var_descriptors();
-
-    /*
-     * A parameter.
-     */
-    template<typename Vdesc> struct param
+    template<typename Vdesc> struct variable
     {
-        const Vdesc& var;             /* The variable descriptor */
-        std::vector<uint32_t> value;  /* The value(s) */
+        const Vdesc& var;               /* The variable descriptor */
+        std::vector<value_type> value;  /* The value(s) */
 
-        param(const Vdesc& var_)
+        variable(const Vdesc& var_)
             : var(var_) {
-            value.resize(var.size);
+              value.resize(var.size);
         }
     };
 
     /*
-     * Module parameters
+     * Module variables
      */
-    typedef param<module_var> module_param;
-    typedef std::vector<module_param> module_parameters;
+    typedef variable<module_var_desc> module_variable;
+    typedef std::vector<module_variable> module_variables;
 
     /*
-     * Channel parameters
+     * Channel variables
      */
-    typedef param<channel_var> channel_param;
-    typedef std::vector<channel_param> channel_parameters;
-    typedef std::vector<channel_parameters> channels;
+    typedef variable<channel_var_desc> channel_variable;
+    typedef std::vector<channel_variable> channel_variables;
+    typedef std::vector<channel_variables> channels_variables;
 
     /*
      * Copy filters. Only used on channels.
@@ -331,6 +454,12 @@ namespace param
     const unsigned int all_mask = (1 << 12) - 1;
 
     /*
+     * Get a copy of the defaults.
+     */
+    const module_var_descs& get_module_var_descriptors();
+    const channel_var_descs& get_channel_var_descriptors();
+
+    /*
      * Load the variables from the DSP variable file into the
      * descriptors.
      */
@@ -345,18 +474,18 @@ namespace param
               channel_var_descs& channel_var_descriptors);
 
     /*
-     * Copy the parameter values based on the filter.
+     * Copy the variables based on the filter.
      */
     void copy_parameters(const copy_filter& filter,
-                         const channel_parameters& source,
-                         channel_parameters& dest);
+                         const channel_variables& source,
+                         channel_variables& dest);
 
     /*
-     * Copy the parameter values based on the filter mask.
+     * Copy the variables based on the filter mask.
      */
     void copy_parameters(const unsigned int filter_mask,
-                         const channel_parameters& source,
-                         channel_parameters& dest);
+                         const channel_variables& source,
+                         channel_variables& dest);
 
 };
 };

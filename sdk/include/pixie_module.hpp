@@ -122,6 +122,20 @@ namespace module
         };
 
         /*
+         * Revision tags
+         */
+        enum rev_tag {
+            rev_A = 10,
+            rev_B,
+            rev_C,
+            rev_D,
+            rev_E,
+            rev_F,
+            rev_G,
+            rev_H
+        };
+
+        /*
          * Slot in the crate.
          */
         int slot;
@@ -177,13 +191,13 @@ namespace module
          * Module parameters
          */
         param::module_var_descs module_var_descriptors;
-        param::values module_values;
+        param::module_variables module_values;
 
         /*
          * CHannel parameters, a set per channel.
          */
         param::channel_var_descs channel_var_descriptors;
-        param::channel_values channel_values;
+        param::channels_variables channel_values;
 
         /*
          * Firmware
@@ -320,6 +334,11 @@ namespace module
         }
 
     private:
+        /*
+         * Initialise the values.
+         */
+        void init_values();
+
         /*
          * Check the EEPROM for verison 2 format.
          */

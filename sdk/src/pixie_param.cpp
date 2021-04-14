@@ -360,8 +360,8 @@ namespace param
 
     void
     copy_parameters(const copy_filter& filter,
-                    const channel_parameters& source,
-                    channel_parameters& dest)
+                    const channel_variables& source,
+                    channel_variables& dest)
     {
         if (source.size() != dest.size())
             throw error(error::code::device_copy_failure,
@@ -378,8 +378,8 @@ namespace param
 
     void
     copy_parameters(const unsigned int filter_mask,
-                    const channel_parameters& source,
-                    channel_parameters& dest)
+                    const channel_variables& source,
+                    channel_variables& dest)
     {
         if ((filter_mask & energy_mask) != 0) {
             copy_parameters(energy_filter, source, dest);
