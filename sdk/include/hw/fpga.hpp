@@ -105,6 +105,11 @@ namespace fpga
         void load(const firmware::image& image, int retries = 10);
 
         /*
+         * Has the programming completed?
+         */
+        bool done();
+
+        /*
          * Low level access.
          */
         void bus_write(int reg, uint32_t data);

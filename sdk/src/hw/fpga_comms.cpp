@@ -63,6 +63,12 @@ namespace fpga
     {
         ctrl.load(image, retries);
     }
+
+    bool
+    comms::done()
+    {
+        return ctrl.done();
+    }
 };
 };
 };

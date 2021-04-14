@@ -46,7 +46,6 @@
 #include <hw/dsp.hpp>
 #include <hw/fpga_comms.hpp>
 #include <hw/fpga_fippi.hpp>
-#include <hw/i2cm24c64.hpp>
 #include <hw/pcf8574.hpp>
 
 #include <pixie16sys_defs.h>
@@ -59,6 +58,14 @@ namespace pixie
 {
 namespace module
 {
+    static std::string
+    module_label(const int num, const int slot)
+    {
+        std::ostringstream oss;
+        oss << "module [num=" << num << ",slot=" << slot << "]";
+        return oss.str();
+    }
+
     error::error(const int num, const int slot,
                  const code type, const std::ostringstream& what)
         : pixie::error::error(type, make_what(num, slot, what.str().c_str()))
@@ -90,7 +97,7 @@ namespace module
     error::make_what(const int num, const int slot, const char* what_)
     {
         std::ostringstream oss;
-        oss << "module [num=" << num << ",slot=" << slot << "]: " << what_;
+        oss << module_label(num, slot) << ": " << what_;
         return oss.str();
     }
 
@@ -133,6 +140,43 @@ namespace module
         return -1;
     }
 
+    /*
+     * EEPROM module configuration handles the various format versions.
+     */
+    struct module_eeprom_format
+    {
+        std::pair<int, int> revisions;
+        int version;
+    };
+
+    static const std::vector<module_eeprom_format> module_eeprom_formats =
+    {
+        { { 0x0a, 0x0f }, 0 },
+        { { 0x0f, 0x0f }, 1 },
+        { { 0x48, 0xff }, 2 }
+    };
+
+    /*
+     * The early Pixie module EEPROMs do not contain the ADC data. Provide a
+     * table of configuration data.
+     */
+    struct module_config
+    {
+        std::pair<int, int> serial_num;
+        int adc_bits;
+        int adc_msps;
+        int num_channels;
+        int eeprom_format;
+        std::vector<int> revisions;
+    };
+
+    static const std::vector<module_config> module_configs =
+    {
+        { {    0,  255 }, 12, 100, 16, 0, { 0xA } },
+        { {  256,  274 }, 12, 100, 16, 1, { 0xB, 0xC, 0xD } },
+        { { 1000, 1034 }, 12, 250, 16, 1, { 0xF } }
+    };
+
     module::guard::guard(module& mod)
         : guard_(mod.lock_)
     {
@@ -140,11 +184,15 @@ namespace module
 
     module::module()
         : slot(0),
+          number(-1),
           serial_num(0),
           revision(0),
-          number(-1),
+          adc_bits(0),
+          adc_msps(0),
+          num_channels(0),
           vmaddr(nullptr),
           dsp(*this),
+          eeprom_format(-1),
           module_var_descriptors(param::get_module_var_descriptors()),
           channel_var_descriptors(param::get_channel_var_descriptors()),
           reg_trace(false),
@@ -155,17 +203,26 @@ namespace module
           fippi_fpga(false),
           device(std::make_unique<pci_bus_handle>())
     {
+        module_values.resize(module_var_descriptors.size());
     }
 
     module::module(module&& m)
         : slot(m.slot),
+          number(m.number),
           serial_num(m.serial_num),
           revision(m.revision),
-          number(m.number),
+          adc_bits(m.adc_bits),
+          adc_msps(m.adc_msps),
+          num_channels(m.num_channels),
           vmaddr(m.vmaddr),
           dsp(*this),
+          eeprom(m.eeprom),
+          eeprom_format(m.eeprom_format),
           module_var_descriptors(std::move(m.module_var_descriptors)),
+          module_values(std::move(m.module_values)),
           channel_var_descriptors(std::move(m.channel_var_descriptors)),
+          channel_values(std::move(m.channel_values)),
+          firmware(std::move(m.firmware)),
           reg_trace(m.reg_trace),
           in_use(0),
           present_(m.present_),
@@ -175,11 +232,21 @@ namespace module
           device(std::move(m.device))
     {
         m.slot = 0;
+        m.number = -1;
         m.serial_num = 0;
         m.revision = 0;
-        m.number = -1;
+        m.adc_bits = 0;
+        m.adc_msps = 0;
+        m.num_channels = 0;
         m.vmaddr = nullptr;
-        m.reg_trace = false;
+        m.eeprom.clear();
+        m.eeprom_format = -1;
+        m.module_var_descriptors =
+            param::module_var_descs(param::get_module_var_descriptors());
+        m.module_values.resize(m.module_var_descriptors.size());
+        m.channel_var_descriptors =
+            param::channel_var_descs(param::get_channel_var_descriptors());
+        m.channel_values.clear();
         m.present_ = false;
         m.online_ = false;
         m.comms_fpga = false;
@@ -211,13 +278,20 @@ namespace module
         }
 
         slot = m.slot;
+        number = m.number;
         serial_num = m.serial_num;
         revision = m.revision;
-        number = m.number;
+        adc_bits = m.adc_bits;
+        adc_msps = m.adc_msps;
+        num_channels = m.num_channels;
         vmaddr = m.vmaddr;
         dsp = std::move(m.dsp);
+        eeprom = std::move(m.eeprom);
+        eeprom_format = m.eeprom_format;
         module_var_descriptors = std::move(m.module_var_descriptors);
         channel_var_descriptors = std::move(m.channel_var_descriptors);
+        module_values = std::move(m.module_values);
+        channel_values = std::move(m.channel_values);
         reg_trace = m.reg_trace;
         present_ = m.present_;
         online_ = m.online_;
@@ -227,10 +301,15 @@ namespace module
         device = std::move(m.device);
 
         m.slot = 0;
+        m.number = -1;
         m.serial_num = 0;
         m.revision = 0;
-        m.number = -1;
+        m.adc_bits = 0;
+        m.adc_msps = 0;
+        m.num_channels = 0;
         m.vmaddr = nullptr;
+        m.eeprom.clear();
+        m.eeprom_format = -1;
         m.reg_trace = false;
         m.present_ = false;
         m.online_ = false;
@@ -305,38 +384,74 @@ namespace module
                             oss);
             }
 
-            hw::i2c::i2cm24c64 eeprom(*this, I2CM24C64_ADDR,
-                                      (1 << 0) | (1 << 3), 1 << 1, 1 << 2);
-            std::vector<uint8_t> data;
+            hw::i2c::i2cm24c64 i2cm24c64(*this, I2CM24C64_ADDR,
+                                         (1 << 0) | (1 << 3), 1 << 1, 1 << 2);
+            i2cm24c64.read(0, 128, eeprom);
 
-            eeprom.sequential_read(0, 3, data);
-
-            if (data.size() != 3) {
+            if (eeprom.size() != 128) {
                 std::ostringstream oss;
                 oss << "eeprom read: device: " << device_number
-                    << " : invalid data length:" << data.size();
+                    << " : invalid data length:" << eeprom.size();
                 throw error(number, slot,
                             error::code::module_info_failure,
                             oss);
-            }
-
-            /*
-             *  Starting with serial number 256, serial number is stored in the
-             *  first two bytes of EEPROM, followed by revision number, which
-             *  is at least 11 (i.e. Rev-B)
-             */
-            revision = data[2];
-
-            if (revision >= 11) {
-                serial_num = ((int) data[1] << 8) | (int) data[0];
-            } else {
-                serial_num = (unsigned int) data[0];
             }
 
             hw::i2c::pcf8574 pio(*this, PCF8574_ADDR,
                                  (1 << 0) | (1 << 3), 1 << 1, 1 << 2);
 
             slot = (pio.read_a_byte() & 0xf8) >> 3;
+
+            if (!eeprom_v2()) {
+                /*
+                 *  Starting with serial number 256, serial number is stored in the
+                 *  first two bytes of EEPROM, followed by revision number, which
+                 *  is at least 11 (i.e. Rev-B)
+                 */
+                revision = eeprom[2];
+
+                if (revision >= 0xB) {
+                    serial_num =
+                        (static_cast<int>(eeprom[1]) << 8) |
+                        static_cast<int>(eeprom[0]);
+                } else {
+                    serial_num = static_cast<int>(eeprom[0]);
+                }
+
+                if (serial_num == 0xFFFF) {
+                    throw error(number, slot,
+                                error::code::module_initialize_failure,
+                                "invalid serial number: EEPROM erased");
+                }
+
+                if (serial_num > 1034) {
+                    adc_bits = static_cast<int>(eeprom[99]);
+                    adc_msps =
+                        (static_cast<int>(eeprom[99 + 1]) << 8) |
+                        static_cast<int>(eeprom[99 + 2]);
+                } else {
+                    for (const auto& config : module_configs) {
+                        if (serial_num >= std::get<0>(config.serial_num) &&
+                            serial_num <= std::get<1>(config.serial_num)) {
+                            adc_bits = config.adc_bits;
+                            adc_msps = config.adc_msps;
+                            eeprom_format = config.eeprom_format;
+                            num_channels = config.num_channels;
+                        break;
+                        }
+                    }
+                }
+
+                if (adc_bits == 0) {
+                    std::ostringstream oss;
+                    oss << "unknown serial number: " << serial_num;
+                    throw error(number, slot,
+                                error::code::module_initialize_failure, oss.str());
+                }
+            } else {
+                throw error(number, slot, error::code::module_initialize_failure,
+                    "eeprom format 2 not supported");
+            }
         }
     }
 
@@ -386,9 +501,42 @@ namespace module
         }
     }
 
-    void
-    module::initialize()
+    template<typename T> void
+    module::check_channel_num(T num)
     {
+        if (num >= num_channels ||
+            (std::is_signed<T>::value && num < 0)) {
+            throw error(number, slot,
+                        error::code::channel_number_invalid,
+                        "channel number out of range");
+        }
+    }
+
+    void
+    module::probe()
+    {
+        hw::fpga::comms comms(*this);
+        comms_fpga = comms.done();
+
+        hw::fpga::fippi fippi(*this);
+        fippi_fpga = fippi.done();
+
+        dsp.online = dsp.done();
+
+        log(log::info) << std::boolalpha
+                       <<  module_label(number, slot)
+                       << ": probe: sys=" << comms_fpga
+                       << " fippi=" << fippi_fpga
+                       << " dsp=" << dsp.online;
+
+        firmware::firmware_ref vars = get("var");
+        param::load(vars,
+                    module_var_descriptors,
+                    channel_var_descriptors);
+        module_values.clear();
+        module_values.resize(module_var_descriptors.size());
+        channel_values.clear();
+        channel_values.resize(channel_var_descriptors.size());
     }
 
     void
@@ -402,9 +550,8 @@ namespace module
 
         if (boot_comms) {
             if (comms_fpga) {
-                throw error(number, slot,
-                            error::code::module_invalid_operation,
-                            "comms already booted");
+                log(log::info) << module_label(number, slot)
+                               << ": comms already loaded";
             }
             firmware::firmware_ref fw = get("sys");
             hw::fpga::comms comms(*this);
@@ -414,9 +561,8 @@ namespace module
 
         if (boot_fippi) {
             if (fippi_fpga) {
-                throw error(number, slot,
-                            error::code::module_invalid_operation,
-                            "fippi already booted");
+                log(log::info) << module_label(number, slot)
+                               << ": fippi already loaded";
             }
             firmware::firmware_ref fw = get("fippi");
             hw::fpga::fippi fippi(*this);
@@ -426,24 +572,29 @@ namespace module
 
         if (boot_dsp) {
             if (dsp.online) {
-                throw error(number, slot,
-                            error::code::module_invalid_operation,
-                            "dsp already booted");
+                log(log::info) << module_label(number, slot)
+                               << ": dsp already running";
             }
             firmware::firmware_ref fw = get("dsp");
             dsp.boot(fw->data);
-            firmware::firmware_ref vars = get("var");
-            param::load(vars,
-                        module_var_descriptors,
-                        channel_var_descriptors);
         }
+
+        firmware::firmware_ref vars = get("var");
+        param::load(vars,
+                    module_var_descriptors,
+                    channel_var_descriptors);
 
         log(log::info) << std::boolalpha
                        << "module: boot: sys-fpga=" << comms_fpga
                        << " fippi-fpga=" << boot_fippi
                        << " dsp=" << dsp.online;
 
-        online_ = comms_fpga && boot_fippi && dsp.online;
+        online_ = comms_fpga && fippi_fpga && dsp.online;
+    }
+
+    void
+    module::initialize()
+    {
     }
 
     void
@@ -462,6 +613,7 @@ namespace module
     firmware::firmware_ref
     module::get(const std::string device)
     {
+        lock_guard guard(lock_);
         /*
          * First check if a slot assigned firmware exists for this
          * device. If not see if a default is available.
@@ -478,6 +630,239 @@ namespace module
         throw error(number, slot,
                     error::code::module_invalid_firmware,
                     oss.str());
+    }
+
+    param::value_type
+    module::read(const std::string& var, bool hw)
+    {
+        auto mvi = std::find_if(module_var_descriptors.begin(),
+                                module_var_descriptors.end(),
+                                [var](param::module_var_desc& desc){
+                                    return desc.name == var;
+                                });
+        if (mvi == module_var_descriptors.end()) {
+            throw error(number, slot,
+                        error::code::module_invalid_param,
+                        "module param not found: " + var);
+        }
+        return read((*mvi).var, hw);
+
+    }
+
+    param::value_type
+    module::read(param::module_var var, bool hw)
+    {
+        size_t index = static_cast<size_t>(var);
+        if (index >= module_var_descriptors.size()) {
+            std::ostringstream oss;
+            oss << "invalid module variable: " << index;
+            throw error(number, slot,
+                        error::code::module_invalid_param, oss.str());
+        }
+        auto& desc = module_var_descriptors[index];
+        log(log::debug) << "module: read: " << desc.name;
+        if (desc.state == param::disable) {
+            throw error(number, slot,
+                        error::code::module_invalid_param,
+                        "module variable disabled: " + desc.name);
+        }
+        if (desc.mode == param::wr) {
+            throw error(number, slot,
+                        error::code::module_invalid_param,
+                        "module variable not readable: " + desc.name);
+        }
+        lock_guard guard(lock_);
+        param::value_type value;
+        if (hw) {
+            hw::dsp::memory mem = dsp.read(desc.address);
+            hw::dsp::convert(mem, value);
+            module_values[index] = value;
+        } else {
+            value = module_values[index];
+        }
+        return value;
+    }
+
+    param::value_type
+    module::read(const std::string& var, size_t channel, bool hw)
+    {
+        auto cvi = std::find_if(channel_var_descriptors.begin(),
+                                channel_var_descriptors.end(),
+                                [var](param::channel_var_desc& desc){
+                                    return desc.name == var;
+                                });
+        if (cvi == channel_var_descriptors.end()) {
+            throw error(number, slot,
+                        error::code::channel_invalid_param,
+                        "channel param not found: " + var);
+        }
+        return read((*cvi).var, channel, hw);
+
+    }
+
+    param::value_type
+    module::read(param::channel_var var, size_t channel, bool hw)
+    {
+        if (channel >= num_channels) {
+            std::ostringstream oss;
+            oss << "invalid channel number: " << channel;
+            throw error(number, slot,
+                        error::code::channel_number_invalid, oss.str());
+        }
+        size_t index = static_cast<size_t>(var);
+        if (index >= channel_var_descriptors.size()) {
+            std::ostringstream oss;
+            oss << "invalid channel variable: " << index;
+            throw error(number, slot,
+                        error::code::channel_invalid_param, oss.str());
+        }
+        auto& desc = channel_var_descriptors[index];
+        if (desc.state == param::disable) {
+            throw error(number, slot,
+                        error::code::channel_invalid_param,
+                        "channel variable disabled: " + desc.name);
+        }
+        if (desc.mode == param::wr) {
+            throw error(number, slot,
+                        error::code::channel_invalid_param,
+                        "channel variable not readable: " + desc.name);
+        }
+        lock_guard guard(lock_);
+        param::value_type value;
+        if (hw) {
+            hw::dsp::convert(dsp.read(channel, desc.address), value);
+            channel_values[channel][index] = value;
+        } else {
+            value = channel_values[channel][index];
+        }
+        return value;
+    }
+
+    void
+    module::write(const std::string& var, param::value_type value, bool hw)
+    {
+        auto mvi = std::find_if(module_var_descriptors.begin(),
+                                module_var_descriptors.end(),
+                                [var](param::module_var_desc& desc){
+                                    return desc.name == var;
+                                });
+        if (mvi == module_var_descriptors.end()) {
+            throw error(number, slot,
+                        error::code::module_invalid_param,
+                        "module param not found: " + var);
+        }
+        write((*mvi).var, value, hw);
+    }
+
+    void
+    module::write(param::module_var var, param::value_type value, bool hw)
+    {
+        size_t index = static_cast<size_t>(var);
+        if (index >= module_var_descriptors.size()) {
+            std::ostringstream oss;
+            oss << "invalid module variable: " << index;
+            throw error(number, slot,
+                        error::code::module_invalid_param, oss.str());
+        }
+        auto& desc = module_var_descriptors[index];
+        if (desc.state == param::disable) {
+            throw error(number, slot,
+                        error::code::module_invalid_param,
+                        "module variable disabled: " + desc.name);
+        }
+        if (desc.mode == param::ro) {
+            throw error(number, slot,
+                        error::code::module_invalid_param,
+                        "module variable not writeable: " + desc.name);
+        }
+        lock_guard guard(lock_);
+        if (hw) {
+            hw::dsp::memory mem;
+            hw::dsp::convert(value, mem);
+            dsp.write(desc.address, mem);
+        }
+        module_values[index] = value;
+    }
+
+    void
+    module::write(const std::string& var, size_t channel,
+                  param::value_type value, bool hw)
+    {
+        auto cvi = std::find_if(channel_var_descriptors.begin(),
+                                channel_var_descriptors.end(),
+                                [var](param::channel_var_desc& desc){
+                                    return desc.name == var;
+                                });
+        if (cvi == channel_var_descriptors.end()) {
+            throw error(number, slot,
+                        error::code::channel_invalid_param,
+                        "channel param not found: " + var);
+        }
+        write((*cvi).var, channel, value, hw);
+    }
+
+    void
+    module::write(param::channel_var var, size_t channel,
+                  param::value_type value, bool hw)
+    {
+        if (channel >= num_channels) {
+            std::ostringstream oss;
+            oss << "invalid channel number: " << channel;
+            throw error(number, slot,
+                        error::code::channel_number_invalid, oss.str());
+        }
+        size_t index = static_cast<size_t>(var);
+        if (index >= channel_var_descriptors.size()) {
+            std::ostringstream oss;
+            oss << "invalid channel variable: " << index;
+            throw error(number, slot,
+                        error::code::channel_invalid_param, oss.str());
+        }
+        auto& desc = channel_var_descriptors[index];
+        if (desc.state == param::disable) {
+            throw error(number, slot,
+                        error::code::channel_invalid_param,
+                        "channel variable disabled: " + desc.name);
+        }
+        if (desc.mode == param::ro) {
+            throw error(number, slot,
+                        error::code::channel_invalid_param,
+                        "channel variable not writeable: " + desc.name);
+        }
+        lock_guard guard(lock_);
+        if (hw) {
+            hw::dsp::memory mem;
+            hw::dsp::convert(value, mem);
+            dsp.write(channel, desc.address, mem);
+        }
+        channel_values[channel][index] = value;
+    }
+
+    void
+    module::output(std::ostream& out) const {
+        ostream_guard flags(out);
+        out << std::boolalpha
+            << "number: " << number
+            << " slot: " << slot
+            << " present:" << present_
+            << " online:" << online_
+            << " serial:" << serial_num
+            << " rev:" << revision_label()
+            << " (" << revision
+            << ") vaddr:" << vmaddr
+            << " fw: " << firmware.size();
+    }
+
+    char
+    module::revision_label() const
+    {
+        return static_cast<char>(revision + 55);
+    }
+
+    bool
+    module::eeprom_v2() const
+    {
+        return false;
     }
 
     void
@@ -520,20 +905,6 @@ namespace module
             mod.number = number;
             number++;
         }
-    }
-
-    void
-    module::output(std::ostream& out) const {
-        ostream_guard flags(out);
-        out << std::boolalpha
-            << "number: " << number
-            << " slot: " << slot
-            << " present:" << present_
-            << " online:" << online_
-            << " serial:" << serial_num
-            << " rev:" << revision
-            << " vaddr:" << vmaddr
-            << " fw: " << firmware.size();
     }
 };
 };

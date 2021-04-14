@@ -71,6 +71,12 @@ enum struct code {
     module_invalid_operation,
     module_invalid_firmware,
     module_initialize_failure,
+    module_invalid_param,
+    /*
+     * Channel
+     */
+    channel_number_invalid,
+    channel_invalid_param,
     /*
      * Device
      */
@@ -92,6 +98,7 @@ enum struct code {
      */
     no_memory,
     slot_map_invalid,
+    invalid_value,
     /*
      * Catch all
      */

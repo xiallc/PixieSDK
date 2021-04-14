@@ -40,6 +40,7 @@
 
 #include <pixie_fw.hpp>
 #include <pixie_hw.hpp>
+#include <pixie_fw.hpp>
 
 namespace xia
 {
@@ -54,6 +55,11 @@ namespace hw
 namespace dsp
 {
     /*
+     * Address.
+     */
+    typedef uint32_t address;
+
+    /*
      * The memory read/write word.
      */
     typedef uint32_t memory;
@@ -62,6 +68,14 @@ namespace dsp
      * Memories
      */
     typedef std::vector<memory> memories;
+
+    /*
+     * Convertors.
+     */
+    template <typename I, typename O>
+    inline void convert(I vin, O& vout) {
+        vout = static_cast<O>(vin);
+    }
 
     struct dsp
     {
@@ -91,19 +105,29 @@ namespace dsp
         void boot(const firmware::image& image, int retries = 10);
 
         /*
+         * Is the DSP loaded and runings?
+         */
+        bool done();
+
+        /*
          * Memory read.
          */
-        memory read(const uint32_t addr);
+        memory read(const address addr);
+        memory read(const size_t channel, const address addr);
 
         /*
          * Memory write.
          */
-        void write(const uint32_t addr, const memory value);
+        void write(const address addr, const memory value);
+        void write(const size_t channel,
+                   const address addr, const memory value);
 
         /*
          * Memory write.
          */
-        void write(const uint32_t addr, const memories& values);
+        void write(const address addr, const memories& values);
+        void write(const size_t channel,
+                   const address addr, const memories& values);
 
     private:
 

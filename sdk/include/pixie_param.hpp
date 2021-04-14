@@ -217,6 +217,21 @@ namespace param
     };
 
     /*
+     * Value type.
+     */
+    typedef uint32_t value_type;
+
+    /*
+     * Parameter values.
+     */
+    typedef std::vector<value_type> values;
+
+    /*
+     * Channel parameter values.
+     */
+    typedef std::vector<values> channel_values;
+
+    /*
      * Variable descriptor.
      */
     template<typename V>
@@ -342,6 +357,7 @@ namespace param
     void copy_parameters(const unsigned int filter_mask,
                          const channel_parameters& source,
                          channel_parameters& dest);
+
 };
 };
 };

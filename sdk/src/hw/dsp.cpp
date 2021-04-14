@@ -218,8 +218,7 @@ namespace dsp
                  */
                 size_t retry = 10;
                 while (--retry > 0) {
-                    memory value = read(POWERUPINITDONE_ADDRESS);
-                    if (value == 1) {
+                    if (done()) {
                         running = true;
                         break;
                     }
@@ -245,8 +244,15 @@ namespace dsp
         online = true;
     }
 
+    bool
+    dsp::done()
+    {
+        memory value = read(POWERUPINITDONE_ADDRESS);
+        return value == 1;
+    }
+
     memory
-    dsp::read(const uint32_t addr)
+    dsp::read(const address addr)
     {
         bus_write(REQUEST_HBR, 0);
         bus_write(EXT_MEM_TEST, addr);
@@ -255,8 +261,14 @@ namespace dsp
         return value;
     }
 
+    memory
+    dsp::read(const size_t channel, const address addr)
+    {
+        return read(addr + (channel * sizeof(memory)));
+    }
+
     void
-    dsp::write(const uint32_t addr, const memory value)
+    dsp::write(const address addr, const memory value)
     {
         bus_write(REQUEST_HBR, 0);
         bus_write(EXT_MEM_TEST, addr);
@@ -265,7 +277,13 @@ namespace dsp
     }
 
     void
-    dsp::write(const uint32_t addr, const memories& values)
+    dsp::write(const size_t channel, const address addr, const memory value)
+    {
+        write(addr + (channel * sizeof(memory)), value);
+    }
+
+    void
+    dsp::write(const address addr, const memories& values)
     {
         bus_write(REQUEST_HBR, 0);
         bus_write(EXT_MEM_TEST, addr);
@@ -273,6 +291,13 @@ namespace dsp
             bus_write(WRT_DSP_MMA, value);
         }
         bus_write(HBR_DONE, 0);
+    }
+
+    void
+    dsp::write(const size_t channel,
+               const address addr, const memories& values)
+    {
+        write(addr + (channel * sizeof(memory)), values);
     }
 
     void

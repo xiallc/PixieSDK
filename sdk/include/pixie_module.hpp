@@ -50,6 +50,7 @@
 #include <pixie_param.hpp>
 
 #include <hw/dsp.hpp>
+#include <hw/i2cm24c64.hpp>
 
 namespace xia
 {
@@ -126,6 +127,12 @@ namespace module
         int slot;
 
         /*
+         * Logical module mapping for this instance of the
+         * SDK.
+         */
+        int number;
+
+        /*
          * Serial number.
          */
         int serial_num;
@@ -136,10 +143,19 @@ namespace module
         int revision;
 
         /*
-         * Logical module mapping for this instance of the
-         * SDK.
+         * ADC size in bits.
          */
-        int number;
+        int adc_bits;
+
+        /*
+         * ADC sampling rate in mega-samples-per-second.
+         */
+        int adc_msps;
+
+        /*
+         * Number of channels
+         */
+        size_t num_channels;
 
         /*
          * Module's register VM address.
@@ -152,10 +168,22 @@ namespace module
         hw::dsp::dsp dsp;
 
         /*
-         * Parameter descriptors
+         * EEPROM
+         */
+        hw::i2c::i2cm24c64::contents eeprom;
+        int eeprom_format;
+
+        /*
+         * Module parameters
          */
         param::module_var_descs module_var_descriptors;
+        param::values module_values;
+
+        /*
+         * CHannel parameters, a set per channel.
+         */
         param::channel_var_descs channel_var_descriptors;
+        param::channel_values channel_values;
 
         /*
          * Firmware
@@ -192,6 +220,16 @@ namespace module
         void close();
 
         /*
+         * Range check the channel number.
+         */
+        template<typename T> void check_channel_num(T number);
+
+        /*
+         * Probe the board to see what is running.
+         */
+        void probe();
+
+        /*
          * Boot the module. If successful it will be online.
          */
         void boot(bool boot_comms = true,
@@ -214,9 +252,32 @@ namespace module
         firmware::firmware_ref get(const std::string device);
 
         /*
+         * Read a parameter.
+         */
+        param::value_type read(const std::string& var, bool hw = true);
+        param::value_type read(param::module_var var, bool hw = true);
+        param::value_type read(const std::string& var, size_t channel,
+                               bool hw = true);
+        param::value_type read(param::channel_var, size_t channel,
+                               bool hw = true);
+
+        /*
+         * Write a parameter.
+         */
+        void write(const std::string& var,
+                   param::value_type value, bool hw = true);
+        void write(param::module_var var,
+                   param::value_type value, bool hw = true);
+        void write(const std::string& var, size_t channel,
+                   param::value_type value, bool hw = true);
+        void write(param::channel_var, size_t channel,
+                   param::value_type value, bool hw = true);
+
+        /*
          * Output the module details.
          */
         void output(std::ostream& out) const;
+        char revision_label() const;
 
         /*
          * IO read 32 bits value.
@@ -259,6 +320,11 @@ namespace module
         }
 
     private:
+        /*
+         * Check the EEPROM for verison 2 format.
+         */
+        bool eeprom_v2() const;
+
         /*
          * Lock
          */

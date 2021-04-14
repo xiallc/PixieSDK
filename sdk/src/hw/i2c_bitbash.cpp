@@ -294,7 +294,7 @@ namespace i2c
     bitbash::bus_write(uint8_t data)
     {
         module.write_32(reg, data);
-        wait(10);
+        wait(5);
     }
 
     uint8_t

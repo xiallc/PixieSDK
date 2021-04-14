@@ -52,6 +52,11 @@ namespace pixie
 namespace crate
 {
     /*
+     * Crate errors
+     */
+    typedef pixie::error::error error;
+
+    /*
      * Number of slots in a crate.
      */
     static const int slots = 12;
@@ -94,7 +99,7 @@ namespace crate
 
         /*
          * Check the crate has been intialised and ready for use. Throws an
-         * error is not ready.
+         * error if not ready.
          */
         void ready();
 
@@ -109,10 +114,17 @@ namespace crate
         int users() const;
 
         /*
-         * Range chekcing operators to index modules based on various index
+         * Range checking operators to index modules based on various index
          * types.
          */
-        template<typename T> module::module& operator[](T number);
+        template<typename T> module::module& operator[](T number) {
+            size_t number_ = static_cast<size_t>(number);
+            if (number_ >= num_modules) {
+                throw error(pixie::error::code::module_number_invalid,
+                            "module number out of range");
+            }
+            return modules[number_];
+        }
 
         /*
          * Initialise the crate and get it ready. If the number of slots is 0
@@ -120,6 +132,11 @@ namespace crate
          */
         WINDOWS_DLLEXPORT void initialize(size_t num_modules = 0,
                                           bool reg_trace = false);
+
+        /*
+         * Probe the modules.
+         */
+        void probe();
 
         /*
          * Boot all modules.

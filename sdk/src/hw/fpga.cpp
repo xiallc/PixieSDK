@@ -177,8 +177,7 @@ namespace fpga
 
             while (true) {
                 wait(1000);
-                data = bus_read(reg.RDCS);
-                if ((data & load_ctrl.done) == load_ctrl.done) {
+                if (done()) {
                     /*
                      * Programmed
                      */
@@ -200,6 +199,12 @@ namespace fpga
         log(log::debug) << "fpga-" << name
                         << " [slot " << module.slot
                         << "] done";
+    }
+
+    bool
+    control::done()
+    {
+        return (bus_read(reg.RDCS) & load_ctrl.done) == load_ctrl.done;
     }
 
     void

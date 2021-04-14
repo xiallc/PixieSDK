@@ -55,9 +55,7 @@ namespace i2c
     }
 
     void
-    i2cm24c64::sequential_read(int address,
-                               size_t length,
-                               std::vector<uint8_t>& data)
+    i2cm24c64::read(int address, size_t length, contents& data)
     {
         data.clear();
         data.reserve(length);
@@ -94,6 +92,11 @@ namespace i2c
         stop();
     }
 
+    void
+    i2cm24c64::read(contents& data)
+    {
+        read(0, size, data);
+    }
 };
 };
 };

@@ -46,11 +46,6 @@ namespace pixie
 {
 namespace crate
 {
-    /*
-     * Crate errors
-     */
-    typedef pixie::error::error error;
-
     crate::user::user(crate& crate__)
         : crate_(crate__)
     {
@@ -91,17 +86,6 @@ namespace crate
     crate::users() const
     {
         return users_.load();
-    }
-
-    template<typename T> module::module&
-    crate::operator[](T number_)
-    {
-        size_t number = static_cast<size_t>(number_);
-        if (number >= num_modules) {
-            throw error(pixie::error::code::module_number_invalid,
-                        "number out of range");
-        }
-        return modules[number];
     }
 
     void
@@ -149,7 +133,7 @@ namespace crate
                     log(log::info) << "module: device " << device_number
                                    << ": slot:" << module.slot
                                    << " serial-number:" << module.serial_num
-                                   << " revision:" << module.revision;
+                                   << " revision:" << module.revision_label();
                 } else {
                     modules.pop_back();
                     break;
@@ -165,6 +149,17 @@ namespace crate
             ready_ = false;
             throw;
         }
+    }
+
+    void
+    crate::probe()
+    {
+        ready();
+        firmware::load(firmware);
+        for (auto& module : modules) {
+            module.probe();
+        }
+        firmware::clear(firmware);
     }
 
     void

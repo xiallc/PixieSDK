@@ -72,6 +72,12 @@ namespace fpga
         wait(10000);
         module.write_32(CFG_DCMRST, 0);
     }
+
+    bool
+    fippi::done()
+    {
+        return ctrl_1_2.done() && ctrl_3_4.done();
+    }
 };
 };
 };

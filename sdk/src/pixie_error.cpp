@@ -65,7 +65,13 @@ struct result_code
 static std::map<code, result_code> result_codes =
 {
     { code::success,                   {  0, "success" } },
+    /*
+     * Crate
+     */
     { code::crate_already_open,        { 100, "crate already open" } },
+    /*
+     * Module
+     */
     { code::module_number_invalid,     { 200, "invalid module number" } },
     { code::module_total_invalid,      { 201, "invalid module count" } },
     { code::module_already_open,       { 202, "module already open" } },
@@ -75,18 +81,37 @@ static std::map<code, result_code> result_codes =
     { code::module_invalid_operation,  { 206, "invalid module operation" } },
     { code::module_invalid_firmware,   { 207, "invalid module firmware" } },
     { code::module_initialize_failure, { 208, "module initialization failure" } },
+    { code::module_invalid_param,      { 209, "invalid module parameter" } },
+    /*
+     * Channel
+     */
+    { code::channel_number_invalid,    { 300, "invalid channel number" } },
+    { code::channel_invalid_param,     { 301, "invalid channel parameter" } },
+    /*
+     * Device
+     */
     { code::device_load_failure,       { 500, "device failed to load" } },
     { code::device_boot_failure,       { 501, "device failed to boot" } },
     { code::device_initialize_failure, { 502, "device failed to initialize" } },
     { code::device_copy_failure,       { 503, "device variable copy failed" } },
     { code::device_image_failure,      { 504, "device image failure" } },
     { code::device_hw_failure,         { 505, "device hardware failure" } },
+    /*
+     * File handling
+     */
     { code::file_not_found,            { 700, "file not found" } },
     { code::file_read_failure,         { 701, "file read failure" } },
     { code::file_size_invalid,         { 702, "invalid file size" } },
     { code::file_create_failure,       { 703, "file create failure" } },
+    /*
+     * System
+     */
     { code::no_memory,                 { 800, "no memory" } },
     { code::slot_map_invalid,          { 801, "invalid slot map" } },
+    { code::invalid_value,             { 802, "invalid number" } },
+    /*
+     * Catch all
+     */
     { code::unknown_error,             { 900, "unknown error" } },
     { code::internal_failure,          { 901, "internal failure" } },
     { code::bad_error_code,            { 990, "bad error code" } },
