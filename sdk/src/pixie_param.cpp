@@ -57,6 +57,192 @@ namespace param
      */
     typedef pixie::error::error error;
 
+    static const system_param_map system_params = {
+        { "NUMBER_MODULES",   { system_param::number_modules } },
+        { "OFFLINE_ANALYSIS", { system_param::offline_analysis } },
+        { "PXI_SLOT_MAP",     { system_param::pxi_slot_map } }
+    };
+
+    static const module_param_map module_params = {
+        { "MODULE_NUMBER",        { module_param::module_number } },
+        { "MODULE_CSRA",          { module_param::module_csra } },
+        { "MODULE_CSRB",          { module_param::module_csrb } },
+        { "MODULE_FORMAT",        { module_param::module_format } },
+        { "MAX_EVENTS",           { module_param::max_events } },
+        { "SYNCH_WAIT",           { module_param::synch_wait } },
+        { "IN_SYNCH",             { module_param::in_synch } },
+        { "SLOW_FILTER_RANGE",    { module_param::slow_filter_range } },
+        { "FAST_FILTER_RANGE",    { module_param::fast_filter_range } },
+        { "FastTrigBackplaneEna", { module_param::fasttrigbackplaneena } },
+        { "CrateID",              { module_param::crateid } },
+        { "SlotID",               { module_param::slotid } },
+        { "ModID",                { module_param::modid } },
+        { "TrigConfig0",          { module_param::trigconfig0 } },
+        { "TrigConfig1",          { module_param::trigconfig1 } },
+        { "TrigConfig2",          { module_param::trigconfig2 } },
+        { "TrigConfig3",          { module_param::trigconfig3 } },
+        { "HOST_RT_PRESET",       { module_param::host_rt_preset } },
+    };
+
+    static const channel_param_map channel_params = {
+        { "TRIGGER_RISETIME",  { channel_param::trigger_risetime } },
+        { "TRIGGER_FLATTOP",   { channel_param::trigger_flattop } },
+        { "TRIGGER_THRESHOLD", { channel_param::trigger_threshold } },
+        { "ENERGY_RISETIME",   { channel_param::energy_risetime } },
+        { "ENERGY_FLATTOP",    { channel_param::energy_flattop } },
+        { "TAU",               { channel_param::tau } },
+        { "TRACE_LENGTH",      { channel_param::trace_length } },
+        { "TRACE_DELAY",       { channel_param::trace_delay } },
+        { "VOFFSET",           { channel_param::voffset } },
+        { "XDT",               { channel_param::xdt } },
+        { "BASELINE_PERCENT",  { channel_param::baseline_percent } },
+        { "EMIN",              { channel_param::emin } },
+        { "BINFACTOR",         { channel_param::binfactor } },
+        { "BASELINE_AVERAGE",  { channel_param::baseline_average } },
+        { "CHANNEL_CSRA",      { channel_param::channel_csra } },
+        { "CHANNEL_CSRB",      { channel_param::channel_csrb } },
+        { "BLCUT",             { channel_param::blcut } },
+        { "INTEGRATOR",        { channel_param::integrator } },
+        { "FASTTRIGBACKLEN",   { channel_param::fasttrigbacklen } },
+        { "CFDDelay",          { channel_param::cfddelay } },
+        { "CFDScale",          { channel_param::cfdscale } },
+        { "CFDThresh",         { channel_param::cfdthresh } },
+        { "QDCLen0",           { channel_param::qdclen0 } },
+        { "QDCLen1",           { channel_param::qdclen1 } },
+        { "QDCLen2",           { channel_param::qdclen2 } },
+        { "QDCLen3",           { channel_param::qdclen3 } },
+        { "QDCLen4",           { channel_param::qdclen4 } },
+        { "QDCLen5",           { channel_param::qdclen5 } },
+        { "QDCLen6",           { channel_param::qdclen6 } },
+        { "QDCLen7",           { channel_param::qdclen7 } },
+        { "ExtTrigStretch",    { channel_param::exttrigstretch } },
+        { "VetoStretch",       { channel_param::vetostretch } },
+        { "MultiplicityMaskL", { channel_param::multiplicitymaskl } },
+        { "MultiplicityMaskH", { channel_param::multiplicitymaskh } },
+        { "ExternDelayLen",    { channel_param::externdelaylen } },
+        { "FtrigoutDelay",     { channel_param::ftrigoutdelay } },
+        { "ChanTrigStretch",   { channel_param::chantrigstretch } },
+    };
+
+    static const module_var_map module_vars = {
+        { "ModNum",               module_var::ModNum },
+        { "ModCSRA",              module_var::ModCSRA },
+        { "ModCSRB",              module_var::ModCSRB },
+        { "ModFormat",            module_var::ModFormat },
+        { "RunTask",              module_var::RunTask },
+        { "ControlTask",          module_var::ControlTask },
+        { "MaxEvents",            module_var::MaxEvents },
+        { "CoincPattern",         module_var::CoincPattern },
+        { "CoincWait",            module_var::CoincWait },
+        { "SynchWait",            module_var::SynchWait },
+        { "InSynch",              module_var::InSynch },
+        { "Resume",               module_var::Resume },
+        { "SlowFilterRange",      module_var::SlowFilterRange },
+        { "FastFilterRange",      module_var::FastFilterRange },
+        { "ChanNum",              module_var::ChanNum },
+        { "HostIO",               module_var::HostIO },
+        { "UserIn",               module_var::UserIn },
+        { "FastTrigBackplaneEna", module_var::FastTrigBackplaneEna },
+        { "CrateID",              module_var::CrateID },
+        { "SlotID",               module_var::SlotID },
+        { "ModID",                module_var::ModID },
+        { "TrigConfig",           module_var::TrigConfig },
+        { "HostRunTimePreset",    module_var::HRTP },
+        { "PowerUpInitDone",      module_var::PUID },
+        { "U00",                  module_var::U00 },
+        { "RealTimeA",            module_var::RealTimeA },
+        { "RealTimeB",            module_var::RealTimeB },
+        { "RunTimeA",             module_var::RunTimeA },
+        { "RunTimeB",             module_var::RunTimeB },
+        { "SynchDone",            module_var::SynchDone },
+        { "UserOut",              module_var::UserOut },
+        { "HardwareID",           module_var::HardwareID },
+        { "HardVariant",          module_var::HardVariant },
+        { "FIFOLength",           module_var::FIFOLength },
+        { "DSPrelease",           module_var::DSPrelease },
+        { "DSPbuild",             module_var::DSPbuild },
+        { "NumEventsA",           module_var::NumEventsA },
+        { "NumEventsB",           module_var::NumEventsB },
+        { "BufHeadLen",           module_var::BufHeadLen },
+        { "EventHeadLen",         module_var::EventHeadLen },
+        { "ChanHeadLen",          module_var::ChanHeadLen },
+        { "LOutBuffer",           module_var::LOutBuffer },
+        { "FippiID",              module_var::FippiID },
+        { "FippiVariant",         module_var::FippiVariant },
+        { "DSPVariant",           module_var::DSPVariant }
+    };
+
+    static const channel_var_map channel_vars = {
+        { "ChanCSRa",          channel_var::ChanCSRa },
+        { "ChanCSRb",          channel_var::ChanCSRb },
+        { "GainDAC",           channel_var::GainDAC },
+        { "OffsetDAC",         channel_var::OffsetDAC },
+        { "DigGain",           channel_var::DigGain },
+        { "SlowLength",        channel_var::SlowLength },
+        { "SlowGap",           channel_var::SlowGap },
+        { "FastLength",        channel_var::FastLength },
+        { "FastGap",           channel_var::FastGap },
+        { "PeakSample",        channel_var::PeakSample },
+        { "PeakSep",           channel_var::PeakSep },
+        { "CFDThresh",         channel_var::CFDThresh },
+        { "FastThresh",        channel_var::FastThresh },
+        { "ThreshWidth",       channel_var::ThreshWidth },
+        { "PAFlength",         channel_var::PAFlength },
+        { "TriggerDelay",      channel_var::TriggerDelay },
+        { "ResetDelay",        channel_var::ResetDelay },
+        { "ChanTrigStretch",   channel_var::ChanTrigStretch },
+        { "TraceLength",       channel_var::TraceLength },
+        { "Xwait",             channel_var::Xwait },
+        { "TrigOutLen",        channel_var::TrigOutLen },
+        { "EnergyLow",         channel_var::EnergyLow },
+        { "Log2Ebin",          channel_var::Log2Ebin },
+        { "MultiplicityMaskL", channel_var::MultiplicityMaskL },
+        { "MultiplicityMaskH", channel_var::MultiplicityMaskH },
+        { "PSAoffset",         channel_var::PSAoffset },
+        { "PSAlength",         channel_var::PSAlength },
+        { "Integrator",        channel_var::Integrator },
+        { "BLcut",             channel_var::BLcut },
+        { "BaselinePercent",   channel_var::BaselinePercent },
+        { "FtrigoutDelay",     channel_var::FtrigoutDelay },
+        { "Log2Bweight",       channel_var::Log2Bweight },
+        { "PreampTau",         channel_var::PreampTau },
+        { "Xavg",              channel_var::Xavg },
+        { "FastTrigBackLen",   channel_var::FastTrigBackLen },
+        { "CFDDelay",          channel_var::CFDDelay },
+        { "CFDScale",          channel_var::CFDScale },
+        { "ExtTrigStretch",    channel_var::ExtTrigStretch },
+        { "VetoStretch",       channel_var::VetoStretch },
+        { "ExternDelayLen",    channel_var::ExternDelayLen },
+        { "QDCLen0",           channel_var::QDCLen0 },
+        { "QDCLen1",           channel_var::QDCLen1 },
+        { "QDCLen2",           channel_var::QDCLen2 },
+        { "QDCLen3",           channel_var::QDCLen3 },
+        { "QDCLen4",           channel_var::QDCLen4 },
+        { "QDCLen5",           channel_var::QDCLen5 },
+        { "QDCLen6",           channel_var::QDCLen6 },
+        { "QDCLen7",           channel_var::QDCLen7 },
+        { "GSLTtime",          channel_var::GSLTtime },
+        { "DSPerror",          channel_var::DSPerror },
+        { "AOutBuffer",        channel_var::AOutBuffer },
+        { "AECorr",            channel_var::AECorr },
+        { "LECorr",            channel_var::LECorr },
+        { "U20",               channel_var::U20 },
+        { "LiveTimeA",         channel_var::LiveTimeA },
+        { "LiveTimeB",         channel_var::LiveTimeB },
+        { "FastPeaksA",        channel_var::FastPeaksA },
+        { "FastPeaksB",        channel_var::FastPeaksB },
+        { "OverflowA",         channel_var::OverflowA },
+        { "OverflowB",         channel_var::OverflowB },
+        { "InSpecA",           channel_var::InSpecA },
+        { "InSpecB",           channel_var::InSpecB },
+        { "UnderflowA",        channel_var::UnderflowA },
+        { "UnderflowB",        channel_var::UnderflowB },
+        { "ChanEventsA",       channel_var::ChanEventsA },
+        { "ChanEventsB",       channel_var::ChanEventsB },
+        { "AutoTau",           channel_var::AutoTau },
+        { "U30",               channel_var::U30 }
+    };
+
     static const module_var_descs module_var_descriptors_default = {
         { module_var::ModNum,               enable,  rw,  1, "ModNum" },
         { module_var::ModCSRA,              disable, ro,  1, "ModCSRA" },
@@ -267,6 +453,61 @@ namespace param
     const channel_var_descs&
     get_channel_var_descriptors() {
         return channel_var_descriptors_default;
+    }
+
+    system_param
+    lookup_system_param(const std::string& label)
+    {
+        auto search = system_params.find(label);
+        if (search == system_params.end()) {
+            throw error(error::code::crate_invalid_param,
+                        "invalid system param: " + label);
+        }
+        return search->second;
+    }
+
+    module_param
+    lookup_module_param(const std::string& label)
+    {
+        auto search = module_params.find(label);
+        if (search == module_params.end()) {
+            throw error(error::code::module_invalid_param,
+                        "invalid module param: " + label);
+        }
+        return search->second;
+    }
+
+    channel_param
+    lookup_channel_param(const std::string& label)
+    {
+        auto search = channel_params.find(label);
+        if (search == channel_params.end()) {
+            throw error(error::code::channel_invalid_param,
+                        "invalid channel param: " + label);
+        }
+        return search->second;
+    }
+
+    module_var
+    lookup_module_var(const std::string& label)
+    {
+        auto search = module_vars.find(label);
+        if (search == module_vars.end()) {
+            throw error(error::code::module_invalid_var,
+                        "invalid module variable: " + label);
+        }
+        return search->second;
+    }
+
+    channel_var
+    lookup_channel_var(const std::string& label)
+    {
+        auto search = channel_vars.find(label);
+        if (search == channel_vars.end()) {
+            throw error(error::code::channel_invalid_var,
+                        "invalid channel variable: " + label);
+        }
+        return search->second;
     }
 
     void

@@ -69,6 +69,7 @@ static std::map<code, result_code> result_codes =
      * Crate
      */
     { code::crate_already_open,        { 100, "crate already open" } },
+    { code::crate_invalid_param,       { 101, "invalid system parameter" } },
     /*
      * Module
      */
@@ -82,11 +83,13 @@ static std::map<code, result_code> result_codes =
     { code::module_invalid_firmware,   { 207, "invalid module firmware" } },
     { code::module_initialize_failure, { 208, "module initialization failure" } },
     { code::module_invalid_param,      { 209, "invalid module parameter" } },
+    { code::module_invalid_var,        { 210, "invalid module variable" } },
     /*
      * Channel
      */
     { code::channel_number_invalid,    { 300, "invalid channel number" } },
     { code::channel_invalid_param,     { 301, "invalid channel parameter" } },
+    { code::channel_invalid_var,       { 302, "invalid channel variable" } },
     /*
      * Device
      */

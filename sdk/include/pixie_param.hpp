@@ -378,14 +378,6 @@ namespace param
     typedef std::vector<channel_param_desc> channel_param_descs;
 
     /*
-     * Param name look up. A fast way to map a name to
-     * a parameter.
-     */
-    typedef std::map<std::string, system_param> system_param_map;
-    typedef std::map<std::string, module_param> module_param_map;
-    typedef std::map<std::string, channel_param> channel_param_map;
-
-    /*
      * Variable descriptor sets for modules and channels
      */
     typedef variable_desc<module_var> module_var_desc;
@@ -454,10 +446,28 @@ namespace param
     const unsigned int all_mask = (1 << 12) - 1;
 
     /*
+     * Look up maps. A fast way to map a name to a parameter or vatiable.
+     */
+    typedef std::map<std::string, system_param> system_param_map;
+    typedef std::map<std::string, module_param> module_param_map;
+    typedef std::map<std::string, channel_param> channel_param_map;
+    typedef std::map<std::string, module_var> module_var_map;
+    typedef std::map<std::string, channel_var> channel_var_map;
+
+    /*
      * Get a copy of the defaults.
      */
     const module_var_descs& get_module_var_descriptors();
     const channel_var_descs& get_channel_var_descriptors();
+
+    /*
+     * Look up parameters and variables.
+     */
+    system_param lookup_system_param(const std::string& label);
+    module_param lookup_module_param(const std::string& label);
+    channel_param lookup_channel_param(const std::string& label);
+    module_var lookup_module_var(const std::string& label);
+    channel_var lookup_channel_var(const std::string& label);
 
     /*
      * Load the variables from the DSP variable file into the

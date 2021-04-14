@@ -59,6 +59,7 @@ enum struct code {
      */
     crate_already_open,
     crate_not_ready,
+    crate_invalid_param,
     /*
      * Module
      */
@@ -72,11 +73,13 @@ enum struct code {
     module_invalid_firmware,
     module_initialize_failure,
     module_invalid_param,
+    module_invalid_var,
     /*
      * Channel
      */
     channel_number_invalid,
     channel_invalid_param,
+    channel_invalid_var,
     /*
      * Device
      */

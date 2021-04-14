@@ -641,18 +641,7 @@ namespace module
     param::value_type
     module::read(const std::string& var, bool hw)
     {
-        auto mvi = std::find_if(module_var_descriptors.begin(),
-                                module_var_descriptors.end(),
-                                [var](param::module_var_desc& desc){
-                                    return desc.name == var;
-                                });
-        if (mvi == module_var_descriptors.end()) {
-            throw error(number, slot,
-                        error::code::module_invalid_param,
-                        "module param not found: " + var);
-        }
-        return read((*mvi).par, hw);
-
+        return read(param::lookup_module_var(var), hw);
     }
 
     param::value_type
@@ -692,17 +681,7 @@ namespace module
     param::value_type
     module::read(const std::string& var, size_t channel, bool hw)
     {
-        auto cvi = std::find_if(channel_var_descriptors.begin(),
-                                channel_var_descriptors.end(),
-                                [var](param::channel_var_desc& desc){
-                                    return desc.name == var;
-                                });
-        if (cvi == channel_var_descriptors.end()) {
-            throw error(number, slot,
-                        error::code::channel_invalid_param,
-                        "channel param not found: " + var);
-        }
-        return read((*cvi).par, channel, hw);
+        return read(param::lookup_channel_var(var), channel, hw);
 
     }
 
@@ -747,17 +726,7 @@ namespace module
     void
     module::write(const std::string& var, param::value_type value, bool hw)
     {
-        auto mvi = std::find_if(module_var_descriptors.begin(),
-                                module_var_descriptors.end(),
-                                [var](param::module_var_desc& desc){
-                                    return desc.name == var;
-                                });
-        if (mvi == module_var_descriptors.end()) {
-            throw error(number, slot,
-                        error::code::module_invalid_param,
-                        "module param not found: " + var);
-        }
-        write((*mvi).par, value, hw);
+        write(param::lookup_module_var(var), value, hw);
     }
 
     void
@@ -794,17 +763,7 @@ namespace module
     module::write(const std::string& var, size_t channel,
                   param::value_type value, bool hw)
     {
-        auto cvi = std::find_if(channel_var_descriptors.begin(),
-                                channel_var_descriptors.end(),
-                                [var](param::channel_var_desc& desc){
-                                    return desc.name == var;
-                                });
-        if (cvi == channel_var_descriptors.end()) {
-            throw error(number, slot,
-                        error::code::channel_invalid_param,
-                        "channel param not found: " + var);
-        }
-        write((*cvi).par, channel, value, hw);
+        write(param::lookup_channel_var(var), channel, value, hw);
     }
 
     void
