@@ -7,7 +7,7 @@ add_library(PixieSDK SHARED
         src/tools.c
         src/utilities.c
         # C++
-        src/pixie.cpp
+        src/pixie16.cpp
         src/pixie_crate.cpp
         src/pixie_module.cpp
         src/pixie_fw.cpp

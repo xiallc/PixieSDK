@@ -33,7 +33,7 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
-#include <pixie.h>
+#include <pixie16.h>
 
 #include <pixie_crate.hpp>
 #include <pixie_error.hpp>

@@ -35,7 +35,7 @@
 
 #include <stdexcept>
 
-#include <pixie.h>
+#include <pixie16.h>
 
 #include "pixie16app_export.h"
 #include "pixie16sys_export.h"
