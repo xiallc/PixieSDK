@@ -167,6 +167,16 @@ namespace module
         int adc_msps;
 
         /*
+         * FPGA ADC clock divider
+         */
+        int adc_clk_div;
+
+        /*
+         * FPGA clock rate in mega-hertz
+         */
+        int fpga_clk_mhz;
+
+        /*
          * Number of channels
          */
         size_t num_channels;
@@ -268,24 +278,62 @@ namespace module
         /*
          * Read a parameter.
          */
-        param::value_type read(const std::string& var, bool hw = true);
-        param::value_type read(param::module_var var, bool hw = true);
-        param::value_type read(const std::string& var, size_t channel,
-                               bool hw = true);
-        param::value_type read(param::channel_var, size_t channel,
-                               bool hw = true);
+        param::value_type read(const std::string& par, bool hw = true);
+        param::value_type read(param::module_param par, bool hw = true);
+        double read(const std::string& par, size_t channel, bool hw = true);
+        double read(param::channel_param par, size_t channel, bool hw = true);
 
         /*
          * Write a parameter.
          */
         void write(const std::string& var,
                    param::value_type value, bool hw = true);
-        void write(param::module_var var,
+        void write(param::module_param var,
                    param::value_type value, bool hw = true);
         void write(const std::string& var, size_t channel,
-                   param::value_type value, bool hw = true);
-        void write(param::channel_var, size_t channel,
-                   param::value_type value, bool hw = true);
+                   double value, bool hw = true);
+        void write(param::channel_param par, size_t channel,
+                   double value, bool hw = true);
+
+        /*
+         * Read a variable.
+         */
+        param::value_type read_var(const std::string& var,
+                                   size_t offset = 0,
+                                   bool hw = true);
+        param::value_type read_var(param::module_var var,
+                                   size_t offset = 0,
+                                   bool hw = true);
+        param::value_type read_var(const std::string& var,
+                                   size_t channel,
+                                   size_t offset = 0,
+                                   bool hw = true);
+        param::value_type read_var(param::channel_var,
+                                   size_t channel,
+                                   size_t offset = 0,
+                                   bool hw = true);
+
+        /*
+         * Write a variable.
+         */
+        void write_var(const std::string& var,
+                       param::value_type value,
+                       size_t offset = 0,
+                       bool hw = true);
+        void write_var(param::module_var var,
+                       param::value_type value,
+                       size_t offset = 0,
+                       bool hw = true);
+        void write_var(const std::string& var,
+                       size_t channel,
+                       param::value_type value,
+                       size_t offset = 0,
+                       bool hw = true);
+        void write_var(param::channel_var,
+                       size_t channel,
+                       param::value_type value,
+                       size_t offset = 0,
+                       bool hw = true);
 
         /*
          * Output the module details.
@@ -343,6 +391,18 @@ namespace module
          * Check the EEPROM for verison 2 format.
          */
         bool eeprom_v2() const;
+
+        /*
+         * Channel parameter handlers.
+         */
+        double trigger_risetime(size_t channel, bool hw);
+        double trigger_flattop(size_t channel, bool hw);
+        double trigger_threshold(size_t channel, bool hw);
+        double energy_risetime(size_t channel, bool hw);
+        double energy_flattop(size_t channel, bool hw);
+        double tau(size_t channel, bool hw);
+        double trace_length(size_t channel, bool hw);
+        double trace_delay(size_t channel, bool hw);
 
         /*
          * Lock

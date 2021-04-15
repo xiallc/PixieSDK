@@ -49,12 +49,38 @@ struct ostream_guard {
     std::ostream& o;
     std::ios_base::fmtflags flags;
     ostream_guard(std::ostream& o_)
-	: o(o_),
-	  flags(o_.flags()) {
+      : o(o_),
+        flags(o_.flags()) {
     }
     ~ostream_guard() {
-	o.flags(flags);
+        o.flags(flags);
     }
+};
+
+/*
+ * IEEE float as a type.
+ */
+struct ieee_float {
+    typedef unsigned int value_type;
+
+    ieee_float();
+    ieee_float(const ieee_float& ieee);
+    ieee_float(value_type value_);
+    ieee_float(double dec_num);
+
+    ieee_float& operator=(const ieee_float& ieee);
+    ieee_float& operator=(const double dec_num);
+
+    bool operator==(const ieee_float& ieee) const;
+    bool operator==(const double dec_num) const;
+
+    operator double() const;
+
+private:
+    value_type in(const double dec_num) const;
+    double out() const;
+
+    value_type value;
 };
 }
 }

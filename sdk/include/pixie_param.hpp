@@ -470,6 +470,11 @@ namespace param
     channel_var lookup_channel_var(const std::string& label);
 
     /*
+     * Module parammeter to module variable map.
+     */
+    module_var map_module_param(module_param par);
+
+    /*
      * Load the variables from the DSP variable file into the
      * descriptors.
      */

@@ -66,10 +66,11 @@ struct command_def
 
 static const std::map<std::string, command_def> command_defs =
 {
-    { "boot", { { 0 },    "boots the modules" } },
-    { "get",  { { 2, 3 }, "get mod chan reg" } },
-    { "set",  { { 3, 4 }, "set mod chan reg val" }
-    }
+    { "boot",      { { 0 },    "boots the module(s)" } },
+    { "par-read",  { { 2, 3 }, "read module/channel parameter" } },
+    { "par-write", { { 3, 4 }, "write module/channel parameter" } },
+    { "var-read",  { { 2, 3 }, "read module/channel variable" } },
+    { "var-write", { { 3, 4 }, "write module/channel variable" } }
 };
 
 static void
@@ -144,27 +145,58 @@ process_command_sets(xia::pixie::crate::crate& crate, commands& cmds)
             crate.boot();
             std::cout << "crate:" << std::endl
                       << crate << std::endl;
-        } else if (cmd[0] == "set") {
+        } else if (cmd[0] == "par-write") {
             auto mod_num = get_value<size_t>(cmd[1]);
             if (cmd.size() == 4) {
-                auto value = get_value<xia::pixie::param::value_type>(cmd[3]);
+                auto value =
+                    get_value<xia::pixie::param::value_type>(cmd[3]);
                 crate[mod_num].write(cmd[2], value);
             } else {
                 auto channel_num = get_value<size_t>(cmd[2]);
-                auto value = get_value<xia::pixie::param::value_type>(cmd[4]);
-                crate[mod_num].write(cmd[3], channel_num, value);
+                auto value =
+                    get_value<xia::pixie::param::value_type>(cmd[4]);
+                crate[mod_num].write_var(cmd[3], channel_num, value);
             }
-        } else if (cmd[0] == "get") {
+        } else if (cmd[0] == "par-read") {
+            double value;
+            auto mod_num = get_value<size_t>(cmd[1]);
+            int reg_name;
+            if (cmd.size() == 3) {
+                reg_name = 2;
+                value = crate[mod_num].read_var(cmd[reg_name]);
+            } else {
+                reg_name = 3;
+                auto channel_num = get_value<size_t>(cmd[2]);
+                value = crate[mod_num].read_var(cmd[reg_name], channel_num, true);
+            }
+            xia::pixie::ostream_guard oguard(std::cout);
+            std::cout << cmd[reg_name] << " = " << value
+                      << std::hex
+                      << " (0x" << value << ')'
+                      << std::endl;
+        } else if (cmd[0] == "var-write") {
+            auto mod_num = get_value<size_t>(cmd[1]);
+            if (cmd.size() == 4) {
+                auto value =
+                    get_value<xia::pixie::param::value_type>(cmd[3]);
+                crate[mod_num].write_var(cmd[2], value);
+            } else {
+                auto channel_num = get_value<size_t>(cmd[2]);
+                auto value =
+                    get_value<xia::pixie::param::value_type>(cmd[4]);
+                crate[mod_num].write_var(cmd[3], channel_num, value);
+            }
+        } else if (cmd[0] == "var-read") {
             xia::pixie::param::value_type value;
             auto mod_num = get_value<size_t>(cmd[1]);
             int reg_name;
             if (cmd.size() == 3) {
                 reg_name = 2;
-                value = crate[mod_num].read(cmd[reg_name]);
+                value = crate[mod_num].read_var(cmd[reg_name]);
             } else {
                 reg_name = 3;
                 auto channel_num = get_value<size_t>(cmd[2]);
-                value = crate[mod_num].read(cmd[reg_name], channel_num);
+                value = crate[mod_num].read_var(cmd[reg_name], channel_num, true);
             }
             xia::pixie::ostream_guard oguard(std::cout);
             std::cout << cmd[reg_name] << " = " << value

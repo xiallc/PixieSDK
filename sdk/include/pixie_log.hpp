@@ -121,6 +121,29 @@ void set_level_stamp(const std::string name, bool level);
 void set_datetime_stamp(const std::string name, bool datetime);
 void set_line_numbers(const std::string name, bool line_numbers);
 
+/*
+ * Level active
+ */
+bool level_logoging(log::level level);
+
+/**
+ * Hex display memory.
+ *
+ * @param addr The address of the memory to display.
+ * @param length The number of elements to display.
+ * @param size The size of the data element.
+ * @param line_length Number of elements per line.
+ * @param offset The printed offset.
+ *
+ * From https://git.rtems.org/rtems-tools/tree/rtemstoolkit/rtems-utils.cpp#n39
+ */
+void memdump(log::level level,
+             const std::string label,
+             const void* addr,
+             size_t length,
+             size_t size = 1,
+             size_t line_length = 16,
+             size_t offset = 0);
 }
 }
 }

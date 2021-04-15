@@ -362,6 +362,27 @@ namespace param
         { channel_var::U30,               disable, ro,  1, "U30" }
     };
 
+    static const module_var module_param_var_map[] = {
+        module_var::ModNum,
+        module_var::ModCSRA,
+        module_var::ModCSRB,
+        module_var::ModFormat,
+        module_var::MaxEvents,
+        module_var::SynchWait,
+        module_var::InSynch,
+        module_var::SlowFilterRange,
+        module_var::FastFilterRange,
+        module_var::FastTrigBackplaneEna,
+        module_var::CrateID,
+        module_var::SlotID,
+        module_var::ModID,
+        module_var::TrigConfig,
+        module_var::TrigConfig,
+        module_var::TrigConfig,
+        module_var::TrigConfig,
+        module_var::HRTP
+    };
+
     const copy_filter energy_filter = {
         channel_var::SlowLength,
         channel_var::SlowGap,
@@ -528,6 +549,12 @@ namespace param
             throw;
         }
         input.close();
+    }
+
+    module_var
+    map_module_param(module_param par)
+    {
+        return module_param_var_map[int(par)];
     }
 
     void

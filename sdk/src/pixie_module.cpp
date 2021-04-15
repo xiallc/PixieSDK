@@ -66,6 +66,12 @@ namespace module
         return oss.str();
     }
 
+    static std::string
+    module_label(const module& mod)
+    {
+        return module_label(mod.number, mod.slot);
+    }
+
     error::error(const int num, const int slot,
                  const code type, const std::ostringstream& what)
         : pixie::error::error(type, make_what(num, slot, what.str().c_str()))
@@ -189,6 +195,8 @@ namespace module
           revision(0),
           adc_bits(0),
           adc_msps(0),
+          adc_clk_div(0),
+          fpga_clk_mhz(0),
           num_channels(0),
           vmaddr(nullptr),
           dsp(*this),
@@ -210,6 +218,8 @@ namespace module
           revision(m.revision),
           adc_bits(m.adc_bits),
           adc_msps(m.adc_msps),
+          adc_clk_div(m.adc_clk_div),
+          fpga_clk_mhz(m.fpga_clk_mhz),
           num_channels(m.num_channels),
           vmaddr(m.vmaddr),
           dsp(*this),
@@ -234,6 +244,8 @@ namespace module
         m.revision = 0;
         m.adc_bits = 0;
         m.adc_msps = 0;
+        m.adc_clk_div = 0;
+        m.fpga_clk_mhz = 0;
         m.num_channels = 0;
         m.vmaddr = nullptr;
         m.eeprom.clear();
@@ -278,6 +290,8 @@ namespace module
         revision = m.revision;
         adc_bits = m.adc_bits;
         adc_msps = m.adc_msps;
+        adc_clk_div = m.adc_clk_div;
+        fpga_clk_mhz = m.fpga_clk_mhz;
         num_channels = m.num_channels;
         vmaddr = m.vmaddr;
         dsp = std::move(m.dsp);
@@ -301,6 +315,8 @@ namespace module
         m.revision = 0;
         m.adc_bits = 0;
         m.adc_msps = 0;
+        m.adc_clk_div = 0;
+        m.fpga_clk_mhz = 0;
         m.num_channels = 0;
         m.vmaddr = nullptr;
         m.eeprom.clear();
@@ -361,8 +377,6 @@ namespace module
 
             device->device_number = device_number;
 
-            present_ = true;
-
             ps = ::PlxPci_DeviceOpen(&device->key, &device->handle);
             if (ps != PLX_STATUS_OK) {
                 std::ostringstream oss;
@@ -386,6 +400,11 @@ namespace module
                             oss);
             }
 
+            hw::i2c::pcf8574 pio(*this, PCF8574_ADDR,
+                                 (1 << 0) | (1 << 3), 1 << 1, 1 << 2);
+
+            slot = (pio.read_a_byte() & 0xf8) >> 3;
+
             hw::i2c::i2cm24c64 i2cm24c64(*this, I2CM24C64_ADDR,
                                          (1 << 0) | (1 << 3), 1 << 1, 1 << 2);
             i2cm24c64.read(0, 128, eeprom);
@@ -399,16 +418,14 @@ namespace module
                             oss);
             }
 
-            hw::i2c::pcf8574 pio(*this, PCF8574_ADDR,
-                                 (1 << 0) | (1 << 3), 1 << 1, 1 << 2);
-
-            slot = (pio.read_a_byte() & 0xf8) >> 3;
+            logging::memdump(log::debug, module_label(*this) + ": EEPROM:",
+                             eeprom.data(), eeprom.size());
 
             if (!eeprom_v2()) {
                 /*
-                 *  Starting with serial number 256, serial number is stored in the
-                 *  first two bytes of EEPROM, followed by revision number, which
-                 *  is at least 11 (i.e. Rev-B)
+                 *  Starting with serial number 256, serial number is stored in
+                 *  the first two bytes of EEPROM, followed by revision number,
+                 *  which is at least 11 (i.e. Rev-B)
                  */
                 revision = eeprom[2];
 
@@ -430,8 +447,8 @@ namespace module
                     eeprom_format = 1;
                     adc_bits = static_cast<int>(eeprom[99]);
                     adc_msps =
-                        (static_cast<int>(eeprom[99 + 1]) << 8) |
-                        static_cast<int>(eeprom[99 + 2]);
+                        (static_cast<int>(eeprom[99 + 2]) << 8) |
+                        static_cast<int>(eeprom[99 + 1]);
                     if (revision <= rev_F) {
                         num_channels = 16;
                     } else {
@@ -452,14 +469,39 @@ namespace module
 
                 if (adc_bits == 0) {
                     std::ostringstream oss;
-                    oss << "unknown serial number: " << serial_num;
+                    oss << "unknown serial number to ADC config: " << serial_num;
                     throw error(number, slot,
-                                error::code::module_initialize_failure, oss.str());
+                                error::code::module_initialize_failure,
+                                oss.str());
                 }
+
+                /*
+                 * Set the FPGA ADC clock divider and the FPGA clock frequency.
+                 */
+                switch (adc_msps) {
+                case 100:
+                    adc_clk_div = 1;
+                    break;
+                case 250:
+                    adc_clk_div = 2;
+                    break;
+                case 500:
+                    adc_clk_div = 5;
+                    break;
+                default:
+                    throw error(number, slot,
+                                error::code::module_initialize_failure,
+                                "invalid ADC MSPS: " + std::to_string(adc_msps));
+                };
+
+                fpga_clk_mhz = adc_msps / adc_clk_div;
             } else {
-                throw error(number, slot, error::code::module_initialize_failure,
-                    "eeprom format 2 not supported");
+                throw error(number, slot,
+                            error::code::module_initialize_failure,
+                            "EEPROM format 2 not supported");
             }
+
+            present_ = true;
         }
     }
 
@@ -470,7 +512,9 @@ namespace module
             PLX_STATUS ps_unmap_bar = PLX_STATUS_OK;
             PLX_STATUS ps_close;
 
-            log(log::debug) << "module: close: device-number=" << device->device_number;
+            log(log::debug) << module_label(*this)
+                            << ": close: device-number="
+                            << device->device_number;
 
             if (vmaddr != nullptr) {
                 ps_unmap_bar = ::PlxPci_PciBarUnmap(&device->handle, &vmaddr);
@@ -532,7 +576,7 @@ namespace module
         dsp.online = dsp.done();
 
         log(log::info) << std::boolalpha
-                       <<  module_label(number, slot)
+                       <<  module_label(*this)
                        << ": probe: sys=" << comms_fpga
                        << " fippi=" << fippi_fpga
                        << " dsp=" << dsp.online;
@@ -555,7 +599,7 @@ namespace module
 
         if (boot_comms) {
             if (comms_fpga) {
-                log(log::info) << module_label(number, slot)
+                log(log::info) << module_label(*this)
                                << ": comms already loaded";
             }
             firmware::firmware_ref fw = get("sys");
@@ -566,7 +610,7 @@ namespace module
 
         if (boot_fippi) {
             if (fippi_fpga) {
-                log(log::info) << module_label(number, slot)
+                log(log::info) << module_label(*this)
                                << ": fippi already loaded";
             }
             firmware::firmware_ref fw = get("fippi");
@@ -577,7 +621,7 @@ namespace module
 
         if (boot_dsp) {
             if (dsp.online) {
-                log(log::info) << module_label(number, slot)
+                log(log::info) << module_label(*this)
                                << ": dsp already running";
             }
             firmware::firmware_ref fw = get("dsp");
@@ -589,8 +633,9 @@ namespace module
                     module_var_descriptors,
                     channel_var_descriptors);
 
-        log(log::info) << std::boolalpha
-                       << "module: boot: sys-fpga=" << comms_fpga
+        log(log::info) << module_label(*this)
+                       << std::boolalpha
+                       << ": boot: sys-fpga=" << comms_fpga
                        << " fippi-fpga=" << boot_fippi
                        << " dsp=" << dsp.online;
 
@@ -639,22 +684,153 @@ namespace module
     }
 
     param::value_type
-    module::read(const std::string& var, bool hw)
+    module::read(const std::string& par, bool hw)
     {
-        return read(param::lookup_module_var(var), hw);
+        log(log::info) << module_label(*this) << ": write: par=" << par;
+        return read(param::lookup_module_param(par), hw);
     }
 
     param::value_type
-    module::read(param::module_var var, bool hw)
+    module::read(param::module_param par, bool hw)
     {
-        size_t index = static_cast<size_t>(var);
+        log(log::debug) << module_label(*this) << ": write: par=" << int(par);
+        const param::module_var var = param::map_module_param(par);
+        size_t offset;
+        if (var == param::module_var::TrigConfig) {
+            offset = size_t(par) - size_t(param::module_param::trigconfig0);
+        } else {
+            offset = 0;
+        }
+        return read_var(var, offset, hw);
+    }
+
+    double
+    module::read(const std::string& par,
+                 size_t channel,
+                 bool hw)
+    {
+        log(log::info) << module_label(*this) << ": read: par=" << par;
+        return read(param::lookup_channel_param(par), channel, hw);
+    }
+
+    double
+    module::read(param::channel_param par,
+                 size_t channel,
+                 bool hw)
+    {
+        log(log::debug) << module_label(*this) << ": read: par=" << int(par);
+        lock_guard guard(lock_);
+        double value;
+        switch (par) {
+        case param::channel_param::trigger_risetime:
+            value = trigger_risetime(channel, hw);
+            break;
+        case param::channel_param::trigger_flattop:
+            value = trigger_flattop(channel, hw);
+            break;
+        case param::channel_param::trigger_threshold:
+            value = trigger_threshold(channel, hw);
+            break;
+        case param::channel_param::energy_risetime:
+            value = energy_risetime(channel, hw);
+            break;
+        case param::channel_param::energy_flattop:
+            value = energy_flattop(channel, hw);
+            break;
+        case param::channel_param::tau:
+            value = tau(channel, hw);
+            break;
+        case param::channel_param::trace_length:
+            value = trace_length(channel, hw);
+            break;
+        case param::channel_param::trace_delay:
+            value = trace_delay(channel, hw);
+            break;
+        default:
+            throw error(number, slot,
+                        error::code::channel_invalid_param,
+                        "invalid read parameter");
+        }
+        return value;
+    }
+
+    void
+    module::write(const std::string& par,
+                  param::value_type value,
+                  bool hw)
+    {
+        log(log::info) << module_label(*this)
+                       << ": write: par=" << par << " value=" << value;
+        write(param::lookup_module_param(par), value, hw);
+    }
+
+    void
+    module::write(param::module_param par,
+                  param::value_type value,
+                  bool hw)
+    {
+        log(log::debug) << module_label(*this)
+                        << ": write: par=" << int(par) << " value=" << value;
+        const param::module_var var = param::map_module_param(par);
+        size_t offset;
+        if (var == param::module_var::TrigConfig) {
+            offset = size_t(par) - size_t(param::module_param::trigconfig0);
+        } else {
+            offset = 0;
+        }
+        write_var(var, value, offset, hw);
+    }
+
+    void
+    module::write(const std::string& par,
+                  size_t channel,
+                  double value,
+                  bool hw)
+    {
+        log(log::info) << module_label(*this)
+                       << ": write: par=" << par
+                       << " channel=" << channel
+                       << " value=" << value;
+        write(param::lookup_module_param(par), value, hw);
+    }
+
+    void
+    module::write(param::channel_param par,
+                  size_t channel,
+                  double value,
+                  bool hw)
+    {
+        log(log::debug) << module_label(*this)
+                        << ": write: par=" << int(par)
+                        << " channel=" << channel
+                        << " value=" << value;
+        lock_guard guard(lock_);
+        (void) hw;
+    }
+
+    param::value_type
+    module::read_var(const std::string& var, size_t offset, bool hw)
+    {
+        log(log::info) << module_label(*this)
+                       << ": read: var=" << var
+                       << " offset=" << offset;
+        return read_var(param::lookup_module_var(var), offset, hw);
+    }
+
+    param::value_type
+    module::read_var(param::module_var var, size_t offset, bool hw)
+    {
+        log(log::debug) << module_label(*this)
+                        << ": read: var=" << int(var)
+                        << " offset=" << offset;
+        const size_t index = static_cast<size_t>(var);
         if (index >= module_var_descriptors.size()) {
             std::ostringstream oss;
             oss << "invalid module variable: " << index;
             throw error(number, slot,
                         error::code::module_invalid_param, oss.str());
         }
-        auto& desc = module_var_descriptors[index];
+        const auto& desc = module_var_descriptors[index];
         log(log::debug) << "module: read: " << desc.name;
         if (desc.state == param::disable) {
             throw error(number, slot,
@@ -666,42 +842,60 @@ namespace module
                         error::code::module_invalid_param,
                         "module variable not readable: " + desc.name);
         }
+        if (offset >= desc.size) {
+            throw error(number, slot,
+                        error::code::channel_invalid_param,
+                        "invalid module variable offset: " + desc.name);
+        }
         lock_guard guard(lock_);
         param::value_type value;
         if (hw) {
             hw::dsp::memory mem = dsp.read(desc.address);
             hw::dsp::convert(mem, value);
-            module_values[index].value[0] = value;
+            module_values[index].value[offset] = value;
         } else {
-            value = module_values[index].value[0];
+            value = module_values[index].value[offset];
         }
         return value;
     }
 
     param::value_type
-    module::read(const std::string& var, size_t channel, bool hw)
+    module::read_var(const std::string& var,
+                     size_t channel,
+                     size_t offset,
+                     bool hw)
     {
-        return read(param::lookup_channel_var(var), channel, hw);
-
+        log(log::info) << module_label(*this)
+                       << ": read: var=" << var
+                       << " channel=" << channel
+                       << " offset=" << offset;
+        return read_var(param::lookup_channel_var(var), channel, offset, hw);
     }
 
     param::value_type
-    module::read(param::channel_var var, size_t channel, bool hw)
+    module::read_var(param::channel_var var,
+                     size_t channel,
+                     size_t offset,
+                     bool hw)
     {
+        log(log::debug) << module_label(*this)
+                        << ": read: var=" << int(var)
+                        << " channel=" << channel
+                        << " offset=" << offset;
         if (channel >= num_channels) {
             std::ostringstream oss;
             oss << "invalid channel number: " << channel;
             throw error(number, slot,
                         error::code::channel_number_invalid, oss.str());
         }
-        size_t index = static_cast<size_t>(var);
+        const size_t index = static_cast<size_t>(var);
         if (index >= channel_var_descriptors.size()) {
             std::ostringstream oss;
             oss << "invalid channel variable: " << index;
             throw error(number, slot,
                         error::code::channel_invalid_param, oss.str());
         }
-        auto& desc = channel_var_descriptors[index];
+        const auto& desc = channel_var_descriptors[index];
         if (desc.state == param::disable) {
             throw error(number, slot,
                         error::code::channel_invalid_param,
@@ -712,34 +906,55 @@ namespace module
                         error::code::channel_invalid_param,
                         "channel variable not readable: " + desc.name);
         }
+        if (offset >= desc.size) {
+            throw error(number, slot,
+                        error::code::channel_invalid_param,
+                        "invalid channel variable offset: " + desc.name);
+        }
         lock_guard guard(lock_);
         param::value_type value;
         if (hw) {
             hw::dsp::convert(dsp.read(channel, desc.address), value);
-            channel_values[channel][index].value[0] = value;
+            channel_values[channel][index].value[offset] = value;
         } else {
-            value = channel_values[channel][index].value[0];
+            value = channel_values[channel][index].value[offset];
         }
         return value;
     }
 
     void
-    module::write(const std::string& var, param::value_type value, bool hw)
+    module::write_var(const std::string& var,
+                      param::value_type value,
+                      size_t offset,
+                      bool hw)
     {
-        write(param::lookup_module_var(var), value, hw);
+        log(log::info) << module_label(*this)
+                       << ": write: var=" << var
+                       << " offset=" << offset
+                       << " value=" << value
+                       << " (0x" << std::hex << value << ')';
+        write_var(param::lookup_module_var(var), value, offset, hw);
     }
 
     void
-    module::write(param::module_var var, param::value_type value, bool hw)
+    module::write_var(param::module_var var,
+                      param::value_type value,
+                      size_t offset,
+                      bool hw)
     {
-        size_t index = static_cast<size_t>(var);
+        log(log::debug) << module_label(*this)
+                        << ": write: var=" << int(var)
+                        << " offset=" << offset
+                        << " value=" << value
+                        << " (0x" << std::hex << value << ')';
+        const size_t index = static_cast<size_t>(var);
         if (index >= module_var_descriptors.size()) {
             std::ostringstream oss;
             oss << "invalid module variable: " << index;
             throw error(number, slot,
                         error::code::module_invalid_param, oss.str());
         }
-        auto& desc = module_var_descriptors[index];
+        const auto& desc = module_var_descriptors[index];
         if (desc.state == param::disable) {
             throw error(number, slot,
                         error::code::module_invalid_param,
@@ -750,40 +965,63 @@ namespace module
                         error::code::module_invalid_param,
                         "module variable not writeable: " + desc.name);
         }
+        if (offset >= desc.size) {
+            throw error(number, slot,
+                        error::code::channel_invalid_param,
+                        "invalid module variable offset: " + desc.name);
+        }
         lock_guard guard(lock_);
         if (hw) {
             hw::dsp::memory mem;
             hw::dsp::convert(value, mem);
             dsp.write(desc.address, mem);
         }
-        module_values[index].value[0] = value;
+        module_values[index].value[offset] = value;
     }
 
     void
-    module::write(const std::string& var, size_t channel,
-                  param::value_type value, bool hw)
+    module::write_var(const std::string& var,
+                      size_t channel,
+                      param::value_type value,
+                      size_t offset,
+                      bool hw)
     {
-        write(param::lookup_channel_var(var), channel, value, hw);
+        log(log::info) << module_label(*this)
+                       << ": write: var=" << var
+                       << " channel=" << channel
+                       << " offset=" << offset
+                       << " value=" << value
+                       << " (0x" << std::hex << value << ')';
+        write_var(param::lookup_channel_var(var), channel, value, offset, hw);
     }
 
     void
-    module::write(param::channel_var var, size_t channel,
-                  param::value_type value, bool hw)
+    module::write_var(param::channel_var var,
+                      size_t channel,
+                      param::value_type value,
+                      size_t offset,
+                      bool hw)
     {
+        log(log::debug) << module_label(*this)
+                        << ": write: var=" << int(var)
+                       << " channel=" << channel
+                        << " offset=" << offset
+                        << " value=" << value
+                        << " (0x" << std::hex << value << ')';
         if (channel >= num_channels) {
             std::ostringstream oss;
             oss << "invalid channel number: " << channel;
             throw error(number, slot,
                         error::code::channel_number_invalid, oss.str());
         }
-        size_t index = static_cast<size_t>(var);
+        const size_t index = static_cast<size_t>(var);
         if (index >= channel_var_descriptors.size()) {
             std::ostringstream oss;
             oss << "invalid channel variable: " << index;
             throw error(number, slot,
                         error::code::channel_invalid_param, oss.str());
         }
-        auto& desc = channel_var_descriptors[index];
+        const auto& desc = channel_var_descriptors[index];
         if (desc.state == param::disable) {
             throw error(number, slot,
                         error::code::channel_invalid_param,
@@ -794,17 +1032,23 @@ namespace module
                         error::code::channel_invalid_param,
                         "channel variable not writeable: " + desc.name);
         }
+        if (offset >= desc.size) {
+            throw error(number, slot,
+                        error::code::channel_invalid_param,
+                        "invalid channel variable offset: " + desc.name);
+        }
         lock_guard guard(lock_);
         if (hw) {
             hw::dsp::memory mem;
             hw::dsp::convert(value, mem);
             dsp.write(channel, desc.address, mem);
         }
-        channel_values[channel][index].value[0] = value;
+        channel_values[channel][index].value[offset] = value;
     }
 
     void
-    module::output(std::ostream& out) const {
+    module::output(std::ostream& out) const
+    {
         ostream_guard flags(out);
         out << std::boolalpha
             << "number: " << number
@@ -849,6 +1093,101 @@ namespace module
     module::eeprom_v2() const
     {
         return false;
+    }
+
+    double
+    module::trigger_risetime(size_t channel, bool hw)
+    {
+        double fast_length =
+            read_var(param::channel_var::FastLength, channel, 0, hw);
+        param::value_type fast_filter_range =
+            read_var(param::module_var::FastFilterRange, 0, hw);
+        double value =
+            (fast_length * (1 << fast_filter_range)) / fpga_clk_mhz;
+        return value;
+    }
+
+    double
+    module::trigger_flattop(size_t channel, bool hw)
+    {
+        double fast_gap =
+            read_var(param::channel_var::FastGap, channel, 0, hw);
+        param::value_type fast_filter_range =
+            read_var(param::module_var::FastFilterRange, 0, hw);
+        double value =
+            (fast_gap * (1 << fast_filter_range)) / fpga_clk_mhz;
+        return value;
+    }
+
+    double
+    module::trigger_threshold(size_t channel, bool hw)
+    {
+        double fast_thresh =
+            read_var(param::channel_var::FastThresh, channel, 0, hw);
+        double fast_length =
+            read_var(param::channel_var::FastLength, channel, 0, hw);
+        double value =
+            fast_thresh / (fast_length * double(adc_clk_div));
+        return value;
+    }
+
+    double
+    module::energy_risetime(size_t channel, bool hw)
+    {
+        double slow_length =
+            read_var(param::channel_var::SlowLength, channel, 0, hw);
+        param::value_type slow_filter_range =
+            read_var(param::module_var::SlowFilterRange, 0, hw);
+        double value =
+            (slow_length * (1 << slow_filter_range)) / fpga_clk_mhz;
+        return value;
+    }
+
+    double
+    module::energy_flattop(size_t channel, bool hw)
+    {
+        double slow_gap =
+            read_var(param::channel_var::SlowGap, channel, 0, hw);
+        param::value_type slow_filter_range =
+            read_var(param::module_var::SlowFilterRange, 0, hw);
+        double value =
+            (slow_gap * (1 << slow_filter_range)) / fpga_clk_mhz;
+        return value;
+    }
+
+    double
+    module::tau(size_t channel, bool hw)
+    {
+        ieee_float preamp_tau =
+            read_var(param::channel_var::PreampTau, channel, 0, hw);
+        return preamp_tau;
+    }
+
+    double
+    module::trace_length(size_t channel, bool hw)
+    {
+        double trace_len =
+            read_var(param::channel_var::TraceLength, channel, 0, hw);
+        param::value_type fast_filter_range =
+            read_var(param::module_var::FastFilterRange, 0, hw);
+        double result =
+            trace_len / (double(adc_msps) * (1 << fast_filter_range));
+        return result;
+    }
+
+    double
+    module::trace_delay(size_t channel, bool hw)
+    {
+        double paf_length =
+            read_var(param::channel_var::PAFlength, channel, 0, hw);
+        double trigger_delay =
+            read_var(param::channel_var::TriggerDelay, channel, 0, hw);
+        param::value_type fast_filter_range =
+            read_var(param::module_var::FastFilterRange, 0, hw);
+        param::value_type ffr_mask = 1 << fast_filter_range;
+        double value =
+            (paf_length - (trigger_delay / ffr_mask)) / (fpga_clk_mhz * ffr_mask);
+        return value;
     }
 
     void
