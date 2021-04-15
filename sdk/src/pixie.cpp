@@ -75,14 +75,17 @@ api_mod_num(unsigned short mod_num) {
 }
 
 int PixieAcquireADCTrace(unsigned short ModNum) {
+    (void) ModNum;
     return -11111;
 }
 
 int PixieAcquireBaselines(unsigned short ModNum) {
+    (void) ModNum;
     return -11111;
 }
 
 int PixieAdjustOffsets(unsigned short ModNum) {
+    (void) ModNum;
     return -11111;
 }
 
@@ -184,36 +187,53 @@ PixieBootModule(const char* ComFPGAConfigFile,
 }
 
 int PixieCheckExternalFIFOStatus(unsigned int* nFIFOWords, unsigned short ModNum) {
+    (void) ModNum;
+    (void) nFIFOWords;
     return -11111;
 }
 
 int PixieCheckRunStatus(unsigned short ModNum) {
+    (void) ModNum;
     return -11111;
 }
 
 double PixieComputeInputCountRate(unsigned int* Statistics, unsigned short ModNum,
                                   unsigned short ChanNum) {
+    (void) ModNum;
+    (void) Statistics;
+    (void) ChanNum;
     return -11111;
 }
 
 double PixieComputeLiveTime(unsigned int* Statistics, unsigned short ModNum, unsigned short ChanNum) {
+    (void) Statistics;
+    (void) ModNum;
+    (void) ChanNum;
     return -11111;
 }
 
 double PixieComputeOutputCountRate(unsigned int* Statistics, unsigned short ModNum,
                                    unsigned short ChanNum) {
+    (void) Statistics;
+    (void) ModNum;
+    (void) ChanNum;
     return -11111;
 }
 
 double PixieComputeProcessedEvents(unsigned int* Statistics, unsigned short ModNum) {
+    (void) Statistics;
+    (void) ModNum;
     return -11111;
 }
 
 double PixieComputeRealTime(unsigned int* Statistics, unsigned short ModNum) {
+    (void) Statistics;
+    (void) ModNum;
     return -11111;
 }
 
 int PixieEndRun(unsigned short ModNum) {
+    (void) ModNum;
     return -11111;
 }
 
@@ -305,11 +325,18 @@ PixieInitSystem(unsigned short NumModules,
 
 int PixieReadDataFromExternalFIFO(unsigned int* ExtFIFO_Data, unsigned int nFIFOWords,
                                   unsigned short ModNum) {
+    (void) ExtFIFO_Data;
+    (void) nFIFOWords;
+    (void) ModNum;
     return -11111;
 }
 
 int PixieReadHistogramFromModule(unsigned int* Histogram, unsigned int NumWords,
                                  unsigned short ModNum, unsigned short ChanNum) {
+    (void) Histogram;
+    (void) NumWords;
+    (void) ModNum;
+    (void) ChanNum;
     return -11111;
 }
 
@@ -330,48 +357,81 @@ PixieReadModuleInfo(unsigned short ModNum,
 
 int PixieReadSglChanADCTrace(unsigned short* Trace_Buffer, unsigned int Trace_Length,
                              unsigned short ModNum, unsigned short ChanNum) {
+    (void) Trace_Buffer;
+    (void) Trace_Length;
+    (void) ModNum;
+    (void) ChanNum;
     return -11111;
 }
 
 int PixieReadSglChanBaselines(double* Baselines, double* TimeStamps, unsigned short NumBases,
                               unsigned short ModNum, unsigned short ChanNum) {
+    (void) Baselines;
+    (void) TimeStamps;
+    (void) NumBases;
+    (void) ModNum;
+    (void) ChanNum;
     return -11111;
 }
 
 int PixieReadSglChanPar(const char* ChanParName, double* ChanParData, unsigned short ModNum,
                         unsigned short ChanNum) {
+    (void) ChanParName;
+    (void) ChanParData;
+    (void) ModNum;
+    (void) ChanNum;
     return -11111;
 }
 
 int PixieReadSglModPar(const char* ModParName, unsigned int* ModParData, unsigned short ModNum) {
+    (void) ModParName;
+    (void) ModParData;
+    (void) ModNum;
     return -11111;
 }
 
 int PixieReadStatisticsFromModule(unsigned int* Statistics, unsigned short ModNum) {
+    (void) Statistics;
+    (void) ModNum;
     return -11111;
 }
 
 int PixieSaveDSPParametersToFile(const char* FileName) {
+    (void) FileName;
     return -11111;
 }
 
 int PixieSaveHistogramToFile(const char* FileName, unsigned short ModNum) {
+    (void) FileName;
+    (void) ModNum;
     return -11111;
 }
 
 int PixieStartHistogramRun(unsigned short ModNum, unsigned short mode) {
+    (void) ModNum;
+    (void) mode;
     return -11111;
 }
 
 int PixieStartListModeRun(unsigned short ModNum, unsigned short RunType, unsigned short mode) {
+    (void) ModNum;
+    (void) RunType;
+    (void) mode;
     return -11111;
 }
 
 int PixieWriteSglChanPar(const char* ChanParName, double ChanParData, unsigned short ModNum,
                          unsigned short ChanNum) {
+    (void) ChanParName;
+    (void) ChanParData;
+    (void) ModNum;
+    (void) ChanNum;
     return -11111;
 }
 
 int PixieWriteSglModPar(const char* ModParName, unsigned int ModParData, unsigned short ModNum) {
+    (void) ModParName;
+    (void) ModParData;
+    (void) ModNum;
     return -11111;
 }
