@@ -1,7 +1,7 @@
 #ifndef PIXIE_H
 #define PIXIE_H
 
-/*----------------------------------------------------------------------
+/**----------------------------------------------------------------------
 * Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
@@ -34,7 +34,11 @@
 * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
-*----------------------------------------------------------------------*/
+*----------------------------------------------------------------------**/
+/// @file pixie.h
+/// @brief C wrappers for the C++ API that expose the same signature as the legacy code
+/// @author C. Johns
+/// @date March 29, 2021
 
 #include <xia_windows_compat.hpp>
 
