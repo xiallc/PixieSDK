@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------
+/**----------------------------------------------------------------------
 * Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
@@ -31,7 +31,11 @@
 * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
-*----------------------------------------------------------------------*/
+*----------------------------------------------------------------------**/
+/// @file pixie16.cpp
+/// @brief C wrappers for the C++ API that expose the same signature as the legacy code
+/// @author C. Johns / S. V. Paulauskas
+/// @date March 29, 2021
 
 #include <pixie16.h>
 
