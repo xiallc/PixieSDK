@@ -160,7 +160,7 @@ ieee_float::in(const double dec_num) const
         /*
          * Search the fist non-zero bit in fract_part_hex
          */
-        ssize_t n;
+        int n;
         for (n = 31; n >0; --n) {
             if ((frac_part_hex & (1 << n)) != 0) {
                 break;
