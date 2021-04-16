@@ -93,7 +93,7 @@ PIXIE_EXPORT int PIXIE_API PixieAdjustOffsets(unsigned short ModNum) {
     return -11111;
 }
 
-PIXIE_EXPORT static void
+static void
 PixieBootModule(xia::pixie::module::module& module,
                 const char* ComFPGAConfigFile,
                 const char* SPFPGAConfigFile,
