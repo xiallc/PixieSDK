@@ -1,4 +1,4 @@
-add_library(PixieSDK SHARED
+set(PIXIE_SDK_LEGACY_SOURCES
         src/communication.c
         src/i2cm24c64.c
         src/pcf8574.c
@@ -6,7 +6,9 @@ add_library(PixieSDK SHARED
         src/pixie16sys.c
         src/tools.c
         src/utilities.c
-        # C++
+        )
+
+set(PIXIE_SDK_SOURCES
         src/pixie16.cpp
         src/pixie_crate.cpp
         src/pixie_module.cpp
@@ -25,33 +27,24 @@ add_library(PixieSDK SHARED
         src/hw/i2cm24c64.cpp
         src/hw/memory.cpp
         src/hw/pcf8574.cpp
-        src/hw/run.cpp)
-target_include_directories(PixieSDK PUBLIC
-        include/
-        ${PROJECT_SOURCE_DIR}/vendor/analog_devices
-        ${PLX_INCLUDE_DIR})
+        src/hw/run.cpp
+        )
 
-IF (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.13")
-    target_link_directories(PixieSDK PUBLIC ${PLX_LIBRARY_DIR})
-ENDIF ()
+#---- Build the object library so that we don't compile the sources more than once
+add_library(PixieSdkObjLib OBJECT ${PIXIE_SDK_LEGACY_SOURCES} ${PIXIE_SDK_SOURCES})
+set_property(TARGET PixieSdkObjLib PROPERTY POSITION_INDEPENDENT_CODE 1)
+target_include_directories(PixieSdkObjLib PUBLIC include/
+        ${PROJECT_SOURCE_DIR}/vendor/analog_devices)
+xia_configure_target(TARGET PixieSdkObjLib USE_PLX CONFIG_OBJ)
 
-target_link_libraries(PixieSDK PUBLIC ${PLX_SHARED_LIB})
-target_compile_definitions(PixieSDK PUBLIC PLX_LITTLE_ENDIAN PCI_CODE)
+#---- Build the shared object for install and general use.
+add_library(PixieSDK SHARED $<TARGET_OBJECTS:PixieSdkObjLib>)
+target_include_directories(PixieSDK PUBLIC include/
+        ${PROJECT_SOURCE_DIR}/vendor/analog_devices)
+xia_configure_target(TARGET PixieSDK USE_PLX)
 
-if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
-    target_compile_definitions(PixieSDK PUBLIC PRINT_DEBUG_MSG)
-endif()
-
-if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-    target_link_libraries(PixieSDK PUBLIC dl m)
-    target_compile_definitions(PixieSDK PUBLIC PLX_LINUX)
-    target_compile_options(PixieSDK PUBLIC -g -Wall -Wextra)
-elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    target_link_libraries(PixieSDK PUBLIC winmm)
-    target_compile_definitions(PixieSDK PUBLIC PLX_WINDOWS )
-endif ()
-
-file(GLOB PIXIESDK_PUBLIC_HEADERS include/*.h
+#---- Install PixieSDK
+file(GLOB PIXIESDK_PUBLIC_HEADERS include/*.h include/*.hpp include/hw/*.hpp
         ${PROJECT_SOURCE_DIR}/vendor/analog_devices/def21160.h)
 set_target_properties(PixieSDK PROPERTIES PUBLIC_HEADER "${PIXIESDK_PUBLIC_HEADERS}")
 install(TARGETS PixieSDK LIBRARY DESTINATION lib PUBLIC_HEADER DESTINATION include)

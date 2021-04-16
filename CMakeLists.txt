@@ -25,7 +25,8 @@ if (${CMAKE_BUILD_TYPE} MATCHES Release)
     string(REGEX REPLACE "-O3" "-O2" CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
 endif ()
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/Cmake/modules/")
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/Cmake/modules/;${PROJECT_SOURCE_DIR}/Cmake/functions")
+include(xia_configure_target)
 
 find_package(BroadcomAPI REQUIRED)
 IF (${CMAKE_VERSION} VERSION_LESS "3.13")
@@ -35,6 +36,7 @@ ENDIF (${CMAKE_VERSION} VERSION_LESS "3.13")
 add_subdirectory(sdk)
 add_subdirectory(tests)
 add_subdirectory(utilities)
+add_subdirectory(vendor)
 
 option(PIXIESDK_DOCO "Tells CMake to build documentation" OFF)
 if(PIXIESDK_DOCO)
