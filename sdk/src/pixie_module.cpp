@@ -43,6 +43,7 @@
 #include <pixie_log.hpp>
 #include <pixie_util.hpp>
 
+#include <hw/csr.hpp>
 #include <hw/dsp.hpp>
 #include <hw/fpga_comms.hpp>
 #include <hw/fpga_fippi.hpp>
@@ -51,6 +52,10 @@
 #include <pixie16sys_defs.h>
 
 #include <PlxApi.h>
+
+#if PLX_SDK_VERSION_MAJOR < 6
+#define ConstAddrLocal LocalAddrConst
+#endif
 
 namespace xia
 {
@@ -117,6 +122,7 @@ namespace module
         int device_number;
         PLX_DEVICE_OBJECT handle;
         PLX_DEVICE_KEY key;
+        PLX_DMA_PROP dma;
         pci_bus_handle();
     };
 
@@ -124,6 +130,7 @@ namespace module
         : device_number(-1)
     {
         ::memset(&key, PCI_FIELD_IGNORE, sizeof(PLX_DEVICE_KEY));
+        ::memset(&dma, 0, sizeof(PLX_DMA_PROP));
         key.VendorId = vendor_id;
         key.DeviceId = device_id;
     }
@@ -400,6 +407,28 @@ namespace module
                             oss);
             }
 
+            /*
+             * DMA channel for block transfers.
+             */
+            device->dma.ReadyInput = 1;
+            device->dma.Burst = 1;
+            device->dma.BurstInfinite = 1;
+#if PLX_SDK_VERSION_MAJOR < 6
+            device->dma.LocalAddrConst = 1;
+#else
+            device->dma.ConstAddrLocal = 1;
+#endif
+            device->dma.LocalBusWidth = 2;
+            ps = ::PlxPci_DmaChannelOpen(&device->handle, 0, &device->dma);
+            if (ps != PLX_STATUS_OK) {
+                std::ostringstream oss;
+                oss << "PCI DMA: device: " << device_number
+                    << " : " << ps;
+                throw error(number, slot,
+                            error::code::module_initialize_failure,
+                            oss);
+            }
+
             hw::i2c::pcf8574 pio(*this, PCF8574_ADDR,
                                  (1 << 0) | (1 << 3), 1 << 1, 1 << 2);
 
@@ -469,7 +498,8 @@ namespace module
 
                 if (adc_bits == 0) {
                     std::ostringstream oss;
-                    oss << "unknown serial number to ADC config: " << serial_num;
+                    oss << "unknown serial number to ADC config: "
+                        << serial_num;
                     throw error(number, slot,
                                 error::code::module_initialize_failure,
                                 oss.str());
@@ -509,12 +539,26 @@ namespace module
     module::close()
     {
         if (device && device->device_number >= 0) {
+            PLX_STATUS ps_dma;
             PLX_STATUS ps_unmap_bar = PLX_STATUS_OK;
             PLX_STATUS ps_close;
 
             log(log::debug) << module_label(*this)
                             << ": close: device-number="
                             << device->device_number;
+
+            /*
+             * Close the DMA channel.
+             */
+            ps_dma = ::PlxPci_DmaChannelClose(&device->handle, 0);
+            if (ps_dma != PLX_STATUS_OK) {
+                log(log::debug) << module_label(*this)
+                                << ": DMA close: " << ps_dma;
+                if (ps_dma == PLX_STATUS_IN_PROGRESS) {
+                    ::PlxPci_DeviceReset(&device->handle);
+                    ::PlxPci_DmaChannelClose(&device->handle, 0);
+                }
+            }
 
             if (vmaddr != nullptr) {
                 ps_unmap_bar = ::PlxPci_PciBarUnmap(&device->handle, &vmaddr);
@@ -772,12 +816,18 @@ namespace module
         log(log::debug) << module_label(*this)
                         << ": write: par=" << int(par) << " value=" << value;
         const param::module_var var = param::map_module_param(par);
-        size_t offset;
-        if (var == param::module_var::TrigConfig) {
+        size_t offset = 0;
+/*        switch (par) {
+        case param::module_param::module_csra
+            break;
+
+        const param::module_var var = param::map_module_param(par);
+        size_t offset = 0;
+        switch (par) {
+        case param::module_var::TrigConfig:
             offset = size_t(par) - size_t(param::module_param::trigconfig0);
-        } else {
-            offset = 0;
-        }
+            break;
+            }*/
         write_var(var, value, offset, hw);
     }
 
@@ -850,8 +900,8 @@ namespace module
         lock_guard guard(lock_);
         param::value_type value;
         if (hw) {
-            hw::dsp::memory mem = dsp.read(desc.address);
-            hw::dsp::convert(mem, value);
+            hw::word mem = dsp.read(desc.address);
+            hw::convert(mem, value);
             module_values[index].value[offset] = value;
         } else {
             value = module_values[index].value[offset];
@@ -914,7 +964,7 @@ namespace module
         lock_guard guard(lock_);
         param::value_type value;
         if (hw) {
-            hw::dsp::convert(dsp.read(channel, desc.address), value);
+            hw::convert(dsp.read(channel, desc.address), value);
             channel_values[channel][index].value[offset] = value;
         } else {
             value = channel_values[channel][index].value[offset];
@@ -972,9 +1022,9 @@ namespace module
         }
         lock_guard guard(lock_);
         if (hw) {
-            hw::dsp::memory mem;
-            hw::dsp::convert(value, mem);
-            dsp.write(desc.address, mem);
+            hw::word word;
+            hw::convert(value, word);
+            dsp.write(desc.address, word);
         }
         module_values[index].value[offset] = value;
     }
@@ -1039,9 +1089,9 @@ namespace module
         }
         lock_guard guard(lock_);
         if (hw) {
-            hw::dsp::memory mem;
-            hw::dsp::convert(value, mem);
-            dsp.write(channel, desc.address, mem);
+            hw::word word;
+            hw::convert(value, word);
+            dsp.write(channel, desc.address, word);
         }
         channel_values[channel][index].value[offset] = value;
     }
@@ -1066,6 +1116,40 @@ namespace module
     module::revision_label() const
     {
         return static_cast<char>(revision + 55);
+    }
+
+    void
+    module::dma_read(const hw::address source, hw::words& values)
+    {
+        PLX_DMA_PARAMS dma_params;
+
+        memset(&dma_params, 0, sizeof(PLX_DMA_PARAMS));
+
+#if PLX_SDK_VERSION_MAJOR < 6
+        dma_params.u.UserVa = static_cast<PLX_UINT_PTR>(values.data());
+        dma_params.LocalToPciDma = 1;
+#else
+        dma_params.UserVa = PLX_PTR_TO_INT(values.data());
+        dma_params.Direction = PLX_DMA_LOC_TO_PCI;
+#endif
+        dma_params.LocalAddr = source;
+        dma_params.ByteCount =
+            values.size() * sizeof(hw::words::value_type);
+
+        /*
+         * Wait while reading. The call will block until the interrupt happens.
+         */
+        PLX_STATUS ps = ::PlxPci_DmaTransferUserBuffer(&device->handle,
+                                                       0,
+                                                       &dma_params,
+                                                       5 * 1000);
+        if (ps != PLX_STATUS_OK) {
+            std::ostringstream oss;
+            oss << "DMA read: " << ps;
+            throw error(number, slot,
+                        error::code::device_dma_failure,
+                        oss.str());
+        }
     }
 
     void
@@ -1188,6 +1272,42 @@ namespace module
         double value =
             (paf_length - (trigger_delay / ffr_mask)) / (fpga_clk_mhz * ffr_mask);
         return value;
+    }
+
+    bool
+    module::operator==(const rev_tag rev) const
+    {
+        return revision == int(rev);
+    }
+
+    bool
+    module::operator!=(const rev_tag rev) const
+    {
+        return revision != int(rev);
+    }
+
+    bool
+    module::operator>=(const rev_tag rev) const
+    {
+        return revision >= int(rev);
+    }
+
+    bool
+    module::operator<=(const rev_tag rev) const
+    {
+        return revision <= int(rev);
+    }
+
+    bool
+    module::operator<(const rev_tag rev) const
+    {
+        return revision < int(rev);
+    }
+
+    bool
+    module::operator>(const rev_tag rev) const
+    {
+        return revision > int(rev);
     }
 
     void

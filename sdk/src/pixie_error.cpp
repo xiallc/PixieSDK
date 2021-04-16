@@ -84,6 +84,7 @@ static std::map<code, result_code> result_codes =
     { code::module_initialize_failure, { 208, "module initialization failure" } },
     { code::module_invalid_param,      { 209, "invalid module parameter" } },
     { code::module_invalid_var,        { 210, "invalid module variable" } },
+    { code::module_task_timeout,       { 211, "module task timeout" } },
     /*
      * Channel
      */

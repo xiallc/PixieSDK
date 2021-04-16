@@ -210,13 +210,13 @@ namespace fpga
     void
     control::bus_write(int reg, uint32_t data)
     {
-        module.write_32(reg, data);
+        module.write_word(reg, data);
     }
 
     uint32_t
     control::bus_read(int reg)
     {
-        return module.read_32(reg);
+        return module.read_word(reg);
     }
 
     std::string

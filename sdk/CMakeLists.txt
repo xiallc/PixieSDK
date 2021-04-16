@@ -13,15 +13,19 @@ add_library(PixieSDK SHARED
         src/pixie_fw.cpp
         src/pixie_param.cpp
         src/pixie_hw.cpp
+        src/pixie_util.cpp
         src/pixie_log.cpp
         src/pixie_error.cpp
+        src/hw/csr.cpp
         src/hw/dsp.cpp
         src/hw/fpga_comms.cpp
         src/hw/fpga_fippi.cpp
         src/hw/fpga.cpp
         src/hw/i2c_bitbash.cpp
         src/hw/i2cm24c64.cpp
-        src/hw/pcf8574.cpp)
+        src/hw/memory.cpp
+        src/hw/pcf8574.cpp
+        src/hw/run.cpp)
 target_include_directories(PixieSDK PUBLIC
         include/
         ${PROJECT_SOURCE_DIR}/vendor/analog_devices

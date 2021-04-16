@@ -70,7 +70,7 @@ namespace fpga
         ctrl_1_2.load(image, retries);
         ctrl_3_4.load(image, retries);
         wait(10000);
-        module.write_32(CFG_DCMRST, 0);
+        module.write_word(CFG_DCMRST, 0);
     }
 
     bool

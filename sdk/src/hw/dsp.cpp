@@ -39,6 +39,7 @@
 #include <pixie_module.hpp>
 #include <pixie_log.hpp>
 
+#include <hw/csr.hpp>
 #include <hw/dsp.hpp>
 
 #include <pixie16sys_defs.h>
@@ -52,14 +53,6 @@ namespace hw
 {
 namespace dsp
 {
-    dsp::clear_download::clear_download(dsp& dsp__)
-        : dsp_(dsp__) {
-    }
-
-    dsp::clear_download::~clear_download() {
-        dsp_.bus_write(CSR_ADDR, dsp_.bus_read(CSR_ADDR) & ~DSPDOWNLOAD);
-    }
-
     dsp::dsp(module::module& module_, bool trace_)
         : module(module_),
           online(false),
@@ -87,9 +80,9 @@ namespace dsp
         bool running = false;
 
         /*
-         * Makes sure the guard bit is clear when destructing.
+         * Guard the download bit so it is cleared when we exit.
          */
-        clear_download download_clear(*this);
+        csr::set_clear csr(module, 1 << DSPDOWNLOAD);
 
         while (!running) {
             --retries;
@@ -101,21 +94,12 @@ namespace dsp
                  */
                 firmware::reader reader(image, sizeof(load_value_type));
 
-                /*
-                 * The reset self clears, the download bit needs to be cleared.
-                 *
-                 * The download bit is cleared by the guard instance of @ref
-                 * clear_download.
-                 */
-                static const uint32_t DSP_BOOT =
-                    (1 << DSPDOWNLOAD) | (1 << DSPRESET);
-
                 bool ok;
 
                 /*
-                 * Reset the DSP and wait 1msec
+                 * Reset the DSP and wait 1msec. The reset bit self clears
                  */
-                bus_write(CSR_ADDR, bus_read(CSR_ADDR) | DSP_BOOT);
+                bus_write(CSR_ADDR, bus_read(CSR_ADDR) | (1 << DSPRESET));
                 wait(1000);
 
                 /*
@@ -132,7 +116,8 @@ namespace dsp
                 /*
                  * HBR request
                  */
-                ok = checked_write(REQUEST_HBR, SYSCON, WRT_DSP_MMA, 0x10, 1000);
+                ok = checked_write(REQUEST_HBR, SYSCON, WRT_DSP_MMA,
+                                   0x10, 1000);
                 if (!ok) {
                     throw error(error::code::device_load_failure,
                                 make_what("DSP SYSCON set failure"));
@@ -247,28 +232,28 @@ namespace dsp
     bool
     dsp::done()
     {
-        memory value = read(POWERUPINITDONE_ADDRESS);
+        word value = read(POWERUPINITDONE_ADDRESS);
         return value == 1;
     }
 
-    memory
+    word
     dsp::read(const address addr)
     {
         bus_write(REQUEST_HBR, 0);
         bus_write(EXT_MEM_TEST, addr);
-        memory value = bus_read(WRT_DSP_MMA);
+        word value = bus_read(WRT_DSP_MMA);
         bus_write(HBR_DONE, 0);
         return value;
     }
 
-    memory
+    word
     dsp::read(const size_t channel, const address addr)
     {
-        return read(addr + (channel * sizeof(memory)));
+        return read(addr + (channel * sizeof(word)));
     }
 
     void
-    dsp::write(const address addr, const memory value)
+    dsp::write(const address addr, const word value)
     {
         bus_write(REQUEST_HBR, 0);
         bus_write(EXT_MEM_TEST, addr);
@@ -277,13 +262,13 @@ namespace dsp
     }
 
     void
-    dsp::write(const size_t channel, const address addr, const memory value)
+    dsp::write(const size_t channel, const address addr, const word value)
     {
-        write(addr + (channel * sizeof(memory)), value);
+        write(addr + (channel * sizeof(word)), value);
     }
 
     void
-    dsp::write(const address addr, const memories& values)
+    dsp::write(const address addr, const words& values)
     {
         bus_write(REQUEST_HBR, 0);
         bus_write(EXT_MEM_TEST, addr);
@@ -295,9 +280,9 @@ namespace dsp
 
     void
     dsp::write(const size_t channel,
-               const address addr, const memories& values)
+               const address addr, const words& values)
     {
-        write(addr + (channel * sizeof(memory)), values);
+        write(addr + (channel * sizeof(word)), values);
     }
 
     void
@@ -356,13 +341,13 @@ namespace dsp
     void
     dsp::bus_write(int reg, uint32_t data)
     {
-        module.write_32(reg, data);
+        module.write_word(reg, data);
     }
 
     uint32_t
     dsp::bus_read(int reg)
     {
-        return module.read_32(reg);
+        return module.read_word(reg);
     }
 
     std::string

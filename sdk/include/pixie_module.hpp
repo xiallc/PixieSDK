@@ -51,6 +51,7 @@
 
 #include <hw/dsp.hpp>
 #include <hw/i2cm24c64.hpp>
+#include <hw/run.hpp>
 
 namespace xia
 {
@@ -88,6 +89,11 @@ namespace module
     typedef std::unique_ptr<pci_bus_handle> bus_handle;
     int pci_bus(const bus_handle& device);
     int pci_slot(const bus_handle& device);
+
+    /*
+     * Maximum histogram size.
+     */
+    const size_t max_histogram_length = 32768;
 
     /*
      * Module
@@ -266,13 +272,9 @@ namespace module
         void initialize();
 
         /*
-         * Set the firmware.
+         * Set or get the firmware.
          */
         void set(firmware::module& fw);
-
-        /*
-         * Get the firmware
-         */
         firmware::firmware_ref get(const std::string device);
 
         /*
@@ -342,10 +344,10 @@ namespace module
         char revision_label() const;
 
         /*
-         * IO read 32 bits value.
+         * Read a word.
          */
-        inline uint32_t read_32(int reg) {
-            uint32_t value = hw::read_32(vmaddr, reg);
+        inline hw::word read_word(int reg) {
+            hw::word value = hw::read_word(vmaddr, reg);
             if (reg_trace) {
                 std::ios_base::fmtflags oflags(std::cout.flags());
                 std::cout << "M r " << std::setfill('0') << std::hex
@@ -358,10 +360,9 @@ namespace module
         }
 
         /*
-         * IO write 32 bits value.
+         * Write a word
          */
-        inline void write_32(int reg,
-                             const uint32_t value) {
+        inline void write_word(int reg, const hw::word value) {
             if (reg_trace) {
                 std::ios_base::fmtflags oflags(std::cout.flags());
                 std::cout << "M w " << std::setfill('0') << std::hex
@@ -370,9 +371,17 @@ namespace module
                           << std::endl;
                 std::cout.flags(oflags);
             }
-            hw::write_32(vmaddr, reg, value);
+            hw::write_word(vmaddr, reg, value);
         }
 
+        /*
+         * DMA block read.
+         */
+        void dma_read(const hw::address source, hw::words& values);
+
+        /*
+         * Locks
+         */
         void lock() {
             lock_.lock();
         }
@@ -380,6 +389,17 @@ namespace module
         void unlock() {
             lock_.unlock();
         }
+
+        /*
+         * Revision tag operators to make comparisions of a version simpler to
+         * code.
+         */
+        bool operator==(const rev_tag rev) const;
+        bool operator!=(const rev_tag rev) const;
+        bool operator>=(const rev_tag rev) const;
+        bool operator<=(const rev_tag rev) const;
+        bool operator<(const rev_tag rev) const;
+        bool operator>(const rev_tag rev) const;
 
     private:
         /*

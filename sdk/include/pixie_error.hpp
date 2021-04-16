@@ -74,6 +74,7 @@ enum struct code {
     module_initialize_failure,
     module_invalid_param,
     module_invalid_var,
+    module_task_timeout,
     /*
      * Channel
      */
@@ -89,6 +90,7 @@ enum struct code {
     device_copy_failure,
     device_image_failure,
     device_hw_failure,
+    device_dma_failure,
     /*
      * File handling
      */

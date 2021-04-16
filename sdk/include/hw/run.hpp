@@ -1,8 +1,8 @@
-#ifndef PIXIE_HW_H
-#define PIXIE_HW_H
+#ifndef PIXIE_HW_RUN_H
+#define PIXIE_HW_RUN_H
 
 /*----------------------------------------------------------------------
-* Copyright (c) 2005 - 2020, XIA LLC
+* Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
 * Redistribution and use in source and binary forms,
@@ -36,68 +36,67 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
-#include <stdexcept>
-#include <vector>
-
 #include <stdint.h>
 
-#include <pixie_error.hpp>
+#include <pixie_hw.hpp>
 
 namespace xia
 {
 namespace pixie
 {
+namespace module
+{
+struct module;
+}
 namespace hw
 {
-    /*
-     * Hardware errors
-     */
-    typedef error::error error;
+namespace run
+{
+/*
+ * Run and control settings
+ */
+enum struct run_mode {
+    new_run = 1,
+    resume = 0
+};
 
-    /*
-     * Address.
-     */
-    typedef uint32_t address;
+enum struct run_task {
+    nop = 0,
+    list_mode = 0x101,
+    histogram = 0x301
+};
 
-    /*
-     * The read/write word.
-     */
-    typedef uint32_t word;
+enum struct control_task {
+    set_dacs = 0,
+    enable_input = 1,
+    ramp_offsetdacs = 3,
+    get_traces = 4,
+    program_fippi = 5,
+    get_baselines = 6,
+    adjust_offsets = 7,
+    tau_finder = 8,
+    reset_adc = 23
+};
 
-    /*
-     * Words
-     */
-    typedef std::vector<word> words;
+/*
+ * Run and control task management.
+ */
+void start(module::module& module,
+           run_mode mode,
+           run_task run_tsk,
+           control_task control_tsk);
+void end(module::module& module);
+bool active(module::module& module);
 
-    /*
-     * Convertor. Use with caution as this steps around the type system.
-     */
-    template <typename I, typename O>
-    inline void convert(I vin, O& vout) {
-        vout = static_cast<O>(vin);
-    }
-
-    /*
-     * Wait in microseconds. We need to check how well this works.
-     */
-    void wait(size_t microseconds);
-
-    /*
-     * Bus interface calls.
-     */
-    static inline word
-    read_word(void* addr, int offset) {
-        volatile word* p = static_cast<volatile word*>(addr);
-        return *(p + (offset / 4));
-    }
-
-    static inline void
-    write_word(void* addr, int offset, const word value) {
-        volatile word* p = static_cast<volatile word*>(addr);
-        *(p + (offset / 4)) = value;
-    }
+/*
+ * Control task
+ */
+void control(module::module& module,
+             control_task control_tsk,
+             int wait_msecs = 10000);
+}
 }
 }
 }
 
-#endif  // PIXIE_HW_H
+#endif  // PIXIE_HW_RUN_H
