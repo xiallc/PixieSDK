@@ -49,7 +49,7 @@
 /*
  * Localize the log and error
  */
-typedef xia::pixie::log log;
+typedef xia::pixie::log xia_logger;
 typedef xia::pixie::error::error error;
 
 /*
@@ -311,9 +311,9 @@ main(int argc, char* argv[])
             log = "test-api-log.txt";
         }
 
-        auto log_level = log::info;
+        auto log_level = xia_logger::info;
         if (args::get(debug_flag)) {
-            log_level = log::debug;
+            log_level = xia_logger::debug;
         }
         xia::pixie::logging::start("log", log, log_level, false);
 
@@ -359,18 +359,18 @@ main(int argc, char* argv[])
             return EXIT_FAILURE;
         }
     } catch (xia::pixie::error::error& e) {
-        log(log::error) << e;
+        xia_logger(xia_logger::error) << e;
         std::cerr << e << std::endl;
         return e.return_code();
     } catch (std::exception& e) {
-        log(log::error) << "unknown error: " << e.what();
+        xia_logger(xia_logger::error) << "unknown error: " << e.what();
         std::cerr <<  "error: unknown error: " << e.what() << std::endl;
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
         if (args::get(throw_unhandled_flag)) {
             throw;
         }
-        log(log::error) << "unknown error: unhandled exception";
+        xia_logger(xia_logger::error) << "unknown error: unhandled exception";
         std::cerr <<  "error: unknown error: unhandled exception" << std::endl;
         return xia::pixie::error::api_result_unknown_error();
     }

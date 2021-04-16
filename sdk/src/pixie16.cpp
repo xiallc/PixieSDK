@@ -46,7 +46,7 @@
 /*
  * Make a local type for the log.
  */
-typedef xia::pixie::log log;
+typedef xia::pixie::log xia_logger;
 
 /*
  * Boot patterns
@@ -138,18 +138,18 @@ PixieBootModule(const char* ComFPGAConfigFile,
                 unsigned short ModNum,
                 unsigned short BootPattern)
 {
-    log(log::info) << "PixieBootModule: ModNum=" << ModNum
+    xia_logger(xia_logger::info) << "PixieBootModule: ModNum=" << ModNum
                    << std::hex
                    << " BootPattern=0x" << BootPattern;
-    log(log::info) << "PixieBootModule: ModNum=" << ModNum
+    xia_logger(xia_logger::info) << "PixieBootModule: ModNum=" << ModNum
                    << " ComFPGAConfigFile=" << ComFPGAConfigFile;
-    log(log::info) << "PixieBootModule: ModNum=" << ModNum
+    xia_logger(xia_logger::info) << "PixieBootModule: ModNum=" << ModNum
                    << " SPFPGAConfigFile=" << SPFPGAConfigFile;
-    log(log::info) << "PixieBootModule: ModNum=" << ModNum
+    xia_logger(xia_logger::info) << "PixieBootModule: ModNum=" << ModNum
                    << " DSPCodeFile=" << DSPCodeFile;
-    log(log::info) << "PixieBootModule: ModNum=" << ModNum
+    xia_logger(xia_logger::info) << "PixieBootModule: ModNum=" << ModNum
                    << " DSPParFile=" << DSPParFile;
-    log(log::info) << "PixieBootModule: ModNum=" << ModNum
+    xia_logger(xia_logger::info) << "PixieBootModule: ModNum=" << ModNum
                    << " DSPVarFile=" << DSPVarFile;
 
     try {
@@ -174,16 +174,16 @@ PixieBootModule(const char* ComFPGAConfigFile,
                             BootPattern);
         }
     } catch (xia::pixie::error::error& e) {
-        log(log::error) << e;
+        xia_logger(xia_logger::error) << e;
         return e.return_code();
     } catch (std::exception& e) {
-        log(log::error) << "unknown error: " << e.what();
+        xia_logger(xia_logger::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
         if (throw_unhandled) {
             throw;
         }
-        log(log::error) << "unknown error: unhandled exception";
+        xia_logger(xia_logger::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
 
@@ -244,7 +244,7 @@ PIXIE_EXPORT int PIXIE_API PixieEndRun(unsigned short ModNum) {
 PIXIE_EXPORT int PIXIE_API
 PixieExitSystem(unsigned short ModNum)
 {
-    log(log::info) << "PixieExitSystem: ModNum=" << ModNum;
+    xia_logger(xia_logger::info) << "PixieExitSystem: ModNum=" << ModNum;
 
     try {
         if (ModNum == 0) {
@@ -256,16 +256,16 @@ PixieExitSystem(unsigned short ModNum)
             module.handle.close();
         }
     } catch (xia::pixie::error::error& e) {
-        log(log::error) << e;
+        xia_logger(xia_logger::error) << e;
         return e.return_code();
     } catch (std::exception& e) {
-        log(log::error) << "unknown error: " << e.what();
+        xia_logger(xia_logger::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
         if (throw_unhandled) {
             throw;
         }
-        log(log::error) << "unknown error: unhandled exception";
+        xia_logger(xia_logger::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
 
@@ -280,9 +280,9 @@ PixieInitSystem(unsigned short NumModules,
     /*
      * Create a log file.
      */
-    xia::pixie::logging::start("log", "PixieMsg.txt", log::info, false);
+    xia::pixie::logging::start("log", "PixieMsg.txt", xia_logger::info, false);
 
-    log(log::info) << "PixieInitSystem: NumModules=" << NumModules
+    xia_logger(xia_logger::info) << "PixieInitSystem: NumModules=" << NumModules
                    << " PXISlotMap=" << PXISlotMap
                    << " OfflineMode=" << OfflineMode;
 
@@ -304,23 +304,23 @@ PixieInitSystem(unsigned short NumModules,
             xia::pixie::module::number_slots numbers;
             for (int i = 0; i < static_cast<int>(NumModules); ++i) {
                 typedef xia::pixie::module::number_slot number_slot;
-                log(log::info) << "PixieInitSystem: slot map: "
+                xia_logger(xia_logger::info) << "PixieInitSystem: slot map: "
                                << PXISlotMap[i] << " => " << i + 1;
                 numbers.push_back(number_slot(i, PXISlotMap[i]));
             }
             crate.assign(numbers);
         }
     } catch (xia::pixie::error::error& e) {
-        log(log::error) << e;
+        xia_logger(xia_logger::error) << e;
         return e.return_code();
     } catch (std::exception& e) {
-        log(log::error) << "unknown error: " << e.what();
+        xia_logger(xia_logger::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
         if (throw_unhandled) {
             throw;
         }
-        log(log::error) << "unknown error: unhandled exception";
+        xia_logger(xia_logger::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
 
