@@ -1,5 +1,5 @@
 #---- BUILD LEGACY TESTS
-add_executable(ptest base_test_runner.cpp
+add_executable(legacy_test_runner base_test_runner.cpp
         app/test_pixie16app.cpp
         app/test_utilities.cpp
         sys/test_pixie16sys.cpp
@@ -7,12 +7,12 @@ add_executable(ptest base_test_runner.cpp
         sys/test_i2cm24c64.cpp
         sys/test_communication.cpp
         $<TARGET_OBJECTS:PixieSdkObjLib>)
-target_include_directories(ptest PUBLIC
+target_include_directories(legacy_test_runner PUBLIC
         ${PROJECT_SOURCE_DIR}/sdk/include
         ${PROJECT_SOURCE_DIR}/vendor/analog_devices
         ${PROJECT_SOURCE_DIR}/vendor/doctest
         ${PLX_INCLUDE_DIR})
-xia_configure_target(TARGET ptest USE_PLX FORCE_DEBUG LINUX_LIBS -Wl,--no-as-needed)
+xia_configure_target(TARGET legacy_test_runner USE_PLX FORCE_DEBUG LINUX_LIBS -Wl,--no-as-needed)
 
 #---- BUILD TEST RUNNER
 add_executable(pixie_sdk_test_runner base_test_runner.cpp src/test_pixie_log.cpp $<TARGET_OBJECTS:PixieSdkObjLib>)
