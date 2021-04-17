@@ -728,14 +728,14 @@ namespace module
     }
 
     param::value_type
-    module::read(const std::string& par, bool hw)
+    module::read(const std::string& par)
     {
         log(log::info) << module_label(*this) << ": write: par=" << par;
-        return read(param::lookup_module_param(par), hw);
+        return read(param::lookup_module_param(par));
     }
 
     param::value_type
-    module::read(param::module_param par, bool hw)
+    module::read(param::module_param par)
     {
         log(log::debug) << module_label(*this) << ": write: par=" << int(par);
         const param::module_var var = param::map_module_param(par);
@@ -745,50 +745,46 @@ namespace module
         } else {
             offset = 0;
         }
-        return read_var(var, offset, hw);
+        return read_var(var, offset);
     }
 
     double
-    module::read(const std::string& par,
-                 size_t channel,
-                 bool hw)
+    module::read(const std::string& par, size_t channel)
     {
         log(log::info) << module_label(*this) << ": read: par=" << par;
-        return read(param::lookup_channel_param(par), channel, hw);
+        return read(param::lookup_channel_param(par), channel);
     }
 
     double
-    module::read(param::channel_param par,
-                 size_t channel,
-                 bool hw)
+    module::read(param::channel_param par, size_t channel)
     {
         log(log::debug) << module_label(*this) << ": read: par=" << int(par);
         lock_guard guard(lock_);
         double value;
         switch (par) {
         case param::channel_param::trigger_risetime:
-            value = trigger_risetime(channel, hw);
+            value = trigger_risetime(channel);
             break;
         case param::channel_param::trigger_flattop:
-            value = trigger_flattop(channel, hw);
+            value = trigger_flattop(channel);
             break;
         case param::channel_param::trigger_threshold:
-            value = trigger_threshold(channel, hw);
+            value = trigger_threshold(channel);
             break;
         case param::channel_param::energy_risetime:
-            value = energy_risetime(channel, hw);
+            value = energy_risetime(channel);
             break;
         case param::channel_param::energy_flattop:
-            value = energy_flattop(channel, hw);
+            value = energy_flattop(channel);
             break;
         case param::channel_param::tau:
-            value = tau(channel, hw);
+            value = tau(channel);
             break;
         case param::channel_param::trace_length:
-            value = trace_length(channel, hw);
+            value = trace_length(channel);
             break;
         case param::channel_param::trace_delay:
-            value = trace_delay(channel, hw);
+            value = trace_delay(channel);
             break;
         default:
             throw error(number, slot,
@@ -799,19 +795,15 @@ namespace module
     }
 
     void
-    module::write(const std::string& par,
-                  param::value_type value,
-                  bool hw)
+    module::write(const std::string& par, param::value_type value)
     {
         log(log::info) << module_label(*this)
                        << ": write: par=" << par << " value=" << value;
-        write(param::lookup_module_param(par), value, hw);
+        write(param::lookup_module_param(par), value);
     }
 
     void
-    module::write(param::module_param par,
-                  param::value_type value,
-                  bool hw)
+    module::write(param::module_param par, param::value_type value)
     {
         log(log::debug) << module_label(*this)
                         << ": write: par=" << int(par) << " value=" << value;
@@ -828,47 +820,48 @@ namespace module
             offset = size_t(par) - size_t(param::module_param::trigconfig0);
             break;
             }*/
-        write_var(var, value, offset, hw);
+        write_var(var, value, offset);
     }
 
     void
-    module::write(const std::string& par,
-                  size_t channel,
-                  double value,
-                  bool hw)
+    module::write(const std::string& par, size_t channel, double value)
     {
         log(log::info) << module_label(*this)
                        << ": write: par=" << par
                        << " channel=" << channel
                        << " value=" << value;
-        write(param::lookup_module_param(par), value, hw);
+        write(param::lookup_module_param(par), value);
     }
 
     void
-    module::write(param::channel_param par,
-                  size_t channel,
-                  double value,
-                  bool hw)
+    module::write(param::channel_param par, size_t channel, double value)
     {
         log(log::debug) << module_label(*this)
                         << ": write: par=" << int(par)
                         << " channel=" << channel
                         << " value=" << value;
         lock_guard guard(lock_);
-        (void) hw;
     }
 
     param::value_type
-    module::read_var(const std::string& var, size_t offset, bool hw)
+    module::read_var(const std::string& var, size_t channel, size_t offset)
     {
         log(log::info) << module_label(*this)
                        << ": read: var=" << var
+                       << " channel=" << channel
                        << " offset=" << offset;
-        return read_var(param::lookup_module_var(var), offset, hw);
+        try {
+            return read_var(param::lookup_module_var(var), offset);
+        } catch (error& e) {
+            if (e.type != error::code::module_invalid_var) {
+                throw;
+            }
+        }
+        return read_var(param::lookup_channel_var(var), channel, offset);
     }
 
     param::value_type
-    module::read_var(param::module_var var, size_t offset, bool hw)
+    module::read_var(param::module_var var, size_t offset)
     {
         log(log::debug) << module_label(*this)
                         << ": read: var=" << int(var)
@@ -899,34 +892,14 @@ namespace module
         }
         lock_guard guard(lock_);
         param::value_type value;
-        if (hw) {
-            hw::word mem = dsp.read(desc.address);
-            hw::convert(mem, value);
-            module_values[index].value[offset] = value;
-        } else {
-            value = module_values[index].value[offset];
-        }
+        hw::word mem = dsp.read(desc.address);
+        hw::convert(mem, value);
+        module_values[index].value[offset] = value;
         return value;
     }
 
     param::value_type
-    module::read_var(const std::string& var,
-                     size_t channel,
-                     size_t offset,
-                     bool hw)
-    {
-        log(log::info) << module_label(*this)
-                       << ": read: var=" << var
-                       << " channel=" << channel
-                       << " offset=" << offset;
-        return read_var(param::lookup_channel_var(var), channel, offset, hw);
-    }
-
-    param::value_type
-    module::read_var(param::channel_var var,
-                     size_t channel,
-                     size_t offset,
-                     bool hw)
+    module::read_var(param::channel_var var, size_t channel, size_t offset)
     {
         log(log::debug) << module_label(*this)
                         << ": read: var=" << int(var)
@@ -963,34 +936,37 @@ namespace module
         }
         lock_guard guard(lock_);
         param::value_type value;
-        if (hw) {
-            hw::convert(dsp.read(channel, desc.address), value);
-            channel_values[channel][index].value[offset] = value;
-        } else {
-            value = channel_values[channel][index].value[offset];
-        }
+        hw::convert(dsp.read(channel, desc.address), value);
+        channel_values[channel][index].value[offset] = value;
         return value;
     }
 
     void
     module::write_var(const std::string& var,
                       param::value_type value,
-                      size_t offset,
-                      bool hw)
+                      size_t channel,
+                      size_t offset)
     {
         log(log::info) << module_label(*this)
                        << ": write: var=" << var
-                       << " offset=" << offset
                        << " value=" << value
-                       << " (0x" << std::hex << value << ')';
-        write_var(param::lookup_module_var(var), value, offset, hw);
+                       << " (0x" << std::hex << value << ')'
+                       << " channel=" << channel
+                       << " offset=" << offset;
+        try {
+            write_var(param::lookup_module_var(var), value, offset);
+        } catch (error& e) {
+            if (e.type != error::code::module_invalid_var) {
+                throw;
+            }
+        }
+        write_var(param::lookup_channel_var(var), value, channel, offset);
     }
 
     void
     module::write_var(param::module_var var,
                       param::value_type value,
-                      size_t offset,
-                      bool hw)
+                      size_t offset)
     {
         log(log::debug) << module_label(*this)
                         << ": write: var=" << int(var)
@@ -1021,43 +997,24 @@ namespace module
                         "invalid module variable offset: " + desc.name);
         }
         lock_guard guard(lock_);
-        if (hw) {
-            hw::word word;
-            hw::convert(value, word);
-            dsp.write(desc.address, word);
-        }
+        hw::word word;
+        hw::convert(value, word);
+        dsp.write(desc.address, word);
         module_values[index].value[offset] = value;
     }
 
     void
-    module::write_var(const std::string& var,
-                      size_t channel,
-                      param::value_type value,
-                      size_t offset,
-                      bool hw)
-    {
-        log(log::info) << module_label(*this)
-                       << ": write: var=" << var
-                       << " channel=" << channel
-                       << " offset=" << offset
-                       << " value=" << value
-                       << " (0x" << std::hex << value << ')';
-        write_var(param::lookup_channel_var(var), channel, value, offset, hw);
-    }
-
-    void
     module::write_var(param::channel_var var,
-                      size_t channel,
                       param::value_type value,
-                      size_t offset,
-                      bool hw)
+                      size_t channel,
+                      size_t offset)
     {
         log(log::debug) << module_label(*this)
                         << ": write: var=" << int(var)
-                       << " channel=" << channel
-                        << " offset=" << offset
                         << " value=" << value
-                        << " (0x" << std::hex << value << ')';
+                        << " (0x" << std::hex << value << ')'
+                        << " channel=" << channel
+                        << " offset=" << offset;
         if (channel >= num_channels) {
             std::ostringstream oss;
             oss << "invalid channel number: " << channel;
@@ -1088,11 +1045,9 @@ namespace module
                         "invalid channel variable offset: " + desc.name);
         }
         lock_guard guard(lock_);
-        if (hw) {
-            hw::word word;
-            hw::convert(value, word);
-            dsp.write(channel, desc.address, word);
-        }
+        hw::word word;
+        hw::convert(value, word);
+        dsp.write(channel, desc.address, word);
         channel_values[channel][index].value[offset] = value;
     }
 
@@ -1180,94 +1135,94 @@ namespace module
     }
 
     double
-    module::trigger_risetime(size_t channel, bool hw)
+    module::trigger_risetime(size_t channel)
     {
         double fast_length =
-            read_var(param::channel_var::FastLength, channel, 0, hw);
+            read_var(param::channel_var::FastLength, channel, 0);
         param::value_type fast_filter_range =
-            read_var(param::module_var::FastFilterRange, 0, hw);
+            read_var(param::module_var::FastFilterRange, 0);
         double value =
             (fast_length * (1 << fast_filter_range)) / fpga_clk_mhz;
         return value;
     }
 
     double
-    module::trigger_flattop(size_t channel, bool hw)
+    module::trigger_flattop(size_t channel)
     {
         double fast_gap =
-            read_var(param::channel_var::FastGap, channel, 0, hw);
+            read_var(param::channel_var::FastGap, channel, 0);
         param::value_type fast_filter_range =
-            read_var(param::module_var::FastFilterRange, 0, hw);
+            read_var(param::module_var::FastFilterRange, 0);
         double value =
             (fast_gap * (1 << fast_filter_range)) / fpga_clk_mhz;
         return value;
     }
 
     double
-    module::trigger_threshold(size_t channel, bool hw)
+    module::trigger_threshold(size_t channel)
     {
         double fast_thresh =
-            read_var(param::channel_var::FastThresh, channel, 0, hw);
+            read_var(param::channel_var::FastThresh, channel, 0);
         double fast_length =
-            read_var(param::channel_var::FastLength, channel, 0, hw);
+            read_var(param::channel_var::FastLength, channel, 0);
         double value =
             fast_thresh / (fast_length * double(adc_clk_div));
         return value;
     }
 
     double
-    module::energy_risetime(size_t channel, bool hw)
+    module::energy_risetime(size_t channel)
     {
         double slow_length =
-            read_var(param::channel_var::SlowLength, channel, 0, hw);
+            read_var(param::channel_var::SlowLength, channel, 0);
         param::value_type slow_filter_range =
-            read_var(param::module_var::SlowFilterRange, 0, hw);
+            read_var(param::module_var::SlowFilterRange, 0);
         double value =
             (slow_length * (1 << slow_filter_range)) / fpga_clk_mhz;
         return value;
     }
 
     double
-    module::energy_flattop(size_t channel, bool hw)
+    module::energy_flattop(size_t channel)
     {
         double slow_gap =
-            read_var(param::channel_var::SlowGap, channel, 0, hw);
+            read_var(param::channel_var::SlowGap, channel, 0);
         param::value_type slow_filter_range =
-            read_var(param::module_var::SlowFilterRange, 0, hw);
+            read_var(param::module_var::SlowFilterRange, 0);
         double value =
             (slow_gap * (1 << slow_filter_range)) / fpga_clk_mhz;
         return value;
     }
 
     double
-    module::tau(size_t channel, bool hw)
+    module::tau(size_t channel)
     {
         ieee_float preamp_tau =
-            read_var(param::channel_var::PreampTau, channel, 0, hw);
+            read_var(param::channel_var::PreampTau, channel, 0);
         return preamp_tau;
     }
 
     double
-    module::trace_length(size_t channel, bool hw)
+    module::trace_length(size_t channel)
     {
         double trace_len =
-            read_var(param::channel_var::TraceLength, channel, 0, hw);
+            read_var(param::channel_var::TraceLength, channel, 0);
         param::value_type fast_filter_range =
-            read_var(param::module_var::FastFilterRange, 0, hw);
+            read_var(param::module_var::FastFilterRange, 0);
         double result =
             trace_len / (double(adc_msps) * (1 << fast_filter_range));
         return result;
     }
 
     double
-    module::trace_delay(size_t channel, bool hw)
+    module::trace_delay(size_t channel)
     {
         double paf_length =
-            read_var(param::channel_var::PAFlength, channel, 0, hw);
+            read_var(param::channel_var::PAFlength, channel, 0);
         double trigger_delay =
-            read_var(param::channel_var::TriggerDelay, channel, 0, hw);
+            read_var(param::channel_var::TriggerDelay, channel, 0);
         param::value_type fast_filter_range =
-            read_var(param::module_var::FastFilterRange, 0, hw);
+            read_var(param::module_var::FastFilterRange, 0);
         param::value_type ffr_mask = 1 << fast_filter_range;
         double value =
             (paf_length - (trigger_delay / ffr_mask)) / (fpga_clk_mhz * ffr_mask);

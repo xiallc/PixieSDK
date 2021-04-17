@@ -280,62 +280,53 @@ namespace module
         /*
          * Read a parameter.
          */
-        param::value_type read(const std::string& par, bool hw = true);
-        param::value_type read(param::module_param par, bool hw = true);
-        double read(const std::string& par, size_t channel, bool hw = true);
-        double read(param::channel_param par, size_t channel, bool hw = true);
+        param::value_type read(const std::string& par);
+        param::value_type read(param::module_param par);
+        double read(const std::string& par, size_t channel);
+        double read(param::channel_param par, size_t channel);
 
         /*
          * Write a parameter.
          */
-        void write(const std::string& var,
-                   param::value_type value, bool hw = true);
-        void write(param::module_param var,
-                   param::value_type value, bool hw = true);
-        void write(const std::string& var, size_t channel,
-                   double value, bool hw = true);
-        void write(param::channel_param par, size_t channel,
-                   double value, bool hw = true);
+        void write(const std::string& var, param::value_type value);
+        void write(param::module_param var, param::value_type value);
+        void write(const std::string& var, size_t channel, double value);
+        void write(param::channel_param par, size_t channel, double value);
 
         /*
          * Read a variable.
+         *
+         * Note, the variable string version is a convenience function
+         * for test tools only. The channel is ignored if the string is
+         * for a module variable.
          */
         param::value_type read_var(const std::string& var,
-                                   size_t offset = 0,
-                                   bool hw = true);
-        param::value_type read_var(param::module_var var,
-                                   size_t offset = 0,
-                                   bool hw = true);
-        param::value_type read_var(const std::string& var,
                                    size_t channel,
-                                   size_t offset = 0,
-                                   bool hw = true);
+                                   size_t offset = 0);
+        param::value_type read_var(param::module_var var,
+                                   size_t offset = 0);
         param::value_type read_var(param::channel_var,
                                    size_t channel,
-                                   size_t offset = 0,
-                                   bool hw = true);
+                                   size_t offset = 0);
 
         /*
          * Write a variable.
+         *
+         * Note, the variable string version is a convenience function
+         * for test tools only. The channel is ignored if the string is
+         * for a module variable.
          */
         void write_var(const std::string& var,
                        param::value_type value,
-                       size_t offset = 0,
-                       bool hw = true);
+                       size_t channel,
+                       size_t offset = 0);
         void write_var(param::module_var var,
                        param::value_type value,
-                       size_t offset = 0,
-                       bool hw = true);
-        void write_var(const std::string& var,
-                       size_t channel,
-                       param::value_type value,
-                       size_t offset = 0,
-                       bool hw = true);
+                       size_t offset = 0);
         void write_var(param::channel_var,
-                       size_t channel,
                        param::value_type value,
-                       size_t offset = 0,
-                       bool hw = true);
+                       size_t channel,
+                       size_t offset = 0);
 
         /*
          * Output the module details.
@@ -415,14 +406,14 @@ namespace module
         /*
          * Channel parameter handlers.
          */
-        double trigger_risetime(size_t channel, bool hw);
-        double trigger_flattop(size_t channel, bool hw);
-        double trigger_threshold(size_t channel, bool hw);
-        double energy_risetime(size_t channel, bool hw);
-        double energy_flattop(size_t channel, bool hw);
-        double tau(size_t channel, bool hw);
-        double trace_length(size_t channel, bool hw);
-        double trace_delay(size_t channel, bool hw);
+        double trigger_risetime(size_t channel);
+        double trigger_flattop(size_t channel);
+        double trigger_threshold(size_t channel);
+        double energy_risetime(size_t channel);
+        double energy_flattop(size_t channel);
+        double tau(size_t channel);
+        double trace_length(size_t channel);
+        double trace_delay(size_t channel);
 
         /*
          * Lock
