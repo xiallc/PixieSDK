@@ -31,7 +31,7 @@ These installation instructions assume that you
    ```shell
    [user@localhost pixie_sdk]$ make
    ```
-2. (**Optional**) Install the software system wide. Defaults to `/usr/local/xia/pixie_sdk`
+2. (**Optional**) Install the software system wide. Defaults to `/usr/local/xia/PixieSDK`
     ```shell script
     [user@localhost pixie_sdk]$ sudo make install
     ```

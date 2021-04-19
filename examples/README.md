@@ -1,36 +1,34 @@
-## Introduction
+# PixieSDK - Example Codes
 We provide some basic programs that you can use to test the functionality of the API. These programs do not encompass
 the full functionality of the API. They are **not recommended for production use**. Users may use these codes as a 
 basis for developing their own applications.
 
-## utilities/pixie.cpp
+## pixie_sdk_example.cpp
 This sample C++ base code can be used to test basic functionality to Pixie modules. At the moment users can boot modules
-and take list mode data. Due to the API design you will need to have a `pxisys.ini` file in the same directory that 
-you execute the function. We'll walk you through the basics of using this program below. If you need help with a 
-particular command, then you can use `pixie -h` or `pixie COMMAND -h` to get more information about how to use the commands.
+and take list mode data. We'll walk you through the basics of using this program below. If you need help with a 
+particular command, then you can use `pixie_sdk_example -h` or `pixie_sdk_example COMMAND -h` to get more information 
+about how to use the commands.
 
-**NOTE**: Make sure that you replace `${INSTALL_PATH}` with the actual installation path. Ex. `/tmp`  
+These instructions assumes
+1. that you've built and installed PixieSDK into the default location
+2. and that you're on a linux environment. 
 
-1. Ensure that you have built and installed the program.
+Windows will work similarly except that you'll need to add the library path to your `PATH` variable.
+
+1. Prepare the execution directory
+   1. Create the directory 
+      ```shell script
+      mkdir ~/pixie_sdk_example
+      cd ~/pixie_sdk_example
+      ```
+   1. Copy the sample configuration file from the repo
+       ```shell script
+       cp ${PATH_TO_PIXIE_SDK_SOURCE}/examples/share/config/cfgPixie16.txt .
+       ```
+   2. Update the configuration file (see below). You can name it whatever you want.
+1. Execute the program to boot the modules
    ```shell script
-   [user@localhost pixie_sdk]$ python3 waf configure build --utilities install --prefix=INSTALL_PATH
-   ```
-1. In your home directory create a test folder
-   ```shell script
-   [user@localhost ~]$ mkdir pixie_sdk_tests && cd pixie_sdk_tests
-   ```
-1. Link to the correct `pxisys.ini` file.
-   ```shell script
-   [user@localhost pixie_sdk_tests]$ ln -s INSTALL_PATH/xia/pixie-sdk/share/pxi/pxisys_14slot_wiener_pxie.ini pxisys.ini
-   ```
-1. Copy the sample configuration file from the installation location
-   ```shell script
-   [user@localhost pixie_sdk_tests]$ cp INSTALL_PATH/xia/pixie-sdk/share/config/cfgPixie16.txt .
-   ```
-1. Update the configuration file (see below). You can name it whatever you want.
-1. Execute the program
-   ```shell script
-   [user@localhost pixie_sdk_tests]$ LD_LIBRARY_PATH=${INSTALL_PATH}/xia/pixie-sdk/lib/ ${INSTALL_PATH}/xia/pixie-sdk/bin/pixie -c <name of config file>
+   LD_LIBRARY_PATH=/usr/local/xia/PixieSDK/lib/ ${PATH_TO_PIXIE_SDK_SOURCE}/build/examples/pixie_sdk_example boot <name of config file>
    ```
 
 ### Configuration file format
@@ -40,7 +38,7 @@ particular command, then you can use `pixie -h` or `pixie COMMAND -h` to get mor
 <The Crate slot for the second module>
 ...
 <The Crate slot for the last module>
-/relative/path/to/ComFPGAConfigFile
+/absolute/path/to/ComFPGAConfigFile
 /relative/path/to/SPFPGAConfigFile
 /relative/path/to/TrigFPGAConfigFile
 /relative/path/to/DSPCodeFile
@@ -51,19 +49,22 @@ particular command, then you can use `pixie -h` or `pixie COMMAND -h` to get mor
 ```
 1
 5
-/home/stan/firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin
-/home/stan/firmware/fippixie16_revfgeneral_16b250m_r36563.bin
+/home/xiauser/firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin
+/home/xiauser/firmware/fippixie16_revfgeneral_16b250m_r36563.bin
 FPGATrig
-/home/stan/dsp/Pixie16DSP_revfgeneral_16b250m_r35921.ldr
-/home/stan/configuration/test_ena_cfd_trace_qdc_esums.set
-/home/stan/dsp/Pixie16DSP_revfgeneral_16b250m_r35921.var
+/home/xiauser/dsp/Pixie16DSP_revfgeneral_16b250m_r35921.ldr
+/home/xiauser/configuration/test_ena_cfd_trace_qdc_esums.set
+/home/xiauser/dsp/Pixie16DSP_revfgeneral_16b250m_r35921.var
 ```
 
-## utilities/pixie.py
+## utilities/pixie_sdk_example.py
+This is a quick POC for interfacing with PixieSDK via python. This is the sole reason
+that we'll likely keep around a C interface to the SDK. It's easier to interface using
+ctypes as opposed to something like SWIG. 
 
 
 ## Copyright
-Copyright (c) 2005 - 2020, XIA LLC
+Copyright (c) 2005 - 2021, XIA LLC
 All rights reserved.
 
 ## License

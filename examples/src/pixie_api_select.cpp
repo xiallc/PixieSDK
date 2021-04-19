@@ -1,4 +1,4 @@
-/*----------------------------------------------------------------------
+/**----------------------------------------------------------------------
 * Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
@@ -31,7 +31,11 @@
 * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
-*----------------------------------------------------------------------*/
+*----------------------------------------------------------------------**/
+/// @file pixie_api_select.cpp
+/// @brief Provides a consistent interface between the Legacy and updated SDK.
+/// @author C. Johns
+/// @date April 3, 2021
 
 #include <stdexcept>
 
