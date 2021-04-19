@@ -293,14 +293,14 @@ namespace i2c
     void
     bitbash::bus_write(uint8_t data)
     {
-        module.write_word(reg, data);
+        module.write_word(reg, static_cast<word>(data));
         wait(5);
     }
 
     uint8_t
     bitbash::bus_read()
     {
-        return module.read_word(reg);
+        return static_cast<uint8_t>(module.read_word(reg));
     }
 };
 };

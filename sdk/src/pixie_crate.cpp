@@ -121,8 +121,8 @@ namespace crate
                         param::module_var_descs(param::get_module_var_descriptors());
                     module.channel_var_descriptors =
                         param::channel_var_descs(param::get_channel_var_descriptors());
-                    module.open(device_number);
                     module.reg_trace = reg_trace;
+                    module.open(device_number);
                 } catch (std::runtime_error& e) {
                     if (!autodetect) {
                         throw;

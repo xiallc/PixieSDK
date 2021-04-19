@@ -423,7 +423,7 @@ namespace module
             if (ps != PLX_STATUS_OK) {
                 std::ostringstream oss;
                 oss << "PCI DMA: device: " << device_number
-                    << " : " << ps;
+                    << ": " << ps;
                 throw error(number, slot,
                             error::code::module_initialize_failure,
                             oss);
@@ -611,13 +611,21 @@ namespace module
     void
     module::probe()
     {
+        dsp.online = fippi_fpga = comms_fpga = false;
+
+        erase_values();
+
         hw::fpga::comms comms(*this);
         comms_fpga = comms.done();
 
-        hw::fpga::fippi fippi(*this);
-        fippi_fpga = fippi.done();
+        if (comms_fpga) {
+            hw::fpga::fippi fippi(*this);
+            fippi_fpga = fippi.done();
 
-        dsp.online = dsp.done();
+            if (fippi_fpga) {
+                dsp.online = dsp.done();
+            }
+        }
 
         log(log::info) << std::boolalpha
                        <<  module_label(*this)
@@ -625,11 +633,13 @@ namespace module
                        << " fippi=" << fippi_fpga
                        << " dsp=" << dsp.online;
 
-        firmware::firmware_ref vars = get("var");
-        param::load(vars,
-                    module_var_descriptors,
-                    channel_var_descriptors);
-        init_values();
+        if (fippi_fpga) {
+            firmware::firmware_ref vars = get("var");
+            param::load(vars,
+                        module_var_descriptors,
+                        channel_var_descriptors);
+            init_values();
+        }
     }
 
     void
@@ -657,6 +667,11 @@ namespace module
                 log(log::info) << module_label(*this)
                                << ": fippi already loaded";
             }
+            if (!comms_fpga) {
+                throw error(number, slot,
+                            error::code::module_initialize_failure,
+                            "fippi boot needs comms booted");
+            }
             firmware::firmware_ref fw = get("fippi");
             hw::fpga::fippi fippi(*this);
             fippi.boot(fw->data);
@@ -667,6 +682,11 @@ namespace module
             if (dsp.online) {
                 log(log::info) << module_label(*this)
                                << ": dsp already running";
+            }
+            if (!comms_fpga || !fippi_fpga) {
+                throw error(number, slot,
+                            error::code::module_initialize_failure,
+                            "dsp needs comms and fippi booted");
             }
             firmware::firmware_ref fw = get("dsp");
             dsp.boot(fw->data);
@@ -738,6 +758,7 @@ namespace module
     module::read(param::module_param par)
     {
         log(log::debug) << module_label(*this) << ": write: par=" << int(par);
+        online_check();
         const param::module_var var = param::map_module_param(par);
         size_t offset;
         if (var == param::module_var::TrigConfig) {
@@ -759,6 +780,8 @@ namespace module
     module::read(param::channel_param par, size_t channel)
     {
         log(log::debug) << module_label(*this) << ": read: par=" << int(par);
+        online_check();
+        channel_check(channel);
         lock_guard guard(lock_);
         double value;
         switch (par) {
@@ -807,6 +830,7 @@ namespace module
     {
         log(log::debug) << module_label(*this)
                         << ": write: par=" << int(par) << " value=" << value;
+        online_check();
         const param::module_var var = param::map_module_param(par);
         size_t offset = 0;
 /*        switch (par) {
@@ -840,6 +864,8 @@ namespace module
                         << ": write: par=" << int(par)
                         << " channel=" << channel
                         << " value=" << value;
+        online_check();
+        channel_check(channel);
         lock_guard guard(lock_);
     }
 
@@ -866,6 +892,7 @@ namespace module
         log(log::debug) << module_label(*this)
                         << ": read: var=" << int(var)
                         << " offset=" << offset;
+        online_check();
         const size_t index = static_cast<size_t>(var);
         if (index >= module_var_descriptors.size()) {
             std::ostringstream oss;
@@ -905,12 +932,8 @@ namespace module
                         << ": read: var=" << int(var)
                         << " channel=" << channel
                         << " offset=" << offset;
-        if (channel >= num_channels) {
-            std::ostringstream oss;
-            oss << "invalid channel number: " << channel;
-            throw error(number, slot,
-                        error::code::channel_number_invalid, oss.str());
-        }
+        online_check();
+        channel_check(channel);
         const size_t index = static_cast<size_t>(var);
         if (index >= channel_var_descriptors.size()) {
             std::ostringstream oss;
@@ -973,6 +996,7 @@ namespace module
                         << " offset=" << offset
                         << " value=" << value
                         << " (0x" << std::hex << value << ')';
+        online_check();
         const size_t index = static_cast<size_t>(var);
         if (index >= module_var_descriptors.size()) {
             std::ostringstream oss;
@@ -1015,12 +1039,8 @@ namespace module
                         << " (0x" << std::hex << value << ')'
                         << " channel=" << channel
                         << " offset=" << offset;
-        if (channel >= num_channels) {
-            std::ostringstream oss;
-            oss << "invalid channel number: " << channel;
-            throw error(number, slot,
-                        error::code::channel_number_invalid, oss.str());
-        }
+        online_check();
+        channel_check(channel);
         const size_t index = static_cast<size_t>(var);
         if (index >= channel_var_descriptors.size()) {
             std::ostringstream oss;
@@ -1076,6 +1096,8 @@ namespace module
     void
     module::dma_read(const hw::address source, hw::words& values)
     {
+        online_check();
+
         PLX_DMA_PARAMS dma_params;
 
         memset(&dma_params, 0, sizeof(PLX_DMA_PARAMS));
@@ -1108,6 +1130,13 @@ namespace module
     }
 
     void
+    module::erase_values()
+    {
+        module_values.clear();
+        channel_values.clear();
+    }
+
+    void
     module::init_values()
     {
         if (num_channels == 0) {
@@ -1115,11 +1144,10 @@ namespace module
                         error::code::internal_failure,
                         "number of channels is 0");
         }
-        module_values.clear();
+        erase_values();
         for (const auto& desc : module_var_descriptors) {
             module_values.push_back(param::module_variable(desc));
         }
-        channel_values.clear();
         channel_values.resize(num_channels);
         for (size_t channel = 0; channel < num_channels; ++channel) {
             for (const auto& desc : channel_var_descriptors) {
@@ -1263,6 +1291,27 @@ namespace module
     module::operator>(const rev_tag rev) const
     {
         return revision > int(rev);
+    }
+
+    void
+    module::online_check() const
+    {
+        if (!online_) {
+            throw error(number, slot,
+                        error::code::module_offline,
+                        "module is not online");
+        }
+    }
+
+    void
+    module::channel_check(const size_t channel) const
+    {
+        if (channel >= num_channels) {
+            std::ostringstream oss;
+            oss << "invalid channel number: " << channel;
+            throw error(number, slot,
+                        error::code::channel_number_invalid, oss.str());
+        }
     }
 
     void

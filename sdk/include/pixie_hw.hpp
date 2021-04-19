@@ -86,13 +86,13 @@ namespace hw
      * Bus interface calls.
      */
     static inline word
-    read_word(void* addr, int offset) {
+    read_word(void* addr, const int offset) {
         volatile word* p = static_cast<volatile word*>(addr);
         return *(p + (offset / 4));
     }
 
     static inline void
-    write_word(void* addr, int offset, const word value) {
+    write_word(void* addr, const int offset, const word value) {
         volatile word* p = static_cast<volatile word*>(addr);
         *(p + (offset / 4)) = value;
     }

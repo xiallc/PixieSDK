@@ -396,6 +396,7 @@ namespace module
         /*
          * Initialise the values.
          */
+        void erase_values();
         void init_values();
 
         /*
@@ -414,6 +415,12 @@ namespace module
         double tau(size_t channel);
         double trace_length(size_t channel);
         double trace_delay(size_t channel);
+
+        /*
+         * Checks, throws an errors.
+         */
+        void online_check() const;
+        void channel_check(const size_t channel) const;
 
         /*
          * Lock
