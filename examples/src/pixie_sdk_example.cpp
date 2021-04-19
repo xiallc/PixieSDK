@@ -457,9 +457,9 @@ int main(int argc, char** argv) {
                                    cfg.TrigFPGAConfigFile.c_str(), cfg.DSPCodeFile.c_str(),
                                    cfg.DSPParFile.c_str(), cfg.DSPVarFile.c_str(), cfg.numModules,
                                    boot_pattern),
-                pixie->label("boot_module"), "INFO - Finished booting!"))
+                pixie->label("boot_module"), "Finished booting!"))
             return EXIT_FAILURE;
-        LOG(INFO) << "Finished " << pixie->label("init_system") << " in "
+        LOG(INFO) << "Finished " << pixie->label("boot_module") << " in "
                   << calculate_duration_in_seconds(start, std::chrono::system_clock::now())
                   << " s.";
         if (boot) {

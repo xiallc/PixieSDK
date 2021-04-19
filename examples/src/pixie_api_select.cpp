@@ -270,7 +270,7 @@ private:
 };
 
 pixie16_calls::pixie16_calls()
-    : calls("pixie16")
+    : calls("LegacyPixieSDK")
 {
 }
 
@@ -471,7 +471,7 @@ private:
 };
 
 pixie_calls::pixie_calls()
-    : calls("pixie")
+    : calls("PixieSDK")
 {
 }
 
