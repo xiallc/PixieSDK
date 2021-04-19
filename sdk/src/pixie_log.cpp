@@ -42,6 +42,7 @@
 #include <iostream>
 #include <mutex>
 #include <thread>
+#include <vector>
 
 #include <pixie_error.hpp>
 #include <pixie_log.hpp>
@@ -141,7 +142,7 @@ outputter::outputter(const std::string& name_,
         out.rdbuf(std::cout.rdbuf());
     } else {
         outfile = std::make_shared<std::ofstream>();
-        auto mode = std::ios_base::out;
+        std::ios::openmode mode = std::ios_base::out;
         if (append) {
             mode |= std::ios::app;
         } else {
@@ -365,7 +366,7 @@ memdump(log::level level,
         out << std::hex << std::setfill('0') << label << std::endl;
 
         while (true) {
-            char data[line_length];
+            std::vector<char> data(line_length);
             if (((b % line_length) == 0) || (b >= length)) {
                 if (b != 0) {
                     size_t line = b % line_length;

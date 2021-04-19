@@ -46,6 +46,8 @@
 #include <sstream>
 #include <string>
 
+#include "xia_windows_compat.hpp"
+
 namespace xia {
 namespace config {
 class Configuration {
@@ -60,7 +62,7 @@ public:
     std::string DSPVarFile;
 };
 
-Configuration read_configuration_file(const std::string& config_file_name);
+PIXIE_EXPORT Configuration PIXIE_API read_configuration_file(const std::string& config_file_name);
 
 }  // namespace config
 }  // namespace xia

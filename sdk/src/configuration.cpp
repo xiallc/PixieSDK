@@ -40,7 +40,7 @@
 #include "configuration.hpp"
 namespace xia {
 namespace config {
-Configuration read_configuration_file(const std::string& config_file_name) {
+PIXIE_EXPORT Configuration PIXIE_API read_configuration_file(const std::string& config_file_name) {
     std::ifstream input(config_file_name, std::ios::in);
 
     if (input.fail()) {
