@@ -362,8 +362,8 @@ int main(int argc, char** argv) {
     args::Group arguments(parser, "arguments", args::Group::Validators::AtLeastOne,
                           args::Options::Global);
 
-    args::Positional<std::string> configuration(arguments, "cfg", "The configuration file to load.",
-                                                args::Options::Required);
+    args::ValueFlag<std::string> configuration(arguments, "cfg", "The configuration file to load.",
+                                               {'c', "config"}, args::Options::Required);
     args::HelpFlag help_flag(arguments, "help", "Displays this message", {'h', "help"});
     args::Flag is_fast_boot(boot, "fast-boot", "Performs a partial boot of the system.",
                             {'f', "fast-boot"});
@@ -386,6 +386,8 @@ int main(int argc, char** argv) {
                                             "The value of the parameter we want to write.",
                                             {'v', "value"});
     adjust_offsets.Add(configuration);
+    boot.Add(configuration);
+    read.Add(configuration);
     trace.Add(configuration);
     trace.Add(module);
     write.Add(configuration);
