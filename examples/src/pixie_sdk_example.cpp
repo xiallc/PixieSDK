@@ -343,7 +343,6 @@ int main(int argc, char** argv) {
             "Sample code that interfaces with a Pixie system through the User API.");
     parser.LongSeparator("=");
 
-    args::Flag api_pixie(parser, "api", "Select the Pixie API (default: pixie16)", {'P', "api"});
 
     args::Group commands(parser, "commands");
     args::Command boot(commands, "boot", "Boots the crate of modules.");
@@ -361,6 +360,7 @@ int main(int argc, char** argv) {
 
     args::Group arguments(parser, "arguments", args::Group::Validators::AtLeastOne,
                           args::Options::Global);
+    args::Flag api_pixie(arguments, "api", "Select the Pixie API (default: pixie16)", {'P', "api"});
 
     args::ValueFlag<std::string> configuration(arguments, "cfg", "The configuration file to load.",
                                                {'c', "config"}, args::Options::Required);
