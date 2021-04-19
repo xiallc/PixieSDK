@@ -9,8 +9,8 @@ add_executable(legacy_test_runner base_test_runner.cpp
         $<TARGET_OBJECTS:LegacyPixieSdkObjLib>)
 target_include_directories(legacy_test_runner PUBLIC
         ${PROJECT_SOURCE_DIR}/sdk/include
-        ${PROJECT_SOURCE_DIR}/vendor/analog_devices
-        ${PROJECT_SOURCE_DIR}/vendor/doctest
+        ${PROJECT_SOURCE_DIR}/externals/analog_devices
+        ${PROJECT_SOURCE_DIR}/externals/doctest
         ${PLX_INCLUDE_DIR})
 xia_configure_target(TARGET legacy_test_runner USE_PLX FORCE_DEBUG LINUX_LIBS -Wl,--no-as-needed)
 
@@ -18,7 +18,7 @@ xia_configure_target(TARGET legacy_test_runner USE_PLX FORCE_DEBUG LINUX_LIBS -W
 add_executable(pixie_sdk_test_runner base_test_runner.cpp $<TARGET_OBJECTS:PixieSdkObjLib>)
 target_include_directories(pixie_sdk_test_runner PUBLIC
         ${PROJECT_SOURCE_DIR}/sdk/include
-        ${PROJECT_SOURCE_DIR}/vendor/analog_devices
-        ${PROJECT_SOURCE_DIR}/vendor/doctest
+        ${PROJECT_SOURCE_DIR}/externals/analog_devices
+        ${PROJECT_SOURCE_DIR}/externals/doctest
         ${PLX_INCLUDE_DIR})
 xia_configure_target(TARGET pixie_sdk_test_runner USE_PLX FORCE_DEBUG)
