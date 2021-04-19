@@ -124,7 +124,7 @@ void set_line_numbers(const std::string name, bool line_numbers);
 /*
  * Level active
  */
-bool level_logoging(log::level level);
+bool level_logging(log::level level);
 
 /**
  * Hex display memory.

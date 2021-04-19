@@ -337,8 +337,7 @@ set_line_numbers(const std::string name, bool line_numbers)
                        "invald log output name in set line numbers");
 }
 
-bool
-level_logoging(log::level level)
+bool level_logging(log::level level)
 {
     for (auto& output : *outputs) {
         log::level outputter_level = output.level.load();
@@ -358,7 +357,7 @@ memdump(log::level level,
         size_t line_length,
         size_t offset)
 {
-    if (level_logoging(level) && length > 0) {
+    if (level_logging(level) && length > 0) {
         const uint8_t* addr8 = static_cast<const uint8_t*>(addr);
         std::ostringstream out;
         size_t b = 0;
