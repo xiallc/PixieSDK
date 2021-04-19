@@ -8,6 +8,25 @@ set(PIXIE_SDK_LEGACY_SOURCES
         src/utilities.c
         )
 
+#---- Build the Legacy object library so that we don't compile the sources more than once
+add_library(LegacyPixieSdkObjLib OBJECT ${PIXIE_SDK_LEGACY_SOURCES})
+set_property(TARGET LegacyPixieSdkObjLib PROPERTY POSITION_INDEPENDENT_CODE 1)
+target_include_directories(LegacyPixieSdkObjLib PUBLIC include/
+        ${PROJECT_SOURCE_DIR}/vendor/analog_devices)
+xia_configure_target(TARGET LegacyPixieSdkObjLib USE_PLX CONFIG_OBJ)
+
+#---- Build the Legacy shared object for install and general use.
+add_library(LegacyPixieSDK SHARED $<TARGET_OBJECTS:LegacyPixieSdkObjLib>)
+target_include_directories(LegacyPixieSDK PUBLIC include/
+        ${PROJECT_SOURCE_DIR}/vendor/analog_devices)
+xia_configure_target(TARGET LegacyPixieSDK USE_PLX)
+
+#---- Install LegacyPixieSDK
+file(GLOB LEGACYPIXIESDK_PUBLIC_HEADERS include/*.h
+        ${PROJECT_SOURCE_DIR}/vendor/analog_devices/def21160.h)
+set_target_properties(LegacyPixieSDK PROPERTIES PUBLIC_HEADER "${LEGACYPIXIESDK_PUBLIC_HEADERS}")
+install(TARGETS LegacyPixieSDK LIBRARY DESTINATION lib PUBLIC_HEADER DESTINATION include)
+
 set(PIXIE_SDK_SOURCES
         src/pixie16.cpp
         src/pixie_crate.cpp
@@ -31,20 +50,19 @@ set(PIXIE_SDK_SOURCES
         )
 
 #---- Build the object library so that we don't compile the sources more than once
-add_library(PixieSdkObjLib OBJECT ${PIXIE_SDK_LEGACY_SOURCES} ${PIXIE_SDK_SOURCES})
+add_library(PixieSdkObjLib OBJECT ${PIXIE_SDK_SOURCES})
 set_property(TARGET PixieSdkObjLib PROPERTY POSITION_INDEPENDENT_CODE 1)
 target_include_directories(PixieSdkObjLib PUBLIC include/
         ${PROJECT_SOURCE_DIR}/vendor/analog_devices)
 xia_configure_target(TARGET PixieSdkObjLib USE_PLX CONFIG_OBJ)
 
 #---- Build the shared object for install and general use.
-add_library(PixieSDK SHARED $<TARGET_OBJECTS:PixieSdkObjLib>)
+add_library(PixieSDK SHARED $<TARGET_OBJECTS:PixieSdkObjLib> $<TARGET_OBJECTS:LegacyPixieSdkObjLib>)
 target_include_directories(PixieSDK PUBLIC include/
         ${PROJECT_SOURCE_DIR}/vendor/analog_devices)
 xia_configure_target(TARGET PixieSDK USE_PLX)
 
 #---- Install PixieSDK
-file(GLOB PIXIESDK_PUBLIC_HEADERS include/*.h include/*.hpp include/hw/*.hpp
-        ${PROJECT_SOURCE_DIR}/vendor/analog_devices/def21160.h)
+file(GLOB PIXIESDK_PUBLIC_HEADERS include/*.hpp include/hw/*.hpp)
 set_target_properties(PixieSDK PROPERTIES PUBLIC_HEADER "${PIXIESDK_PUBLIC_HEADERS}")
 install(TARGETS PixieSDK LIBRARY DESTINATION lib PUBLIC_HEADER DESTINATION include)
