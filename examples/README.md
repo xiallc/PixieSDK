@@ -23,12 +23,12 @@ Windows will work similarly except that you'll need to add the library path to y
       ```
    1. Copy the sample configuration file from the repo
        ```shell script
-       cp ${PATH_TO_PIXIE_SDK_SOURCE}/examples/share/config/cfgPixie16.txt .
+       cp /usr/local/xia/PixieSdk/share/config/cfgPixie16.txt .
        ```
    2. Update the configuration file (see below). You can name it whatever you want.
 1. Execute the program to boot the modules
    ```shell script
-   LD_LIBRARY_PATH=/usr/local/xia/PixieSDK/lib/ ${PATH_TO_PIXIE_SDK_SOURCE}/build/examples/pixie_sdk_example boot <name of config file>
+   LD_LIBRARY_PATH=/usr/local/xia/PixieSDK/lib/ /usr/local/xia/PixieSDK/bin/pixie_sdk_example boot <name of config file>
    ```
 
 ### Configuration file format
