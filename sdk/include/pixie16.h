@@ -767,6 +767,23 @@ PIXIE_EXPORT int PIXIE_API PixieSaveDSPParametersToFile(const char* FileName);
 PIXIE_EXPORT int PIXIE_API PixieSaveHistogramToFile(const char* FileName, unsigned short ModNum);
 
 /**
+ * @ingroup CONTROL_TASK_RUN
+ * @brief Set all DACs.
+ *
+ * Use this function to reprogram the on-board digital to analog converters (DAC) of the Pixie-16
+ * modules. In this operation the DSP uses data from the DSP parameters that were previously
+ * downloaded.
+ *
+ * @param[in] ModNum: The module number, which starts counting at 0.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Invalid Pixie module number
+ * @retval -2 - Failed to start the SET_DACs run
+ * @retval -3 - SET_DACs run timed out after 10 seconds of trying.
+ */
+PIXIE_EXPORT int PIXIE_API PixieSetDACs(unsigned short ModNum);
+
+/**
  * @ingroup PUBLIC_API
  * @brief Start or resume a histogram run.
  *

@@ -411,6 +411,11 @@ PIXIE_EXPORT int PIXIE_API PixieSaveHistogramToFile(const char* FileName, unsign
     return -11111;
 }
 
+PIXIE_EXPORT int PIXIE_API PixieSetDACs(unsigned short ModNum) {
+    (void) ModNum;
+    return -11111;
+}
+
 PIXIE_EXPORT int PIXIE_API PixieStartHistogramRun(unsigned short ModNum, unsigned short mode) {
     (void) ModNum;
     (void) mode;
