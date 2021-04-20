@@ -167,6 +167,29 @@ PIXIE_EXPORT int PIXIE_API PixieAcquireBaselines(unsigned short ModNum);  // mod
 PIXIE_EXPORT int PIXIE_API PixieAdjustOffsets(unsigned short ModNum);
 
 /**
+ * @ingroup CONFIGURATION
+ * @brief Find the BLcut value for the selected channel and return it using pointer *BLcut.
+ *
+ * Use this function to find the Baseline Cut value for one channel of a Pixie-16 module. The
+ * baseline cut value is then downloaded to the DSP, where baselines are captured and averaged
+ * over time. The cut value would prevent a bad baseline value from being used in the averaging
+ * process, i.e., if a baseline value is outside the baseline cut range, it will not be used for
+ * computing the baseline average. Averaging baselines over time improves energy resolution
+ * measurement.
+ *
+ * @param[in] ModNum: The module number to work with, starts counting at 0.
+ * @param[in] ChanNum: The channel number to work with, starts counting at 0.
+ * @param[out] BLcut: The Baseline cut as determined by the calculation.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - successful
+ * @retval -1 - Invalid Pixie module number
+ * @retval -2 - failed to collect baselines
+ * @retval -3 - failed to read baselines from the data memory
+ */
+PIXIE_EXPORT int PIXIE_API PixieBLcutFinder(unsigned short ModNum, unsigned short ChanNum,
+                                            unsigned int* BLcut);
+
+/**
  * @ingroup PUBLIC_API
  *
  * @brief Boot one or more modules in the system.

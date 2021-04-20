@@ -93,6 +93,14 @@ PIXIE_EXPORT int PIXIE_API PixieAdjustOffsets(unsigned short ModNum) {
     return -11111;
 }
 
+PIXIE_EXPORT int PIXIE_API Pixie16BLcutFinder(unsigned short ModNum, unsigned short ChanNum,
+                                              unsigned int* BLcut) {
+    (void) ModNum;
+    (void) ChanNum;
+    (void) BLcut;
+    return -11111;
+}
+
 static void
 PixieBootModule(xia::pixie::module::module& module,
                 const char* ComFPGAConfigFile,
