@@ -314,7 +314,7 @@ main(int argc, char* argv[])
         cmd_flag(command_group,
                  "commands",
                  "Commands to be performed in order. "
-                 "Commands are 'init', 'boot', 'set', 'get'.");
+                 "Commands are 'boot', 'set', 'get'.");
 
     try {
         parser.ParseCLI(argc, argv);
