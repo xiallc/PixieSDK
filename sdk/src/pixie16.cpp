@@ -44,9 +44,10 @@
 #include <pixie_log.hpp>
 
 /*
- * Make a local type for the log.
+ * Local types for convenience.
  */
 typedef xia::pixie::log xia_log;
+typedef xia::pixie::error::error xia_error;
 
 /*
  * Boot patterns
@@ -76,7 +77,8 @@ static bool throw_unhandled;
 static size_t
 api_mod_num(unsigned short mod_num) {
     if (mod_num == 0)
-        return 0;
+        throw xia_error(xia_error::code::module_number_invalid,
+                        "module number is 0");
     return static_cast<size_t>(mod_num - 1);
 }
 
@@ -183,7 +185,7 @@ PixieBootModule(const char* ComFPGAConfigFile,
                            << " DSPVarFile=" << DSPVarFile;
 
     try {
-        if (ModNum == 0) {
+        if (ModNum == crate.num_modules) {
             for (auto& module : crate.modules) {
                 PixieBootModule(module,
                                 ComFPGAConfigFile,
@@ -203,7 +205,7 @@ PixieBootModule(const char* ComFPGAConfigFile,
                             DSPVarFile,
                             BootPattern);
         }
-    } catch (xia::pixie::error::error& e) {
+    } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
     } catch (std::exception& e) {
@@ -308,7 +310,7 @@ PixieExitSystem(unsigned short ModNum)
     xia_log(xia_log::info) << "PixieExitSystem: ModNum=" << ModNum;
 
     try {
-        if (ModNum == 0) {
+        if (ModNum == crate.num_modules) {
             for (auto& module : crate.modules) {
                 module.close();
             }
@@ -316,7 +318,7 @@ PixieExitSystem(unsigned short ModNum)
             xia::pixie::crate::module_handle module(crate, api_mod_num(ModNum));
             module.handle.close();
         }
-    } catch (xia::pixie::error::error& e) {
+    } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
     } catch (std::exception& e) {
@@ -371,7 +373,7 @@ PixieInitSystem(unsigned short NumModules,
             }
             crate.assign(numbers);
         }
-    } catch (xia::pixie::error::error& e) {
+    } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
     } catch (std::exception& e) {
