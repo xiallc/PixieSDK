@@ -63,4 +63,5 @@ script:
   - cd build
   - cmake ../
   - make
-  - ./tests/unit/legacy/legacy_unit_test_runner
+  - ./tests/unit/legacy_unit_test_runner
+  - ./tests/unit/pixie_sdk_unit_test_runner

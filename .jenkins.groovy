@@ -16,13 +16,30 @@ pipeline {
                 '''
             }
         }
-        stage('PixieSDK') {
+        stage('Build PixieSDK') {
             steps{
                 dir('build') {
                     sh '''
                     cmake3 ../
                     make
-                    ./tests/unit/legacy/legacy_unit_test_runner
+                    '''
+                }
+            }
+        }
+        stage('Legacy Test Suite') {
+            steps{
+                dir('build') {
+                    sh '''
+                    ./tests/unit/legacy_unit_test_runner
+                    '''
+                }
+            }
+        }
+        stage('Test Suite') {
+            steps{
+                dir('build') {
+                    sh '''
+                    ./tests/unit/pixie_sdk_unit_test_runner
                     '''
                 }
             }
