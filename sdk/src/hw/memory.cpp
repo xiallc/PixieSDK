@@ -43,6 +43,7 @@
 #include <hw/memory.hpp>
 
 #include <pixie16sys_defs.h>
+#include <def21160.h>
 
 namespace xia
 {
@@ -52,10 +53,158 @@ namespace hw
 {
 namespace memory
 {
-    const address MCA_MEM_DATA = 0x00400000;
+    struct host_bus_request {
+        module::module& module;
+        bool holding;
+        host_bus_request(module::module& module_)
+            : module(module_),
+              holding(false) {
+            request();
+        }
+        ~host_bus_request() {
+            release();
+        }
+        void request() {
+            if (!holding) {
+                module.write_word(REQUEST_HBR, 0);
+                holding = true;
+            }
+        }
+        void release() {
+            if (holding) {
+                module.write_word(HBR_DONE, 0);
+                holding = false;
+            }
+        }
+    };
+
+    bus::bus(module::module& module_)
+        : module(module_)
+    {
+    }
+
+    dsp::dsp(module::module& module_)
+        : bus(module_)
+    {
+    }
+
+    word
+    dsp::read(const address addr)
+    {
+        host_bus_request hbr(module);
+        bus_write(EXT_MEM_TEST, addr);
+        word value = bus_read(WRT_DSP_MMA);
+        return value;
+    }
+
+    word
+    dsp::read(const size_t channel, const address addr)
+    {
+        return read(addr + (channel * sizeof(word)));
+    }
+
+    void
+    dsp::read(const address addr, words& values)
+    {
+        size_t size = values.size();
+        word_ptr block_data = values.data();
+        address block_addr = addr;
+        while (size > 48) {
+            const size_t block_size =
+                size > max_dma_block_size ? max_dma_block_size : size;
+            dma_read(block_addr, block_data, block_size);
+            size -= block_size;
+        }
+        if (size > 0) {
+            host_bus_request hbr(module);
+            bus_write(EXT_MEM_TEST, block_addr);
+            while (size-- > 0) {
+                *block_data = bus_read(WRT_DSP_MMA);
+                block_data++;
+            }
+       }
+    }
+
+    void
+    dsp::read(const address addr, io_buffer& buffer)
+    {
+        static_assert((io_buffer_length % max_dma_block_size) != 0,
+                      "io-buffer not a multiple of the block size");
+        const size_t blocks = buffer.size() / max_dma_block_size;
+        word* data = buffer.data();
+        size_t offset = 0;
+        for (size_t block = 0; block < blocks; ++block) {
+            dma_read(addr + offset,  data + offset, max_dma_block_size);
+            offset += max_dma_block_size;
+        }
+    }
+
+    void
+    dsp::write(const address addr, const word value)
+    {
+        host_bus_request hbr(module);
+        bus_write(EXT_MEM_TEST, addr);
+        bus_write(WRT_DSP_MMA, value);
+    }
+
+    void
+    dsp::write(const size_t channel, const address addr, const word value)
+    {
+        write(addr + (channel * sizeof(word)), value);
+    }
+
+    void
+    dsp::write(const address addr, const words& values)
+    {
+        host_bus_request hbr(module);
+        bus_write(EXT_MEM_TEST, addr);
+        for (auto value : values) {
+            bus_write(WRT_DSP_MMA, value);
+        }
+    }
+
+    void
+    dsp::dma_read(const address addr, word_ptr buffer, const size_t length)
+    {
+        host_bus_request hbr(module);
+
+        bus_write(EXT_MEM_TEST, DMASTAT);
+        if ((bus_read(WRT_DSP_MMA) & (1 << 11)) != 0) {
+            throw error(error::code::device_dma_busy, "dsp: DMA busy");
+        }
+
+        bus_write(WRT_DSP_II11, addr);
+        bus_write(WRT_DSP_C11, length);
+        bus_write(WRT_DSP_IM11, 1);
+        bus_write(WRT_DSP_EC11, length);
+        bus_write(WRT_DSP_DMAC11, 0x905);
+        bus_write(RD_WRT_FIFO_WML, length / 2);
+
+        hbr.release();
+
+        try {
+            bus_write(SET_INT_FIFO, 0);
+            csr::fifo_ready_wait(module);
+            module.dma_read(addr, buffer, length);
+        } catch (...) {
+            hbr.request();
+            bus_write(WRT_DSP_DMAC11, 0x904);
+            throw;
+        }
+
+        hbr.request();
+        bus_write(WRT_DSP_DMAC11, 0x904);
+    }
+
+    void
+    dsp::write(const size_t channel,
+               const address addr, const words& values)
+    {
+        write(addr + (channel * sizeof(word)), values);
+    }
 
     mca::mca(module::module& module_)
-        : module(module_)
+        : bus(module_)
     {
     }
 

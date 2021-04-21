@@ -53,6 +53,11 @@ namespace hw
 {
 namespace fpga
 {
+    /*
+     * System FPGA clock frequency in MHz
+     */
+    const size_t system_clock_mhz = 100;
+
     struct control
     {
         /*

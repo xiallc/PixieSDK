@@ -54,20 +54,19 @@ namespace hw
 {
 namespace memory
 {
-    struct mca
+    static const address IO_BUFFER_ADDR = 0x00050000; /* R */
+    static const address FIFO_MEM_DMA   = 0x00200000; /* R */
+    static const address DSP_MEM_DMA    = 0x00300000; /* R */
+    static const address MCA_MEM_DMA    = 0x00400000; /* R */
+    static const address MCA_MEM_DATA   = 0x00400000; /* R W */
+
+    struct bus
     {
         module::module& module;
 
-        mca(module::module& module);
+        bus(module::module& module);
 
-        /*
-         * Block read and write.
-         */
-        void read(const address addr, words& values);
-        void write(const address addr, const words& values);
-
-    private:
-
+    protected:
         /*
          * Low level access.
          */
@@ -77,6 +76,64 @@ namespace memory
         uint32_t bus_read(int reg) {
             return module.read_word(reg);
         }
+    };
+
+    struct dsp
+        : public bus
+    {
+        /*
+         * DMA block size.
+         */
+        static const size_t max_dma_block_size = 9192;
+
+        dsp(module::module& module);
+
+        /*
+         * Memory read.
+         */
+        word read(const address addr);
+        word read(const size_t channel, const address addr);
+
+        /*
+         * Memory block read.
+         */
+        void read(const address addr, words& values);
+        void read(const address addr, io_buffer& buffer);
+
+        /*
+         * Memory write.
+         */
+        void write(const address addr, const word value);
+        void write(const size_t channel,
+                   const address addr, const word value);
+
+        /*
+         * Memory block write.
+         */
+        void write(const address addr, const words& values);
+        void write(const size_t channel,
+                   const address addr, const words& values);
+
+    private:
+
+        /*
+         * DMA set up
+         */
+        void dma_read(const address addr,
+                      word_ptr buffer,
+                      const size_t length);
+    };
+
+    struct mca
+        : public bus
+    {
+        mca(module::module& module);
+
+        /*
+         * Block read and write.
+         */
+        void read(const address addr, words& values);
+        void write(const address addr, const words& values);
     };
 }
 }

@@ -203,7 +203,7 @@ namespace dsp
                  */
                 size_t retry = 10;
                 while (--retry > 0) {
-                    if (done()) {
+                    if (init_done()) {
                         running = true;
                         break;
                     }
@@ -230,59 +230,13 @@ namespace dsp
     }
 
     bool
-    dsp::done()
-    {
-        word value = read(POWERUPINITDONE_ADDRESS);
-        return value == 1;
-    }
-
-    word
-    dsp::read(const address addr)
+    dsp::init_done()
     {
         bus_write(REQUEST_HBR, 0);
-        bus_write(EXT_MEM_TEST, addr);
+        bus_write(EXT_MEM_TEST, POWERUPINITDONE_ADDRESS);
         word value = bus_read(WRT_DSP_MMA);
         bus_write(HBR_DONE, 0);
-        return value;
-    }
-
-    word
-    dsp::read(const size_t channel, const address addr)
-    {
-        return read(addr + (channel * sizeof(word)));
-    }
-
-    void
-    dsp::write(const address addr, const word value)
-    {
-        bus_write(REQUEST_HBR, 0);
-        bus_write(EXT_MEM_TEST, addr);
-        bus_write(WRT_DSP_MMA, value);
-        bus_write(HBR_DONE, 0);
-    }
-
-    void
-    dsp::write(const size_t channel, const address addr, const word value)
-    {
-        write(addr + (channel * sizeof(word)), value);
-    }
-
-    void
-    dsp::write(const address addr, const words& values)
-    {
-        bus_write(REQUEST_HBR, 0);
-        bus_write(EXT_MEM_TEST, addr);
-        for (auto value : values) {
-            bus_write(WRT_DSP_MMA, value);
-        }
-        bus_write(HBR_DONE, 0);
-    }
-
-    void
-    dsp::write(const size_t channel,
-               const address addr, const words& values)
-    {
-        write(addr + (channel * sizeof(word)), values);
+        return value == 1;
     }
 
     void

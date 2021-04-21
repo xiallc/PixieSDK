@@ -80,6 +80,19 @@ set_clear::~set_clear()
 {
     clear(module, mask);
 }
+
+void
+fifo_ready_wait(module::module& module, const size_t polls)
+{
+    size_t count = 0;
+    while (count++ < polls) {
+        if ((read(module) & (1 << EXTFIFO_WML)) != 0) {
+            return;
+        }
+    }
+    throw error(error::code::device_dma_busy,
+                "csr: EXT FIFO failed to get ready for read");
+}
 }
 }
 }

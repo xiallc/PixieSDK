@@ -1,5 +1,5 @@
-#ifndef PIXIE_HW_H
-#define PIXIE_HW_H
+#ifndef PIXIE_CHANNEL_H
+#define PIXIE_CHANNEL_H
 
 /*----------------------------------------------------------------------
 * Copyright (c) 2005 - 2020, XIA LLC
@@ -36,89 +36,59 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
-#include <array>
-#include <stdexcept>
 #include <vector>
 
-#include <stdint.h>
-
 #include <pixie_error.hpp>
+#include <pixie_hw.hpp>
+#include <pixie_param.hpp>
 
 namespace xia
 {
 namespace pixie
 {
-namespace hw
+namespace module
 {
-    /*
-     * IO buffer length
-     */
-    static const size_t io_buffer_length = 65536;
+class module;
+}
+namespace channel
+{
+/*
+ * FIFO
+ */
+struct fifo {
+    module::module& module;
 
-    /*
-     * Maximum histogram size.
-     */
-    static const size_t max_histogram_length = 32768;
+    fifo(module::module& module);
 
-    /*
-     * Address.
-     */
-    typedef uint32_t address;
+    void update(const size_t channel, param::value_type trace_delay);
+};
 
-    /*
-     * The read/write word.
-     */
-    typedef uint32_t word;
+/*
+ * Baseline
+ */
+struct baseline {
+    static const size_t max_num = 3640;
 
-    /*
-     * Word pointer.
-     */
-    typedef word* word_ptr;
+    typedef std::pair<double, double> value;
 
-    /*
-     * Words
-     */
-    typedef std::vector<word> words;
+    module::module& module;
+    std::vector<value> values;
 
-    /*
-     * IO buffer
-     */
-    typedef std::array<word, io_buffer_length> io_buffer;
+    baseline(module::module& module, size_t num = max_num);
 
-    /*
-     * Hardware errors
-     */
-    typedef error::error error;
+    void find_cut(size_t channel);
 
-    /*
-     * Convertor. Use with caution as this steps around the type system.
-     */
-    template <typename I, typename O>
-    inline void convert(I vin, O& vout) {
-        vout = static_cast<O>(vin);
-    }
+    double time(hw::word time_word0, hw::word time_word1);
 
-    /*
-     * Wait in microseconds. We need to check how well this works.
-     */
-    void wait(size_t microseconds);
+    void get(size_t channel);
 
-    /*
-     * Bus interface calls.
-     */
-    static inline word
-    read_word(void* addr, const int offset) {
-        volatile word* p = static_cast<volatile word*>(addr);
-        return *(p + (offset / 4));
-    }
+private:
 
-    static inline void
-    write_word(void* addr, const int offset, const word value) {
-        volatile word* p = static_cast<volatile word*>(addr);
-        *(p + (offset / 4)) = value;
-    }
+    param::value_type compute_cut(size_t channel);
+};
 }
 }
 }
 
-#endif  // PIXIE_HW_H
+
+#endif  // PIXIE_CHANNEL_H

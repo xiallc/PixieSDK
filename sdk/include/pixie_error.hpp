@@ -91,6 +91,7 @@ enum struct code {
     device_image_failure,
     device_hw_failure,
     device_dma_failure,
+    device_dma_busy,
     /*
      * File handling
      */

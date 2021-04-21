@@ -36,6 +36,8 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
+#include <array>
+
 #include <stdint.h>
 
 #include <pixie_fw.hpp>
@@ -82,29 +84,9 @@ namespace dsp
         void boot(const firmware::image& image, int retries = 10);
 
         /*
-         * Is the DSP loaded and runings?
+         * Is the DSP loaded and runing?
          */
-        bool done();
-
-        /*
-         * Memory read.
-         */
-        word read(const address addr);
-        word read(const size_t channel, const address addr);
-
-        /*
-         * Memory write.
-         */
-        void write(const address addr, const word value);
-        void write(const size_t channel,
-                   const address addr, const word value);
-
-        /*
-         * Memory write.
-         */
-        void write(const address addr, const words& values);
-        void write(const size_t channel,
-                   const address addr, const words& values);
+        bool init_done();
 
     private:
 

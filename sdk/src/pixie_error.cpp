@@ -100,6 +100,8 @@ static std::map<code, result_code> result_codes =
     { code::device_copy_failure,       { 503, "device variable copy failed" } },
     { code::device_image_failure,      { 504, "device image failure" } },
     { code::device_hw_failure,         { 505, "device hardware failure" } },
+    { code::device_dma_failure,        { 506, "device dma failure" } },
+    { code::device_dma_busy,           { 507, "device dma busy" } },
     /*
      * File handling
      */

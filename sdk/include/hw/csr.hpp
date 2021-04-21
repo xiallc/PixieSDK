@@ -52,6 +52,9 @@ namespace hw
 {
 namespace csr
 {
+/*
+ * Low level read/write and bit set/clear support.
+ */
 word read(module::module& module);
 void write(module::module& module, word value);
 void set(module::module& module, word mask);
@@ -67,6 +70,11 @@ struct set_clear {
     set_clear(module::module& module, uint32_t mask);
     ~set_clear();
 };
+
+/*
+ * Wait for external FIFO
+ */
+void fifo_ready_wait(module::module& module, const size_t polls = 1000);
 }
 }
 }

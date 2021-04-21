@@ -49,9 +49,7 @@
 #include <pixie_hw.hpp>
 #include <pixie_param.hpp>
 
-#include <hw/dsp.hpp>
 #include <hw/i2cm24c64.hpp>
-#include <hw/run.hpp>
 
 namespace xia
 {
@@ -89,11 +87,6 @@ namespace module
     typedef std::unique_ptr<pci_bus_handle> bus_handle;
     int pci_bus(const bus_handle& device);
     int pci_slot(const bus_handle& device);
-
-    /*
-     * Maximum histogram size.
-     */
-    const size_t max_histogram_length = 32768;
 
     /*
      * Module
@@ -193,11 +186,6 @@ namespace module
         void* vmaddr;
 
         /*
-         * DSP
-         */
-        hw::dsp::dsp dsp;
-
-        /*
          * EEPROM
          */
         hw::i2c::i2cm24c64::contents eeprom;
@@ -288,8 +276,8 @@ namespace module
         /*
          * Write a parameter.
          */
-        void write(const std::string& var, param::value_type value);
-        void write(param::module_param var, param::value_type value);
+        bool write(const std::string& var, param::value_type value);
+        bool write(param::module_param var, param::value_type value);
         void write(const std::string& var, size_t channel, double value);
         void write(param::channel_param par, size_t channel, double value);
 
@@ -299,15 +287,21 @@ namespace module
          * Note, the variable string version is a convenience function
          * for test tools only. The channel is ignored if the string is
          * for a module variable.
+         *
+         * `io` true reads the value from the DSP, false returns the
+         * module's copy.
          */
         param::value_type read_var(const std::string& var,
                                    size_t channel,
-                                   size_t offset = 0);
+                                   size_t offset = 0,
+                                   bool io = true);
         param::value_type read_var(param::module_var var,
-                                   size_t offset = 0);
+                                   size_t offset = 0,
+                                   bool io = true);
         param::value_type read_var(param::channel_var,
                                    size_t channel,
-                                   size_t offset = 0);
+                                   size_t offset = 0,
+                                   bool io = true);
 
         /*
          * Write a variable.
@@ -369,6 +363,9 @@ namespace module
          * DMA block read.
          */
         void dma_read(const hw::address source, hw::words& values);
+        void dma_read(const hw::address source,
+                      hw::word_ptr values,
+                      size_t length);
 
         /*
          * Locks
@@ -405,6 +402,13 @@ namespace module
         bool eeprom_v2() const;
 
         /*
+         * Module parameter handlers.
+         */
+        void module_csrb(param::value_type value);
+        void slow_filter_range(param::value_type value);
+        void fast_filter_range(param::value_type value);
+
+        /*
          * Channel parameter handlers.
          */
         double trigger_risetime(size_t channel);
@@ -417,7 +421,7 @@ namespace module
         double trace_delay(size_t channel);
 
         /*
-         * Checks, throws an errors.
+         * Checks, throws errors.
          */
         void online_check() const;
         void channel_check(const size_t channel) const;
@@ -447,6 +451,7 @@ namespace module
          */
         bool comms_fpga;
         bool fippi_fpga;
+        bool dsp_online;
 
         /*
          * PCI bus. The type is opaque.

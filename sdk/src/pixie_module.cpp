@@ -39,6 +39,7 @@
 #include <iomanip>
 #include <sstream>
 
+#include <pixie_channel.hpp>
 #include <pixie_module.hpp>
 #include <pixie_log.hpp>
 #include <pixie_util.hpp>
@@ -47,9 +48,15 @@
 #include <hw/dsp.hpp>
 #include <hw/fpga_comms.hpp>
 #include <hw/fpga_fippi.hpp>
+#include <hw/memory.hpp>
 #include <hw/pcf8574.hpp>
+#include <hw/run.hpp>
 
+/*
+ * @todo move the few defines out of these at some point
+ */
 #include <pixie16sys_defs.h>
+#include <pixie16app_defs.h>
 
 #include <PlxApi.h>
 
@@ -206,7 +213,6 @@ namespace module
           fpga_clk_mhz(0),
           num_channels(0),
           vmaddr(nullptr),
-          dsp(*this),
           eeprom_format(-1),
           reg_trace(false),
           in_use(0),
@@ -229,7 +235,6 @@ namespace module
           fpga_clk_mhz(m.fpga_clk_mhz),
           num_channels(m.num_channels),
           vmaddr(m.vmaddr),
-          dsp(*this),
           eeprom(m.eeprom),
           eeprom_format(m.eeprom_format),
           module_var_descriptors(std::move(m.module_var_descriptors)),
@@ -301,7 +306,6 @@ namespace module
         fpga_clk_mhz = m.fpga_clk_mhz;
         num_channels = m.num_channels;
         vmaddr = m.vmaddr;
-        dsp = std::move(m.dsp);
         eeprom = std::move(m.eeprom);
         eeprom_format = m.eeprom_format;
         module_var_descriptors = std::move(m.module_var_descriptors);
@@ -611,7 +615,7 @@ namespace module
     void
     module::probe()
     {
-        dsp.online = fippi_fpga = comms_fpga = false;
+        dsp_online = fippi_fpga = comms_fpga = false;
 
         erase_values();
 
@@ -623,7 +627,8 @@ namespace module
             fippi_fpga = fippi.done();
 
             if (fippi_fpga) {
-                dsp.online = dsp.done();
+                hw::dsp::dsp dsp(*this);
+                dsp_online = dsp.init_done();
             }
         }
 
@@ -631,7 +636,7 @@ namespace module
                        <<  module_label(*this)
                        << ": probe: sys=" << comms_fpga
                        << " fippi=" << fippi_fpga
-                       << " dsp=" << dsp.online;
+                       << " dsp=" << dsp_online;
 
         if (fippi_fpga) {
             firmware::firmware_ref vars = get("var");
@@ -679,7 +684,7 @@ namespace module
         }
 
         if (boot_dsp) {
-            if (dsp.online) {
+            if (dsp_online) {
                 log(log::info) << module_label(*this)
                                << ": dsp already running";
             }
@@ -689,6 +694,7 @@ namespace module
                             "dsp needs comms and fippi booted");
             }
             firmware::firmware_ref fw = get("dsp");
+            hw::dsp::dsp dsp(*this);
             dsp.boot(fw->data);
         }
 
@@ -701,9 +707,9 @@ namespace module
                        << std::boolalpha
                        << ": boot: sys-fpga=" << comms_fpga
                        << " fippi-fpga=" << boot_fippi
-                       << " dsp=" << dsp.online;
+                       << " dsp=" << dsp_online;
 
-        online_ = comms_fpga && fippi_fpga && dsp.online;
+        online_ = comms_fpga && fippi_fpga && dsp_online;
     }
 
     void
@@ -817,34 +823,64 @@ namespace module
         return value;
     }
 
-    void
+    bool
     module::write(const std::string& par, param::value_type value)
     {
         log(log::info) << module_label(*this)
                        << ": write: par=" << par << " value=" << value;
-        write(param::lookup_module_param(par), value);
+        return write(param::lookup_module_param(par), value);
     }
 
-    void
+    bool
     module::write(param::module_param par, param::value_type value)
     {
         log(log::debug) << module_label(*this)
                         << ": write: par=" << int(par) << " value=" << value;
         online_check();
-        const param::module_var var = param::map_module_param(par);
+        std::ostringstream oss;
         size_t offset = 0;
-/*        switch (par) {
-        case param::module_param::module_csra
-            break;
-
-        const param::module_var var = param::map_module_param(par);
-        size_t offset = 0;
+        bool bcast = false;
+        lock_guard guard(lock_);
         switch (par) {
-        case param::module_var::TrigConfig:
-            offset = size_t(par) - size_t(param::module_param::trigconfig0);
+        case param::module_param::module_csrb:
+            module_csrb(value);
             break;
-            }*/
-        write_var(var, value, offset);
+        case param::module_param::slow_filter_range:
+            slow_filter_range(value);
+            break;
+        case param::module_param::fast_filter_range:
+            fast_filter_range(value);
+            break;
+        case param::module_param::synch_wait:
+        case param::module_param::in_synch:
+        case param::module_param::host_rt_preset:
+            bcast = true;
+            /* fall through */
+        case param::module_param::module_format:
+        case param::module_param::max_events:
+            write_var(param::map_module_param(par), value, offset);
+            break;
+        case param::module_param::trigconfig0:
+        case param::module_param::trigconfig1:
+        case param::module_param::trigconfig2:
+        case param::module_param::trigconfig3:
+            offset = size_t(par) - size_t(param::module_param::trigconfig0);
+            /* fall through */
+        case param::module_param::module_csra:
+        case param::module_param::fasttrigbackplaneena:
+        case param::module_param::crateid:
+        case param::module_param::slotid:
+        case param::module_param::modid:
+            write_var(param::map_module_param(par), value, offset);
+            hw::run::control(*this, hw::run::control_task::program_fippi);
+            break;
+        default:
+            oss << "invalid module parameter: " << int(par);
+            throw error(number, slot,
+                        error::code::module_invalid_param, oss.str());
+            break;
+        }
+        return bcast;
     }
 
     void
@@ -870,24 +906,28 @@ namespace module
     }
 
     param::value_type
-    module::read_var(const std::string& var, size_t channel, size_t offset)
+    module::read_var(const std::string& var,
+                     size_t channel,
+                     size_t offset,
+                     bool io)
     {
         log(log::info) << module_label(*this)
                        << ": read: var=" << var
                        << " channel=" << channel
-                       << " offset=" << offset;
+                       << " offset=" << offset
+                       << " io=" << io;
         try {
-            return read_var(param::lookup_module_var(var), offset);
+            return read_var(param::lookup_module_var(var), offset, io);
         } catch (error& e) {
             if (e.type != error::code::module_invalid_var) {
                 throw;
             }
         }
-        return read_var(param::lookup_channel_var(var), channel, offset);
+        return read_var(param::lookup_channel_var(var), channel, offset, io);
     }
 
     param::value_type
-    module::read_var(param::module_var var, size_t offset)
+    module::read_var(param::module_var var, size_t offset, bool io)
     {
         log(log::debug) << module_label(*this)
                         << ": read: var=" << int(var)
@@ -919,19 +959,28 @@ namespace module
         }
         lock_guard guard(lock_);
         param::value_type value;
-        hw::word mem = dsp.read(desc.address);
-        hw::convert(mem, value);
-        module_values[index].value[offset] = value;
+        if (io) {
+            hw::memory::dsp dsp(*this);
+            hw::word mem = dsp.read(desc.address);
+            hw::convert(mem, value);
+            module_values[index].value[offset] = value;
+        } else {
+            value = module_values[index].value[offset];
+        }
         return value;
     }
 
     param::value_type
-    module::read_var(param::channel_var var, size_t channel, size_t offset)
+    module::read_var(param::channel_var var,
+                     size_t channel,
+                     size_t offset,
+                     bool io)
     {
         log(log::debug) << module_label(*this)
                         << ": read: var=" << int(var)
                         << " channel=" << channel
-                        << " offset=" << offset;
+                        << " offset=" << offset
+                        << " io=" << io;
         online_check();
         channel_check(channel);
         const size_t index = static_cast<size_t>(var);
@@ -959,8 +1008,13 @@ namespace module
         }
         lock_guard guard(lock_);
         param::value_type value;
-        hw::convert(dsp.read(channel, desc.address), value);
-        channel_values[channel][index].value[offset] = value;
+        if (io) {
+            hw::memory::dsp dsp(*this);
+            hw::convert(dsp.read(channel, desc.address), value);
+            channel_values[channel][index].value[offset] = value;
+        } else {
+            value = channel_values[channel][index].value[offset];
+        }
         return value;
     }
 
@@ -1020,9 +1074,10 @@ namespace module
                         error::code::channel_invalid_param,
                         "invalid module variable offset: " + desc.name);
         }
-        lock_guard guard(lock_);
         hw::word word;
         hw::convert(value, word);
+        hw::memory::dsp dsp(*this);
+        lock_guard guard(lock_);
         dsp.write(desc.address, word);
         module_values[index].value[offset] = value;
     }
@@ -1064,9 +1119,10 @@ namespace module
                         error::code::channel_invalid_param,
                         "invalid channel variable offset: " + desc.name);
         }
-        lock_guard guard(lock_);
         hw::word word;
         hw::convert(value, word);
+        hw::memory::dsp dsp(*this);
+        lock_guard guard(lock_);
         dsp.write(channel, desc.address, word);
         channel_values[channel][index].value[offset] = value;
     }
@@ -1096,6 +1152,14 @@ namespace module
     void
     module::dma_read(const hw::address source, hw::words& values)
     {
+        dma_read(source, values.data(), values.size());
+    }
+
+    void
+    module::dma_read(const hw::address source,
+                     hw::word_ptr values,
+                     size_t length)
+    {
         online_check();
 
         PLX_DMA_PARAMS dma_params;
@@ -1103,15 +1167,14 @@ namespace module
         memset(&dma_params, 0, sizeof(PLX_DMA_PARAMS));
 
 #if PLX_SDK_VERSION_MAJOR < 6
-        dma_params.u.UserVa = static_cast<PLX_UINT_PTR>(values.data());
+        dma_params.u.UserVa = static_cast<PLX_UINT_PTR>(values);
         dma_params.LocalToPciDma = 1;
 #else
-        dma_params.UserVa = PLX_PTR_TO_INT(values.data());
+        dma_params.UserVa = PLX_PTR_TO_INT(values);
         dma_params.Direction = PLX_DMA_LOC_TO_PCI;
 #endif
         dma_params.LocalAddr = source;
-        dma_params.ByteCount =
-            values.size() * sizeof(hw::words::value_type);
+        dma_params.ByteCount = length * sizeof(hw::words::value_type);
 
         /*
          * Wait while reading. The call will block until the interrupt happens.
@@ -1127,6 +1190,42 @@ namespace module
                         error::code::device_dma_failure,
                         oss.str());
         }
+    }
+
+    bool
+    module::operator==(const rev_tag rev) const
+    {
+        return revision == int(rev);
+    }
+
+    bool
+    module::operator!=(const rev_tag rev) const
+    {
+        return revision != int(rev);
+    }
+
+    bool
+    module::operator>=(const rev_tag rev) const
+    {
+        return revision >= int(rev);
+    }
+
+    bool
+    module::operator<=(const rev_tag rev) const
+    {
+        return revision <= int(rev);
+    }
+
+    bool
+    module::operator<(const rev_tag rev) const
+    {
+        return revision < int(rev);
+    }
+
+    bool
+    module::operator>(const rev_tag rev) const
+    {
+        return revision > int(rev);
     }
 
     void
@@ -1160,6 +1259,133 @@ namespace module
     module::eeprom_v2() const
     {
         return false;
+    }
+
+    void
+    module::module_csrb(param::value_type value)
+    {
+        write_var(param::module_var::ModCSRB, value);
+        hw::run::control(*this, hw::run::control_task::program_fippi);
+
+        param::value_type csr = 0xaa;
+
+        /*
+         * Set up Pull-up resistors
+         */
+        if ((value & (1 << MODCSRB_CPLDPULLUP)) != 0) {
+            csr |= 1 << MODCSRB_CPLDPULLUP;
+        } else {
+            csr &= ~(1 << MODCSRB_CPLDPULLUP);
+        }
+
+        /*
+         * Enable connections of PXI nearest neighbor lines (J2) onto the
+         * backplane if the module is a Rev-B or C module
+         */
+        if (*this == rev_B || *this == rev_C) {
+            csr |= 1 << CPLDCSR_BPCONNECT;
+        }
+
+        write_word(CFG_CTRLCS, csr);
+
+        /*
+         * Set pullups for the SYNCH lines on the backplane
+         */
+        csr = hw::csr::read(*this);
+
+        if ((csr & (1 << MODCSRB_CHASSISMASTER)) != 0) {
+            csr |= 1 << PULLUP_CTRL;
+        } else {
+            csr &= ~(1 << PULLUP_CTRL);
+        }
+        hw::csr::write(*this, csr);
+    }
+
+    void
+    module::slow_filter_range(param::value_type value)
+    {
+        if (value < SLOWFILTERRANGE_MIN) {
+            std::stringstream oss;
+            oss << "slow filter value below min: " << value;
+            throw error(number, slot,
+                        error::code::module_invalid_param,
+                        oss.str());
+        }
+        if (value > SLOWFILTERRANGE_MAX) {
+            std::stringstream oss;
+            oss << "slow filter value above max: " << value;
+            throw error(number, slot,
+                        error::code::module_invalid_param,
+                        oss.str());
+        }
+
+        write_var(param::module_var::SlowFilterRange, value);
+
+        /*
+         * Recompute the FIFO settings
+         */
+        channel::fifo fifo(*this);
+        value = 1 << read_var(param::module_var::FastFilterRange, 0, false);
+        for (size_t channel = 0; channel < num_channels; ++channel) {
+            param::value_type paf_length =
+                read_var(param::channel_var::PAFlength, channel, 0, false);
+            param::value_type trigger_delay =
+                read_var(param::channel_var::TriggerDelay, channel, 0, false);
+            fifo.update(channel, paf_length - (trigger_delay / value));
+        }
+
+        /*
+         * Apply the settings to the FIPPI FPGA
+         */
+        hw::run::control(*this, hw::run::control_task::program_fippi);
+
+        /*
+         * Update the baseline cut value
+         */
+        channel::baseline baseline(*this);
+        for (size_t channel = 0; channel < num_channels; ++channel) {
+            baseline.find_cut(channel);
+        }
+    }
+
+    void
+    module::fast_filter_range(param::value_type value)
+    {
+        if (value > FASTFILTERRANGE_MAX) {
+            value = FASTFILTERRANGE_MAX;
+            log(log::warning) << "setting FAST_FILTER_RANGE to max: "
+                              << FASTFILTERRANGE_MAX;
+        }
+
+#if FASTFILTERRANGE_MIN > 0
+        if (value < FASTFILTERRANGE_MIN) {
+            value = FASTFILTERRANGE_MIN;
+            log(log::warning) << "setting FAST_FILTER_RANGE to min: "
+                              << FASTFILTERRANGE_MIN;
+        }
+#endif
+
+        param::value_type last_ffr =
+            1 << read_var(param::module_var::FastFilterRange, 0, false);
+
+        write_var(param::module_var::FastFilterRange, value);
+
+        /*
+         * Recompute the FIFO settings
+         */
+        channel::fifo fifo(*this);
+        for (size_t channel = 0; channel < num_channels; ++channel) {
+            param::value_type paf_length =
+                read_var(param::channel_var::PAFlength, channel, 0, false);
+            param::value_type trigger_delay =
+                read_var(param::channel_var::TriggerDelay, channel, 0, false);
+            fifo.update(channel, paf_length - (trigger_delay / last_ffr));
+        }
+
+        /*
+         * Apply the settings to the FIPPI FPGA
+         */
+        hw::run::control(*this, hw::run::control_task::program_fippi);
     }
 
     double
@@ -1253,44 +1479,9 @@ namespace module
             read_var(param::module_var::FastFilterRange, 0);
         param::value_type ffr_mask = 1 << fast_filter_range;
         double value =
-            (paf_length - (trigger_delay / ffr_mask)) / (fpga_clk_mhz * ffr_mask);
+            (paf_length - (trigger_delay / ffr_mask)) /
+            (fpga_clk_mhz * ffr_mask);
         return value;
-    }
-
-    bool
-    module::operator==(const rev_tag rev) const
-    {
-        return revision == int(rev);
-    }
-
-    bool
-    module::operator!=(const rev_tag rev) const
-    {
-        return revision != int(rev);
-    }
-
-    bool
-    module::operator>=(const rev_tag rev) const
-    {
-        return revision >= int(rev);
-    }
-
-    bool
-    module::operator<=(const rev_tag rev) const
-    {
-        return revision <= int(rev);
-    }
-
-    bool
-    module::operator<(const rev_tag rev) const
-    {
-        return revision < int(rev);
-    }
-
-    bool
-    module::operator>(const rev_tag rev) const
-    {
-        return revision > int(rev);
     }
 
     void
