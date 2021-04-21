@@ -105,6 +105,7 @@ enum struct code {
     no_memory,
     slot_map_invalid,
     invalid_value,
+    not_supported,
     /*
      * Catch all
      */
@@ -142,9 +143,19 @@ int api_result(enum code type);
 std::string api_result_text(enum code type);
 
 /*
+ * Turn the API result into a result code.
+ */
+int return_code(int result);
+
+/*
  * Unknown error helper.
  */
 int api_result_unknown_error();
+
+/*
+ * Not support helper.
+ */
+int api_result_not_supported();
 }
 }
 }

@@ -115,6 +115,7 @@ static std::map<code, result_code> result_codes =
     { code::no_memory,                 { 800, "no memory" } },
     { code::slot_map_invalid,          { 801, "invalid slot map" } },
     { code::invalid_value,             { 802, "invalid number" } },
+    { code::not_supported,             { 803, "not supported" } },
     /*
      * Catch all
      */
@@ -199,9 +200,21 @@ api_result_text(enum code type)
 }
 
 int
+return_code(int result)
+{
+    return 0 - result;
+}
+
+int
 api_result_unknown_error()
 {
     return api_result(code::unknown_error);
+}
+
+int
+api_result_not_supported()
+{
+    return api_result(code::not_supported);
 }
 
 }

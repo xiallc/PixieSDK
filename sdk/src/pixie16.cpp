@@ -46,7 +46,7 @@
 /*
  * Make a local type for the log.
  */
-typedef xia::pixie::log xia_logger;
+typedef xia::pixie::log xia_log;
 
 /*
  * Boot patterns
@@ -64,12 +64,14 @@ typedef xia::pixie::log xia_logger;
 static xia::pixie::crate::crate crate;
 
 /*
- * Return an error code for an unhandled exception.
+ * Return an error code for an unhandled exception. If true the exception is
+ * thrown and you can catch it in a debugger or see it on the console to find
+ * out what it is.
  */
 static bool throw_unhandled;
 
 /*
- * Type safe subtraction of the module number, 0 means all.
+ * Type safe subtraction of the module number, 0 is an error.
  */
 static size_t
 api_mod_num(unsigned short mod_num) {
@@ -78,27 +80,47 @@ api_mod_num(unsigned short mod_num) {
     return static_cast<size_t>(mod_num - 1);
 }
 
-PIXIE_EXPORT int PIXIE_API PixieAcquireADCTrace(unsigned short ModNum) {
-    (void) ModNum;
-    return -11111;
+static int
+not_supprted()
+{
+    int error = xia::pixie::error::api_result_not_supported();
+    return xia::pixie::error::return_code(error);
 }
 
-PIXIE_EXPORT int PIXIE_API PixieAcquireBaselines(unsigned short ModNum) {
-    (void) ModNum;
-    return -11111;
+PIXIE_EXPORT int PIXIE_API
+PixieAcquireADCTrace(unsigned short ModNum)
+{
+    xia_log(xia_log::info) << "PixieAcquireADCTrace: ModNum=" << ModNum;
+
+    return not_supprted();
 }
 
-PIXIE_EXPORT int PIXIE_API PixieAdjustOffsets(unsigned short ModNum) {
-    (void) ModNum;
-    return -11111;
+PIXIE_EXPORT int PIXIE_API
+PixieAcquireBaselines(unsigned short ModNum)
+{
+    xia_log(xia_log::info) << "PixieAcquireBaselines: ModNum=" << ModNum;
+
+    return not_supprted();
 }
 
-PIXIE_EXPORT int PIXIE_API Pixie16BLcutFinder(unsigned short ModNum, unsigned short ChanNum,
-                                              unsigned int* BLcut) {
-    (void) ModNum;
-    (void) ChanNum;
+PIXIE_EXPORT int PIXIE_API
+PixieAdjustOffsets(unsigned short ModNum)
+{
+    xia_log(xia_log::info) << "PixieAdjustOffsets: ModNum=" << ModNum;
+
+    return not_supprted();
+}
+
+PIXIE_EXPORT int PIXIE_API
+Pixie16BLcutFinder(unsigned short ModNum,
+                   unsigned short ChanNum,
+                   unsigned int* BLcut)
+{
+    xia_log(xia_log::info) << "Pixie16BLcutFinder: ModNum=" << ModNum
+                           << " ChanNum=" << ChanNum;
+
     (void) BLcut;
-    return -11111;
+    return not_supprted();
 }
 
 static void
@@ -146,19 +168,19 @@ PixieBootModule(const char* ComFPGAConfigFile,
                 unsigned short ModNum,
                 unsigned short BootPattern)
 {
-    xia_logger(xia_logger::info) << "PixieBootModule: ModNum=" << ModNum
-                   << std::hex
-                   << " BootPattern=0x" << BootPattern;
-    xia_logger(xia_logger::info) << "PixieBootModule: ModNum=" << ModNum
-                   << " ComFPGAConfigFile=" << ComFPGAConfigFile;
-    xia_logger(xia_logger::info) << "PixieBootModule: ModNum=" << ModNum
-                   << " SPFPGAConfigFile=" << SPFPGAConfigFile;
-    xia_logger(xia_logger::info) << "PixieBootModule: ModNum=" << ModNum
-                   << " DSPCodeFile=" << DSPCodeFile;
-    xia_logger(xia_logger::info) << "PixieBootModule: ModNum=" << ModNum
-                   << " DSPParFile=" << DSPParFile;
-    xia_logger(xia_logger::info) << "PixieBootModule: ModNum=" << ModNum
-                   << " DSPVarFile=" << DSPVarFile;
+    xia_log(xia_log::info) << "PixieBootModule: ModNum=" << ModNum
+                           << std::hex
+                           << " BootPattern=0x" << BootPattern;
+    xia_log(xia_log::info) << "PixieBootModule: ModNum=" << ModNum
+                           << " ComFPGAConfigFile=" << ComFPGAConfigFile;
+    xia_log(xia_log::info) << "PixieBootModule: ModNum=" << ModNum
+                           << " SPFPGAConfigFile=" << SPFPGAConfigFile;
+    xia_log(xia_log::info) << "PixieBootModule: ModNum=" << ModNum
+                           << " DSPCodeFile=" << DSPCodeFile;
+    xia_log(xia_log::info) << "PixieBootModule: ModNum=" << ModNum
+                           << " DSPParFile=" << DSPParFile;
+    xia_log(xia_log::info) << "PixieBootModule: ModNum=" << ModNum
+                           << " DSPVarFile=" << DSPVarFile;
 
     try {
         if (ModNum == 0) {
@@ -182,77 +204,108 @@ PixieBootModule(const char* ComFPGAConfigFile,
                             BootPattern);
         }
     } catch (xia::pixie::error::error& e) {
-        xia_logger(xia_logger::error) << e;
+        xia_log(xia_log::error) << e;
         return e.return_code();
     } catch (std::exception& e) {
-        xia_logger(xia_logger::error) << "unknown error: " << e.what();
+        xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
         if (throw_unhandled) {
             throw;
         }
-        xia_logger(xia_logger::error) << "unknown error: unhandled exception";
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
 
     return 0;
 }
 
-PIXIE_EXPORT int PIXIE_API PixieCheckExternalFIFOStatus(unsigned int* nFIFOWords, unsigned short ModNum) {
-    (void) ModNum;
+PIXIE_EXPORT int PIXIE_API
+PixieCheckExternalFIFOStatus(unsigned int* nFIFOWords,
+                             unsigned short ModNum)
+{
+    xia_log(xia_log::info) << "PixieCheckExternalFIFOStatus: ModNum=" << ModNum;
+
     (void) nFIFOWords;
-    return -11111;
+    return not_supprted();
 }
 
-PIXIE_EXPORT int PIXIE_API PixieCheckRunStatus(unsigned short ModNum) {
-    (void) ModNum;
-    return -11111;
+PIXIE_EXPORT int PIXIE_API
+PixieCheckRunStatus(unsigned short ModNum)
+{
+    xia_log(xia_log::info) << "PixieCheckRunStatus: ModNum=" << ModNum;
+
+    return not_supprted();
 }
 
-PIXIE_EXPORT double PIXIE_API PixieComputeInputCountRate(unsigned int* Statistics, unsigned short ModNum,
-                                  unsigned short ChanNum) {
-    (void) ModNum;
+PIXIE_EXPORT double PIXIE_API
+PixieComputeInputCountRate(unsigned int* Statistics,
+                           unsigned short ModNum,
+                           unsigned short ChanNum)
+{
+    xia_log(xia_log::info) << "PixieComputeInputCountRate: ModNum=" << ModNum
+                           << " ChanNum=" << ChanNum;
+
     (void) Statistics;
-    (void) ChanNum;
-    return -11111;
+    return not_supprted();
 }
 
-PIXIE_EXPORT double PIXIE_API PixieComputeLiveTime(unsigned int* Statistics, unsigned short ModNum, unsigned short ChanNum) {
+PIXIE_EXPORT double PIXIE_API
+PixieComputeLiveTime(unsigned int* Statistics,
+                     unsigned short ModNum,
+                     unsigned short ChanNum)
+{
+    xia_log(xia_log::info) << "PixieComputeLiveTime: ModNum=" << ModNum
+                           << " ChanNum=" << ChanNum;
+
     (void) Statistics;
-    (void) ModNum;
-    (void) ChanNum;
-    return -11111;
+    return not_supprted();
 }
 
-PIXIE_EXPORT double PIXIE_API PixieComputeOutputCountRate(unsigned int* Statistics, unsigned short ModNum,
-                                   unsigned short ChanNum) {
+PIXIE_EXPORT double PIXIE_API
+PixieComputeOutputCountRate(unsigned int* Statistics,
+                            unsigned short ModNum,
+                            unsigned short ChanNum)
+{
+    xia_log(xia_log::info) << "PixieComputeOutputCountRate: ModNum=" << ModNum
+                           << " ChanNum=" << ChanNum;
+
     (void) Statistics;
-    (void) ModNum;
-    (void) ChanNum;
-    return -11111;
+    return not_supprted();
 }
 
-PIXIE_EXPORT double PIXIE_API PixieComputeProcessedEvents(unsigned int* Statistics, unsigned short ModNum) {
+PIXIE_EXPORT double PIXIE_API
+PixieComputeProcessedEvents(unsigned int* Statistics,
+                            unsigned short ModNum)
+{
+    xia_log(xia_log::info) << "PixieComputeProcessedEvents: ModNum=" << ModNum;
+
     (void) Statistics;
-    (void) ModNum;
-    return -11111;
+    return not_supprted();
 }
 
-PIXIE_EXPORT double PIXIE_API PixieComputeRealTime(unsigned int* Statistics, unsigned short ModNum) {
+PIXIE_EXPORT double PIXIE_API
+PixieComputeRealTime(unsigned int* Statistics,
+                     unsigned short ModNum)
+{
+    xia_log(xia_log::info) << "PixieComputeRealTime: ModNum=" << ModNum;
+
     (void) Statistics;
-    (void) ModNum;
-    return -11111;
+    return not_supprted();
 }
 
-PIXIE_EXPORT int PIXIE_API PixieEndRun(unsigned short ModNum) {
-    (void) ModNum;
-    return -11111;
+PIXIE_EXPORT int PIXIE_API
+PixieEndRun(unsigned short ModNum)
+{
+    xia_log(xia_log::info) << "PixieEndRun: ModNum=" << ModNum;
+
+    return not_supprted();
 }
 
 PIXIE_EXPORT int PIXIE_API
 PixieExitSystem(unsigned short ModNum)
 {
-    xia_logger(xia_logger::info) << "PixieExitSystem: ModNum=" << ModNum;
+    xia_log(xia_log::info) << "PixieExitSystem: ModNum=" << ModNum;
 
     try {
         if (ModNum == 0) {
@@ -264,16 +317,16 @@ PixieExitSystem(unsigned short ModNum)
             module.handle.close();
         }
     } catch (xia::pixie::error::error& e) {
-        xia_logger(xia_logger::error) << e;
+        xia_log(xia_log::error) << e;
         return e.return_code();
     } catch (std::exception& e) {
-        xia_logger(xia_logger::error) << "unknown error: " << e.what();
+        xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
         if (throw_unhandled) {
             throw;
         }
-        xia_logger(xia_logger::error) << "unknown error: unhandled exception";
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
 
@@ -288,11 +341,11 @@ PixieInitSystem(unsigned short NumModules,
     /*
      * Create a log file.
      */
-    xia::pixie::logging::start("log", "PixieMsg.txt", xia_logger::info, false);
+    xia::pixie::logging::start("log", "PixieMsg.txt", xia_log::info, false);
 
-    xia_logger(xia_logger::info) << "PixieInitSystem: NumModules=" << NumModules
-                   << " PXISlotMap=" << PXISlotMap
-                   << " OfflineMode=" << OfflineMode;
+    xia_log(xia_log::info) << "PixieInitSystem: NumModules=" << NumModules
+                           << " PXISlotMap=" << PXISlotMap
+                           << " OfflineMode=" << OfflineMode;
 
     /*
      * Not supported. We now have tools that can access the DSP variables.
@@ -312,44 +365,53 @@ PixieInitSystem(unsigned short NumModules,
             xia::pixie::module::number_slots numbers;
             for (int i = 0; i < static_cast<int>(NumModules); ++i) {
                 typedef xia::pixie::module::number_slot number_slot;
-                xia_logger(xia_logger::info) << "PixieInitSystem: slot map: "
+                xia_log(xia_log::info) << "PixieInitSystem: slot map: "
                                << PXISlotMap[i] << " => " << i + 1;
                 numbers.push_back(number_slot(i, PXISlotMap[i]));
             }
             crate.assign(numbers);
         }
     } catch (xia::pixie::error::error& e) {
-        xia_logger(xia_logger::error) << e;
+        xia_log(xia_log::error) << e;
         return e.return_code();
     } catch (std::exception& e) {
-        xia_logger(xia_logger::error) << "unknown error: " << e.what();
+        xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
         if (throw_unhandled) {
             throw;
         }
-        xia_logger(xia_logger::error) << "unknown error: unhandled exception";
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
 
     return 0;
 }
 
-PIXIE_EXPORT int PIXIE_API PixieReadDataFromExternalFIFO(unsigned int* ExtFIFO_Data, unsigned int nFIFOWords,
-                                  unsigned short ModNum) {
+PIXIE_EXPORT int PIXIE_API
+PixieReadDataFromExternalFIFO(unsigned int* ExtFIFO_Data,
+                              unsigned int nFIFOWords,
+                              unsigned short ModNum)
+{
+    xia_log(xia_log::info) << "PixieReadDataFromExternalFIFO: ModNum=" << ModNum
+                           << " nFIFOWords=" << nFIFOWords;
+
     (void) ExtFIFO_Data;
-    (void) nFIFOWords;
-    (void) ModNum;
-    return -11111;
+    return not_supprted();
 }
 
-PIXIE_EXPORT int PIXIE_API PixieReadHistogramFromModule(unsigned int* Histogram, unsigned int NumWords,
-                                 unsigned short ModNum, unsigned short ChanNum) {
+PIXIE_EXPORT int PIXIE_API
+PixieReadHistogramFromModule(unsigned int* Histogram,
+                             unsigned int NumWords,
+                             unsigned short ModNum,
+                             unsigned short ChanNum)
+{
+    xia_log(xia_log::info) << "PixieReadHistogramFromModule: ModNum=" << ModNum
+                           << " ChanNum=" << ChanNum
+                           << " NumWords=" << NumWords;
+
     (void) Histogram;
-    (void) NumWords;
-    (void) ModNum;
-    (void) ChanNum;
-    return -11111;
+    return not_supprted();
 }
 
 PIXIE_EXPORT int PIXIE_API
@@ -359,96 +421,151 @@ PixieReadModuleInfo(unsigned short ModNum,
                     unsigned short* ModADCBits,
                     unsigned short* ModADCMSPS)
 {
-    (void) ModNum;
+    xia_log(xia_log::info) << "PixieReadModuleInfo: ModNum=" << ModNum;
+
     (void) ModRev;
     (void) ModSerNum;
     (void) ModADCBits;
     (void) ModADCMSPS;
-    return -11111;
+    return not_supprted();
 }
 
-PIXIE_EXPORT int PIXIE_API PixieReadSglChanADCTrace(unsigned short* Trace_Buffer, unsigned int Trace_Length,
-                             unsigned short ModNum, unsigned short ChanNum) {
+PIXIE_EXPORT int PIXIE_API
+PixieReadSglChanADCTrace(unsigned short* Trace_Buffer,
+                         unsigned int Trace_Length,
+                         unsigned short ModNum,
+                         unsigned short ChanNum)
+{
+    xia_log(xia_log::info) << "PixieReadSglChanADCTrace: ModNum=" << ModNum
+                           << " ChanNum=" << ChanNum
+                           << " Trace_Length=" << Trace_Length;
+
     (void) Trace_Buffer;
-    (void) Trace_Length;
-    (void) ModNum;
-    (void) ChanNum;
-    return -11111;
+    return not_supprted();
 }
 
-PIXIE_EXPORT int PIXIE_API PixieReadSglChanBaselines(double* Baselines, double* TimeStamps, unsigned short NumBases,
-                              unsigned short ModNum, unsigned short ChanNum) {
+PIXIE_EXPORT int PIXIE_API
+PixieReadSglChanBaselines(double* Baselines,
+                          double* TimeStamps,
+                          unsigned short NumBases,
+                          unsigned short ModNum,
+                          unsigned short ChanNum)
+{
+    xia_log(xia_log::info) << "PixieReadSglChanADCTrace: ModNum=" << ModNum
+                           << " ChanNum=" << ChanNum
+                           << " NumBases=" << NumBases;
+
     (void) Baselines;
     (void) TimeStamps;
-    (void) NumBases;
-    (void) ModNum;
-    (void) ChanNum;
-    return -11111;
+    return not_supprted();
 }
 
-PIXIE_EXPORT int PIXIE_API PixieReadSglChanPar(const char* ChanParName, double* ChanParData, unsigned short ModNum,
-                        unsigned short ChanNum) {
+PIXIE_EXPORT int PIXIE_API
+PixieReadSglChanPar(const char* ChanParName,
+                    double* ChanParData,
+                    unsigned short ModNum,
+                    unsigned short ChanNum)
+{
+    xia_log(xia_log::info) << "PixieReadSglChanPar: ModNum=" << ModNum
+                           << " ChanNum=" << ChanNum;
+
     (void) ChanParName;
     (void) ChanParData;
-    (void) ModNum;
-    (void) ChanNum;
-    return -11111;
+    return not_supprted();
 }
 
-PIXIE_EXPORT int PIXIE_API PixieReadSglModPar(const char* ModParName, unsigned int* ModParData, unsigned short ModNum) {
-    (void) ModParName;
+PIXIE_EXPORT int PIXIE_API
+PixieReadSglModPar(const char* ModParName,
+                   unsigned int* ModParData,
+                   unsigned short ModNum)
+{
+    xia_log(xia_log::info) << "PixieReadSglModPar: ModNum=" << ModNum
+                           << " ModParName=" << ModParName;
+
     (void) ModParData;
-    (void) ModNum;
-    return -11111;
+    return not_supprted();
 }
 
-PIXIE_EXPORT int PIXIE_API PixieReadStatisticsFromModule(unsigned int* Statistics, unsigned short ModNum) {
+PIXIE_EXPORT int PIXIE_API
+PixieReadStatisticsFromModule(unsigned int* Statistics,
+                              unsigned short ModNum)
+{
+    xia_log(xia_log::info) << "PixieReadStatisticsFromModule: ModNum=" << ModNum;
+
     (void) Statistics;
-    (void) ModNum;
-    return -11111;
+    return not_supprted();
 }
 
-PIXIE_EXPORT int PIXIE_API PixieSaveDSPParametersToFile(const char* FileName) {
-    (void) FileName;
-    return -11111;
+PIXIE_EXPORT int PIXIE_API
+PixieSaveDSPParametersToFile(const char* FileName)
+{
+    xia_log(xia_log::info) << "PixieReadStatisticsFromModule: FileName=" << FileName;
+
+    return not_supprted();
 }
 
-PIXIE_EXPORT int PIXIE_API PixieSaveHistogramToFile(const char* FileName, unsigned short ModNum) {
-    (void) FileName;
-    (void) ModNum;
-    return -11111;
+PIXIE_EXPORT int PIXIE_API
+PixieSaveHistogramToFile(const char* FileName,
+                         unsigned short ModNum)
+{
+    xia_log(xia_log::info) << "PixieSaveHistogramToFile: ModNum=" << ModNum
+                           << " FileName=" << FileName;
+
+    return not_supprted();
 }
 
-PIXIE_EXPORT int PIXIE_API PixieSetDACs(unsigned short ModNum) {
-    (void) ModNum;
-    return -11111;
+PIXIE_EXPORT int PIXIE_API
+PixieSetDACs(unsigned short ModNum)
+{
+    xia_log(xia_log::info) << "PixieSetDACs: ModNum=" << ModNum;
+
+    return not_supprted();
 }
 
-PIXIE_EXPORT int PIXIE_API PixieStartHistogramRun(unsigned short ModNum, unsigned short mode) {
-    (void) ModNum;
-    (void) mode;
-    return -11111;
+PIXIE_EXPORT int PIXIE_API
+PixieStartHistogramRun(unsigned short ModNum,
+                       unsigned short mode)
+{
+    xia_log(xia_log::info) << "PixieStartHistogramRun: ModNum=" << ModNum
+                           << " mode=" << mode;
+
+    return not_supprted();
 }
 
-PIXIE_EXPORT int PIXIE_API PixieStartListModeRun(unsigned short ModNum, unsigned short RunType, unsigned short mode) {
-    (void) ModNum;
-    (void) RunType;
-    (void) mode;
-    return -11111;
+PIXIE_EXPORT int PIXIE_API
+PixieStartListModeRun(unsigned short ModNum,
+                      unsigned short RunType,
+                      unsigned short mode)
+{
+    xia_log(xia_log::info) << "PixieStartListModeRun: ModNum=" << ModNum
+                           << " RunType=" << RunType
+                           << " mode=" << mode;
+
+    return not_supprted();
 }
 
-PIXIE_EXPORT int PIXIE_API PixieWriteSglChanPar(const char* ChanParName, double ChanParData, unsigned short ModNum,
-                         unsigned short ChanNum) {
-    (void) ChanParName;
-    (void) ChanParData;
-    (void) ModNum;
-    (void) ChanNum;
-    return -11111;
+PIXIE_EXPORT int PIXIE_API
+PixieWriteSglChanPar(const char* ChanParName,
+                     double ChanParData,
+                     unsigned short ModNum,
+                     unsigned short ChanNum)
+{
+    xia_log(xia_log::info) << "PixieWriteSglChanPar: ModNum=" << ModNum
+                           << " ChanNum=" << ChanNum
+                           << " ChanParName=" << ChanParName
+                           << " ChanParData=" << ChanParData;
+
+    return not_supprted();
 }
 
-PIXIE_EXPORT int PIXIE_API PixieWriteSglModPar(const char* ModParName, unsigned int ModParData, unsigned short ModNum) {
-    (void) ModParName;
-    (void) ModParData;
-    (void) ModNum;
-    return -11111;
+PIXIE_EXPORT int PIXIE_API
+PixieWriteSglModPar(const char* ModParName,
+                    unsigned int ModParData,
+                    unsigned short ModNum)
+{
+    xia_log(xia_log::info) << "PixieWriteSglModPar: ModNum=" << ModNum
+                           << " ModParName=" << ModParName
+                           << " ModParData=" << ModParData;
+
+    return not_supprted();
 }
