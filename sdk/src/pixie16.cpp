@@ -71,19 +71,8 @@ static xia::pixie::crate::crate crate;
  */
 static bool throw_unhandled;
 
-/*
- * Type safe subtraction of the module number, 0 is an error.
- */
-static size_t
-api_mod_num(unsigned short mod_num) {
-    if (mod_num == 0)
-        throw xia_error(xia_error::code::module_number_invalid,
-                        "module number is 0");
-    return static_cast<size_t>(mod_num - 1);
-}
-
 static int
-not_supprted()
+not_supported()
 {
     int error = xia::pixie::error::api_result_not_supported();
     return xia::pixie::error::return_code(error);
@@ -94,7 +83,7 @@ PixieAcquireADCTrace(unsigned short ModNum)
 {
     xia_log(xia_log::info) << "PixieAcquireADCTrace: ModNum=" << ModNum;
 
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT int PIXIE_API
@@ -102,7 +91,7 @@ PixieAcquireBaselines(unsigned short ModNum)
 {
     xia_log(xia_log::info) << "PixieAcquireBaselines: ModNum=" << ModNum;
 
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT int PIXIE_API
@@ -110,7 +99,7 @@ PixieAdjustOffsets(unsigned short ModNum)
 {
     xia_log(xia_log::info) << "PixieAdjustOffsets: ModNum=" << ModNum;
 
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT int PIXIE_API
@@ -122,7 +111,7 @@ Pixie16BLcutFinder(unsigned short ModNum,
                            << " ChanNum=" << ChanNum;
 
     (void) BLcut;
-    return not_supprted();
+    return not_supported();
 }
 
 static void
@@ -186,6 +175,7 @@ PixieBootModule(const char* ComFPGAConfigFile,
 
     try {
         if (ModNum == crate.num_modules) {
+            xia::pixie::crate::crate::user user(crate);
             for (auto& module : crate.modules) {
                 PixieBootModule(module,
                                 ComFPGAConfigFile,
@@ -196,7 +186,7 @@ PixieBootModule(const char* ComFPGAConfigFile,
                                 BootPattern);
             }
         } else {
-            xia::pixie::crate::module_handle module(crate, api_mod_num(ModNum));
+            xia::pixie::crate::module_handle module(crate, ModNum);
             PixieBootModule(module.handle,
                             ComFPGAConfigFile,
                             SPFPGAConfigFile,
@@ -229,7 +219,7 @@ PixieCheckExternalFIFOStatus(unsigned int* nFIFOWords,
     xia_log(xia_log::info) << "PixieCheckExternalFIFOStatus: ModNum=" << ModNum;
 
     (void) nFIFOWords;
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT int PIXIE_API
@@ -237,7 +227,7 @@ PixieCheckRunStatus(unsigned short ModNum)
 {
     xia_log(xia_log::info) << "PixieCheckRunStatus: ModNum=" << ModNum;
 
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT double PIXIE_API
@@ -249,7 +239,7 @@ PixieComputeInputCountRate(unsigned int* Statistics,
                            << " ChanNum=" << ChanNum;
 
     (void) Statistics;
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT double PIXIE_API
@@ -261,7 +251,7 @@ PixieComputeLiveTime(unsigned int* Statistics,
                            << " ChanNum=" << ChanNum;
 
     (void) Statistics;
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT double PIXIE_API
@@ -273,7 +263,7 @@ PixieComputeOutputCountRate(unsigned int* Statistics,
                            << " ChanNum=" << ChanNum;
 
     (void) Statistics;
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT double PIXIE_API
@@ -283,7 +273,7 @@ PixieComputeProcessedEvents(unsigned int* Statistics,
     xia_log(xia_log::info) << "PixieComputeProcessedEvents: ModNum=" << ModNum;
 
     (void) Statistics;
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT double PIXIE_API
@@ -293,7 +283,7 @@ PixieComputeRealTime(unsigned int* Statistics,
     xia_log(xia_log::info) << "PixieComputeRealTime: ModNum=" << ModNum;
 
     (void) Statistics;
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT int PIXIE_API
@@ -301,7 +291,7 @@ PixieEndRun(unsigned short ModNum)
 {
     xia_log(xia_log::info) << "PixieEndRun: ModNum=" << ModNum;
 
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT int PIXIE_API
@@ -310,12 +300,14 @@ PixieExitSystem(unsigned short ModNum)
     xia_log(xia_log::info) << "PixieExitSystem: ModNum=" << ModNum;
 
     try {
+        crate.ready();
         if (ModNum == crate.num_modules) {
+            xia::pixie::crate::crate::user user(crate);
             for (auto& module : crate.modules) {
                 module.close();
             }
         } else {
-            xia::pixie::crate::module_handle module(crate, api_mod_num(ModNum));
+            xia::pixie::crate::module_handle module(crate, ModNum);
             module.handle.close();
         }
     } catch (xia_error& e) {
@@ -353,7 +345,7 @@ PixieInitSystem(unsigned short NumModules,
      * Not supported. We now have tools that can access the DSP variables.
      */
     if (OfflineMode != 0) {
-        return -11111;
+        return not_supported();
     }
 
     try {
@@ -399,7 +391,7 @@ PixieReadDataFromExternalFIFO(unsigned int* ExtFIFO_Data,
                            << " nFIFOWords=" << nFIFOWords;
 
     (void) ExtFIFO_Data;
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT int PIXIE_API
@@ -413,7 +405,7 @@ PixieReadHistogramFromModule(unsigned int* Histogram,
                            << " NumWords=" << NumWords;
 
     (void) Histogram;
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT int PIXIE_API
@@ -429,7 +421,7 @@ PixieReadModuleInfo(unsigned short ModNum,
     (void) ModSerNum;
     (void) ModADCBits;
     (void) ModADCMSPS;
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT int PIXIE_API
@@ -443,7 +435,7 @@ PixieReadSglChanADCTrace(unsigned short* Trace_Buffer,
                            << " Trace_Length=" << Trace_Length;
 
     (void) Trace_Buffer;
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT int PIXIE_API
@@ -459,7 +451,7 @@ PixieReadSglChanBaselines(double* Baselines,
 
     (void) Baselines;
     (void) TimeStamps;
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT int PIXIE_API
@@ -473,7 +465,7 @@ PixieReadSglChanPar(const char* ChanParName,
 
     (void) ChanParName;
     (void) ChanParData;
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT int PIXIE_API
@@ -485,7 +477,7 @@ PixieReadSglModPar(const char* ModParName,
                            << " ModParName=" << ModParName;
 
     (void) ModParData;
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT int PIXIE_API
@@ -495,7 +487,7 @@ PixieReadStatisticsFromModule(unsigned int* Statistics,
     xia_log(xia_log::info) << "PixieReadStatisticsFromModule: ModNum=" << ModNum;
 
     (void) Statistics;
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT int PIXIE_API
@@ -503,7 +495,7 @@ PixieSaveDSPParametersToFile(const char* FileName)
 {
     xia_log(xia_log::info) << "PixieReadStatisticsFromModule: FileName=" << FileName;
 
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT int PIXIE_API
@@ -513,7 +505,7 @@ PixieSaveHistogramToFile(const char* FileName,
     xia_log(xia_log::info) << "PixieSaveHistogramToFile: ModNum=" << ModNum
                            << " FileName=" << FileName;
 
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT int PIXIE_API
@@ -521,7 +513,7 @@ PixieSetDACs(unsigned short ModNum)
 {
     xia_log(xia_log::info) << "PixieSetDACs: ModNum=" << ModNum;
 
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT int PIXIE_API
@@ -531,7 +523,7 @@ PixieStartHistogramRun(unsigned short ModNum,
     xia_log(xia_log::info) << "PixieStartHistogramRun: ModNum=" << ModNum
                            << " mode=" << mode;
 
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT int PIXIE_API
@@ -543,7 +535,7 @@ PixieStartListModeRun(unsigned short ModNum,
                            << " RunType=" << RunType
                            << " mode=" << mode;
 
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT int PIXIE_API
@@ -557,7 +549,7 @@ PixieWriteSglChanPar(const char* ChanParName,
                            << " ChanParName=" << ChanParName
                            << " ChanParData=" << ChanParData;
 
-    return not_supprted();
+    return not_supported();
 }
 
 PIXIE_EXPORT int PIXIE_API
@@ -569,5 +561,5 @@ PixieWriteSglModPar(const char* ModParName,
                            << " ModParName=" << ModParName
                            << " ModParData=" << ModParData;
 
-    return not_supprted();
+    return not_supported();
 }
