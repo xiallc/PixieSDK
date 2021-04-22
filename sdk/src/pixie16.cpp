@@ -642,5 +642,36 @@ PixieWriteSglModPar(const char* ModParName,
                            << " ModParName=" << ModParName
                            << " ModParData=" << ModParData;
 
-    return not_supported();
+    try {
+        crate.ready();
+        bool bcast;
+        if (ModNum == crate.num_modules) {
+            bcast = true;
+        } else {
+            xia::pixie::crate::module_handle module(crate, ModNum);
+            bcast = module.handle.write(ModParName, ModParData);
+        }
+        if (bcast) {
+            xia::pixie::crate::crate::user user(crate);
+            for (auto& module : crate.modules) {
+                if (ModNum != module.number) {
+                    module.write(ModParName, ModParData);
+                }
+            }
+        }
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+        return e.return_code();
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::api_result_unknown_error();
+    } catch (...) {
+        if (throw_unhandled) {
+            throw;
+        }
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::api_result_unknown_error();
+    }
+
+    return 0;
 }
