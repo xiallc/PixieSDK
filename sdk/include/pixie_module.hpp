@@ -323,6 +323,12 @@ namespace module
                        size_t offset = 0);
 
         /*
+         * Run control and status
+         */
+        void run_end();
+        bool run_active();
+
+        /*
          * Output the module details.
          */
         void output(std::ostream& out) const;

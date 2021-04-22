@@ -1128,6 +1128,22 @@ namespace module
     }
 
     void
+    module::run_end()
+    {
+        online_check();
+        lock_guard guard(lock_);
+        hw::run::end(*this);
+    }
+
+    bool
+    module::run_active()
+    {
+        online_check();
+        lock_guard guard(lock_);
+        return hw::run::active(*this);
+    }
+
+    void
     module::output(std::ostream& out) const
     {
         ostream_guard flags(out);
