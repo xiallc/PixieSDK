@@ -501,11 +501,32 @@ PixieReadSglChanPar(const char* ChanParName,
                     unsigned short ChanNum)
 {
     xia_log(xia_log::info) << "PixieReadSglChanPar: ModNum=" << ModNum
-                           << " ChanNum=" << ChanNum;
+                           << " ChanNum=" << ChanNum
+                           << " ChanParName=" << ChanParName;
 
-    (void) ChanParName;
-    (void) ChanParData;
-    return not_supported();
+    try {
+        crate.ready();
+        xia::pixie::crate::module_handle module(crate, ModNum);
+        *ChanParData = module.handle.read(ChanParName, ChanNum);
+        xia_log(xia_log::debug) << "PixieReadSglChanPar: ModNum=" << ModNum
+                                << " ChanNum=" << ChanNum
+                                << " ChanParName=" << ChanParName
+                                << " ChanParData=" << *ChanParData;
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+        return e.return_code();
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::api_result_unknown_error();
+    } catch (...) {
+        if (throw_unhandled) {
+            throw;
+        }
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::api_result_unknown_error();
+    }
+
+    return 0;
 }
 
 PIXIE_EXPORT int PIXIE_API
