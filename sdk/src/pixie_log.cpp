@@ -221,7 +221,7 @@ outputter::write(const log::level entry_level, const std::string& entry)
         auto as_time_t = std::chrono::system_clock::to_time_t(now);
         const auto now_ms =
             std::chrono::duration_cast<ms>(now.time_since_epoch());
-        out << std::put_time(std::localtime(&as_time_t), "%Y-%m-%d %T")
+        out << std::put_time(std::localtime(&as_time_t), "%Y-%m-%dT%T")
             << std::setfill('0')
             << '.' << std::setw(3) << now_ms.count() % 1000
             << ' ';
