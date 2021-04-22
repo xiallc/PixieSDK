@@ -282,7 +282,7 @@ stop(const std::string name)
         }
     }
     throw error::error(error::code::internal_failure,
-                       "invald log output name in stop");
+                       "invalid log output name in stop");
 }
 
 void
@@ -295,7 +295,7 @@ set_level(const std::string name, log::level level)
         }
     }
     throw error::error(error::code::internal_failure,
-                       "invald log output name in set level");
+                       "invalid log output name in set level");
 }
 
 void
@@ -308,7 +308,7 @@ set_level_stamp(const std::string name, bool level)
         }
     }
     throw error::error(error::code::internal_failure,
-                       "invald log output name in set level stamp");
+                       "invalid log output name in set level stamp");
 }
 
 void
@@ -321,7 +321,7 @@ set_datetime_stamp(const std::string name, bool datetime)
         }
     }
     throw error::error(error::code::internal_failure,
-                       "invald log output name in set datetime stamp");
+                       "invalid log output name in set datetime stamp");
 }
 
 void
@@ -334,7 +334,7 @@ set_line_numbers(const std::string name, bool line_numbers)
         }
     }
     throw error::error(error::code::internal_failure,
-                       "invald log output name in set line numbers");
+                       "invalid log output name in set line numbers");
 }
 
 bool level_logging(log::level level)
