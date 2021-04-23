@@ -294,7 +294,7 @@ main(int argc, char* argv[])
         fw_file_flag(option_group,
                      "fw_file_flag",
                      "Firmware file(s) to load. Can be repeated. "
-                     "Takes the form rev:rev-num:type:name"
+                     "Takes the form rev:mod-rev-num:type:name"
                      "Ex. r33339:15:sys:syspixie16_revfgeneral_adc250mhz_r33339.bin",
                      {'F', "firmware"});
     args::ValueFlagList<std::string>
@@ -308,6 +308,11 @@ main(int argc, char* argv[])
                       "log_file_flag",
                       "Log file. Use `stdout` for the console.",
                       {'l', "log"});
+    args::ValueFlagList<size_t>
+        slot_map_flag(option_group,
+                      "slot_map_flag",
+                      "A list of slots used to define the slot to index mapping.",
+                      {'s', "slot_map"});
 
     args::Group command_group(parser, "Commands");
     args::PositionalList<std::string>
@@ -368,6 +373,13 @@ main(int argc, char* argv[])
         crate.initialize(num_modules, reg_trace);
         std::cout << "modules found: " << crate.modules.size()
                   << std::endl;
+
+        if (slot_map_flag) {
+            xia::pixie::module::number_slots slot_map;
+            for (const auto& slot : args::get(slot_map_flag))
+                slot_map.emplace_back(std::make_pair(slot_map.size(), slot));
+            crate.assign(slot_map);
+        }
 
         crate.set_firmware();
         crate.probe();
