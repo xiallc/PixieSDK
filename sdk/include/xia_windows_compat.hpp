@@ -36,6 +36,7 @@
 *----------------------------------------------------------------------**/
 
 #if defined(_WIN64) || defined(_WIN32)
+#define _USE_MATH_DEFINES
 #define PIXIE_EXPORT __declspec(dllexport)
 #define PIXIE_API _stdcall
 /*

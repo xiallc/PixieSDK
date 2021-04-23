@@ -197,8 +197,7 @@ baseline::compute_cut(size_t channel)
     }
 
     if (sdev_count > 0) {
-        constexpr double PI = double(3.14159265358979);
-        constexpr double sqrpi = std::sqrt(PI / 2);
+        const double sqrpi = std::sqrt(M_PI_2);
         double bl_sigma = sdev * sqrpi / sdev_count;
         bl_cut = static_cast<param::value_type>(std::floor(8.0 * bl_sigma));
     } else {
