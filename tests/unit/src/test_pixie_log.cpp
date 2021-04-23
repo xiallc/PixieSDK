@@ -203,59 +203,65 @@ TEST_SUITE("xia::pixie::log") {
 
 TEST_SUITE("xia::pixie::logging") {
     TEST_CASE("level_logging") {
-        xia::pixie::logging::start("level_logging", "", xia::pixie::log::level::off, false);
         SUBCASE("off") {
+            xia::pixie::logging::start("off", "", xia::pixie::log::level::off, false);
             CHECK(xia::pixie::logging::level_logging(xia::pixie::log::level::off));
             CHECK_FALSE(xia::pixie::logging::level_logging(xia::pixie::log::level::error));
             CHECK_FALSE(xia::pixie::logging::level_logging(xia::pixie::log::level::warning));
             CHECK_FALSE(xia::pixie::logging::level_logging(xia::pixie::log::level::info));
             CHECK_FALSE(xia::pixie::logging::level_logging(xia::pixie::log::level::debug));
             CHECK_FALSE(xia::pixie::logging::level_logging(xia::pixie::log::level::max_level));
+            xia::pixie::logging::stop("off");
         }
         SUBCASE("error") {
-            xia::pixie::logging::set_level("level_logging", xia::pixie::log::level::error);
+            xia::pixie::logging::set_level("error", xia::pixie::log::level::error);
             CHECK_FALSE(xia::pixie::logging::level_logging(xia::pixie::log::level::off));
             CHECK(xia::pixie::logging::level_logging(xia::pixie::log::level::error));
             CHECK_FALSE(xia::pixie::logging::level_logging(xia::pixie::log::level::warning));
             CHECK_FALSE(xia::pixie::logging::level_logging(xia::pixie::log::level::info));
             CHECK_FALSE(xia::pixie::logging::level_logging(xia::pixie::log::level::debug));
             CHECK_FALSE(xia::pixie::logging::level_logging(xia::pixie::log::level::max_level));
+            xia::pixie::logging::stop("error");
         }
         SUBCASE("warning") {
-            xia::pixie::logging::set_level("level_logging", xia::pixie::log::level::warning);
+            xia::pixie::logging::set_level("warning", xia::pixie::log::level::warning);
             CHECK_FALSE(xia::pixie::logging::level_logging(xia::pixie::log::level::off));
             CHECK(xia::pixie::logging::level_logging(xia::pixie::log::level::error));
             CHECK(xia::pixie::logging::level_logging(xia::pixie::log::level::warning));
             CHECK_FALSE(xia::pixie::logging::level_logging(xia::pixie::log::level::info));
             CHECK_FALSE(xia::pixie::logging::level_logging(xia::pixie::log::level::debug));
             CHECK_FALSE(xia::pixie::logging::level_logging(xia::pixie::log::level::max_level));
+            xia::pixie::logging::stop("warning");
         }
         SUBCASE("info") {
-            xia::pixie::logging::set_level("level_logging", xia::pixie::log::level::info);
+            xia::pixie::logging::set_level("info", xia::pixie::log::level::info);
             CHECK_FALSE(xia::pixie::logging::level_logging(xia::pixie::log::level::off));
             CHECK(xia::pixie::logging::level_logging(xia::pixie::log::level::error));
             CHECK(xia::pixie::logging::level_logging(xia::pixie::log::level::warning));
             CHECK(xia::pixie::logging::level_logging(xia::pixie::log::level::info));
             CHECK_FALSE(xia::pixie::logging::level_logging(xia::pixie::log::level::debug));
             CHECK_FALSE(xia::pixie::logging::level_logging(xia::pixie::log::level::max_level));
+            xia::pixie::logging::stop("info");
         }
         SUBCASE("debug") {
-            xia::pixie::logging::set_level("level_logging", xia::pixie::log::level::debug);
+            xia::pixie::logging::set_level("debug", xia::pixie::log::level::debug);
             CHECK_FALSE(xia::pixie::logging::level_logging(xia::pixie::log::level::off));
             CHECK(xia::pixie::logging::level_logging(xia::pixie::log::level::error));
             CHECK(xia::pixie::logging::level_logging(xia::pixie::log::level::warning));
             CHECK(xia::pixie::logging::level_logging(xia::pixie::log::level::info));
             CHECK(xia::pixie::logging::level_logging(xia::pixie::log::level::debug));
             CHECK_FALSE(xia::pixie::logging::level_logging(xia::pixie::log::level::max_level));
+            xia::pixie::logging::stop("debug");
         }
         SUBCASE("max_level") {
-            xia::pixie::logging::set_level("level_logging", xia::pixie::log::level::max_level);
+            xia::pixie::logging::set_level("max_level", xia::pixie::log::level::max_level);
             CHECK_FALSE(xia::pixie::logging::level_logging(xia::pixie::log::level::off));
             CHECK(xia::pixie::logging::level_logging(xia::pixie::log::level::error));
             CHECK(xia::pixie::logging::level_logging(xia::pixie::log::level::warning));
             CHECK(xia::pixie::logging::level_logging(xia::pixie::log::level::info));
             CHECK(xia::pixie::logging::level_logging(xia::pixie::log::level::debug));
             CHECK(xia::pixie::logging::level_logging(xia::pixie::log::level::max_level));
+            xia::pixie::logging::stop("max_level");
         }
     }
     TEST_CASE("set_datetime_stamp") {
@@ -264,22 +270,26 @@ TEST_SUITE("xia::pixie::logging") {
         CHECK_THROWS_WITH_AS(xia::pixie::logging::set_datetime_stamp("unit_test", false),
                              "invalid log output name in set datetime stamp",
                              xia::pixie::error::error);
+        xia::pixie::logging::stop("set_datetime_stamp");
     }
     TEST_CASE("set_line_numbers") {
         xia::pixie::logging::start("set_line_numbers", "", xia::pixie::log::level::off, false);
         CHECK_THROWS_WITH_AS(xia::pixie::logging::set_line_numbers("unit_test", false),
                              "invalid log output name in set line numbers",
                              xia::pixie::error::error);
+        xia::pixie::logging::stop("set_line_numbers");
     }
     TEST_CASE("set_level") {
         xia::pixie::logging::start("set_level", "", xia::pixie::log::level::off, false);
         CHECK_THROWS_WITH_AS(xia::pixie::logging::set_level("unit_test", xia::pixie::log::info),
                              "invalid log output name in set level", xia::pixie::error::error);
+        xia::pixie::logging::stop("set_level");
     }
     TEST_CASE("set_level_stamp") {
         xia::pixie::logging::start("set_level_stamp", "", xia::pixie::log::level::off, false);
         CHECK_THROWS_WITH_AS(xia::pixie::logging::set_level_stamp("unit_test", false),
                              "invalid log output name in set level stamp",
                              xia::pixie::error::error);
+        xia::pixie::logging::stop("set_level_stamp");
     }
 }
