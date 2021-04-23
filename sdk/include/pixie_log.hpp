@@ -43,8 +43,6 @@
 
 namespace xia
 {
-namespace pixie
-{
 namespace logging
 {
 /*
@@ -144,7 +142,6 @@ void memdump(log::level level,
              size_t size = 1,
              size_t line_length = 16,
              size_t offset = 0);
-}
 }
 }
 

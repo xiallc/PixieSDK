@@ -49,8 +49,6 @@
 
 namespace xia
 {
-namespace pixie
-{
 namespace logging
 {
 /*
@@ -152,7 +150,7 @@ outputter::outputter(const std::string& name_,
         if (!*outfile) {
             std::ostringstream what;
             what << "opening: " << filename << ": " << std::strerror(errno);
-            throw error::error(error::code::file_create_failure, what);
+            throw pixie::error::error(pixie::error::code::file_create_failure, what);
         }
         out.rdbuf(outfile->rdbuf());
     }
@@ -281,7 +279,7 @@ stop(const std::string name)
             return;
         }
     }
-    throw error::error(error::code::internal_failure,
+    throw pixie::error::error(pixie::error::code::internal_failure,
                        "invalid log output name in stop");
 }
 
@@ -294,7 +292,7 @@ set_level(const std::string name, log::level level)
             return;
         }
     }
-    throw error::error(error::code::internal_failure,
+    throw pixie::error::error(pixie::error::code::internal_failure,
                        "invalid log output name in set level");
 }
 
@@ -307,7 +305,7 @@ set_level_stamp(const std::string name, bool level)
             return;
         }
     }
-    throw error::error(error::code::internal_failure,
+    throw pixie::error::error(pixie::error::code::internal_failure,
                        "invalid log output name in set level stamp");
 }
 
@@ -320,7 +318,7 @@ set_datetime_stamp(const std::string name, bool datetime)
             return;
         }
     }
-    throw error::error(error::code::internal_failure,
+    throw pixie::error::error(pixie::error::code::internal_failure,
                        "invalid log output name in set datetime stamp");
 }
 
@@ -333,7 +331,7 @@ set_line_numbers(const std::string name, bool line_numbers)
             return;
         }
     }
-    throw error::error(error::code::internal_failure,
+    throw pixie::error::error(pixie::error::code::internal_failure,
                        "invalid log output name in set line numbers");
 }
 
@@ -448,5 +446,4 @@ log::~log()
     logging::write(*this);
 }
 
-};
 };

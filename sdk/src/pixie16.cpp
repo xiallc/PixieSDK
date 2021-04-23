@@ -46,7 +46,7 @@
 /*
  * Local types for convenience.
  */
-typedef xia::pixie::log xia_log;
+typedef xia::log xia_log;
 typedef xia::pixie::error::error xia_error;
 
 /*
@@ -375,7 +375,7 @@ PixieInitSystem(unsigned short NumModules,
     /*
      * Create a log file.
      */
-    xia::pixie::logging::start("log", "PixieMsg.txt", xia_log::info, false);
+    xia::logging::start("log", "PixieMsg.txt", xia_log::info, false);
 
     xia_log(xia_log::info) << "PixieInitSystem: NumModules=" << NumModules
                            << " PXISlotMap=" << PXISlotMap

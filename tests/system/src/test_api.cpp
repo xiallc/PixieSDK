@@ -49,7 +49,7 @@
 /*
  * Localize the log and error
  */
-typedef xia::pixie::log xia_logger;
+typedef xia::log xia_logger;
 typedef xia::pixie::error::error error;
 
 /*
@@ -340,7 +340,7 @@ main(int argc, char* argv[])
         if (args::get(debug_flag)) {
             log_level = xia_logger::debug;
         }
-        xia::pixie::logging::start("log", log, log_level, false);
+        xia::logging::start("log", log, log_level, false);
 
         size_t num_modules = args::get(num_modules_flag);
 
