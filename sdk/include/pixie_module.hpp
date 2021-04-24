@@ -45,6 +45,7 @@
 #include <vector>
 
 #include <pixie_error.hpp>
+#include <pixie_channel.hpp>
 #include <pixie_fw.hpp>
 #include <pixie_hw.hpp>
 #include <pixie_param.hpp>
@@ -198,10 +199,10 @@ namespace module
         param::module_variables module_values;
 
         /*
-         * CHannel parameters, a set per channel.
+         * Channel parameters, a set per channel.
          */
         param::channel_var_descs channel_var_descriptors;
-        param::channels_variables channel_values;
+        channel::channels channels;
 
         /*
          * Firmware
@@ -413,18 +414,6 @@ namespace module
         void module_csrb(param::value_type value);
         void slow_filter_range(param::value_type value);
         void fast_filter_range(param::value_type value);
-
-        /*
-         * Channel parameter handlers.
-         */
-        double trigger_risetime(size_t channel);
-        double trigger_flattop(size_t channel);
-        double trigger_threshold(size_t channel);
-        double energy_risetime(size_t channel);
-        double energy_flattop(size_t channel);
-        double tau(size_t channel);
-        double trace_length(size_t channel);
-        double trace_delay(size_t channel);
 
         /*
          * Checks, throws errors.

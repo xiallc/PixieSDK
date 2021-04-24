@@ -35,6 +35,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -240,7 +241,7 @@ namespace module
           module_var_descriptors(std::move(m.module_var_descriptors)),
           module_values(std::move(m.module_values)),
           channel_var_descriptors(std::move(m.channel_var_descriptors)),
-          channel_values(std::move(m.channel_values)),
+          channels(std::move(m.channels)),
           firmware(std::move(m.firmware)),
           reg_trace(m.reg_trace),
           in_use(0),
@@ -265,7 +266,7 @@ namespace module
         m.module_var_descriptors.clear();
         m.module_values.clear();
         m.channel_var_descriptors.clear();
-        m.channel_values.clear();
+        m.channels.clear();
         m.present_ = false;
         m.online_ = false;
         m.comms_fpga = false;
@@ -311,7 +312,7 @@ namespace module
         module_var_descriptors = std::move(m.module_var_descriptors);
         channel_var_descriptors = std::move(m.channel_var_descriptors);
         module_values = std::move(m.module_values);
-        channel_values = std::move(m.channel_values);
+        channels = std::move(m.channels);
         reg_trace = m.reg_trace;
         present_ = m.present_;
         online_ = m.online_;
@@ -792,28 +793,101 @@ namespace module
         double value;
         switch (par) {
         case param::channel_param::trigger_risetime:
-            value = trigger_risetime(channel);
+            value = channels[channel].trigger_risetime();
             break;
         case param::channel_param::trigger_flattop:
-            value = trigger_flattop(channel);
+            value = channels[channel].trigger_flattop();
             break;
         case param::channel_param::trigger_threshold:
-            value = trigger_threshold(channel);
+            value = channels[channel].trigger_threshold();
             break;
         case param::channel_param::energy_risetime:
-            value = energy_risetime(channel);
+            value = channels[channel].energy_risetime();
             break;
         case param::channel_param::energy_flattop:
-            value = energy_flattop(channel);
+            value = channels[channel].energy_flattop();
             break;
         case param::channel_param::tau:
-            value = tau(channel);
+            value = channels[channel].tau();
             break;
         case param::channel_param::trace_length:
-            value = trace_length(channel);
+            value = channels[channel].trace_length();
             break;
         case param::channel_param::trace_delay:
-            value = trace_delay(channel);
+            value = channels[channel].trace_delay();
+            break;
+        case param::channel_param::voffset:
+            value = channels[channel].voffset();
+            break;
+        case param::channel_param::xdt:
+            value = channels[channel].xdt();
+            break;
+        case param::channel_param::baseline_percent:
+            value = channels[channel].baseline_percent();
+            break;
+        case param::channel_param::emin:
+            value = channels[channel].emin();
+            break;
+        case param::channel_param::binfactor:
+            value = channels[channel].binfactor();
+            break;
+        case param::channel_param::baseline_average:
+            value = channels[channel].baseline_average();
+            break;
+        case param::channel_param::channel_csra:
+            value = channels[channel].csra();
+            break;
+        case param::channel_param::channel_csrb:
+            value = channels[channel].csrb();
+            break;
+        case param::channel_param::blcut:
+            value = channels[channel].bl_cut();
+            break;
+        case param::channel_param::integrator:
+            value = channels[channel].integrator();
+            break;
+        case param::channel_param::fasttrigbacklen:
+            value = channels[channel].fast_trig_backlen();
+            break;
+        case param::channel_param::cfddelay:
+            value = channels[channel].cfd_delay();
+            break;
+        case param::channel_param::cfdscale:
+            value = channels[channel].cfd_scale();
+            break;
+        case param::channel_param::cfdthresh:
+            value = channels[channel].cfd_thresh();
+            break;
+        case param::channel_param::qdclen0:
+        case param::channel_param::qdclen1:
+        case param::channel_param::qdclen2:
+        case param::channel_param::qdclen3:
+        case param::channel_param::qdclen4:
+        case param::channel_param::qdclen5:
+        case param::channel_param::qdclen6:
+        case param::channel_param::qdclen7:
+            value = channels[channel].qdc_len(par);
+            break;
+        case param::channel_param::exttrigstretch:
+            value = channels[channel].ext_trig_stretch();
+            break;
+        case param::channel_param::vetostretch:
+            value = channels[channel].veto_stretch();
+            break;
+        case param::channel_param::multiplicitymaskl:
+            value = channels[channel].multiplicity_mask_l();
+            break;
+        case param::channel_param::multiplicitymaskh:
+            value = channels[channel].multiplicity_mask_h();
+            break;
+        case param::channel_param::externdelaylen:
+            value = channels[channel].extern_delay_len();
+            break;
+        case param::channel_param::ftrigoutdelay:
+            value = channels[channel].ftrig_out_delay();
+            break;
+        case param::channel_param::chantrigstretch:
+            value = channels[channel].chan_trig_stretch();
             break;
         default:
             throw error(number, slot,
@@ -902,7 +976,107 @@ namespace module
                         << " value=" << value;
         online_check();
         channel_check(channel);
+        std::ostringstream oss;
         lock_guard guard(lock_);
+        switch (par) {
+        case param::channel_param::trigger_risetime:
+            channels[channel].trigger_risetime(value);
+            break;
+        case param::channel_param::trigger_flattop:
+            channels[channel].trigger_flattop(value);
+            break;
+        case param::channel_param::trigger_threshold:
+            channels[channel].trigger_threshold(value);
+            break;
+        case param::channel_param::energy_risetime:
+        case param::channel_param::energy_flattop:
+            channels[channel].energy_risetime_flattop(par, value);
+            break;
+        case param::channel_param::tau:
+            channels[channel].tau(value);
+            break;
+        case param::channel_param::trace_length:
+            channels[channel].trace_length(value);
+            break;
+        case param::channel_param::trace_delay:
+            channels[channel].trace_delay(value);
+            break;
+        case param::channel_param::voffset:
+            channels[channel].voffset(value);
+            break;
+        case param::channel_param::xdt:
+            channels[channel].xdt(value);
+            break;
+        case param::channel_param::baseline_percent:
+            channels[channel].baseline_percent(value);
+            break;
+        case param::channel_param::emin:
+            channels[channel].emin(value);
+            break;
+        case param::channel_param::binfactor:
+            channels[channel].binfactor(value);
+            break;
+        case param::channel_param::baseline_average:
+            channels[channel].baseline_average(value);
+            break;
+        case param::channel_param::channel_csra:
+            channels[channel].csra(value);
+            break;
+        case param::channel_param::channel_csrb:
+            channels[channel].csrb(value);
+            break;
+        case param::channel_param::blcut:
+            channels[channel].bl_cut(value);
+            break;
+        case param::channel_param::integrator:
+            channels[channel].integrator(value);
+            break;
+        case param::channel_param::fasttrigbacklen:
+            channels[channel].fast_trig_backlen(value);
+            break;
+        case param::channel_param::cfddelay:
+            channels[channel].cfd_delay(value);
+            break;
+        case param::channel_param::cfdscale:
+            channels[channel].cfd_scale(value);
+            break;
+        case param::channel_param::cfdthresh:
+            channels[channel].cfd_thresh(value);
+            break;
+        case param::channel_param::qdclen0:
+        case param::channel_param::qdclen1:
+        case param::channel_param::qdclen2:
+        case param::channel_param::qdclen3:
+        case param::channel_param::qdclen4:
+        case param::channel_param::qdclen5:
+        case param::channel_param::qdclen6:
+        case param::channel_param::qdclen7:
+            channels[channel].qdc_len(par, value);
+            break;
+        case param::channel_param::exttrigstretch:
+            channels[channel].ext_trig_stretch(value);
+            break;
+        case param::channel_param::vetostretch:
+            channels[channel].veto_stretch(value);
+            break;
+        case param::channel_param::multiplicitymaskl:
+            channels[channel].multiplicity_mask_l(value);
+            break;
+        case param::channel_param::multiplicitymaskh:
+            channels[channel].multiplicity_mask_h(value);
+            break;
+        case param::channel_param::externdelaylen:
+            channels[channel].extern_delay_len(value);
+            break;
+        case param::channel_param::ftrigoutdelay:
+            channels[channel].ftrig_out_delay(value);
+            break;
+        case param::channel_param::chantrigstretch:
+            channels[channel].chan_trig_stretch(value);
+            break;
+        default:
+            break;
+        }
     }
 
     param::value_type
@@ -1011,9 +1185,9 @@ namespace module
         if (io) {
             hw::memory::dsp dsp(*this);
             hw::convert(dsp.read(channel, desc.address), value);
-            channel_values[channel][index].value[offset] = value;
+            channels[channel].vars[index].value[offset] = value;
         } else {
-            value = channel_values[channel][index].value[offset];
+            value = channels[channel].vars[index].value[offset];
         }
         return value;
     }
@@ -1124,7 +1298,7 @@ namespace module
         hw::memory::dsp dsp(*this);
         lock_guard guard(lock_);
         dsp.write(channel, desc.address, word);
-        channel_values[channel][index].value[offset] = value;
+        channels[channel].vars[index].value[offset] = value;
     }
 
     void
@@ -1248,7 +1422,7 @@ namespace module
     module::erase_values()
     {
         module_values.clear();
-        channel_values.clear();
+        channels.clear();
     }
 
     void
@@ -1263,10 +1437,11 @@ namespace module
         for (const auto& desc : module_var_descriptors) {
             module_values.push_back(param::module_variable(desc));
         }
-        channel_values.resize(num_channels);
+        channels.resize(num_channels, channel::channel(*this));
         for (size_t channel = 0; channel < num_channels; ++channel) {
+            channels[channel].number = channel;
             for (const auto& desc : channel_var_descriptors) {
-                channel_values[channel].push_back(param::channel_variable(desc));
+                channels[channel].vars.push_back(param::channel_variable(desc));
             }
         }
     }
@@ -1340,14 +1515,13 @@ namespace module
         /*
          * Recompute the FIFO settings
          */
-        channel::fifo fifo(*this);
         value = 1 << read_var(param::module_var::FastFilterRange, 0, false);
         for (size_t channel = 0; channel < num_channels; ++channel) {
             param::value_type paf_length =
                 read_var(param::channel_var::PAFlength, channel, 0, false);
             param::value_type trigger_delay =
                 read_var(param::channel_var::TriggerDelay, channel, 0, false);
-            fifo.update(channel, paf_length - (trigger_delay / value));
+            channels[channel].update_fifo(paf_length - (trigger_delay / value));
         }
 
         /*
@@ -1358,9 +1532,8 @@ namespace module
         /*
          * Update the baseline cut value
          */
-        channel::baseline baseline(*this);
         for (size_t channel = 0; channel < num_channels; ++channel) {
-            baseline.find_cut(channel);
+            channels[channel].baselines.find_cut(channel);
         }
     }
 
@@ -1389,115 +1562,18 @@ namespace module
         /*
          * Recompute the FIFO settings
          */
-        channel::fifo fifo(*this);
         for (size_t channel = 0; channel < num_channels; ++channel) {
             param::value_type paf_length =
                 read_var(param::channel_var::PAFlength, channel, 0, false);
             param::value_type trigger_delay =
                 read_var(param::channel_var::TriggerDelay, channel, 0, false);
-            fifo.update(channel, paf_length - (trigger_delay / last_ffr));
+            channels[channel].update_fifo(paf_length - (trigger_delay / last_ffr));
         }
 
         /*
          * Apply the settings to the FIPPI FPGA
          */
         hw::run::control(*this, hw::run::control_task::program_fippi);
-    }
-
-    double
-    module::trigger_risetime(size_t channel)
-    {
-        double fast_length =
-            read_var(param::channel_var::FastLength, channel, 0);
-        param::value_type fast_filter_range =
-            read_var(param::module_var::FastFilterRange, 0);
-        double value =
-            (fast_length * (1 << fast_filter_range)) / fpga_clk_mhz;
-        return value;
-    }
-
-    double
-    module::trigger_flattop(size_t channel)
-    {
-        double fast_gap =
-            read_var(param::channel_var::FastGap, channel, 0);
-        param::value_type fast_filter_range =
-            read_var(param::module_var::FastFilterRange, 0);
-        double value =
-            (fast_gap * (1 << fast_filter_range)) / fpga_clk_mhz;
-        return value;
-    }
-
-    double
-    module::trigger_threshold(size_t channel)
-    {
-        double fast_thresh =
-            read_var(param::channel_var::FastThresh, channel, 0);
-        double fast_length =
-            read_var(param::channel_var::FastLength, channel, 0);
-        double value =
-            fast_thresh / (fast_length * double(adc_clk_div));
-        return value;
-    }
-
-    double
-    module::energy_risetime(size_t channel)
-    {
-        double slow_length =
-            read_var(param::channel_var::SlowLength, channel, 0);
-        param::value_type slow_filter_range =
-            read_var(param::module_var::SlowFilterRange, 0);
-        double value =
-            (slow_length * (1 << slow_filter_range)) / fpga_clk_mhz;
-        return value;
-    }
-
-    double
-    module::energy_flattop(size_t channel)
-    {
-        double slow_gap =
-            read_var(param::channel_var::SlowGap, channel, 0);
-        param::value_type slow_filter_range =
-            read_var(param::module_var::SlowFilterRange, 0);
-        double value =
-            (slow_gap * (1 << slow_filter_range)) / fpga_clk_mhz;
-        return value;
-    }
-
-    double
-    module::tau(size_t channel)
-    {
-        ieee_float preamp_tau =
-            read_var(param::channel_var::PreampTau, channel, 0);
-        return preamp_tau;
-    }
-
-    double
-    module::trace_length(size_t channel)
-    {
-        double trace_len =
-            read_var(param::channel_var::TraceLength, channel, 0);
-        param::value_type fast_filter_range =
-            read_var(param::module_var::FastFilterRange, 0);
-        double result =
-            trace_len / (double(adc_msps) * (1 << fast_filter_range));
-        return result;
-    }
-
-    double
-    module::trace_delay(size_t channel)
-    {
-        double paf_length =
-            read_var(param::channel_var::PAFlength, channel, 0);
-        double trigger_delay =
-            read_var(param::channel_var::TriggerDelay, channel, 0);
-        param::value_type fast_filter_range =
-            read_var(param::module_var::FastFilterRange, 0);
-        param::value_type ffr_mask = 1 << fast_filter_range;
-        double value =
-            (paf_length - (trigger_delay / ffr_mask)) /
-            (fpga_clk_mhz * ffr_mask);
-        return value;
     }
 
     void
