@@ -219,7 +219,7 @@ namespace module
          */
         module();
         module(module&& m);
-        ~module();
+        virtual ~module();
         module& operator=(module&& mod);
 
         /*
@@ -235,8 +235,8 @@ namespace module
         /*
          * Open the module and find the device on the bus.
          */
-        void open(size_t device_number);
-        void close();
+        virtual void open(size_t device_number);
+        virtual void close();
 
         /*
          * Range check the channel number.
@@ -246,19 +246,19 @@ namespace module
         /*
          * Probe the board to see what is running.
          */
-        void probe();
+        virtual void probe();
 
         /*
          * Boot the module. If successful it will be online.
          */
-        void boot(bool boot_comms = true,
-                  bool boot_fippi = true,
-                  bool boot_dsp = true);
+        virtual void boot(bool boot_comms = true,
+                          bool boot_fippi = true,
+                          bool boot_dsp = true);
 
         /*
          * Initialise the module ready for use.
          */
-        void initialize();
+        virtual void initialize();
 
         /*
          * Set or get the firmware.
@@ -396,7 +396,7 @@ namespace module
         bool operator<(const rev_tag rev) const;
         bool operator>(const rev_tag rev) const;
 
-    private:
+    protected:
         /*
          * Initialise the values.
          */
@@ -461,9 +461,14 @@ namespace module
     typedef std::vector<number_slot> number_slots;
 
     /*
+     * A module pointer.
+     */
+    typedef std::shared_ptr<module> module_ptr;
+
+    /*
      * A container of modules.
      */
-    typedef std::vector<module> modules;
+    typedef std::vector<module_ptr> modules;
 
     /*
      * Assign the number to the slots in the rack.

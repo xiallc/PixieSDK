@@ -74,6 +74,9 @@ enum struct code {
     module_initialize_failure,
     module_invalid_param,
     module_invalid_var,
+    module_param_disabled,
+    module_param_readonly,
+    module_param_writeonly,
     module_task_timeout,
     /*
      * Channel
@@ -81,6 +84,9 @@ enum struct code {
     channel_number_invalid,
     channel_invalid_param,
     channel_invalid_var,
+    channel_param_disabled,
+    channel_param_readonly,
+    channel_param_writeonly,
     /*
      * Device
      */

@@ -112,9 +112,10 @@ namespace crate
                  device_number < max_modules;
                  ++device_number) {
 
-                modules.push_back(module::module());
+                add_module();
 
-                module::module& module = modules.back();
+                auto& module_ptr = modules.back();
+                module::module& module = *module_ptr;
 
                 try {
                     module.module_var_descriptors =
@@ -161,7 +162,7 @@ namespace crate
         ready();
         firmware::load(firmware);
         for (auto& module : modules) {
-            module.probe();
+            module->probe();
         }
         firmware::clear(firmware);
     }
@@ -172,8 +173,8 @@ namespace crate
         ready();
         firmware::load(firmware);
         for (auto& module : modules) {
-            if (module.revision != 0) {
-                module.boot();
+            if (module->revision != 0) {
+                module->boot();
             }
         }
         firmware::clear(firmware);
@@ -184,14 +185,14 @@ namespace crate
     {
         ready();
         for (auto& module : modules) {
-            auto mod_fw = firmware.find(module.revision);
+            auto mod_fw = firmware.find(module->revision);
             if (mod_fw != firmware.end()) {
                 log(log::info) << "crate: set module firmware: "
-                               << module.revision;
-                module.set(firmware[module.revision]);
+                               << module->revision;
+                module->set(firmware[module->revision]);
             } else {
                 log(log::debug) << "crate: module firmware alread set: "
-                                << module.revision;
+                                << module->revision;
             }
         }
     }
@@ -220,7 +221,7 @@ namespace crate
             } else {
                 out << std::endl;
             }
-            out << ' ' << mod;
+            out << ' ' << *mod;
         }
     }
 
@@ -230,6 +231,12 @@ namespace crate
         ready();
         module::assign(modules, numbers);
         module::order_by_number(modules);
+    }
+
+    void
+    crate::add_module()
+    {
+        modules.push_back(std::make_unique<module::module>());
     }
 
     module_handle::module_handle(crate& crate_, size_t number)

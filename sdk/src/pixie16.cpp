@@ -177,7 +177,7 @@ PixieBootModule(const char* ComFPGAConfigFile,
         if (ModNum == crate.num_modules) {
             xia::pixie::crate::crate::user user(crate);
             for (auto& module : crate.modules) {
-                PixieBootModule(module,
+                PixieBootModule(*module,
                                 ComFPGAConfigFile,
                                 SPFPGAConfigFile,
                                 DSPCodeFile,
@@ -187,7 +187,7 @@ PixieBootModule(const char* ComFPGAConfigFile,
             }
         } else {
             xia::pixie::crate::module_handle module(crate, ModNum);
-            PixieBootModule(module.handle,
+            PixieBootModule(*module,
                             ComFPGAConfigFile,
                             SPFPGAConfigFile,
                             DSPCodeFile,
@@ -232,7 +232,7 @@ PixieCheckRunStatus(unsigned short ModNum)
     try {
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
-        if (module.handle.run_active()) {
+        if (module->run_active()) {
             result = 1;
         }
     } catch (xia_error& e) {
@@ -316,7 +316,7 @@ PixieEndRun(unsigned short ModNum)
     try {
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
-        module.handle.run_end();
+        module->run_end();
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
@@ -344,11 +344,11 @@ PixieExitSystem(unsigned short ModNum)
         if (ModNum == crate.num_modules) {
             xia::pixie::crate::crate::user user(crate);
             for (auto& module : crate.modules) {
-                module.close();
+                module->close();
             }
         } else {
             xia::pixie::crate::module_handle module(crate, ModNum);
-            module.handle.close();
+            module->close();
         }
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
@@ -507,7 +507,7 @@ PixieReadSglChanPar(const char* ChanParName,
     try {
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
-        *ChanParData = module.handle.read(ChanParName, ChanNum);
+        *ChanParData = module->read(ChanParName, ChanNum);
         xia_log(xia_log::debug) << "PixieReadSglChanPar: ModNum=" << ModNum
                                 << " ChanNum=" << ChanNum
                                 << " ChanParName=" << ChanParName
@@ -540,7 +540,7 @@ PixieReadSglModPar(const char* ModParName,
     try {
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
-        *ModParData = module.handle.read(ModParName);
+        *ModParData = module->read(ModParName);
         xia_log(xia_log::debug) << "PixieReadSglModPar: ModNum=" << ModNum
                                 << " ModParName=" << ModParName
                                 << " ModParData=" << *ModParData;
@@ -633,7 +633,7 @@ PixieWriteSglChanPar(const char* ChanParName,
     try {
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
-        module.handle.write(ChanParName, ChanNum, ChanParData);
+        module->write(ChanParName, ChanNum, ChanParData);
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
@@ -667,13 +667,13 @@ PixieWriteSglModPar(const char* ModParName,
             bcast = true;
         } else {
             xia::pixie::crate::module_handle module(crate, ModNum);
-            bcast = module.handle.write(ModParName, ModParData);
+            bcast = module->write(ModParName, ModParData);
         }
         if (bcast) {
             xia::pixie::crate::crate::user user(crate);
             for (auto& module : crate.modules) {
-                if (ModNum != module.number) {
-                    module.write(ModParName, ModParData);
+                if (ModNum != module->number) {
+                    module->write(ModParName, ModParData);
                 }
             }
         }

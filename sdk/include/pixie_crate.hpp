@@ -95,7 +95,7 @@ namespace crate
         firmware::crate firmware;
 
         WINDOWS_DLLEXPORT crate();
-        WINDOWS_DLLEXPORT ~crate();
+        WINDOWS_DLLEXPORT virtual ~crate();
 
         /*
          * Check the crate has been intialised and ready for use. Throws an
@@ -123,7 +123,7 @@ namespace crate
                 throw error(pixie::error::code::module_number_invalid,
                             "module number out of range");
             }
-            return modules[number_];
+            return *(modules[number_]);
         }
 
         /*
@@ -158,6 +158,10 @@ namespace crate
          */
         void output(std::ostream& out) const;
 
+    protected:
+
+        virtual void add_module();
+
     private:
         /*
          * Crate ready.
@@ -181,9 +185,15 @@ namespace crate
         module_handle(crate& crate_, unsigned short number);
         ~module_handle() = default;
 
-        module::module& handle;
+        module::module& operator*() {
+            return handle;
+        }
+        module::module* operator->() {
+            return &handle;
+        }
 
     private:
+        module::module& handle;
         crate::user user;
         module::module::guard guard;
     };

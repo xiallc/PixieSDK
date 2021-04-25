@@ -616,7 +616,7 @@ namespace module
     void
     module::probe()
     {
-        dsp_online = fippi_fpga = comms_fpga = false;
+        online_ = dsp_online = fippi_fpga = comms_fpga = false;
 
         erase_values();
 
@@ -646,15 +646,15 @@ namespace module
                         channel_var_descriptors);
             init_values();
         }
+
+        online_ = comms_fpga && fippi_fpga && dsp_online;
     }
 
     void
     module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp)
     {
         if (online_) {
-            throw error(number, slot,
-                        error::code::module_invalid_operation,
-                        "module is online");
+            log(log::warning) << "boot online module";
         }
 
         if (boot_comms) {
@@ -697,6 +697,7 @@ namespace module
             firmware::firmware_ref fw = get("dsp");
             hw::dsp::dsp dsp(*this);
             dsp.boot(fw->data);
+            dsp_online = dsp.init_done();
         }
 
         firmware::firmware_ref vars = get("var");
@@ -725,7 +726,7 @@ namespace module
         if (online_) {
             throw error(number, slot,
                         error::code::module_invalid_operation,
-                        "module is online");
+                        "module is online when setting firmware");
         }
         firmware.clear();
         std::copy(fw.begin(), fw.end(),
@@ -1118,12 +1119,12 @@ namespace module
         log(log::debug) << "module: read: " << desc.name;
         if (desc.state == param::disable) {
             throw error(number, slot,
-                        error::code::module_invalid_param,
+                        error::code::module_param_disabled,
                         "module variable disabled: " + desc.name);
         }
         if (desc.mode == param::wr) {
             throw error(number, slot,
-                        error::code::module_invalid_param,
+                        error::code::module_param_writeonly,
                         "module variable not readable: " + desc.name);
         }
         if (offset >= desc.size) {
@@ -1167,12 +1168,12 @@ namespace module
         const auto& desc = channel_var_descriptors[index];
         if (desc.state == param::disable) {
             throw error(number, slot,
-                        error::code::channel_invalid_param,
+                        error::code::channel_param_disabled,
                         "channel variable disabled: " + desc.name);
         }
         if (desc.mode == param::wr) {
             throw error(number, slot,
-                        error::code::channel_invalid_param,
+                        error::code::channel_param_writeonly,
                         "channel variable not readable: " + desc.name);
         }
         if (offset >= desc.size) {
@@ -1235,12 +1236,12 @@ namespace module
         const auto& desc = module_var_descriptors[index];
         if (desc.state == param::disable) {
             throw error(number, slot,
-                        error::code::module_invalid_param,
+                        error::code::module_param_disabled,
                         "module variable disabled: " + desc.name);
         }
         if (desc.mode == param::ro) {
             throw error(number, slot,
-                        error::code::module_invalid_param,
+                        error::code::module_param_readonly,
                         "module variable not writeable: " + desc.name);
         }
         if (offset >= desc.size) {
@@ -1280,12 +1281,12 @@ namespace module
         const auto& desc = channel_var_descriptors[index];
         if (desc.state == param::disable) {
             throw error(number, slot,
-                        error::code::channel_invalid_param,
+                        error::code::channel_param_disabled,
                         "channel variable disabled: " + desc.name);
         }
         if (desc.mode == param::ro) {
             throw error(number, slot,
-                        error::code::channel_invalid_param,
+                        error::code::channel_param_readonly,
                         "channel variable not writeable: " + desc.name);
         }
         if (offset >= desc.size) {
@@ -1602,8 +1603,8 @@ namespace module
     {
         for (auto number_slot : numbers) {
             for (auto& mod : modules_) {
-                if (mod.slot == number_slot.second) {
-                    mod.number = number_slot.first;
+                if (mod->slot == number_slot.second) {
+                    mod->number = number_slot.first;
                     break;
                 }
             }
@@ -1615,8 +1616,8 @@ namespace module
     {
         std::sort(mods.begin(),
                   mods.end(),
-                  [](module& a, module& b) {
-                      return a.number < b.number; } );
+                  [](module_ptr& a, module_ptr& b) {
+                      return a->number < b->number; } );
     }
 
     void
@@ -1624,8 +1625,8 @@ namespace module
     {
         std::sort(mods.begin(),
                   mods.end(),
-                  [](module& a, module& b) {
-                      return a.slot < b.slot; } );
+                  [](module_ptr& a, module_ptr& b) {
+                      return a->slot < b->slot; } );
     }
 
     void
@@ -1634,7 +1635,7 @@ namespace module
         order_by_slot(mods);
         int number = 0;
         for (auto& mod : mods) {
-            mod.number = number;
+            mod->number = number;
             number++;
         }
     }

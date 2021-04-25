@@ -467,13 +467,33 @@ namespace param
     };
 
     const module_var_descs&
-    get_module_var_descriptors() {
+    get_module_var_descriptors()
+    {
         return module_var_descriptors_default;
     }
 
     const channel_var_descs&
-    get_channel_var_descriptors() {
+    get_channel_var_descriptors()
+    {
         return channel_var_descriptors_default;
+    }
+
+    const system_param_map
+    get_system_param_map()
+    {
+        return system_params;
+    }
+
+    const module_param_map
+    get_module_param_map()
+    {
+        return module_params;
+    }
+
+    const channel_param_map
+    get_channel_param_map()
+    {
+        return channel_params;
     }
 
     system_param

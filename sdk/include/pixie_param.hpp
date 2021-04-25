@@ -461,6 +461,13 @@ namespace param
     const channel_var_descs& get_channel_var_descriptors();
 
     /*
+     * Get the maps
+     */
+    const system_param_map get_system_param_map();
+    const module_param_map get_module_param_map();
+    const channel_param_map get_channel_param_map();
+
+    /*
      * Look up parameters and variables.
      */
     system_param lookup_system_param(const std::string& label);
