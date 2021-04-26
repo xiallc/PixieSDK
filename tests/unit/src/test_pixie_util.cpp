@@ -85,4 +85,60 @@ TEST_SUITE("xia::util") {
             CHECK(xia::util::ieee_float(-1.0) == xia::util::ieee_float(0xbf800000u));
         }
     }
+
+    TEST_CASE("dequote") {
+        std::string good = "\"quoted\"";
+        xia::util::dequote(good);
+        CHECK(good == "quoted");
+
+        std::string bad = "\"quoted\'";
+        CHECK_THROWS_WITH_AS(xia::util::dequote(bad), "invalid quoting: \"quoted\'",
+                             std::runtime_error);
+    }
+
+    TEST_CASE("ltrim") {
+        std::string test = "    trim";
+        xia::util::ltrim(test);
+        CHECK(test == "trim");
+    }
+
+    TEST_CASE("rtrim") {
+        std::string test = "trim    ";
+        xia::util::rtrim(test);
+        CHECK(test == "trim");
+    }
+
+    TEST_CASE("split") {
+        std::string test = "a,b,c,d";
+        xia::util::strings result;
+        SUBCASE("Basic split") {
+            xia::util::split(result, test, ',', 0, false, false, false);
+            CHECK(result == xia::util::strings{"a", "b", "c", "d"});
+        }
+        SUBCASE("Split with limit") {
+            xia::util::split(result, test, ',', 2, false, false, true);
+            CHECK(result == xia::util::strings{"a", "b"});
+        }
+        SUBCASE("Split with spaces") {
+            std::string test_w_spaces = "    a,b   ,c,d";
+            xia::util::split(result, test_w_spaces, ',', 0, true, false, true);
+            CHECK(result == xia::util::strings{"a", "b", "c", "d"});
+        }
+        SUBCASE("Split with quotes") {
+            std::string test_w_quotes = "\"a\",b,\'c\',d";
+            xia::util::split(result, test_w_quotes, ',', 0, false, true, true);
+            CHECK(result == xia::util::strings{"a", "b", "c", "d"});
+        }
+        SUBCASE("Split with bad quotes") {
+            std::string test_w_quotes = "\"a\",b,\'c\",d";
+            CHECK_THROWS_WITH_AS(xia::util::split(result, test_w_quotes, ',', 0, false, true, true),
+                                 "invalid quoting: \'c\"", std::runtime_error);
+        }
+        SUBCASE("Split with quotes and spaces") {
+            result.clear();
+            std::string test_w_quotes_and_space = "\"  a\",  b,\'c  \',  d";
+            xia::util::split(result, test_w_quotes_and_space, ',', 0, true, true, true);
+            CHECK(result == xia::util::strings{"a", "b", "c", "d"});
+        }
+    }
 }

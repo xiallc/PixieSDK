@@ -56,10 +56,10 @@ dequote (std::string& s)
       {
         if (front != back)
             throw std::runtime_error("invalid quoting: " + s);
-        s =  s.substr(1, s.length() - (1 + 1));
+        s = s.substr(1, s.length() - (1 + 1));
       }
     }
-  }
+}
 
 void
 split(strings& split_string,
@@ -75,10 +75,10 @@ split(strings& split_string,
     split_string.clear();
     while (std::getline(ss, e, delimiter))
     {
-        if (strip_whitespace)
-            trim(e);
         if (strip_quotes)
             dequote(e);
+        if (strip_whitespace)
+            trim(e);
         if (empty || !e.empty())
         {
             split_string.push_back(e);
