@@ -347,7 +347,8 @@ bool level_logging(log::level level)
 {
     for (auto& output : *outputs) {
         log::level outputter_level = output.level.load();
-        if ((outputter_level != log::off && outputter_level >= level)) {
+        if ((outputter_level != log::off && outputter_level >= level) ||
+            (outputter_level == log::off && level == log::off)) {
             return true;
         }
     }
