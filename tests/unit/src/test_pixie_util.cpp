@@ -62,19 +62,23 @@ TEST_SUITE("xia::util") {
         }
         SUBCASE("Sign Bit 0 / Exponent > 0") {
             CHECK(doctest::Approx(xia::util::ieee_float(0x40490fdbu)) == 3.14159);
-            CHECK(doctest::Approx(xia::util::ieee_float(3.14159)) == xia::util::ieee_float(0x40490fdbu));
+            CHECK(doctest::Approx(xia::util::ieee_float(3.14159)) ==
+                  xia::util::ieee_float(0x40490fdbu));
         }
         SUBCASE("Sign Bit 1 / Exponent > 0") {
             CHECK(doctest::Approx(xia::util::ieee_float(0xc958a450u)) == -887365);
-            CHECK(doctest::Approx(xia::util::ieee_float(-887365.)) == xia::util::ieee_float(0xc958a450u));
+            CHECK(doctest::Approx(xia::util::ieee_float(-887365.)) ==
+                  xia::util::ieee_float(0xc958a450u));
         }
         SUBCASE("Sign Bit 0 / Exponent < 0") {
             CHECK(doctest::Approx(xia::util::ieee_float(0x3e22d0e5u)) == 0.159);
-            CHECK(doctest::Approx(xia::util::ieee_float(0.159)) == xia::util::ieee_float(0x3e22d0e5u));
+            CHECK(doctest::Approx(xia::util::ieee_float(0.159)) ==
+                  xia::util::ieee_float(0x3e22d0e5u));
         }
         SUBCASE("Sign Bit 1 / Exponent < 0") {
             CHECK(doctest::Approx(xia::util::ieee_float(0xbe22d0e5u)) == -0.159);
-            CHECK(doctest::Approx(xia::util::ieee_float(-0.159)) == xia::util::ieee_float(0xbe22d0e5u));
+            CHECK(doctest::Approx(xia::util::ieee_float(-0.159)) ==
+                  xia::util::ieee_float(0xbe22d0e5u));
         }
         SUBCASE("Sign Bit 0 / Exponent = 0") {
             CHECK(xia::util::ieee_float(0x3f800000u) == 1.0);
