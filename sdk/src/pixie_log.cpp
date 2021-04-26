@@ -208,6 +208,9 @@ outputter::write(const log::level entry_level, const std::string& entry)
 {
     std::lock_guard<lock_type> guard(lock);
 
+    if(entry_level == log::level::off)
+        return;
+
     ++counter;
 
     if (show_level) {
@@ -344,7 +347,7 @@ bool level_logging(log::level level)
 {
     for (auto& output : *outputs) {
         log::level outputter_level = output.level.load();
-        if (outputter_level != log::off && outputter_level >= level) {
+        if ((outputter_level != log::off && outputter_level >= level)) {
             return true;
         }
     }
