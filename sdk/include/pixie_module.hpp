@@ -344,7 +344,12 @@ namespace module
          * Read a word.
          */
         inline hw::word read_word(int reg) {
-            hw::word value = hw::read_word(vmaddr, reg);
+            hw::word value;
+            if (have_hardware) {
+                value = hw::read_word(vmaddr, reg);
+            } else {
+                value = 0;
+            }
             if (reg_trace) {
                 std::ios_base::fmtflags oflags(std::cout.flags());
                 std::cout << "M r " << std::setfill('0') << std::hex
@@ -368,7 +373,9 @@ namespace module
                           << std::endl;
                 std::cout.flags(oflags);
             }
-            hw::write_word(vmaddr, reg, value);
+            if (have_hardware) {
+                hw::write_word(vmaddr, reg, value);
+            }
         }
 
         /*

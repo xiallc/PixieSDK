@@ -439,6 +439,8 @@ namespace module
                             oss);
             }
 
+            have_hardware = true;
+
             hw::i2c::pcf8574 pio(*this, PCF8574_ADDR,
                                  (1 << 0) | (1 << 3), 1 << 1, 1 << 2);
 
@@ -449,6 +451,7 @@ namespace module
             i2cm24c64.read(0, 128, eeprom);
 
             if (eeprom.size() != 128) {
+                have_hardware = false;
                 std::ostringstream oss;
                 oss << "eeprom read: device: " << device_number
                     << " : invalid data length:" << eeprom.size();
@@ -478,12 +481,12 @@ namespace module
 
                 config_settings();
             } else {
+                have_hardware = false;
                 throw error(number, slot,
                             error::code::module_initialize_failure,
                             "EEPROM format 2 not supported");
             }
 
-            have_hardware = true;
             present_ = true;
         }
     }
