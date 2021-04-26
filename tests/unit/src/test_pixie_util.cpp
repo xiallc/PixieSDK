@@ -46,28 +46,43 @@ TEST_SUITE("xia::util") {
         xia::util::ostream_guard ostream_guard(std::cout);
         CHECK(ostream_guard.flags == expected);
     }
+
     TEST_CASE("ieee_float") {
         SUBCASE("Initialization") {
             CHECK(xia::util::ieee_float(0.5) == 0.5);
             CHECK(xia::util::ieee_float(xia::util::ieee_float(0.5)) == 0.5);
             CHECK(xia::util::ieee_float(0x3f000000u) == 0.5);
         }
-        SUBCASE("Operators") {
-            xia::util::ieee_float ieee = 0.5;
-            xia::util::ieee_float copy = ieee;
-            CHECK(ieee == copy);
-            CHECK(ieee == xia::util::ieee_float(0.5));
-            CHECK(static_cast<double>(ieee) == 0.5);
+        SUBCASE("Equality Operator") {
+            CHECK(xia::util::ieee_float(0.5) == xia::util::ieee_float(0.5));
         }
-        SUBCASE("Conversions") {
+        SUBCASE("Cast operator / out()") {
+            CHECK(static_cast<double>(xia::util::ieee_float(0.5)) == 0.5);
+            CHECK(static_cast<double>(xia::util::ieee_float(-0.5)) == -0.5);
+        }
+        SUBCASE("Sign Bit 0 / Exponent > 0") {
+            CHECK(doctest::Approx(xia::util::ieee_float(0x40490fdbu)) == 3.14159);
+            CHECK(doctest::Approx(xia::util::ieee_float(3.14159)) == xia::util::ieee_float(0x40490fdbu));
+        }
+        SUBCASE("Sign Bit 1 / Exponent > 0") {
+            CHECK(doctest::Approx(xia::util::ieee_float(0xc958a450u)) == -887365);
+            CHECK(doctest::Approx(xia::util::ieee_float(-887365.)) == xia::util::ieee_float(0xc958a450u));
+        }
+        SUBCASE("Sign Bit 0 / Exponent < 0") {
+            CHECK(doctest::Approx(xia::util::ieee_float(0x3e22d0e5u)) == 0.159);
+            CHECK(doctest::Approx(xia::util::ieee_float(0.159)) == xia::util::ieee_float(0x3e22d0e5u));
+        }
+        SUBCASE("Sign Bit 1 / Exponent < 0") {
+            CHECK(doctest::Approx(xia::util::ieee_float(0xbe22d0e5u)) == -0.159);
+            CHECK(doctest::Approx(xia::util::ieee_float(-0.159)) == xia::util::ieee_float(0xbe22d0e5u));
+        }
+        SUBCASE("Sign Bit 0 / Exponent = 0") {
             CHECK(xia::util::ieee_float(0x3f800000u) == 1.0);
-            CHECK(xia::util::ieee_float(0xbf800000u) == -1.0);
-            CHECK(xia::util::ieee_float(0x40490fdbu) == 3.14159);
-            CHECK(xia::util::ieee_float(0x4958a450u) == 887635.0);
             CHECK(xia::util::ieee_float(1.0) == xia::util::ieee_float(0x3f800000u));
+        }
+        SUBCASE("Sign Bit 1 / Exponent = 0") {
+            CHECK(xia::util::ieee_float(0xbf800000u) == -1.0);
             CHECK(xia::util::ieee_float(-1.0) == xia::util::ieee_float(0xbf800000u));
-            CHECK(xia::util::ieee_float(3.14159) == xia::util::ieee_float(0x40490fdbu));
-            CHECK(xia::util::ieee_float(88763.0) == xia::util::ieee_float(0x4958a450u));
         }
     }
 }

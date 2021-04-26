@@ -34,6 +34,7 @@
 *----------------------------------------------------------------------*/
 
 #include <algorithm>
+#include <bitset>
 #include <cmath>
 #include <sstream>
 #include <stdexcept>
@@ -262,15 +263,12 @@ ieee_float::in(const double dec_num) const
 double
 ieee_float::out() const
 {
-    short signbit = static_cast<short>(value >> 31);
-    short exponent = static_cast<short>(((value & 0x7F800000) >> 23) - 127);
+    auto signbit = static_cast<short>(value >> 31);
+    auto exponent = static_cast<short>(((value & 0x7F800000) >> 23) - 127);
     double mantissa = 1.0 + ((double(value & 0x7FFFFF) / double(1 << 23)));
-    double result;
-    if (signbit == 0) {
-        result = mantissa * (double(1 << exponent));
-    } else {
-        result = -(mantissa * (double(1 << exponent)));
-    }
+    double result = mantissa * std::pow(2.0, static_cast<double>(exponent));
+    if(signbit != 0)
+        result *= -1.0;
     return result;
 }
 
