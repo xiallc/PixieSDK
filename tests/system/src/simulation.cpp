@@ -38,6 +38,7 @@
 #include <fstream>
 
 #include <pixie_log.hpp>
+#include <pixie_util.hpp>
 
 #include "simulation.hpp"
 
@@ -81,9 +82,9 @@ module::open(size_t device_number)
             adc_clk_div = mod_def.adc_clk_div;
             fpga_clk_mhz = adc_msps / adc_clk_div;
 
-            present_ = true;
+            var_defaults = mod_def.var_defaults;
 
-            init_values();
+            present_ = true;
             return;
         }
     }
@@ -107,6 +108,7 @@ module::probe()
 {
     log(log::info) << "sim: module: probe";
     online_ = dsp_online = fippi_fpga = comms_fpga = true;
+    init_values();
 }
 
 void
@@ -131,6 +133,64 @@ module::initialize()
 {
 }
 
+void
+module::init_values()
+{
+    pixie::module::module::init_values();
+    if (!var_defaults.empty()) {
+        load_var_defaults(var_defaults);
+    }
+}
+
+void
+module::load_var_defaults(const std::string& file)
+{
+    log(log::info) << "sim: module: load var defaults: " << file;
+
+    std::ifstream input(file, std::ios::in | std::ios::binary);
+    if (!input) {
+        throw error(number, slot,
+                    error::code::file_read_failure,
+                    std::string("module var defaults open: ") + file +
+                    ": " + std::strerror(errno));
+    }
+
+    for (std::string line; std::getline(input, line); ) {
+        line = line.substr(0, line.find('#', 0));
+        if (!line.empty()) {
+            util::trim(line);
+            util::strings label_value;
+            util::split(label_value, line, '=');
+            if (label_value.size() == 2) {
+                label_value[1] =
+                    label_value[1].substr(0, label_value[1].find('(', 0));
+                if (param::is_module_var(label_value[0])) {
+                    param::module_var var =
+                        param::lookup_module_var(label_value[0]);
+                    size_t index = static_cast<size_t>(var);
+                    param::value_type value = std::stoul(label_value[1]);
+                    module_vars[index].value[0] = value;
+                    log(log::debug) << "sim: module: mod var: "
+                                    << label_value[0] << '=' << label_value[1];
+                } else if (param::is_channel_var(label_value[0])) {
+                    param::channel_var var =
+                        param::lookup_channel_var(label_value[0]);
+                    size_t index = static_cast<size_t>(var);
+                    param::value_type value = std::stoul(label_value[1]);
+                    for (size_t channel = 0;
+                         channel < num_channels;
+                         ++channel) {
+                        channels[channel].vars[index].value[0] = value;
+                    }
+                    log(log::debug) << "sim: module: chan var: "
+                                    << label_value[0] << '=' << label_value[1];
+                }
+            }
+        }
+    }
+
+    input.close();
+}
 
 void
 crate::add_module()
@@ -180,34 +240,54 @@ load_module_defs(std::istream& input)
 void
 add_module_def(const std::string mod_desc, const char delimiter)
 {
-    std::string md = mod_desc;
-
-    if (delimiter != ' ') {
-        std::transform(md.begin(), md.end(), md.begin(),
-                       [delimiter](unsigned char c) -> unsigned char {
-                           if (c == delimiter) return ' ';
-                           return c; });
-    }
-
-    std::transform(md.begin(), md.end(), md.begin(),
-                   [](unsigned char c) -> unsigned char {
-                       if (std::isspace(c)) return ' ';
-                       return c; });
-
-    std::istringstream field_stream(md);
+    util::strings fields;
+    util::split(fields, mod_desc, delimiter);
 
     module_def mod_def;
 
+    for (auto field : fields) {
+        util::strings label_value;
+        util::split(label_value, field, '=');
+        if (label_value.size() != 2) {
+            throw error(error::code::invalid_value,
+                        "invalid module definition: " + field);
+        }
 
-    field_stream >> mod_def.device_number
-                 >> mod_def.slot
-                 >> mod_def.revision
-                 >> mod_def.eeprom_format
-                 >> mod_def.serial_num
-                 >> mod_def.num_channels
-                 >> mod_def.adc_bits
-                 >> mod_def.adc_msps
-                 >> mod_def.adc_clk_div;
+        try {
+            if (label_value[0] == "device-number") {
+                mod_def.device_number = std::stoul(label_value[1]);
+            } else if (label_value[0] == "slot") {
+                mod_def.slot = std::stoul(label_value[1]);
+            } else if (label_value[0] == "revision") {
+                mod_def.revision = std::stoul(label_value[1]);
+            } else if (label_value[0] == "eeprom-format") {
+                mod_def.eeprom_format = std::stoul(label_value[1]);
+            } else if (label_value[0] == "serial-num") {
+                mod_def.serial_num = std::stoul(label_value[1]);
+            } else if (label_value[0] == "num-channels") {
+                mod_def.num_channels = std::stoul(label_value[1]);
+            } else if (label_value[0] == "adc-bits") {
+                mod_def.adc_bits = std::stoul(label_value[1]);
+            } else if (label_value[0] == "adc-msps") {
+                mod_def.adc_msps = std::stoul(label_value[1]);
+            } else if (label_value[0] == "adc-clk-div") {
+                mod_def.adc_clk_div = std::stoul(label_value[1]);
+            } else if (label_value[0] == "var-defaults") {
+                mod_def.var_defaults = label_value[1];
+            } else {
+                throw error(error::code::invalid_value,
+                            "invalid module definition: " + field);
+            }
+        } catch (error& e) {
+            throw;
+        } catch (...) {
+            throw error(error::code::invalid_value,
+                        "invalid module definition: bad value: " +
+                        label_value[1]);
+        }
+    }
+
+    log(log::info) << "sim: module desc: add: " << mod_desc;
 
     mod_defs.push_back(mod_def);
 }

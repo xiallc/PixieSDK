@@ -496,6 +496,41 @@ namespace param
         return channel_params;
     }
 
+    bool
+    is_system_param(const std::string& label)
+    {
+        auto search = system_params.find(label);
+        return search != system_params.end();
+    }
+
+    bool
+    is_module_param(const std::string& label)
+    {
+        auto search = module_params.find(label);
+        return search != module_params.end();
+    }
+
+    bool
+    is_channel_param(const std::string& label)
+    {
+        auto search = channel_params.find(label);
+        return search != channel_params.end();
+    }
+
+    bool
+    is_module_var(const std::string& label)
+    {
+        auto search = module_vars.find(label);
+        return search != module_vars.end();
+    }
+
+    bool
+    is_channel_var(const std::string& label)
+    {
+        auto search = channel_vars.find(label);
+        return search != channel_vars.end();
+    }
+
     system_param
     lookup_system_param(const std::string& label)
     {

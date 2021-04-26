@@ -221,6 +221,7 @@ namespace module
           online_(false),
           comms_fpga(false),
           fippi_fpga(false),
+          have_hardware(false),
           device(std::make_unique<pci_bus_handle>())
     {
     }
@@ -239,7 +240,7 @@ namespace module
           eeprom(m.eeprom),
           eeprom_format(m.eeprom_format),
           module_var_descriptors(std::move(m.module_var_descriptors)),
-          module_values(std::move(m.module_values)),
+          module_vars(std::move(m.module_vars)),
           channel_var_descriptors(std::move(m.channel_var_descriptors)),
           channels(std::move(m.channels)),
           firmware(std::move(m.firmware)),
@@ -249,6 +250,7 @@ namespace module
           online_(m.online_),
           comms_fpga(m.comms_fpga),
           fippi_fpga(m.fippi_fpga),
+          have_hardware(false),
           device(std::move(m.device))
     {
         m.slot = 0;
@@ -264,13 +266,14 @@ namespace module
         m.eeprom.clear();
         m.eeprom_format = -1;
         m.module_var_descriptors.clear();
-        m.module_values.clear();
+        m.module_vars.clear();
         m.channel_var_descriptors.clear();
         m.channels.clear();
         m.present_ = false;
         m.online_ = false;
         m.comms_fpga = false;
         m.fippi_fpga = false;
+        m.have_hardware = false;
     }
 
     module::~module()
@@ -311,13 +314,14 @@ namespace module
         eeprom_format = m.eeprom_format;
         module_var_descriptors = std::move(m.module_var_descriptors);
         channel_var_descriptors = std::move(m.channel_var_descriptors);
-        module_values = std::move(m.module_values);
+        module_vars = std::move(m.module_vars);
         channels = std::move(m.channels);
         reg_trace = m.reg_trace;
         present_ = m.present_;
         online_ = m.online_;
         comms_fpga = m.comms_fpga;
         fippi_fpga = m.fippi_fpga;
+        have_hardware = m.have_hardware;
 
         device = std::move(m.device);
 
@@ -338,6 +342,7 @@ namespace module
         m.online_ = false;
         m.comms_fpga = false;
         m.fippi_fpga = false;
+        m.have_hardware = false;
 
         return *this;
     }
@@ -536,6 +541,7 @@ namespace module
                             "EEPROM format 2 not supported");
             }
 
+            have_hardware = true;
             present_ = true;
         }
     }
@@ -574,6 +580,7 @@ namespace module
 
             device->device_number = -1;
             online_ = false;
+            have_hardware = false;
             present_ = false;
 
             /*
@@ -1134,13 +1141,13 @@ namespace module
         }
         lock_guard guard(lock_);
         param::value_type value;
-        if (io) {
+        if (have_hardware && io) {
             hw::memory::dsp dsp(*this);
             hw::word mem = dsp.read(desc.address);
             hw::convert(mem, value);
-            module_values[index].value[offset] = value;
+            module_vars[index].value[offset] = value;
         } else {
-            value = module_values[index].value[offset];
+            value = module_vars[index].value[offset];
         }
         return value;
     }
@@ -1183,7 +1190,7 @@ namespace module
         }
         lock_guard guard(lock_);
         param::value_type value;
-        if (io) {
+        if (have_hardware && io) {
             hw::memory::dsp dsp(*this);
             hw::convert(dsp.read(channel, desc.address), value);
             channels[channel].vars[index].value[offset] = value;
@@ -1254,7 +1261,7 @@ namespace module
         hw::memory::dsp dsp(*this);
         lock_guard guard(lock_);
         dsp.write(desc.address, word);
-        module_values[index].value[offset] = value;
+        module_vars[index].value[offset] = value;
     }
 
     void
@@ -1422,7 +1429,7 @@ namespace module
     void
     module::erase_values()
     {
-        module_values.clear();
+        module_vars.clear();
         channels.clear();
     }
 
@@ -1436,7 +1443,7 @@ namespace module
         }
         erase_values();
         for (const auto& desc : module_var_descriptors) {
-            module_values.push_back(param::module_variable(desc));
+            module_vars.push_back(param::module_variable(desc));
         }
         channels.resize(num_channels, channel::channel(*this));
         for (size_t channel = 0; channel < num_channels; ++channel) {

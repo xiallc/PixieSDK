@@ -468,6 +468,15 @@ namespace param
     const channel_param_map get_channel_param_map();
 
     /*
+     * Check is the parameter or variable is valid?
+     */
+    bool is_system_param(const std::string& label);
+    bool is_module_param(const std::string& label);
+    bool is_channel_param(const std::string& label);
+    bool is_module_var(const std::string& label);
+    bool is_channel_var(const std::string& label);
+
+    /*
      * Look up parameters and variables.
      */
     system_param lookup_system_param(const std::string& label);

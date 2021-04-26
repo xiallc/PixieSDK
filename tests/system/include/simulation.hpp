@@ -70,8 +70,12 @@ public:
               bool boot_fippi = true,
               bool boot_dsp = true) override;
     void initialize() override;
+    void init_values() override;
+
+    void load_var_defaults(const std::string& file);
 
     std::unique_ptr<uint8_t[]> pci_memory;
+    std::string var_defaults;
 };
 
 /*
@@ -100,6 +104,7 @@ struct module_def
     int adc_bits;
     int adc_msps;
     int adc_clk_div;
+    std::string var_defaults;
 
     module_def();
 };

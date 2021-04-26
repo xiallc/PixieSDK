@@ -11,17 +11,17 @@ where each line in the crate firmware file is a firmware file.
 
 The format of a line is:
 
- <field>,<field><field>...
+ `<field>,<field>,<field>..<field>`
 
 The fields in order they appear in a line is:
 
- version  : string
+ `version` : string
 
- revision : int
+ `revision` : int
 
- device   : string, can be sys, fippi, or dsp
+ `device` : string, can be `sys`, `fippi`, or `dsp`
 
- filename : string
+ `filename` : string
 
 
 Module Definition
@@ -31,32 +31,34 @@ The module definition for crate is required to be supplied on the command line
 if the simulation (`-S`) option is provided. The definition is a text file
 where each line defines a module in the crate.
 
-All fields are required. in time some fields maybe filled in my the SDK
-software based on the serial number and revision.
+The fields are specified as a label/value pair and can appear in any order. It
+is recommended all fields are provide, the `var-defaults` is optional.
 
 The format of a line is:
 
- `<field>,<field><field>...`
+ `label=value,label=value...label=value`
 
-The fields in order they appear in a line is:
+The fields are:
 
- `device_number` : `size_t`, the device number order modules are opened
+ `device=number` : `size_t`, the device number order modules are opened
 
  `slot` : `int`, the slot the module occupies
 
  `revision` : `int`, the revision of the module
 
- `eeprom_format` : `int`, set to `1`
+ `eeprom-format` : `int`, set to `1`
 
- `serial_num` : `int`, serial number of the module
+ `serial-num` : `int`, serial number of the module
 
- `num_channels` : number of channels
+ `num-channels` : number of channels
 
- `adc_bits` : `int`, number of ADC bits
+ `adc-bits` : `int`, number of ADC bits
 
- `adc_msps` : `int`, ADC mega-samples per second
+ `adc-msps` : `int`, ADC mega-samples per second
 
- `adc_clk_div` : `int`, the divider of the ADC clock used to clock the FPGA
+ `adc-clk-div` : `int`, the divider of the ADC clock used to clock the FPGA
+
+ `var-defaults` : `string`, path to a file of default values
 
 Commands
 --------
@@ -66,7 +68,7 @@ The test command supports the following command:
 boot
 ~~~~
 
-  `boot`
+`boot`
 
 Arguments:
 
@@ -80,15 +82,15 @@ Boot the module using the firmware set passed in on the command line using the
 `par-read`
 ~~~~~~~~~~
 
-  `par-read <mod> [channel] <param>`
+`par-read <mod> [channel] <param>`
 
 Arguments:
 
- `mod` : module number
+`mod` : module number
 
- `channel` : optionally provide a channel number
+`channel` : optionally provide a channel number
 
- `param` : parameter to read and print or `all` for all parameters
+`param` : parameter to read and print or `all` for all parameters
 
 Description:
 
@@ -98,17 +100,17 @@ are read.
 `par-write`
 ~~~~~~~~~~~
 
- `par-write <mod> [channel] <param> <value>`
+`par-write <mod> [channel] <param> <value>`
 
 Arguments:
 
- `mod` : module number
+`mod` : module number
 
- `channel` : optionally provide a channel number
+`channel` : optionally provide a channel number
 
- `param` : parameter to write to the value too
+`param` : parameter to write to the value too
 
- `value` : value to write to the parameter
+`value` : value to write to the parameter
 
 Description:
 
@@ -118,15 +120,15 @@ written too.
 `var-read`
 ~~~~~~~~~~
 
-  `var-read <mod> [channel] <var>`
+`var-read <mod> [channel] <var>`
 
 Arguments:
 
- `mod` : module number
+`mod` : module number
 
- `channel` : optionally provide a channel number
+`channel` : optionally provide a channel number
 
- `var` : DSP variable to read and print or `all` for all variables
+`var` : DSP variable to read and print or `all` for all variables
 
 Description:
 
@@ -136,17 +138,17 @@ variables are read.
 `var-write`
 ~~~~~~~~~~~
 
- `var-write <mod> [channel] <var> <value>`
+`var-write <mod> [channel] <var> <value>`
 
 Arguments:
 
- `mod` : module number
+`mod` : module number
 
- `channel` : optionally provide a channel number
+`channel` : optionally provide a channel number
 
- `var` : variable to write to the value too
+`var` : variable to write to the value too
 
- `value` : value to write to the variable
+`value` : value to write to the variable
 
 Description:
 

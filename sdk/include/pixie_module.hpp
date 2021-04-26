@@ -196,7 +196,7 @@ namespace module
          * Module parameters
          */
         param::module_var_descs module_var_descriptors;
-        param::module_variables module_values;
+        param::module_variables module_vars;
 
         /*
          * Channel parameters, a set per channel.
@@ -369,10 +369,10 @@ namespace module
         /*
          * DMA block read.
          */
-        void dma_read(const hw::address source, hw::words& values);
-        void dma_read(const hw::address source,
-                      hw::word_ptr values,
-                      size_t length);
+        virtual void dma_read(const hw::address source, hw::words& values);
+        virtual void dma_read(const hw::address source,
+                              hw::word_ptr values,
+                              size_t length);
 
         /*
          * Locks
@@ -400,8 +400,8 @@ namespace module
         /*
          * Initialise the values.
          */
-        void erase_values();
-        void init_values();
+        virtual void erase_values();
+        virtual void init_values();
 
         /*
          * Check the EEPROM for verison 2 format.
@@ -447,6 +447,11 @@ namespace module
         bool comms_fpga;
         bool fippi_fpga;
         bool dsp_online;
+
+        /*
+         * Have hardware?
+         */
+        bool have_hardware;
 
         /*
          * PCI bus. The type is opaque.
