@@ -52,6 +52,11 @@ namespace xia
 namespace logging
 {
 /*
+ * Local error type
+ */
+typedef xia::pixie::error::error error;
+
+/*
  * Synchronous outputter.
  *
  * Can be made asynchronous with a fixed size queue and worker thread.
@@ -150,7 +155,7 @@ outputter::outputter(const std::string& name_,
         if (!*outfile) {
             std::ostringstream what;
             what << "opening: " << filename << ": " << std::strerror(errno);
-            throw pixie::error::error(pixie::error::code::file_create_failure, what);
+            throw error(error::code::file_create_failure, what);
         }
         out.rdbuf(outfile->rdbuf());
     }
@@ -279,7 +284,7 @@ stop(const std::string name)
             return;
         }
     }
-    throw pixie::error::error(pixie::error::code::internal_failure,
+    throw error(error::code::internal_failure,
                        "invalid log output name in stop");
 }
 
@@ -292,7 +297,7 @@ set_level(const std::string name, log::level level)
             return;
         }
     }
-    throw pixie::error::error(pixie::error::code::internal_failure,
+    throw error(error::code::internal_failure,
                        "invalid log output name in set level");
 }
 
@@ -305,7 +310,7 @@ set_level_stamp(const std::string name, bool level)
             return;
         }
     }
-    throw pixie::error::error(pixie::error::code::internal_failure,
+    throw error(error::code::internal_failure,
                        "invalid log output name in set level stamp");
 }
 
@@ -318,7 +323,7 @@ set_datetime_stamp(const std::string name, bool datetime)
             return;
         }
     }
-    throw pixie::error::error(pixie::error::code::internal_failure,
+    throw error(error::code::internal_failure,
                        "invalid log output name in set datetime stamp");
 }
 
@@ -331,7 +336,7 @@ set_line_numbers(const std::string name, bool line_numbers)
             return;
         }
     }
-    throw pixie::error::error(pixie::error::code::internal_failure,
+    throw error(error::code::internal_failure,
                        "invalid log output name in set line numbers");
 }
 
