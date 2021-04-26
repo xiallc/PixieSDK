@@ -32,15 +32,15 @@
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
 *----------------------------------------------------------------------**/
-/// @file test_pixie_log.cpp
+/// @file test_pixie_util.cpp
 /// @brief
 /// @author S. V. Paulauskas
-/// @date April 15, 2021
+/// @date April 20, 2021
 
 #include "doctest.h"
 #include "pixie_util.hpp"
 
-TEST_SUITE("xia::pixie") {
+TEST_SUITE("xia::util") {
     TEST_CASE("Verify ostream_guard") {
         std::ios_base::fmtflags expected(std::cout.flags());
         xia::util::ostream_guard ostream_guard(std::cout);
