@@ -37,11 +37,56 @@
 *----------------------------------------------------------------------*/
 
 #include <iostream>
+#include <string>
+#include <vector>
 
 namespace xia
 {
-namespace pixie
+namespace util
 {
+/*
+ * String trim and split support.
+ */
+typedef std::vector<std::string> strings;
+
+/**
+ * Split a string into a vector of strings.
+ *
+ * @param split_string The split string
+ * @param s String to split
+ * @param count Number of split to make before returning
+ * @param strip_whitespace Trim white space from the split strings
+ * @param strip_quotes Remove quotes from string fragments
+ * @param empty Include empty string fragments
+ */
+void split(strings& split_string,
+           const std::string& s,
+           const char delimiter = ' ',
+           size_t count = 0,
+           bool strip_whitespace = true,
+           bool strip_quotes = true,
+           bool empty = false);
+
+/*
+ * Remove spaces from the front of the string.
+ */
+void ltrim(std::string& s);
+
+/*
+ * Remove spaces from the end of the string
+ */
+void rtrim(std::string& s);
+
+/*
+ * Trim spaces from both ends of a string
+ */
+void trim(std::string& s);
+
+/*
+ * Dequote a string
+ */
+void dequote(std::string& s);
+
 /*
  * Save and restore the output stream's settings.
  */

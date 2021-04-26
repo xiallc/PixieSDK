@@ -107,7 +107,7 @@ template<typename V>
 static void
 output_value(const std::string& name, V value)
 {
-    xia::pixie::ostream_guard oguard(std::cout);
+    xia::util::ostream_guard oguard(std::cout);
     std::cout << name << " = " << value;
     if (!std::is_same<V, double>::value) {
         std::cout << std::hex << " (0x" << value << ')';

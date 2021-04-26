@@ -198,6 +198,7 @@ add_module_def(const std::string mod_desc, const char delimiter)
 
     module_def mod_def;
 
+
     field_stream >> mod_def.device_number
                  >> mod_def.slot
                  >> mod_def.revision

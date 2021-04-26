@@ -106,7 +106,7 @@ namespace module
     void
     error::output(std::ostream& out)
     {
-        ostream_guard flags(out);
+        util::ostream_guard flags(out);
         out << std::setfill(' ')
             << "error: code=" << std::setw(2) << result()
             << ' ' << what();
@@ -1321,7 +1321,7 @@ namespace module
     void
     module::output(std::ostream& out) const
     {
-        ostream_guard flags(out);
+        util::ostream_guard flags(out);
         out << std::boolalpha
             << "number: " << number
             << " slot: " << slot

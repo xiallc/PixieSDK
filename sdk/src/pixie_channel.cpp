@@ -137,7 +137,7 @@ error::error(const int num, const int slot, const int channel,
 void
 error::output(std::ostream& out)
 {
-    ostream_guard flags(out);
+    util::ostream_guard flags(out);
     out << std::setfill(' ')
         << "error: code=" << std::setw(2) << result()
         << ' ' << what();
@@ -232,7 +232,7 @@ baseline::get()
         const size_t offset = 2 + (bl * BASELINES_BLOCK_LEN);
         double timestamp =
             time(buffer[offset], buffer[offset + 1]) - starttime;
-        double baseline = ieee_float(buffer[offset + 2 + chan]);
+        double baseline = util::ieee_float(buffer[offset + 2 + chan]);
         values[bl] = value(timestamp, baseline);
     }
 }
@@ -579,7 +579,7 @@ double
 channel::tau()
 {
     module::module& mod = module.get();
-    ieee_float preamp_tau =
+    util::ieee_float preamp_tau =
         mod.read_var(param::channel_var::PreampTau, number);
     return preamp_tau;
 }
@@ -589,7 +589,7 @@ channel::tau(double value)
 {
     module::module& mod = module.get();
 
-    param::value_type preamp_tau = ieee_float(value);
+    param::value_type preamp_tau = util::ieee_float(value);
 
     mod.write_var(param::channel_var::PreampTau, number, preamp_tau);
 

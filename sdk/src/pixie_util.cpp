@@ -33,14 +33,85 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
+#include <algorithm>
 #include <cmath>
+#include <sstream>
+#include <stdexcept>
 
 #include <pixie_util.hpp>
 
 namespace xia
 {
-namespace pixie
+namespace util
 {
+void
+dequote (std::string& s)
+{
+    if (!s.empty())
+    {
+      char front = s[0];
+      char back = s[s.length () - 1];
+      if ((front == '"') || (front == '\''))
+      {
+        if (front != back)
+            throw std::runtime_error("invalid quoting: " + s);
+        s =  s.substr(1, s.length() - (1 + 1));
+      }
+    }
+  }
+
+void
+split(strings& split_string,
+      const std::string& s,
+      const char delimiter,
+      size_t count,
+      bool strip_whitespace,
+      bool strip_quotes,
+      bool empty)
+{
+    std::stringstream ss(s);
+    std::string       e;
+    split_string.clear();
+    while (std::getline(ss, e, delimiter))
+    {
+        if (strip_whitespace)
+            trim(e);
+        if (strip_quotes)
+            dequote(e);
+        if (empty || !e.empty())
+        {
+            split_string.push_back(e);
+            if (count != 0 && split_string.size() >= count) {
+                break;
+            }
+        }
+    }
+}
+
+void
+ltrim(std::string& s)
+{
+    s.erase(s.begin(),
+            std::find_if(s.begin(), s.end(),
+                         [](unsigned char ch) {
+                             return !std::isspace(ch); }));
+}
+
+void
+rtrim(std::string& s)
+{
+    s.erase(std::find_if(s.rbegin(), s.rend(),
+                         [](unsigned char ch) { return !std::isspace(ch); }).base(),
+            s.end());
+}
+
+void
+trim(std::string& s)
+{
+    ltrim(s);
+    rtrim(s);
+}
+
 ieee_float::ieee_float()
     : value(0)
 {

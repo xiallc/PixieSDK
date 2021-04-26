@@ -43,31 +43,31 @@
 TEST_SUITE("xia::pixie") {
     TEST_CASE("Verify ostream_guard") {
         std::ios_base::fmtflags expected(std::cout.flags());
-        xia::pixie::ostream_guard ostream_guard(std::cout);
+        xia::util::ostream_guard ostream_guard(std::cout);
         CHECK(ostream_guard.flags == expected);
     }
     TEST_CASE("ieee_float") {
         SUBCASE("Initialization") {
-            CHECK(xia::pixie::ieee_float(0.5) == 0.5);
-            CHECK(xia::pixie::ieee_float(xia::pixie::ieee_float(0.5)) == 0.5);
-            CHECK(xia::pixie::ieee_float(0x3f000000u) == 0.5);            
+            CHECK(xia::util::ieee_float(0.5) == 0.5);
+            CHECK(xia::util::ieee_float(xia::util::ieee_float(0.5)) == 0.5);
+            CHECK(xia::util::ieee_float(0x3f000000u) == 0.5);
         }
         SUBCASE("Operators") {
-            xia::pixie::ieee_float ieee = 0.5;
-            xia::pixie::ieee_float copy = ieee;
+            xia::util::ieee_float ieee = 0.5;
+            xia::util::ieee_float copy = ieee;
             CHECK(ieee == copy);
-            CHECK(ieee == xia::pixie::ieee_float(0.5));
+            CHECK(ieee == xia::util::ieee_float(0.5));
             CHECK(static_cast<double>(ieee) == 0.5);
         }
         SUBCASE("Conversions") {
-            CHECK(xia::pixie::ieee_float(0x3f800000u) == 1.0);
-            CHECK(xia::pixie::ieee_float(0xbf800000u) == -1.0);
-            CHECK(xia::pixie::ieee_float(0x40490fdbu) == 3.14159);
-            CHECK(xia::pixie::ieee_float(0x4958a450u) == 887635.0);
-            CHECK(xia::pixie::ieee_float(1.0) == xia::pixie::ieee_float(0x3f800000u));
-            CHECK(xia::pixie::ieee_float(-1.0) == xia::pixie::ieee_float(0xbf800000u));
-            CHECK(xia::pixie::ieee_float(3.14159) == xia::pixie::ieee_float(0x40490fdbu));
-            CHECK(xia::pixie::ieee_float(88763.0) == xia::pixie::ieee_float(0x4958a450u));
+            CHECK(xia::util::ieee_float(0x3f800000u) == 1.0);
+            CHECK(xia::util::ieee_float(0xbf800000u) == -1.0);
+            CHECK(xia::util::ieee_float(0x40490fdbu) == 3.14159);
+            CHECK(xia::util::ieee_float(0x4958a450u) == 887635.0);
+            CHECK(xia::util::ieee_float(1.0) == xia::util::ieee_float(0x3f800000u));
+            CHECK(xia::util::ieee_float(-1.0) == xia::util::ieee_float(0xbf800000u));
+            CHECK(xia::util::ieee_float(3.14159) == xia::util::ieee_float(0x40490fdbu));
+            CHECK(xia::util::ieee_float(88763.0) == xia::util::ieee_float(0x4958a450u));
         }
     }
 }
