@@ -476,65 +476,7 @@ namespace module
                     serial_num = static_cast<int>(eeprom[0]);
                 }
 
-                if (serial_num == 0xFFFF) {
-                    throw error(number, slot,
-                                error::code::module_initialize_failure,
-                                "invalid serial number: EEPROM erased");
-                }
-
-                if (serial_num > 1034) {
-                    eeprom_format = 1;
-                    adc_bits = static_cast<int>(eeprom[99]);
-                    adc_msps =
-                        (static_cast<int>(eeprom[99 + 2]) << 8) |
-                        static_cast<int>(eeprom[99 + 1]);
-                    if (revision <= rev_F) {
-                        num_channels = 16;
-                    } else {
-                        num_channels = 16;
-                    }
-                } else {
-                    for (const auto& config : module_configs) {
-                        if (serial_num >= std::get<0>(config.serial_num) &&
-                            serial_num <= std::get<1>(config.serial_num)) {
-                            adc_bits = config.adc_bits;
-                            adc_msps = config.adc_msps;
-                            eeprom_format = config.eeprom_format;
-                            num_channels = config.num_channels;
-                        break;
-                        }
-                    }
-                }
-
-                if (adc_bits == 0) {
-                    std::ostringstream oss;
-                    oss << "unknown serial number to ADC config: "
-                        << serial_num;
-                    throw error(number, slot,
-                                error::code::module_initialize_failure,
-                                oss.str());
-                }
-
-                /*
-                 * Set the FPGA ADC clock divider and the FPGA clock frequency.
-                 */
-                switch (adc_msps) {
-                case 100:
-                    adc_clk_div = 1;
-                    break;
-                case 250:
-                    adc_clk_div = 2;
-                    break;
-                case 500:
-                    adc_clk_div = 5;
-                    break;
-                default:
-                    throw error(number, slot,
-                                error::code::module_initialize_failure,
-                                "invalid ADC MSPS: " + std::to_string(adc_msps));
-                };
-
-                fpga_clk_mhz = adc_msps / adc_clk_div;
+                config_settings();
             } else {
                 throw error(number, slot,
                             error::code::module_initialize_failure,
@@ -724,6 +666,70 @@ namespace module
     void
     module::initialize()
     {
+    }
+
+    void
+    module::config_settings()
+    {
+        if (serial_num == 0xFFFF) {
+            throw error(number, slot,
+                        error::code::module_initialize_failure,
+                        "invalid serial number: EEPROM erased");
+        }
+
+        if (serial_num > 1034) {
+            eeprom_format = 1;
+            adc_bits = static_cast<int>(eeprom[99]);
+            adc_msps =
+                (static_cast<int>(eeprom[99 + 2]) << 8) |
+                static_cast<int>(eeprom[99 + 1]);
+            if (revision <= rev_F) {
+                num_channels = 16;
+            } else {
+                num_channels = 16;
+            }
+        } else {
+            for (const auto& config : module_configs) {
+                if (serial_num >= std::get<0>(config.serial_num) &&
+                    serial_num <= std::get<1>(config.serial_num)) {
+                    adc_bits = config.adc_bits;
+                    adc_msps = config.adc_msps;
+                    eeprom_format = config.eeprom_format;
+                    num_channels = config.num_channels;
+                    break;
+                }
+            }
+        }
+
+        if (adc_bits == 0) {
+            std::ostringstream oss;
+            oss << "unknown serial number to ADC config: "
+                << serial_num;
+            throw error(number, slot,
+                        error::code::module_initialize_failure,
+                        oss.str());
+        }
+
+        /*
+         * Set the FPGA ADC clock divider and the FPGA clock frequency.
+         */
+        switch (adc_msps) {
+        case 100:
+            adc_clk_div = 1;
+            break;
+        case 250:
+            adc_clk_div = 2;
+            break;
+        case 500:
+            adc_clk_div = 5;
+            break;
+        default:
+            throw error(number, slot,
+                        error::code::module_initialize_failure,
+                        "invalid ADC MSPS: " + std::to_string(adc_msps));
+        };
+
+        fpga_clk_mhz = adc_msps / adc_clk_div;
     }
 
     void

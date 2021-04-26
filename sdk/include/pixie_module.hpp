@@ -261,6 +261,11 @@ namespace module
         virtual void initialize();
 
         /*
+         * Configure the settings from the revision and serial number.
+         */
+        virtual void config_settings();
+
+        /*
          * Set or get the firmware.
          */
         void set(firmware::module& fw);
