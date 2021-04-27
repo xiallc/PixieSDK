@@ -181,10 +181,8 @@ baseline::find_cut(size_t num)
     try {
         compute_cut();
         mod.write_var(param::channel_var::BLcut, cut, chan);
-
         compute_cut();
         mod.write_var(param::channel_var::BLcut, cut, chan);
-
         log(log::info) << channel_label(channel_) << "bl cut=" << cut;
     } catch (...) {
         try {
@@ -275,7 +273,7 @@ baseline::compute_cut()
         cut = 0;
     }
 
-    log(log::info) << channel_label(channel_) << "compute cut=" << cut;
+    log(log::info) << channel_label(channel_) << "computed cut=" << cut;
 }
 
 channel::channel(module::module& module_)

@@ -84,7 +84,7 @@ namespace memory
         /*
          * DMA block size.
          */
-        static const size_t max_dma_block_size = 9192;
+        static const size_t max_dma_block_size = 8192;
 
         dsp(module::module& module);
 

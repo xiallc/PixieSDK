@@ -54,6 +54,7 @@ static const char* control_task_labels[] =
 {
     "set_dacs",
     "enable_input",
+    "not-used",
     "ramp_offsetdacs",
     "get_traces",
     "program_fippi",

@@ -1408,6 +1408,10 @@ namespace module
                      hw::word_ptr values,
                      size_t length)
     {
+        log(log::debug) << module_label(*this)
+                        << "dma read: addr=" << std::hex << source
+                        << " length=" << std::dec << length;
+
         online_check();
 
         PLX_DMA_PARAMS dma_params;
@@ -1438,6 +1442,9 @@ namespace module
                         error::code::device_dma_failure,
                         oss.str());
         }
+
+        log(log::debug) << module_label(*this)
+                        << "dma read: done";
     }
 
     bool

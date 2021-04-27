@@ -133,7 +133,7 @@ make_command_sets(args::PositionalList<std::string>& cmd, commands& cmds)
         auto counts = search->second.counts;
         auto min = std::min_element(counts.begin(), counts.end());
         auto max = std::max_element(counts.begin(), counts.end());
-        if (option.size() > *min) {
+        if (*min != *max && option.size() > *min) {
             search = command_defs.find(opt);
             if (search != command_defs.end()) {
                 if (option.size() > 1) {
@@ -142,10 +142,11 @@ make_command_sets(args::PositionalList<std::string>& cmd, commands& cmds)
                 cmds.push_back(option);
                 option.clear();
                 option.push_back(opt);
-            } else if (option.size() > *max) {
-                cmds.push_back(option);
-                option.clear();
             }
+        }
+        if (option.size() > *max) {
+          cmds.push_back(option);
+          option.clear();
         }
     }
     if (!option.empty()) {

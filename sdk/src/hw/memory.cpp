@@ -128,7 +128,7 @@ namespace memory
     void
     dsp::read(const address addr, io_buffer& buffer)
     {
-        static_assert((io_buffer_length % max_dma_block_size) != 0,
+        static_assert((io_buffer_length % max_dma_block_size) == 0,
                       "io-buffer not a multiple of the block size");
         const size_t blocks = buffer.size() / max_dma_block_size;
         word* data = buffer.data();
@@ -166,6 +166,10 @@ namespace memory
     void
     dsp::dma_read(const address addr, word_ptr buffer, const size_t length)
     {
+        log(log::debug) << module::module_label(module)
+                        << "dsp dma read: addr=" << std::hex << addr
+                        << " length=" << std::dec << length;
+
         host_bus_request hbr(module);
 
         bus_write(EXT_MEM_TEST, DMASTAT);
