@@ -48,6 +48,7 @@
 #include <pixie_channel.hpp>
 #include <pixie_fw.hpp>
 #include <pixie_hw.hpp>
+#include <pixie_log.hpp>
 #include <pixie_param.hpp>
 
 #include <hw/i2cm24c64.hpp>
@@ -351,12 +352,9 @@ namespace module
                 value = 0;
             }
             if (reg_trace) {
-                std::ios_base::fmtflags oflags(std::cout.flags());
-                std::cout << "M r " << std::setfill('0') << std::hex
-                          << vmaddr << ':' << std::setw(2) << reg
-                          << " => " << std::setw(8) << value
-                          << std::endl;
-                std::cout.flags(oflags);
+                log(log::debug) << "M r " << std::setfill('0') << std::hex
+                                << vmaddr << ':' << std::setw(2) << reg
+                                << " => " << std::setw(8) << value;
             }
             return value;
         }
@@ -366,12 +364,9 @@ namespace module
          */
         inline void write_word(int reg, const hw::word value) {
             if (reg_trace) {
-                std::ios_base::fmtflags oflags(std::cout.flags());
-                std::cout << "M w " << std::setfill('0') << std::hex
-                          << vmaddr << ':' << std::setw(2) << reg
-                          << " <= " << std::setw(8) << value
-                          << std::endl;
-                std::cout.flags(oflags);
+                log(log::debug) << "M w " << std::setfill('0') << std::hex
+                                << vmaddr << ':' << std::setw(2) << reg
+                                << " <= " << std::setw(8) << value;
             }
             if (have_hardware) {
                 hw::write_word(vmaddr, reg, value);
@@ -470,6 +465,12 @@ namespace module
          */
         bus_handle device;
     };
+
+    /*
+     * Make a label from the module
+     */
+    std::string module_label(const module& mod,
+                             const char* label = "module");
 
     /*
      * A list of numbers that can be assigned to modules by slots

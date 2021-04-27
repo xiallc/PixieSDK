@@ -103,8 +103,8 @@ static std::string
 channel_label(const int num, const int slot, const int chan)
 {
     std::ostringstream oss;
-    oss << "channel [num=" << num << ",slot=" << slot
-        << ",chan=" << chan << "]";
+    oss << "channel: num=" << num << ",slot=" << slot
+        << ",chan=" << chan << ": ";
     return oss.str();
 }
 
@@ -150,7 +150,7 @@ error::make_what(const int num,
                  const char* what_)
 {
     std::ostringstream oss;
-    oss << channel_label(num, slot, channel) << ": " << what_;
+    oss << channel_label(num, slot, channel) << what_;
     return oss.str();
 }
 
@@ -163,7 +163,7 @@ baseline::baseline(channel& channel__)
 void
 baseline::find_cut(size_t num)
 {
-    log(log::info) << channel_label(channel_) << ": find bl cut: num=" << num;
+    log(log::info) << channel_label(channel_) << "find bl cut: num=" << num;
 
     module::module& mod = channel_.module.get();
     const size_t chan = channel_.number;
@@ -175,32 +175,32 @@ baseline::find_cut(size_t num)
     param::value_type current_bl_cut =
         mod.read_var(param::channel_var::BLcut, chan, 0, false);
 
-    mod.write_var(param::channel_var::Log2Bweight, chan, 0);
-    mod.write_var(param::channel_var::BLcut, chan, 0);
+    mod.write_var(param::channel_var::Log2Bweight, 0, chan);
+    mod.write_var(param::channel_var::BLcut, 0, chan);
 
     try {
         compute_cut();
-        mod.write_var(param::channel_var::BLcut, chan, cut);
+        mod.write_var(param::channel_var::BLcut, cut, chan);
 
         compute_cut();
-        mod.write_var(param::channel_var::BLcut, chan, cut);
+        mod.write_var(param::channel_var::BLcut, cut, chan);
 
-        log(log::info) << channel_label(channel_) << ": bl cut=" << cut;
+        log(log::info) << channel_label(channel_) << "bl cut=" << cut;
     } catch (...) {
         try {
             mod.write_var(param::channel_var::Log2Bweight,
-                          chan,
-                          log2_bweight);
+                          log2_bweight,
+                          chan);
             mod.write_var(param::channel_var::Log2Bweight,
-                          chan,
-                          current_bl_cut);
+                          current_bl_cut,
+                          chan);
         } catch (...) {
             /* ignore nesting exceptions, keep the first */
         }
         throw;
     }
 
-    mod.write_var(param::channel_var::Log2Bweight, chan, log2_bweight);
+    mod.write_var(param::channel_var::Log2Bweight, log2_bweight, chan);
 }
 
 double
@@ -275,13 +275,12 @@ baseline::compute_cut()
         cut = 0;
     }
 
-    log(log::info) << channel_label(channel_) << ": compute cut=" << cut;
+    log(log::info) << channel_label(channel_) << "compute cut=" << cut;
 }
 
 channel::channel(module::module& module_)
     : number(-1),
-      module(module_),
-      baselines(*this)
+      module(module_)
 {
 }
 
@@ -297,8 +296,8 @@ channel::operator=(const channel& c)
 void
 channel::update_fifo(param::value_type trace_delay)
 {
-    log(log::info) << channel_label(*this)
-                   << ": fifo update: trace-delay=" << trace_delay;
+    log(log::debug) << channel_label(*this)
+                    << "fifo update: trace-delay=" << trace_delay;
 
     module::module& mod = module.get();
 
@@ -328,8 +327,8 @@ channel::update_fifo(param::value_type trace_delay)
         trigger_delay = (paf_length - trace_delay) * fast_filter_range;
     }
 
-    mod.write_var(param::channel_var::TriggerDelay, number, trigger_delay);
-    mod.write_var(param::channel_var::PAFlength, number, paf_length);
+    mod.write_var(param::channel_var::TriggerDelay, trigger_delay, number);
+    mod.write_var(param::channel_var::PAFlength, paf_length, number);
 }
 
 double
@@ -371,8 +370,8 @@ channel::trigger_risetime(double value)
         }
     }
 
-    mod.write_var(param::channel_var::FastLength, number, fast_length);
-    mod.write_var(param::channel_var::FastGap, number, fast_gap);
+    mod.write_var(param::channel_var::FastLength, fast_length, number);
+    mod.write_var(param::channel_var::FastGap, fast_gap, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
@@ -410,7 +409,7 @@ channel::trigger_flattop(double value)
         fast_gap = FASTFILTER_MAX_LEN - fast_length;
     }
 
-    mod.write_var(param::channel_var::FastGap, number, fast_gap);
+    mod.write_var(param::channel_var::FastGap, fast_gap, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
@@ -449,7 +448,7 @@ channel::trigger_threshold(double value)
         fast_thresh = static_cast<param::value_type>(value);
     }
 
-    mod.write_var(param::channel_var::FastThresh, number, fast_thresh);
+    mod.write_var(param::channel_var::FastThresh, fast_thresh, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
@@ -537,8 +536,8 @@ channel::energy_risetime_flattop(param::channel_param par, double value)
                     "param not enery risetime or flattop");
     }
 
-    mod.write_var(param::channel_var::SlowLength, number, slow_length);
-    mod.write_var(param::channel_var::SlowGap, number, slow_gap);
+    mod.write_var(param::channel_var::SlowLength, slow_length, number);
+    mod.write_var(param::channel_var::SlowGap, slow_gap, number);
 
     param::value_type peak_sep = slow_length + slow_gap;
     param::value_type peak_sample;
@@ -567,8 +566,8 @@ channel::energy_risetime_flattop(param::channel_param par, double value)
         break;
     }
 
-    mod.write_var(param::channel_var::PeakSample, number, peak_sample);
-    mod.write_var(param::channel_var::PeakSep, number, peak_sep);
+    mod.write_var(param::channel_var::PeakSample, peak_sample, number);
+    mod.write_var(param::channel_var::PeakSep, peak_sep, number);
 
     update_fifo(trace_delay);
 
@@ -591,9 +590,10 @@ channel::tau(double value)
 
     param::value_type preamp_tau = util::ieee_float(value);
 
-    mod.write_var(param::channel_var::PreampTau, number, preamp_tau);
+    mod.write_var(param::channel_var::PreampTau, preamp_tau, number);
 
-    baselines.find_cut();
+    baseline bl(*this);
+    bl.find_cut();
 }
 
 double
@@ -643,7 +643,7 @@ channel::trace_length(double value)
         trace_length = fifo_length;
     }
 
-    mod.write_var(param::channel_var::TraceLength, number, trace_length);
+    mod.write_var(param::channel_var::TraceLength, trace_length, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
@@ -722,7 +722,7 @@ channel::voffset(double value)
         offset_dac = 65535;
     }
 
-    mod.write_var(param::channel_var::OffsetDAC, number, offset_dac);
+    mod.write_var(param::channel_var::OffsetDAC, offset_dac, number);
 
     hw::run::control(mod, hw::run::control_task::set_dacs);
 }
@@ -778,7 +778,7 @@ channel::xdt(double value)
         xwait = std::floor(double(xwait) / multiple) * multiple;
     }
 
-    mod.write_var(param::channel_var::Xwait, number, xwait);
+    mod.write_var(param::channel_var::Xwait, xwait, number);
 }
 
 double
@@ -807,7 +807,7 @@ channel::baseline_percent(double value)
         bl_percent = 99;
     }
 
-    mod.write_var(param::channel_var::BaselinePercent, number, bl_percent);
+    mod.write_var(param::channel_var::BaselinePercent, bl_percent, number);
 }
 
 double
@@ -828,7 +828,7 @@ channel::emin(double value)
 {
     module::module& mod = module.get();
 
-    mod.write_var(param::channel_var::EnergyLow, number, value);
+    mod.write_var(param::channel_var::EnergyLow, value, number);
 }
 
 double
@@ -859,7 +859,7 @@ channel::binfactor(double value)
 
     log2ebin = (1ULL << 32) - uint64_t(log2ebin);
 
-    mod.write_var(param::channel_var::Log2Ebin, number, log2ebin);
+    mod.write_var(param::channel_var::Log2Ebin, log2ebin, number);
 }
 
 double
@@ -896,7 +896,7 @@ channel::baseline_average(double value)
         bl_avg = (1ULL << 32) - uint64_t(bl_avg);
     }
 
-    mod.write_var(param::channel_var::Log2Bweight, number, bl_avg);
+    mod.write_var(param::channel_var::Log2Bweight, bl_avg, number);
 }
 
 double
@@ -922,14 +922,15 @@ channel::csra(double value)
 
     param::value_type csra = value;
 
-    mod.write_var(param::channel_var::ChanCSRa, number, csra);
+    mod.write_var(param::channel_var::ChanCSRa, csra, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
     hw::run::control(mod, hw::run::control_task::set_dacs);
 
     if ((csra & (1 << CCSRA_ENARELAY)) !=
         (current_csra & (1 << CCSRA_ENARELAY))) {
-        baselines.find_cut();
+        baseline bl(*this);
+        bl.find_cut();
     }
 }
 
@@ -951,7 +952,7 @@ channel::csrb(double value)
 {
     module::module& mod = module.get();
 
-    mod.write_var(param::channel_var::ChanCSRb, number, value);
+    mod.write_var(param::channel_var::ChanCSRb, value, number);
 }
 
 double
@@ -972,7 +973,7 @@ channel::bl_cut(double value)
 {
     module::module& mod = module.get();
 
-    mod.write_var(param::channel_var::BLcut, number, value);
+    mod.write_var(param::channel_var::BLcut, value, number);
 }
 
 double
@@ -997,7 +998,7 @@ channel::integrator(double value)
         value = 7;
     }
 
-    mod.write_var(param::channel_var::Integrator, number, value);
+    mod.write_var(param::channel_var::Integrator, value, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
@@ -1039,7 +1040,7 @@ channel::fast_trig_backlen(double value)
         fast_trig_blen = FASTTRIGBACKLEN_MAX;
     }
 
-    mod.write_var(param::channel_var::FastTrigBackLen, number, fast_trig_blen);
+    mod.write_var(param::channel_var::FastTrigBackLen, fast_trig_blen, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
@@ -1071,7 +1072,7 @@ channel::cfd_delay(double value)
         cfddelay = CFDDELAY_MAX;
     }
 
-     mod.write_var(param::channel_var::CFDScale, number, cfddelay);
+     mod.write_var(param::channel_var::CFDScale, cfddelay, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
@@ -1100,7 +1101,7 @@ channel::cfd_scale(double value)
         cfdscale = CFDSCALE_MAX;
     }
 
-    mod.write_var(param::channel_var::CFDScale, number, cfdscale);
+    mod.write_var(param::channel_var::CFDScale, cfdscale, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
@@ -1133,7 +1134,7 @@ channel::cfd_thresh(double value)
                     oss.str());
     }
 
-    mod.write_var(param::channel_var::CFDThresh, number, cfdthresh);
+    mod.write_var(param::channel_var::CFDThresh, cfdthresh, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
@@ -1240,7 +1241,7 @@ channel::qdc_len(param::channel_param par, double value)
         qdclen = QDCLEN_MAX;
     }
 
-    mod.write_var(var, number, qdclen);
+    mod.write_var(var, qdclen, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
@@ -1272,7 +1273,7 @@ channel::ext_trig_stretch(double value)
         exttrigstretch = EXTTRIGSTRETCH_MAX;
     }
 
-    mod.write_var(param::channel_var::ExtTrigStretch, number, exttrigstretch);
+    mod.write_var(param::channel_var::ExtTrigStretch, exttrigstretch, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
@@ -1304,7 +1305,7 @@ channel::veto_stretch(double value)
         vetostretch = VETOSTRETCH_MAX;
     }
 
-    mod.write_var(param::channel_var::VetoStretch, number, vetostretch);
+    mod.write_var(param::channel_var::VetoStretch, vetostretch, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
@@ -1329,7 +1330,7 @@ channel::multiplicity_mask_l(double value)
 
     param::value_type multiplicitymaskl = value;
 
-    mod.write_var(param::channel_var::MultiplicityMaskL, number, multiplicitymaskl);
+    mod.write_var(param::channel_var::MultiplicityMaskL, multiplicitymaskl, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
@@ -1354,7 +1355,7 @@ channel::multiplicity_mask_h(double value)
 
     param::value_type multiplicitymaskh = value;
 
-    mod.write_var(param::channel_var::MultiplicityMaskH, number, multiplicitymaskh);
+    mod.write_var(param::channel_var::MultiplicityMaskH, multiplicitymaskh, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
@@ -1405,7 +1406,7 @@ channel::extern_delay_len(double value)
         externdelaylen = externdelaylen_max;
     }
 
-    mod.write_var(param::channel_var::ExternDelayLen, number, externdelaylen);
+    mod.write_var(param::channel_var::ExternDelayLen, externdelaylen, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
@@ -1456,7 +1457,7 @@ channel::ftrig_out_delay(double value)
         ftrigoutdelay = ftrigoutdelay_max;
     }
 
-    mod.write_var(param::channel_var::FtrigoutDelay, number, ftrigoutdelay);
+    mod.write_var(param::channel_var::FtrigoutDelay, ftrigoutdelay, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
@@ -1488,7 +1489,7 @@ channel::chan_trig_stretch(double value)
         chantrigstretch = CHANTRIGSTRETCH_MAX;
     }
 
-    mod.write_var(param::channel_var::ChanTrigStretch, number, chantrigstretch);
+    mod.write_var(param::channel_var::ChanTrigStretch, chantrigstretch, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }

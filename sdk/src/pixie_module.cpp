@@ -72,17 +72,17 @@ namespace pixie
 namespace module
 {
     static std::string
-    module_label(const int num, const int slot)
+    module_label(const int num, const int slot, const char* label = "module")
     {
         std::ostringstream oss;
-        oss << "module [num=" << num << ",slot=" << slot << "]";
+        oss << label << ": num=" << num << ",slot=" << slot << ": ";
         return oss.str();
     }
 
-    static std::string
-    module_label(const module& mod)
+    std::string
+    module_label(const module& mod, const char* label)
     {
-        return module_label(mod.number, mod.slot);
+        return module_label(mod.number, mod.slot, label);
     }
 
     error::error(const int num, const int slot,
@@ -116,7 +116,7 @@ namespace module
     error::make_what(const int num, const int slot, const char* what_)
     {
         std::ostringstream oss;
-        oss << module_label(num, slot) << ": " << what_;
+        oss << module_label(num, slot) << what_;
         return oss.str();
     }
 
@@ -125,6 +125,36 @@ namespace module
      */
     const int vendor_id = 0x10b5;
     const int device_id = 0x9054;
+
+    static const char* pci_error_labels[] = {
+        "PLX_STATUS_OK",
+        "PLX_STATUS_FAILED",
+        "PLX_STATUS_NULL_PARAM",
+        "PLX_STATUS_UNSUPPORTED",
+        "PLX_STATUS_NO_DRIVER",
+        "PLX_STATUS_INVALID_OBJECT",
+        "PLX_STATUS_VER_MISMATCH",
+        "PLX_STATUS_INVALID_OFFSET",
+        "PLX_STATUS_INVALID_DATA",
+        "PLX_STATUS_INVALID_SIZE",
+        "PLX_STATUS_INVALID_ADDR",
+        "PLX_STATUS_INVALID_ACCESS",
+        "PLX_STATUS_INSUFFICIENT_RES",
+        "PLX_STATUS_TIMEOUT",
+        "PLX_STATUS_CANCELED",
+        "PLX_STATUS_COMPLETE",
+        "PLX_STATUS_PAUSED",
+        "PLX_STATUS_IN_PROGRESS",
+        "PLX_STATUS_PAGE_GET_ERROR",
+        "PLX_STATUS_PAGE_LOCK_ERROR",
+        "PLX_STATUS_LOW_POWER",
+        "PLX_STATUS_IN_USE",
+        "PLX_STATUS_DISABLED",
+        "PLX_STATUS_PENDING",
+        "PLX_STATUS_NOT_FOUND",
+        "PLX_STATUS_INVALID_STATE",
+        "PLX_STATUS_BUFF_TOO_SMALL"
+    };
 
     struct pci_bus_handle {
         int device_number;
@@ -159,6 +189,19 @@ namespace module
             return device->key.slot;
         }
         return -1;
+    }
+
+    std::string
+    pci_error_text(PLX_STATUS ps)
+    {
+        std::ostringstream oss;
+        oss << "PLX (" << int(ps) << ") ";
+        if (ps >= PLX_STATUS_OK && ps < PLX_STATUS_RSVD_LAST_ERROR) {
+            oss << pci_error_labels[ps - PLX_STATUS_OK];
+        } else {
+            oss << "unknown error code";
+        }
+        return oss.str();
     }
 
     /*
@@ -386,7 +429,7 @@ namespace module
             if (ps != PLX_STATUS_OK) {
                 std::ostringstream oss;
                 oss << "PCI find: device: " << device_number
-                    << " : " << ps;
+                    << ": " << pci_error_text(ps);
                 throw error(number, slot,
                             error::code::module_initialize_failure,
                             oss);
@@ -398,7 +441,7 @@ namespace module
             if (ps != PLX_STATUS_OK) {
                 std::ostringstream oss;
                 oss << "PCI open: device: " << device_number
-                    << " : " << ps;
+                    << ": " << pci_error_text(ps);
                 throw error(number, slot,
                             error::code::module_initialize_failure,
                             oss);
@@ -411,7 +454,7 @@ namespace module
             if (ps != PLX_STATUS_OK) {
                 std::ostringstream oss;
                 oss << "PCI BAR map: device: " << device_number
-                    << " : " << ps;
+                    << ": " << pci_error_text(ps);
                 throw error(number, slot,
                             error::code::module_initialize_failure,
                             oss);
@@ -433,7 +476,7 @@ namespace module
             if (ps != PLX_STATUS_OK) {
                 std::ostringstream oss;
                 oss << "PCI DMA: device: " << device_number
-                    << ": " << ps;
+                    << ": " << pci_error_text(ps);
                 throw error(number, slot,
                             error::code::module_initialize_failure,
                             oss);
@@ -454,13 +497,13 @@ namespace module
                 have_hardware = false;
                 std::ostringstream oss;
                 oss << "eeprom read: device: " << device_number
-                    << " : invalid data length:" << eeprom.size();
+                    << ": invalid data length:" << eeprom.size();
                 throw error(number, slot,
                             error::code::module_info_failure,
                             oss);
             }
 
-            logging::memdump(log::debug, module_label(*this) + ": EEPROM:",
+            logging::memdump(log::debug, module_label(*this) + "EEPROM:",
                              eeprom.data(), eeprom.size());
 
             if (!eeprom_v2()) {
@@ -500,7 +543,7 @@ namespace module
             PLX_STATUS ps_close;
 
             log(log::debug) << module_label(*this)
-                            << ": close: device-number="
+                            << "close: device-number="
                             << device->device_number;
 
             /*
@@ -509,7 +552,7 @@ namespace module
             ps_dma = ::PlxPci_DmaChannelClose(&device->handle, 0);
             if (ps_dma != PLX_STATUS_OK) {
                 log(log::debug) << module_label(*this)
-                                << ": DMA close: " << ps_dma;
+                                << "DMA close: " << pci_error_text(ps_dma);
                 if (ps_dma == PLX_STATUS_IN_PROGRESS) {
                     ::PlxPci_DeviceReset(&device->handle);
                     ::PlxPci_DmaChannelClose(&device->handle, 0);
@@ -546,7 +589,8 @@ namespace module
                     oss << "close";
                 }
                 oss << ": device: " << device->device_number
-                    << " : " << ps_unmap_bar << ", " << ps_close;
+                    << ": " << pci_error_text(ps_unmap_bar)
+                    << ", " << pci_error_text(ps_close);
                 throw error(number, slot,
                             error::code::module_close_failure,
                             oss.str());
@@ -587,7 +631,7 @@ namespace module
 
         log(log::info) << std::boolalpha
                        <<  module_label(*this)
-                       << ": probe: sys=" << comms_fpga
+                       << "probe: sys=" << comms_fpga
                        << " fippi=" << fippi_fpga
                        << " dsp=" << dsp_online;
 
@@ -612,7 +656,7 @@ namespace module
         if (boot_comms) {
             if (comms_fpga) {
                 log(log::info) << module_label(*this)
-                               << ": comms already loaded";
+                               << "comms already loaded";
             }
             firmware::firmware_ref fw = get("sys");
             hw::fpga::comms comms(*this);
@@ -623,7 +667,7 @@ namespace module
         if (boot_fippi) {
             if (fippi_fpga) {
                 log(log::info) << module_label(*this)
-                               << ": fippi already loaded";
+                               << "fippi already loaded";
             }
             if (!comms_fpga) {
                 throw error(number, slot,
@@ -639,7 +683,7 @@ namespace module
         if (boot_dsp) {
             if (dsp_online) {
                 log(log::info) << module_label(*this)
-                               << ": dsp already running";
+                               << "dsp already running";
             }
             if (!comms_fpga || !fippi_fpga) {
                 throw error(number, slot,
@@ -659,7 +703,7 @@ namespace module
 
         log(log::info) << module_label(*this)
                        << std::boolalpha
-                       << ": boot: sys-fpga=" << comms_fpga
+                       << "boot: sys-fpga=" << comms_fpga
                        << " fippi-fpga=" << boot_fippi
                        << " dsp=" << dsp_online;
 
@@ -774,14 +818,14 @@ namespace module
     param::value_type
     module::read(const std::string& par)
     {
-        log(log::info) << module_label(*this) << ": write: par=" << par;
+        log(log::info) << module_label(*this) << "write: par=" << par;
         return read(param::lookup_module_param(par));
     }
 
     param::value_type
     module::read(param::module_param par)
     {
-        log(log::debug) << module_label(*this) << ": write: par=" << int(par);
+        log(log::debug) << module_label(*this) << "write: par=" << int(par);
         online_check();
         const param::module_var var = param::map_module_param(par);
         size_t offset;
@@ -796,14 +840,14 @@ namespace module
     double
     module::read(const std::string& par, size_t channel)
     {
-        log(log::info) << module_label(*this) << ": read: par=" << par;
+        log(log::info) << module_label(*this) << "read: par=" << par;
         return read(param::lookup_channel_param(par), channel);
     }
 
     double
     module::read(param::channel_param par, size_t channel)
     {
-        log(log::debug) << module_label(*this) << ": read: par=" << int(par);
+        log(log::debug) << module_label(*this) << "read: par=" << int(par);
         online_check();
         channel_check(channel);
         lock_guard guard(lock_);
@@ -918,7 +962,7 @@ namespace module
     module::write(const std::string& par, param::value_type value)
     {
         log(log::info) << module_label(*this)
-                       << ": write: par=" << par << " value=" << value;
+                       << "write: par=" << par << " value=" << value;
         return write(param::lookup_module_param(par), value);
     }
 
@@ -926,7 +970,7 @@ namespace module
     module::write(param::module_param par, param::value_type value)
     {
         log(log::debug) << module_label(*this)
-                        << ": write: par=" << int(par) << " value=" << value;
+                        << "write: par=" << int(par) << " value=" << value;
         online_check();
         std::ostringstream oss;
         size_t offset = 0;
@@ -978,7 +1022,7 @@ namespace module
     module::write(const std::string& par, size_t channel, double value)
     {
         log(log::info) << module_label(*this)
-                       << ": write: par=" << par
+                       << "write: par=" << par
                        << " channel=" << channel
                        << " value=" << value;
         write(param::lookup_module_param(par), value);
@@ -988,7 +1032,7 @@ namespace module
     module::write(param::channel_param par, size_t channel, double value)
     {
         log(log::debug) << module_label(*this)
-                        << ": write: par=" << int(par)
+                        << "write: par=" << int(par)
                         << " channel=" << channel
                         << " value=" << value;
         online_check();
@@ -1103,13 +1147,13 @@ namespace module
                      bool io)
     {
         log(log::info) << module_label(*this)
-                       << ": read: var=" << var
+                       << "read: var=" << var
                        << " channel=" << channel
                        << " offset=" << offset
                        << " io=" << io;
         try {
             return read_var(param::lookup_module_var(var), offset, io);
-        } catch (error& e) {
+        } catch (pixie::error::error& e) {
             if (e.type != error::code::module_invalid_var) {
                 throw;
             }
@@ -1121,7 +1165,7 @@ namespace module
     module::read_var(param::module_var var, size_t offset, bool io)
     {
         log(log::debug) << module_label(*this)
-                        << ": read: var=" << int(var)
+                        << "read: var=" << int(var)
                         << " offset=" << offset;
         online_check();
         const size_t index = static_cast<size_t>(var);
@@ -1168,7 +1212,7 @@ namespace module
                      bool io)
     {
         log(log::debug) << module_label(*this)
-                        << ": read: var=" << int(var)
+                        << "read: var=" << int(var)
                         << " channel=" << channel
                         << " offset=" << offset
                         << " io=" << io;
@@ -1216,14 +1260,13 @@ namespace module
                       size_t offset)
     {
         log(log::info) << module_label(*this)
-                       << ": write: var=" << var
-                       << " value=" << value
-                       << " (0x" << std::hex << value << ')'
+                       << "write: var=" << var
                        << " channel=" << channel
-                       << " offset=" << offset;
+                       << " value[" << offset << "]=" << value
+                       << " (0x" << std::hex << value << ')';
         try {
             write_var(param::lookup_module_var(var), value, offset);
-        } catch (error& e) {
+        } catch (pixie::error::error& e) {
             if (e.type != error::code::module_invalid_var) {
                 throw;
             }
@@ -1237,9 +1280,8 @@ namespace module
                       size_t offset)
     {
         log(log::debug) << module_label(*this)
-                        << ": write: var=" << int(var)
-                        << " offset=" << offset
-                        << " value=" << value
+                        << "write: var=" << int(var)
+                        << " value[" << offset << "]=" << value
                         << " (0x" << std::hex << value << ')';
         online_check();
         const size_t index = static_cast<size_t>(var);
@@ -1280,11 +1322,10 @@ namespace module
                       size_t offset)
     {
         log(log::debug) << module_label(*this)
-                        << ": write: var=" << int(var)
-                        << " value=" << value
-                        << " (0x" << std::hex << value << ')'
+                        << "write: var=" << int(var)
                         << " channel=" << channel
-                        << " offset=" << offset;
+                        << " value[" << offset << "]=" << value
+                        << " (0x" << std::hex << value << ')';
         online_check();
         channel_check(channel);
         const size_t index = static_cast<size_t>(var);
@@ -1392,7 +1433,7 @@ namespace module
                                                        5 * 1000);
         if (ps != PLX_STATUS_OK) {
             std::ostringstream oss;
-            oss << "DMA read: " << ps;
+            oss << "DMA read: " << pci_error_text(ps);
             throw error(number, slot,
                         error::code::device_dma_failure,
                         oss.str());
@@ -1550,7 +1591,8 @@ namespace module
          * Update the baseline cut value
          */
         for (size_t channel = 0; channel < num_channels; ++channel) {
-            channels[channel].baselines.find_cut(channel);
+            channel::baseline bl(channels[channel]);
+            bl.find_cut();
         }
     }
 

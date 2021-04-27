@@ -73,6 +73,7 @@ module::open(size_t device_number)
 
             std::memset(vmaddr, 0, pci_addr_space_size);
 
+            slot = mod_def.slot;
             revision = mod_def.revision;
             eeprom_format = mod_def.eeprom_format;
             serial_num = mod_def.serial_num;

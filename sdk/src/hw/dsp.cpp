@@ -236,6 +236,9 @@ namespace dsp
         bus_write(EXT_MEM_TEST, POWERUPINITDONE_ADDRESS);
         word value = bus_read(WRT_DSP_MMA);
         bus_write(HBR_DONE, 0);
+        if (value == 1) {
+          csr::clear(module, 1 << DSPDOWNLOAD);
+        }
         return value == 1;
     }
 

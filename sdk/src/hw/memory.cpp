@@ -66,13 +66,13 @@ namespace memory
         }
         void request() {
             if (!holding) {
-                module.write_word(REQUEST_HBR, 0);
+                module.write_word(REQUEST_HBR, 7);
                 holding = true;
             }
         }
         void release() {
             if (holding) {
-                module.write_word(HBR_DONE, 0);
+                module.write_word(HBR_DONE, 7);
                 holding = false;
             }
         }

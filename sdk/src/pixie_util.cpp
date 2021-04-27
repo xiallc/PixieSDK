@@ -50,14 +50,14 @@ dequote (std::string& s)
 {
     if (!s.empty())
     {
-      char front = s[0];
-      char back = s[s.length () - 1];
-      if ((front == '"') || (front == '\''))
-      {
-        if (front != back)
-            throw std::runtime_error("invalid quoting: " + s);
-        s = s.substr(1, s.length() - (1 + 1));
-      }
+        char front = s[0];
+        char back = s[s.length () - 1];
+        if ((front == '"') || (front == '\''))
+        {
+            if (front != back)
+                throw std::runtime_error("invalid quoting: " + s);
+            s = s.substr(1, s.length() - (1 + 1));
+        }
     }
 }
 

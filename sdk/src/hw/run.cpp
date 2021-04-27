@@ -33,6 +33,7 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
+#include <pixie_log.hpp>
 #include <pixie_module.hpp>
 
 #include <hw/csr.hpp>
@@ -49,12 +50,30 @@ namespace hw
 {
 namespace run
 {
+static const char* control_task_labels[] =
+{
+    "set_dacs",
+    "enable_input",
+    "ramp_offsetdacs",
+    "get_traces",
+    "program_fippi",
+    "get_baselines",
+    "adjust_offsets",
+    "tau_finder",
+    "reset_adc"
+};
+
 void
 start(module::module& module,
       run_mode mode,
       run_task run_tsk,
       control_task control_tsk)
 {
+    log(log::debug) << module::module_label(module, "control")
+                    << "start: run-mode=" << int(mode)
+                    << " run-tsk=" << int(run_tsk)
+                    << " control-tsk=" << int(control_tsk);
+
     /*
      * End a run if one is running.
      */
@@ -89,6 +108,7 @@ start(module::module& module,
 void
 end(module::module& module)
 {
+    log(log::debug) << module::module_label(module, "control") << "end";
     csr::clear(module, 1 << RUNENA);
     for (int msecs = 0; msecs < 100; ++msecs) {
         hw::wait(1000);
@@ -103,18 +123,21 @@ end(module::module& module)
 bool
 active(module::module& module)
 {
-    return (csr::read(module) & (1 << RUNACTIVE)) != 0;
+    return (csr::read(module) & ((1 << RUNENA) | (1 << RUNACTIVE))) != 0;
 }
 
 void
 control(module::module& module, control_task control_tsk, int wait_msecs)
 {
+    log(log::debug) << module::module_label(module, "control")
+                    << "control=" << control_task_labels[int(control_tsk)]
+                    << " wait=" << wait_msecs;
     start(module, run_mode::new_run, run_task::nop, control_tsk);
     for (int msecs = 0; msecs < wait_msecs; ++msecs) {
-        hw::wait(1000);
-        if (active(module)) {
+        if (!active(module)) {
             return;
         }
+        hw::wait(500);
     }
     std::ostringstream oss;
     oss << "control task failed to start: " << int(control_tsk);

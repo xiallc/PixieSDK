@@ -123,11 +123,6 @@ struct channel {
     param::channel_variables vars;
 
     /*
-     * Baseline
-     */
-    baseline baselines;
-
-    /*
      * A channel nust be part of a module.
      */
     channel(module::module& module);
