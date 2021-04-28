@@ -1025,7 +1025,7 @@ namespace module
                        << "write: par=" << par
                        << " channel=" << channel
                        << " value=" << value;
-        write(param::lookup_module_param(par), value);
+        write(param::lookup_channel_param(par), channel, value);
     }
 
     void
