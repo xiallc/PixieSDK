@@ -177,6 +177,14 @@ make_command_sets(args::PositionalList<std::string>& cmd, commands& cmds)
 }
 
 static void
+boot(xia::pixie::crate::crate& crate, options& )
+{
+  std::cout << "booting crate" << std::endl;
+  crate.boot();
+  std::cout << "crate:" << std::endl << crate << std::endl;
+}
+
+static void
 acq_adc(xia::pixie::crate::crate& crate, options& cmd)
 {
     auto mod_num = get_value<size_t>(cmd[1]);
@@ -408,42 +416,38 @@ var_read(xia::pixie::crate::crate& crate, options& cmd)
     }
 }
 
+struct cmd_handler {
+    std::string cmd;
+    void (*func)(xia::pixie::crate::crate& crate, options& cmd);
+};
+
+static const std::vector<cmd_handler> cmd_handlers = {
+    { "boot",        boot },
+    { "acq-adc",     acq_adc },
+    { "acq-bl",      acq_bl },
+    { "adj-off",     adj_off },
+    { "set-dacs",    set_dacs },
+    { "hist-start",  hist_start },
+    { "hist-resume", hist_resume },
+    { "list-start",  list_start },
+    { "list-resume", list_resume },
+    { "run-active",  run_active },
+    { "run-end",     run_end },
+    { "par-write",   par_write },
+    { "par-read",    par_read },
+    { "var-write",   var_write },
+    { "var-read",    var_read }
+};
+
 static bool
 process_command_sets(xia::pixie::crate::crate& crate, commands& cmds)
 {
     for (auto& cmd : cmds) {
-        if (cmd[0] == "boot") {
-            std::cout << "booting crate" << std::endl;
-            crate.boot();
-            std::cout << "crate:" << std::endl << crate << std::endl;
-        } else if (cmd[0] == "acq-adc") {
-            acq_adc(crate, cmd);
-        } else if (cmd[0] == "acq-bl") {
-            acq_bl(crate, cmd);
-        } else if (cmd[0] == "adj-off") {
-            adj_off(crate, cmd);
-        } else if (cmd[0] == "set-dacs") {
-            set_dacs(crate, cmd);
-        } else if (cmd[0] == "hist-start") {
-            hist_start(crate, cmd);
-        } else if (cmd[0] == "hist-resume") {
-            hist_resume(crate, cmd);
-        } else if (cmd[0] == "list-start") {
-            list_start(crate, cmd);
-        } else if (cmd[0] == "list-resume") {
-            list_resume(crate, cmd);
-        } else if (cmd[0] == "run-active") {
-            run_active(crate, cmd);
-        } else if (cmd[0] == "run-end") {
-            run_end(crate, cmd);
-        } else if (cmd[0] == "par-write") {
-            par_write(crate, cmd);
-        } else if (cmd[0] == "par-read") {
-            par_read(crate, cmd);
-        } else if (cmd[0] == "var-write") {
-            var_write(crate, cmd);
-        } else if (cmd[0] == "var-read") {
-            var_read(crate, cmd);
+        for (const auto& handler : cmd_handlers) {
+            if (handler.cmd == cmd[0]) {
+                handler.func(crate, cmd);
+                break;
+            }
         }
     }
     return true;
