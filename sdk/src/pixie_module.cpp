@@ -1392,6 +1392,14 @@ namespace module
     }
 
     void
+    module::get_traces()
+    {
+        online_check();
+        lock_guard guard(lock_);
+        hw::run::control(*this, hw::run::control_task::get_traces);
+    }
+
+    void
     module::set_dacs()
     {
         online_check();

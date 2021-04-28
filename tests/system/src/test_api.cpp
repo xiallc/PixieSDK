@@ -69,8 +69,9 @@ struct command_def
 static const std::map<std::string, command_def> command_defs =
 {
     { "boot",      { { 0 },       "boots the module(s)" } },
+    { "acq-adc",   { { 1 },       "acquire a module's ADC trace" } },
     { "acq-bl",    { { 1 },       "acquire the module's baselines" } },
-    { "adj-off",   { { 1 },       "addjust the module's offsets" } },
+    { "adj-off",   { { 1 },       "adjust the module's offsets" } },
     { "set-dacs",  { { 1 },       "set the module's DACs" } },
     { "par-read",  { { 2, 3 },    "read module/channel parameter" } },
     { "par-write", { { 3, 4 },    "write module/channel parameter" } },
@@ -167,6 +168,13 @@ make_command_sets(args::PositionalList<std::string>& cmd, commands& cmds)
         cmds.push_back(option);
     }
     return true;
+}
+
+static void
+acq_adc(xia::pixie::crate::crate& crate, options& cmd)
+{
+    auto mod_num = get_value<size_t>(cmd[1]);
+    crate[mod_num].get_traces();
 }
 
 static void
@@ -353,6 +361,8 @@ process_command_sets(xia::pixie::crate::crate& crate, commands& cmds)
             std::cout << "booting crate" << std::endl;
             crate.boot();
             std::cout << "crate:" << std::endl << crate << std::endl;
+        } else if (cmd[0] == "acq-adc") {
+            acq_adc(crate, cmd);
         } else if (cmd[0] == "acq-bl") {
             acq_bl(crate, cmd);
         } else if (cmd[0] == "adj-off") {

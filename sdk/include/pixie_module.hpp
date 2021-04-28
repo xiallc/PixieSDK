@@ -340,6 +340,7 @@ namespace module
          */
         void aquire_baselines();
         void adjust_offsets();
+        void get_traces();
         void set_dacs();
 
         /*
