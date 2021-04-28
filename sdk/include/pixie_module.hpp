@@ -336,6 +336,11 @@ namespace module
         bool run_active();
 
         /*
+         * Control tasks
+         */
+        void set_dacs();
+
+        /*
          * Output the module details.
          */
         void output(std::ostream& out) const;

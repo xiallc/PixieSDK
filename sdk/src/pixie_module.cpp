@@ -1376,6 +1376,14 @@ namespace module
     }
 
     void
+    module::set_dacs()
+    {
+        online_check();
+        lock_guard guard(lock_);
+        hw::run::control(*this, hw::run::control_task::set_dacs);
+    }
+
+    void
     module::output(std::ostream& out) const
     {
         util::ostream_guard flags(out);

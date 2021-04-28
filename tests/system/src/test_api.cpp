@@ -69,6 +69,7 @@ struct command_def
 static const std::map<std::string, command_def> command_defs =
 {
     { "boot",      { { 0 },       "boots the module(s)" } },
+    { "set-dacs",  { { 1 },       "set the module's DACs" } },
     { "par-read",  { { 2, 3 },    "read module/channel parameter" } },
     { "par-write", { { 3, 4 },    "write module/channel parameter" } },
     { "var-read",  { { 2, 3, 4 }, "read module/channel variable" } },
@@ -164,6 +165,13 @@ make_command_sets(args::PositionalList<std::string>& cmd, commands& cmds)
         cmds.push_back(option);
     }
     return true;
+}
+
+static void
+set_dacs(xia::pixie::crate::crate& crate, options& cmd)
+{
+    auto mod_num = get_value<size_t>(cmd[1]);
+    crate[mod_num].set_dacs();
 }
 
 static void
@@ -329,6 +337,8 @@ process_command_sets(xia::pixie::crate::crate& crate, commands& cmds)
             std::cout << "booting crate" << std::endl;
             crate.boot();
             std::cout << "crate:" << std::endl << crate << std::endl;
+        } else if (cmd[0] == "set-dacs") {
+            set_dacs(crate, cmd);
         } else if (cmd[0] == "par-write") {
             par_write(crate, cmd);
         } else if (cmd[0] == "par-read") {
