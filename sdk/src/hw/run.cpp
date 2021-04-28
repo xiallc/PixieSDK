@@ -51,29 +51,62 @@ namespace hw
 {
 namespace run
 {
-static const char* control_task_labels[] =
+static const char*
+control_task_labels(control_task control_tsk)
 {
-    "set_dacs",
-    "enable_input",
-    "not-used",
-    "ramp_offsetdacs",
-    "get_traces",
-    "program_fippi",
-    "get_baselines",
-    "adjust_offsets",
-    "tau_finder",
-    "reset_adc"
+    switch (control_tsk) {
+    case control_task::set_dacs:
+        return "set_dacs";
+    case control_task::enable_input:
+        return "enable_input";
+    case control_task::ramp_offsetdacs:
+        return "ramp_offsetdacs";
+    case control_task::get_traces:
+        return "get_traces";
+    case control_task::program_fippi:
+        return "program_fippi";
+    case control_task::get_baselines:
+        return "get_baselines";
+    case control_task::adjust_offsets:
+        return "adjust_offsets";
+    case control_task::tau_finder:
+        return "tau_finder";
+    case control_task::reset_adc:
+        return "reset_adc";
+    default:
+        break;
+    }
+    return "nop";
 };
 
+static const char* run_mode_labels[] =
+{
+    "resume",
+    "new_run"
+};
+
+static const char*
+run_task_labels(run_task run_tsk)
+{
+    switch (run_tsk) {
+    case run_task::list_mode:
+        return "list_mode";
+    case run_task::histogram:
+        return "hostogram";
+    default:
+        break;
+    }
+    return "nop";
+}
 void
 start(module::module& module,
       run_mode mode,
       run_task run_tsk,
       control_task control_tsk)
 {
-    log(log::debug) << module::module_label(module, "control")
+    log(log::debug) << module::module_label(module, "run")
                     << "start: run-mode=" << int(mode)
-                    << " run-tsk=" << int(run_tsk)
+                    << " run-tsk=" << std::hex << int(run_tsk) << std::dec
                     << " control-tsk=" << int(control_tsk);
 
     /*
@@ -110,13 +143,18 @@ start(module::module& module,
 void
 end(module::module& module)
 {
-    log(log::debug) << module::module_label(module, "control") << "end";
+    log(log::debug) << module::module_label(module, "run") << "end";
+    util::timepoint tp;
+    tp.start();
     csr::clear(module, 1 << RUNENA);
-    for (int msecs = 0; msecs < 100; ++msecs) {
-        hw::wait(1000);
-        if (hw::run::active(module)) {
+    for (int msecs = 0; msecs < 2 * 100; ++msecs) {
+        if (!hw::run::active(module)) {
+            tp.end();
+            log(log::debug) << module::module_label(module, "run")
+                            << "end duration=" << tp;
             return;
         }
+        hw::wait(500);
     }
     throw error(error::code::module_task_timeout,
                 "failed to stop task");
@@ -131,8 +169,8 @@ active(module::module& module)
 void
 control(module::module& module, control_task control_tsk, int wait_msecs)
 {
-    log(log::debug) << module::module_label(module, "control")
-                    << "control=" << control_task_labels[int(control_tsk)]
+    log(log::debug) << module::module_label(module, "run")
+                    << "control=" << control_task_labels(control_tsk)
                     << " wait=" << wait_msecs;
     util::timepoint tp;
     tp.start();
@@ -141,8 +179,8 @@ control(module::module& module, control_task control_tsk, int wait_msecs)
     for (int msecs = 0; msecs < wait_msecs; ++msecs) {
         if (!active(module)) {
             tp.end();
-            log(log::debug) << module::module_label(module, "control")
-                            << "control=" << control_task_labels[int(control_tsk)]
+            log(log::debug) << module::module_label(module, "run")
+                            << "control=" << control_task_labels(control_tsk)
                             << " duration=" << tp;
             return;
         }
@@ -151,6 +189,15 @@ control(module::module& module, control_task control_tsk, int wait_msecs)
     std::ostringstream oss;
     oss << "control task failed to start: " << int(control_tsk);
     throw error(error::code::module_task_timeout, oss.str());
+}
+
+void
+run(module::module& module, run_mode mode, run_task run_tsk)
+{
+    log(log::debug) << module::module_label(module, "run")
+                    << "mode=" << run_mode_labels[int(mode)]
+                    << " run=" << run_task_labels(run_tsk);
+    start(module, mode, run_tsk, control_task::nop);
 }
 }
 }

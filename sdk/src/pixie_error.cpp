@@ -156,7 +156,7 @@ error::output(std::ostream& out)
     util::ostream_guard flags(out);
     out << std::setfill(' ')
         << "error: code:"
-        << std::setw(2) << static_cast<int>(type)
+        << std::setw(3) << result()
         << " : " << what();
 }
 

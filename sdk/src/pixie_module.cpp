@@ -1408,6 +1408,14 @@ namespace module
     }
 
     void
+    module::start_histograms(hw::run::run_mode mode)
+    {
+        online_check();
+        lock_guard guard(lock_);
+        hw::run::run(*this, mode, hw::run::run_task::histogram);
+    }
+
+    void
     module::output(std::ostream& out) const
     {
         util::ostream_guard flags(out);

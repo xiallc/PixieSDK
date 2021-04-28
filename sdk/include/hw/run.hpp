@@ -75,7 +75,8 @@ enum struct control_task {
     get_baselines = 6,
     adjust_offsets = 7,
     tau_finder = 8,
-    reset_adc = 23
+    reset_adc = 23,
+    nop = 100
 };
 
 /*
@@ -94,6 +95,11 @@ bool active(module::module& module);
 void control(module::module& module,
              control_task control_tsk,
              int wait_msecs = 10000);
+
+/*
+ * Run task
+ */
+void run(module::module& module, run_mode mode, run_task run_tsk);
 }
 }
 }

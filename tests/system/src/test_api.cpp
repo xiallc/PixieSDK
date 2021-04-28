@@ -68,15 +68,19 @@ struct command_def
 
 static const std::map<std::string, command_def> command_defs =
 {
-    { "boot",      { { 0 },       "boots the module(s)" } },
-    { "acq-adc",   { { 1 },       "acquire a module's ADC trace" } },
-    { "acq-bl",    { { 1 },       "acquire the module's baselines" } },
-    { "adj-off",   { { 1 },       "adjust the module's offsets" } },
-    { "set-dacs",  { { 1 },       "set the module's DACs" } },
-    { "par-read",  { { 2, 3 },    "read module/channel parameter" } },
-    { "par-write", { { 3, 4 },    "write module/channel parameter" } },
-    { "var-read",  { { 2, 3, 4 }, "read module/channel variable" } },
-    { "var-write", { { 3, 4, 5 }, "write module/channel variable" } }
+    { "boot",        { { 0 },       "boots the module(s)" } },
+    { "acq-adc",     { { 1 },       "acquire a module's ADC trace" } },
+    { "acq-bl",      { { 1 },       "acquire the module's baselines" } },
+    { "adj-off",     { { 1 },       "adjust the module's offsets" } },
+    { "set-dacs",    { { 1 },       "set the module's DACs" } },
+    { "run-active",  { { 1 },       "does the module have an active run?" } },
+    { "run-end",     { { 1 },       "end the module's run" } },
+    { "hist-start",  { { 1 },       "start module histograms" } },
+    { "hist-resume", { { 1 },       "resume module histograms" } },
+    { "par-read",    { { 2, 3 },    "read module/channel parameter" } },
+    { "par-write",   { { 3, 4 },    "write module/channel parameter" } },
+    { "var-read",    { { 2, 3, 4 }, "read module/channel variable" } },
+    { "var-write",   { { 3, 4, 5 }, "write module/channel variable" } }
 };
 
 static void
@@ -196,6 +200,39 @@ set_dacs(xia::pixie::crate::crate& crate, options& cmd)
 {
     auto mod_num = get_value<size_t>(cmd[1]);
     crate[mod_num].set_dacs();
+}
+
+static void
+run_active(xia::pixie::crate::crate& crate, options& cmd)
+{
+    auto mod_num = get_value<size_t>(cmd[1]);
+    std::cout << "module=" << mod_num << " run-active="
+              << std::boolalpha
+              << crate[mod_num].run_active()
+              << std::endl;
+}
+
+static void
+hist_start(xia::pixie::crate::crate& crate, options& cmd)
+{
+    auto mod_num = get_value<size_t>(cmd[1]);
+    using namespace xia::pixie::hw::run;
+    crate[mod_num].start_histograms(run_mode::new_run);
+}
+
+static void
+hist_resume(xia::pixie::crate::crate& crate, options& cmd)
+{
+    auto mod_num = get_value<size_t>(cmd[1]);
+    using namespace xia::pixie::hw::run;
+    crate[mod_num].start_histograms(run_mode::resume);
+}
+
+static void
+run_end(xia::pixie::crate::crate& crate, options& cmd)
+{
+    auto mod_num = get_value<size_t>(cmd[1]);
+    crate[mod_num].run_end();
 }
 
 static void
@@ -369,6 +406,14 @@ process_command_sets(xia::pixie::crate::crate& crate, commands& cmds)
             adj_off(crate, cmd);
         } else if (cmd[0] == "set-dacs") {
             set_dacs(crate, cmd);
+        } else if (cmd[0] == "hist-start") {
+            hist_start(crate, cmd);
+        } else if (cmd[0] == "hist-resume") {
+            hist_resume(crate, cmd);
+        } else if (cmd[0] == "run-active") {
+            run_active(crate, cmd);
+        } else if (cmd[0] == "run-end") {
+            run_end(crate, cmd);
         } else if (cmd[0] == "par-write") {
             par_write(crate, cmd);
         } else if (cmd[0] == "par-read") {

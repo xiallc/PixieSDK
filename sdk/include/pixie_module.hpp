@@ -52,6 +52,7 @@
 #include <pixie_param.hpp>
 
 #include <hw/i2cm24c64.hpp>
+#include <hw/run.hpp>
 
 namespace xia
 {
@@ -342,6 +343,12 @@ namespace module
         void adjust_offsets();
         void get_traces();
         void set_dacs();
+
+        /*
+         * Run tasks
+         */
+        void start_histograms(hw::run::run_mode mode);
+        void start_listmode(hw::run::run_mode mode);
 
         /*
          * Output the module details.
