@@ -1384,6 +1384,14 @@ namespace module
     }
 
     void
+    module::adjust_offsets()
+    {
+        online_check();
+        lock_guard guard(lock_);
+        hw::run::control(*this, hw::run::control_task::adjust_offsets);
+    }
+
+    void
     module::set_dacs()
     {
         online_check();

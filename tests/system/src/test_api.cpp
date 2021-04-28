@@ -70,6 +70,7 @@ static const std::map<std::string, command_def> command_defs =
 {
     { "boot",      { { 0 },       "boots the module(s)" } },
     { "acq-bl",    { { 1 },       "acquire the module's baselines" } },
+    { "adj-off",   { { 1 },       "addjust the module's offsets" } },
     { "set-dacs",  { { 1 },       "set the module's DACs" } },
     { "par-read",  { { 2, 3 },    "read module/channel parameter" } },
     { "par-write", { { 3, 4 },    "write module/channel parameter" } },
@@ -173,6 +174,13 @@ acq_bl(xia::pixie::crate::crate& crate, options& cmd)
 {
     auto mod_num = get_value<size_t>(cmd[1]);
     crate[mod_num].aquire_baselines();
+}
+
+static void
+adj_off(xia::pixie::crate::crate& crate, options& cmd)
+{
+    auto mod_num = get_value<size_t>(cmd[1]);
+    crate[mod_num].adjust_offsets();
 }
 
 static void
@@ -347,6 +355,8 @@ process_command_sets(xia::pixie::crate::crate& crate, commands& cmds)
             std::cout << "crate:" << std::endl << crate << std::endl;
         } else if (cmd[0] == "acq-bl") {
             acq_bl(crate, cmd);
+        } else if (cmd[0] == "adj-off") {
+            adj_off(crate, cmd);
         } else if (cmd[0] == "set-dacs") {
             set_dacs(crate, cmd);
         } else if (cmd[0] == "par-write") {
