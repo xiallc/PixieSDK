@@ -1376,6 +1376,14 @@ namespace module
     }
 
     void
+    module::aquire_baselines()
+    {
+        online_check();
+        lock_guard guard(lock_);
+        hw::run::control(*this, hw::run::control_task::get_baselines);
+    }
+
+    void
     module::set_dacs()
     {
         online_check();

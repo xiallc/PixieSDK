@@ -338,6 +338,7 @@ namespace module
         /*
          * Control tasks
          */
+        void aquire_baselines();
         void set_dacs();
 
         /*
