@@ -36,6 +36,8 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
+#include <atomic>
+#include <chrono>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -103,6 +105,42 @@ struct ostream_guard {
 };
 
 /*
+ * Timepiont measures a period of time between two points.
+ */
+struct timepoint {
+    typedef std::chrono::time_point<std::chrono::steady_clock> marker;
+
+    bool active;
+    bool suspended;
+    bool captured;
+    marker start_mark;
+    marker end_mark;
+
+    timepoint(bool autostart = false);
+    ~timepoint();
+
+    void reset();
+    void start();
+    void end();
+    void restart();
+    void pause();
+    void resume();
+
+    uint64_t msecs();
+    uint64_t usecs();
+
+    operator std::string ();
+    std::string output();
+
+private:
+
+    void lock();
+    void unlock();
+
+    std::atomic_bool locked;
+};
+
+/*
  * IEEE float as a type.
  */
 struct ieee_float {
@@ -129,5 +167,11 @@ private:
 };
 }
 }
+
+/*
+ * Output stream operator.
+ */
+std::ostream&
+operator<<(std::ostream& out, xia::util::timepoint& timepoint);
 
 #endif  // PIXIE16_UTIL_H

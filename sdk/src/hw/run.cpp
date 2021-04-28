@@ -35,6 +35,7 @@
 
 #include <pixie_log.hpp>
 #include <pixie_module.hpp>
+#include <pixie_util.hpp>
 
 #include <hw/csr.hpp>
 #include <hw/memory.hpp>
@@ -133,9 +134,16 @@ control(module::module& module, control_task control_tsk, int wait_msecs)
     log(log::debug) << module::module_label(module, "control")
                     << "control=" << control_task_labels[int(control_tsk)]
                     << " wait=" << wait_msecs;
+    util::timepoint tp;
+    tp.start();
+    wait_msecs *= 2;
     start(module, run_mode::new_run, run_task::nop, control_tsk);
     for (int msecs = 0; msecs < wait_msecs; ++msecs) {
         if (!active(module)) {
+            tp.end();
+            log(log::debug) << module::module_label(module, "control")
+                            << "control=" << control_task_labels[int(control_tsk)]
+                            << " duration=" << tp;
             return;
         }
         hw::wait(500);

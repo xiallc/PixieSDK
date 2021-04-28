@@ -36,6 +36,8 @@
 #include <algorithm>
 #include <bitset>
 #include <cmath>
+#include <ctime>
+#include <iomanip>
 #include <sstream>
 #include <stdexcept>
 
@@ -111,6 +113,166 @@ trim(std::string& s)
 {
     ltrim(s);
     rtrim(s);
+}
+
+timepoint::timepoint(bool autostart)
+    : active(false),
+      suspended(false),
+      captured(false),
+      locked(false)
+{
+    if (autostart) {
+        start();
+    }
+}
+
+timepoint::~timepoint()
+{
+    lock();
+}
+
+void
+timepoint::reset()
+{
+    lock();
+    active = false;
+    suspended = false;
+    captured = false;
+    unlock();
+}
+
+void
+timepoint::start()
+{
+    lock();
+    if (!active && !captured) {
+        active = true;
+        start_mark = std::chrono::steady_clock::now();
+    }
+    unlock();
+}
+
+void
+timepoint::end()
+{
+    lock();
+    if (active && !captured) {
+        active = false;
+        suspended = false;
+        captured = true;
+        end_mark = std::chrono::steady_clock::now();
+    }
+    unlock();
+}
+
+void
+timepoint::pause()
+{
+    lock();
+    if (active) {
+        suspended = true;
+    }
+    unlock();
+}
+
+void
+timepoint::resume()
+{
+    lock();
+    suspended = false;
+    unlock();
+}
+
+void
+timepoint::restart()
+{
+    lock();
+    active = true;
+    suspended = false;
+    captured = false;
+    start_mark = std::chrono::steady_clock::now();
+    unlock();
+}
+
+uint64_t
+timepoint::msecs()
+{
+    lock();
+    if (active && !suspended && !captured) {
+        end_mark = std::chrono::steady_clock::now();
+    }
+    uint64_t period = 0;
+    if (active || captured) {
+        using namespace std::literals;
+        period = (end_mark - start_mark) / 1ms;
+    }
+    unlock();
+    return period;
+}
+
+uint64_t
+timepoint::usecs()
+{
+    lock();
+    if (active && !suspended && !captured) {
+        end_mark = std::chrono::steady_clock::now();
+    }
+    uint64_t period = 0;
+    if (active || captured) {
+        using namespace std::literals;
+        period = (end_mark - start_mark) / 1us;
+    }
+    unlock();
+    return period;
+}
+
+
+timepoint::operator std::string()
+{
+    return output();
+}
+
+std::string
+timepoint::output()
+{
+    lock();
+    if (active && !captured) {
+        end_mark = std::chrono::steady_clock::now();
+    }
+    if (!active && !captured) {
+        unlock();
+        return std::string("n/a");
+    }
+    const auto duration = end_mark - start_mark;
+    unlock();
+    using namespace std::literals;
+    std::ostringstream oss;
+    oss << std::setfill('0')
+        << std::setw(2) << duration / 1h
+        << ':'
+        << std::setw(2) << (duration / 1min) % 60
+        << ':'
+        << std::setw(2) << (duration / 1s) % 60
+        << '.'
+        << std::setw(6) << (duration / 1us) % 1000000;
+    return oss.str();
+}
+
+void
+timepoint::lock()
+{
+    while (true) {
+        bool is_locked = locked.exchange(true);
+        if (!is_locked) {
+            return;
+        }
+    }
+}
+
+void
+timepoint::unlock()
+{
+    locked = false;
 }
 
 ieee_float::ieee_float()
@@ -273,4 +435,11 @@ ieee_float::out() const
 }
 
 }
+}
+
+std::ostream&
+operator<<(std::ostream& out, xia::util::timepoint& timepoint)
+{
+    out << timepoint.output();
+    return out;
 }

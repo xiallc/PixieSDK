@@ -168,6 +168,8 @@ baseline::find_cut(size_t num)
     module::module& mod = channel_.module.get();
     const size_t chan = channel_.number;
 
+    util::timepoint tp(true);
+
     values.resize(num);
 
     param::value_type log2_bweight =
@@ -199,6 +201,11 @@ baseline::find_cut(size_t num)
     }
 
     mod.write_var(param::channel_var::Log2Bweight, log2_bweight, chan);
+
+    tp.end();
+
+    log(log::info) << channel_label(channel_) << "find bl cut: cut=" << cut
+                   << " duration=" << tp;
 }
 
 double
@@ -219,6 +226,8 @@ baseline::get()
 
     hw::memory::dsp dsp(mod);
     hw::io_buffer buffer;
+
+    log(log::debug) << channel_label(channel_) << "baseline get";
 
     hw::run::control(mod, hw::run::control_task::get_baselines);
 
@@ -273,7 +282,7 @@ baseline::compute_cut()
         cut = 0;
     }
 
-    log(log::info) << channel_label(channel_) << "computed cut=" << cut;
+    log(log::debug) << channel_label(channel_) << "computed cut=" << cut;
 }
 
 channel::channel(module::module& module_)
