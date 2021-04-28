@@ -77,6 +77,8 @@ static const std::map<std::string, command_def> command_defs =
     { "run-end",     { { 1 },       "end the module's run" } },
     { "hist-start",  { { 1 },       "start module histograms" } },
     { "hist-resume", { { 1 },       "resume module histograms" } },
+    { "list-start",  { { 1 },       "start module list mode" } },
+    { "list-resume", { { 1 },       "resume module list mode" } },
     { "par-read",    { { 2, 3 },    "read module/channel parameter" } },
     { "par-write",   { { 3, 4 },    "write module/channel parameter" } },
     { "var-read",    { { 2, 3, 4 }, "read module/channel variable" } },
@@ -226,6 +228,22 @@ hist_resume(xia::pixie::crate::crate& crate, options& cmd)
     auto mod_num = get_value<size_t>(cmd[1]);
     using namespace xia::pixie::hw::run;
     crate[mod_num].start_histograms(run_mode::resume);
+}
+
+static void
+list_start(xia::pixie::crate::crate& crate, options& cmd)
+{
+    auto mod_num = get_value<size_t>(cmd[1]);
+    using namespace xia::pixie::hw::run;
+    crate[mod_num].start_listmode(run_mode::new_run);
+}
+
+static void
+list_resume(xia::pixie::crate::crate& crate, options& cmd)
+{
+    auto mod_num = get_value<size_t>(cmd[1]);
+    using namespace xia::pixie::hw::run;
+    crate[mod_num].start_listmode(run_mode::resume);
 }
 
 static void
@@ -410,6 +428,10 @@ process_command_sets(xia::pixie::crate::crate& crate, commands& cmds)
             hist_start(crate, cmd);
         } else if (cmd[0] == "hist-resume") {
             hist_resume(crate, cmd);
+        } else if (cmd[0] == "list-start") {
+            list_start(crate, cmd);
+        } else if (cmd[0] == "list-resume") {
+            list_resume(crate, cmd);
         } else if (cmd[0] == "run-active") {
             run_active(crate, cmd);
         } else if (cmd[0] == "run-end") {

@@ -676,7 +676,37 @@ PixieStartHistogramRun(unsigned short ModNum,
     xia_log(xia_log::info) << "PixieStartHistogramRun: ModNum=" << ModNum
                            << " mode=" << mode;
 
-    return not_supported();
+    try {
+        xia::pixie::hw::run::run_mode run_mode;
+        switch (mode) {
+        case 0:
+            run_mode = xia::pixie::hw::run::run_mode::resume;
+            break;
+        case 1:
+            run_mode = xia::pixie::hw::run::run_mode::new_run;
+            break;
+        default:
+            throw xia_error(xia_error::code::invalid_value,
+                            "invalid histogram start run mode");
+        }
+        crate.ready();
+        xia::pixie::crate::module_handle module(crate, ModNum);
+        module->start_histograms(run_mode);
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+        return e.return_code();
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::api_result_unknown_error();
+    } catch (...) {
+        if (throw_unhandled) {
+            throw;
+        }
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::api_result_unknown_error();
+    }
+
+    return 0;
 }
 
 PIXIE_EXPORT int PIXIE_API
@@ -688,7 +718,42 @@ PixieStartListModeRun(unsigned short ModNum,
                            << " RunType=" << RunType
                            << " mode=" << mode;
 
-    return not_supported();
+
+    try {
+        if (RunType != 0x101) {
+            throw xia_error(xia_error::code::invalid_value,
+                            "invalid listmode start run type (must be 0x101)");
+        }
+        xia::pixie::hw::run::run_mode run_mode;
+        switch (mode) {
+        case 0:
+            run_mode = xia::pixie::hw::run::run_mode::resume;
+            break;
+        case 1:
+            run_mode = xia::pixie::hw::run::run_mode::new_run;
+            break;
+        default:
+            throw xia_error(xia_error::code::invalid_value,
+                            "invalid listmode start run mode");
+        }
+        crate.ready();
+        xia::pixie::crate::module_handle module(crate, ModNum);
+        module->start_listmode(run_mode);
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+        return e.return_code();
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::api_result_unknown_error();
+    } catch (...) {
+        if (throw_unhandled) {
+            throw;
+        }
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::api_result_unknown_error();
+    }
+
+    return 0;
 }
 
 PIXIE_EXPORT int PIXIE_API
