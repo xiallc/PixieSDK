@@ -1378,6 +1378,7 @@ namespace module
     void
     module::aquire_baselines()
     {
+        log(log::info) << module_label(*this) << "aquire-baselines";
         online_check();
         lock_guard guard(lock_);
         hw::run::control(*this, hw::run::control_task::get_baselines);
@@ -1386,6 +1387,7 @@ namespace module
     void
     module::adjust_offsets()
     {
+        log(log::info) << module_label(*this) << "adjust-offsets";
         online_check();
         lock_guard guard(lock_);
         hw::run::control(*this, hw::run::control_task::adjust_offsets);
@@ -1394,6 +1396,7 @@ namespace module
     void
     module::get_traces()
     {
+        log(log::info) << module_label(*this) << "get-traces";
         online_check();
         lock_guard guard(lock_);
         hw::run::control(*this, hw::run::control_task::get_traces);
@@ -1402,6 +1405,7 @@ namespace module
     void
     module::set_dacs()
     {
+        log(log::info) << module_label(*this) << "set-dacs";
         online_check();
         lock_guard guard(lock_);
         hw::run::control(*this, hw::run::control_task::set_dacs);
@@ -1410,6 +1414,8 @@ namespace module
     void
     module::start_histograms(hw::run::run_mode mode)
     {
+        log(log::info) << module_label(*this)
+                       << "start-histograms: mode=" << int(mode);
         online_check();
         lock_guard guard(lock_);
         hw::run::run(*this, mode, hw::run::run_task::histogram);
@@ -1418,6 +1424,8 @@ namespace module
     void
     module::start_listmode(hw::run::run_mode mode)
     {
+        log(log::info) << module_label(*this)
+                       << "start-listmode: mode=" << int(mode);
         online_check();
         lock_guard guard(lock_);
         hw::run::run(*this, mode, hw::run::run_task::list_mode);
@@ -1429,6 +1437,10 @@ namespace module
                      size_t size,
                      bool run)
     {
+        log(log::info) << module_label(*this)
+                       << "read-adc: channel=" << channel
+                       << " size=" << size
+                       << " run=" << std::boolalpha << run;
         online_check();
         lock_guard guard(lock_);
         channel::channel& chan = channels[channel];

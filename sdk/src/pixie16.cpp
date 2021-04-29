@@ -531,7 +531,7 @@ PixieReadSglChanADCTrace(unsigned short* Trace_Buffer,
     try {
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
-        module->read_adc(ChanNum, Trace_Buffer, Trace_Length);
+        module->read_adc(ChanNum, Trace_Buffer, Trace_Length, false);
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();

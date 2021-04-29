@@ -308,7 +308,7 @@ adc_save(xia::pixie::crate::crate& crate, options& cmd)
     }
     for (auto channel : channels) {
         xia::pixie::hw::adc_trace adc_trace(length);
-        crate[mod_num].read_adc(channel, adc_trace);
+        crate[mod_num].read_adc(channel, adc_trace, false);
         std::ostringstream name;
         name << std::setfill('0') << adc_prefix
              << '-' << std::setw(2) << mod_num
