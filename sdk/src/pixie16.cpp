@@ -164,8 +164,31 @@ Pixie16BLcutFinder(unsigned short ModNum,
     xia_log(xia_log::info) << "Pixie16BLcutFinder: ModNum=" << ModNum
                            << " ChanNum=" << ChanNum;
 
-    (void) BLcut;
-    return not_supported();
+    try {
+        if (BLcut == nullptr) {
+            throw xia_error(xia_error::code::invalid_value,
+                            "BLcut is NULL");
+        }
+        crate.ready();
+        xia::pixie::crate::module_handle module(crate, ModNum);
+        xia::pixie::channel::range channels = { size_t(ChanNum) };
+        xia::pixie::channel::baseline bl(*module, channels);
+        *BLcut = bl.cuts[0];
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+        return e.return_code();
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::api_result_unknown_error();
+    } catch (...) {
+        if (throw_unhandled) {
+            throw;
+        }
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::api_result_unknown_error();
+    }
+
+    return 0;
 }
 
 static void

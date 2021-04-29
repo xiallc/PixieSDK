@@ -79,22 +79,34 @@ private:
 struct channel;
 
 /*
+ * Range, a list of channels for an operation.
+ */
+typedef std::vector<size_t> range;
+
+/*
+ * Set the range of all channels to [first, first + size).
+ */
+void range_set(range& range_, size_t first = 0);
+
+/*
  * Baselines
  */
 struct baseline {
     static const size_t max_num = 3640;
 
-    typedef std::pair<double, double> value;
+    typedef std::pair<double, double> bl_value;
+    typedef std::array<bl_value, max_num> bl_values;
 
-    channel& channel_;
-    std::vector<value> values;
+    module::module& module;
+    range& channels;
+    std::vector<bl_values> values;
 
     /*
      * last found cut.
      */
-    param::value_type cut;
+    param::values cuts;
 
-    baseline(channel& channel_);
+    baseline(module::module& module, range& channels);
 
     void find_cut(size_t num = max_num);
     void compute_cut();
@@ -110,7 +122,7 @@ struct channel {
     /*
      * Number of this channel.
      */
-    int number;
+    size_t number;
 
     /*
      * The module this channel is part of.

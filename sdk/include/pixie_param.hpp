@@ -328,6 +328,11 @@ namespace param
     typedef uint32_t value_type;
 
     /*
+     * Values.
+     */
+    typedef std::vector<value_type> values;
+
+    /*
      * Parameter descriptor.
      */
     template<typename P>

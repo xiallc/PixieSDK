@@ -362,6 +362,11 @@ namespace module
                       bool run = true);
 
         /*
+         * Find the baseline cut for the range of channels.
+         */
+        void bl_find_cut(channel::range& channels, param::values& cuts);
+
+        /*
          * Output the module details.
          */
         void output(std::ostream& out) const;
@@ -370,34 +375,12 @@ namespace module
         /*
          * Read a word.
          */
-        inline hw::word read_word(int reg) {
-            hw::word value;
-            if (have_hardware) {
-                value = hw::read_word(vmaddr, reg);
-            } else {
-                value = 0;
-            }
-            if (reg_trace) {
-                log(log::debug) << "M r " << std::setfill('0') << std::hex
-                                << vmaddr << ':' << std::setw(2) << reg
-                                << " => " << std::setw(8) << value;
-            }
-            return value;
-        }
+        hw::word read_word(int reg);
 
         /*
          * Write a word
          */
-        inline void write_word(int reg, const hw::word value) {
-            if (reg_trace) {
-                log(log::debug) << "M w " << std::setfill('0') << std::hex
-                                << vmaddr << ':' << std::setw(2) << reg
-                                << " <= " << std::setw(8) << value;
-            }
-            if (have_hardware) {
-                hw::write_word(vmaddr, reg, value);
-            }
-        }
+        void write_word(int reg, const hw::word value);
 
         /*
          * DMA block read.
@@ -491,6 +474,34 @@ namespace module
          */
         bus_handle device;
     };
+
+    inline hw::word
+    module::read_word(int reg) {
+        hw::word value;
+        if (have_hardware) {
+            value = hw::read_word(vmaddr, reg);
+        } else {
+            value = 0;
+        }
+        if (reg_trace) {
+            log(log::debug) << "M r " << std::setfill('0') << std::hex
+                            << vmaddr << ':' << std::setw(2) << reg
+                            << " => " << std::setw(8) << value;
+        }
+        return value;
+    }
+
+    inline void
+    module::write_word(int reg, const hw::word value) {
+        if (reg_trace) {
+            log(log::debug) << "M w " << std::setfill('0') << std::hex
+                            << vmaddr << ':' << std::setw(2) << reg
+                            << " <= " << std::setw(8) << value;
+        }
+        if (have_hardware) {
+            hw::write_word(vmaddr, reg, value);
+        }
+    }
 
     /*
      * Make a label from the module

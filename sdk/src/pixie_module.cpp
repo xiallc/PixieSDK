@@ -1457,6 +1457,15 @@ namespace module
     }
 
     void
+    module::bl_find_cut(channel::range& channels_, param::values& cuts)
+    {
+        cuts.clear();
+        channel::baseline bl(*this, channels_);
+        bl.find_cut();
+        cuts = bl.cuts;
+    }
+
+    void
     module::output(std::ostream& out) const
     {
         util::ostream_guard flags(out);
@@ -1678,10 +1687,10 @@ namespace module
         /*
          * Update the baseline cut value
          */
-        for (size_t channel = 0; channel < num_channels; ++channel) {
-            channel::baseline bl(channels[channel]);
-            bl.find_cut();
-        }
+        channel::range chans(num_channels);
+        channel::range_set(chans);
+        channel::baseline bl(*this, chans);
+        bl.find_cut();
     }
 
     void

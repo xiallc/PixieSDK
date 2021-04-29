@@ -34,6 +34,7 @@
 *----------------------------------------------------------------------*/
 
 #include <cmath>
+#include <numeric>
 
 #include <pixie_channel.hpp>
 #include <pixie_log.hpp>
@@ -154,58 +155,79 @@ error::make_what(const int num,
     return oss.str();
 }
 
-baseline::baseline(channel& channel__)
-    : channel_(channel__),
-      cut(0)
+void
+range_set(range& range_, size_t first)
 {
+    std::iota(range_.begin(), range_.end(), first);
+}
+
+baseline::baseline(module::module& module, range& channels_)
+    : module(module),
+      channels(channels_),
+      cuts(channels.size())
+{
+    values.resize(channels.size());
 }
 
 void
 baseline::find_cut(size_t num)
 {
-    log(log::info) << channel_label(channel_) << "find bl cut: num=" << num;
-
-    module::module& mod = channel_.module.get();
-    const size_t chan = channel_.number;
+    log(log::info) << module::module_label(module) << "find bl cut: num=" << num;
 
     util::timepoint tp(true);
 
-    values.resize(num);
+    param::values log2_bweight(channels.size());
+    param::values current_bl_cut(channels.size());
 
-    param::value_type log2_bweight =
-        mod.read_var(param::channel_var::Log2Bweight, chan, 0, false);
-    param::value_type current_bl_cut =
-        mod.read_var(param::channel_var::BLcut, chan, 0, false);
-
-    mod.write_var(param::channel_var::Log2Bweight, 0, chan);
-    mod.write_var(param::channel_var::BLcut, 0, chan);
+    for (auto chan : channels) {
+        log2_bweight[chan] =
+            module.read_var(param::channel_var::Log2Bweight, chan, 0, false);
+        current_bl_cut[chan] =
+            module.read_var(param::channel_var::BLcut, chan, 0, false);
+        module.write_var(param::channel_var::Log2Bweight, 0, chan);
+        module.write_var(param::channel_var::BLcut, 0, chan);
+    }
 
     try {
         compute_cut();
-        mod.write_var(param::channel_var::BLcut, cut, chan);
+        for (auto chan : channels) {
+            module.write_var(param::channel_var::BLcut, cuts[chan], chan);
+        }
         compute_cut();
-        mod.write_var(param::channel_var::BLcut, cut, chan);
-        log(log::info) << channel_label(channel_) << "bl cut=" << cut;
+        for (auto chan : channels) {
+            module.write_var(param::channel_var::BLcut, cuts[chan], chan);
+            log(log::info) << module::module_label(module)
+                           << "channel=" << chan << " bl cut=" << cuts[chan];
+        }
     } catch (...) {
         try {
-            mod.write_var(param::channel_var::Log2Bweight,
-                          log2_bweight,
-                          chan);
-            mod.write_var(param::channel_var::Log2Bweight,
-                          current_bl_cut,
-                          chan);
+            for (auto chan : channels) {
+                module.write_var(param::channel_var::Log2Bweight,
+                                 log2_bweight[chan],
+                                 chan);
+                module.write_var(param::channel_var::Log2Bweight,
+                                 current_bl_cut[chan],
+                                 chan);
+            }
         } catch (...) {
             /* ignore nesting exceptions, keep the first */
         }
         throw;
     }
 
-    mod.write_var(param::channel_var::Log2Bweight, log2_bweight, chan);
+    for (auto chan : channels) {
+        module.write_var(param::channel_var::Log2Bweight,
+                         log2_bweight[chan],
+                         chan);
+        log(log::info) << module::module_label(module)
+                       << "channel=" << chan
+                       << "find bl cut: cut=" << cuts[chan];
+    }
 
     tp.end();
 
-    log(log::info) << channel_label(channel_) << "find bl cut: cut=" << cut
-                   << " duration=" << tp;
+    log(log::info) << module::module_label(module)
+                   << "find bl cut: duration=" << tp;
 }
 
 double
@@ -221,68 +243,68 @@ baseline::time(hw::word time_word0, hw::word time_word1)
 void
 baseline::get()
 {
-    module::module& mod = channel_.module.get();
-    const size_t chan = channel_.number;
-
-    hw::memory::dsp dsp(mod);
+    hw::memory::dsp dsp(module);
     hw::io_buffer buffer;
 
-    log(log::debug) << channel_label(channel_) << "baseline get";
+    log(log::debug) << module::module_label(module) << "baseline get";
 
-    hw::run::control(mod, hw::run::control_task::get_baselines);
+    hw::run::control(module, hw::run::control_task::get_baselines);
 
     dsp.read(hw::memory::IO_BUFFER_ADDR, buffer);
 
     double starttime = time(buffer[0], buffer[1]);
 
-    for (size_t bl = 0; bl < values.size(); ++bl) {
-        const size_t offset = 2 + (bl * BASELINES_BLOCK_LEN);
-        double timestamp =
-            time(buffer[offset], buffer[offset + 1]) - starttime;
-        double baseline = util::ieee_float(buffer[offset + 2 + chan]);
-        values[bl] = value(timestamp, baseline);
+    for (auto chan : channels) {
+        for (size_t bl = 0; bl < values[chan].size(); ++bl) {
+            const size_t offset = 2 + (bl * BASELINES_BLOCK_LEN);
+            double timestamp =
+                time(buffer[offset], buffer[offset + 1]) - starttime;
+            double baseline = util::ieee_float(buffer[offset + 2 + chan]);
+            values[chan][bl] = bl_value(timestamp, baseline);
+        }
     }
 }
 
 void
 baseline::compute_cut()
 {
-    double sdev = 0.0;
-    size_t sdev_count = 0;
-
-    cut = 0;
-
     for (size_t count = 0; count < 10; ++count) {
         get();
-        for (size_t bl = 0; bl < (values.size() - 1); ++bl) {
-            double val =
-                std::fabs(values[bl].second - values[bl + 1].second);
-            if (val != 0) {
-                if (val < (10.0 * values[bl].second) &&
-                    val < (10.0 * values[bl + 1].second)) {
-                    /*
-                     * @todo This peice of logic does not make sense because
-                     * `cut` is set to 0 and not touched. It is a form of the
-                     * code from before but it needs to be checked.
-                     */
-                    if (cut == 0 || val < cut) {
-                        sdev += val;
-                        ++sdev_count;
+        for (auto chan : channels) {
+            double sdev = 0.0;
+            size_t sdev_count = 0;
+            cuts[chan] = 0;
+            for (size_t bl = 0; bl < (values[chan].size() - 1); ++bl) {
+                double val =
+                    std::fabs(values[chan][bl].second - values[chan][bl + 1].second);
+                if (val != 0) {
+                    if (val < (10.0 * values[chan][bl].second) &&
+                        val < (10.0 * values[chan][bl + 1].second)) {
+                        /*
+                         * @todo This peice of logic does not make sense because
+                         * `cut` is set to 0 and not touched. It is a form of the
+                         * code from before but it needs to be checked.
+                         */
+                        if (cuts[chan] == 0 || val < cuts[chan]) {
+                            sdev += val;
+                            ++sdev_count;
+                        }
                     }
                 }
             }
+            if (sdev_count > 0) {
+                const double sqrpi = std::sqrt(M_PI_2);
+                double bl_sigma = sdev * sqrpi / sdev_count;
+                cuts[chan] = static_cast<param::value_type>(std::floor(8.0 * bl_sigma));
+            } else {
+                cuts[chan] = 0;
+            }
+
+            log(log::debug) << module::module_label(module)
+                            << " channel=" << chan << "computed cut=" << cuts[chan];
         }
     }
 
-    if (sdev_count > 0) {
-        const double sqrpi = std::sqrt(M_PI_2);
-        double bl_sigma = sdev * sqrpi / sdev_count;
-        cut = static_cast<param::value_type>(std::floor(8.0 * bl_sigma));
-    } else {
-        cut = 0;
-    }
-
-    log(log::debug) << channel_label(channel_) << "computed cut=" << cut;
 }
 
 channel::channel(module::module& module_)
@@ -616,7 +638,8 @@ channel::tau(double value)
 
     mod.write_var(param::channel_var::PreampTau, preamp_tau, number);
 
-    baseline bl(*this);
+    range chans = { number };
+    baseline bl(mod, chans);
     bl.find_cut();
 }
 
@@ -953,7 +976,8 @@ channel::csra(double value)
 
     if ((csra & (1 << CCSRA_ENARELAY)) !=
         (current_csra & (1 << CCSRA_ENARELAY))) {
-        baseline bl(*this);
+        range chans = { number };
+        baseline bl(mod, chans);
         bl.find_cut();
     }
 }
