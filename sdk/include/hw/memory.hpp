@@ -96,9 +96,12 @@ namespace memory
 
         /*
          * Memory block read.
+         *
+         * If length is not 0 only the length of data will be read.
          */
-        void read(const address addr, words& values);
-        void read(const address addr, io_buffer& buffer);
+        template<class B>
+        void read(const address addr, B& values, const size_t length = 0);
+        void read(const address addr, word_ptr buffer, const size_t length);
 
         /*
          * Memory write.
@@ -123,6 +126,15 @@ namespace memory
                       word_ptr buffer,
                       const size_t length);
     };
+
+    template<class B>
+    inline void dsp::read(const address addr, B& values, const size_t length) {
+        if (length > values.size()) {
+            throw error(error::code::invalid_value,
+                        "dsp: read length greater than buffer size");
+        }
+        read(addr, values.data(), length != 0 ? length : values.size());
+    }
 
     struct mca
         : public bus

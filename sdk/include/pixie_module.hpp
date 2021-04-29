@@ -351,6 +351,17 @@ namespace module
         void start_listmode(hw::run::run_mode mode);
 
         /*
+         * ADC trace
+         */
+        void read_adc(size_t channel,
+                      hw::adc_word* buffer,
+                      size_t size,
+                      bool run = true);
+        void read_adc(size_t channel,
+                      hw::adc_trace& buffer,
+                      bool run = true);
+
+        /*
          * Output the module details.
          */
         void output(std::ostream& out) const;

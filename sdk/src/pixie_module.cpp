@@ -1424,12 +1424,33 @@ namespace module
     }
 
     void
+    module::read_adc(size_t channel,
+                     hw::adc_word* buffer,
+                     size_t size,
+                     bool run)
+    {
+        online_check();
+        lock_guard guard(lock_);
+        channel::channel& chan = channels[channel];
+        if (run) {
+            get_traces();
+        }
+        chan.read_adc(buffer, size);
+    }
+
+    void
+    module::read_adc(size_t channel, hw::adc_trace& buffer, bool run)
+    {
+        read_adc(channel, buffer.data(), buffer.size(), run);
+    }
+
+    void
     module::output(std::ostream& out) const
     {
         util::ostream_guard flags(out);
         out << std::boolalpha
-            << "number: " << number
-            << " slot: " << slot
+            << "number: " << std::setw(2) << number
+            << " slot: " << std::setw(2) << slot
             << " present:" << present_
             << " online:" << online_
             << " serial:" << serial_num

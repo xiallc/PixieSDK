@@ -104,39 +104,34 @@ namespace memory
     }
 
     void
-    dsp::read(const address addr, words& values)
+    dsp::read(const address addr, word_ptr buffer, const size_t length)
     {
-        size_t size = values.size();
-        word_ptr block_data = values.data();
-        address block_addr = addr;
+        log(log::debug) << module::module_label(module)
+                        << "dsp read: addr=" << std::hex << addr
+                        << " length=" << std::dec << length;
+
+        size_t size = length;
+        size_t offset = 0;
+        /*
+         * The 48 is taken from the legacy code. The signficance of this value
+         * is unknown.
+         */
         while (size > 48) {
             const size_t block_size =
                 size > max_dma_block_size ? max_dma_block_size : size;
-            dma_read(block_addr, block_data, block_size);
+            dma_read(addr + offset, buffer + offset, block_size);
             size -= block_size;
+            offset += block_size;
         }
         if (size > 0) {
             host_bus_request hbr(module);
-            bus_write(EXT_MEM_TEST, block_addr);
+            bus_write(EXT_MEM_TEST, addr + offset);
+            buffer += offset;
             while (size-- > 0) {
-                *block_data = bus_read(WRT_DSP_MMA);
-                block_data++;
+                *buffer = bus_read(WRT_DSP_MMA);
+                ++buffer;
             }
        }
-    }
-
-    void
-    dsp::read(const address addr, io_buffer& buffer)
-    {
-        static_assert((io_buffer_length % max_dma_block_size) == 0,
-                      "io-buffer not a multiple of the block size");
-        const size_t blocks = buffer.size() / max_dma_block_size;
-        word* data = buffer.data();
-        size_t offset = 0;
-        for (size_t block = 0; block < blocks; ++block) {
-            dma_read(addr + offset,  data + offset, max_dma_block_size);
-            offset += max_dma_block_size;
-        }
     }
 
     void

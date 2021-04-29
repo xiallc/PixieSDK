@@ -38,6 +38,7 @@
 #include <iostream>
 #include <fstream>
 #include <map>
+#include <numeric>
 #include <sstream>
 
 #include <pixie_crate.hpp>
@@ -66,13 +67,40 @@ struct command_def
     std::string help;
 };
 
+struct cmd_handler {
+    std::string cmd;
+    void (*func)(xia::pixie::crate::crate& crate, options& cmd);
+};
+
+static void help(xia::pixie::crate::crate& crate, options& cmd);
+static void boot(xia::pixie::crate::crate& crate, options& cmd);
+static void crate_report(xia::pixie::crate::crate& crate, options& cmd);
+static void adj_off(xia::pixie::crate::crate& crate, options& cmd);
+static void set_dacs(xia::pixie::crate::crate& crate, options& cmd);
+static void adc_acq(xia::pixie::crate::crate& crate, options& cmd);
+static void adc_save(xia::pixie::crate::crate& crate, options& cmd);
+static void bl_acq(xia::pixie::crate::crate& crate, options& cmd);
+static void hist_start(xia::pixie::crate::crate& crate, options& cmd);
+static void hist_resume(xia::pixie::crate::crate& crate, options& cmd);
+static void list_start(xia::pixie::crate::crate& crate, options& cmd);
+static void list_resume(xia::pixie::crate::crate& crate, options& cmd);
+static void run_active(xia::pixie::crate::crate& crate, options& cmd);
+static void run_end(xia::pixie::crate::crate& crate, options& cmd);
+static void par_write(xia::pixie::crate::crate& crate, options& cmd);
+static void par_read(xia::pixie::crate::crate& crate, options& cmd);
+static void var_write(xia::pixie::crate::crate& crate, options& cmd);
+static void var_read(xia::pixie::crate::crate& crate, options& cmd);
+
 static const std::map<std::string, command_def> command_defs =
 {
+    { "help",        { { 0 },       "command help" } },
+    { "crate",       { { 0 },       "report the crate" } },
     { "boot",        { { 0 },       "boots the module(s)" } },
-    { "acq-adc",     { { 1 },       "acquire a module's ADC trace" } },
-    { "acq-bl",      { { 1 },       "acquire the module's baselines" } },
     { "adj-off",     { { 1 },       "adjust the module's offsets" } },
     { "set-dacs",    { { 1 },       "set the module's DACs" } },
+    { "adc-acq",     { { 1 },       "acquire a module's ADC trace" } },
+    { "adc-save",    { { 1, 2, 3 }, "save a module's ADC trace to a file" } },
+    { "bl-acq",      { { 1 },       "acquire the module's baselines" } },
     { "run-active",  { { 1 },       "does the module have an active run?" } },
     { "run-end",     { { 1 },       "end the module's run" } },
     { "hist-start",  { { 1 },       "start module histograms" } },
@@ -85,8 +113,31 @@ static const std::map<std::string, command_def> command_defs =
     { "var-write",   { { 3, 4, 5 }, "write module/channel variable" } }
 };
 
-static void
-check_number(const std::string& opt)
+static const std::vector<cmd_handler> cmd_handlers = {
+    { "help",        help },
+    { "crate",       crate_report },
+    { "boot",        boot },
+    { "adj-off",     adj_off },
+    { "set-dacs",    set_dacs },
+    { "adc-acq",     adc_acq },
+    { "adc-save",    adc_save },
+    { "bl-acq",      bl_acq },
+    { "hist-start",  hist_start },
+    { "hist-resume", hist_resume },
+    { "list-start",  list_start },
+    { "list-resume", list_resume },
+    { "run-active",  run_active },
+    { "run-end",     run_end },
+    { "par-write",   par_write },
+    { "par-read",    par_read },
+    { "var-write",   var_write },
+    { "var-read",    var_read }
+};
+
+static std::string adc_prefix = "adc-trace";
+
+static bool
+check_number(const std::string& opt, bool raise = false)
 {
     if (!opt.empty()) {
         auto it = opt.begin();
@@ -96,17 +147,20 @@ check_number(const std::string& opt)
                 ++it;
             }
             if (it == opt.end()) {
-                return;
+                return true;
             }
         }
     }
-    throw error(error::code::invalid_value, "not a number");
+    if (raise) {
+      throw error(error::code::invalid_value, "not a number");
+    }
+    return false;
 }
 
 template<typename T> static T
 get_value(const std::string& opt)
 {
-    check_number(opt);
+  check_number(opt, true);
     std::istringstream iss(opt);
     T value;
     iss >> value;
@@ -177,6 +231,24 @@ make_command_sets(args::PositionalList<std::string>& cmd, commands& cmds)
 }
 
 static void
+help(xia::pixie::crate::crate& , options& )
+{
+  std::cout << "Command help:" << std::endl;
+  auto mi = std::max_element(command_defs.begin(),
+                             command_defs.end(),
+                             [](auto& a, auto& b) {
+                                 return (std::get<0>(a).size() <
+                                         std::get<0>(b).size());
+                             });
+  auto max = std::get<0>(*mi).size();
+  for (auto& cmd_def : command_defs) {
+      std::cout << std::setw(max + 1) << std::get<0>(cmd_def)
+                << " " << std::get<1>(cmd_def).help
+                << std::endl;
+  }
+}
+
+static void
 boot(xia::pixie::crate::crate& crate, options& )
 {
   std::cout << "booting crate" << std::endl;
@@ -185,17 +257,9 @@ boot(xia::pixie::crate::crate& crate, options& )
 }
 
 static void
-acq_adc(xia::pixie::crate::crate& crate, options& cmd)
+crate_report(xia::pixie::crate::crate& crate, options& )
 {
-    auto mod_num = get_value<size_t>(cmd[1]);
-    crate[mod_num].get_traces();
-}
-
-static void
-acq_bl(xia::pixie::crate::crate& crate, options& cmd)
-{
-    auto mod_num = get_value<size_t>(cmd[1]);
-    crate[mod_num].aquire_baselines();
+  std::cout << crate << std::endl;
 }
 
 static void
@@ -210,6 +274,56 @@ set_dacs(xia::pixie::crate::crate& crate, options& cmd)
 {
     auto mod_num = get_value<size_t>(cmd[1]);
     crate[mod_num].set_dacs();
+}
+
+static void
+adc_acq(xia::pixie::crate::crate& crate, options& cmd)
+{
+    auto mod_num = get_value<size_t>(cmd[1]);
+    crate[mod_num].get_traces();
+}
+
+static void
+adc_save(xia::pixie::crate::crate& crate, options& cmd)
+{
+    auto mod_num = get_value<size_t>(cmd[1]);
+    std::vector<size_t> channels;
+    size_t length = xia::pixie::hw::max_adc_trace_length;
+    if (cmd.size() == 3) {
+        auto value = get_value<size_t>(cmd[2]);
+        if (value > crate[mod_num].num_channels) {
+            length = value;
+        } else {
+            channels.resize(1);
+            channels[0] = value;
+        }
+    } else if (cmd.size() == 4) {
+        channels.resize(1);
+        channels[0] = get_value<size_t>(cmd[2]);
+        length = get_value<size_t>(cmd[3]);
+    }
+    if (channels.empty()) {
+        channels.resize(crate[mod_num].num_channels);
+        std::iota(channels.begin(), channels.end(), 0);
+    }
+    for (auto channel : channels) {
+        xia::pixie::hw::adc_trace adc_trace(length);
+        crate[mod_num].read_adc(channel, adc_trace);
+        std::ostringstream name;
+        name << std::setfill('0') << adc_prefix
+             << '-' << std::setw(2) << mod_num
+             << '-' << std::setw(2) << channel << ".bin";
+        std::ofstream out(name.str(), std::ios::binary);
+        out.write(reinterpret_cast<char*>(adc_trace.data()),
+                  adc_trace.size() * sizeof(xia::pixie::hw::adc_trace::value_type));
+    }
+}
+
+static void
+bl_acq(xia::pixie::crate::crate& crate, options& cmd)
+{
+    auto mod_num = get_value<size_t>(cmd[1]);
+    crate[mod_num].aquire_baselines();
 }
 
 static void
@@ -416,29 +530,6 @@ var_read(xia::pixie::crate::crate& crate, options& cmd)
     }
 }
 
-struct cmd_handler {
-    std::string cmd;
-    void (*func)(xia::pixie::crate::crate& crate, options& cmd);
-};
-
-static const std::vector<cmd_handler> cmd_handlers = {
-    { "boot",        boot },
-    { "acq-adc",     acq_adc },
-    { "acq-bl",      acq_bl },
-    { "adj-off",     adj_off },
-    { "set-dacs",    set_dacs },
-    { "hist-start",  hist_start },
-    { "hist-resume", hist_resume },
-    { "list-start",  list_start },
-    { "list-resume", list_resume },
-    { "run-active",  run_active },
-    { "run-end",     run_end },
-    { "par-write",   par_write },
-    { "par-read",    par_read },
-    { "var-write",   var_write },
-    { "var-read",    var_read }
-};
-
 static bool
 process_command_sets(xia::pixie::crate::crate& crate, commands& cmds)
 {
@@ -550,7 +641,7 @@ main(int argc, char* argv[])
         cmd_flag(command_group,
                  "commands",
                  "Commands to be performed in order. "
-                 "Commands are 'boot', 'set', 'get'.");
+                 "The command `help` lists avalable command.");
 
     try {
         parser.ParseCLI(argc, argv);

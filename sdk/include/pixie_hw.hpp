@@ -56,6 +56,11 @@ namespace hw
     static const size_t io_buffer_length = 65536;
 
     /*
+     * Maximum ADC trace size.
+     */
+    static const size_t max_adc_trace_length = 8192;
+
+    /*
      * Maximum histogram size.
      */
     static const size_t max_histogram_length = 32768;
@@ -81,9 +86,24 @@ namespace hw
     typedef std::vector<word> words;
 
     /*
+     * ADC trace word
+     */
+    typedef uint16_t adc_word;
+
+    /*
      * IO buffer
      */
     typedef std::array<word, io_buffer_length> io_buffer;
+
+    /*
+     * ADC trace buffer, as read from the channel
+     */
+    typedef std::array<word, max_adc_trace_length> adc_trace_buffer;
+
+    /*
+     * ADC trace
+     */
+    typedef std::vector<adc_word> adc_trace;
 
     /*
      * Hardware errors

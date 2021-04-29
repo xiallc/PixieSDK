@@ -131,6 +131,11 @@ struct channel {
     channel& operator=(const channel& c);
 
     /*
+     * ADC trace
+     */
+    void read_adc(hw::adc_word* buffer, size_t size);
+
+    /*
      * Update fifo settings.
      */
     void update_fifo(param::value_type trace_delay);
