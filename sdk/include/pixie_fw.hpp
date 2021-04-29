@@ -104,6 +104,11 @@ namespace firmware
     struct firmware
     {
         /*
+         * Firmware tag
+         */
+        const std::string tag;
+
+        /*
          * The firmware can be used in a range of slots.
          */
         typedef std::vector<int> slots;
@@ -118,6 +123,8 @@ namespace firmware
          */
         const std::string version;
         const int mod_revision;
+        const int mod_adc_msps;
+        const int mod_adc_bits;
         const std::string device;
 
         /*
@@ -138,6 +145,8 @@ namespace firmware
          */
         WINDOWS_DLLEXPORT firmware(const std::string version,
                                    const int mod_revision,
+                                   const int mod_adc_msps,
+                                   const int mod_adc_bits,
                                    const std::string device);
 
         /*
@@ -183,10 +192,15 @@ namespace firmware
     typedef std::vector<firmware_ref> module;
 
      /*
-     * Firmware based on the module revision. Firmware is managed indepentenly
-     * to the crates and modules.
+     * Firmware based on the module revision, ADC MSPS and ADC bits. Firmware
+     * is managed indepentenly to the crates and modules.
      */
-    typedef std::map<int, module> crate;
+    typedef std::map<std::string, module> crate;
+
+    /*
+     * Make a firmware tagl
+     */
+    std::string tag(const int revision, const int adc_msps, const int adc_bits);
 
     /*
      * Add the firmware to a crate.

@@ -35,6 +35,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstring>
 #include <fstream>
 #include <iterator>
 #include <iostream>
@@ -44,6 +45,7 @@
 
 #include <pixie_error.hpp>
 #include <pixie_fw.hpp>
+#include <pixie_util.hpp>
 
 namespace xia
 {
@@ -111,9 +113,14 @@ namespace firmware
 
     firmware::firmware(const std::string version_,
                        const int mod_revision_,
+                       const int mod_adc_msps_,
+                       const int mod_adc_bits_,
                        const std::string device_)
-        : version(version_),
+        : tag(pixie::firmware::tag(mod_revision_, mod_adc_msps_, mod_adc_bits_)),
+          version(version_),
           mod_revision(mod_revision_),
+          mod_adc_msps(mod_adc_msps_),
+          mod_adc_bits(mod_adc_bits_),
           device(device_)
     {
     }
@@ -122,6 +129,11 @@ namespace firmware
     firmware::load()
     {
         std::ifstream file(filename, std::ios::binary);
+        if (!file) {
+            throw error(error::code::file_not_found,
+                        "firmware: image open: " + filename +
+                        ": " + std::strerror(errno));
+        }
 
         file.unsetf(std::ios::skipws);
         file.seekg(0, std::ios::end);
@@ -159,13 +171,18 @@ namespace firmware
         return
             fw.version == version &&
             fw.mod_revision == mod_revision &&
+            fw.mod_adc_msps == mod_adc_msps &&
+            fw.mod_adc_bits == mod_adc_bits &&
             fw.device == device;
     }
 
     template<typename T> void
     firmware::output(T& out) const {
-        out << "ver:" << version
+        out << tag
+            << ": ver:" << version
             << " mod-rev:" << mod_revision
+            << " mod-adc-msps:" << mod_adc_msps
+            << " mod-adc-bits:" << mod_adc_bits
             << " dev:" << device
             << " slots:";
         if (slot.size() > 0) {
@@ -181,19 +198,28 @@ namespace firmware
         out << " size:" << data.size();
     }
 
+    std::string
+    tag(const int revision, const int adc_msps, const int adc_bits)
+    {
+        return
+            std::to_string(revision) +
+            '-' + std::to_string(adc_msps) +
+            '-' + std::to_string(adc_bits);
+    }
+
     void
     add(crate& firmwares, firmware& fw)
     {
-        if (firmwares.find(fw.mod_revision) == std::end(firmwares)) {
-            firmwares[fw.mod_revision] = module();
+        if (firmwares.find(fw.tag) == std::end(firmwares)) {
+            firmwares[fw.tag] = module();
         }
-        firmwares[fw.mod_revision].push_back(std::make_shared<firmware>(fw));
+        firmwares[fw.tag].push_back(std::make_shared<firmware>(fw));
     }
 
     bool
     check(const crate& firmwares, const firmware& fw)
     {
-        auto mod_fw = firmwares.find(fw.mod_revision);
+        auto mod_fw = firmwares.find(fw.tag);
         if (mod_fw != firmwares.end()) {
             for (auto fwr : std::get<1>(*mod_fw)) {
                 if (*fwr == fw) {
@@ -205,7 +231,9 @@ namespace firmware
     }
 
     firmware_ref
-    find(module& firmwares, const std::string device, const int slot)
+    find(module& firmwares,
+         const std::string device,
+         const int slot)
     {
         /*
          * First check if a slot assigned firmware exists for this
@@ -222,13 +250,14 @@ namespace firmware
             }
         }
         for (auto& fwr : firmwares) {
-            if (fwr->device == device && fwr->slot.empty()) {
+            if (fwr->slot.empty() &&
+                fwr->device == device &&
+                fwr) {
                 return fwr;
             }
         }
-        std::string what("firmware: device not found: device=");
-        what += device;
-        throw error(error::code::device_image_failure, what);
+        throw error(error::code::device_image_failure,
+                    "firmware: device not found: device=" + device);
     }
 
     void
@@ -266,61 +295,82 @@ namespace firmware
     firmware
     parse(const std::string fw_desc, const char delimiter)
     {
-        std::string fwd = fw_desc;
-
-        if (delimiter == ' ') {
-            std::transform(fwd.begin(), fwd.end(), fwd.begin(),
-                           [](unsigned char c) -> unsigned char {
-                               if (std::isspace(c)) return ' ';
-                               return c; });
-        }
-
-        std::istringstream field_stream(fwd);
-        std::string field;
-
         std::string version;
-        if (std::getline(field_stream, field, delimiter)) {
-            version = field;
-        } else {
-            std::string what("firmware: version not found: ");
-            what += fw_desc;
-            throw error(error::code::device_image_failure, what);
-        }
-
-        int mod_revision;
-        if (std::getline(field_stream, field, delimiter)) {
-            try {
-                mod_revision = std::stoi(field);
-            } catch (std::invalid_argument& e) {
-                std::string what("firmware: module revision not a number: ");
-                what += field;
-                throw error(error::code::device_image_failure, what);
-            }
-        } else {
-            std::string what("firmware: module revision not found ");
-            what += fw_desc;
-            throw error(error::code::device_image_failure, what);
-        }
-
+        int mod_revision = 0;
+        int mod_adc_msps = 0;
+        int mod_adc_bits = 0;
         std::string device;
-        if (std::getline(field_stream, field, delimiter)) {
-            device = field;
-        } else {
-            std::string what("firmware: device found: ");
-            what += fw_desc;
-            throw error(error::code::device_image_failure, what);
-        }
-
         std::string filename;
-        if (std::getline(field_stream, field, delimiter)) {
-            filename = field;
-        } else {
-            std::string what("firmware: filename not found: ");
-            what += fw_desc;
-            throw error(error::code::device_image_failure, what);
+
+        util::strings fields;
+        util::split(fields, fw_desc, delimiter);
+
+        for (auto field : fields) {
+            util::strings label_value;
+            util::split(label_value, field, '=');
+            if (label_value.size() != 2) {
+                throw error(error::code::invalid_value,
+                            "invalid firmware field: " + field);
+            }
+            if (label_value[0] == "version") {
+                version = label_value[1];
+            } else if (label_value[0] == "revision") {
+                try {
+                    mod_revision = std::stoi(label_value[1]);
+                } catch (std::invalid_argument& e) {
+                    throw error(error::code::device_image_failure,
+                                "firmware: module revision not a number: " +
+                                field);
+                }
+            } else if (label_value[0] == "adc-msps") {
+                try {
+                    mod_adc_msps = std::stoi(label_value[1]);
+                } catch (std::invalid_argument& e) {
+                    throw error(error::code::device_image_failure,
+                                "firmware: module ADC MSPS not a number: " +
+                                field);
+                }
+            } else if (label_value[0] == "adc-bits") {
+                try {
+                    mod_adc_bits = std::stoi(label_value[1]);
+                } catch (std::invalid_argument& e) {
+                    throw error(error::code::device_image_failure,
+                                "firmware: module ADC BITS not a number: " +
+                                field);
+                }
+            } else if (label_value[0] == "device") {
+                device = label_value[1];
+            } else if (label_value[0] == "file") {
+                filename = label_value[1];
+            }
         }
 
-        firmware fw(version, mod_revision, device);
+        if (version.empty()) {
+            throw error(error::code::device_image_failure,
+                        "firmware version mandatory: " + fw_desc);
+        }
+        if (mod_revision == 0) {
+            throw error(error::code::device_image_failure,
+                        "firmware revision mandatory: " + fw_desc);
+        }
+        if (mod_adc_msps == 0) {
+            throw error(error::code::device_image_failure,
+                        "firmware ADC MSPS mandatory: " + fw_desc);
+        }
+        if (mod_adc_bits == 0) {
+            throw error(error::code::device_image_failure,
+                        "firmware ADC_bits mandatory: " + fw_desc);
+        }
+        if (device.empty()) {
+            throw error(error::code::device_image_failure,
+                        "firmware device mandatory: " + fw_desc);
+        }
+        if (filename.empty()) {
+            throw error(error::code::device_image_failure,
+                        "firmware file name mandatory: " + fw_desc);
+        }
+
+        firmware fw(version, mod_revision, mod_adc_msps, mod_adc_bits, device);
         fw.filename = filename;
 
         return fw;

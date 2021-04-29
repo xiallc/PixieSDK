@@ -180,19 +180,31 @@ PixieBootModule(xia::pixie::module::module& module,
     typedef xia::pixie::firmware::firmware firmware;
 
     (void) DSPParFile;
-    (void) DSPVarFile;
 
-    firmware comm_fw(0, module.revision, "sys");
-    firmware fippi_fw(0, module.revision, "fippi");
-    firmware dsp_fw(0, module.revision, "dsp");
+    firmware comm_fw("n/a", module.revision,
+                     module.adc_msps, module.adc_bits, "sys");
+    firmware fippi_fw("n/a", module.revision,
+                      module.adc_msps, module.adc_bits, "fippi");
+    firmware dsp_fw("n/a", module.revision,
+                    module.adc_msps, module.adc_bits, "dsp");
+    firmware dsp_var("n/a", module.revision,
+                     module.adc_msps, module.adc_bits, "var");
 
     comm_fw.filename = ComFPGAConfigFile;
-    fippi_fw.filename = SPFPGAConfigFile;
-    dsp_fw.filename = DSPCodeFile;
-
+    comm_fw.slot.push_back(module.slot);
     xia::pixie::firmware::add(crate.firmware, comm_fw);
+
+    fippi_fw.filename = SPFPGAConfigFile;
+    fippi_fw.slot.push_back(module.slot);
     xia::pixie::firmware::add(crate.firmware, fippi_fw);
+
+    dsp_fw.filename = DSPCodeFile;
+    dsp_fw.slot.push_back(module.slot);
     xia::pixie::firmware::add(crate.firmware, dsp_fw);
+
+    dsp_var.filename = DSPVarFile;
+    dsp_var.slot.push_back(module.slot);
+    xia::pixie::firmware::add(crate.firmware, dsp_var);
 
     crate.set_firmware();
 

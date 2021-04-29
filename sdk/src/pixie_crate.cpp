@@ -185,14 +185,17 @@ namespace crate
     {
         ready();
         for (auto& module : modules) {
-            auto mod_fw = firmware.find(module->revision);
+            auto tag = firmware::tag(module->revision,
+                                     module->adc_msps,
+                                     module->adc_bits);
+            auto mod_fw = firmware.find(tag);
             if (mod_fw != firmware.end()) {
                 log(log::info) << "crate: set module firmware: "
-                               << module->revision;
-                module->set(firmware[module->revision]);
+                               << tag;
+                module->set(firmware[tag]);
             } else {
                 log(log::debug) << "crate: module firmware alread set: "
-                                << module->revision;
+                                << tag;
             }
         }
     }
@@ -203,12 +206,11 @@ namespace crate
             out << "not initialized";
             return;
         }
-        out << "fw: revs: " << firmware.size() << std::endl;
+        out << "fw: tags: " << firmware.size() << std::endl;
         int c = 0;
         for (auto fw_rev : firmware) {
             for (auto& fw : std::get<1>(fw_rev)) {
                 out << ' ' << std::setw(3) << ++c << ". "
-                    << std::get<0>(fw_rev)
                     << ' ' << *fw
                     << std::endl;
             }
