@@ -39,6 +39,7 @@
 #include <fstream>
 #include <map>
 #include <numeric>
+#include <regex>
 #include <sstream>
 
 #include <pixie_crate.hpp>
@@ -137,30 +138,15 @@ static const std::vector<cmd_handler> cmd_handlers = {
 static std::string adc_prefix = "adc-trace";
 
 static bool
-check_number(const std::string& opt, bool raise = false)
+check_number(const std::string& opt)
 {
-    if (!opt.empty()) {
-        auto it = opt.begin();
-        if (*it == '-' || std::isdigit(*it)) {
-            ++it;
-            while (it != opt.end() && std::isdigit(*it)) {
-                ++it;
-            }
-            if (it == opt.end()) {
-                return true;
-            }
-        }
-    }
-    if (raise) {
-      throw error(error::code::invalid_value, "not a number");
-    }
-    return false;
+    return std::regex_match(opt, std::regex(( "((\\+|-)?[[:digit:]]+)(\\.(([[:digit:]]+)?))?" )));
 }
 
 template<typename T> static T
 get_value(const std::string& opt)
 {
-  check_number(opt, true);
+    check_number(opt);
     std::istringstream iss(opt);
     T value;
     iss >> value;
