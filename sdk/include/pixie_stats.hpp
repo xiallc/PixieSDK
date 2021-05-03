@@ -74,6 +74,7 @@ struct channel {
 
     double input_count_rate() const;
     double output_count_rate() const;
+    double live_time() const;
 };
 
 typedef std::vector<channel> channels;

@@ -431,8 +431,32 @@ PixieComputeLiveTime(unsigned int* Statistics,
     xia_log(xia_log::info) << "PixieComputeLiveTime: ModNum=" << ModNum
                            << " ChanNum=" << ChanNum;
 
-    (void) Statistics;
-    return not_supported();
+    double result = 0;
+
+    try {
+        if (Statistics == nullptr) {
+            throw xia_error(xia_error::code::invalid_value,
+                            "statistics pointer is NULL");
+        }
+        stats_legacy_ptr stats = reinterpret_cast<stats_legacy_ptr>(Statistics);
+        stats->validate();
+        if (ChanNum >= stats->num_channels) {
+            throw xia_error(xia_error::code::channel_number_invalid,
+                            "invalid channel number");
+        }
+        result = stats->channels[ChanNum].live_time();
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+    } catch (...) {
+        if (throw_unhandled) {
+            throw;
+        }
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+    }
+
+    return result;
 }
 
 PIXIE_EXPORT double PIXIE_API
@@ -442,7 +466,6 @@ PixieComputeOutputCountRate(unsigned int* Statistics,
 {
     xia_log(xia_log::info) << "PixieComputeOutputCountRate: ModNum=" << ModNum
                            << " ChanNum=" << ChanNum;
-
 
     double result = 0;
 

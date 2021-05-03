@@ -560,6 +560,13 @@ stats(xia::pixie::crate::crate& crate, options& cmd)
                   << ": real-time="
                   << stats.mod.real_time()
                   << std::endl;
+    } else if (stat == "lt") {
+        for (auto channel : channels) {
+            std::cout << "module " << mod_num << " chan " << channel
+                  << ": live-time="
+                  << stats.chans[channel].live_time()
+                  << std::endl;
+        }
     }
 }
 

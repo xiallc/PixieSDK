@@ -97,6 +97,13 @@ channel::output_count_rate() const
     return chan_events / (real_time * (1.0e-6 / hw::system_clock_mhz));
 }
 
+double
+channel::live_time() const
+{
+    const double live_time =  make_u64(live_time_a, live_time_b);
+    return live_time * config.adc_clk_div * (1.0e-6 / config.adc_msps);
+}
+
 module::module()
     : num_events_a(0),
       num_events_b(0)
