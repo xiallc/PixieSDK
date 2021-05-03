@@ -36,6 +36,8 @@
 #include <cmath>
 #include <numeric>
 
+#include <xia_windows_compat.hpp>
+
 #include <pixie_channel.hpp>
 #include <pixie_log.hpp>
 #include <pixie_module.hpp>
