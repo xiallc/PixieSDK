@@ -107,7 +107,7 @@ namespace memory
     dsp::read(const address addr, word_ptr buffer, const size_t length)
     {
         log(log::debug) << module::module_label(module)
-                        << "dsp read: addr=" << std::hex << addr
+                        << "dsp read: addr=0x" << std::hex << addr
                         << " length=" << std::dec << length;
 
         size_t size = length;
@@ -162,7 +162,7 @@ namespace memory
     dsp::dma_read(const address addr, word_ptr buffer, const size_t length)
     {
         log(log::debug) << module::module_label(module)
-                        << "dsp dma read: addr=" << std::hex << addr
+                        << "dsp dma read: addr=0x" << std::hex << addr
                         << " length=" << std::dec << length;
 
         host_bus_request hbr(module);

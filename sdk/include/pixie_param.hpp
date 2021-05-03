@@ -36,16 +36,23 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
-#include <stdexcept>
+#include <algorithm>
+#include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
-#include <pixie_fw.hpp>
+#include <pixie_hw.hpp>
 
 namespace xia
 {
 namespace pixie
 {
+namespace firmware
+{
+    struct firmware;
+    typedef std::shared_ptr<firmware> firmware_ref;
+}
 namespace param
 {
     /*
@@ -187,8 +194,13 @@ namespace param
         RealTimeB,
         RunTimeA,
         RunTimeB,
+        GSLTtime,
+        DSPerror,
         SynchDone,
         UserOut,
+        AOutBuffer,
+        AECorr,
+        LECorr,
         HardwareID,
         HardVariant,
         FIFOLength,
@@ -203,6 +215,7 @@ namespace param
         FippiID,
         FippiVariant,
         DSPVariant,
+        U20,
         /*
          * Size marker
          */
@@ -270,12 +283,6 @@ namespace param
         /*
          * Out
          */
-        GSLTtime,
-        DSPerror,
-        AOutBuffer,
-        AECorr,
-        LECorr,
-        U20,
         LiveTimeA,
         LiveTimeB,
         FastPeaksA,
@@ -361,7 +368,7 @@ namespace param
     template<typename V>
     struct variable_desc
         : public parameter_desc<V> {
-        uint32_t address;           /* DSP memory address */
+        hw::address address;           /* DSP memory address */
         variable_desc(const V var_,
                       enabledisable state_,
                       const rwrowr mode_,
@@ -460,6 +467,67 @@ namespace param
     typedef std::map<std::string, channel_var> channel_var_map;
 
     /*
+     * Address map
+     */
+    struct address_map {
+        typedef std::pair<size_t, hw::address> desc_address;
+        typedef std::vector<desc_address> desc_addresses;
+        struct range {
+            hw::address start;
+            hw::address end;
+            size_t size;
+            range();
+            void set_size();
+            void output(std::ostream& out) const;
+        };
+
+        range full;
+
+        range module;
+        range module_in;
+        range module_out;
+
+        range channels;
+        range channels_in;
+        range channels_out;
+
+        size_t vars;
+        size_t module_vars;
+        size_t channel_vars;
+        size_t vars_per_channel;
+
+        address_map();
+
+        void set(const size_t num_channels,
+                 const module_var_descs& module_descs,
+                 const channel_var_descs& channel_descs);
+        hw::address channel_base(const size_t channel);
+
+        void output(std::ostream& out) const;
+
+    private:
+        void check_channel_gap(const size_t num_channels,
+                               const channel_var_descs& channel_descs,
+                               const desc_addresses& addresses);
+
+        template<typename V>
+        void get(const V& vars,
+                 desc_addresses& addresses,
+                 const rwrowr mode);
+        hw::address min(const desc_addresses& addresses);
+        hw::address max(const desc_addresses& addresses);
+    };
+
+    /*
+     * Get a descriptor from the descriptors.
+     */
+    template<typename D, typename V>
+    const typename D::value_type&
+    get_descriptor(const D& descs, const V var) {
+        return descs[size_t(var)];
+    }
+
+    /*
      * Get a copy of the defaults.
      */
     const module_var_descs& get_module_var_descriptors();
@@ -526,5 +594,8 @@ namespace param
 };
 };
 };
+
+std::ostream&
+operator<<(std::ostream& out, const xia::pixie::param::address_map& config);
 
 #endif  // PIXIE_PARAM_H

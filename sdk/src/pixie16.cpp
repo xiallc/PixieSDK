@@ -42,6 +42,7 @@
 #include <pixie_crate.hpp>
 #include <pixie_error.hpp>
 #include <pixie_log.hpp>
+#include <pixie_stats.hpp>
 
 /*
  * Local types for convenience.
@@ -60,6 +61,26 @@ typedef xia::pixie::error::error xia_error;
 #define BOOTPATTERN_SETDACS_BIT   6
 
 /*
+ * Legacy API stats data exported to users as opaque data
+ */
+struct stats_legacy {
+    static const unsigned int mark_1 = 0x20010928;
+    static const unsigned int mark_2 = 0x19650829;
+
+    unsigned int marker_1;
+    size_t num_channels;
+    xia::pixie::stats::module module;;
+    xia::pixie::stats::channel channels[xia::pixie::hw::max_channels];
+    unsigned int marker_2;
+
+    stats_legacy(const xia::pixie::hw::configs& configs);
+
+    void validate() const;
+};
+
+typedef stats_legacy* stats_legacy_ptr;
+
+/*
  * The crate. We only handle a single crate with the legacy API.
  */
 static xia::pixie::crate::crate crate;
@@ -70,6 +91,23 @@ static xia::pixie::crate::crate crate;
  * out what it is.
  */
 static bool throw_unhandled;
+
+stats_legacy::stats_legacy(const xia::pixie::hw::configs& configs)
+    : marker_1(mark_1),
+      marker_2(mark_2)
+{
+    for (size_t channel = 0; channel < configs.size(); ++channel) {
+        channels[channel].config = configs[channel];
+    }
+}
+
+void
+stats_legacy::validate() const
+{
+    if (marker_1 != mark_1 || marker_2 != mark_2) {
+        throw xia_error(xia_error::code::invalid_value, "statistics data corrupt");
+    }
+}
 
 static int
 not_supported()
@@ -205,13 +243,21 @@ PixieBootModule(xia::pixie::module::module& module,
     (void) DSPParFile;
 
     firmware comm_fw("n/a", module.revision,
-                     module.adc_msps, module.adc_bits, "sys");
+                     module.channels[0].config.adc_msps,
+                     module.channels[0].config.adc_bits,
+                     "sys");
     firmware fippi_fw("n/a", module.revision,
-                      module.adc_msps, module.adc_bits, "fippi");
+                      module.channels[0].config.adc_msps,
+                      module.channels[0].config.adc_bits,
+                      "fippi");
     firmware dsp_fw("n/a", module.revision,
-                    module.adc_msps, module.adc_bits, "dsp");
+                    module.channels[0].config.adc_msps,
+                    module.channels[0].config.adc_bits,
+                    "dsp");
     firmware dsp_var("n/a", module.revision,
-                     module.adc_msps, module.adc_bits, "var");
+                     module.channels[0].config.adc_msps,
+                     module.channels[0].config.adc_bits,
+                     "var");
 
     comm_fw.filename = ComFPGAConfigFile;
     comm_fw.slot.push_back(module.slot);
@@ -349,8 +395,32 @@ PixieComputeInputCountRate(unsigned int* Statistics,
     xia_log(xia_log::info) << "PixieComputeInputCountRate: ModNum=" << ModNum
                            << " ChanNum=" << ChanNum;
 
-    (void) Statistics;
-    return not_supported();
+    double events = 0;
+
+    try {
+        if (Statistics == nullptr) {
+            throw xia_error(xia_error::code::invalid_value,
+                            "statistics pointer is NULL");
+        }
+        stats_legacy_ptr stats = reinterpret_cast<stats_legacy_ptr>(Statistics);
+        stats->validate();
+        if (ChanNum >= stats->num_channels) {
+            throw xia_error(xia_error::code::channel_number_invalid,
+                            "invalid channel number");
+        }
+        events = stats->module.processed_events();
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+    } catch (...) {
+        if (throw_unhandled) {
+            throw;
+        }
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+    }
+
+    return events;
 }
 
 PIXIE_EXPORT double PIXIE_API
@@ -383,8 +453,28 @@ PixieComputeProcessedEvents(unsigned int* Statistics,
 {
     xia_log(xia_log::info) << "PixieComputeProcessedEvents: ModNum=" << ModNum;
 
-    (void) Statistics;
-    return not_supported();
+    double events = 0;
+
+    try {
+        if (Statistics == nullptr) {
+            throw xia_error(xia_error::code::invalid_value,
+                            "statistics pointer is NULL");
+        }
+        stats_legacy_ptr stats = reinterpret_cast<stats_legacy_ptr>(Statistics);
+        stats->validate();
+        events = stats->module.processed_events();
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+    } catch (...) {
+        if (throw_unhandled) {
+            throw;
+        }
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+    }
+
+    return events;
 }
 
 PIXIE_EXPORT double PIXIE_API
@@ -671,16 +761,45 @@ PIXIE_EXPORT int PIXIE_API
 PixieReadStatisticsFromModule(unsigned int* Statistics,
                               unsigned short ModNum)
 {
-    xia_log(xia_log::info) << "PixieReadStatisticsFromModule: ModNum=" << ModNum;
+    xia_log(xia_log::info) << "PixieReadStatisticsFromModule: ModNum="
+                           << ModNum;
 
-    (void) Statistics;
-    return not_supported();
+    try {
+        if (Statistics == nullptr) {
+            throw xia_error(xia_error::code::invalid_value,
+                            "statistics pointer is NULL");
+        }
+        crate.ready();
+        xia::pixie::crate::module_handle module(crate, ModNum);
+        stats_legacy_ptr legacy_stats =
+            new(Statistics) stats_legacy(module->configs);
+        legacy_stats->validate();
+        xia::pixie::stats::stats stats(module->configs);
+        module->read_stats(stats);
+        legacy_stats->num_channels = module->num_channels;
+        legacy_stats->module = stats.mod;
+        for (size_t channel = 0; channel < module->num_channels; ++channel) {
+            legacy_stats->channels[channel] = stats.chans[channel];
+        }
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+    } catch (...) {
+        if (throw_unhandled) {
+            throw;
+        }
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+    }
+
+    return 0;
 }
 
 PIXIE_EXPORT int PIXIE_API
 PixieSaveDSPParametersToFile(const char* FileName)
 {
-    xia_log(xia_log::info) << "PixieReadStatisticsFromModule: FileName=" << FileName;
+    xia_log(xia_log::info) << "PixieReadStatisticsFromModule: FileName="
+                           << FileName;
 
     return not_supported();
 }

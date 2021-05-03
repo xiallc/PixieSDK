@@ -105,7 +105,7 @@ namespace crate
             size_t max_modules = num_modules = num_modules_;
 
             if (max_modules == 0) {
-                max_modules = slots;
+                max_modules = hw::max_slots;
             }
 
             for (size_t device_number = 0;
@@ -185,17 +185,19 @@ namespace crate
     {
         ready();
         for (auto& module : modules) {
-            auto tag = firmware::tag(module->revision,
-                                     module->adc_msps,
-                                     module->adc_bits);
-            auto mod_fw = firmware.find(tag);
-            if (mod_fw != firmware.end()) {
-                log(log::info) << "crate: set module firmware: "
-                               << tag;
-                module->set(firmware[tag]);
-            } else {
-                log(log::debug) << "crate: module firmware alread set: "
-                                << tag;
+            for (auto& config : module->configs) {
+                auto tag = firmware::tag(module->revision,
+                                         config.adc_msps,
+                                         config.adc_bits);
+                auto mod_fw = firmware.find(tag);
+                if (mod_fw != firmware.end()) {
+                    log(log::info) << "crate: add module firmware(s): "
+                                   << tag;
+                    module->add(firmware[tag]);
+                } else {
+                    log(log::debug) << "crate: module firmware alread set: "
+                                    << tag;
+                }
             }
         }
     }

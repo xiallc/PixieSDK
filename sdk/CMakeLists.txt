@@ -33,6 +33,7 @@ set(PIXIE_SDK_SOURCES
         src/pixie_crate.cpp
         src/pixie_module.cpp
         src/pixie_channel.cpp
+        src/pixie_stats.cpp
         src/pixie_fw.cpp
         src/pixie_param.cpp
         src/pixie_hw.cpp

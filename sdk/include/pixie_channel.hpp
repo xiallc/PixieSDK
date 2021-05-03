@@ -125,6 +125,11 @@ struct channel {
     size_t number;
 
     /*
+     * Configuration
+     */
+    hw::config config;
+
+    /*
      * The module this channel is part of.
      */
     std::reference_wrapper<module::module> module;

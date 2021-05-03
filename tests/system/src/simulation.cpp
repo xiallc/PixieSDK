@@ -78,10 +78,12 @@ module::open(size_t device_number)
             eeprom_format = mod_def.eeprom_format;
             serial_num = mod_def.serial_num;
             num_channels = mod_def.num_channels;
-            adc_bits = mod_def.adc_bits;
-            adc_msps = mod_def.adc_msps;
-            adc_clk_div = mod_def.adc_clk_div;
-            fpga_clk_mhz = adc_msps / adc_clk_div;
+            hw::config config;
+            config.adc_bits = mod_def.adc_bits;
+            config.adc_msps = mod_def.adc_msps;
+            config.adc_clk_div = mod_def.adc_clk_div;
+            config.fpga_clk_mhz = mod_def.adc_msps / mod_def.adc_clk_div;
+            configs.resize(num_channels, config);
 
             var_defaults = mod_def.var_defaults;
 

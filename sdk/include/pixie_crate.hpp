@@ -57,11 +57,6 @@ namespace crate
     typedef pixie::error::error error;
 
     /*
-     * Number of slots in a crate.
-     */
-    static const int slots = 12;
-
-    /*
      * Crate
      *
      * A crate is a series of slots that contain modules.

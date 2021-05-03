@@ -91,6 +91,7 @@ static void par_write(xia::pixie::crate::crate& crate, options& cmd);
 static void par_read(xia::pixie::crate::crate& crate, options& cmd);
 static void var_write(xia::pixie::crate::crate& crate, options& cmd);
 static void var_read(xia::pixie::crate::crate& crate, options& cmd);
+static void stats(xia::pixie::crate::crate& crate, options& cmd);
 
 static const std::map<std::string, command_def> command_defs =
 {
@@ -111,7 +112,8 @@ static const std::map<std::string, command_def> command_defs =
     { "par-read",    { { 2, 3 },    "read module/channel parameter" } },
     { "par-write",   { { 3, 4 },    "write module/channel parameter" } },
     { "var-read",    { { 2, 3, 4 }, "read module/channel variable" } },
-    { "var-write",   { { 3, 4, 5 }, "write module/channel variable" } }
+    { "var-write",   { { 3, 4, 5 }, "write module/channel variable" } },
+    { "stats",       { { 2, 3 },    "module/channel stats" } }
 };
 
 static const std::vector<cmd_handler> cmd_handlers = {
@@ -132,7 +134,8 @@ static const std::vector<cmd_handler> cmd_handlers = {
     { "par-write",   par_write },
     { "par-read",    par_read },
     { "var-write",   var_write },
-    { "var-read",    var_read }
+    { "var-read",    var_read },
+    { "stats",       stats }
 };
 
 static std::string adc_prefix = "adc-trace";
@@ -273,7 +276,7 @@ static void
 adc_save(xia::pixie::crate::crate& crate, options& cmd)
 {
     auto mod_num = get_value<size_t>(cmd[1]);
-    std::vector<size_t> channels;
+    xia::pixie::channel::range channels;
     size_t length = xia::pixie::hw::max_adc_trace_length;
     if (cmd.size() == 3) {
         auto value = get_value<size_t>(cmd[2]);
@@ -290,7 +293,7 @@ adc_save(xia::pixie::crate::crate& crate, options& cmd)
     }
     if (channels.empty()) {
         channels.resize(crate[mod_num].num_channels);
-        std::iota(channels.begin(), channels.end(), 0);
+        xia::pixie::channel::range_set(channels);
     }
     for (auto channel : channels) {
         xia::pixie::hw::adc_trace adc_trace(length);
@@ -513,6 +516,38 @@ var_read(xia::pixie::crate::crate& crate, options& cmd)
                      crate[mod_num].read_var(cmd[reg_name],
                                              channel,
                                              offset));
+    }
+}
+
+static void
+stats(xia::pixie::crate::crate& crate, options& cmd)
+{
+    auto mod_num = get_value<size_t>(cmd[1]);
+    std::string stat;
+    xia::pixie::channel::range channels;
+    if (cmd.size() == 3) {
+        stat = cmd[2];
+        channels.resize(crate[mod_num].num_channels);
+        xia::pixie::channel::range_set(channels);
+    } else {
+        channels.resize(1);
+        channels[0] = get_value<size_t>(cmd[2]);
+        stat = cmd[3];
+    }
+    xia::pixie::stats::stats stats(crate[mod_num].configs);
+    crate[mod_num].read_stats(stats);
+    if (stat == "pe") {
+        std::cout << "module " << mod_num
+                  << ": processed-events="
+                  << stats.mod.processed_events()
+                  << std::endl;
+    } else if (stat == "icr") {
+        for (auto channel : channels) {
+            std::cout << "module " << mod_num << " chan " << channel
+                  << ": input-count-rate="
+                  << stats.chans[channel].input_count_rate()
+                  << std::endl;
+        }
     }
 }
 

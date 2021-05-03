@@ -251,10 +251,6 @@ namespace module
           number(-1),
           serial_num(0),
           revision(0),
-          adc_bits(0),
-          adc_msps(0),
-          adc_clk_div(0),
-          fpga_clk_mhz(0),
           num_channels(0),
           vmaddr(nullptr),
           eeprom_format(-1),
@@ -274,10 +270,6 @@ namespace module
           number(m.number),
           serial_num(m.serial_num),
           revision(m.revision),
-          adc_bits(m.adc_bits),
-          adc_msps(m.adc_msps),
-          adc_clk_div(m.adc_clk_div),
-          fpga_clk_mhz(m.fpga_clk_mhz),
           num_channels(m.num_channels),
           vmaddr(m.vmaddr),
           eeprom(m.eeprom),
@@ -300,10 +292,6 @@ namespace module
         m.number = -1;
         m.serial_num = 0;
         m.revision = 0;
-        m.adc_bits = 0;
-        m.adc_msps = 0;
-        m.adc_clk_div = 0;
-        m.fpga_clk_mhz = 0;
         m.num_channels = 0;
         m.vmaddr = nullptr;
         m.eeprom.clear();
@@ -347,10 +335,6 @@ namespace module
         number = m.number;
         serial_num = m.serial_num;
         revision = m.revision;
-        adc_bits = m.adc_bits;
-        adc_msps = m.adc_msps;
-        adc_clk_div = m.adc_clk_div;
-        fpga_clk_mhz = m.fpga_clk_mhz;
         num_channels = m.num_channels;
         vmaddr = m.vmaddr;
         eeprom = std::move(m.eeprom);
@@ -372,10 +356,6 @@ namespace module
         m.number = -1;
         m.serial_num = 0;
         m.revision = 0;
-        m.adc_bits = 0;
-        m.adc_msps = 0;
-        m.adc_clk_div = 0;
-        m.fpga_clk_mhz = 0;
         m.num_channels = 0;
         m.vmaddr = nullptr;
         m.eeprom.clear();
@@ -636,10 +616,6 @@ namespace module
                        << " dsp=" << dsp_online;
 
         if (fippi_fpga) {
-            firmware::firmware_ref vars = get("var");
-            param::load(vars,
-                        module_var_descriptors,
-                        channel_var_descriptors);
             init_values();
         }
 
@@ -696,10 +672,9 @@ namespace module
             dsp_online = dsp.init_done();
         }
 
-        firmware::firmware_ref vars = get("var");
-        param::load(vars,
-                    module_var_descriptors,
-                    channel_var_descriptors);
+        if (fippi_fpga) {
+            init_values();
+        }
 
         log(log::info) << module_label(*this)
                        << std::boolalpha
@@ -721,34 +696,36 @@ namespace module
         if (serial_num == 0xFFFF) {
             throw error(number, slot,
                         error::code::module_initialize_failure,
-                        "invalid serial number: EEPROM erased");
+                        "invalid serial number: blank EEPROM");
         }
 
+        hw::config config;
+
         if (serial_num > 1034) {
-            eeprom_format = 1;
-            adc_bits = static_cast<int>(eeprom[99]);
-            adc_msps =
-                (static_cast<int>(eeprom[99 + 2]) << 8) |
-                static_cast<int>(eeprom[99 + 1]);
             if (revision <= rev_F) {
                 num_channels = 16;
             } else {
                 num_channels = 16;
             }
+            eeprom_format = 1;
+            config.adc_bits = static_cast<int>(eeprom[99]);
+            config.adc_msps =
+                (static_cast<int>(eeprom[99 + 2]) << 8) |
+                static_cast<int>(eeprom[99 + 1]);
         } else {
-            for (const auto& config : module_configs) {
-                if (serial_num >= std::get<0>(config.serial_num) &&
-                    serial_num <= std::get<1>(config.serial_num)) {
-                    adc_bits = config.adc_bits;
-                    adc_msps = config.adc_msps;
-                    eeprom_format = config.eeprom_format;
-                    num_channels = config.num_channels;
+            for (const auto& mod_config : module_configs) {
+                if (serial_num >= std::get<0>(mod_config.serial_num) &&
+                    serial_num <= std::get<1>(mod_config.serial_num)) {
+                    num_channels = mod_config.num_channels;
+                    eeprom_format = mod_config.eeprom_format;
+                    config.adc_bits = mod_config.adc_bits;
+                    config.adc_msps = mod_config.adc_msps;
                     break;
                 }
             }
         }
 
-        if (adc_bits == 0) {
+        if (config.adc_bits == 0) {
             std::ostringstream oss;
             oss << "unknown serial number to ADC config: "
                 << serial_num;
@@ -760,27 +737,29 @@ namespace module
         /*
          * Set the FPGA ADC clock divider and the FPGA clock frequency.
          */
-        switch (adc_msps) {
+        switch (config.adc_msps) {
         case 100:
-            adc_clk_div = 1;
+            config.adc_clk_div = 1;
             break;
         case 250:
-            adc_clk_div = 2;
+            config.adc_clk_div = 2;
             break;
         case 500:
-            adc_clk_div = 5;
+            config.adc_clk_div = 5;
             break;
         default:
             throw error(number, slot,
                         error::code::module_initialize_failure,
-                        "invalid ADC MSPS: " + std::to_string(adc_msps));
+                        "invalid ADC MSPS: " + std::to_string(config.adc_msps));
         };
 
-        fpga_clk_mhz = adc_msps / adc_clk_div;
+        config.fpga_clk_mhz = config.adc_msps / config.adc_clk_div;
+
+        configs.resize(num_channels, config);
     }
 
     void
-    module::set(firmware::module& fw)
+    module::add(firmware::module& fw)
     {
         lock_guard guard(lock_);
         if (online_) {
@@ -788,7 +767,6 @@ namespace module
                         error::code::module_invalid_operation,
                         "module is online when setting firmware");
         }
-        firmware.clear();
         std::copy(fw.begin(), fw.end(),
                   std::back_inserter(firmware));
     }
@@ -1459,10 +1437,22 @@ namespace module
     void
     module::bl_find_cut(channel::range& channels_, param::values& cuts)
     {
+        log(log::info) << module_label(*this)
+                       << "bl-find-count: channels=" << channels.size();
         cuts.clear();
         channel::baseline bl(*this, channels_);
         bl.find_cut();
         cuts = bl.cuts;
+    }
+
+    void
+    module::read_stats(stats::stats& stats)
+    {
+        log(log::info) << module_label(*this)
+                       << "bl-find-count: channels=" << channels.size();
+        online_check();
+        lock_guard guard(lock_);
+        stats::read(*this, stats);
     }
 
     void
@@ -1499,7 +1489,7 @@ namespace module
                      size_t length)
     {
         log(log::debug) << module_label(*this)
-                        << "dma read: addr=" << std::hex << source
+                        << "dma read: addr=0x" << std::hex << source
                         << " length=" << std::dec << length;
 
         online_check();
@@ -1588,6 +1578,24 @@ namespace module
                         error::code::internal_failure,
                         "number of channels is 0");
         }
+        if (configs.size() != num_channels) {
+            throw error(number, slot,
+                        error::code::internal_failure,
+                        "invalid number of channels configurations");
+        }
+
+        firmware::firmware_ref vars = get("var");
+        param::load(vars,
+                    module_var_descriptors,
+                    channel_var_descriptors);
+
+        param_addresses.set(num_channels,
+                            module_var_descriptors,
+                            channel_var_descriptors);
+
+        log(log::info) << module_label(*this)
+                       << "address map: " << param_addresses;
+
         erase_values();
         for (const auto& desc : module_var_descriptors) {
             module_vars.push_back(param::module_variable(desc));
@@ -1595,10 +1603,12 @@ namespace module
         channels.resize(num_channels, channel::channel(*this));
         for (size_t channel = 0; channel < num_channels; ++channel) {
             channels[channel].number = channel;
+            channels[channel].config = configs[channel];
             for (const auto& desc : channel_var_descriptors) {
                 channels[channel].vars.push_back(param::channel_variable(desc));
             }
         }
+
     }
 
     bool

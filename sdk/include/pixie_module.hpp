@@ -50,6 +50,7 @@
 #include <pixie_hw.hpp>
 #include <pixie_log.hpp>
 #include <pixie_param.hpp>
+#include <pixie_stats.hpp>
 
 #include <hw/i2cm24c64.hpp>
 #include <hw/run.hpp>
@@ -159,26 +160,6 @@ namespace module
         int revision;
 
         /*
-         * ADC size in bits.
-         */
-        int adc_bits;
-
-        /*
-         * ADC sampling rate in mega-samples-per-second.
-         */
-        int adc_msps;
-
-        /*
-         * FPGA ADC clock divider
-         */
-        int adc_clk_div;
-
-        /*
-         * FPGA clock rate in mega-hertz
-         */
-        int fpga_clk_mhz;
-
-        /*
          * Number of channels
          */
         size_t num_channels;
@@ -187,6 +168,11 @@ namespace module
          * Module's register VM address.
          */
         void* vmaddr;
+
+        /*
+         * Channel configs
+         */
+        hw::configs configs;
 
         /*
          * EEPROM
@@ -205,6 +191,11 @@ namespace module
          */
         param::channel_var_descs channel_var_descriptors;
         channel::channels channels;
+
+        /*
+         * Parameter configuration.
+         */
+        param::address_map param_addresses;
 
         /*
          * Firmware
@@ -268,9 +259,9 @@ namespace module
         virtual void config_settings();
 
         /*
-         * Set or get the firmware.
+         * Add or get the firmware.
          */
-        void set(firmware::module& fw);
+        void add(firmware::module& fw);
         firmware::firmware_ref get(const std::string device);
 
         /*
@@ -365,6 +356,11 @@ namespace module
          * Find the baseline cut for the range of channels.
          */
         void bl_find_cut(channel::range& channels, param::values& cuts);
+
+        /*
+         * Read the stats
+         */
+        void read_stats(stats::stats& stats);
 
         /*
          * Output the module details.

@@ -51,9 +51,14 @@ namespace pixie
 namespace hw
 {
     /*
-     * IO buffer length
+     * Maximum number of slots in a crate.
      */
-    static const size_t io_buffer_length = 65536;
+    static const int max_slots = 12;
+
+    /*
+     * Maximum number of channels a module can have.
+     */
+    static const int max_channels = 32;
 
     /*
      * Maximum ADC trace size.
@@ -64,6 +69,11 @@ namespace hw
      * Maximum histogram size.
      */
     static const size_t max_histogram_length = 32768;
+
+    /*
+     * IO buffer length
+     */
+    static const size_t io_buffer_length = 65536;
 
     /*
      * Address.
@@ -109,6 +119,20 @@ namespace hw
      * Hardware errors
      */
     typedef error::error error;
+
+    /*
+     * Configuration
+     */
+    struct config {
+        int adc_bits;
+        int adc_msps;
+        int adc_clk_div;
+        int fpga_clk_mhz;
+
+        config();
+    };
+
+    typedef std::vector<config> configs;
 
     /*
      * Convertor. Use with caution as this steps around the type system.

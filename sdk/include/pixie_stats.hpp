@@ -1,3 +1,6 @@
+#ifndef PIXIE_STATS_H
+#define PIXIE_STATS_H
+
 /*----------------------------------------------------------------------
 * Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
@@ -33,32 +36,68 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
-#include <chrono>
-#include <thread>
+#include <vector>
 
 #include <pixie_hw.hpp>
+#include <pixie_param.hpp>
 
 namespace xia
 {
 namespace pixie
 {
-namespace hw
+namespace module
 {
-config::config()
-    : adc_bits(0),
-      adc_msps(0),
-      adc_clk_div(0),
-      fpga_clk_mhz(0)
+    class module;
+}
+namespace stats
 {
+/*
+ * Statistics
+ *
+ * The channel and module stats cannot contain any containers while they
+ * are used in the legacy API.
+ */
+struct channel {
+    param::value_type fast_peaks_a;
+    param::value_type fast_peaks_b;
+    param::value_type live_time_a;
+    param::value_type live_time_b;
+    param::value_type chan_events_a;
+    param::value_type chan_events_b;
+    param::value_type runtime_a;
+    param::value_type runtime_b;
+
+    hw::config config;
+
+    channel(const hw::config& config);
+    channel();
+
+    double input_count_rate() const;
+};
+
+typedef std::vector<channel> channels;
+
+struct module {
+    param::value_type num_events_a;
+    param::value_type num_events_b;
+
+    module();
+
+    uint64_t processed_events() const;
+};
+
+    typedef std::vector<module> modules;
+
+struct stats {
+    module mod;
+    channels chans;
+
+    stats(const hw::configs& configs);
+};
+
+void read(pixie::module::module& module_, stats& stats_);
+}
+}
 }
 
-void
-wait(size_t microseconds)
-{
-    std::this_thread::sleep_for(
-        std::chrono::microseconds(microseconds)
-        );
-}
-};
-};
-};
+#endif  // PIXIE_STATS_H

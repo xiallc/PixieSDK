@@ -42,9 +42,13 @@
 
 #include <pixie16app_defs.h>
 
+#include <pixie_channel.hpp>
 #include <pixie_error.hpp>
+#include <pixie_fw.hpp>
 #include <pixie_log.hpp>
+#include <pixie_module.hpp>
 #include <pixie_param.hpp>
+#include <pixie_util.hpp>
 
 namespace xia
 {
@@ -154,8 +158,13 @@ namespace param
         { "RealTimeB",            module_var::RealTimeB },
         { "RunTimeA",             module_var::RunTimeA },
         { "RunTimeB",             module_var::RunTimeB },
+        { "GSLTtime",             module_var::GSLTtime },
+        { "DSPerror",             module_var::DSPerror },
         { "SynchDone",            module_var::SynchDone },
         { "UserOut",              module_var::UserOut },
+        { "AOutBuffer",           module_var::AOutBuffer },
+        { "AECorr",               module_var::AECorr },
+        { "LECorr",               module_var::LECorr },
         { "HardwareID",           module_var::HardwareID },
         { "HardVariant",          module_var::HardVariant },
         { "FIFOLength",           module_var::FIFOLength },
@@ -169,7 +178,8 @@ namespace param
         { "LOutBuffer",           module_var::LOutBuffer },
         { "FippiID",              module_var::FippiID },
         { "FippiVariant",         module_var::FippiVariant },
-        { "DSPVariant",           module_var::DSPVariant }
+        { "DSPVariant",           module_var::DSPVariant },
+        { "U20",                  module_var::U20 },
     };
 
     static const channel_var_map channel_vars = {
@@ -221,12 +231,6 @@ namespace param
         { "QDCLen5",           channel_var::QDCLen5 },
         { "QDCLen6",           channel_var::QDCLen6 },
         { "QDCLen7",           channel_var::QDCLen7 },
-        { "GSLTtime",          channel_var::GSLTtime },
-        { "DSPerror",          channel_var::DSPerror },
-        { "AOutBuffer",        channel_var::AOutBuffer },
-        { "AECorr",            channel_var::AECorr },
-        { "LECorr",            channel_var::LECorr },
-        { "U20",               channel_var::U20 },
         { "LiveTimeA",         channel_var::LiveTimeA },
         { "LiveTimeB",         channel_var::LiveTimeB },
         { "FastPeaksA",        channel_var::FastPeaksA },
@@ -245,7 +249,7 @@ namespace param
 
     static const module_var_descs module_var_descriptors_default = {
         { module_var::ModNum,               enable,  rw,  1, "ModNum" },
-        { module_var::ModCSRA,              disable, ro,  1, "ModCSRA" },
+        { module_var::ModCSRA,              disable, rw,  1, "ModCSRA" },
         { module_var::ModCSRB,              enable,  rw,  1, "ModCSRB" },
         { module_var::ModFormat,            disable, rw,  1, "ModFormat" },
         { module_var::RunTask,              enable,  rw,  1, "RunTask" },
@@ -273,8 +277,13 @@ namespace param
         { module_var::RealTimeB,            enable,  ro,  1, "RealTimeB" },
         { module_var::RunTimeA,             enable,  ro,  1, "RunTimeA" },
         { module_var::RunTimeB,             enable,  ro,  1, "RunTimeB" },
+        { module_var::GSLTtime,             enable,  ro,  1, "GSLTtime" },
+        { module_var::DSPerror,             enable,  ro,  1, "DSPerror" },
         { module_var::SynchDone,            enable,  ro,  1, "SynchDone" },
         { module_var::UserOut,              enable,  ro, 16, "UserOut" },
+        { module_var::AOutBuffer,           enable,  ro,  1, "AOutBuffer" },
+        { module_var::AECorr,               enable,  ro,  1, "AECorr" },
+        { module_var::LECorr,               enable,  ro,  1, "LECorr" },
         { module_var::HardwareID,           enable,  ro,  1, "HardwareID" },
         { module_var::HardVariant,          enable,  ro,  1, "HardVariant" },
         { module_var::FIFOLength,           enable,  ro,  1, "FIFOLength" },
@@ -288,7 +297,8 @@ namespace param
         { module_var::LOutBuffer,           disable, ro,  1, "LOutBuffer" },
         { module_var::FippiID,              disable, ro,  1, "FippiID" },
         { module_var::FippiVariant,         disable, ro,  1, "FippiVariant" },
-        { module_var::DSPVariant,           disable, ro,  1, "DSPVariant" }
+        { module_var::DSPVariant,           disable, ro,  1, "DSPVariant" },
+        { module_var::U20,                  enable,  ro,  1, "U20" }
     };
 
     static const channel_var_descs channel_var_descriptors_default = {
@@ -340,12 +350,6 @@ namespace param
         { channel_var::QDCLen5,           enable,  rw,  1, "QDCLen5" },
         { channel_var::QDCLen6,           enable,  rw,  1, "QDCLen6" },
         { channel_var::QDCLen7,           enable,  rw,  1, "QDCLen7" },
-        { channel_var::GSLTtime,          enable,  ro,  1, "GSLTtime" },
-        { channel_var::DSPerror,          enable,  ro,  1, "DSPerror" },
-        { channel_var::AOutBuffer,        enable,  ro,  1, "AOutBuffer" },
-        { channel_var::AECorr,            enable,  ro,  1, "AECorr" },
-        { channel_var::LECorr,            enable,  ro,  1, "LECorr" },
-        { channel_var::U20,               enable,  ro,  1, "U20" },
         { channel_var::LiveTimeA,         enable,  ro,  1, "LiveTimeA" },
         { channel_var::LiveTimeB,         enable,  ro,  1, "LiveTimeB" },
         { channel_var::FastPeaksA,        enable,  ro,  1, "FastPeaksA" },
@@ -465,6 +469,166 @@ namespace param
         channel_var::QDCLen6,
         channel_var::QDCLen7
     };
+
+    address_map::range::range()
+        : start(0),
+          end(0),
+          size(0)
+    {
+    }
+
+    void
+    address_map::range::set_size()
+    {
+        size = end - start;
+    }
+
+    address_map::address_map()
+        : vars(0),
+          module_vars(0),
+          channel_vars(0),
+          vars_per_channel(0)
+    {
+    }
+
+    void
+    address_map::range::output(std::ostream& out) const
+    {
+        util::ostream_guard guard(out);
+        out << std::showbase << std::hex
+            << '[' << start << ',' << end
+            << std::dec
+            << ")," << size;
+    }
+
+    void
+    address_map::set(const size_t num_channels,
+                     const module_var_descs& module_descs,
+                     const channel_var_descs& channel_descs)
+    {
+        vars_per_channel = channel_descs.size();
+        module_vars = module_descs.size();
+        channel_vars = num_channels * vars_per_channel;
+        vars = module_vars + channel_vars;
+
+        desc_addresses da;
+
+        get(module_descs, da, rwrowr::rw);
+        module_in.start = min(da);
+        module_in.end = max(da);
+        module_in.set_size();
+
+        get(module_descs, da, rwrowr::ro);
+        module_out.start = min(da);
+        module_out.end = max(da);
+        module_out.set_size();
+
+        module.start = std::min(module_in.start, module_out.start);
+        module.end = std::max(module_in.end, module_out.end);
+        module.set_size();
+
+        get(channel_descs, da, rwrowr::rw);
+        check_channel_gap(num_channels, channel_descs, da);
+        channels_in.start = min(da);
+        channels_in.end = max(da);
+        channels_in.set_size();
+
+        get(channel_descs, da, rwrowr::ro);
+        check_channel_gap(num_channels, channel_descs, da);
+        channels_out.start = min(da);
+        channels_out.end = max(da);
+        channels_out.set_size();
+
+        channels.start = std::min(channels_in.start, channels_out.start);
+        channels.end = std::max(channels_in.end, channels_out.end);
+        channels.set_size();
+
+        full.start = std::min(module.start, channels.start);
+        full.end = std::max(module.end, channels.end);
+        full.set_size();
+    }
+
+    void
+    address_map::output(std::ostream& out) const
+    {
+        out << "full=";
+        full.output(out);
+        out << " mod=";
+        module.output(out);
+        out << " mod-in=";
+        module_in.output(out);
+        out << " mod-out=";
+        module_out.output(out);
+        out << " chans=";
+        channels.output(out);
+        out << " chans-in=";
+        channels_in.output(out);
+        out << " chans-out=";
+        channels_out.output(out);
+    }
+
+    void
+    address_map::check_channel_gap(const size_t num_channels,
+                                   const channel_var_descs& channel_descs,
+                                   const desc_addresses& addresses)
+    {
+        /*
+         * The var file of addresses are not in the same order as the logcal
+         * descriptor table. Sort by address then check the gaps.
+         */
+        for (size_t a = 1; a < addresses.size(); ++a) {
+            size_t desc = std::get<0>(addresses[a]);
+            hw::address addr = std::get<1>(addresses[a]);
+            size_t gap = addr - std::get<1>(addresses[a - 1]);
+            size_t gap_num_channels = gap / channel_descs[desc].size;
+            if (gap_num_channels != num_channels) {
+                throw error(error::code::channel_invalid_var,
+                            "invalid channel var address gap: " +
+                            channel_descs[desc].name);
+            }
+        }
+    }
+
+    template<typename V>
+    void
+    address_map::get(const V& vars,
+                     desc_addresses& addresses,
+                     const rwrowr mode)
+    {
+        addresses.clear();
+        for (size_t d = 0; d < vars.size(); ++d) {
+            if (vars[d].mode == mode) {
+                auto da = desc_address(d, vars[d].address);
+                addresses.push_back(da);
+            }
+        }
+        std::sort(addresses.begin(), addresses.end(),
+                  [](auto& a, auto& b) {
+                      return std::get<1>(a) < std::get<1>(b);
+                  });
+    }
+
+    hw::address
+    address_map::min(const desc_addresses& addresses)
+    {
+        auto min =
+            std::min_element(addresses.begin(), addresses.end(),
+                             [](auto& a, auto& b) {
+                                 return std::get<1>(a) < std::get<1>(b);
+                             });
+        return std::get<1>((*min));
+    }
+
+    hw::address
+    address_map::max(const desc_addresses& addresses)
+    {
+        auto max =
+            std::max_element(addresses.begin(), addresses.end(),
+                             [](auto& a, auto& b) {
+                                 return std::get<1>(a) < std::get<1>(b);
+                             });
+        return std::get<1>((*max));
+    }
 
     const module_var_descs&
     get_module_var_descriptors()
@@ -748,3 +912,10 @@ namespace param
 };
 };
 };
+
+std::ostream&
+operator<<(std::ostream& out, const xia::pixie::param::address_map& config)
+{
+    config.output(out);
+    return out;
+}
