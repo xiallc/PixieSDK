@@ -191,11 +191,13 @@ namespace crate
                                          config.adc_bits);
                 auto mod_fw = firmware.find(tag);
                 if (mod_fw != firmware.end()) {
-                    log(log::info) << "crate: add module firmware(s): "
-                                   << tag;
+                    log(log::debug) << module::module_label(*module)
+                                    << "crate: add module firmware(s): "
+                                    << tag;
                     module->add(firmware[tag]);
                 } else {
-                    log(log::debug) << "crate: module firmware alread set: "
+                    log(log::debug) << module::module_label(*module)
+                                    << "crate: module firmware alread set: "
                                     << tag;
                 }
             }
