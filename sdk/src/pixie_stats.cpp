@@ -94,7 +94,7 @@ channel::output_count_rate() const
     if (real_time == 0.0) {
         return 0.0;
     }
-    return chan_events / (real_time * (1.0e-6 / config.adc_msps));
+    return chan_events / (real_time * (1.0e-6 / hw::system_clock_mhz));
 }
 
 module::module()
@@ -107,6 +107,12 @@ uint64_t
 module::processed_events() const
 {
     return make_u64(num_events_a, num_events_b);
+}
+
+double
+module::real_time() const
+{
+    return make_u64(runtime_a, runtime_b) * (1.0e-6 / hw::system_clock_mhz);
 }
 
 stats::stats(const hw::configs& configs)
@@ -144,10 +150,10 @@ read(pixie::module::module& module_, stats& stats_)
 
     addr = param::get_descriptor(mod_descs,
                                  param::module_var::RunTimeA).address;
-    param::value_type runtime_a = vars[addr - base];
+    stats_.mod.runtime_a = vars[addr - base];
     addr = param::get_descriptor(mod_descs,
                                  param::module_var::RunTimeB).address;
-    param::value_type runtime_b = vars[addr - base];
+    stats_.mod.runtime_b = vars[addr - base];
 
     for (auto& channel : stats_.chans) {
         addr = param::get_descriptor(chan_descs,
@@ -168,8 +174,8 @@ read(pixie::module::module& module_, stats& stats_)
         addr = param::get_descriptor(chan_descs,
                                      param::channel_var::ChanEventsB).address;
         channel.chan_events_b = vars[addr - base];
-        channel.runtime_a = runtime_a;
-        channel.runtime_b = runtime_b;
+        channel.runtime_a = stats_.mod.runtime_a;
+        channel.runtime_b = stats_.mod.runtime_b;
     }
 }
 }

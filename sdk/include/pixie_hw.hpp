@@ -76,6 +76,11 @@ namespace hw
     static const size_t io_buffer_length = 65536;
 
     /*
+     * System FPGA clock frequency in MHz
+     */
+    static const size_t system_clock_mhz = 100;
+
+    /*
      * Address.
      */
     typedef uint32_t address;

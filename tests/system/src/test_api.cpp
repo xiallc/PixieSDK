@@ -555,6 +555,11 @@ stats(xia::pixie::crate::crate& crate, options& cmd)
                   << stats.chans[channel].output_count_rate()
                   << std::endl;
         }
+    } else if (stat == "rt") {
+        std::cout << "module " << mod_num
+                  << ": real-time="
+                  << stats.mod.real_time()
+                  << std::endl;
     }
 }
 

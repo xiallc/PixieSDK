@@ -81,10 +81,13 @@ typedef std::vector<channel> channels;
 struct module {
     param::value_type num_events_a;
     param::value_type num_events_b;
+    param::value_type runtime_a;
+    param::value_type runtime_b;
 
     module();
 
     uint64_t processed_events() const;
+    double real_time() const;
 };
 
     typedef std::vector<module> modules;
