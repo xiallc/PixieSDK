@@ -116,6 +116,12 @@ not_supported()
     return xia::pixie::error::return_code(error);
 }
 
+PIXIE_EXPORT unsigned int PIXIE_API
+PixieGetStatisticsSize(void)
+{
+    return sizeof(stats_legacy);
+}
+
 PIXIE_EXPORT int PIXIE_API
 PixieAcquireADCTrace(unsigned short ModNum)
 {

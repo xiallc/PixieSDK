@@ -89,6 +89,18 @@ PIXIE_EXPORT unsigned int PIXIE_API Decimal2IEEEFloating(double DecimalNumber);
 
 /**
  * @ingroup PUBLIC_API
+ * @brief Get the size of the statistics buffer.
+ *
+ * Use this function to get the size in bytes for the statistics buffer.
+ *
+ * @see Pixie16ReadStatisticsFromModule
+ *
+ * @retval size in bytes
+ */
+PIXIE_EXPORT unsigned int PIXIE_API PixieGetStatisticsSize(void);
+
+/**
+ * @ingroup PUBLIC_API
  * @brief Acquire ADC traces from a Pixie module.
  *
  * Use this function to acquire ADC traces from Pixie-16 modules. Specify the module using ModNum
