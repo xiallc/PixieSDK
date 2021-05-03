@@ -330,7 +330,7 @@ namespace module
         /*
          * Control tasks
          */
-        void aquire_baselines();
+        void acquire_baselines();
         void adjust_offsets();
         void get_traces();
         void set_dacs();

@@ -156,7 +156,7 @@ PixieAcquireBaselines(unsigned short ModNum)
     try {
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
-        module->aquire_baselines();
+        module->acquire_baselines();
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();

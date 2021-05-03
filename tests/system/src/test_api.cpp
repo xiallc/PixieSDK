@@ -312,7 +312,7 @@ static void
 bl_acq(xia::pixie::crate::crate& crate, options& cmd)
 {
     auto mod_num = get_value<size_t>(cmd[1]);
-    crate[mod_num].aquire_baselines();
+    crate[mod_num].acquire_baselines();
 }
 
 static void

@@ -1354,9 +1354,9 @@ namespace module
     }
 
     void
-    module::aquire_baselines()
+    module::acquire_baselines()
     {
-        log(log::info) << module_label(*this) << "aquire-baselines";
+        log(log::info) << module_label(*this) << "acquire-baselines";
         online_check();
         lock_guard guard(lock_);
         hw::run::control(*this, hw::run::control_task::get_baselines);
