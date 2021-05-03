@@ -548,6 +548,13 @@ stats(xia::pixie::crate::crate& crate, options& cmd)
                   << stats.chans[channel].input_count_rate()
                   << std::endl;
         }
+    } else if (stat == "ocr") {
+        for (auto channel : channels) {
+            std::cout << "module " << mod_num << " chan " << channel
+                  << ": output-count-rate="
+                  << stats.chans[channel].output_count_rate()
+                  << std::endl;
+        }
     }
 }
 

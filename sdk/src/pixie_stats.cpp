@@ -86,6 +86,17 @@ channel::input_count_rate() const
     return fast_peaks / (live_time * (1.0e-6 / config.adc_msps));
 }
 
+double
+channel::output_count_rate() const
+{
+    const double chan_events = make_u64(chan_events_a, chan_events_b);
+    const double real_time =  make_u64(runtime_a, runtime_b);
+    if (real_time == 0.0) {
+        return 0.0;
+    }
+    return chan_events / (real_time * (1.0e-6 / config.adc_msps));
+}
+
 module::module()
     : num_events_a(0),
       num_events_b(0)

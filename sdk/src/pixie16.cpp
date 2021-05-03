@@ -395,7 +395,7 @@ PixieComputeInputCountRate(unsigned int* Statistics,
     xia_log(xia_log::info) << "PixieComputeInputCountRate: ModNum=" << ModNum
                            << " ChanNum=" << ChanNum;
 
-    double events = 0;
+    double result = 0;
 
     try {
         if (Statistics == nullptr) {
@@ -408,7 +408,7 @@ PixieComputeInputCountRate(unsigned int* Statistics,
             throw xia_error(xia_error::code::channel_number_invalid,
                             "invalid channel number");
         }
-        events = stats->module.processed_events();
+        result = stats->channels[ChanNum].input_count_rate();
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
     } catch (std::exception& e) {
@@ -420,7 +420,7 @@ PixieComputeInputCountRate(unsigned int* Statistics,
         xia_log(xia_log::error) << "unknown error: unhandled exception";
     }
 
-    return events;
+    return result;
 }
 
 PIXIE_EXPORT double PIXIE_API
@@ -443,17 +443,8 @@ PixieComputeOutputCountRate(unsigned int* Statistics,
     xia_log(xia_log::info) << "PixieComputeOutputCountRate: ModNum=" << ModNum
                            << " ChanNum=" << ChanNum;
 
-    (void) Statistics;
-    return not_supported();
-}
 
-PIXIE_EXPORT double PIXIE_API
-PixieComputeProcessedEvents(unsigned int* Statistics,
-                            unsigned short ModNum)
-{
-    xia_log(xia_log::info) << "PixieComputeProcessedEvents: ModNum=" << ModNum;
-
-    double events = 0;
+    double result = 0;
 
     try {
         if (Statistics == nullptr) {
@@ -462,7 +453,11 @@ PixieComputeProcessedEvents(unsigned int* Statistics,
         }
         stats_legacy_ptr stats = reinterpret_cast<stats_legacy_ptr>(Statistics);
         stats->validate();
-        events = stats->module.processed_events();
+        if (ChanNum >= stats->num_channels) {
+            throw xia_error(xia_error::code::channel_number_invalid,
+                            "invalid channel number");
+        }
+        result = stats->channels[ChanNum].output_count_rate();
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
     } catch (std::exception& e) {
@@ -474,7 +469,37 @@ PixieComputeProcessedEvents(unsigned int* Statistics,
         xia_log(xia_log::error) << "unknown error: unhandled exception";
     }
 
-    return events;
+    return result;
+}
+
+PIXIE_EXPORT double PIXIE_API
+PixieComputeProcessedEvents(unsigned int* Statistics,
+                            unsigned short ModNum)
+{
+    xia_log(xia_log::info) << "PixieComputeProcessedEvents: ModNum=" << ModNum;
+
+    double result = 0;
+
+    try {
+        if (Statistics == nullptr) {
+            throw xia_error(xia_error::code::invalid_value,
+                            "statistics pointer is NULL");
+        }
+        stats_legacy_ptr stats = reinterpret_cast<stats_legacy_ptr>(Statistics);
+        stats->validate();
+        result = stats->module.processed_events();
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+    } catch (...) {
+        if (throw_unhandled) {
+            throw;
+        }
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+    }
+
+    return result;
 }
 
 PIXIE_EXPORT double PIXIE_API
