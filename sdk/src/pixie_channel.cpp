@@ -51,11 +51,6 @@ namespace pixie
 namespace channel
 {
 /*
- * System FPGA clock frequency in MHZ
- */
-static const size_t SYSTEM_CLOCK_MHZ = 100;
-
-/*
  * Length of each baseline (default: 2 timestamp words + 16 baselines)
  */
 static const size_t BASELINES_BLOCK_LEN = 18;
@@ -166,18 +161,26 @@ baseline::baseline(module::module& module, range& channels_)
       channels(channels_),
       cuts(channels.size())
 {
-    values.resize(channels.size());
 }
 
 void
 baseline::find_cut(size_t num)
 {
-    log(log::info) << module::module_label(module) << "find bl cut: num=" << num;
+    log(log::info) << module::module_label(module)
+                   << "find bl cut: num=" << num;
+
+    if (num > max_num) {
+        throw module::error(module.number, module.slot,
+                            error::code::invalid_value,
+                            "baseline values size exceeds max");
+    }
 
     util::timepoint tp(true);
 
     param::values log2_bweight(channels.size());
     param::values current_bl_cut(channels.size());
+
+    bl_values.resize(channels.size());
 
     for (auto chan : channels) {
         log2_bweight[chan] =
@@ -189,11 +192,11 @@ baseline::find_cut(size_t num)
     }
 
     try {
-        compute_cut();
+        compute_cut(num);
         for (auto chan : channels) {
             module.write_var(param::channel_var::BLcut, cuts[chan], chan);
         }
-        compute_cut();
+        compute_cut(num);
         for (auto chan : channels) {
             module.write_var(param::channel_var::BLcut, cuts[chan], chan);
             log(log::info) << module::module_label(module)
@@ -236,12 +239,12 @@ baseline::time(hw::word time_word0, hw::word time_word1)
     double time;
     time = double(static_cast<uint64_t>(time_word0) << 32);
     time += double(time_word1);
-    time *= 1.0e-6 / double(SYSTEM_CLOCK_MHZ);
+    time *= 1.0e-6 / double(hw::system_clock_mhz);
     return time;
 }
 
 void
-baseline::get()
+baseline::get(baseline::channels_values& chan_values)
 {
     hw::memory::dsp dsp(module);
     hw::io_buffer buffer;
@@ -255,31 +258,31 @@ baseline::get()
     double starttime = time(buffer[0], buffer[1]);
 
     for (auto chan : channels) {
-        for (size_t bl = 0; bl < values[chan].size(); ++bl) {
+        for (size_t bl = 0; bl < chan_values[chan].size(); ++bl) {
             const size_t offset = 2 + (bl * BASELINES_BLOCK_LEN);
             double timestamp =
                 time(buffer[offset], buffer[offset + 1]) - starttime;
             double baseline = util::ieee_float(buffer[offset + 2 + chan]);
-            values[chan][bl] = bl_value(timestamp, baseline);
+            chan_values[chan][bl] = value(timestamp, baseline);
         }
     }
 }
 
 void
-baseline::compute_cut()
+baseline::compute_cut(size_t num)
 {
     for (size_t count = 0; count < 10; ++count) {
-        get();
+        get(bl_values);
         for (auto chan : channels) {
             double sdev = 0.0;
             size_t sdev_count = 0;
             cuts[chan] = 0;
-            for (size_t bl = 0; bl < (values[chan].size() - 1); ++bl) {
-                double val =
-                    std::fabs(values[chan][bl].second - values[chan][bl + 1].second);
+            for (size_t bl = 0; bl < (num - 1); ++bl) {
+                double val = (std::fabs(bl_values[chan][bl].second -
+                                        bl_values[chan][bl + 1].second));
                 if (val != 0) {
-                    if (val < (10.0 * values[chan][bl].second) &&
-                        val < (10.0 * values[chan][bl + 1].second)) {
+                    if (val < (10.0 * bl_values[chan][bl].second) &&
+                        val < (10.0 * bl_values[chan][bl + 1].second)) {
                         /*
                          * @todo This peice of logic does not make sense because
                          * `cut` is set to 0 and not touched. It is a form of the
@@ -304,7 +307,6 @@ baseline::compute_cut()
                             << " channel=" << chan << "computed cut=" << cuts[chan];
         }
     }
-
 }
 
 channel::channel(module::module& module_)

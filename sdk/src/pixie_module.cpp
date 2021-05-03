@@ -1441,8 +1441,20 @@ namespace module
                        << "bl-find-count: channels=" << channels.size();
         cuts.clear();
         channel::baseline bl(*this, channels_);
+        lock_guard guard(lock_);
         bl.find_cut();
         cuts = bl.cuts;
+    }
+
+    void
+    module::bl_get(channel::range& channels_,
+                   channel::baseline::channels_values& values)
+    {
+        log(log::info) << module_label(*this)
+                       << "bl-find-count: channels=" << channels.size();
+        channel::baseline bl(*this, channels_);
+        lock_guard guard(lock_);
+        bl.get(values);
     }
 
     void

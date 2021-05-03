@@ -356,6 +356,8 @@ namespace module
          * Find the baseline cut for the range of channels.
          */
         void bl_find_cut(channel::range& channels, param::values& cuts);
+        void bl_get(channel::range& channels_,
+                    channel::baseline::channels_values& values);
 
         /*
          * Read the stats

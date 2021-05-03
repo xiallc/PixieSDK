@@ -216,8 +216,9 @@ Pixie16BLcutFinder(unsigned short ModNum,
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
         xia::pixie::channel::range channels = { size_t(ChanNum) };
-        xia::pixie::channel::baseline bl(*module, channels);
-        *BLcut = bl.cuts[0];
+        xia::pixie::param::values values;
+        module->bl_find_cut(channels, values);
+        *BLcut = values[0];
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
@@ -739,9 +740,40 @@ PixieReadSglChanBaselines(double* Baselines,
                            << " ChanNum=" << ChanNum
                            << " NumBases=" << NumBases;
 
-    (void) Baselines;
-    (void) TimeStamps;
-    return not_supported();
+    try {
+        if (Baselines == nullptr) {
+            throw xia_error(xia_error::code::invalid_value,
+                            "Baselines is NULL");
+        }
+        if (TimeStamps == nullptr) {
+            throw xia_error(xia_error::code::invalid_value,
+                            "TimeStamps is NULL");
+        }
+        crate.ready();
+        xia::pixie::crate::module_handle module(crate, ModNum);
+        xia::pixie::channel::range channels = { size_t(ChanNum) };
+        xia::pixie::channel::baseline::channels_values values(1);
+        module->bl_get(channels, values);
+        xia::pixie::channel::baseline::values& cv = values[0];
+        for (size_t v = 0; v < cv.size(); ++v) {
+            TimeStamps[v] = std::get<0>(cv[v]);
+            Baselines[v] = std::get<1>(cv[v]);
+        }
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+        return e.return_code();
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::api_result_unknown_error();
+    } catch (...) {
+        if (throw_unhandled) {
+            throw;
+        }
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::api_result_unknown_error();
+    }
+
+    return 0;
 }
 
 PIXIE_EXPORT int PIXIE_API
