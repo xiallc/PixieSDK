@@ -1483,13 +1483,19 @@ namespace module
 
     void
     module::bl_get(channel::range& channels_,
-                   channel::baseline::channels_values& values)
+                   channel::baseline::channels_values& values,
+                   bool run)
     {
         log(log::info) << module_label(*this)
                        << "bl-get: channels=" << channels.size();
         channel::baseline bl(*this, channels_);
         lock_guard guard(lock_);
-        bl.get(values);
+        if (control_task != hw::run::control_task::get_baselines) {
+            throw error(number, slot,
+                        error::code::module_invalid_operation,
+                        "control task `get_baseline` has not run");
+        }
+        bl.get(values, run);
     }
 
     void

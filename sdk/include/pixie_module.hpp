@@ -364,7 +364,8 @@ namespace module
          */
         void bl_find_cut(channel::range& channels, param::values& cuts);
         void bl_get(channel::range& channels_,
-                    channel::baseline::channels_values& values);
+                    channel::baseline::channels_values& values,
+                    bool run = true);
 
         /*
          * Read a channel histogram.
@@ -404,17 +405,6 @@ namespace module
                               const size_t size);
 
         /*
-         * Locks
-         */
-        void lock() {
-            lock_.lock();
-        }
-
-        void unlock() {
-            lock_.unlock();
-        }
-
-        /*
          * Revision tag operators to make comparisions of a version simpler to
          * code.
          */
@@ -426,6 +416,17 @@ namespace module
         bool operator>(const rev_tag rev) const;
 
     protected:
+        /*
+         * Locks
+         */
+        void lock() {
+            lock_.lock();
+        }
+
+        void unlock() {
+            lock_.unlock();
+        }
+
         /*
          * Initialise the values.
          */

@@ -251,7 +251,7 @@ baseline::time(hw::word time_word0, hw::word time_word1)
 }
 
 void
-baseline::get(baseline::channels_values& chan_values)
+baseline::get(baseline::channels_values& chan_values, bool run)
 {
     hw::memory::dsp dsp(module);
     hw::io_buffer buffer;
@@ -266,7 +266,9 @@ baseline::get(baseline::channels_values& chan_values)
                             "more channels in range than value slots");
     }
 
-    hw::run::control(module, hw::run::control_task::get_baselines);
+    if (run) {
+        hw::run::control(module, hw::run::control_task::get_baselines);
+    }
 
     dsp.read(hw::memory::IO_BUFFER_ADDR, buffer);
 

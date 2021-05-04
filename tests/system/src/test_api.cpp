@@ -339,7 +339,7 @@ bl_save(xia::pixie::crate::crate& crate, options& cmd)
         xia::pixie::channel::range_set(channels);
     }
     xia::pixie::channel::baseline::channels_values baselines(channels.size());
-    crate[mod_num].bl_get(channels, baselines);
+    crate[mod_num].bl_get(channels, baselines, false);
     for (size_t channel = 0; channel < channels.size(); ++channel) {
         std::ostringstream name;
         name << std::setfill('0') << baseline_prefix

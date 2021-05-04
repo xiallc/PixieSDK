@@ -111,7 +111,7 @@ struct baseline {
 
     void find_cut(size_t num = max_num);
     void compute_cut(size_t num);
-    void get(channels_values& chan_values);
+    void get(channels_values& chan_values, bool run = true);
     double time(hw::word time_word0, hw::word time_word1);
 };
 
