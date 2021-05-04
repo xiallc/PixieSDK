@@ -100,6 +100,29 @@ bool execute_adjust_offsets(const unsigned int& numModules, const std::string& s
     return true;
 }
 
+bool execute_baseline_capture(const unsigned int& module) {
+    LOG(INFO) << "Starting baseline capture for Modules";
+    if (!verify_api_return_value(pixie->acquire_baselines(module),
+                                 pixie->label("acquire_baselines")))
+        return false;
+
+    const size_t num_baselines = 10;
+    for (unsigned int i = 0; i < NUMBER_OF_CHANNELS; i++) {
+        LOG(INFO) << "Acquiring baselines for Channel " << i;
+        std::vector<double> baselines(num_baselines, 0);
+        std::vector<double> timestamps(num_baselines, 0);
+        if (!verify_api_return_value(pixie->read_sgl_chan_baselines(baselines.data(),
+                                                                    timestamps.data(),
+                                                                    num_baselines, module, i),
+                                     "read_sgl_chan_baselines"))
+            return false;
+        for(size_t idx = 0; idx < num_baselines; idx++){
+            std::cout << "timestamp = " << timestamps[idx] << " ; baseline = " << baselines[idx] << std::endl;
+        }
+    }
+    return true;
+}
+
 bool execute_list_mode_run(const xia::config::Configuration& cfg,
                            const double& runtime_in_seconds) {
     LOG(INFO) << "Starting list mode data run for " << runtime_in_seconds << " s.";
@@ -356,6 +379,7 @@ int main(int argc, char** argv) {
     args::Command trace(commands, "trace", "Captures traces from the modules.");
     args::Command adjust_offsets(commands, "adjust_offsets",
                                  "Adjusts the DC offsets for all modules in the config file.");
+    args::Command baseline(commands, "baseline", "Acquire and print baselines from the module");
     //args::Command mca(commands, "mca", "Starts an MCA data run.");
 
     args::Group arguments(parser, "arguments", args::Group::Validators::AtLeastOne,
@@ -395,6 +419,7 @@ int main(int argc, char** argv) {
     write.Add(crate);
     write.Add(module);
     write.Add(channel);
+    baseline.Add(module);
 
     try {
         parser.ParseCLI(argc, argv);
@@ -507,6 +532,13 @@ int main(int argc, char** argv) {
     if (export_settings) {
         if (!save_dsp_pars(cfg.DSPParFile))
             return EXIT_FAILURE;
+        return EXIT_SUCCESS;
+    }
+
+    if (baseline) {
+        if(!execute_baseline_capture(args::get(module)))
+            return EXIT_FAILURE;
+        execute_close_module_connection(cfg.numModules);
         return EXIT_SUCCESS;
     }
 

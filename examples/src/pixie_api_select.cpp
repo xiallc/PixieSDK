@@ -83,6 +83,12 @@ calls::acquire_adc_trace(unsigned short )
 }
 
 int
+calls::acquire_baselines(unsigned short )
+{
+    not_implemented(*this, "acquire_baselines");
+}
+
+int
 calls::adjust_offsets(unsigned short )
 {
     not_implemented(*this, "adjust_offsets");
@@ -207,6 +213,16 @@ calls::write_sgl_mod_par(const char* ,
     not_implemented(*this, "write_sgl_mod_par");
 }
 
+int
+calls::read_sgl_chan_baselines(double* ,
+                               double* ,
+                               unsigned short ,
+                               unsigned short ,
+                               unsigned short )
+{
+    not_implemented(*this, "read_sgl_chan_baselines");
+}
+
 /*
  * Pixie16 API calls.
  */
@@ -216,6 +232,7 @@ struct pixie16_calls
     pixie16_calls();
 
     virtual int acquire_adc_trace(unsigned short module) override;
+    virtual int acquire_baselines(unsigned short module) override;
     virtual int adjust_offsets(unsigned short module) override;
     virtual int boot_module(const char* com_fpga_config,
                             const char* sp_fpga_config,
@@ -235,6 +252,11 @@ struct pixie16_calls
                                      unsigned short module) override;
     virtual int read_sgl_chan_adc_trace(unsigned short* buffer,
                                         unsigned int length,
+                                        unsigned short module,
+                                        unsigned short channel) override;
+    virtual int read_sgl_chan_baselines(double* baselines,
+                                        double* timestamps,
+                                        unsigned short num_bases,
                                         unsigned short module,
                                         unsigned short channel) override;
     virtual int read_sgl_chan_par(const char* name,
@@ -262,7 +284,6 @@ struct pixie16_calls
     virtual int write_sgl_mod_par(const char* name,
                                   unsigned int data,
                                   unsigned short module) override;
-
     virtual const labels& get_labels() const override;
 
 private:
@@ -278,6 +299,10 @@ int
 pixie16_calls::acquire_adc_trace(unsigned short module)
 {
     return Pixie16AcquireADCTrace(module);
+}
+
+int pixie16_calls::acquire_baselines(unsigned short module) {
+    return Pixie16AcquireBaselines(module);
 }
 
 int
@@ -346,6 +371,16 @@ pixie16_calls::read_sgl_chan_adc_trace(unsigned short* buffer,
                                     unsigned short channel)
 {
     return Pixie16ReadSglChanADCTrace(buffer, length, module, channel);
+}
+
+int
+pixie16_calls::read_sgl_chan_baselines(double* baselines,
+                                       double* timestamps,
+                                       unsigned short num_bases,
+                                       unsigned short module,
+                                       unsigned short channel)
+{
+    return Pixie16ReadSglChanBaselines(baselines, timestamps, num_bases, module, channel);
 }
 
 int

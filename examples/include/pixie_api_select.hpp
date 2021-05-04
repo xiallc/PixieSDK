@@ -62,6 +62,7 @@ struct calls {
     const std::string label(const std::string call) const;
 
     virtual int acquire_adc_trace(unsigned short module);
+    virtual int acquire_baselines(unsigned short module);
     virtual int adjust_offsets(unsigned short module);
     virtual int boot_module(const char* com_fpga_config,
                             const char* sp_fpga_config,
@@ -81,6 +82,11 @@ struct calls {
                                      unsigned short module);
     virtual int read_sgl_chan_adc_trace(unsigned short* buffer,
                                         unsigned int length,
+                                        unsigned short module,
+                                        unsigned short channel);
+    virtual int read_sgl_chan_baselines(double* baselines,
+                                        double* timestamps,
+                                        unsigned short num_bases,
                                         unsigned short module,
                                         unsigned short channel);
     virtual int read_sgl_chan_par(const char* name,
