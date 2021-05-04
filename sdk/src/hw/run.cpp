@@ -112,9 +112,7 @@ start(module::module& module,
     /*
      * End a run if one is running.
      */
-    if (active(module)) {
-        end(module);
-    }
+    end(module);
 
     /*
      * If this is a new run and it is an acquisition task clear the MCA memory.
@@ -128,6 +126,9 @@ start(module::module& module,
         for (address addr = 0; addr < mca_end;  addr += block_size) {
             mca.write(addr, zero);
         }
+        module.run_task = run_tsk;
+    } else {
+      module.control_task = control_tsk;
     }
 
     module.write_var(param::module_var::RunTask,
@@ -143,21 +144,25 @@ start(module::module& module,
 void
 end(module::module& module)
 {
-    log(log::debug) << module::module_label(module, "run") << "end";
-    util::timepoint tp;
-    tp.start();
-    csr::clear(module, 1 << RUNENA);
-    for (int msecs = 0; msecs < 2 * 100; ++msecs) {
-        if (!hw::run::active(module)) {
-            tp.end();
-            log(log::debug) << module::module_label(module, "run")
-                            << "end duration=" << tp;
-            return;
+    module.run_task = run_task::nop;
+    module.control_task = control_task::nop;
+    if (active(module)) {
+        log(log::debug) << module::module_label(module, "run") << "end";
+        util::timepoint tp;
+        tp.start();
+        csr::clear(module, 1 << RUNENA);
+        for (int msecs = 0; msecs < 2 * 100; ++msecs) {
+            if (!hw::run::active(module)) {
+                tp.end();
+                log(log::debug) << module::module_label(module, "run")
+                                << "end duration=" << tp;
+                return;
+            }
+            hw::wait(500);
         }
-        hw::wait(500);
+        throw error(error::code::module_task_timeout,
+                    "failed to stop task");
     }
-    throw error(error::code::module_task_timeout,
-                "failed to stop task");
 }
 
 bool

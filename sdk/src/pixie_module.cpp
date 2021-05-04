@@ -254,6 +254,8 @@ namespace module
           num_channels(0),
           vmaddr(nullptr),
           eeprom_format(-1),
+          run_task(hw::run::run_task::nop),
+          control_task(hw::run::control_task::nop),
           reg_trace(false),
           in_use(0),
           present_(false),
@@ -272,6 +274,7 @@ namespace module
           revision(m.revision),
           num_channels(m.num_channels),
           vmaddr(m.vmaddr),
+          configs(m.configs),
           eeprom(m.eeprom),
           eeprom_format(m.eeprom_format),
           module_var_descriptors(std::move(m.module_var_descriptors)),
@@ -279,6 +282,8 @@ namespace module
           channel_var_descriptors(std::move(m.channel_var_descriptors)),
           channels(std::move(m.channels)),
           firmware(std::move(m.firmware)),
+          run_task(m.run_task),
+          control_task(m.control_task),
           reg_trace(m.reg_trace),
           in_use(0),
           present_(m.present_),
@@ -294,12 +299,15 @@ namespace module
         m.revision = 0;
         m.num_channels = 0;
         m.vmaddr = nullptr;
+        m.configs.clear();
         m.eeprom.clear();
         m.eeprom_format = -1;
         m.module_var_descriptors.clear();
         m.module_vars.clear();
         m.channel_var_descriptors.clear();
         m.channels.clear();
+        m.run_task = hw::run::run_task::nop;
+        m.control_task = hw::run::control_task::nop;
         m.present_ = false;
         m.online_ = false;
         m.comms_fpga = false;
@@ -337,12 +345,15 @@ namespace module
         revision = m.revision;
         num_channels = m.num_channels;
         vmaddr = m.vmaddr;
+        configs = m.configs;
         eeprom = std::move(m.eeprom);
         eeprom_format = m.eeprom_format;
         module_var_descriptors = std::move(m.module_var_descriptors);
         channel_var_descriptors = std::move(m.channel_var_descriptors);
         module_vars = std::move(m.module_vars);
         channels = std::move(m.channels);
+        run_task = m.run_task;
+        control_task = m.control_task;
         reg_trace = m.reg_trace;
         present_ = m.present_;
         online_ = m.online_;
@@ -358,8 +369,11 @@ namespace module
         m.revision = 0;
         m.num_channels = 0;
         m.vmaddr = nullptr;
+        m.configs.clear();
         m.eeprom.clear();
         m.eeprom_format = -1;
+        m.run_task = hw::run::run_task::nop;
+        m.control_task = hw::run::control_task::nop;
         m.reg_trace = false;
         m.present_ = false;
         m.online_ = false;
@@ -1342,7 +1356,13 @@ namespace module
     {
         online_check();
         lock_guard guard(lock_);
+        if (run_task != hw::run::run_task::nop &&
+            run_task != hw::run::run_task::list_mode) {
+            log(log::warning) << module_label(*this)
+                              << "start-histogram: different task task active";
+        }
         hw::run::end(*this);
+        run_task = hw::run::run_task::nop;
     }
 
     bool
@@ -1396,6 +1416,11 @@ namespace module
                        << "start-histograms: mode=" << int(mode);
         online_check();
         lock_guard guard(lock_);
+        if (run_task != hw::run::run_task::nop &&
+            run_task != hw::run::run_task::list_mode) {
+            log(log::warning) << module_label(*this)
+                              << "start-histogram: different run task active";
+        }
         hw::run::run(*this, mode, hw::run::run_task::histogram);
     }
 
@@ -1406,6 +1431,11 @@ namespace module
                        << "start-listmode: mode=" << int(mode);
         online_check();
         lock_guard guard(lock_);
+        if (run_task != hw::run::run_task::nop &&
+            run_task != hw::run::run_task::list_mode) {
+            log(log::warning) << module_label(*this)
+                              << "start-listmode: different run task active";
+        }
         hw::run::run(*this, mode, hw::run::run_task::list_mode);
     }
 
@@ -1424,6 +1454,11 @@ namespace module
         channel::channel& chan = channels[channel];
         if (run) {
             get_traces();
+        }
+        if (control_task != hw::run::control_task::get_traces) {
+            throw error(number, slot,
+                        error::code::module_invalid_operation,
+                        "control task not `get_traces`");
         }
         chan.read_adc(buffer, size);
     }
@@ -1455,6 +1490,38 @@ namespace module
         channel::baseline bl(*this, channels_);
         lock_guard guard(lock_);
         bl.get(values);
+    }
+
+    void
+    module::read_histogram(size_t channel, hw::words& values)
+    {
+        log(log::info) << module_label(*this)
+                       << "read-histogram: channel=" << channel
+                       << " length=" << values.size();
+        lock_guard guard(lock_);
+        if (run_task != hw::run::run_task::histogram) {
+            throw error(number, slot,
+                        error::code::module_invalid_operation,
+                        "run task not `histogram`");
+        }
+        channels[channel].read_histogram(values);
+    }
+
+    void
+    module::read_histogram(size_t channel,
+                           hw::word_ptr values,
+                           const size_t size)
+    {
+        log(log::info) << module_label(*this)
+                       << "read-histogram: channel=" << channel
+                       << " length=" << size;
+        lock_guard guard(lock_);
+        if (run_task != hw::run::run_task::histogram) {
+            throw error(number, slot,
+                        error::code::module_invalid_operation,
+                        "run task not `histogram`");
+        }
+        channels[channel].read_histogram(values, size);
     }
 
     void
@@ -1498,11 +1565,11 @@ namespace module
     void
     module::dma_read(const hw::address source,
                      hw::word_ptr values,
-                     size_t length)
-    {
+                     const size_t size)
+                 {
         log(log::debug) << module_label(*this)
                         << "dma read: addr=0x" << std::hex << source
-                        << " length=" << std::dec << length;
+                        << " length=" << std::dec << size;
 
         online_check();
 
@@ -1518,7 +1585,7 @@ namespace module
         dma_params.Direction = PLX_DMA_LOC_TO_PCI;
 #endif
         dma_params.LocalAddr = source;
-        dma_params.ByteCount = length * sizeof(hw::words::value_type);
+        dma_params.ByteCount = size * sizeof(hw::words::value_type);
 
         /*
          * Wait while reading. The call will block until the interrupt happens.

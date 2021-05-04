@@ -154,6 +154,12 @@ struct channel {
     void read_adc(hw::adc_word* buffer, size_t size);
 
     /*
+     * Histogram
+     */
+    void read_histogram(hw::word_ptr values, const size_t size);
+    void read_histogram(hw::words& values);
+
+    /*
      * Update fifo settings.
      */
     void update_fifo(param::value_type trace_delay);

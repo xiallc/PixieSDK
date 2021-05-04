@@ -83,6 +83,7 @@ static void adc_save(xia::pixie::crate::crate& crate, options& cmd);
 static void bl_acq(xia::pixie::crate::crate& crate, options& cmd);
 static void hist_start(xia::pixie::crate::crate& crate, options& cmd);
 static void hist_resume(xia::pixie::crate::crate& crate, options& cmd);
+static void hist_save(xia::pixie::crate::crate& crate, options& cmd);
 static void list_start(xia::pixie::crate::crate& crate, options& cmd);
 static void list_resume(xia::pixie::crate::crate& crate, options& cmd);
 static void run_active(xia::pixie::crate::crate& crate, options& cmd);
@@ -107,6 +108,7 @@ static const std::map<std::string, command_def> command_defs =
     { "run-end",     { { 1 },       "end the module's run" } },
     { "hist-start",  { { 1 },       "start module histograms" } },
     { "hist-resume", { { 1 },       "resume module histograms" } },
+    { "hist-save",   { { 1 },       "save a module's histogram to a file" } },
     { "list-start",  { { 1 },       "start module list mode" } },
     { "list-resume", { { 1 },       "resume module list mode" } },
     { "par-read",    { { 2, 3 },    "read module/channel parameter" } },
@@ -127,6 +129,7 @@ static const std::vector<cmd_handler> cmd_handlers = {
     { "bl-acq",      bl_acq },
     { "hist-start",  hist_start },
     { "hist-resume", hist_resume },
+    { "hist-save",   hist_save },
     { "list-start",  list_start },
     { "list-resume", list_resume },
     { "run-active",  run_active },
@@ -139,11 +142,14 @@ static const std::vector<cmd_handler> cmd_handlers = {
 };
 
 static std::string adc_prefix = "adc-trace";
+static std::string histogram_prefix = "histo";
 
 static bool
 check_number(const std::string& opt)
 {
-    return std::regex_match(opt, std::regex(( "((\\+|-)?[[:digit:]]+)(\\.(([[:digit:]]+)?))?" )));
+    return
+        std::regex_match(opt,
+                         std::regex(("((\\+|-)?[[:digit:]]+)(\\.(([[:digit:]]+)?))?")));
 }
 
 template<typename T> static T
@@ -339,6 +345,43 @@ hist_resume(xia::pixie::crate::crate& crate, options& cmd)
     auto mod_num = get_value<size_t>(cmd[1]);
     using namespace xia::pixie::hw::run;
     crate[mod_num].start_histograms(run_mode::resume);
+}
+
+static void
+hist_save(xia::pixie::crate::crate& crate, options& cmd)
+{
+    auto mod_num = get_value<size_t>(cmd[1]);
+    using namespace xia::pixie::hw::run;
+    xia::pixie::channel::range channels;
+    size_t length = xia::pixie::hw::max_histogram_length;
+    if (cmd.size() == 3) {
+        auto value = get_value<size_t>(cmd[2]);
+        if (value > crate[mod_num].num_channels) {
+            length = value;
+        } else {
+            channels.resize(1);
+            channels[0] = value;
+        }
+    } else if (cmd.size() == 4) {
+        channels.resize(1);
+        channels[0] = get_value<size_t>(cmd[2]);
+        length = get_value<size_t>(cmd[3]);
+    }
+    if (channels.empty()) {
+        channels.resize(crate[mod_num].num_channels);
+        xia::pixie::channel::range_set(channels);
+    }
+    for (auto channel : channels) {
+        xia::pixie::hw::words histogram(length);
+        crate[mod_num].read_histogram(channel, histogram);
+        std::ostringstream name;
+        name << std::setfill('0') << histogram_prefix
+             << '-' << std::setw(2) << mod_num
+             << '-' << std::setw(2) << channel << ".bin";
+        std::ofstream out(name.str(), std::ios::binary);
+        out.write(reinterpret_cast<char*>(histogram.data()),
+                  histogram.size() * sizeof(xia::pixie::hw::word));
+    }
 }
 
 static void

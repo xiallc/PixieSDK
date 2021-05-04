@@ -344,6 +344,23 @@ channel::read_adc(hw::adc_word* buffer, size_t size)
 }
 
 void
+channel::read_histogram(hw::word_ptr values, const size_t size)
+{
+    if (size != 0) {
+        const hw::address addr =
+            hw::memory::HISTOGRAM_MEMORY + (number * hw::max_histogram_length);
+        hw::memory::mca mca(module);
+        mca.read(addr, values, size);
+    }
+}
+
+void
+channel::read_histogram(hw::words& values)
+{
+    read_histogram(values.data(), values.size());
+}
+
+void
 channel::update_fifo(param::value_type trace_delay)
 {
     log(log::debug) << channel_label(*this)
@@ -370,7 +387,7 @@ channel::update_fifo(param::value_type trace_delay)
     paf_length = (trigger_delay / fast_filter_range) + trigger_delay;
 
     /*
-     * PAF Length must be larger than the FIFO Length
+     * PAF Length must not be larger than the FIFO Length
      */
     if (paf_length > fifo_length) {
         paf_length = fifo_length - 1;

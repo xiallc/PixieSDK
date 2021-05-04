@@ -210,8 +210,14 @@ namespace memory
     void
     mca::read(const address addr, words& values)
     {
+        read(addr, values.data(), values.size());
+    }
+
+    void
+    mca::read(const address addr, word_ptr values, size_t size)
+    {
         /*
-         * Guard the PCI active  bit so it is cleared when we exit.
+         * Guard the PCI active bit so it is cleared when we exit.
          */
         csr::set_clear csr(module, 1 << PCIACTIVE);
 
@@ -235,7 +241,7 @@ namespace memory
         /*
          * Read the data using DMA.
          */
-        module.dma_read(MCA_MEM_DATA, values);
+        module.dma_read(MCA_MEM_DATA, values, size);
     }
 
     void

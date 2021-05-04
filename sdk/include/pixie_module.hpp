@@ -203,6 +203,12 @@ namespace module
         firmware::module firmware;
 
         /*
+         * Run and control task states.
+         */
+        hw::run::run_task run_task;
+        hw::run::control_task control_task;
+
+        /*
          * Diagnostics
          */
         bool reg_trace;
@@ -353,11 +359,20 @@ namespace module
                       bool run = true);
 
         /*
-         * Find the baseline cut for the range of channels.
+         * Find the baseline cut for the range of channels. Return the
+         * baselines.
          */
         void bl_find_cut(channel::range& channels, param::values& cuts);
         void bl_get(channel::range& channels_,
                     channel::baseline::channels_values& values);
+
+        /*
+         * Read a channel histogram.
+         */
+        void read_histogram(size_t channel, hw::words& values);
+        void read_histogram(size_t channel,
+                            hw::word_ptr values,
+                            const size_t size);
 
         /*
          * Read the stats
@@ -386,7 +401,7 @@ namespace module
         virtual void dma_read(const hw::address source, hw::words& values);
         virtual void dma_read(const hw::address source,
                               hw::word_ptr values,
-                              size_t length);
+                              const size_t size);
 
         /*
          * Locks
