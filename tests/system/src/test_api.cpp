@@ -81,6 +81,7 @@ static void set_dacs(xia::pixie::crate::crate& crate, options& cmd);
 static void adc_acq(xia::pixie::crate::crate& crate, options& cmd);
 static void adc_save(xia::pixie::crate::crate& crate, options& cmd);
 static void bl_acq(xia::pixie::crate::crate& crate, options& cmd);
+static void bl_save(xia::pixie::crate::crate& crate, options& cmd);
 static void hist_start(xia::pixie::crate::crate& crate, options& cmd);
 static void hist_resume(xia::pixie::crate::crate& crate, options& cmd);
 static void hist_save(xia::pixie::crate::crate& crate, options& cmd);
@@ -104,11 +105,12 @@ static const std::map<std::string, command_def> command_defs =
     { "adc-acq",     { { 1 },       "acquire a module's ADC trace" } },
     { "adc-save",    { { 1, 2, 3 }, "save a module's ADC trace to a file" } },
     { "bl-acq",      { { 1 },       "acquire the module's baselines" } },
+    { "bl-save",     { { 1, 2 },    "save the module's baselines" } },
     { "run-active",  { { 1 },       "does the module have an active run?" } },
     { "run-end",     { { 1 },       "end the module's run" } },
     { "hist-start",  { { 1 },       "start module histograms" } },
     { "hist-resume", { { 1 },       "resume module histograms" } },
-    { "hist-save",   { { 1 },       "save a module's histogram to a file" } },
+    { "hist-save",   { { 1, 2, 3 }, "save a module's histogram to a file" } },
     { "list-start",  { { 1 },       "start module list mode" } },
     { "list-resume", { { 1 },       "resume module list mode" } },
     { "par-read",    { { 2, 3 },    "read module/channel parameter" } },
@@ -127,6 +129,7 @@ static const std::vector<cmd_handler> cmd_handlers = {
     { "adc-acq",     adc_acq },
     { "adc-save",    adc_save },
     { "bl-acq",      bl_acq },
+    { "bl-save",     bl_save },
     { "hist-start",  hist_start },
     { "hist-resume", hist_resume },
     { "hist-save",   hist_save },
@@ -143,6 +146,7 @@ static const std::vector<cmd_handler> cmd_handlers = {
 
 static std::string adc_prefix = "adc-trace";
 static std::string histogram_prefix = "histo";
+static std::string baseline_prefix = "baseline";
 
 static bool
 check_number(const std::string& opt)
@@ -319,6 +323,35 @@ bl_acq(xia::pixie::crate::crate& crate, options& cmd)
 {
     auto mod_num = get_value<size_t>(cmd[1]);
     crate[mod_num].acquire_baselines();
+}
+
+static void
+bl_save(xia::pixie::crate::crate& crate, options& cmd)
+{
+    auto mod_num = get_value<size_t>(cmd[1]);
+    xia::pixie::channel::range channels;
+    if (cmd.size() == 3) {
+        channels.resize(1);
+        channels[0] = get_value<size_t>(cmd[2]);
+    }
+    if (channels.empty()) {
+        channels.resize(crate[mod_num].num_channels);
+        xia::pixie::channel::range_set(channels);
+    }
+    xia::pixie::channel::baseline::channels_values baselines(channels.size());
+    crate[mod_num].bl_get(channels, baselines);
+    for (size_t channel = 0; channel < channels.size(); ++channel) {
+        std::ostringstream name;
+        name << std::setfill('0') << baseline_prefix
+             << '-' << std::setw(2) << mod_num
+             << '-' << std::setw(2) << channels[channel] << ".txt";
+        std::ofstream out(name.str(), std::ios::binary);
+        for (auto& value : baselines[channel]) {
+            out << "timestamp=" << std::get<0>(value)
+                << ",baseline=" << std::get<1>(value)
+                << std::endl;
+        }
+    }
 }
 
 static void

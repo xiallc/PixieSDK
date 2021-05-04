@@ -184,7 +184,7 @@ namespace memory
         try {
             bus_write(SET_INT_FIFO, 0);
             csr::fifo_ready_wait(module);
-            module.dma_read(addr, buffer, length);
+            module.dma_read(DSP_MEM_DMA, buffer, length);
         } catch (...) {
             hbr.request();
             bus_write(WRT_DSP_DMAC11, 0x904);

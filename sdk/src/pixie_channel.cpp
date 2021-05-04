@@ -163,6 +163,11 @@ baseline::baseline(module::module& module, range& channels_)
       channels(channels_),
       cuts(channels.size())
 {
+    if (channels.size() > module.num_channels) {
+        throw module::error(module.number, module.slot,
+                            error::code::invalid_value,
+                            "more channels in range than module has");
+    }
 }
 
 void
@@ -251,7 +256,15 @@ baseline::get(baseline::channels_values& chan_values)
     hw::memory::dsp dsp(module);
     hw::io_buffer buffer;
 
-    log(log::debug) << module::module_label(module) << "baseline get";
+    log(log::debug) << module::module_label(module)
+                    << "baseline get: channels=" << channels.size()
+                    << " chan-values=" << chan_values.size();
+
+    if (channels.size() > chan_values.size()) {
+        throw module::error(module.number, module.slot,
+                            error::code::invalid_value,
+                            "more channels in range than value slots");
+    }
 
     hw::run::control(module, hw::run::control_task::get_baselines);
 
@@ -259,13 +272,14 @@ baseline::get(baseline::channels_values& chan_values)
 
     double starttime = time(buffer[0], buffer[1]);
 
-    for (auto chan : channels) {
-        for (size_t bl = 0; bl < chan_values[chan].size(); ++bl) {
+    for (size_t chan = 0; chan < channels.size(); ++chan) {
+        values& chan_vals = chan_values[chan];
+        for (size_t bl = 0; bl < chan_vals.size(); ++bl) {
             const size_t offset = 2 + (bl * BASELINES_BLOCK_LEN);
             double timestamp =
                 time(buffer[offset], buffer[offset + 1]) - starttime;
-            double baseline = util::ieee_float(buffer[offset + 2 + chan]);
-            chan_values[chan][bl] = value(timestamp, baseline);
+            double baseline = util::ieee_float(buffer[offset + 2 + channels[chan]]);
+            chan_vals[bl] = value(timestamp, baseline);
         }
     }
 }

@@ -1473,7 +1473,7 @@ namespace module
     module::bl_find_cut(channel::range& channels_, param::values& cuts)
     {
         log(log::info) << module_label(*this)
-                       << "bl-find-count: channels=" << channels.size();
+                       << "bl-find-cut: channels=" << channels.size();
         cuts.clear();
         channel::baseline bl(*this, channels_);
         lock_guard guard(lock_);
@@ -1486,7 +1486,7 @@ namespace module
                    channel::baseline::channels_values& values)
     {
         log(log::info) << module_label(*this)
-                       << "bl-find-count: channels=" << channels.size();
+                       << "bl-get: channels=" << channels.size();
         channel::baseline bl(*this, channels_);
         lock_guard guard(lock_);
         bl.get(values);
