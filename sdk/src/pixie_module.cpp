@@ -468,6 +468,11 @@ namespace module
             device->dma.LocalBusWidth = 2;
             ps = ::PlxPci_DmaChannelOpen(&device->handle, 0, &device->dma);
             if (ps != PLX_STATUS_OK) {
+                if (ps == PLX_STATUS_INVALID_ACCESS) {
+                  throw error(number, slot,
+                              error::code::module_already_open,
+                              "module in use by another process");
+                }
                 std::ostringstream oss;
                 oss << "PCI DMA: device: " << device_number
                     << ": " << pci_error_text(ps);
