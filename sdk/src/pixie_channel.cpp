@@ -260,10 +260,31 @@ baseline::get(baseline::channels_values& chan_values, bool run)
                     << "baseline get: channels=" << channels.size()
                     << " chan-values=" << chan_values.size();
 
+    /*
+     * A baseline is returned in words as:
+     *
+     * [timestamp msw][timestamp lsw][baseline 0][baseline 2] ... [baseline N]
+     *
+     * where N is the maximum number of channels a module can have.
+     */
+    const size_t bl_block_len = 2 + module.num_channels;
+
+    if (channels.size() == 0) {
+        throw module::error(module.number, module.slot,
+                            error::code::invalid_value,
+                            "no channels in the channel range");
+    }
+
     if (channels.size() > chan_values.size()) {
         throw module::error(module.number, module.slot,
                             error::code::invalid_value,
                             "more channels in range than value slots");
+    }
+
+    if (chan_values[channels[0]].size() > (buffer.size() / bl_block_len)) {
+        throw module::error(module.number, module.slot,
+                            error::code::invalid_value,
+                            "channels values more than avaliable baselines");
     }
 
     if (run) {
@@ -273,15 +294,17 @@ baseline::get(baseline::channels_values& chan_values, bool run)
     dsp.read(hw::memory::IO_BUFFER_ADDR, buffer);
 
     double starttime = time(buffer[0], buffer[1]);
+    size_t offset = 2;
 
-    for (size_t chan = 0; chan < channels.size(); ++chan) {
-        values& chan_vals = chan_values[chan];
-        for (size_t bl = 0; bl < chan_vals.size(); ++bl) {
-            const size_t offset = 2 + (bl * BASELINES_BLOCK_LEN);
-            double timestamp =
-                time(buffer[offset], buffer[offset + 1]) - starttime;
-            double baseline = util::ieee_float(buffer[offset + 2 + channels[chan]]);
-            chan_vals[bl] = value(timestamp, baseline);
+    for (size_t bl = 0; bl < max_num; ++bl, offset += bl_block_len) {
+        double timestamp =
+            time(buffer[offset], buffer[offset + 1]) - starttime;
+        for (auto chan : channels) {
+            values& chan_vals = chan_values[chan];
+            if (bl < chan_vals.size()) {
+                double baseline = util::ieee_float(buffer[offset + 2 + chan]);
+                chan_vals[bl] = value(timestamp, baseline);
+            }
         }
     }
 }
