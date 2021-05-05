@@ -47,6 +47,11 @@ namespace hw
 {
 namespace csr
 {
+void reset(module::module& module)
+{
+    clear(module, (1 << RUNENA) | (1 << DSPDOWNLOAD) | (1 << PCIACTIVE));
+}
+
 word read(module::module& module)
 {
     return module.read_word(CSR_ADDR);

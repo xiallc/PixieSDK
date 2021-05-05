@@ -483,6 +483,8 @@ namespace module
 
             have_hardware = true;
 
+            hw::csr::reset(*this);
+
             hw::i2c::pcf8574 pio(*this, PCF8574_ADDR,
                                  (1 << 0) | (1 << 3), 1 << 1, 1 << 2);
 

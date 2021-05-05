@@ -53,6 +53,11 @@ namespace hw
 namespace csr
 {
 /*
+ * Reset the CSR to a default state.
+ */
+void reset(module::module& module);
+
+/*
  * Low level read/write and bit set/clear support.
  */
 word read(module::module& module);
