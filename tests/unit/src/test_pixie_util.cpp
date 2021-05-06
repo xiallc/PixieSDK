@@ -138,10 +138,16 @@ TEST_SUITE("xia::util") {
             CHECK_THROWS_WITH_AS(xia::util::split(result, test_w_quotes, ',', 0, false, true, true),
                                  "invalid quoting: \'c\"", std::runtime_error);
         }
-        SUBCASE("Split with quotes and spaces") {
+        SUBCASE("Split with quotes and spaces - in element") {
             result.clear();
             std::string test_w_quotes_and_space = "\"  a\",  b,\'c  \',  d";
             xia::util::split(result, test_w_quotes_and_space, ',', 0, true, true, true);
+            CHECK(result == xia::util::strings{"a", "b", "c", "d"});
+        }
+        SUBCASE("Split with quotes and spaces - around element") {
+            result.clear();
+            std::string test_w_quotes_and_space_outside = "  \"a\",  b  ,\'c  \'  ,  d";
+            xia::util::split(result, test_w_quotes_and_space_outside, ',', 0, true, true, true);
             CHECK(result == xia::util::strings{"a", "b", "c", "d"});
         }
     }
