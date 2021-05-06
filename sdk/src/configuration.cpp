@@ -38,6 +38,9 @@
 /// @date April 13, 2021
 
 #include "configuration.hpp"
+#include "json.hpp"
+#include "pixie_param.hpp"
+
 namespace xia {
 namespace config {
 PIXIE_EXPORT Configuration PIXIE_API read_configuration_file(const std::string& config_file_name) {
@@ -56,10 +59,25 @@ PIXIE_EXPORT Configuration PIXIE_API read_configuration_file(const std::string& 
         input >> cfg.slot_map[i];
 
     input >> cfg.ComFPGAConfigFile >> cfg.SPFPGAConfigFile >> cfg.TrigFPGAConfigFile >>
-          cfg.DSPCodeFile >> cfg.DSPParFile >> cfg.DSPVarFile;
+        cfg.DSPCodeFile >> cfg.DSPParFile >> cfg.DSPVarFile;
 
     input.close();
     return cfg;
 }
-}  // namespace configuration
+
+bool read_dsp_settings_file(const std::string& absolute_path) {
+    std::ifstream input_json_stream(absolute_path);
+    if (!input_json_stream)
+        throw error(pixie::error::code::file_not_found,
+                    "Could not open dsp settings file for parsing.");
+
+    nlohmann::json jf = nlohmann::json::parse(input_json_stream);
+
+    for (auto& config : jf) {
+        nlohmann::json metadata = config["metadata"];
+        nlohmann::json module_parameters_json = config["module_parameters"];
+        nlohmann::json channel_parameters_json = config["channel_parameters"];
+    }
+}
+}  // namespace config
 }  // namespace xia

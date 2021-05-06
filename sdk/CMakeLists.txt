@@ -57,7 +57,8 @@ set(PIXIE_SDK_SOURCES
 add_library(PixieSdkObjLib OBJECT ${PIXIE_SDK_SOURCES})
 set_property(TARGET PixieSdkObjLib PROPERTY POSITION_INDEPENDENT_CODE 1)
 target_include_directories(PixieSdkObjLib PUBLIC include/
-        ${PROJECT_SOURCE_DIR}/externals/analog_devices)
+        ${PROJECT_SOURCE_DIR}/externals/analog_devices
+        ${PROJECT_SOURCE_DIR}/externals/nolhmann)
 xia_configure_target(TARGET PixieSdkObjLib USE_PLX CONFIG_OBJ)
 
 #---- Build the shared object for install and general use.

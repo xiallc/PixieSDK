@@ -46,10 +46,14 @@
 #include <sstream>
 #include <string>
 
+#include "pixie_error.hpp"
 #include "xia_windows_compat.hpp"
 
 namespace xia {
 namespace config {
+
+typedef pixie::error::error error;
+
 class Configuration {
 public:
     unsigned short numModules;

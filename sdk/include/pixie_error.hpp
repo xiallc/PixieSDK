@@ -107,6 +107,11 @@ enum struct code {
     file_size_invalid,
     file_create_failure,
     /*
+     * Configuration handling
+     */
+    configuration_bad_parameter,
+    configuration_parameter_not_found,
+    /*
      * System
      */
     no_memory,
