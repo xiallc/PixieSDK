@@ -98,6 +98,7 @@ enum struct code {
     device_hw_failure,
     device_dma_failure,
     device_dma_busy,
+    device_fifo_failure,
     /*
      * File handling
      */
@@ -112,6 +113,10 @@ enum struct code {
     slot_map_invalid,
     invalid_value,
     not_supported,
+    buffer_pool_empty,
+    buffer_pool_not_empty,
+    buffer_pool_busy,
+    buffer_pool_not_enough,
     /*
      * Catch all
      */

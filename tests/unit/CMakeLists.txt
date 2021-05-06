@@ -14,9 +14,10 @@ xia_configure_target(TARGET legacy_unit_test_runner USE_PLX FORCE_DEBUG LINUX_LI
 #---- BUILD TEST RUNNER
 add_executable(pixie_sdk_unit_test_runner $<TARGET_OBJECTS:BaseTestRunnerObjLib>
         $<TARGET_OBJECTS:PixieSdkObjLib>
+        src/test_pixie_buffer.cpp
         src/test_pixie_error.cpp
-        src/test_pixie_util.cpp
         src/test_pixie_log.cpp
+        src/test_pixie_util.cpp
         )
 target_include_directories(pixie_sdk_unit_test_runner PUBLIC
         ${PROJECT_SOURCE_DIR}/sdk/include

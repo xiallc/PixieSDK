@@ -33,6 +33,12 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
+/*
+ * Override build system magic.
+ */
+#undef NDEBUG
+
+#include <cassert>
 #include <iostream>
 #include <iomanip>
 #include <map>
@@ -62,14 +68,15 @@ struct result_code
     }
 };
 
-static std::map<code, result_code> result_codes =
+static const std::map<code, result_code> result_codes =
 {
     { code::success,                   {  0, "success" } },
     /*
      * Crate
      */
     { code::crate_already_open,        { 100, "crate already open" } },
-    { code::crate_invalid_param,       { 101, "invalid system parameter" } },
+    { code::crate_not_ready,           { 101, "crate not ready" } },
+    { code::crate_invalid_param,       { 102, "invalid system parameter" } },
     /*
      * Module
      */
@@ -94,8 +101,9 @@ static std::map<code, result_code> result_codes =
     { code::channel_number_invalid,    { 300, "invalid channel number" } },
     { code::channel_invalid_param,     { 301, "invalid channel parameter" } },
     { code::channel_invalid_var,       { 302, "invalid channel variable" } },
-    { code::channel_param_readonly,    { 303, "channel parameter is readonly" } },
-    { code::channel_param_writeonly,   { 304, "channel parameter is writeonly" } },
+    { code::channel_param_disabled,    { 303, "invalid channel variable" } },
+    { code::channel_param_readonly,    { 304, "channel parameter is readonly" } },
+    { code::channel_param_writeonly,   { 305, "channel parameter is writeonly" } },
     /*
      * Device
      */
@@ -107,6 +115,7 @@ static std::map<code, result_code> result_codes =
     { code::device_hw_failure,         { 505, "device hardware failure" } },
     { code::device_dma_failure,        { 506, "device dma failure" } },
     { code::device_dma_busy,           { 507, "device dma busy" } },
+    { code::device_fifo_failure,       { 508, "device fifo failure" } },
     /*
      * File handling
      */
@@ -121,6 +130,10 @@ static std::map<code, result_code> result_codes =
     { code::slot_map_invalid,          { 801, "invalid slot map" } },
     { code::invalid_value,             { 802, "invalid number" } },
     { code::not_supported,             { 803, "not supported" } },
+    { code::buffer_pool_empty,         { 804, "buffer pool empty" } },
+    { code::buffer_pool_not_empty,     { 805, "buffer pool not empty" } },
+    { code::buffer_pool_busy,          { 806, "buffer pool bust" } },
+    { code::buffer_pool_not_enough,    { 807, "buffer pool not enough" } },
     /*
      * Catch all
      */
@@ -128,6 +141,10 @@ static std::map<code, result_code> result_codes =
     { code::internal_failure,          { 901, "internal failure" } },
     { code::bad_error_code,            { 990, "bad error code" } },
 };
+
+static bool check_code_match() {
+    return result_codes.size() == size_t(code::last);
+}
 
 error::error(const code type_, const std::ostringstream& what)
     : runtime_error(what.str()),
@@ -181,10 +198,11 @@ error::return_code() const
 int
 api_result(enum code type)
 {
+    assert(check_code_match());
     auto search = result_codes.find(type);
     int result;
     if (search == result_codes.end()) {
-        result = result_codes[code::bad_error_code].result;
+        result = result_codes.at(code::bad_error_code).result;
     } else {
         result = search->second.result;
     }
@@ -194,10 +212,11 @@ api_result(enum code type)
 std::string
 api_result_text(enum code type)
 {
+    assert(check_code_match());
     auto search = result_codes.find(type);
     std::string text;
     if (search == result_codes.end()) {
-        text = result_codes[code::bad_error_code].text;
+        text = result_codes.at(code::bad_error_code).text;
     } else {
         text = search->second.text;
     }
