@@ -151,8 +151,8 @@ namespace param
         { "SlotID",               module_var::SlotID },
         { "ModID",                module_var::ModID },
         { "TrigConfig",           module_var::TrigConfig },
-        { "HostRunTimePreset",    module_var::HRTP },
-        { "PowerUpInitDone",      module_var::PUID },
+        { "HostRunTimePreset",    module_var::HostRunTimePreset },
+        { "PowerUpInitDone",      module_var::PowerUpInitDone },
         { "U00",                  module_var::U00 },
         { "RealTimeA",            module_var::RealTimeA },
         { "RealTimeB",            module_var::RealTimeB },
@@ -384,7 +384,7 @@ namespace param
         module_var::TrigConfig,
         module_var::TrigConfig,
         module_var::TrigConfig,
-        module_var::HRTP
+        module_var::HostRunTimePreset
     };
 
     const copy_filter energy_filter = {
