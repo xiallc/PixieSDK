@@ -16,31 +16,46 @@ pipeline {
                 '''
             }
         }
-        stage('Build PixieSDK') {
-            steps{
-                dir('build') {
-                    sh '''
-                    cmake3 ../
-                    make
-                    '''
+        stage('PixieSDK') {
+            matrix {
+                axes {
+                    axis {
+                        name 'RELEASE_TYPE'
+                        values 'Release', 'Debug'
+                    }
                 }
-            }
-        }
-        stage('Legacy Test Suite') {
-            steps{
-                dir('build') {
-                    sh '''
-                    ./tests/unit/legacy_unit_test_runner
-                    '''
-                }
-            }
-        }
-        stage('Test Suite') {
-            steps{
-                dir('build') {
-                    sh '''
-                    ./tests/unit/pixie_sdk_unit_test_runner
-                    '''
+                stages {
+                    stage("Build") {
+                        steps{
+                            dir("build-${RELEASE_TYPE}") {
+                                sh '''
+                                pwd
+                                cmake3 ../ -DCMAKE_BUILD_TYPE=${RELEASE_TYPE}
+                                make
+                                '''
+                            }
+                        }
+                    }
+                    stage("Legacy Test Suite") {
+                        steps{
+                            dir("build-${RELEASE_TYPE}") {
+                                sh '''
+                                pwd
+                                ./tests/unit/legacy_unit_test_runner
+                                '''
+                            }
+                        }
+                    }
+                    stage("Test Suite") {
+                        steps{
+                            dir("build-${RELEASE_TYPE}") {
+                                sh '''
+                                pwd
+                                ./tests/unit/pixie_sdk_unit_test_runner
+                                '''
+                            }
+                        }
+                    }
                 }
             }
         }
