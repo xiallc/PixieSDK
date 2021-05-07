@@ -43,6 +43,7 @@
 #include <vector>
 
 #include <pixie_hw.hpp>
+#include "xia_windows_compat.hpp"
 
 namespace xia
 {

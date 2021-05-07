@@ -43,6 +43,7 @@
 
 #include <pixie_error.hpp>
 #include <pixie_module.hpp>
+#include "xia_windows_compat.hpp"
 
 namespace xia {
 namespace pixie {
@@ -60,7 +61,7 @@ struct configuration {
     std::string dsp_var;
 };
 
-void read(const std::string& config_file_name, configuration& cfg);
+PIXIE_EXPORT void PIXIE_API read(const std::string& config_file_name, configuration& cfg);
 void read(const std::string& filename, module::module& module);
 
 }

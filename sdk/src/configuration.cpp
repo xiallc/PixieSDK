@@ -53,7 +53,7 @@ namespace xia {
 namespace pixie {
 namespace config {
 
-void
+PIXIE_EXPORT void PIXIE_API
 read(const std::string& config_file_name, configuration& cfg)
 {
     std::ifstream input(config_file_name, std::ios::in);
