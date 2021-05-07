@@ -1,5 +1,5 @@
-#ifndef PIXIE16_ERROR_H
-#define PIXIE16_ERROR_H
+#ifndef PIXIE_ERROR_H
+#define PIXIE_ERROR_H
 
 /*----------------------------------------------------------------------
 * Copyright (c) 2005 - 2021, XIA LLC
@@ -100,17 +100,18 @@ enum struct code {
     device_dma_busy,
     device_fifo_failure,
     /*
+     * Configuration
+     */
+    config_invalid_param,
+    config_param_not_found,
+    /*
      * File handling
      */
     file_not_found,
+    file_open_failure,
     file_read_failure,
     file_size_invalid,
     file_create_failure,
-    /*
-     * Configuration handling
-     */
-    configuration_bad_parameter,
-    configuration_parameter_not_found,
     /*
      * System
      */
@@ -179,4 +180,4 @@ int api_result_not_supported();
 std::ostringstream& operator<<(std::ostringstream& out, xia::pixie::error::error& error);
 std::ostream& operator<<(std::ostream& out, xia::pixie::error::error& error);
 
-#endif  // PIXIE16_ERROR_H
+#endif  // PIXIE_ERROR_H

@@ -37,39 +37,98 @@
 /// @author S. V. Paulauskas
 /// @date April 13, 2021
 
-#include "configuration.hpp"
+#include <algorithm>
+#include <exception>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+
+#include <configuration.hpp>
+#include <pixie_hw.hpp>
+#include <pixie_param.hpp>
+
 #include "json.hpp"
-#include "pixie_param.hpp"
 
 namespace xia {
+namespace pixie {
 namespace config {
-PIXIE_EXPORT Configuration PIXIE_API read_configuration_file(const std::string& config_file_name) {
-    std::ifstream input(config_file_name, std::ios::in);
 
+void
+read(const std::string& config_file_name, configuration& cfg)
+{
+    std::ifstream input(config_file_name, std::ios::in);
     if (input.fail()) {
-        std::stringstream errmsg;
-        errmsg << "Could not open " << config_file_name << "!";
-        throw std::invalid_argument(errmsg.str());
+        throw error(error::code::file_open_failure,
+                    "open: " + config_file_name + ": " + std::strerror(errno));
     }
 
-    xia::config::Configuration cfg;
-    input >> cfg.numModules;
-    cfg.slot_map = new unsigned short[cfg.numModules + 1];
-    for (size_t i = 0; i < cfg.numModules; i++)
-        input >> cfg.slot_map[i];
+    input >> cfg.num_modules;
+    if (cfg.num_modules == 0 || cfg.num_modules > hw::max_slots) {
+        throw error(error::code::config_invalid_param,
+                    "invalid number of modules");
+    }
 
-    input >> cfg.ComFPGAConfigFile >> cfg.SPFPGAConfigFile >> cfg.TrigFPGAConfigFile >>
-        cfg.DSPCodeFile >> cfg.DSPParFile >> cfg.DSPVarFile;
+    cfg.slot_map.clear();
+    for (int num = 0; num < cfg.num_modules; num++) {
+        int slot;
+        if (input >> slot) {
+            cfg.slot_map.push_back(module::number_slot(num, slot));
+        } else {
+            throw error(error::code::config_invalid_param,
+                        "invalid slot");
+        }
+    }
+
+    input >> cfg.com_fpga_config;
+    if (!input) {
+        throw error(error::code::config_invalid_param,
+                    "invalid COM FPGA file name");
+    }
+
+    input >> cfg.sp_fpga_config;
+    if (!input) {
+        throw error(error::code::config_invalid_param,
+                    "invalid FP FPGA file name");
+    }
+
+    std::string trig_holder;
+    input >> trig_holder;
+    if (!input) {
+        throw error(error::code::config_invalid_param,
+                    "invalid Trigg file name");
+    }
+
+    input >> cfg.dsp_code;
+    if (!input) {
+        throw error(error::code::config_invalid_param,
+                    "invalid DSP code file name");
+    }
+
+    input >> cfg.dsp_param;
+    if (!input) {
+        throw error(error::code::config_invalid_param,
+                    "invalid DSP parameters file name");
+    }
+
+    input >> cfg.dsp_var;
+    if (!input) {
+        throw error(error::code::config_invalid_param,
+                    "invalid DSP variables file name");
+    }
 
     input.close();
-    return cfg;
 }
 
-bool read_dsp_settings_file(const std::string& absolute_path) {
-    std::ifstream input_json_stream(absolute_path);
-    if (!input_json_stream)
-        throw error(pixie::error::code::file_not_found,
-                    "Could not open dsp settings file for parsing.");
+void
+read(const std::string& filename, module::module& module)
+{
+    std::ifstream input_json_stream(filename);
+    if (!input_json_stream) {
+        throw error(pixie::error::code::file_open_failure,
+                    "opening json file: " + filename + ": " + std::strerror(errno));
+    }
+
+    (void) module;
 
     nlohmann::json jf = nlohmann::json::parse(input_json_stream);
 
@@ -79,5 +138,7 @@ bool read_dsp_settings_file(const std::string& absolute_path) {
         nlohmann::json channel_parameters_json = config["channel_parameters"];
     }
 }
-}  // namespace config
-}  // namespace xia
+
+}
+}
+}

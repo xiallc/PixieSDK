@@ -117,12 +117,18 @@ static const std::map<code, result_code> result_codes =
     { code::device_dma_busy,           { 507, "device dma busy" } },
     { code::device_fifo_failure,       { 508, "device fifo failure" } },
     /*
+     * Configuration
+     */
+    { code::config_invalid_param,      { 600, "invalid config parameter" } },
+    { code::config_param_not_found,    { 601, "config parameter not found" } },
+    /*
      * File handling
      */
     { code::file_not_found,            { 700, "file not found" } },
-    { code::file_read_failure,         { 701, "file read failure" } },
-    { code::file_size_invalid,         { 702, "invalid file size" } },
-    { code::file_create_failure,       { 703, "file create failure" } },
+    { code::file_open_failure,         { 701, "file open failure" } },
+    { code::file_read_failure,         { 702, "file read failure" } },
+    { code::file_size_invalid,         { 703, "invalid file size" } },
+    { code::file_create_failure,       { 704, "file create failure" } },
     /*
      * System
      */

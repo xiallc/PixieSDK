@@ -45,15 +45,15 @@
 
 #include <pixie16.h>
 
-#include "pixie16app_export.h"
-#include "pixie16sys_export.h"
-
 #include "pixie_api_select.hpp"
 
 #include "args.hxx"
 #include "easylogging++.h"
 
 #include "configuration.hpp"
+
+#include "pixie16app_export.h"
+#include "pixie16sys_export.h"
 
 #if defined(_WIN64) || defined(_WIN32)
 #include <Windows.h>
@@ -123,7 +123,7 @@ bool execute_baseline_capture(const unsigned int& module) {
     return true;
 }
 
-bool execute_list_mode_run(const xia::config::Configuration& cfg,
+bool execute_list_mode_run(const xia::pixie::config::configuration& cfg,
                            const double& runtime_in_seconds) {
     LOG(INFO) << "Starting list mode data run for " << runtime_in_seconds << " s.";
 
@@ -140,7 +140,7 @@ bool execute_list_mode_run(const xia::config::Configuration& cfg,
         return false;
 
     LOG(INFO) << "Calling " << pixie->label("start_list_mode_run") << ".";
-    if (!verify_api_return_value(pixie->start_list_mode_run(cfg.numModules, LIST_MODE_RUN, NEW_RUN),
+    if (!verify_api_return_value(pixie->start_list_mode_run(cfg.num_modules, LIST_MODE_RUN, NEW_RUN),
                                  pixie->label("start_list_mode_run")))
         return false;
 
@@ -157,15 +157,15 @@ bool execute_list_mode_run(const xia::config::Configuration& cfg,
     unsigned int mod_numwordsread = 0;
 
     std::vector<std::string> output_file_names;
-    output_file_names.reserve(cfg.numModules);
-    for (auto i = 0; i < cfg.numModules; i++)
+    output_file_names.reserve(cfg.num_modules);
+    for (auto i = 0; i < cfg.num_modules; i++)
       output_file_names.push_back("module" + std::to_string(i) + ".lmd");
 
     LOG(INFO) << "Collecting data for " << runtime_in_seconds << " s.";
     steady_clock::time_point run_start_time = steady_clock::now();
     while (duration_cast<duration<double>>(steady_clock::now() - run_start_time).count() <
            runtime_in_seconds) {
-        for (int k = 0; k < cfg.numModules; k++) {
+        for (int k = 0; k < cfg.num_modules; k++) {
             /*
              * Error check this call?
              */
@@ -197,7 +197,7 @@ bool execute_list_mode_run(const xia::config::Configuration& cfg,
 
     // Make sure all modules indeed finish their run successfully.
     const unsigned int number_of_finalize_attempts = 10;
-    for (int k = 0; k < cfg.numModules; k++) {
+    for (int k = 0; k < cfg.num_modules; k++) {
         size_t finalize_attempt_number = 0;
         while (finalize_attempt_number < number_of_finalize_attempts) {
             if (pixie->check_run_status(k) == 0) {
@@ -224,7 +224,7 @@ bool execute_list_mode_run(const xia::config::Configuration& cfg,
               << " s";
 
     // All modules have their run stopped successfully.Now read out the possible last words from the external FIFO
-    for (int k = 0; k < cfg.numModules; k++) {
+    for (int k = 0; k < cfg.num_modules; k++) {
         pixie->read_ext_fifo_status(&mod_numwordsread, k);
         if (!verify_api_return_value(
                 pixie->save_external_fifo_data_to_file(output_file_names[k].c_str(), &mod_numwordsread,
@@ -440,11 +440,11 @@ int main(int argc, char** argv) {
     }
     LOG(INFO) << "API: " << pixie->name;
 
-    xia::config::Configuration cfg;
+    xia::pixie::config::configuration cfg;
     try {
-        cfg = xia::config::read_configuration_file(configuration.Get());
-    } catch (std::invalid_argument& invalidArgument) {
-        LOG(ERROR) << invalidArgument.what();
+        xia::pixie::config::read(configuration.Get(), cfg);
+    } catch (xia::pixie::error::error& e) {
+        LOG(ERROR) << e.what();
         return EXIT_FAILURE;
     }
 
@@ -457,7 +457,11 @@ int main(int argc, char** argv) {
 
     start = std::chrono::system_clock::now();
     LOG(INFO) << "Calling " << pixie->label("init_system") << ".";
-    if (!verify_api_return_value(pixie->init_system(cfg.numModules, cfg.slot_map, offline_mode),
+    std::shared_ptr<unsigned short> slot_map = std::make_shared<unsigned short>(cfg.num_modules + 1);
+    for (int s = 0; s < cfg.num_modules; ++s) {
+        slot_map.get()[s] = std::get<1>(cfg.slot_map[s]);
+    }
+    if (!verify_api_return_value(pixie->init_system(cfg.num_modules, slot_map.get(), offline_mode),
                                  pixie->label("init_system"), false))
         return EXIT_FAILURE;
     LOG(INFO) << "Finished " << pixie->label("init_system") << " in "
@@ -478,9 +482,9 @@ int main(int argc, char** argv) {
                 << boot_pattern << std::dec;
 
         if (!verify_api_return_value(
-                pixie->boot_module(cfg.ComFPGAConfigFile.c_str(), cfg.SPFPGAConfigFile.c_str(),
-                                   cfg.TrigFPGAConfigFile.c_str(), cfg.DSPCodeFile.c_str(),
-                                   cfg.DSPParFile.c_str(), cfg.DSPVarFile.c_str(), cfg.numModules,
+                pixie->boot_module(cfg.com_fpga_config.c_str(), cfg.sp_fpga_config.c_str(),
+                                   NULL, cfg.dsp_code.c_str(),
+                                   cfg.dsp_param.c_str(), cfg.dsp_var.c_str(), cfg.num_modules,
                                    boot_pattern),
                 pixie->label("boot_module"), "Finished booting!"))
             return EXIT_FAILURE;
@@ -488,7 +492,7 @@ int main(int argc, char** argv) {
                   << calculate_duration_in_seconds(start, std::chrono::system_clock::now())
                   << " s.";
         if (boot) {
-            execute_close_module_connection(cfg.numModules);
+            execute_close_module_connection(cfg.num_modules);
             return EXIT_SUCCESS;
         }
     }
@@ -496,41 +500,41 @@ int main(int argc, char** argv) {
     if (read) {
         if (!execute_parameter_read(parameter, crate, module, channel))
             return EXIT_FAILURE;
-        execute_close_module_connection(cfg.numModules);
+        execute_close_module_connection(cfg.num_modules);
         return EXIT_SUCCESS;
     }
 
     if (write) {
         if (!execute_parameter_write(parameter, parameter_value, crate, module, channel,
-                                     cfg.DSPParFile))
+                                     cfg.dsp_param))
             return EXIT_FAILURE;
-        execute_close_module_connection(cfg.numModules);
+        execute_close_module_connection(cfg.num_modules);
         return EXIT_SUCCESS;
     }
 
     if (adjust_offsets) {
-        if (!execute_adjust_offsets(cfg.numModules, cfg.DSPParFile))
+        if (!execute_adjust_offsets(cfg.num_modules, cfg.dsp_param))
             return EXIT_FAILURE;
-        execute_close_module_connection(cfg.numModules);
+        execute_close_module_connection(cfg.num_modules);
         return EXIT_SUCCESS;
     }
 
     if (trace) {
         if (!execute_trace_capture(module))
             return EXIT_FAILURE;
-        execute_close_module_connection(cfg.numModules);
+        execute_close_module_connection(cfg.num_modules);
         return EXIT_SUCCESS;
     }
 
     if (list_mode) {
         if (!execute_list_mode_run(cfg, run_time.Get()))
             return EXIT_FAILURE;
-        execute_close_module_connection(cfg.numModules);
+        execute_close_module_connection(cfg.num_modules);
         return EXIT_SUCCESS;
     }
 
     if (export_settings) {
-        if (!save_dsp_pars(cfg.DSPParFile))
+        if (!save_dsp_pars(cfg.dsp_param))
             return EXIT_FAILURE;
         return EXIT_SUCCESS;
     }
@@ -538,16 +542,16 @@ int main(int argc, char** argv) {
     if (baseline) {
         if(!execute_baseline_capture(args::get(module)))
             return EXIT_FAILURE;
-        execute_close_module_connection(cfg.numModules);
+        execute_close_module_connection(cfg.num_modules);
         return EXIT_SUCCESS;
     }
 
     if (histogram) {
         LOG(INFO) << "Starting to write histograms from the module.";
-        for (int i = 0; i < cfg.numModules; i++)
+        for (int i = 0; i < cfg.num_modules; i++)
           pixie->save_histogram_to_file(("module" + std::to_string(i) + ".his").c_str(), i);
         LOG(INFO) << "Finished writing histograms from the module.";
     }
 
-    execute_close_module_connection(cfg.numModules);
+    execute_close_module_connection(cfg.num_modules);
 }

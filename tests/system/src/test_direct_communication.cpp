@@ -36,12 +36,6 @@
 /// @brief Used to test direct communication with memory registers on the system.
 /// @author S. V. Paulauskas
 /// @date February 19, 2021
-#include "args.hxx"
-#include "configuration.hpp"
-#include "easylogging++.h"
-#include "pixie16app_export.h"
-#include "pixie16sys_export.h"
-#include "system_test_utilities.hpp"
 
 #include <algorithm>
 #include <array>
@@ -52,6 +46,13 @@
 #include <thread>
 #include <type_traits>
 #include <vector>
+
+#include "args.hxx"
+#include "configuration.hpp"
+#include "easylogging++.h"
+#include "pixie16app_export.h"
+#include "pixie16sys_export.h"
+#include "system_test_utilities.hpp"
 
 #ifdef _WINDOWS
 #include <windows.h>
@@ -172,9 +173,9 @@ int main(int argc, char* argv[]) {
     } else
         address = stoul(args::get(address_flag), nullptr, 0);
 
-    xia::config::Configuration cfg;
+    xia::pixie::config::configuration cfg;
     try {
-        cfg = xia::config::read_configuration_file(configuration.Get());
+        xia::pixie::config::read(configuration.Get(), cfg);
     } catch (std::invalid_argument& invalidArgument) {
         LOG(ERROR) << invalidArgument.what();
         return EXIT_FAILURE;
@@ -185,7 +186,11 @@ int main(int argc, char* argv[]) {
         offline_mode = 1;
 
     LOG(INFO) << "Calling Pixie16InitSystem.";
-    if (!verify_api_return_value(Pixie16InitSystem(cfg.numModules, cfg.slot_map, offline_mode),
+    std::shared_ptr<unsigned short> slot_map = std::make_shared<unsigned short>(cfg.num_modules + 1);
+    for (int s = 0; s < cfg.num_modules; ++s) {
+        slot_map.get()[s] = std::get<1>(cfg.slot_map[s]);
+    }
+    if (!verify_api_return_value(Pixie16InitSystem(cfg.num_modules, slot_map.get(), offline_mode),
                                  "Pixie16InitSystem"))
         return EXIT_FAILURE;
 
@@ -197,9 +202,9 @@ int main(int argc, char* argv[]) {
                   << boot_pattern << std::dec;
 
         if (!verify_api_return_value(
-                Pixie16BootModule(cfg.ComFPGAConfigFile.c_str(), cfg.SPFPGAConfigFile.c_str(),
-                                  cfg.TrigFPGAConfigFile.c_str(), cfg.DSPCodeFile.c_str(),
-                                  cfg.DSPParFile.c_str(), cfg.DSPVarFile.c_str(), cfg.numModules,
+                Pixie16BootModule(cfg.com_fpga_config.c_str(), cfg.sp_fpga_config.c_str(),
+                                  NULL, cfg.dsp_code.c_str(),
+                                  cfg.dsp_param.c_str(), cfg.dsp_var.c_str(), cfg.num_modules,
                                   boot_pattern),
                 "Pixie16BootModule", "INFO - Finished booting!"))
             return EXIT_FAILURE;

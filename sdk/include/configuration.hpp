@@ -1,5 +1,5 @@
-#ifndef PIXIE_SDK_CONFIGURATION_HPP
-#define PIXIE_SDK_CONFIGURATION_HPP
+#ifndef PIXIE_CONFIG_HPP
+#define PIXIE_CONFIG_HPP
 /**----------------------------------------------------------------------
 * Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
@@ -39,36 +39,32 @@
 /// @author S. V. Paulauskas
 /// @date November 13, 2020
 
-#include <algorithm>
-#include <exception>
-#include <fstream>
-#include <iostream>
-#include <sstream>
 #include <string>
 
-#include "pixie_error.hpp"
-#include "xia_windows_compat.hpp"
+#include <pixie_error.hpp>
+#include <pixie_module.hpp>
 
 namespace xia {
+namespace pixie {
 namespace config {
 
 typedef pixie::error::error error;
 
-class Configuration {
-public:
-    unsigned short numModules;
-    unsigned short* slot_map;
-    std::string ComFPGAConfigFile;
-    std::string SPFPGAConfigFile;
-    std::string TrigFPGAConfigFile;
-    std::string DSPCodeFile;
-    std::string DSPParFile;
-    std::string DSPVarFile;
+struct configuration {
+    int num_modules;
+    module::number_slots slot_map;
+    std::string com_fpga_config;
+    std::string sp_fpga_config;
+    std::string dsp_code;
+    std::string dsp_param;
+    std::string dsp_var;
 };
 
-PIXIE_EXPORT Configuration PIXIE_API read_configuration_file(const std::string& config_file_name);
+void read(const std::string& config_file_name, configuration& cfg);
+void read(const std::string& filename, module::module& module);
 
-}  // namespace config
-}  // namespace xia
+}
+}
+}
 
-#endif  //SOFTWARE_HELPER_FUNCTIONS_HPP
+#endif  // PIXIE_CONFIG_HPP
