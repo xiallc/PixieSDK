@@ -529,7 +529,7 @@ var_write(xia::pixie::crate::crate& crate, options& cmd)
         break;
     }
     auto value = get_value<xia::pixie::param::value_type>(cmd[val]);
-    crate[mod_num].write_var(cmd[reg_name], channel, value, offset);
+    crate[mod_num].write_var(cmd[reg_name], value, channel, offset);
 }
 
 static void
