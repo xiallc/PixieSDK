@@ -148,7 +148,7 @@ static const std::map<code, result_code> result_codes =
     { code::bad_error_code,            { 990, "bad error code" } },
 };
 
-static bool check_code_match() {
+bool check_code_match() {
     return result_codes.size() == size_t(code::last);
 }
 
@@ -204,7 +204,6 @@ error::return_code() const
 int
 api_result(enum code type)
 {
-    assert(check_code_match());
     auto search = result_codes.find(type);
     int result;
     if (search == result_codes.end()) {
@@ -218,7 +217,6 @@ api_result(enum code type)
 std::string
 api_result_text(enum code type)
 {
-    assert(check_code_match());
     auto search = result_codes.find(type);
     std::string text;
     if (search == result_codes.end()) {

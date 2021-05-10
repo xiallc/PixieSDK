@@ -154,6 +154,11 @@ struct error
 };
 
 /*
+ * Internal test: check that error code definition are consistent.
+ */
+bool check_code_match();
+
+/*
  * Get the API code for an error code.
  */
 int api_result(enum code type);

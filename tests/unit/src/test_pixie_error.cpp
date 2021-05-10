@@ -53,4 +53,7 @@ TEST_SUITE("xia::pixie::error") {
             CHECK(xia::pixie::error::api_result(xia::pixie::error::code::last) == 990);
         }
     }
+    TEST_CASE("Result_codes size matches code::last") {
+        CHECK(xia::pixie::error::check_code_match());
+    }
 }
