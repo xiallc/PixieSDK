@@ -2,6 +2,8 @@
 add_executable(pixie_sdk_example
         src/pixie_sdk_example.cpp
         src/pixie_api_select.cpp
+        ${PROJECT_SOURCE_DIR}/sdk/src/pixie_error.cpp
+        ${PROJECT_SOURCE_DIR}/sdk/src/pixie_log.cpp
         $<TARGET_OBJECTS:EasyLoggingObjLib>)
 target_include_directories(pixie_sdk_example PUBLIC
         include/
