@@ -1269,8 +1269,8 @@ namespace module
             if (e.type != error::code::module_invalid_var) {
                 throw;
             }
+            write_var(param::lookup_channel_var(var), value, channel, offset);
         }
-        write_var(param::lookup_channel_var(var), value, channel, offset);
     }
 
     void
