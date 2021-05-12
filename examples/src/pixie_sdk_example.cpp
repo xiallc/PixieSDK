@@ -410,6 +410,7 @@ int main(int argc, char** argv) {
                                             "The value of the parameter we want to write.",
                                             {'v', "value"});
     adjust_offsets.Add(configuration);
+    baseline.Add(is_fast_boot);
     boot.Add(configuration);
     read.Add(configuration);
     trace.Add(configuration);
