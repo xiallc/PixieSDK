@@ -809,7 +809,7 @@ channel::voffset()
         mod.read_var(param::channel_var::OffsetDAC, number);
 
     double result =
-        double(value) / 65536.0 * DAC_VOLTAGE_RANGE - DAC_VOLTAGE_RANGE / 2.0;
+        (65536 * ((double(value) / DAC_VOLTAGE_RANGE) + 0.5));
 
     return result;
 }
@@ -820,7 +820,7 @@ channel::voffset(double value)
     module::module& mod = module.get();
 
     auto offset_dac =
-        param::value_type ((65536 * (((value / DAC_VOLTAGE_RANGE) + 0.5))));
+        param::value_type ((65536 * ((value / DAC_VOLTAGE_RANGE) + 0.5)));
 
     /*
      * 16-bit DAC, range check.
