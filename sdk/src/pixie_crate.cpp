@@ -197,7 +197,7 @@ namespace crate
                     module->add(firmware[tag]);
                 } else {
                     log(log::debug) << module::module_label(*module)
-                                    << "crate: module firmware alread set: "
+                                    << "crate: module firmware already set: "
                                     << tag;
                 }
             }

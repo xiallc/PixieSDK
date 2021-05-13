@@ -828,7 +828,7 @@ main(int argc, char* argv[])
         cmd_flag(command_group,
                  "commands",
                  "Commands to be performed in order. "
-                 "The command `help` lists avalable command.");
+                 "The command `help` lists available command.");
 
     try {
         parser.ParseCLI(argc, argv);
@@ -866,7 +866,7 @@ main(int argc, char* argv[])
         if (simulate) {
             if (!module_defs) {
                 throw
-                    std::runtime_error("simulation requires a module defnition");
+                    std::runtime_error("simulation requires a module definition");
             }
             xia_log(xia_log::info) << "simulation: " << args::get(module_defs);
             xia::pixie::sim::load_module_defs(args::get(module_defs));
