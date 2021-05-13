@@ -79,6 +79,8 @@ namespace dsp
 
         bool running = false;
 
+        module::module::bus_guard guard(module);
+
         /*
          * Guard the download bit so it is cleared when we exit.
          */
@@ -201,6 +203,7 @@ namespace dsp
                  * should prevent premature downloading of DSP parameters by the
                  * host, which would cause corruption of DSP internal memory.
                  */
+                guard.unlock();
                 size_t retry = 10;
                 while (--retry > 0) {
                     if (init_done()) {
@@ -209,6 +212,7 @@ namespace dsp
                     }
                     wait(1000);
                 }
+                guard.lock();
                 if (retry == 0) {
                     throw error(error::code::device_boot_failure,
                                 make_what("DSP failed to start"));
@@ -232,6 +236,7 @@ namespace dsp
     bool
     dsp::init_done()
     {
+        module::module::bus_guard guard(module);
         bus_write(REQUEST_HBR, 0);
         bus_write(EXT_MEM_TEST, POWERUPINITDONE_ADDRESS);
         word value = bus_read(WRT_DSP_MMA);

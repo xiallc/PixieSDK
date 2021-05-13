@@ -57,6 +57,7 @@ namespace i2c
     void
     i2cm24c64::read(int address, size_t length, contents& data)
     {
+        module::module::bus_guard guard(module);
         data.clear();
         data.reserve(length);
 

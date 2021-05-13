@@ -91,6 +91,7 @@ namespace memory
     word
     dsp::read(const address addr)
     {
+        module::module::bus_guard guard(module);
         host_bus_request hbr(module);
         bus_write(EXT_MEM_TEST, addr);
         word value = bus_read(WRT_DSP_MMA);
@@ -110,6 +111,8 @@ namespace memory
                         << "dsp read: addr=0x" << std::hex << addr
                         << " length=" << std::dec << length;
 
+        module::module::bus_guard guard(module);
+
         size_t size = length;
         size_t offset = 0;
         /*
@@ -118,7 +121,7 @@ namespace memory
          */
         while (size > 48) {
             const size_t block_size =
-                size > max_dma_block_size ? max_dma_block_size : size;
+                size > hw::max_dma_block_size ? hw::max_dma_block_size : size;
             dma_read(addr + offset, buffer + offset, block_size);
             size -= block_size;
             offset += block_size;
@@ -137,6 +140,7 @@ namespace memory
     void
     dsp::write(const address addr, const word value)
     {
+        module::module::bus_guard guard(module);
         host_bus_request hbr(module);
         bus_write(EXT_MEM_TEST, addr);
         bus_write(WRT_DSP_MMA, value);
@@ -151,6 +155,7 @@ namespace memory
     void
     dsp::write(const address addr, const words& values)
     {
+        module::module::bus_guard guard(module);
         host_bus_request hbr(module);
         bus_write(EXT_MEM_TEST, addr);
         for (auto value : values) {
@@ -164,6 +169,10 @@ namespace memory
         log(log::debug) << module::module_label(module)
                         << "dsp dma read: addr=0x" << std::hex << addr
                         << " length=" << std::dec << length;
+
+        /*
+         * The bus is held on entry.
+         */
 
         host_bus_request hbr(module);
 
@@ -216,6 +225,8 @@ namespace memory
     void
     mca::read(const address addr, word_ptr values, size_t size)
     {
+        module::module::bus_guard guard(module);
+
         /*
          * Guard the PCI active bit so it is cleared when we exit.
          */
@@ -247,6 +258,8 @@ namespace memory
     void
     mca::write(const address addr, const words& values)
     {
+        module::module::bus_guard guard(module);
+
         /*
          * Guard the PCI active  bit so it is cleared when we exit.
          */
@@ -256,6 +269,40 @@ namespace memory
         for (auto value : values) {
             bus_write(MCA_MEM_DATA, value);
         }
+    }
+
+    fifo::fifo(module::module& module_)
+        : bus(module_)
+    {
+    }
+
+    size_t
+    fifo::level()
+    {
+        module::module::bus_guard guard(module);
+        return size_t(bus_read(RD_WRT_FIFO_WML));
+    }
+
+    void
+    fifo::read(word_ptr buffer, const size_t length)
+    {
+        module::module::bus_guard guard(module);
+
+        bus_write(SET_EXT_FIFO, length);
+
+        size_t polls = 1000;
+        while (polls-- > 0) {
+            if (bus_read(RD_WRT_FIFO_WML) >= length) {
+                break;
+            }
+        }
+        if (polls == 0) {
+            throw module::error(module.number, module.slot,
+                                module::error::code::device_fifo_failure,
+                                "FIFO failed to reach watermack");
+        }
+
+        module.dma_read(FIFO_MEM_DMA, buffer, length);
     }
 };
 };

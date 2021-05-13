@@ -58,6 +58,8 @@ namespace i2c
     uint8_t
     pcf8574::read_a_byte()
     {
+        module::module::bus_guard guard(module);
+
         /*
          * Send START, device select code
          */

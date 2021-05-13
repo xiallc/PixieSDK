@@ -138,6 +138,7 @@ start(module::module& module,
     module.write_var(param::module_var::Resume,
                      param::value_type(mode));
 
+    module::module::bus_guard guard(module);
     csr::set(module, 1 << RUNENA);
 }
 
@@ -150,8 +151,11 @@ end(module::module& module)
         log(log::debug) << module::module_label(module, "run") << "end";
         util::timepoint tp;
         tp.start();
-        csr::clear(module, 1 << RUNENA);
-        for (int msecs = 0; msecs < 2 * 100; ++msecs) {
+        {
+          module::module::bus_guard guard(module);
+          csr::clear(module, 1 << RUNENA);
+        }
+        for (int msecs = 0; msecs < 2 * 1000; ++msecs) {
             if (!hw::run::active(module)) {
                 tp.end();
                 log(log::debug) << module::module_label(module, "run")
@@ -168,6 +172,7 @@ end(module::module& module)
 bool
 active(module::module& module)
 {
+    module::module::bus_guard guard(module);
     return (csr::read(module) & ((1 << RUNENA) | (1 << RUNACTIVE))) != 0;
 }
 

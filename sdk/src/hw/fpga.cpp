@@ -49,6 +49,10 @@ namespace hw
 {
 namespace fpga
 {
+    /*
+     * The module bus lock is not held here. Hold at the
+     * FPGA instance level.
+     */
     control::controls::controls(const uint32_t clear_,
                                 const uint32_t set_,
                                 const uint32_t done_)
@@ -177,7 +181,8 @@ namespace fpga
 
             while (true) {
                 wait(1000);
-                if (done()) {
+                auto is_done = done();
+                if (is_done) {
                     /*
                      * Programmed
                      */

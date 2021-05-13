@@ -39,13 +39,14 @@
 #include <atomic>
 #include <iomanip>
 #include <iostream>
-#include <list>
 #include <memory>
 #include <mutex>
+#include <thread>
 #include <vector>
 
-#include <pixie_error.hpp>
+#include <pixie_buffer.hpp>
 #include <pixie_channel.hpp>
+#include <pixie_error.hpp>
 #include <pixie_fw.hpp>
 #include <pixie_hw.hpp>
 #include <pixie_log.hpp>
@@ -107,10 +108,16 @@ namespace module
     class module
     {
         /*
-         * Module lock.
+         * Module lock
          */
-        typedef std::mutex lock_type;
+        typedef std::recursive_mutex lock_type;
         typedef std::lock_guard<lock_type> lock_guard;
+
+        /*
+         * Bus lock
+         */
+        typedef std::mutex bus_lock_type;
+        typedef std::lock_guard<bus_lock_type> bus_lock_guard;
 
     public:
         /*
@@ -118,10 +125,26 @@ namespace module
          * operations.
          */
         class guard {
+            lock_type& lock_;
             lock_guard guard_;
         public:
             guard(module& mod);
             ~guard() = default;
+            void lock();
+            void unlock();
+        };
+
+        /*
+         * Bus guard
+         */
+        class bus_guard {
+            bus_lock_type& lock_;
+            bus_lock_guard guard_;
+        public:
+            bus_guard(module &mod);
+            ~bus_guard() = default;
+            void lock();
+            void unlock();
         };
 
         /*
@@ -137,6 +160,14 @@ namespace module
             rev_G,
             rev_H
         };
+
+        /*
+         * Defaults
+         */
+        static const size_t default_fifo_buffers = 100;
+        static const size_t default_fifo_run_wait_usec = 5000;
+        static const size_t default_fifo_idle_wait_usec = 150000;
+        static const size_t default_fifo_hold_usec = 100000;
 
         /*
          * Slot in the crate.
@@ -205,8 +236,37 @@ namespace module
         /*
          * Run and control task states.
          */
-        hw::run::run_task run_task;
-        hw::run::control_task control_task;
+        std::atomic<hw::run::run_task> run_task;
+        std::atomic<hw::run::control_task> control_task;
+
+        /*
+         * Number of buffers in the FIFO pool. The buffers are fixed to the
+         * maximum DMA block size and allocated at the start of a run.
+         */
+        size_t fifo_buffers;
+
+        /*
+         * FIFO run wait poll period. The setting needs to be less than the
+         * period of time it takes to full the FIFO device at the maxiumum data
+         * rate. It is used when a run using the FIFO starts or data is detected
+         * in the FIFO.
+         */
+        std::atomic_size_t fifo_run_wait_usecs;
+
+        /*
+         * FIFO idle wait poll period. The setting is a back ground poll period
+         * used when there is not run active using the FIFO. When a run
+         * finishes the poll period in creases by the power 2 every hold period
+         * until this value is reached.
+         */
+        std::atomic_size_t fifo_idle_wait_usecs;
+
+        /*
+         * FIFO hold time is the period data is held in the FIFO before being
+         * read into a buffer. Slow data and long poll periods by the user can
+         * use all the buffers. If buffers run low the queue is compacted.
+         */
+        std::atomic_size_t fifo_hold_usecs;
 
         /*
          * Diagnostics
@@ -224,12 +284,12 @@ namespace module
         /*
          * If the module present?
          */
-        bool present();
+        bool present() const;
 
         /*
          * Has the module been booted and is online?
          */
-        bool online();
+        bool online() const;
 
         /*
          * Open the module and find the device on the bus.
@@ -368,12 +428,19 @@ namespace module
                     bool run = true);
 
         /*
-         * Read a channel histogram.
+         * Read a channel's histogram.
          */
         void read_histogram(size_t channel, hw::words& values);
         void read_histogram(size_t channel,
                             hw::word_ptr values,
                             const size_t size);
+
+        /*
+         * Read the module's list mode
+         */
+        size_t read_list_mode_level();
+        void read_list_mode(hw::words& words);
+        void read_list_mode(hw::word_ptr values, const size_t size);
 
         /*
          * Read the stats
@@ -452,9 +519,29 @@ namespace module
         void channel_check(const size_t channel) const;
 
         /*
-         * Lock
+         * FIFO worker
+         */
+        void start_fifo_worker();
+        void stop_fifo_worker();
+        void fifo_worker();
+
+        std::thread fifo_thread;
+
+        std::atomic_bool fifo_worker_running;
+        std::atomic_bool fifo_worker_finished;
+
+        buffer::pool fifo_pool;
+        buffer::queue fifo_data;
+
+        /*
+         * Module lock
          */
         lock_type lock_;
+
+        /*
+         * Bus lock
+         */
+        bus_lock_type bus_lock_;
 
         /*
          * In use counter.
@@ -464,12 +551,12 @@ namespace module
         /*
          * Present in the rack.
          */
-        bool present_;
+        std::atomic_bool present_;
 
         /*
          * Online and ready to use.
          */
-        bool online_;
+        std::atomic_bool online_;
 
         /*
          * System, FIPPI and DSP online.

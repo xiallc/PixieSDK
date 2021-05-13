@@ -67,6 +67,7 @@ namespace fpga
     void
     fippi::boot(const firmware::image& image, int retries)
     {
+        module::module::bus_guard guard(module);
         ctrl_1_2.load(image, retries);
         ctrl_3_4.load(image, retries);
         wait(10000);
@@ -76,6 +77,7 @@ namespace fpga
     bool
     fippi::done()
     {
+        module::module::bus_guard guard(module);
         return ctrl_1_2.done() && ctrl_3_4.done();
     }
 };

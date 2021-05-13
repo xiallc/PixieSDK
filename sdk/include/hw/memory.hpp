@@ -38,7 +38,7 @@
 
 #include <stdint.h>
 
-#include <pixie_fw.hpp>
+#include <pixie_error.hpp>
 #include <pixie_hw.hpp>
 #include <pixie_fw.hpp>
 
@@ -89,11 +89,6 @@ namespace memory
     struct dsp
         : public bus
     {
-        /*
-         * DMA block size.
-         */
-        static const size_t max_dma_block_size = 8192;
-
         dsp(module::module& module);
 
         /*
@@ -156,6 +151,35 @@ namespace memory
         void read(const address addr, word_ptr values, size_t size);
         void write(const address addr, const words& values);
     };
+
+    struct fifo
+        : public bus
+    {
+        fifo(module::module& module);
+
+        /*
+         * Level of data currently in the FIFO in words
+         */
+        size_t level();
+
+        /*
+         * Memory block read.
+         *
+         * If length is not 0 only the length of data will be read.
+         */
+        template<typename B>
+        void read(B& values, const size_t length = 0);
+        void read(word_ptr buffer, const size_t length);
+    };
+
+    template<class B>
+    inline void fifo::read(B& values, const size_t length) {
+        if (length > values.size()) {
+            throw error(error::code::invalid_value,
+                        "fifo: read length greater than buffer size");
+        }
+        read(values.data(), length != 0 ? length : values.size());
+    }
 }
 }
 }

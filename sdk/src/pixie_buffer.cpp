@@ -32,7 +32,7 @@
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
-/// @file test_pixie_buffer.cpp
+/// @file pixie_buffer.cpp
 /// @brief
 /// @author Chris Johns
 /// @date May 5, 2021
@@ -104,12 +104,12 @@ pool::create(const size_t number_, const size_t size_)
 void
 pool::destroy()
 {
-    log(log::info) << "pool destroy";
     lock_guard guard(lock);
     if (number > 0) {
+        log(log::info) << "pool destroy";
         if (count_.load() != number) {
             throw error(error::code::buffer_pool_busy,
-                        "pool destory made while busy");
+                        "pool destroy made while busy");
         }
         while (!buffers.empty()) {
             buffer_ptr buf = buffers.front();
@@ -285,6 +285,13 @@ queue::compact()
             to_bi++;
         }
     }
+}
+
+void
+queue::flush()
+{
+    lock_guard guard(lock);
+    buffers.clear();
 }
 
 void

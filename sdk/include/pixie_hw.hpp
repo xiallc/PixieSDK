@@ -81,6 +81,16 @@ namespace hw
     static const size_t system_clock_mhz = 100;
 
     /*
+     * FIFO size in words
+     */
+    static const size_t fifo_size_words = 32768;
+
+    /*
+     * DMA block size.
+     */
+    static const size_t max_dma_block_size = 8192;
+
+    /*
      * Address.
      */
     typedef uint32_t address;

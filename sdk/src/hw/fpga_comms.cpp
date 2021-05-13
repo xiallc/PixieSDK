@@ -36,6 +36,8 @@
 #include <iostream>
 #include <iomanip>
 
+#include <pixie_module.hpp>
+
 #include <hw/fpga_comms.hpp>
 
 #include <pixie16sys_defs.h>
@@ -61,12 +63,14 @@ namespace fpga
     void
     comms::boot(const firmware::image& image, int retries)
     {
+        module::module::bus_guard guard(ctrl.module);
         ctrl.load(image, retries);
     }
 
     bool
     comms::done()
     {
+        module::module::bus_guard guard(ctrl.module);
         return ctrl.done();
     }
 };

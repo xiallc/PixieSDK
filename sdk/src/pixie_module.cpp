@@ -242,8 +242,39 @@ namespace module
     };
 
     module::guard::guard(module& mod)
-        : guard_(mod.lock_)
+        : lock_(mod.lock_),
+          guard_(lock_)
     {
+    }
+
+    void
+    module::guard::lock()
+    {
+        lock_.lock();
+    }
+
+    void
+    module::guard::unlock()
+    {
+        lock_.unlock();
+    }
+
+    module::bus_guard::bus_guard(module& mod)
+        : lock_(mod.bus_lock_),
+          guard_(lock_)
+    {
+    }
+
+    void
+    module::bus_guard::lock()
+    {
+        lock_.lock();
+    }
+
+    void
+    module::bus_guard::unlock()
+    {
+        lock_.unlock();
     }
 
     module::module()
@@ -256,7 +287,13 @@ namespace module
           eeprom_format(-1),
           run_task(hw::run::run_task::nop),
           control_task(hw::run::control_task::nop),
+          fifo_buffers(default_fifo_buffers),
+          fifo_run_wait_usecs(default_fifo_run_wait_usec),
+          fifo_idle_wait_usecs(default_fifo_idle_wait_usec),
+          fifo_hold_usecs(default_fifo_hold_usec),
           reg_trace(false),
+          fifo_worker_running(false),
+          fifo_worker_finished(false),
           in_use(0),
           present_(false),
           online_(false),
@@ -282,12 +319,18 @@ namespace module
           channel_var_descriptors(std::move(m.channel_var_descriptors)),
           channels(std::move(m.channels)),
           firmware(std::move(m.firmware)),
-          run_task(m.run_task),
-          control_task(m.control_task),
+          run_task(m.run_task.load()),
+          control_task(m.control_task.load()),
+          fifo_buffers(m.fifo_buffers),
+          fifo_run_wait_usecs(m.fifo_run_wait_usecs.load()),
+          fifo_idle_wait_usecs(m.fifo_idle_wait_usecs.load()),
+          fifo_hold_usecs(m.fifo_hold_usecs.load()),
           reg_trace(m.reg_trace),
+          fifo_worker_running(false),
+          fifo_worker_finished(false),
           in_use(0),
-          present_(m.present_),
-          online_(m.online_),
+          present_(m.present_.load()),
+          online_(m.online_.load()),
           comms_fpga(m.comms_fpga),
           fippi_fpga(m.fippi_fpga),
           have_hardware(false),
@@ -308,6 +351,11 @@ namespace module
         m.channels.clear();
         m.run_task = hw::run::run_task::nop;
         m.control_task = hw::run::control_task::nop;
+        m.fifo_buffers = default_fifo_buffers;
+        m.fifo_run_wait_usecs = default_fifo_run_wait_usec;
+        m.fifo_idle_wait_usecs = default_fifo_idle_wait_usec;
+        m.fifo_hold_usecs = default_fifo_hold_usec;
+        m.reg_trace = false;
         m.present_ = false;
         m.online_ = false;
         m.comms_fpga = false;
@@ -352,11 +400,15 @@ namespace module
         channel_var_descriptors = std::move(m.channel_var_descriptors);
         module_vars = std::move(m.module_vars);
         channels = std::move(m.channels);
-        run_task = m.run_task;
-        control_task = m.control_task;
+        run_task = m.run_task.load();
+        control_task = m.control_task.load();
+        fifo_buffers = m.fifo_buffers;
+        fifo_run_wait_usecs = m.fifo_run_wait_usecs.load();
+        fifo_idle_wait_usecs = m.fifo_idle_wait_usecs.load();
+        fifo_hold_usecs = m.fifo_hold_usecs.load();
         reg_trace = m.reg_trace;
-        present_ = m.present_;
-        online_ = m.online_;
+        present_ = m.present_.load();
+        online_ = m.online_.load();
         comms_fpga = m.comms_fpga;
         fippi_fpga = m.fippi_fpga;
         have_hardware = m.have_hardware;
@@ -374,6 +426,10 @@ namespace module
         m.eeprom_format = -1;
         m.run_task = hw::run::run_task::nop;
         m.control_task = hw::run::control_task::nop;
+        m.fifo_buffers = default_fifo_buffers;
+        m.fifo_run_wait_usecs = default_fifo_run_wait_usec;
+        m.fifo_idle_wait_usecs = default_fifo_idle_wait_usec;
+        m.fifo_hold_usecs = default_fifo_hold_usec;
         m.reg_trace = false;
         m.present_ = false;
         m.online_ = false;
@@ -385,23 +441,23 @@ namespace module
     }
 
     bool
-    module::present()
+    module::present() const
     {
-        lock_guard guard(lock_);
-        return present_;
+        return present_.load();
     }
 
     bool
-    module::online()
+    module::online() const
     {
-        lock_guard guard(lock_);
-        return online_;
+        return online_.load();
     }
 
     void
     module::open(size_t device_number)
     {
         log(log::debug) << "module: open: device-number=" << device_number;
+
+        lock_guard guard(lock_);
 
         if (module_var_descriptors.empty() ||
             channel_var_descriptors.empty()) {
@@ -410,7 +466,7 @@ namespace module
                         "no module or channel variable descriptors");
         }
 
-        if (online_) {
+        if (online()) {
             throw error(number, slot,
                         error::code::module_already_open,
                         "module already open");
@@ -532,12 +588,19 @@ namespace module
             }
 
             present_ = true;
+
+            fifo_pool.create(fifo_buffers, hw::max_dma_block_size);
+            start_fifo_worker();
+
+            hw::run::end(*this);
         }
     }
 
     void
     module::close()
     {
+        lock_guard guard(lock_);
+
         if (device && device->device_number >= 0) {
             PLX_STATUS ps_dma;
             PLX_STATUS ps_unmap_bar = PLX_STATUS_OK;
@@ -546,6 +609,13 @@ namespace module
             log(log::debug) << module_label(*this)
                             << "close: device-number="
                             << device->device_number;
+
+            /*
+             * Stop the FIFO worker and destroy the buffer pool.
+             */
+            stop_fifo_worker();
+            fifo_data.flush();
+            fifo_pool.destroy();
 
             /*
              * Close the DMA channel.
@@ -646,7 +716,7 @@ namespace module
     void
     module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp)
     {
-        if (online_) {
+        if (online()) {
             log(log::warning) << "boot online module";
         }
 
@@ -783,7 +853,7 @@ namespace module
     module::add(firmware::module& fw)
     {
         lock_guard guard(lock_);
-        if (online_) {
+        if (online()) {
             throw error(number, slot,
                         error::code::module_invalid_operation,
                         "module is online when setting firmware");
@@ -1363,13 +1433,12 @@ namespace module
     {
         online_check();
         lock_guard guard(lock_);
-        if (run_task != hw::run::run_task::nop &&
-            run_task != hw::run::run_task::list_mode) {
+        if (run_task == hw::run::run_task::nop) {
             log(log::warning) << module_label(*this)
-                              << "start-histogram: different task task active";
+                              << "run-end: no run active";
+        } else {
+            hw::run::end(*this);
         }
-        hw::run::end(*this);
-        run_task = hw::run::run_task::nop;
     }
 
     bool
@@ -1423,10 +1492,10 @@ namespace module
                        << "start-histograms: mode=" << int(mode);
         online_check();
         lock_guard guard(lock_);
-        if (run_task != hw::run::run_task::nop &&
-            run_task != hw::run::run_task::list_mode) {
-            log(log::warning) << module_label(*this)
-                              << "start-histogram: different run task active";
+        if (run_task != hw::run::run_task::nop) {
+            throw error(number, slot,
+                        error::code::module_invalid_operation,
+                        "module already runinng a task");
         }
         hw::run::run(*this, mode, hw::run::run_task::histogram);
     }
@@ -1438,11 +1507,12 @@ namespace module
                        << "start-listmode: mode=" << int(mode);
         online_check();
         lock_guard guard(lock_);
-        if (run_task != hw::run::run_task::nop &&
-            run_task != hw::run::run_task::list_mode) {
-            log(log::warning) << module_label(*this)
-                              << "start-listmode: different run task active";
+        if (run_task != hw::run::run_task::nop) {
+            throw error(number, slot,
+                        error::code::module_invalid_operation,
+                        "module already runinng a task");
         }
+        fifo_data.flush();
         hw::run::run(*this, mode, hw::run::run_task::list_mode);
     }
 
@@ -1511,6 +1581,7 @@ namespace module
         log(log::info) << module_label(*this)
                        << "read-histogram: channel=" << channel
                        << " length=" << values.size();
+        online_check();
         lock_guard guard(lock_);
         if (run_task != hw::run::run_task::histogram) {
             throw error(number, slot,
@@ -1528,6 +1599,7 @@ namespace module
         log(log::info) << module_label(*this)
                        << "read-histogram: channel=" << channel
                        << " length=" << size;
+        online_check();
         lock_guard guard(lock_);
         if (run_task != hw::run::run_task::histogram) {
             throw error(number, slot,
@@ -1535,6 +1607,52 @@ namespace module
                         "run task not `histogram`");
         }
         channels[channel].read_histogram(values, size);
+    }
+
+    size_t
+    module::read_list_mode_level()
+    {
+        log(log::info) << module_label(*this)
+                       << "read-list-mode-level";
+        online_check();
+        if (!fifo_worker_running.load()) {
+            log(log::info) << module_label(*this)
+                           << "read-list-mode-level: FIFO worker not running";
+        }
+        return fifo_data.size();
+    }
+
+    void
+    module::read_list_mode(hw::words& values)
+    {
+        log(log::info) << module_label(*this)
+                       << "read-list-mode: length=" << values.size()
+                       << " fifo-size=" << fifo_data.size();
+        online_check();
+        if (!fifo_worker_running.load()) {
+            log(log::warning) << module_label(*this)
+                              << "read-list-mode: FIFO worker not running";
+        }
+        if (!fifo_data.empty()) {
+            lock_guard guard(lock_);
+            fifo_data.copy(values);
+            log(log::debug) << module_label(*this)
+                            << "read-list-mode: values=" << values.size()
+                            << " fifo-size=" << fifo_data.size();
+        }
+    }
+
+    void
+    module::read_list_mode(hw::word_ptr values, const size_t size)
+    {
+        log(log::info) << module_label(*this)
+                       << "read-list-mode: length=" << size
+                       << " fifo-size=" << fifo_data.size();
+        online_check();
+        if (!fifo_data.empty()) {
+            lock_guard guard(lock_);
+            fifo_data.copy(values, size);
+        }
     }
 
     void
@@ -1554,8 +1672,8 @@ namespace module
         out << std::boolalpha
             << "number: " << std::setw(2) << number
             << " slot: " << std::setw(2) << slot
-            << " present:" << present_
-            << " online:" << online_
+            << " present:" << present_.load()
+            << " online:" << online_.load()
             << " serial:" << serial_num
             << " rev:" << revision_label()
             << " (" << revision
@@ -1579,12 +1697,22 @@ namespace module
     module::dma_read(const hw::address source,
                      hw::word_ptr values,
                      const size_t size)
-                 {
+    {
         log(log::debug) << module_label(*this)
                         << "dma read: addr=0x" << std::hex << source
                         << " length=" << std::dec << size;
 
         online_check();
+
+        if (bus_lock_.try_lock()) {
+            bus_lock_.unlock();
+            throw error(number, slot,
+                        error::code::device_dma_failure,
+                        "bus lock not held");
+        }
+
+        util::timepoint tp;
+        tp.start();
 
         PLX_DMA_PARAMS dma_params;
 
@@ -1615,8 +1743,10 @@ namespace module
                         oss.str());
         }
 
+        tp.end();
+
         log(log::debug) << module_label(*this)
-                        << "dma read: done";
+                        << "dma read: done, period=" << tp;
     }
 
     bool
@@ -1714,6 +1844,8 @@ namespace module
     {
         write_var(param::module_var::ModCSRB, value);
         hw::run::control(*this, hw::run::control_task::program_fippi);
+
+        bus_guard guard(*this);
 
         param::value_type csr = 0xaa;
 
@@ -1837,7 +1969,7 @@ namespace module
     void
     module::online_check() const
     {
-        if (!online_) {
+        if (!online()) {
             throw error(number, slot,
                         error::code::module_offline,
                         "module is not online");
@@ -1853,6 +1985,187 @@ namespace module
             throw error(number, slot,
                         error::code::channel_number_invalid, oss.str());
         }
+    }
+
+    void
+    module::start_fifo_worker()
+    {
+        log(log::debug) << module_label(*this)
+                        << "FIFO worker: starting";
+        fifo_worker_finished = false;
+        fifo_worker_running = true;;
+        fifo_thread = std::thread(&module::fifo_worker, this);
+    }
+
+    void
+    module::stop_fifo_worker()
+    {
+        log(log::debug) << module_label(*this)
+                        << "FIFO worker: stopping";
+        fifo_worker_running = false;
+        unlock();
+        if (fifo_thread.joinable()) {
+            fifo_thread.join();
+        }
+        lock();
+    }
+
+    void
+    module::fifo_worker()
+    {
+        log(log::info) << module_label(*this)
+                       << "FIFO worker: running";
+
+        hw::memory::fifo fifo(*this);
+
+        try {
+            size_t wait_time = fifo_run_wait_usecs.load();
+            size_t hold_time = 0;
+
+            bool pool_empty_logged = false;
+            bool fifo_full_logged = false;
+
+            while (fifo_worker_running.load()) {
+                if (!online()) {
+                    hw::wait(250 * 1000);
+                    continue;
+                }
+
+                const hw::run::run_task this_run_tsk = run_task.load();
+
+                /*
+                 * If list mode is running the wait period is the currently
+                 * configured run period.
+                 *
+                 * Any other mode will decay the wait period every hold period
+                 * until capped at the idle wait period.
+                 */
+                if (this_run_tsk == hw::run::run_task::list_mode) {
+                    wait_time = fifo_run_wait_usecs.load();
+                    /*
+                     * See if the task is still running? If not the module may
+                     * have been directed to stop running by another module.
+                     */
+                    if (!hw::run::active(*this)) {
+                        fifo_worker_running = false;
+                        run_task = hw::run::run_task::nop;
+                        log(log::info) << module_label(*this)
+                                       << "FIFO worker: run not active";
+                    }
+                } else {
+                    const size_t idle_wait_time = fifo_idle_wait_usecs.load();
+                    /*
+                     * WHen the wait time is equal to the idle period nothing
+                     * further happens. The hold time should also be 0 which
+                     * means any new data will be held for the hold period.
+                     */
+                    if (wait_time > idle_wait_time) {
+                        wait_time = idle_wait_time;
+                    } else if (wait_time < idle_wait_time &&
+                               hold_time >= fifo_hold_usecs.load()) {
+                        wait_time <<= 1;
+                        if (wait_time > idle_wait_time) {
+                            wait_time = idle_wait_time;
+                        }
+                        hold_time = 0;
+                    }
+                }
+
+                /*
+                 * Loop while there is data to read. Read the FIFO if the level
+                 * is more than the DMA block size or it has sat in the FIFO
+                 * for the hold time. The hold time is reset on every transfer
+                 * from the FIFO no matter the run task state. If we are idle
+                 * and reading data the hold time is reset so the wait time
+                 * only starts to decay once we do not see data.
+                 */
+                while (fifo_worker_running.load()) {
+                    size_t level = fifo.level();
+                    if (level == 0 ||
+                        (hold_time < fifo_hold_usecs.load() &&
+                         level < hw::max_dma_block_size)) {
+                        break;
+                    }
+                    buffer::handle buf;
+                    if (fifo_pool.empty()) {
+                        if (!pool_empty_logged) {
+                            log(log::warning) << module_label(*this)
+                                              << "FIFO worker: pool empty,"
+                                              <<" compacting queue ...";
+                        }
+                        fifo_data.compact();
+                    }
+                    /*
+                     * If the pool is still empty after compacting wait
+                     * letting the FIFO fill.
+                     */
+                    if (!fifo_pool.empty()) {
+                        log(log::debug) << module_label(*this)
+                                        << "FIFO read, level=" << level;
+                        buf = fifo_pool.request();
+                        if (level > buf->capacity()) {
+                            level = buf->capacity();
+                        }
+                        buf->resize(level);
+                        fifo.read(*buf, level);
+                        fifo_data.push(buf);
+                        hold_time = 0;
+                        pool_empty_logged = false;
+                        fifo_full_logged = false;
+                    } else {
+                        if (!pool_empty_logged) {
+                            log(log::warning) << module_label(*this)
+                                              << "FIFO worker: pool empty";
+                            pool_empty_logged = true;
+                        }
+                        if (!fifo_full_logged &&
+                            level >= hw::fifo_size_words) {
+                            fifo_full_logged = true;
+                            log(log::warning) << module_label(*this)
+                                              << "FIFO worker: FIFO full";
+                        }
+                        break;
+                    }
+                }
+
+                /*
+                 * Nap the wait time.
+                 */
+                hw::wait(wait_time);
+
+                /*
+                 * Update the hold time if below the hold period.
+                 */
+                if (hold_time < fifo_hold_usecs.load()) {
+                    hold_time += wait_time;
+                }
+            }
+
+            /*
+             * Flush the buffers from the queue back into the pool. Any user
+             * active calls should be done in a few seconds.
+             */
+            fifo_data.flush();
+            size_t wait_period = 5 * 1000 / 10;
+            while (wait_period-- > 0) {
+                if (fifo_pool.full()) {
+                    break;
+                }
+                hw::wait(10000);
+            }
+        } catch (error& e) {
+            log(log::error) << "FIFO worker: " << e;
+        } catch (std::exception& e) {
+            log(log::error) << "FIFO worker: error: " << e.what();
+        } catch (...) {
+            log(log::error) << "FIFO worker: unhandled exception";
+        }
+
+        log(log::info) << module_label(*this)
+                       << "FIFO worker: finishing";
+
+        fifo_worker_running = false;
+        fifo_worker_finished = true;
     }
 
     void

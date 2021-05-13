@@ -87,6 +87,7 @@ static void hist_resume(xia::pixie::crate::crate& crate, options& cmd);
 static void hist_save(xia::pixie::crate::crate& crate, options& cmd);
 static void list_start(xia::pixie::crate::crate& crate, options& cmd);
 static void list_resume(xia::pixie::crate::crate& crate, options& cmd);
+static void list_save(xia::pixie::crate::crate& crate, options& cmd);
 static void run_active(xia::pixie::crate::crate& crate, options& cmd);
 static void run_end(xia::pixie::crate::crate& crate, options& cmd);
 static void par_write(xia::pixie::crate::crate& crate, options& cmd);
@@ -94,6 +95,7 @@ static void par_read(xia::pixie::crate::crate& crate, options& cmd);
 static void var_write(xia::pixie::crate::crate& crate, options& cmd);
 static void var_read(xia::pixie::crate::crate& crate, options& cmd);
 static void stats(xia::pixie::crate::crate& crate, options& cmd);
+static void wait(xia::pixie::crate::crate& crate, options& cmd);
 
 static const std::map<std::string, command_def> command_defs =
 {
@@ -113,11 +115,13 @@ static const std::map<std::string, command_def> command_defs =
     { "hist-save",   { { 1, 2, 3 }, "save a module's histogram to a file" } },
     { "list-start",  { { 1 },       "start module list mode" } },
     { "list-resume", { { 1 },       "resume module list mode" } },
+    { "list-save",   { { 3 },       "save a module's histogram to a file" } },
     { "par-read",    { { 2, 3 },    "read module/channel parameter" } },
     { "par-write",   { { 3, 4 },    "write module/channel parameter" } },
     { "var-read",    { { 2, 3, 4 }, "read module/channel variable" } },
     { "var-write",   { { 3, 4, 5 }, "write module/channel variable" } },
-    { "stats",       { { 2, 3 },    "module/channel stats" } }
+    { "stats",       { { 2, 3 },    "module/channel stats" } },
+    { "wait",        { { 1 },    "wait a number of msecs" } }
 };
 
 static const std::vector<cmd_handler> cmd_handlers = {
@@ -135,13 +139,15 @@ static const std::vector<cmd_handler> cmd_handlers = {
     { "hist-save",   hist_save },
     { "list-start",  list_start },
     { "list-resume", list_resume },
+    { "list-save",   list_save },
     { "run-active",  run_active },
     { "run-end",     run_end },
     { "par-write",   par_write },
     { "par-read",    par_read },
     { "var-write",   var_write },
     { "var-read",    var_read },
-    { "stats",       stats }
+    { "stats",       stats },
+    { "wait",        wait },
 };
 
 static std::string adc_prefix = "adc-trace";
@@ -434,6 +440,63 @@ list_resume(xia::pixie::crate::crate& crate, options& cmd)
 }
 
 static void
+list_save(xia::pixie::crate::crate& crate, options& cmd)
+{
+    auto mod_num = get_value<size_t>(cmd[1]);
+    auto seconds = get_value<size_t>(cmd[2]);
+    auto name = cmd[3];
+    if (seconds == 0) {
+        throw std::runtime_error(
+            std::string("list mode save period is 0")
+        );
+    }
+    std::ofstream out(name, std::ios::binary);
+    if (!out) {
+        throw std::runtime_error(
+            std::string("list mode file open: ") + name +
+            ": " + std::strerror(errno)
+        );
+    }
+    const size_t poll_period_usecs = 100 * 1000;
+    size_t secs_without_data = 0;
+    size_t total = 0;
+    size_t secs = 0;
+    while (secs < seconds) {
+        size_t polls = 1 * 1000 * 1000 / poll_period_usecs;
+        size_t last_total = total;
+        while (polls-- > 0) {
+            size_t data_available;
+            do {
+                data_available = crate[mod_num].read_list_mode_level();
+                if (data_available > 0) {
+                    xia::pixie::hw::words lm;
+                    crate[mod_num].read_list_mode(lm);
+                    total += lm.size();
+                    out.write(reinterpret_cast<char*>(lm.data()),
+                              lm.size() * sizeof(xia::pixie::hw::word));
+                    secs_without_data = 0;
+                }
+            } while (data_available > 0);
+            xia::pixie::hw::wait(poll_period_usecs);
+        }
+        if ((total - last_total) == 0) {
+            ++secs_without_data;
+            if (secs_without_data > 5) {
+                std::cout << "warning: no data recieved" << std::endl;
+                secs_without_data = 0;
+            }
+        }
+        ++secs;
+    }
+    std::cout << "data received: " << total
+              << " bytes, rate: " << double(total) / seconds << " bytes/sec"
+              << std::endl;
+    xia_log(xia_log::info) << "data received: " << total
+                           << " bytes, rate: "
+                           << double(total) / seconds << " bytes/sec";
+}
+
+static void
 run_end(xia::pixie::crate::crate& crate, options& cmd)
 {
     auto mod_num = get_value<size_t>(cmd[1]);
@@ -644,6 +707,14 @@ stats(xia::pixie::crate::crate& crate, options& cmd)
                   << std::endl;
         }
     }
+}
+
+static void
+wait(xia::pixie::crate::crate& , options& cmd)
+{
+    auto msecs = get_value<size_t>(cmd[1]);
+    std::cout << "waiting " << msecs << " msecs" << std::endl;
+    xia::pixie::hw::wait(msecs * 1000);
 }
 
 static bool

@@ -272,7 +272,7 @@ namespace param
         { module_var::TrigConfig,           enable,  rw,  4, "TrigConfig" },
         { module_var::HostRunTimePreset,    enable,  rw,  1, "HostRunTimePreset" },
         { module_var::PowerUpInitDone,      enable,  rw,  1, "PowerUpInitDone" },
-        { module_var::U00,                  disable, rw,  1, "U00" },
+        { module_var::U00,                  disable, rw,  7, "U00" },
         { module_var::RealTimeA,            enable,  ro,  1, "RealTimeA" },
         { module_var::RealTimeB,            enable,  ro,  1, "RealTimeB" },
         { module_var::RunTimeA,             enable,  ro,  1, "RunTimeA" },
@@ -363,7 +363,7 @@ namespace param
         { channel_var::ChanEventsA,       enable,  ro,  1, "ChanEventsA" },
         { channel_var::ChanEventsB,       enable,  ro,  1, "ChanEventsB" },
         { channel_var::AutoTau,           enable,  ro,  1, "AutoTau" },
-        { channel_var::U30,               disable, ro,  1, "U30" }
+        { channel_var::U30,               disable, ro, 11, "U30" }
     };
 
     static const module_var module_param_var_map[] = {
@@ -576,10 +576,10 @@ namespace param
          * The var file of addresses are not in the same order as the logcal
          * descriptor table. Sort by address then check the gaps.
          */
-        for (size_t a = 1; a < addresses.size(); ++a) {
+        for (size_t a = 0; a < addresses.size() - 1; ++a) {
             size_t desc = std::get<0>(addresses[a]);
             hw::address addr = std::get<1>(addresses[a]);
-            size_t gap = addr - std::get<1>(addresses[a - 1]);
+            size_t gap = std::get<1>(addresses[a + 1]) - addr;
             size_t gap_num_channels = gap / channel_descs[desc].size;
             if (gap_num_channels != num_channels) {
                 throw error(error::code::channel_invalid_var,

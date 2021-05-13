@@ -147,6 +147,8 @@ struct queue
         return count_.load();
     }
 
+    void flush();
+
     void output(std::ostream& out);
 
 private:

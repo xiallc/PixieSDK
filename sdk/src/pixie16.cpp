@@ -81,6 +81,14 @@ struct stats_legacy {
 typedef stats_legacy* stats_legacy_ptr;
 
 /*
+ * Module FIFO realtime default settings.
+ */
+static const size_t fifo_buffers = 100;
+static const size_t fifo_run_wait_usecs = 2000;
+static const size_t fifo_idle_wait_usecs = 150000;
+static const size_t fifo_hold_usecs = 50000;
+
+/*
  * The crate. We only handle a single crate with the legacy API.
  */
 static xia::pixie::crate::crate crate;
@@ -358,10 +366,30 @@ PIXIE_EXPORT int PIXIE_API
 PixieCheckExternalFIFOStatus(unsigned int* nFIFOWords,
                              unsigned short ModNum)
 {
-    xia_log(xia_log::info) << "PixieCheckExternalFIFOStatus: ModNum=" << ModNum;
+    xia_log(xia_log::info) << "PixieCheckExternalFIFOStatus: ModNum="
+                           << ModNum;
 
-    (void) nFIFOWords;
-    return not_supported();
+    int result = 0;
+
+    try {
+        crate.ready();
+        xia::pixie::crate::module_handle module(crate, ModNum);
+        *nFIFOWords = module->read_list_mode_level();
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+        return e.return_code();
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::api_result_unknown_error();
+    } catch (...) {
+        if (throw_unhandled) {
+            throw;
+        }
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::api_result_unknown_error();
+    }
+
+    return result;
 }
 
 PIXIE_EXPORT int PIXIE_API
@@ -638,6 +666,15 @@ PixieInitSystem(unsigned short NumModules,
                 numbers.push_back(number_slot(i, PXISlotMap[i]));
             }
             crate.assign(numbers);
+        }
+
+        /*
+         * Set the FIFO realtime settings.
+         */
+        for (auto& module : crate.modules) {
+          module->fifo_buffers = fifo_buffers;
+          module->fifo_run_wait_usecs = fifo_run_wait_usecs;
+          module->fifo_hold_usecs = fifo_hold_usecs;
         }
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;

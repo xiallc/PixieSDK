@@ -71,7 +71,7 @@ TEST_SUITE("xia::buffer") {
             {
                 xia::buffer::handle buf = pool.request();
                 CHECK_THROWS_WITH_AS(pool.destroy(),
-                                     "pool destory made while busy",
+                                     "pool destroy made while busy",
                                      xia::buffer::error);
             }
             pool.destroy();
