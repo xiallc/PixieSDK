@@ -75,8 +75,8 @@ TEST_SUITE("xia::pixie::channel") {
     TEST_CASE("VOFFSET") {
         xia::pixie::sim::crate crate;
         setup_simulation(crate, 15, 16, 250, 16);
-        double expected_par = 0.77;
-        size_t expected_var = 49588;
+        const double expected_par = 0.77;
+        const size_t expected_var = 49588;
         crate[0].write("VOFFSET", 0, expected_par);
         CHECK(crate[0].read_var("OffsetDAC", 0, 0) == expected_var);
         CHECK(doctest::Approx(crate[0].read("VOFFSET", 0)).epsilon(0.001) == expected_par);
