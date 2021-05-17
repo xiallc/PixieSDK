@@ -146,18 +146,8 @@ module::init_values()
 }
 
 void
-module::load_var_defaults(const std::string& file)
+module::load_var_defaults(std::istream& input)
 {
-    log(log::info) << "sim: module: load var defaults: " << file;
-
-    std::ifstream input(file, std::ios::in | std::ios::binary);
-    if (!input) {
-        throw error(number, slot,
-                    error::code::file_read_failure,
-                    std::string("module var defaults open: ") + file +
-                    ": " + std::strerror(errno));
-    }
-
     for (std::string line; std::getline(input, line); ) {
         line = line.substr(0, line.find('#', 0));
         if (!line.empty()) {
@@ -191,6 +181,22 @@ module::load_var_defaults(const std::string& file)
             }
         }
     }
+}
+
+void
+module::load_var_defaults(const std::string& file)
+{
+    log(log::info) << "sim: module: load var defaults: " << file;
+
+    std::ifstream input(file, std::ios::in | std::ios::binary);
+    if (!input) {
+        throw error(number, slot,
+                    error::code::file_read_failure,
+                    std::string("module var defaults open: ") + file +
+                    ": " + std::strerror(errno));
+    }
+
+    load_var_defaults(input);
 
     input.close();
 }

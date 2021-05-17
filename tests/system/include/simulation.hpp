@@ -73,6 +73,7 @@ public:
     void init_values() override;
 
     void load_var_defaults(const std::string& file);
+    void load_var_defaults(std::istream& input);
 
     std::unique_ptr<uint8_t[]> pci_memory;
     std::string var_defaults;
