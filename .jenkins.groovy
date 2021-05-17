@@ -36,7 +36,7 @@ pipeline {
                             }
                         }
                     }
-                    stage("Legacy Test Suite") {
+                    stage("Legacy") {
                         steps{
                             dir("build-${RELEASE_TYPE}") {
                                 sh '''
@@ -46,22 +46,24 @@ pipeline {
                             }
                         }
                     }
-                    stage("Unit Suite") {
+                    stage("Unit") {
                         steps{
-                            dir("build-${RELEASE_TYPE}") {
-                                sh '''
-                                pwd
-                                ./tests/unit/pixie_sdk_unit_test_runner
-                                '''
+                            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                                dir("build-${RELEASE_TYPE}") {
+                                    sh '''
+                                    pwd
+                                    ./tests/unit/pixie_sdk_unit_test_runner
+                                    '''
+                                }
                             }
                         }
                     }
-                    stage("Functional Suite") {
+                    stage("Functional") {
                         steps{
                             dir("build-${RELEASE_TYPE}") {
                                 sh '''
                                 pwd
-                                ./tests/unit/pixie_sdk_functional_test_runner
+                                ./tests/functional/pixie_sdk_functional_test_runner
                                 '''
                             }
                         }
