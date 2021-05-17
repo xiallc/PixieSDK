@@ -46,12 +46,22 @@ pipeline {
                             }
                         }
                     }
-                    stage("Test Suite") {
+                    stage("Unit Suite") {
                         steps{
                             dir("build-${RELEASE_TYPE}") {
                                 sh '''
                                 pwd
                                 ./tests/unit/pixie_sdk_unit_test_runner
+                                '''
+                            }
+                        }
+                    }
+                    stage("Functional Suite") {
+                        steps{
+                            dir("build-${RELEASE_TYPE}") {
+                                sh '''
+                                pwd
+                                ./tests/unit/pixie_sdk_functional_test_runner
                                 '''
                             }
                         }

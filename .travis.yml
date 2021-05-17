@@ -65,3 +65,4 @@ script:
   - make
   - ./tests/unit/legacy_unit_test_runner
   - ./tests/unit/pixie_sdk_unit_test_runner
+  - ./tests/unit/pixie_sdk_functional_test_runner
