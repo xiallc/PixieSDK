@@ -158,6 +158,7 @@ struct ieee_float {
     bool operator==(const double dec_num) const;
 
     operator double() const;
+    operator value_type() const;
 
 private:
     value_type in(const double dec_num) const;

@@ -326,6 +326,11 @@ ieee_float::operator double() const
     return out();
 }
 
+ieee_float::operator value_type() const
+{
+    return value;
+}
+
 ieee_float::value_type
 ieee_float::in(const double dec_num) const
 {

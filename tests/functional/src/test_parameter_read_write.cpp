@@ -125,4 +125,11 @@ TEST_SUITE("xia::pixie::channel") {
             CHECK(doctest::Approx(crate[2].read("XDT", 0)) == expected_par);
         }
     }
+    TEST_CASE("TAU") {
+        const double expected_par = 0.2;
+        const size_t expected_var = 1045220556;
+        crate[1].write("TAU", 0, expected_par);
+        CHECK(crate[1].read_var("PreampTau", 0, 0) == expected_var);
+        CHECK(doctest::Approx(crate[1].read("TAU", 0)).epsilon(0.001) == expected_par);
+    }
 }
