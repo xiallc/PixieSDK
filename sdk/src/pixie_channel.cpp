@@ -1525,7 +1525,7 @@ channel::ftrig_out_delay()
 void
 channel::ftrig_out_delay(double value)
 {
-    ///@TODO Verify that the implicit conversion of a negative double to UINT_MAX is what we want
+    ///@TODO Need range checking to prevent negative values. For now negative values get set to max.
     module::module& mod = module.get();
 
     param::value_type ftrigoutdelay = std::round(value * config.fpga_clk_mhz);
@@ -1577,6 +1577,7 @@ channel::chan_trig_stretch()
 void
 channel::chan_trig_stretch(double value)
 {
+    ///@TODO Need range checking here. Negative values get set to max.
     module::module& mod = module.get();
 
     param::value_type chantrigstretch = std::round(value * config.fpga_clk_mhz);
