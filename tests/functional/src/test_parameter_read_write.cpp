@@ -119,25 +119,21 @@ TEST_SUITE("Parameter Reads and Writes") {
             double expected_var = std::round(value * crate[1].configs[0].fpga_clk_mhz);
             crate[1].write("ChanTrigStretch", 0, value);
             CHECK(crate[1].read_var("ChanTrigStretch", 0, 0) == expected_var);
-            CHECK(doctest::Approx(crate[1].read("ChanTrigStretch", 0)).epsilon(0.1) == value);
+            CHECK(doctest::Approx(crate[1].read("ChanTrigStretch", 0)).epsilon(0.005) == value);
         }
         SUBCASE("Too Small") {
-            const double value = 0.00000001;
             const double expected_var = 1;
-            const double expected_par = std::round(expected_var / crate[1].configs[0].fpga_clk_mhz);
-            crate[1].write("ChanTrigStretch", 0, value);
+            const double expected_par = expected_var / crate[1].configs[0].fpga_clk_mhz;
+            crate[1].write("ChanTrigStretch", 0, 0.00000001);
             CHECK(crate[1].read_var("ChanTrigStretch", 0, 0) == expected_var);
-            CHECK(doctest::Approx(crate[1].read("ChanTrigStretch", 0)).epsilon(0.1) ==
-                  expected_par);
+            CHECK(crate[1].read("ChanTrigStretch", 0) == expected_par);
         }
         SUBCASE("Too Big") {
-            const double value = 10000000;
             const double expected_var = 4095;
-            const double expected_par = std::round(expected_var / crate[1].configs[0].fpga_clk_mhz);
-            crate[1].write("ChanTrigStretch", 0, value);
+            const double expected_par = expected_var / crate[1].configs[0].fpga_clk_mhz;
+            crate[1].write("ChanTrigStretch", 0, 10000000);
             CHECK(crate[1].read_var("ChanTrigStretch", 0, 0) == expected_var);
-            CHECK(doctest::Approx(crate[1].read("ChanTrigStretch", 0)).epsilon(0.1) ==
-                  expected_par);
+            CHECK(crate[1].read("ChanTrigStretch", 0) == expected_par);
         }
     }
     TEST_CASE("ENERGY_FLATTOP") {}
