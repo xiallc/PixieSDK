@@ -49,8 +49,7 @@ static xia::pixie::sim::crate crate;
 static const std::vector<std::string> module_defs = {
     "device-number=0,slot=2, revision=13, eeprom-format=1, serial-num=250, num-channels=16, adc-msps=100, adc-bits=16, adc-clk-div=1",
     "device-number=1,slot=3, revision=15, eeprom-format=1, serial-num=1000, num-channels=16, adc-msps=250, adc-bits=16, adc-clk-div=1",
-    "device-number=2,slot=4, revision=15, eeprom-format=1, serial-num=1001, num-channels=16, adc-msps=500, adc-bits=14, adc-clk-div=1"
-};
+    "device-number=2,slot=4, revision=15, eeprom-format=1, serial-num=1001, num-channels=16, adc-msps=500, adc-bits=14, adc-clk-div=1"};
 
 static const std::vector<std::string> firmware_defs = {
     "version=sim, revision=13, adc-msps=100, adc-bits=16, device=sys, file=@PROJECT_SOURCE_DIR@/tests/assets/simulation/sim_sys.bin",
@@ -82,8 +81,9 @@ void setup_simulation() {
     crate.probe();
 }
 
-TEST_SUITE("xia::pixie::channel") {
+TEST_SUITE("Parameter Reads and Writes") {
     TEST_CASE("VOFFSET") {
+        ///@TODO We could maybe move this setup to a more communal spot, but this works for now.
         setup_simulation();
         const double expected_par = 0.77;
         const size_t expected_var = 49588;
