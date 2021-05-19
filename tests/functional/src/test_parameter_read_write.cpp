@@ -141,7 +141,39 @@ TEST_SUITE("Parameter Reads and Writes") {
     TEST_CASE("energy_risetime_flattop") {}
     TEST_CASE("ExtTrigStretch") {}
     TEST_CASE("FASTTRIGBACKLEN") {}
-    TEST_CASE("FtrigoutDelay") {}
+    TEST_CASE("FtrigoutDelay") {
+        const double max_bcd = 255;
+        const double max_fh = 511;
+        SUBCASE("Rev D - 100 MSPS - Happy Path") {
+            const double value = 0.3;
+            double expected_var = std::round(value * crate[0].configs[0].fpga_clk_mhz);
+            crate[0].write("FtrigoutDelay", 0, value);
+            CHECK(crate[0].read_var("FtrigoutDelay", 0, 0) == expected_var);
+            CHECK(doctest::Approx(crate[0].read("FtrigoutDelay", 0)).epsilon(0.005) == value);
+        }
+        SUBCASE("Rev D - 100 MSPS - Too Big") {
+            crate[0].write("FtrigoutDelay", 0, 10000000);
+            CHECK(crate[0].read_var("FtrigoutDelay", 0, 0) == max_bcd);
+            CHECK(crate[0].read("FtrigoutDelay", 0) == max_bcd / crate[0].configs[0].fpga_clk_mhz);
+        }
+        SUBCASE("Rev F - 250 MSPS - Happy Path") {
+            const double value = 0.3;
+            double expected_var = std::round(value * crate[1].configs[0].fpga_clk_mhz);
+            crate[1].write("FtrigoutDelay", 0, value);
+            CHECK(crate[1].read_var("FtrigoutDelay", 0, 0) == expected_var);
+            CHECK(doctest::Approx(crate[1].read("FtrigoutDelay", 0)).epsilon(0.005) == value);
+        }
+        SUBCASE("Rev F - 250 MSPS - Negative") {
+            crate[1].write("FtrigoutDelay", 0, -0.3);
+            CHECK(crate[1].read_var("FtrigoutDelay", 0, 0) == max_fh);
+            CHECK(crate[1].read("FtrigoutDelay", 0) == max_fh / crate[1].configs[0].fpga_clk_mhz);
+        }
+        SUBCASE("Rev F - 250 MSPS - Too Big") {
+            crate[1].write("FtrigoutDelay", 0, 10000000);
+            CHECK(crate[1].read_var("FtrigoutDelay", 0, 0) == max_fh);
+            CHECK(crate[1].read("FtrigoutDelay", 0) == max_fh / crate[1].configs[0].fpga_clk_mhz);
+        }
+    }
     TEST_CASE("INTEGRATOR") {}
     TEST_CASE("QDCLenX") {}
     TEST_CASE("TAU") {
