@@ -1159,6 +1159,8 @@ channel::cfd_delay()
 void
 channel::cfd_delay(double value)
 {
+    ///@TODO Need range checking to prevent negative values.
+
     module::module& mod = module.get();
 
     param::value_type cfddelay = std::round(value * config.fpga_clk_mhz);
@@ -1191,6 +1193,7 @@ channel::cfd_scale()
 void
 channel::cfd_scale(double value)
 {
+    ///@TODO Need range checking to prevent negative values.
     module::module& mod = module.get();
 
     param::value_type cfdscale = value;
@@ -1290,6 +1293,8 @@ channel::qdc_len(param::channel_param par)
 void
 channel::qdc_len(param::channel_param par, double value)
 {
+    ///@TODO Need range checking to prevent negative values.
+
     module::module& mod = module.get();
 
     param::channel_var var;
@@ -1360,6 +1365,8 @@ channel::ext_trig_stretch()
 void
 channel::ext_trig_stretch(double value)
 {
+    ///@TODO Need range checking to prevent negative values.
+    ///@Note this logic is identical to channel::chan_trig_stretch and channel::veto_stretch.
     module::module& mod = module.get();
 
     param::value_type exttrigstretch = std::round(value * config.fpga_clk_mhz);
@@ -1392,6 +1399,8 @@ channel::veto_stretch()
 void
 channel::veto_stretch(double value)
 {
+    ///@TODO Need range checking to prevent negative values.
+    ///@Note this logic is identical to channel::chan_trig_stretch and channel::ext_trig_stretch.
     module::module& mod = module.get();
 
     param::value_type vetostretch = std::round(value * config.fpga_clk_mhz);
@@ -1424,6 +1433,7 @@ channel::multiplicity_mask_l()
 void
 channel::multiplicity_mask_l(double value)
 {
+    ///@TODO Need range checking to prevent negative values.
     module::module& mod = module.get();
 
     param::value_type multiplicitymaskl = value;
@@ -1449,6 +1459,7 @@ channel::multiplicity_mask_h()
 void
 channel::multiplicity_mask_h(double value)
 {
+    ///@TODO Need range checking to prevent negative values.
     module::module& mod = module.get();
 
     param::value_type multiplicitymaskh = value;
@@ -1474,6 +1485,8 @@ channel::extern_delay_len()
 void
 channel::extern_delay_len(double value)
 {
+    ///@TODO Need range checking to prevent negative values. For now negative values get set to max.
+    ///@NOTE This function's logic is identical to channel::ftrig_out_delay, maybe we can simplify?
     module::module& mod = module.get();
 
     param::value_type externdelaylen = std::round(value * config.fpga_clk_mhz);
@@ -1578,6 +1591,7 @@ void
 channel::chan_trig_stretch(double value)
 {
     ///@TODO Need range checking here. Negative values get set to max.
+    ///@Note this logic is identical to channel::veto_stretch and channel::ext_trig_stretch.
     module::module& mod = module.get();
 
     param::value_type chantrigstretch = std::round(value * config.fpga_clk_mhz);
