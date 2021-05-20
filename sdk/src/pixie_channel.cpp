@@ -74,7 +74,7 @@ static const size_t FASTTRIGBACKLEN_MIN_125MHZFIPCLK = 2;
 static const size_t FASTTRIGBACKLEN_MAX = 4095;
 static const size_t CCSRA_ENARELAY = 14;
 static const size_t CFDDELAY_MIN = 1;
-static const size_t CFDDELAY_MAX = 1;
+static const size_t CFDDELAY_MAX = 63;
 static const size_t CFDSCALE_MAX = 7;
 static const size_t CFDTHRESH_MIN = 1;
 static const size_t CFDTHRESH_MAX = 65535;
@@ -1170,7 +1170,7 @@ channel::cfd_delay(double value)
         cfddelay = CFDDELAY_MAX;
     }
 
-     mod.write_var(param::channel_var::CFDScale, cfddelay, number);
+     mod.write_var(param::channel_var::CFDDelay, cfddelay, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }

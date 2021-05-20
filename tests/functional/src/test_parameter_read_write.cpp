@@ -110,9 +110,72 @@ TEST_SUITE("Parameter Reads and Writes") {
         }
     }
     TEST_CASE("BINFACTOR") {}
-    TEST_CASE("CFDDelay") {}
-    TEST_CASE("CFDScale") {}
-    TEST_CASE("CFDThresh") {}
+    TEST_CASE("CFDDelay") {
+        const double min = 1;
+        const double max = 63;
+        const double fpga_clk_mhz = crate[1].configs[0].fpga_clk_mhz;
+        SUBCASE("Happy Path") {
+            const double value = 0.1;
+            const double expected_var = std::round(value * fpga_clk_mhz);
+            crate[1].write("CFDDelay", 0, value);
+            CHECK(crate[1].read_var("CFDDelay", 0, 0) == expected_var);
+            CHECK(doctest::Approx(crate[1].read("CFDDelay", 0)).epsilon(0.01) == value);
+        }
+        SUBCASE("Negative") {
+            crate[1].write("CFDDelay", 0, -3);
+            CHECK(crate[1].read_var("CFDDelay", 0, 0) == max);
+            CHECK(crate[1].read("CFDDelay", 0) == max / fpga_clk_mhz);
+        }
+        SUBCASE("Too Small") {
+            crate[1].write("CFDDelay", 0, 1.e-6);
+            CHECK(crate[1].read_var("CFDDelay", 0, 0) == min);
+            CHECK(crate[1].read("CFDDelay", 0) == min / fpga_clk_mhz);
+        }
+        SUBCASE("Too Big") {
+            crate[1].write("CFDDelay", 0, 1.e6);
+            CHECK(crate[1].read_var("CFDDelay", 0, 0) == max);
+            CHECK(crate[1].read("CFDDelay", 0) == max / fpga_clk_mhz);
+        }
+    }
+    TEST_CASE("CFDScale") {
+        const double min = 0;
+        const double max = 7;
+        SUBCASE("Happy Path") {
+            const double value = 3;
+            crate[1].write("CFDScale", 0, value);
+            CHECK(crate[1].read_var("CFDScale", 0, 0) == value);
+            CHECK(crate[1].read("CFDScale", 0) == value);
+        }
+        SUBCASE("Negative") {
+            crate[1].write("CFDScale", 0, -3);
+            CHECK(crate[1].read_var("CFDScale", 0, 0) == max);
+            CHECK(crate[1].read("CFDScale", 0) == max);
+        }
+        SUBCASE("Too Small") {
+            crate[1].write("CFDScale", 0, 1.e-6);
+            CHECK(crate[1].read_var("CFDScale", 0, 0) == min);
+            CHECK(crate[1].read("CFDScale", 0) == min);
+        }
+        SUBCASE("Too Big") {
+            crate[1].write("CFDScale", 0, 1.e6);
+            CHECK(crate[1].read_var("CFDScale", 0, 0) == max);
+            CHECK(crate[1].read("CFDScale", 0) == max);
+        }
+    }
+    TEST_CASE("CFDThresh") {
+        SUBCASE("Happy Path") {
+            const double value = 10;
+            crate[1].write("CFDThresh", 0, value);
+            CHECK(crate[1].read_var("CFDThresh", 0, 0) == value);
+            CHECK(crate[1].read("CFDThresh", 0) == value);
+        }
+        SUBCASE("Too Small") {
+            CHECK_THROWS_AS(crate[1].write("CFDThresh", 0, 0.2), xia::pixie::error::error);
+        }
+        SUBCASE("Too Big") {
+            CHECK_THROWS_AS(crate[1].write("CFDThresh", 0, 1.e6), xia::pixie::error::error);
+        }
+    }
     TEST_CASE("ChanTrigStretch") {
         SUBCASE("Happy Path - 250 MSPS") {
             const double value = 0.3;
@@ -139,7 +202,62 @@ TEST_SUITE("Parameter Reads and Writes") {
     TEST_CASE("ENERGY_FLATTOP") {}
     TEST_CASE("ENERGY_RISETIME") {}
     TEST_CASE("energy_risetime_flattop") {}
-    TEST_CASE("ExtTrigStretch") {}
+    TEST_CASE("ExtTrigStretch") {
+        SUBCASE("Happy Path - 250 MSPS") {
+            const double value = 0.3;
+            double expected_var = std::round(value * crate[1].configs[0].fpga_clk_mhz);
+            crate[1].write("ExtTrigStretch", 0, value);
+            CHECK(crate[1].read_var("ExtTrigStretch", 0, 0) == expected_var);
+            CHECK(doctest::Approx(crate[1].read("ExtTrigStretch", 0)).epsilon(0.005) == value);
+        }
+        SUBCASE("Too Small") {
+            const double expected_var = 1;
+            const double expected_par = expected_var / crate[1].configs[0].fpga_clk_mhz;
+            crate[1].write("ExtTrigStretch", 0, 0.00000001);
+            CHECK(crate[1].read_var("ExtTrigStretch", 0, 0) == expected_var);
+            CHECK(crate[1].read("ExtTrigStretch", 0) == expected_par);
+        }
+        SUBCASE("Too Big") {
+            const double expected_var = 4095;
+            const double expected_par = expected_var / crate[1].configs[0].fpga_clk_mhz;
+            crate[1].write("ExtTrigStretch", 0, 10000000);
+            CHECK(crate[1].read_var("ExtTrigStretch", 0, 0) == expected_var);
+            CHECK(crate[1].read("ExtTrigStretch", 0) == expected_par);
+        }
+    }
+    TEST_CASE("ExternDelayLen") {
+        const double max_bcd = 255;
+        const double max_fh = 511;
+        SUBCASE("Rev D - 100 MSPS - Happy Path") {
+            const double value = 0.3;
+            double expected_var = std::round(value * crate[0].configs[0].fpga_clk_mhz);
+            crate[0].write("ExternDelayLen", 0, value);
+            CHECK(crate[0].read_var("ExternDelayLen", 0, 0) == expected_var);
+            CHECK(doctest::Approx(crate[0].read("ExternDelayLen", 0)).epsilon(0.005) == value);
+        }
+        SUBCASE("Rev D - 100 MSPS - Too Big") {
+            crate[0].write("ExternDelayLen", 0, 10000000);
+            CHECK(crate[0].read_var("ExternDelayLen", 0, 0) == max_bcd);
+            CHECK(crate[0].read("ExternDelayLen", 0) == max_bcd / crate[0].configs[0].fpga_clk_mhz);
+        }
+        SUBCASE("Rev F - 250 MSPS - Happy Path") {
+            const double value = 0.3;
+            double expected_var = std::round(value * crate[1].configs[0].fpga_clk_mhz);
+            crate[1].write("ExternDelayLen", 0, value);
+            CHECK(crate[1].read_var("ExternDelayLen", 0, 0) == expected_var);
+            CHECK(doctest::Approx(crate[1].read("ExternDelayLen", 0)).epsilon(0.005) == value);
+        }
+        SUBCASE("Rev F - 250 MSPS - Negative") {
+            crate[1].write("ExternDelayLen", 0, -0.3);
+            CHECK(crate[1].read_var("ExternDelayLen", 0, 0) == max_fh);
+            CHECK(crate[1].read("ExternDelayLen", 0) == max_fh / crate[1].configs[0].fpga_clk_mhz);
+        }
+        SUBCASE("Rev F - 250 MSPS - Too Big") {
+            crate[1].write("ExternDelayLen", 0, 10000000);
+            CHECK(crate[1].read_var("ExternDelayLen", 0, 0) == max_fh);
+            CHECK(crate[1].read("ExternDelayLen", 0) == max_fh / crate[1].configs[0].fpga_clk_mhz);
+        }
+    }
     TEST_CASE("FASTTRIGBACKLEN") {}
     TEST_CASE("FtrigoutDelay") {
         const double max_bcd = 255;
@@ -175,7 +293,40 @@ TEST_SUITE("Parameter Reads and Writes") {
         }
     }
     TEST_CASE("INTEGRATOR") {}
-    TEST_CASE("QDCLenX") {}
+    TEST_CASE("QDCLen") {
+        const double min = 1;
+        const double max = 32767;
+        const double value = 1.5;
+        SUBCASE("Rev F - 500 MSPS - Happy Path") {
+            double expected_var = value * (crate[2].configs[0].adc_msps / 5.);
+            crate[2].write("QDCLen0", 0, value);
+            CHECK(crate[2].read_var("QDCLen0", 0, 0) == expected_var);
+            CHECK(crate[2].read("QDCLen0", 0) == value);
+        }
+
+        const double adc_msps = crate[1].configs[0].adc_msps;
+        SUBCASE("Rev F - 250 MSPS - Happy Path") {
+            const double expected_var = value * adc_msps;
+            crate[1].write("QDCLen0", 0, value);
+            CHECK(crate[1].read_var("QDCLen0", 0, 0) == expected_var);
+            CHECK(crate[1].read("QDCLen0", 0) == value);
+        }
+        SUBCASE("Rev F - 250 MSPS - Negative") {
+            crate[1].write("QDCLen0", 0, value * -1.);
+            CHECK(crate[1].read_var("QDCLen0", 0, 0) == max);
+            CHECK(crate[1].read("QDCLen0", 0) == max / adc_msps);
+        }
+        SUBCASE("Rev F - 250 MSPS - Too Small") {
+            crate[1].write("QDCLen0", 0, 1.e-6);
+            CHECK(crate[1].read_var("QDCLen0", 0, 0) == min);
+            CHECK(crate[1].read("QDCLen0", 0) == min / adc_msps);
+        }
+        SUBCASE("Rev F - 250 MSPS - Too Big") {
+            crate[1].write("QDCLen0", 0, 1.e6);
+            CHECK(crate[1].read_var("QDCLen0", 0, 0) == max);
+            CHECK(crate[1].read("QDCLen0", 0) == max / adc_msps);
+        }
+    }
     TEST_CASE("TAU") {
         const double expected_par = 0.2;
         const size_t expected_var = 1045220556;
@@ -189,6 +340,29 @@ TEST_SUITE("Parameter Reads and Writes") {
     TEST_CASE("TRIGGER_RISETIME") {}
     TEST_CASE("TRIGGER_THRESHOLD") {}
     TEST_CASE("update_fifo") {}
+    TEST_CASE("VetoStretch") {
+        SUBCASE("Happy Path - 250 MSPS") {
+            const double value = 0.3;
+            double expected_var = std::round(value * crate[1].configs[0].fpga_clk_mhz);
+            crate[1].write("VetoStretch", 0, value);
+            CHECK(crate[1].read_var("VetoStretch", 0, 0) == expected_var);
+            CHECK(doctest::Approx(crate[1].read("VetoStretch", 0)).epsilon(0.005) == value);
+        }
+        SUBCASE("Too Small") {
+            const double expected_var = 1;
+            const double expected_par = expected_var / crate[1].configs[0].fpga_clk_mhz;
+            crate[1].write("VetoStretch", 0, 0.00000001);
+            CHECK(crate[1].read_var("VetoStretch", 0, 0) == expected_var);
+            CHECK(crate[1].read("VetoStretch", 0) == expected_par);
+        }
+        SUBCASE("Too Big") {
+            const double expected_var = 4095;
+            const double expected_par = expected_var / crate[1].configs[0].fpga_clk_mhz;
+            crate[1].write("VetoStretch", 0, 10000000);
+            CHECK(crate[1].read_var("VetoStretch", 0, 0) == expected_var);
+            CHECK(crate[1].read("VetoStretch", 0) == expected_par);
+        }
+    }
     TEST_CASE("VOFFSET") {
         const double expected_par = 0.77;
         const size_t expected_var = 49588;
