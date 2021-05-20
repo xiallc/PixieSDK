@@ -258,7 +258,50 @@ TEST_SUITE("Parameter Reads and Writes") {
             CHECK(crate[1].read("ExternDelayLen", 0) == max_fh / crate[1].configs[0].fpga_clk_mhz);
         }
     }
-    TEST_CASE("FASTTRIGBACKLEN") {}
+    TEST_CASE("FASTTRIGBACKLEN") {
+        const double min_100 = 1;
+        const double min_250 = 2;
+        const double max = 4095;
+        SUBCASE("Rev D - 100 MSPS - Happy Path") {
+            const double value = 0.3;
+            double expected_var = std::round(value * crate[0].configs[0].fpga_clk_mhz);
+            crate[0].write("FASTTRIGBACKLEN", 0, value);
+            CHECK(crate[0].read_var("FastTrigBackLen", 0, 0) == expected_var);
+            CHECK(doctest::Approx(crate[0].read("FASTTRIGBACKLEN", 0)).epsilon(0.005) == value);
+        }
+        SUBCASE("Rev D - 100 MSPS - Too Small") {
+            crate[0].write("FASTTRIGBACKLEN", 0, 1e-6);
+            CHECK(crate[0].read_var("FastTrigBackLen", 0, 0) == min_100);
+            CHECK(crate[0].read("FASTTRIGBACKLEN", 0) == min_100 / crate[0].configs[0].fpga_clk_mhz);
+        }
+        SUBCASE("Rev D - 100 MSPS - Too Big") {
+            crate[0].write("FASTTRIGBACKLEN", 0, 1e6);
+            CHECK(crate[0].read_var("FastTrigBackLen", 0, 0) == max);
+            CHECK(crate[0].read("FASTTRIGBACKLEN", 0) == max / crate[0].configs[0].fpga_clk_mhz);
+        }
+        SUBCASE("Rev F - 250 MSPS - Happy Path") {
+            const double value = 0.3;
+            double expected_var = std::round(value * crate[1].configs[0].fpga_clk_mhz);
+            crate[1].write("FASTTRIGBACKLEN", 0, value);
+            CHECK(crate[1].read_var("FastTrigBackLen", 0, 0) == expected_var);
+            CHECK(doctest::Approx(crate[1].read("FASTTRIGBACKLEN", 0)).epsilon(0.005) == value);
+        }
+        SUBCASE("Rev F - 250 MSPS - Negative") {
+            crate[1].write("FASTTRIGBACKLEN", 0, -0.3);
+            CHECK(crate[1].read_var("FastTrigBackLen", 0, 0) == max);
+            CHECK(crate[1].read("FASTTRIGBACKLEN", 0) == max / crate[1].configs[0].fpga_clk_mhz);
+        }
+        SUBCASE("Rev F - 250 MSPS - Too Small") {
+            crate[1].write("FASTTRIGBACKLEN", 0, 1e-6);
+            CHECK(crate[1].read_var("FastTrigBackLen", 0, 0) == min_250);
+            CHECK(crate[1].read("FASTTRIGBACKLEN", 0) == min_250 / crate[1].configs[0].fpga_clk_mhz);
+        }
+        SUBCASE("Rev F - 250 MSPS - Too Big") {
+            crate[1].write("FASTTRIGBACKLEN", 0, 1e6);
+            CHECK(crate[1].read_var("FastTrigBackLen", 0, 0) == max);
+            CHECK(crate[1].read("FASTTRIGBACKLEN", 0) == max / crate[1].configs[0].fpga_clk_mhz);
+        }
+    }
     TEST_CASE("FtrigoutDelay") {
         const double max_bcd = 255;
         const double max_fh = 511;

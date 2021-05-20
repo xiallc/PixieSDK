@@ -1117,23 +1117,25 @@ channel::fast_trig_backlen()
 void
 channel::fast_trig_backlen(double value)
 {
+    ///@TODO Need range checking to prevent negative values.
+
     module::module& mod = module.get();
 
     param::value_type fast_trig_blen = std::round(value * config.fpga_clk_mhz);
 
-    param::value_type fast_trig_blen_max;
+    param::value_type fast_trig_blen_min;
     switch (config.adc_msps) {
     case 100:
     case 500:
-        fast_trig_blen_max = FASTTRIGBACKLEN_MIN_100MHZFIPCLK;
+        fast_trig_blen_min = FASTTRIGBACKLEN_MIN_100MHZFIPCLK;
         break;
     default:
-        fast_trig_blen_max = FASTTRIGBACKLEN_MIN_125MHZFIPCLK;
+        fast_trig_blen_min = FASTTRIGBACKLEN_MIN_125MHZFIPCLK;
         break;
     }
 
-    if (fast_trig_blen < fast_trig_blen_max) {
-        fast_trig_blen = fast_trig_blen_max;
+    if (fast_trig_blen < fast_trig_blen_min) {
+        fast_trig_blen = fast_trig_blen_min;
     } else if (fast_trig_blen > FASTTRIGBACKLEN_MAX) {
         fast_trig_blen = FASTTRIGBACKLEN_MAX;
     }
