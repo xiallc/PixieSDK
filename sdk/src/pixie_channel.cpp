@@ -1325,12 +1325,12 @@ channel::qdc_len(param::channel_param par, double value)
                     "invalid QDCLen param offset");
     }
 
-    double divider = config.adc_msps;
+    double multiplier = config.adc_msps;
     if (config.adc_msps == 500) {
-        divider /= 5;
+        multiplier /= 5;
     }
 
-    param::value_type qdclen = std::round(value * divider);
+    param::value_type qdclen = std::round(value * multiplier);
 
     if (qdclen < QDCLEN_MIN) {
         qdclen = QDCLEN_MIN;
