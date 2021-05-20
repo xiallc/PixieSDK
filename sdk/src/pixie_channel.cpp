@@ -1181,9 +1181,9 @@ channel::cfd_scale()
     module::module& mod = module.get();
 
     param::value_type value =
-        mod.read_var(param::channel_var::CFDDelay, number);
+        mod.read_var(param::channel_var::CFDScale, number);
 
-    double result = double(value);
+    auto result = double(value);
 
     return result;
 }
