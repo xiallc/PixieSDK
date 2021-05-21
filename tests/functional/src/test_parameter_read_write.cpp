@@ -129,7 +129,34 @@ TEST_SUITE("Parameter Reads and Writes") {
             CHECK(doctest::Approx(crate[1].read("BASELINE_PERCENT", 0)).epsilon(0.001) == expected);
         }
     }
-    TEST_CASE("BINFACTOR") {}
+    TEST_CASE("BINFACTOR") {
+        const double min_par  = 1;
+        const double max_par = 6;
+        const double min_var = 4294967295;
+        const double max_var = 4294967290;
+        SUBCASE("Happy path") {
+            const double value = 3;
+            const double expected_var = 4294967293;
+            crate[1].write("BINFACTOR", 0, value);
+            CHECK(crate[1].read_var("Log2Ebin", 0, 0) == expected_var);
+            CHECK(crate[1].read("BINFACTOR", 0) == value);
+        }
+        SUBCASE("Negative") {
+            crate[1].write("BINFACTOR", 0, -3);
+            CHECK(crate[1].read_var("Log2Ebin", 0, 0) == max_var);
+            CHECK(crate[1].read("BINFACTOR", 0) == max_par);
+        }
+        SUBCASE("Too Small") {
+            crate[1].write("BINFACTOR", 0, 0);
+            CHECK(crate[1].read_var("Log2Ebin", 0, 0) == min_var);
+            CHECK(crate[1].read("BINFACTOR", 0) == min_par);
+        }
+        SUBCASE("Too Big") {
+            crate[1].write("BINFACTOR", 0, 17);
+            CHECK(crate[1].read_var("Log2Ebin", 0, 0) == max_var);
+            CHECK(crate[1].read("BINFACTOR", 0) == max_par);
+        }
+    }
     TEST_CASE("CFDDelay") {
         const double min = 1;
         const double max = 63;

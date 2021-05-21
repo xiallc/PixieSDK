@@ -944,6 +944,8 @@ channel::binfactor()
 void
 channel::binfactor(double value)
 {
+    ///@TODO Need range checking to prevent negative values.
+
     module::module& mod = module.get();
 
     param::value_type log2ebin = value;
