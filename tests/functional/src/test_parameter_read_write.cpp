@@ -86,7 +86,27 @@ TEST_SUITE("Parameter Reads and Writes") {
         ///@TODO We could maybe move this setup to a more communal spot, but this works for now.
         setup_simulation();
     }
-    TEST_CASE("BASELINE_AVERAGE") {}
+    TEST_CASE("BASELINE_AVERAGE") {
+        const double max_par = 16;
+        const double max_var = 4294967280;
+        SUBCASE("Happy path") {
+            const double value = 3;
+            const double expected_var = 4294967293;
+            crate[1].write("BASELINE_AVERAGE", 0, value);
+            CHECK(crate[1].read_var("Log2Bweight", 0, 0) == expected_var);
+            CHECK(crate[1].read("BASELINE_AVERAGE", 0) == value);
+        }
+        SUBCASE("Negative") {
+            crate[1].write("BASELINE_AVERAGE", 0, -3);
+            CHECK(crate[1].read_var("Log2Bweight", 0, 0) == max_var);
+            CHECK(crate[1].read("BASELINE_AVERAGE", 0) == max_par);
+        }
+        SUBCASE("Too Big") {
+            crate[1].write("BASELINE_AVERAGE", 0, 17);
+            CHECK(crate[1].read_var("Log2Bweight", 0, 0) == max_var);
+            CHECK(crate[1].read("BASELINE_AVERAGE", 0) == max_par);
+        }
+    }
     TEST_CASE("BASELINE_PERCENT") {
         SUBCASE("Happy path") {
             const double expected = 10;
@@ -272,7 +292,8 @@ TEST_SUITE("Parameter Reads and Writes") {
         SUBCASE("Rev D - 100 MSPS - Too Small") {
             crate[0].write("FASTTRIGBACKLEN", 0, 1e-6);
             CHECK(crate[0].read_var("FastTrigBackLen", 0, 0) == min_100);
-            CHECK(crate[0].read("FASTTRIGBACKLEN", 0) == min_100 / crate[0].configs[0].fpga_clk_mhz);
+            CHECK(crate[0].read("FASTTRIGBACKLEN", 0) ==
+                  min_100 / crate[0].configs[0].fpga_clk_mhz);
         }
         SUBCASE("Rev D - 100 MSPS - Too Big") {
             crate[0].write("FASTTRIGBACKLEN", 0, 1e6);
@@ -294,7 +315,8 @@ TEST_SUITE("Parameter Reads and Writes") {
         SUBCASE("Rev F - 250 MSPS - Too Small") {
             crate[1].write("FASTTRIGBACKLEN", 0, 1e-6);
             CHECK(crate[1].read_var("FastTrigBackLen", 0, 0) == min_250);
-            CHECK(crate[1].read("FASTTRIGBACKLEN", 0) == min_250 / crate[1].configs[0].fpga_clk_mhz);
+            CHECK(crate[1].read("FASTTRIGBACKLEN", 0) ==
+                  min_250 / crate[1].configs[0].fpga_clk_mhz);
         }
         SUBCASE("Rev F - 250 MSPS - Too Big") {
             crate[1].write("FASTTRIGBACKLEN", 0, 1e6);
@@ -335,7 +357,10 @@ TEST_SUITE("Parameter Reads and Writes") {
             CHECK(crate[1].read("FtrigoutDelay", 0) == max_fh / crate[1].configs[0].fpga_clk_mhz);
         }
     }
-    TEST_CASE("INTEGRATOR") {}
+    TEST_CASE("INTEGRATOR") {
+        ///@NOTE This variable is disabled at the time of writing the test.
+        CHECK_THROWS_AS(crate[1].write("INTEGRATOR", 0, 0.3), xia::pixie::error::error);
+    }
     TEST_CASE("QDCLen") {
         const double min = 1;
         const double max = 32767;

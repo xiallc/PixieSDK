@@ -981,6 +981,8 @@ channel::baseline_average()
 void
 channel::baseline_average(double value)
 {
+    ///@TODO Need range checking to prevent negative values.
+
     module::module& mod = module.get();
 
     param::value_type bl_avg = value;
@@ -989,9 +991,7 @@ channel::baseline_average(double value)
         bl_avg = 16;
     }
 
-    if (bl_avg > 0) {
-        bl_avg = (1ULL << 32) - uint64_t(bl_avg);
-    }
+    bl_avg = (1ULL << 32) - uint64_t(bl_avg);
 
     mod.write_var(param::channel_var::Log2Bweight, bl_avg, number);
 }
@@ -1012,6 +1012,8 @@ channel::csra()
 void
 channel::csra(double value)
 {
+    ///@TODO Need range checking to prevent negative values.
+
     module::module& mod = module.get();
 
     param::value_type current_csra =
@@ -1048,6 +1050,8 @@ channel::csrb()
 void
 channel::csrb(double value)
 {
+    ///@TODO Need range checking to prevent negative values.
+
     module::module& mod = module.get();
 
     mod.write_var(param::channel_var::ChanCSRb, value, number);
@@ -1069,6 +1073,8 @@ channel::bl_cut()
 void
 channel::bl_cut(double value)
 {
+    ///@TODO Need range checking to prevent negative values.
+
     module::module& mod = module.get();
 
     mod.write_var(param::channel_var::BLcut, value, number);
@@ -1090,6 +1096,8 @@ channel::integrator()
 void
 channel::integrator(double value)
 {
+    ///@TODO Need range checking to prevent negative values.
+    ///@Note This variable is disabled. Do we still need this functionality??
     module::module& mod = module.get();
 
     if (value > 7) {
