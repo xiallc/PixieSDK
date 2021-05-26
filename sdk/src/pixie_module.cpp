@@ -481,7 +481,8 @@ namespace module
                 oss << "PCI find: device: " << device_number
                     << ": " << pci_error_text(ps);
                 error::code ec = error::code::module_initialize_failure;
-                if (ps == PLX_STATUS_INVALID_OBJECT) {
+                if (ps == PLX_STATUS_NO_DRIVER ||
+                    ps == PLX_STATUS_INVALID_OBJECT) {
                     ec = error::code::not_supported;
                 }
                 throw error(number, slot, ec, oss);
