@@ -2037,8 +2037,10 @@ namespace module
             hw::fpga::fippi fippi(*this);
             if (fippi.done()) {
                 hw::csr::reset(*this);
-                fifo_pool.create(fifo_buffers, hw::max_dma_block_size);
-                start_fifo_worker();
+                if (fifo_pool.empty()) {
+                    fifo_pool.create(fifo_buffers, hw::max_dma_block_size);
+                    start_fifo_worker();
+                }
                 hw::run::end(*this);
             }
         }
