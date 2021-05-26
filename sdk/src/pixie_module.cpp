@@ -2040,8 +2040,8 @@ namespace module
                 if (fifo_pool.empty()) {
                     fifo_pool.create(fifo_buffers, hw::max_dma_block_size);
                     start_fifo_worker();
+                    hw::run::end(*this);
                 }
-                hw::run::end(*this);
             }
         }
     }
