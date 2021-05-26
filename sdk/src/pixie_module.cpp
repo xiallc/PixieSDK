@@ -480,9 +480,11 @@ namespace module
                 std::ostringstream oss;
                 oss << "PCI find: device: " << device_number
                     << ": " << pci_error_text(ps);
-                throw error(number, slot,
-                            error::code::module_initialize_failure,
-                            oss);
+                error::code ec = error::code::module_initialize_failure;
+                if (ps == PLX_STATUS_INVALID_OBJECT) {
+                    ec = error::code::not_supported;
+                }
+                throw error(number, slot, ec, oss);
             }
 
             device->device_number = device_number;
@@ -496,6 +498,41 @@ namespace module
                             error::code::module_initialize_failure,
                             oss);
             }
+
+            U8 drv_major;
+            U8 drv_minor;
+            U8 drv_rev;
+
+            ps = ::PlxPci_DriverVersion(&device->handle,
+                                        &drv_major,
+                                        &drv_minor,
+                                        &drv_rev);
+            if (ps != PLX_STATUS_OK) {
+                std::ostringstream oss;
+                oss << "driver version: device: " << device_number
+                    << ": " << pci_error_text(ps);
+                throw error(number, slot,
+                            error::code::module_initialize_failure,
+                            oss);
+            }
+
+            log(log::info) << "PLX: driver: version=" << int(drv_major)
+                           << '.' << int(drv_minor) << '.' << int(drv_rev);
+
+            U16 chip_type;
+            U8 chip_rev;
+            ps = ::PlxPci_ChipTypeGet(&device->handle, &chip_type, &chip_rev);
+            if (ps != PLX_STATUS_OK) {
+                std::ostringstream oss;
+                oss << "get chip type: device: " << device_number
+                    << ": " << pci_error_text(ps);
+                throw error(number, slot,
+                            error::code::module_initialize_failure,
+                            oss);
+            }
+
+            log(log::info) << "PLX: device: type=" << std::hex << chip_type
+                           << " rev=" << std::dec << int(chip_rev);
 
             /*
              * For PLX 9054, Space 0 is at PCI BAR 2.
@@ -539,8 +576,13 @@ namespace module
 
             have_hardware = true;
 
-            hw::csr::reset(*this);
-
+            /*
+             * We can only touch specific registers at this early stage of
+             * handling a module. We can read the slot and EEPROM and then
+             * check if the FPGAs are loaded. If the FPGAs are loaded the DSP
+             * can be reset and the FIFO worker started. Do not access any
+             * other registers until the FPGAs are loaded.
+             */
             hw::i2c::pcf8574 pio(*this, PCF8574_ADDR,
                                  (1 << 0) | (1 << 3), 1 << 1, 1 << 2);
 
@@ -589,10 +631,7 @@ namespace module
 
             present_ = true;
 
-            fifo_pool.create(fifo_buffers, hw::max_dma_block_size);
-            start_fifo_worker();
-
-            hw::run::end(*this);
+            start_fifo_services();
         }
     }
 
@@ -766,6 +805,8 @@ namespace module
         if (fippi_fpga) {
             init_values();
         }
+
+        start_fifo_services();
 
         log(log::info) << module_label(*this)
                        << std::boolalpha
@@ -1984,6 +2025,21 @@ namespace module
             oss << "invalid channel number: " << channel;
             throw error(number, slot,
                         error::code::channel_number_invalid, oss.str());
+        }
+    }
+
+    void
+    module::start_fifo_services()
+    {
+        hw::fpga::comms comms(*this);
+        if (comms.done()) {
+            hw::fpga::fippi fippi(*this);
+            if (fippi.done()) {
+                hw::csr::reset(*this);
+                fifo_pool.create(fifo_buffers, hw::max_dma_block_size);
+                start_fifo_worker();
+                hw::run::end(*this);
+            }
         }
     }
 

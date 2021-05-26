@@ -116,6 +116,7 @@ namespace crate
 
                 auto& module_ptr = modules.back();
                 module::module& module = *module_ptr;
+                bool last_module_found = false;
 
                 try {
                     module.module_var_descriptors =
@@ -124,14 +125,13 @@ namespace crate
                         param::channel_var_descs(param::get_channel_var_descriptors());
                     module.reg_trace = reg_trace;
                     module.open(device_number);
-                } catch (std::runtime_error& e) {
+                } catch (module::error& e) {
                     if (!autodetect) {
                         throw;
                     }
-                    if (module.present()) {
-                        log(log::error) << "module: device " << device_number
-                                        << ": error: " << e.what();
-                    }
+                    last_module_found = e.type == module::error::code::not_supported;
+                    log(log::error) << "module: device " << device_number
+                                    << ": error: " << e.what();
                 }
 
                 if (module.present()) {
@@ -141,7 +141,9 @@ namespace crate
                                    << " revision:" << module.revision_label();
                 } else {
                     modules.pop_back();
-                    break;
+                    if (last_module_found) {
+                      break;
+                    }
                 }
             }
 

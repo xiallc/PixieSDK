@@ -519,6 +519,12 @@ namespace module
         void channel_check(const size_t channel) const;
 
         /*
+         * Check if the FPGA devices are programmed and start the FIFO services
+         * if they are.
+         */
+        void start_fifo_services();
+
+        /*
          * FIFO worker
          */
         void start_fifo_worker();
