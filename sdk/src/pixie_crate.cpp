@@ -34,6 +34,7 @@
 *----------------------------------------------------------------------*/
 
 #include <algorithm>
+#include <future>
 #include <iomanip>
 #include <sstream>
 
@@ -174,12 +175,51 @@ namespace crate
     {
         ready();
         firmware::load(firmware);
-        for (auto& module : modules) {
-            if (module->revision != 0) {
-                module->boot();
+
+        typedef std::promise<error::code> promise_error;
+        typedef std::future<error::code> future_error;
+
+        std::vector<promise_error> promises(modules.size());
+        std::vector<future_error> futures;
+        std::vector<std::thread> threads;
+
+        for (size_t m = 0; m < modules.size(); ++m) {
+            auto module = modules[m];
+            if (module->revision == 0) {
+                continue;
             }
+            futures.push_back(future_error(promises[m].get_future()));
+            threads.push_back(
+                std::thread(
+                    [m, &promises, module] {
+                        try {
+                            module->boot();
+                            promises[m].set_value(error::code::success);
+                        } catch (pixie::error::error& e) {
+                            promises[m].set_value(e.type);
+                        } catch (...) {
+                            try {
+                                promises[m].set_exception(std::current_exception());
+                            } catch (...) { }
+                        }
+                    }));
         }
+
+        error::code first_error = error::code::success;
+
+        for (size_t t = 0; t < threads.size(); ++t) {
+            error::code e = futures[t].get();
+            if (first_error == error::code::success) {
+                first_error = e;
+            }
+            threads[t].join();
+        }
+
         firmware::clear(firmware);
+
+        if (first_error != error::code::success) {
+            throw error(first_error, "crate boot error; see log");
+        }
     }
 
     void
