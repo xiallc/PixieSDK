@@ -400,9 +400,9 @@ channel::update_fifo(param::value_type trace_delay)
 
     module::module& mod = module.get();
 
-    const param::value_type slow_filter_range =
+    const param::value_type sfr_mask =
         1 << mod.read_var(param::module_var::SlowFilterRange, 0, false);
-    const param::value_type fast_filter_range =
+    const param::value_type ffr_mask =
         1 << mod.read_var(param::module_var::FastFilterRange, 0, false);
     const param::value_type fifo_length =
         mod.read_var(param::module_var::FIFOLength, 0, false);
@@ -415,15 +415,15 @@ channel::update_fifo(param::value_type trace_delay)
     /*
      * Calulate the trigger delay and PAF length.
      */
-    trigger_delay = (peak_sep - 1) * slow_filter_range;
-    paf_length = (trigger_delay / fast_filter_range) + trigger_delay;
+    trigger_delay = (peak_sep - 1) * sfr_mask;
+    paf_length = (trigger_delay / ffr_mask) + trigger_delay;
 
     /*
      * PAF Length must not be larger than the FIFO Length
      */
     if (paf_length > fifo_length) {
         paf_length = fifo_length - 1;
-        trigger_delay = (paf_length - trace_delay) * fast_filter_range;
+        trigger_delay = (paf_length - trace_delay) * ffr_mask;
     }
 
     mod.write_var(param::channel_var::TriggerDelay, trigger_delay, number);
@@ -435,13 +435,13 @@ channel::trigger_risetime()
 {
     module::module& mod = module.get();
 
-    param::value_type fast_filter_range =
+    param::value_type ffr_mask =
         1 << mod.read_var(param::module_var::FastFilterRange);
     double fast_length =
         mod.read_var(param::channel_var::FastLength, number);
 
     double result =
-        (fast_length * fast_filter_range) / config.fpga_clk_mhz;
+        (fast_length * ffr_mask) / config.fpga_clk_mhz;
 
     return result;
 }
@@ -451,13 +451,13 @@ channel::trigger_risetime(double value)
 {
     module::module& mod = module.get();
 
-    param::value_type fast_filter_range =
+    param::value_type ffr_mask =
         1 << mod.read_var(param::module_var::FastFilterRange, 0, false);
     param::value_type fast_gap =
         mod.read_var(param::channel_var::FastGap, number, 0, false);
 
     param::value_type fast_length =
-        std::round((value * config.fpga_clk_mhz) / fast_filter_range);
+        std::round((value * config.fpga_clk_mhz) / ffr_mask);
 
     if ((fast_length + fast_gap) > FASTFILTER_MAX_LEN) {
         fast_length = FASTFILTER_MAX_LEN - fast_gap;
@@ -480,13 +480,13 @@ channel::trigger_flattop()
 {
     module::module& mod = module.get();
 
-    param::value_type fast_filter_range =
+    param::value_type ffr_mask =
         1 << mod.read_var(param::module_var::FastFilterRange);
     double fast_gap =
         mod.read_var(param::channel_var::FastGap, number);
 
     double result =
-        (fast_gap * fast_filter_range) / config.fpga_clk_mhz;
+        (fast_gap * ffr_mask) / config.fpga_clk_mhz;
 
     return result;
 }
@@ -496,13 +496,13 @@ channel::trigger_flattop(double value)
 {
     module::module& mod = module.get();
 
-    param::value_type fast_filter_range =
+    param::value_type ffr_mask =
         1 << mod.read_var(param::module_var::FastFilterRange, 0, false);
     param::value_type fast_length =
         mod.read_var(param::channel_var::FastLength, number, 0, false);
 
     param::value_type fast_gap =
-        std::round((value * config.fpga_clk_mhz) / fast_filter_range);
+        std::round((value * config.fpga_clk_mhz) / ffr_mask);
 
     if ((fast_length + fast_gap) > FASTFILTER_MAX_LEN) {
         fast_gap = FASTFILTER_MAX_LEN - fast_length;
@@ -557,13 +557,13 @@ channel::energy_risetime()
 {
     module::module& mod = module.get();
 
-    param::value_type slow_filter_range =
+    param::value_type sfr_mask =
         1 << mod.read_var(param::module_var::SlowFilterRange);
     double slow_length =
         mod.read_var(param::channel_var::SlowLength, number);
 
     double result =
-        (slow_length * slow_filter_range) / config.fpga_clk_mhz;
+        (slow_length * sfr_mask) / config.fpga_clk_mhz;
 
     return result;
 }
@@ -573,13 +573,13 @@ channel::energy_flattop()
 {
     module::module& mod = module.get();
 
-    param::value_type slow_filter_range =
+    param::value_type sfr_mask =
         1 << mod.read_var(param::module_var::SlowFilterRange);
     double slow_gap =
         mod.read_var(param::channel_var::SlowGap, number);
 
     double result =
-        (slow_gap * slow_filter_range) / config.fpga_clk_mhz;
+        (slow_gap * sfr_mask) / config.fpga_clk_mhz;
 
     return result;
 }
@@ -589,9 +589,9 @@ channel::energy_risetime_flattop(param::channel_param par, double value)
 {
     module::module& mod = module.get();
 
-    param::value_type fast_filter_range =
+    param::value_type ffr_mask =
         1 << mod.read_var(param::module_var::FastFilterRange, 0, false);
-    param::value_type slow_filter_range =
+    param::value_type sfr_mask =
         1 << mod.read_var(param::module_var::SlowFilterRange, 0, false);
     param::value_type paf_length =
         mod.read_var(param::channel_var::PAFlength, number, 0, false);
@@ -599,13 +599,13 @@ channel::energy_risetime_flattop(param::channel_param par, double value)
         mod.read_var(param::channel_var::TriggerDelay, number, 0, false);
 
     param::value_type trace_delay =
-        paf_length - (trigger_delay / fast_filter_range);
+        paf_length - (trigger_delay / ffr_mask);
 
     param::value_type slow_length;
     param::value_type slow_gap;
 
     if (par == param::channel_param::energy_risetime) {
-        slow_length = std::round((value * config.adc_msps) / fast_filter_range);
+        slow_length = std::round((value * config.adc_msps) / ffr_mask);
         slow_gap = mod.read_var(param::channel_var::SlowGap, number, 0, false);
         if ((slow_length + slow_gap) > SLOWFILTER_MAX_LEN) {
             slow_length = SLOWFILTER_MAX_LEN - slow_gap;
@@ -617,7 +617,7 @@ channel::energy_risetime_flattop(param::channel_param par, double value)
             }
         }
     } else if (par == param::channel_param::energy_flattop) {
-        slow_gap = std::round((value * config.fpga_clk_mhz) / slow_filter_range);
+        slow_gap = std::round((value * config.fpga_clk_mhz) / sfr_mask);
         slow_length =
             mod.read_var(param::channel_var::SlowLength, number, 0, false);
         if ((slow_length + slow_gap) > SLOWFILTER_MAX_LEN) {
@@ -641,7 +641,7 @@ channel::energy_risetime_flattop(param::channel_param par, double value)
     param::value_type peak_sep = slow_length + slow_gap;
     param::value_type peak_sample;
 
-    switch (slow_filter_range) {
+    switch (sfr_mask) {
     case 1 << 1:
         peak_sample = peak_sep - 3;
         break;
@@ -703,11 +703,11 @@ channel::trace_length()
 
     double trace_len =
         mod.read_var(param::channel_var::TraceLength, number);
-    param::value_type fast_filter_range =
+    param::value_type ffr_mask =
         1 << mod.read_var(param::module_var::FastFilterRange);
 
     double result =
-        trace_len / (double(config.adc_msps) * fast_filter_range);
+        trace_len / (double(config.adc_msps) * ffr_mask);
 
     return result;
 }
@@ -717,12 +717,12 @@ channel::trace_length(double value)
 {
     module::module& mod = module.get();
 
-    param::value_type fast_filter_range =
+    param::value_type ffr_mask =
         1 << mod.read_var(param::module_var::FastFilterRange);
     param::value_type fifo_length =
          mod.read_var(param::module_var::FIFOLength);
 
-    param::value_type trace_length = (value * config.adc_msps) / fast_filter_range;
+    param::value_type trace_length = value * config.adc_msps / ffr_mask;
 
     /*
      * Adjust the length to suit the FPGA requirements
@@ -773,12 +773,12 @@ channel::trace_delay(double value)
 {
     module::module& mod = module.get();
 
-    param::value_type fast_filter_range =
+    param::value_type ffr_mask =
         1 << mod.read_var(param::module_var::FastFilterRange);
     param::value_type trace_length =
         mod.read_var(param::channel_var::TraceLength, number);
 
-    param::value_type trace_delay = (value * config.fpga_clk_mhz) / fast_filter_range;
+    param::value_type trace_delay = value * config.fpga_clk_mhz / ffr_mask;
 
     if (trace_delay > trace_length) {
         trace_delay = trace_length / 2;
