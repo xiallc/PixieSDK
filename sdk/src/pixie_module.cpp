@@ -653,9 +653,7 @@ namespace module
             /*
              * Stop the FIFO worker and destroy the buffer pool.
              */
-            stop_fifo_worker();
-            fifo_data.flush();
-            fifo_pool.destroy();
+            stop_fifo_services();
 
             /*
              * Close the DMA channel.
@@ -2059,6 +2057,7 @@ namespace module
     module::stop_fifo_services()
     {
         stop_fifo_worker();
+        fifo_data.flush();
         fifo_pool.destroy();
     }
 
