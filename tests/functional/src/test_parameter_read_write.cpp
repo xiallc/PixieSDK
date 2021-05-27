@@ -66,6 +66,10 @@ static const std::vector<std::string> firmware_defs = {
     "version=sim, revision=15, adc-msps=500, adc-bits=14, device=var, file=@PROJECT_SOURCE_DIR@/tests/assets/simulation/sim_dsp.var",
 };
 
+static const size_t max_fifo_length = 16380;
+static const double a_big_value = 1e6;
+static const double a_small_value = 1.e-6;
+
 void setup_simulation() {
     xia::logging::start("log", "stdout", xia::log::level::debug, false);
     std::stringstream def;
@@ -81,11 +85,14 @@ void setup_simulation() {
     crate.probe();
 }
 
-TEST_SUITE("Parameter Reads and Writes") {
+TEST_SUITE("Simulation Initialization") {
     TEST_CASE("Initialize Simulation") {
         ///@TODO We could maybe move this setup to a more communal spot, but this works for now.
         setup_simulation();
     }
+}
+
+TEST_SUITE("Channel Parameter Reads and Writes") {
     TEST_CASE("BASELINE_AVERAGE") {
         const double max_par = 16;
         const double max_var = 4294967280;
@@ -130,7 +137,7 @@ TEST_SUITE("Parameter Reads and Writes") {
         }
     }
     TEST_CASE("BINFACTOR") {
-        const double min_par  = 1;
+        const double min_par = 1;
         const double max_par = 6;
         const double min_var = 4294967295;
         const double max_var = 4294967290;
@@ -246,9 +253,6 @@ TEST_SUITE("Parameter Reads and Writes") {
             CHECK(crate[1].read("ChanTrigStretch", 0) == expected_par);
         }
     }
-    TEST_CASE("ENERGY_FLATTOP") {}
-    TEST_CASE("ENERGY_RISETIME") {}
-    TEST_CASE("energy_risetime_flattop") {}
     TEST_CASE("ExtTrigStretch") {
         SUBCASE("Happy Path - 250 MSPS") {
             const double value = 0.3;
@@ -429,12 +433,32 @@ TEST_SUITE("Parameter Reads and Writes") {
         CHECK(crate[1].read_var("PreampTau", 0, 0) == expected_var);
         CHECK(doctest::Approx(crate[1].read("TAU", 0)).epsilon(0.001) == expected_par);
     }
-    TEST_CASE("TRACE_DELAY") {}
-    TEST_CASE("TRACE_LENGTH") {}
-    TEST_CASE("TRIGGER_FLATTOP") {}
-    TEST_CASE("TRIGGER_RISETIME") {}
-    TEST_CASE("TRIGGER_THRESHOLD") {}
-    TEST_CASE("update_fifo") {}
+    TEST_CASE("TRACE_LENGTH") {
+        SUBCASE("500 - Happy Path") {
+            double value = 0.253;
+            size_t expected_var = uint(value * crate[2].configs[0].adc_msps) / 10 * 10;
+            double expected_par = double(expected_var) / crate[2].configs[0].adc_msps;
+            crate[2].write("TRACE_LENGTH", 0, value);
+            CHECK(crate[2].read_var("TraceLength", 0, 0) == expected_var);
+            CHECK(crate[2].read("TRACE_LENGTH", 0) == expected_par);
+        }
+        SUBCASE("250 - Happy Path") {
+            double value = 0.151;
+            size_t expected_var = uint(value * crate[1].configs[0].adc_msps) / 2 * 2;
+            double expected_par = double(expected_var) / crate[1].configs[0].adc_msps;
+            crate[1].write("TRACE_LENGTH", 0, value);
+            CHECK(crate[1].read_var("TraceLength", 0, 0) == expected_var);
+            CHECK(crate[1].read("TRACE_LENGTH", 0) == expected_par);
+        }
+        SUBCASE("250 - Too Big") {
+            double value = 1e6;
+            size_t expected_var = max_fifo_length;
+            double expected_par = double(expected_var) / crate[1].configs[0].adc_msps;
+            crate[1].write("TRACE_LENGTH", 0, value);
+            CHECK(crate[1].read_var("TraceLength", 0, 0) == max_fifo_length);
+            CHECK(crate[1].read("TRACE_LENGTH", 0) == expected_par);
+        }
+    }
     TEST_CASE("VetoStretch") {
         SUBCASE("Happy Path - 250 MSPS") {
             const double value = 0.3;
