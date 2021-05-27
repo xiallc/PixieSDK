@@ -413,7 +413,7 @@ channel::update_fifo(param::value_type trace_delay)
     param::value_type paf_length;
 
     /*
-     * Calulate the trigger delay and PAF length.
+     * Calculate the trigger delay and PAF length.
      */
     trigger_delay = (peak_sep - 1) * sfr_mask;
     paf_length = (trigger_delay / ffr_mask) + trigger_delay;
@@ -632,7 +632,7 @@ channel::energy_risetime_flattop(param::channel_param par, double value)
     } else {
         throw error(mod.number, mod.slot, number,
                     error::code::channel_invalid_param,
-                    "param not enery risetime or flattop");
+                    "param not energy risetime or flattop");
     }
 
     mod.write_var(param::channel_var::SlowLength, slow_length, number);
@@ -715,6 +715,8 @@ channel::trace_length()
 void
 channel::trace_length(double value)
 {
+    ///@TODO Need range checking to prevent negative values.
+
     module::module& mod = module.get();
 
     param::value_type ffr_mask =
@@ -771,6 +773,8 @@ channel::trace_delay()
 void
 channel::trace_delay(double value)
 {
+    ///@TODO Need range checking to prevent negative values.
+
     module::module& mod = module.get();
 
     param::value_type ffr_mask =
@@ -840,6 +844,8 @@ channel::xdt()
 void
 channel::xdt(double value)
 {
+    ///@TODO Need range checking to prevent negative values.
+
     module::module& mod = module.get();
 
     param::value_type current_xwait =
@@ -894,6 +900,8 @@ channel::baseline_percent()
 void
 channel::baseline_percent(double value)
 {
+    ///@TODO Need range checking to prevent negative values.
+
     module::module& mod = module.get();
 
     param::value_type bl_percent = value;
@@ -923,6 +931,8 @@ channel::emin()
 void
 channel::emin(double value)
 {
+    ///@TODO Need range checking to prevent negative values.
+
     module::module& mod = module.get();
 
     mod.write_var(param::channel_var::EnergyLow, value, number);
