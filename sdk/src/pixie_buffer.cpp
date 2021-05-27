@@ -87,7 +87,7 @@ pool::create(const size_t number_, const size_t size_)
     log(log::info) << "pool create: num=" << number_
                    << " size=" << size_;
     lock_guard guard(lock);
-    if (number != 0) {
+    if (valid()) {
         throw error(error::code::buffer_pool_not_empty,
                     "pool is already created");
     }

@@ -723,6 +723,8 @@ namespace module
     void
     module::probe()
     {
+        lock_guard guard(lock_);
+
         online_ = dsp_online = fippi_fpga = comms_fpga = false;
 
         erase_values();
@@ -756,9 +758,13 @@ namespace module
     void
     module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp)
     {
+        lock_guard guard(lock_);
+
         if (online()) {
             log(log::warning) << "boot online module";
         }
+
+        online_ = false;
 
         if (boot_comms) {
             if (comms_fpga) {
@@ -767,8 +773,9 @@ namespace module
             }
             firmware::firmware_ref fw = get("sys");
             hw::fpga::comms comms(*this);
+            comms_fpga = false;
             comms.boot(fw->data);
-            comms_fpga = true;
+            comms_fpga = comms.done();
         }
 
         if (boot_fippi) {
@@ -783,8 +790,9 @@ namespace module
             }
             firmware::firmware_ref fw = get("fippi");
             hw::fpga::fippi fippi(*this);
+            fippi_fpga = false;
             fippi.boot(fw->data);
-            fippi_fpga = true;
+            fippi_fpga = fippi.done();
         }
 
         if (boot_dsp) {
@@ -799,6 +807,7 @@ namespace module
             }
             firmware::firmware_ref fw = get("dsp");
             hw::dsp::dsp dsp(*this);
+            dsp_online = false;
             dsp.boot(fw->data);
             dsp_online = dsp.init_done();
         }
@@ -2037,7 +2046,7 @@ namespace module
             hw::fpga::fippi fippi(*this);
             if (fippi.done()) {
                 hw::csr::reset(*this);
-                if (fifo_pool.empty()) {
+                if (!fifo_pool.valid()) {
                     fifo_pool.create(fifo_buffers, hw::max_dma_block_size);
                     start_fifo_worker();
                     hw::run::end(*this);
@@ -2047,26 +2056,37 @@ namespace module
     }
 
     void
+    module::stop_fifo_services()
+    {
+        stop_fifo_worker();
+        fifo_pool.destroy();
+    }
+
+    void
     module::start_fifo_worker()
     {
         log(log::debug) << module_label(*this)
-                        << "FIFO worker: starting";
-        fifo_worker_finished = false;
-        fifo_worker_running = true;;
-        fifo_thread = std::thread(&module::fifo_worker, this);
+                        << std::boolalpha
+                        << "FIFO worker: starting: running="
+                        << fifo_worker_running.load();
+        if (!fifo_worker_running.load()) {
+            fifo_worker_finished = false;
+            fifo_worker_running = true;;
+            fifo_thread = std::thread(&module::fifo_worker, this);
+        }
     }
 
     void
     module::stop_fifo_worker()
     {
         log(log::debug) << module_label(*this)
-                        << "FIFO worker: stopping";
+                        << std::boolalpha
+                        << "FIFO worker: stopping: running="
+                        << fifo_worker_running.load();
         fifo_worker_running = false;
-        unlock();
         if (fifo_thread.joinable()) {
             fifo_thread.join();
         }
-        lock();
     }
 
     void

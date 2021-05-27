@@ -90,6 +90,10 @@ struct pool
 
     handle request();
 
+    bool valid() const {
+        return number != 0;
+    }
+
     bool empty() const {
         return count_.load() == 0;
     }

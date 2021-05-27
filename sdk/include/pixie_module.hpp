@@ -523,6 +523,7 @@ namespace module
          * if they are.
          */
         void start_fifo_services();
+        void stop_fifo_services();
 
         /*
          * FIFO worker
