@@ -83,6 +83,12 @@ void setup_simulation() {
     crate.initialize(module_defs.size(), false);
     crate.set_firmware();
     crate.probe();
+    for (auto& mod : crate.modules) {
+        mod->write_var("FastFilterRange", xia::pixie::param::value_type(0), 0);
+        mod->write_var("SlowFilterRange", xia::pixie::param::value_type(3), 0);
+        //@TODO This is here temporarily to facilitate tests until P16-263 is done.
+        mod->write_var("FIFOLength", xia::pixie::param::value_type(16380), 0);
+    }
 }
 
 TEST_SUITE("Simulation Initialization") {
@@ -521,6 +527,125 @@ TEST_SUITE("Channel Parameter Reads and Writes") {
             crate[2].write("XDT", 0, value);
             CHECK(crate[2].read_var("Xwait", 0, 0) == expected_var);
             CHECK(doctest::Approx(crate[2].read("XDT", 0)) == expected_par);
+        }
+    }
+
+    ///@NOTE The remaining tests have overlapping parameter requirements
+    TEST_CASE("TRIGGER_RISETIME") {
+        crate[1].write_var("FastGap", 0, 0);
+
+        const double max = 127;
+        const double min = 2;
+        SUBCASE("Happy Path") {
+            const double value = 0.159;
+            const size_t expected_var = 20;
+            const double expected_par = 0.16;
+            crate[1].write("TRIGGER_RISETIME", 0, value);
+            CHECK(crate[1].read_var("FastLength", 0, 0) == expected_var);
+            CHECK(crate[1].read("TRIGGER_RISETIME", 0) == expected_par);
+        }
+        SUBCASE("Too Big") {
+            crate[1].write("TRIGGER_RISETIME", 0, a_big_value);
+            CHECK(crate[1].read_var("FastLength", 0, 0) == max);
+            CHECK(crate[1].read("TRIGGER_RISETIME", 0) == max / crate[1].configs[0].fpga_clk_mhz);
+        }
+        SUBCASE("Too Small") {
+            crate[1].write("TRIGGER_RISETIME", 0, a_small_value);
+            CHECK(crate[1].read_var("FastLength", 0, 0) == min);
+            CHECK(crate[1].read("TRIGGER_RISETIME", 0) == min / crate[1].configs[0].fpga_clk_mhz);
+        }
+        SUBCASE("Too Small w/ Gap out of range") {
+            crate[1].write_var("FastGap", 126, 0);
+            crate[1].write("TRIGGER_RISETIME", 0, a_small_value);
+            CHECK(crate[1].read_var("FastLength", 0, 0) == min);
+            CHECK(crate[1].read_var("FastGap", 0, 0) == max - min);
+            CHECK(crate[1].read("TRIGGER_RISETIME", 0) == min / crate[1].configs[0].fpga_clk_mhz);
+        }
+    }
+    TEST_CASE("TRIGGER_FLATTOP") {
+        const double max = 127;
+        SUBCASE("Happy Path") {
+            const double value = 0.159;
+            const size_t expected_var = 20;
+            const double expected_par = 0.16;
+            crate[1].write("TRIGGER_FLATTOP", 0, value);
+            CHECK(crate[1].read_var("FastGap", 0, 0) == expected_var);
+            CHECK(crate[1].read("TRIGGER_FLATTOP", 0) == expected_par);
+        }
+        SUBCASE("Too Big") {
+            const double fast_length = 12;
+            const double expected_var = max - fast_length;
+            const double expected_par = expected_var / crate[1].configs[0].fpga_clk_mhz;
+            crate[1].write_var("FastLength", fast_length, 0);
+            crate[1].write("TRIGGER_FLATTOP", 0, a_big_value);
+            CHECK(crate[1].read_var("FastGap", 0, 0) == expected_var);
+            CHECK(crate[1].read("TRIGGER_FLATTOP", 0) == expected_par);
+        }
+    }
+    TEST_CASE("TRIGGER_THRESHOLD") {
+        const double fast_length_var = 12;
+        const double max = 65535;
+        crate[1].write_var("FastLength", fast_length_var, 0);
+        SUBCASE("Happy Path") {
+            const double value = 0.5;
+            const size_t expected_var = value * fast_length_var * crate[1].configs[0].adc_clk_div;
+            const double expected_par =
+                expected_var / (fast_length_var * crate[1].configs[0].adc_clk_div);
+            crate[1].write("TRIGGER_THRESHOLD", 0, value);
+            CHECK(crate[1].read_var("FastThresh", 0, 0) == expected_var);
+            CHECK(crate[1].read("TRIGGER_THRESHOLD", 0) == expected_par);
+        }
+        SUBCASE("Too Big") {
+            const size_t expected_var = max / (max - 0.5) * max;
+            const double expected_par =
+                expected_var / (fast_length_var * crate[1].configs[0].adc_clk_div);
+            crate[1].write("TRIGGER_THRESHOLD", 0, a_big_value);
+            CHECK(crate[1].read_var("FastThresh", 0, 0) == expected_var);
+            CHECK(crate[1].read("TRIGGER_THRESHOLD", 0) == expected_par);
+        }
+    }
+    TEST_CASE("update_fifo") {
+        const size_t peak_sep = 12;
+        crate[1].write_var("PeakSep", peak_sep, 0);
+
+        const size_t trace_delay = 10;
+        const size_t sfr_mask = 1 << crate[1].read_var("SlowFilterRange", 0, false);
+        const size_t ffr_mask = 1 << crate[1].read_var("FastFilterRange", 0, false);
+        const double trigger_delay = (peak_sep - 1) * sfr_mask;
+        const double paf_length = trigger_delay / ffr_mask + trace_delay;
+
+        SUBCASE("Happy Path") {
+            crate[1].channels[0].update_fifo(trace_delay);
+            CHECK(crate[1].read_var("PAFlength", 0, 0) == paf_length);
+            CHECK(crate[1].read_var("TriggerDelay", 0, 0) == trigger_delay);
+        }
+        SUBCASE("paf_length too big") {
+            crate[1].channels[0].update_fifo(a_big_value);
+            CHECK(crate[1].read_var("PAFlength", 0, 0) == max_fifo_length - 1);
+            CHECK(crate[1].read_var("TriggerDelay", 0, 0) ==
+                  uint32_t(max_fifo_length) - 1 - uint32_t(a_big_value));
+        }
+    }
+    TEST_CASE("TRACE_DELAY") {
+        const double max = 1023;
+        const size_t peak_sep = 12;
+        crate[1].write_var("PeakSep", peak_sep, 0);
+
+        SUBCASE("Happy Path") {
+            crate[1].write("TRACE_DELAY", 0, 0.051);
+            CHECK(crate[1].read("TRACE_DELAY", 0) == 0.048);
+        }
+        SUBCASE("Too Big - Bigger than Trace Length") {
+            double trace_length = 1000;
+            crate[1].write_var("TraceLength", size_t(trace_length), 0);
+            double expected_par = trace_length * 0.5 / crate[1].configs[0].fpga_clk_mhz;
+            crate[1].write("TRACE_DELAY", 0, a_big_value);
+            CHECK(crate[1].read("TRACE_DELAY", 0) == expected_par);
+        }
+        SUBCASE("Too Big - Smaller than Trace Length") {
+            crate[1].write_var("TraceLength", size_t(max * 1.5), 0);
+            crate[1].write("TRACE_DELAY", 0, 8.2);
+            CHECK(crate[1].read("TRACE_DELAY", 0) == max / crate[1].configs[0].fpga_clk_mhz);
         }
     }
 }

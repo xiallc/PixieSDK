@@ -286,7 +286,8 @@ namespace param
         { module_var::LECorr,               enable,  ro,  1, "LECorr" },
         { module_var::HardwareID,           enable,  ro,  1, "HardwareID" },
         { module_var::HardVariant,          enable,  ro,  1, "HardVariant" },
-        { module_var::FIFOLength,           enable,  ro,  1, "FIFOLength" },
+        //@TODO This is here temporarily to facilitate tests until P16-263 is done.
+        { module_var::FIFOLength,           enable,  rw,  1, "FIFOLength" },
         { module_var::DSPrelease,           enable,  ro,  1, "DSPrelease" },
         { module_var::DSPbuild,             enable,  ro,  1, "DSPbuild" },
         { module_var::NumEventsA,           disable, ro,  1, "NumEventsA" },

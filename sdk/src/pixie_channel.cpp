@@ -416,7 +416,7 @@ channel::update_fifo(param::value_type trace_delay)
      * Calculate the trigger delay and PAF length.
      */
     trigger_delay = (peak_sep - 1) * sfr_mask;
-    paf_length = (trigger_delay / ffr_mask) + trigger_delay;
+    paf_length = (trigger_delay / ffr_mask) + trace_delay;
 
     /*
      * PAF Length must not be larger than the FIFO Length
@@ -765,7 +765,7 @@ channel::trace_delay()
 
     double result =
         (paf_length - (trigger_delay / ffr_mask)) /
-        (config.fpga_clk_mhz * ffr_mask);
+        config.fpga_clk_mhz * ffr_mask;
 
     return result;
 }
