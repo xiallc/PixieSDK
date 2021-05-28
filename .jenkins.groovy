@@ -58,12 +58,12 @@ pipeline {
                             }
                         }
                     }
-                    stage("Functional") {
+                    stage("Integration") {
                         steps{
                             dir("build-${RELEASE_TYPE}") {
                                 sh '''
                                 pwd
-                                ./tests/functional/pixie_sdk_functional_test_runner
+                                ./tests/integration/pixie_sdk_integration_test_runner
                                 '''
                             }
                         }

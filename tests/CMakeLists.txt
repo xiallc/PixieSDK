@@ -4,6 +4,6 @@ target_include_directories(BaseTestRunnerObjLib PUBLIC
         ${PROJECT_SOURCE_DIR}/externals/doctest)
 xia_configure_target(TARGET BaseTestRunnerObjLib CONFIG_OBJ)
 
-add_subdirectory(functional)
+add_subdirectory(integration)
 add_subdirectory(unit)
 add_subdirectory(system)
