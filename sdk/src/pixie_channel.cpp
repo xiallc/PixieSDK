@@ -587,12 +587,15 @@ channel::energy_flattop()
 void
 channel::energy_risetime_flattop(param::channel_param par, double value)
 {
+    ///@TODO Need range checking to prevent negative values.
+
     module::module& mod = module.get();
 
     param::value_type ffr_mask =
         1 << mod.read_var(param::module_var::FastFilterRange, 0, false);
-    param::value_type sfr_mask =
-        1 << mod.read_var(param::module_var::SlowFilterRange, 0, false);
+    param::value_type sfr =
+        mod.read_var(param::module_var::SlowFilterRange, 0, false);
+    param::value_type sfr_mask = 1 << sfr;
     param::value_type paf_length =
         mod.read_var(param::channel_var::PAFlength, number, 0, false);
     param::value_type trigger_delay =
@@ -605,7 +608,7 @@ channel::energy_risetime_flattop(param::channel_param par, double value)
     param::value_type slow_gap;
 
     if (par == param::channel_param::energy_risetime) {
-        slow_length = std::round((value * config.adc_msps) / ffr_mask);
+        slow_length = std::round((value * config.fpga_clk_mhz) / sfr_mask);
         slow_gap = mod.read_var(param::channel_var::SlowGap, number, 0, false);
         if ((slow_length + slow_gap) > SLOWFILTER_MAX_LEN) {
             slow_length = SLOWFILTER_MAX_LEN - slow_gap;
@@ -641,25 +644,19 @@ channel::energy_risetime_flattop(param::channel_param par, double value)
     param::value_type peak_sep = slow_length + slow_gap;
     param::value_type peak_sample;
 
-    switch (sfr_mask) {
-    case 1 << 1:
+    switch (sfr) {
+    case 1:
         peak_sample = peak_sep - 3;
         break;
-    case 1 << 2:
-        peak_sample = peak_sep - 2;
-        break;
-    case 1 << 3:
-        peak_sample = peak_sep - 2;
-        break;
-    case 1 << 4:
-        peak_sample = peak_sep - 1;
-        break;
-    case 1 << 5:
+    case 5:
         peak_sample = peak_sep;
         break;
-    case 1 << 6:
+    case 4:
+    case 6:
         peak_sample = peak_sep - 1;
         break;
+    case 2:
+    case 3:
     default:
         peak_sample = peak_sep - 2;
         break;

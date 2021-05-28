@@ -41,6 +41,7 @@
 
 #include <doctest.h>
 #include <pixie_channel.hpp>
+#include <pixie_error.hpp>
 #include <pixie_log.hpp>
 #include <simulation.hpp>
 
@@ -646,6 +647,122 @@ TEST_SUITE("Channel Parameter Reads and Writes") {
             crate[1].write_var("TraceLength", size_t(max * 1.5), 0);
             crate[1].write("TRACE_DELAY", 0, 8.2);
             CHECK(crate[1].read("TRACE_DELAY", 0) == max / crate[1].configs[0].fpga_clk_mhz);
+        }
+    }
+    TEST_CASE("ENERGY_RISETIME") {
+        const double max = 127;
+        const double min = 2;
+        const uint32_t slow_gap = 3;
+        crate[1].write_var("SlowGap", slow_gap, 0);
+
+        SUBCASE("Happy Path") {
+            crate[1].write("ENERGY_RISETIME", 0, 0.575);
+            CHECK(crate[1].read_var("SlowLength", 0, 0) == 9);
+            CHECK(crate[1].read("ENERGY_RISETIME", 0) == 0.576);
+        }
+        SUBCASE("Too Big") {
+            crate[1].write("ENERGY_RISETIME", 0, a_big_value);
+            CHECK(crate[1].read_var("SlowLength", 0, 0) == max - slow_gap);
+            CHECK(crate[1].read("ENERGY_RISETIME", 0) == 7.936);
+        }
+        SUBCASE("Too Small") {
+            crate[1].write("ENERGY_RISETIME", 0, a_small_value);
+            CHECK(crate[1].read_var("SlowLength", 0, 0) == min);
+            CHECK(crate[1].read("ENERGY_RISETIME", 0) == 0.128);
+        }
+        SUBCASE("Too Small w/ Gap out of range") {
+            crate[1].write_var("SlowGap", 126, 0);
+            crate[1].write("ENERGY_RISETIME", 0, a_small_value);
+            CHECK(crate[1].read_var("SlowLength", 0, 0) == min);
+            CHECK(crate[1].read_var("SlowGap", 0, 0) == max - min);
+            CHECK(crate[1].read("ENERGY_RISETIME", 0) == 0.128);
+        }
+    }
+    TEST_CASE("ENERGY_FLATTOP") {
+        const double max = 127;
+        const double min = 3;
+        const uint32_t slow_length = 12;
+        crate[1].write_var("SlowLength", slow_length, 0);
+
+        SUBCASE("Happy Path") {
+            crate[1].write("ENERGY_FLATTOP", 0, 0.5);
+            CHECK(crate[1].read_var("SlowGap", 0, 0) == 8);
+            CHECK(crate[1].read("ENERGY_FLATTOP", 0) == 0.512);
+        }
+        SUBCASE("Too Big") {
+            crate[1].write("ENERGY_FLATTOP", 0, a_big_value);
+            CHECK(crate[1].read_var("SlowGap", 0, 0) == max - slow_length);
+            CHECK(crate[1].read("ENERGY_FLATTOP", 0) == 7.36);
+        }
+        SUBCASE("Too Small") {
+            crate[1].write("ENERGY_FLATTOP", 0, a_small_value);
+            CHECK(crate[1].read_var("SlowGap", 0, 0) == min);
+            CHECK(crate[1].read("ENERGY_FLATTOP", 0) == 0.192);
+        }
+        SUBCASE("Too Small w/ Gap out of range") {
+            crate[1].write_var("SlowLength", 126, 0);
+            crate[1].write("ENERGY_FLATTOP", 0, a_small_value);
+            CHECK(crate[1].read_var("SlowGap", 0, 0) == min);
+            CHECK(crate[1].read_var("SlowLength", 0, 0) == max - min);
+            CHECK(crate[1].read("ENERGY_FLATTOP", 0) == 0.192);
+        }
+    }
+    TEST_CASE("energy_risetime_flattop") {
+        crate[1].write_var("SlowLength", 12, 0);
+
+        SUBCASE("Bad Parameter") {
+            CHECK_THROWS_AS(crate[1].channels[0].energy_risetime_flattop(
+                                xia::pixie::param::channel_param::voffset, 1.2),
+                            xia::pixie::error::error);
+        }
+        SUBCASE("SFR = 1") {
+            crate[1].write_var("SlowFilterRange", 1, 0);
+            crate[1].channels[0].energy_risetime_flattop(
+                xia::pixie::param::channel_param::energy_flattop, a_small_value);
+            CHECK(crate[1].read_var("PeakSep", 0, 0) == 15);
+            CHECK(crate[1].read_var("PeakSample", 0, 0) == 12);
+        }
+        SUBCASE("SFR = 2") {
+            crate[1].write_var("SlowFilterRange", 2, 0);
+            crate[1].channels[0].energy_risetime_flattop(
+                xia::pixie::param::channel_param::energy_flattop, a_small_value);
+            CHECK(crate[1].read_var("PeakSep", 0, 0) == 15);
+            CHECK(crate[1].read_var("PeakSample", 0, 0) == 13);
+        }
+        SUBCASE("SFR = 3") {
+            crate[1].write_var("SlowFilterRange", 3, 0);
+            crate[1].channels[0].energy_risetime_flattop(
+                xia::pixie::param::channel_param::energy_flattop, a_small_value);
+            CHECK(crate[1].read_var("PeakSep", 0, 0) == 15);
+            CHECK(crate[1].read_var("PeakSample", 0, 0) == 13);
+        }
+        SUBCASE("SFR = 4") {
+            crate[1].write_var("SlowFilterRange", 4, 0);
+            crate[1].channels[0].energy_risetime_flattop(
+                xia::pixie::param::channel_param::energy_flattop, a_small_value);
+            CHECK(crate[1].read_var("PeakSep", 0, 0) == 15);
+            CHECK(crate[1].read_var("PeakSample", 0, 0) == 14);
+        }
+        SUBCASE("SFR = 5") {
+            crate[1].write_var("SlowFilterRange", 5, 0);
+            crate[1].channels[0].energy_risetime_flattop(
+                xia::pixie::param::channel_param::energy_flattop, a_small_value);
+            CHECK(crate[1].read_var("PeakSep", 0, 0) == 15);
+            CHECK(crate[1].read_var("PeakSample", 0, 0) == 15);
+        }
+        SUBCASE("SFR = 6") {
+            crate[1].write_var("SlowFilterRange", 6, 0);
+            crate[1].channels[0].energy_risetime_flattop(
+                xia::pixie::param::channel_param::energy_flattop, a_small_value);
+            CHECK(crate[1].read_var("PeakSep", 0, 0) == 15);
+            CHECK(crate[1].read_var("PeakSample", 0, 0) == 14);
+        }
+        SUBCASE("SFR = 7") {
+            crate[1].write_var("SlowFilterRange", 7, 0);
+            crate[1].channels[0].energy_risetime_flattop(
+                xia::pixie::param::channel_param::energy_flattop, a_small_value);
+            CHECK(crate[1].read_var("PeakSep", 0, 0) == 15);
+            CHECK(crate[1].read_var("PeakSample", 0, 0) == 13);
         }
     }
 }
