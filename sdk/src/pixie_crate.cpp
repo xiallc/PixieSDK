@@ -126,7 +126,7 @@ namespace crate
                         param::channel_var_descs(param::get_channel_var_descriptors());
                     module.reg_trace = reg_trace;
                     module.open(device_number);
-                } catch (module::error& e) {
+                } catch (pixie::error::error& e) {
                     if (!autodetect) {
                         throw;
                     }
