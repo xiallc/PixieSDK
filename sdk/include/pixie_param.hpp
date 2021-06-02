@@ -348,7 +348,7 @@ namespace param
         const P par;                /* Parameter (index) */
         const rwrowr mode;          /* In/out of the variable */
         const size_t size;          /* Number of DSP words it covers */
-        enabledisable state;        /* Varirable's state */
+        enabledisable state;        /* Variable's state */
         const std::string name;     /* Name of the variable */
         parameter_desc(const P par_,
                        enabledisable state_,
