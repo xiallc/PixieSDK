@@ -121,8 +121,7 @@ namespace module
 
     public:
         /*
-         * A handle holds the module locked. This is for transnational
-         * operations.
+         * Module lock guard
          */
         class guard {
             lock_type& lock_;
@@ -135,7 +134,7 @@ namespace module
         };
 
         /*
-         * Bus guard
+         * Bus lock guard
          */
         class bus_guard {
             bus_lock_type& lock_;
@@ -246,7 +245,7 @@ namespace module
         size_t fifo_buffers;
 
         /*
-         * FIFO run wait poll period. The setting needs to be less than the
+         * FIFO run wait poll period. This setting needs to be less than the
          * period of time it takes to full the FIFO device at the maxiumum data
          * rate. It is used when a run using the FIFO starts or data is detected
          * in the FIFO.
@@ -254,9 +253,9 @@ namespace module
         std::atomic_size_t fifo_run_wait_usecs;
 
         /*
-         * FIFO idle wait poll period. The setting is a back ground poll period
+         * FIFO idle wait poll period. This setting is a back ground poll period
          * used when there is not run active using the FIFO. When a run
-         * finishes the poll period in creases by the power 2 every hold period
+         * finishes the poll period increases by the power 2 every hold period
          * until this value is reached.
          */
         std::atomic_size_t fifo_idle_wait_usecs;
@@ -378,14 +377,22 @@ namespace module
         void write_var(const std::string& var,
                        param::value_type value,
                        size_t channel,
-                       size_t offset = 0);
+                       size_t offset = 0,
+                       bool io = true);
         void write_var(param::module_var var,
                        param::value_type value,
-                       size_t offset = 0);
+                       size_t offset = 0,
+                       bool io = true);
         void write_var(param::channel_var,
                        param::value_type value,
                        size_t channel,
-                       size_t offset = 0);
+                       size_t offset = 0,
+                       bool io = true);
+
+        /*
+         * Synchronize dirty variables with the hardware
+         */
+        void sync_vars();
 
         /*
          * Run control and status

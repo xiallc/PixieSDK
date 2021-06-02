@@ -1328,9 +1328,10 @@ namespace module
             hw::memory::dsp dsp(*this);
             hw::word mem = dsp.read(desc.address);
             hw::convert(mem, value);
-            module_vars[index].value[offset] = value;
+            module_vars[index].value[offset].value = value;
+            module_vars[index].value[offset].dirty = false;
         } else {
-            value = module_vars[index].value[offset];
+            value = module_vars[index].value[offset].value;
         }
         return value;
     }
@@ -1376,9 +1377,10 @@ namespace module
         if (have_hardware && io) {
             hw::memory::dsp dsp(*this);
             hw::convert(dsp.read(channel, desc.address), value);
-            channels[channel].vars[index].value[offset] = value;
+            channels[channel].vars[index].value[offset].value = value;
+            channels[channel].vars[index].value[offset].dirty = false;
         } else {
-            value = channels[channel].vars[index].value[offset];
+            value = channels[channel].vars[index].value[offset].value;
         }
         return value;
     }
@@ -1387,7 +1389,8 @@ namespace module
     module::write_var(const std::string& var,
                       param::value_type value,
                       size_t channel,
-                      size_t offset)
+                      size_t offset,
+                      bool io)
     {
         log(log::info) << module_label(*this)
                        << "write: var=" << var
@@ -1395,19 +1398,20 @@ namespace module
                        << " value[" << offset << "]=" << value
                        << " (0x" << std::hex << value << ')';
         try {
-            write_var(param::lookup_module_var(var), value, offset);
+            write_var(param::lookup_module_var(var), value, offset, io);
         } catch (pixie::error::error& e) {
             if (e.type != error::code::module_invalid_var) {
                 throw;
             }
-            write_var(param::lookup_channel_var(var), value, channel, offset);
+            write_var(param::lookup_channel_var(var), value, channel, offset, io);
         }
     }
 
     void
     module::write_var(param::module_var var,
                       param::value_type value,
-                      size_t offset)
+                      size_t offset,
+                      bool io)
     {
         log(log::debug) << module_label(*this)
                         << "write: var=" << int(var)
@@ -1437,19 +1441,24 @@ namespace module
                         error::code::channel_invalid_param,
                         "invalid module variable offset: " + desc.name);
         }
-        hw::word word;
-        hw::convert(value, word);
-        hw::memory::dsp dsp(*this);
         lock_guard guard(lock_);
-        dsp.write(desc.address, word);
-        module_vars[index].value[offset] = value;
+        module_vars[index].value[offset].value = value;
+        module_vars[index].value[offset].dirty = true;
+        if (have_hardware && io) {
+            hw::word word;
+            hw::convert(value, word);
+            hw::memory::dsp dsp(*this);
+            dsp.write(desc.address, word);
+            module_vars[index].value[offset].dirty = false;
+        }
     }
 
     void
     module::write_var(param::channel_var var,
                       param::value_type value,
                       size_t channel,
-                      size_t offset)
+                      size_t offset,
+                      bool io)
     {
         log(log::debug) << module_label(*this)
                         << "write: var=" << int(var)
@@ -1481,12 +1490,57 @@ namespace module
                         error::code::channel_invalid_param,
                         "invalid channel variable offset: " + desc.name);
         }
-        hw::word word;
-        hw::convert(value, word);
-        hw::memory::dsp dsp(*this);
         lock_guard guard(lock_);
-        dsp.write(channel, desc.address, word);
-        channels[channel].vars[index].value[offset] = value;
+        channels[channel].vars[index].value[offset].value = value;
+        channels[channel].vars[index].value[offset].dirty = true;
+        if (have_hardware && io) {
+            hw::word word;
+            hw::convert(value, word);
+            hw::memory::dsp dsp(*this);
+            dsp.write(channel, desc.address, word);
+            channels[channel].vars[index].value[offset].dirty = false;
+        }
+    }
+
+    void
+    module::sync_vars()
+    {
+        lock_guard guard(lock_);
+        hw::memory::dsp dsp(*this);
+        for (auto& var : module_vars) {
+            const auto& desc = var.var;
+            if (desc.state == param::enable &&
+                desc.mode != param::ro) {
+                for (auto& value : var.value) {
+                    if (value.dirty) {
+                        if (have_hardware) {
+                            hw::word word;
+                            hw::convert(value.value, word);
+                            dsp.write(desc.address, word);
+                        }
+                        value.dirty = false;
+                    }
+                }
+            }
+        }
+        for (auto& channel : channels) {
+            for (auto& var : channel.vars) {
+                const auto& desc = var.var;
+                if (desc.state == param::enable &&
+                    desc.mode != param::ro) {
+                    for (auto& value : var.value) {
+                        if (value.dirty) {
+                            if (have_hardware) {
+                                hw::word word;
+                                hw::convert(value.value, word);
+                                dsp.write(desc.address, word);
+                                value.dirty = false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     void

@@ -162,7 +162,8 @@ module::load_var_defaults(std::istream& input)
                         param::lookup_module_var(label_value[0]);
                     size_t index = static_cast<size_t>(var);
                     param::value_type value = std::stoul(label_value[1]);
-                    module_vars[index].value[0] = value;
+                    module_vars[index].value[0].value = value;
+                    module_vars[index].value[0].dirty = true;
                     log(log::debug) << "sim: module: mod var: "
                                     << label_value[0] << '=' << label_value[1];
                 } else if (param::is_channel_var(label_value[0])) {
@@ -173,7 +174,8 @@ module::load_var_defaults(std::istream& input)
                     for (size_t channel = 0;
                          channel < num_channels;
                          ++channel) {
-                        channels[channel].vars[index].value[0] = value;
+                        channels[channel].vars[index].value[0].value = value;
+                        channels[channel].vars[index].value[0].dirty = true;
                     }
                     log(log::debug) << "sim: module: chan var: "
                                     << label_value[0] << '=' << label_value[1];

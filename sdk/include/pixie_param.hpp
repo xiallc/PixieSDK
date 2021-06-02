@@ -403,8 +403,16 @@ namespace param
      */
     template<typename Vdesc> struct variable
     {
-        const Vdesc& var;               /* The variable descriptor */
-        std::vector<value_type> value;  /* The value(s) */
+        struct data {
+            bool dirty;        /* Written to hardware? */
+            value_type value;
+            data()
+                : dirty(false),
+                  value(0) {
+            }
+        };
+        const Vdesc& var;         /* The variable descriptor */
+        std::vector<data> value;  /* The value(s) */
 
         variable(const Vdesc& var_)
             : var(var_) {

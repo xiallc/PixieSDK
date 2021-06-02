@@ -858,8 +858,9 @@ namespace param
         for (auto f : filter) {
             int v = static_cast<int>(f.var);
             for (size_t i = 0; i < dest.size(); ++i) {
-                dest[v].value[i] =
-                    (dest[v].value[i] & ~f.mask) | (source[v].value[i] & f.mask);
+                dest[v].value[i].value =
+                    (dest[v].value[i].value & ~f.mask) | (source[v].value[i].value & f.mask);
+                dest[v].value[i].dirty = true;
             }
         }
     }
