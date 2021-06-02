@@ -237,10 +237,11 @@ namespace i2c
         bus_write(0);
 
         if (trace) {
-            log(log::debug) << "i2c-bb: get_ack " << ((data & 0x1) == 0);
+          log(log::debug) << std::boolalpha
+                          << "i2c-bb: get_ack " << ((data & SDA) == 0);
         }
 
-        return (data & 0x1) == 0;
+        return (data & SDA) == 0;
     }
 
     void
