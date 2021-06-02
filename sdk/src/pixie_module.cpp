@@ -61,10 +61,6 @@
 
 #include <PlxApi.h>
 
-#if PLX_SDK_VERSION_MAJOR < 6
-#define ConstAddrLocal LocalAddrConst
-#endif
-
 namespace xia
 {
 namespace pixie
@@ -584,13 +580,29 @@ namespace module
              * can be reset and the FIFO worker started. Do not access any
              * other registers until the FPGAs are loaded.
              */
-            hw::i2c::pcf8574 pio(*this, PCF8574_ADDR,
-                                 (1 << 0) | (1 << 3), 1 << 1, 1 << 2);
+            const uint32_t i2c_CTRL = 1 << 2;
+            const uint32_t i2c_SCL = 1 << 1;
+            const uint32_t i2c_SDA = 1 << 0;
 
-            slot = (pio.read_a_byte() & 0xf8) >> 3;
+            hw::i2c::pcf8574 pio(*this, PCF8574_ADDR,
+                                 i2c_SDA, i2c_SCL, i2c_CTRL,
+                                 reg_trace);
+            uint8_t pio_value = pio.read_a_byte();
+
+            if (pio_value == 0) {
+                have_hardware = false;
+                std::ostringstream oss;
+                oss << "pio: device: " << device_number
+                    << ": invalid value: 0";
+                throw error(number, slot,
+                            error::code::module_info_failure,
+                            oss);
+            }
+
+            slot = (pio_value & 0xf8) >> 3;
 
             hw::i2c::i2cm24c64 i2cm24c64(*this, I2CM24C64_ADDR,
-                                         (1 << 0) | (1 << 3), 1 << 1, 1 << 2);
+                                         i2c_SDA, i2c_SCL, i2c_CTRL);
             i2cm24c64.read(0, 128, eeprom);
 
             if (eeprom.size() != 128) {
