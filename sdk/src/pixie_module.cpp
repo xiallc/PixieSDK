@@ -919,8 +919,22 @@ namespace module
                         error::code::module_invalid_operation,
                         "module is online when setting firmware");
         }
-        std::copy(fw.begin(), fw.end(),
-                  std::back_inserter(firmware));
+        for (auto fp : fw) {
+            bool found = false;
+            for (auto fm : firmware) {
+                if (fm == fp) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                log(log::debug) << module_label(*this)
+                                << "add module firmware: "
+                                << fp->tag
+                                << " device: " << fp->device;
+                firmware.push_back(fp);
+            }
+        }
     }
 
     firmware::firmware_ref
@@ -1505,6 +1519,8 @@ namespace module
     void
     module::sync_vars()
     {
+        online_check();
+        log(log::info) << module_label(*this) << "sync variables";
         lock_guard guard(lock_);
         hw::memory::dsp dsp(*this);
         for (auto& var : module_vars) {
@@ -1955,49 +1971,51 @@ namespace module
     }
 
     void
-    module::module_csrb(param::value_type value)
+    module::module_csrb(param::value_type value, bool io)
     {
-        write_var(param::module_var::ModCSRB, value);
-        hw::run::control(*this, hw::run::control_task::program_fippi);
+        write_var(param::module_var::ModCSRB, value, io);
+        if (io) {
+            hw::run::control(*this, hw::run::control_task::program_fippi);
 
-        bus_guard guard(*this);
+            bus_guard guard(*this);
 
-        param::value_type csr = 0xaa;
+            param::value_type csr = 0xaa;
 
-        /*
-         * Set up Pull-up resistors
-         */
-        if ((value & (1 << MODCSRB_CPLDPULLUP)) != 0) {
-            csr |= 1 << MODCSRB_CPLDPULLUP;
-        } else {
-            csr &= ~(1 << MODCSRB_CPLDPULLUP);
+            /*
+             * Set up Pull-up resistors
+             */
+            if ((value & (1 << MODCSRB_CPLDPULLUP)) != 0) {
+                csr |= 1 << MODCSRB_CPLDPULLUP;
+            } else {
+                csr &= ~(1 << MODCSRB_CPLDPULLUP);
+            }
+
+            /*
+             * Enable connections of PXI nearest neighbor lines (J2) onto the
+             * backplane if the module is a Rev-B or C module
+             */
+            if (*this == rev_B || *this == rev_C) {
+                csr |= 1 << CPLDCSR_BPCONNECT;
+            }
+
+            write_word(CFG_CTRLCS, csr);
+
+            /*
+             * Set pullups for the SYNCH lines on the backplane
+             */
+            csr = hw::csr::read(*this);
+
+            if ((csr & (1 << MODCSRB_CHASSISMASTER)) != 0) {
+                csr |= 1 << PULLUP_CTRL;
+            } else {
+                csr &= ~(1 << PULLUP_CTRL);
+            }
+            hw::csr::write(*this, csr);
         }
-
-        /*
-         * Enable connections of PXI nearest neighbor lines (J2) onto the
-         * backplane if the module is a Rev-B or C module
-         */
-        if (*this == rev_B || *this == rev_C) {
-            csr |= 1 << CPLDCSR_BPCONNECT;
-        }
-
-        write_word(CFG_CTRLCS, csr);
-
-        /*
-         * Set pullups for the SYNCH lines on the backplane
-         */
-        csr = hw::csr::read(*this);
-
-        if ((csr & (1 << MODCSRB_CHASSISMASTER)) != 0) {
-            csr |= 1 << PULLUP_CTRL;
-        } else {
-            csr &= ~(1 << PULLUP_CTRL);
-        }
-        hw::csr::write(*this, csr);
     }
 
     void
-    module::slow_filter_range(param::value_type value)
+    module::slow_filter_range(param::value_type value, bool io)
     {
         if (value < SLOWFILTERRANGE_MIN) {
             std::stringstream oss;
@@ -2014,36 +2032,38 @@ namespace module
                         oss.str());
         }
 
-        write_var(param::module_var::SlowFilterRange, value);
+        write_var(param::module_var::SlowFilterRange, value, io);
 
-        /*
-         * Recompute the FIFO settings
-         */
-        value = 1 << read_var(param::module_var::FastFilterRange, 0, false);
-        for (size_t channel = 0; channel < num_channels; ++channel) {
-            param::value_type paf_length =
-                read_var(param::channel_var::PAFlength, channel, 0, false);
-            param::value_type trigger_delay =
-                read_var(param::channel_var::TriggerDelay, channel, 0, false);
-            channels[channel].update_fifo(paf_length - (trigger_delay / value));
+        if (io) {
+            /*
+             * Recompute the FIFO settings
+             */
+            value = 1 << read_var(param::module_var::FastFilterRange, 0, false);
+            for (size_t channel = 0; channel < num_channels; ++channel) {
+                param::value_type paf_length =
+                    read_var(param::channel_var::PAFlength, channel, 0, false);
+                param::value_type trigger_delay =
+                    read_var(param::channel_var::TriggerDelay, channel, 0, false);
+                channels[channel].update_fifo(paf_length - (trigger_delay / value));
+            }
+
+            /*
+             * Apply the settings to the FIPPI FPGA
+             */
+            hw::run::control(*this, hw::run::control_task::program_fippi);
+
+            /*
+             * Update the baseline cut value
+             */
+            channel::range chans(num_channels);
+            channel::range_set(chans);
+            channel::baseline bl(*this, chans);
+            bl.find_cut();
         }
-
-        /*
-         * Apply the settings to the FIPPI FPGA
-         */
-        hw::run::control(*this, hw::run::control_task::program_fippi);
-
-        /*
-         * Update the baseline cut value
-         */
-        channel::range chans(num_channels);
-        channel::range_set(chans);
-        channel::baseline bl(*this, chans);
-        bl.find_cut();
     }
 
     void
-    module::fast_filter_range(param::value_type value)
+    module::fast_filter_range(param::value_type value, bool io)
     {
         if (value > FASTFILTERRANGE_MAX) {
             value = FASTFILTERRANGE_MAX;
@@ -2059,26 +2079,28 @@ namespace module
         }
 #endif
 
-        param::value_type last_ffr =
-            1 << read_var(param::module_var::FastFilterRange, 0, false);
+        write_var(param::module_var::FastFilterRange, value, io);
 
-        write_var(param::module_var::FastFilterRange, value);
+        if (io) {
+            param::value_type last_ffr =
+                1 << read_var(param::module_var::FastFilterRange, 0, false);
 
-        /*
-         * Recompute the FIFO settings
-         */
-        for (size_t channel = 0; channel < num_channels; ++channel) {
-            param::value_type paf_length =
-                read_var(param::channel_var::PAFlength, channel, 0, false);
-            param::value_type trigger_delay =
-                read_var(param::channel_var::TriggerDelay, channel, 0, false);
-            channels[channel].update_fifo(paf_length - (trigger_delay / last_ffr));
+            /*
+             * Recompute the FIFO settings
+             */
+            for (size_t channel = 0; channel < num_channels; ++channel) {
+                param::value_type paf_length =
+                    read_var(param::channel_var::PAFlength, channel, 0, false);
+                param::value_type trigger_delay =
+                    read_var(param::channel_var::TriggerDelay, channel, 0, false);
+                channels[channel].update_fifo(paf_length - (trigger_delay / last_ffr));
+            }
+
+            /*
+             * Apply the settings to the FIPPI FPGA
+             */
+            hw::run::control(*this, hw::run::control_task::program_fippi);
         }
-
-        /*
-         * Apply the settings to the FIPPI FPGA
-         */
-        hw::run::control(*this, hw::run::control_task::program_fippi);
     }
 
     void

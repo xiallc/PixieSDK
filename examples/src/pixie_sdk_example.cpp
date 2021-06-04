@@ -47,10 +47,10 @@
 
 #include "pixie_api_select.hpp"
 
+#include "pixie_config.hpp"
+
 #include "args.hxx"
 #include "easylogging++.h"
-
-#include "configuration.hpp"
 
 #include "pixie16app_export.h"
 #include "pixie16sys_export.h"

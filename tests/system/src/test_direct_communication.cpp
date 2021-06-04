@@ -47,8 +47,9 @@
 #include <type_traits>
 #include <vector>
 
+#include "pixie_config.hpp"
+
 #include "args.hxx"
-#include "configuration.hpp"
 #include "easylogging++.h"
 #include "pixie16app_export.h"
 #include "pixie16sys_export.h"

@@ -515,9 +515,9 @@ namespace module
         /*
          * Module parameter handlers.
          */
-        void module_csrb(param::value_type value);
-        void slow_filter_range(param::value_type value);
-        void fast_filter_range(param::value_type value);
+        void module_csrb(param::value_type value, bool io = true);
+        void slow_filter_range(param::value_type value, bool io = true);
+        void fast_filter_range(param::value_type value, bool io = true);
 
         /*
          * Checks, throws errors.

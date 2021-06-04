@@ -38,6 +38,7 @@
 #include <iomanip>
 #include <sstream>
 
+#include <pixie_config.hpp>
 #include <pixie_crate.hpp>
 #include <pixie_log.hpp>
 
@@ -233,17 +234,37 @@ namespace crate
                                          config.adc_bits);
                 auto mod_fw = firmware.find(tag);
                 if (mod_fw != firmware.end()) {
-                    log(log::debug) << module::module_label(*module)
-                                    << "crate: add module firmware(s): "
-                                    << tag;
                     module->add(firmware[tag]);
                 } else {
-                    log(log::debug) << module::module_label(*module)
-                                    << "crate: module firmware already set: "
-                                    << tag;
+                    log(log::warning) << module::module_label(*module)
+                                      << "crate: module firmware not found: "
+                                      << tag;
                 }
             }
+            if (module->firmware.size() == 0) {
+                log(log::warning) << module::module_label(*module)
+                                  << "no firmware set";
+            }
         }
+    }
+
+    void
+    crate::load(const std::string json_file, module::number_slots& loaded)
+    {
+        ready();
+        loaded.clear();
+        config::load(json_file, *this, loaded);
+        for (auto& module : modules) {
+            if (module->online()) {
+                module->sync_vars();
+            }
+        }
+    }
+
+    void
+    crate::unload(const std::string json_file)
+    {
+        config::unload(json_file, *this);
     }
 
     void

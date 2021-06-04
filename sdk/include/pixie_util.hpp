@@ -108,7 +108,7 @@ struct ostream_guard {
  * Timepiont measures a period of time between two points.
  */
 struct timepoint {
-    typedef std::chrono::time_point<std::chrono::steady_clock> marker;
+    using marker = std::chrono::time_point<std::chrono::steady_clock>;
 
     bool active;
     bool suspended;
@@ -144,7 +144,7 @@ private:
  * IEEE float as a type.
  */
 struct ieee_float {
-    typedef unsigned int value_type;
+    using value_type = unsigned int;
 
     ieee_float();
     ieee_float(const ieee_float& ieee);
@@ -165,6 +165,34 @@ private:
     double out() const;
 
     value_type value;
+};
+
+/*
+ * CRC32 checksum
+ *
+ *
+ * The polynomial is
+ *  X^32+X^26+X^23+X^22+X^16+X^12+X^11+X^10+X^8+X^7+X^5+X^4+X^2+X^1+X^0
+ */
+struct crc32 {
+    using value_type = uint32_t;
+
+    value_type value;
+
+    template <typename T> void update(const T val);
+
+    crc32& operator<<(const std::string& val);
+
+    template <typename T> crc32& operator<<(const T val);
+    template <typename T> crc32& operator<<(const std::vector<T>& vals);
+
+    operator const std::string() const;
+
+    crc32();
+
+private:
+    void update(const unsigned char* data, int len);
+    static const value_type table[256];
 };
 }
 }

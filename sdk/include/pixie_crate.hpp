@@ -109,7 +109,7 @@ namespace crate
         int users() const;
 
         /*
-         * Range checking operators to index modules based on various index
+         * Range checking operator to index modules based on various index
          * types.
          */
         template<typename T> module::module& operator[](T number) {
@@ -119,6 +119,23 @@ namespace crate
                             "module number out of range");
             }
             return *(modules[number_]);
+        }
+
+        /*
+         * Return a module indexed by a slot.
+         */
+        template<typename T> module::module& find(T slot) {
+            size_t slot_ = static_cast<size_t>(slot);
+            auto mod = std::find_if(modules.begin(),
+                                    modules.end(),
+                                    [slot_](const module::module& m) {
+                                        return m.slot == slot_;
+                                    });
+            if (mod == modules.end()) {
+                throw error(pixie::error::code::module_number_invalid,
+                            "module slot not found");
+            }
+            return *mod;
         }
 
         /*
@@ -147,6 +164,16 @@ namespace crate
          * Set the firmwares into the modules in the crate.
          */
         WINDOWS_DLLEXPORT void set_firmware();
+
+        /*
+         * Load a configuration returning a list of loaded modules.
+         */
+        void load(const std::string json_file, module::number_slots& loaded);
+
+        /*
+         * Unload a configuration
+         */
+        void unload(const std::string json_file);
 
         /*
          * Output the crate details.

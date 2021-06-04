@@ -41,8 +41,9 @@
 
 #include <string>
 
+#include <pixie_crate.hpp>
 #include <pixie_error.hpp>
-#include <pixie_module.hpp>
+
 #include "xia_windows_compat.hpp"
 
 namespace xia {
@@ -62,7 +63,18 @@ struct configuration {
 };
 
 PIXIE_EXPORT void PIXIE_API read(const std::string& config_file_name, configuration& cfg);
-void read(const std::string& filename, module::module& module);
+
+/*
+ * Load a JSON confuguration into a crate.
+ */
+void load(const std::string& json_file,
+          crate::crate& crate,
+          module::number_slots& loaded);
+
+/*
+ * Unload a crate's configuration to a JSON file.
+ */
+void unload(const std::string& json_file, crate::crate& crate);
 
 }
 }
