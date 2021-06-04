@@ -198,7 +198,7 @@ load(const std::string& filename,
              */
             for (auto& el : settings["module"]["input"].items()) {
                 /*
-                 * Load variables first and if not a parameter log a warning.
+                 * Load variables first and if not a variable log a warning.
                  */
                 if (param::is_module_var(el.key())) {
                     auto var = param::lookup_module_var(el.key());
@@ -236,7 +236,7 @@ load(const std::string& filename,
              */
             for (auto& el : settings["channel"]["input"].items()) {
                 /*
-                 * Load variables first and if not a parameter log a warning.
+                 * Load variables first and if not a variable log a warning.
                  */
                 if (param::is_channel_var(el.key())) {
                     auto var = param::lookup_channel_var(el.key());
