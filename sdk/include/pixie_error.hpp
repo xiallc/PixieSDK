@@ -104,6 +104,7 @@ enum struct code {
      */
     config_invalid_param,
     config_param_not_found,
+    config_json_error,
     /*
      * File handling
      */

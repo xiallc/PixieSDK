@@ -1557,6 +1557,11 @@ namespace module
                 }
             }
         }
+
+        /*
+         * Update the FIPPI with the values
+         */
+        hw::run::control(*this, hw::run::control_task::program_fippi);
     }
 
     void

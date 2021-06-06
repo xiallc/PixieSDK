@@ -121,6 +121,7 @@ static const std::map<code, result_code> result_codes =
      */
     { code::config_invalid_param,      { 600, "invalid config parameter" } },
     { code::config_param_not_found,    { 601, "config parameter not found" } },
+    { code::config_json_error,         { 602, "config json error" } },
     /*
      * File handling
      */

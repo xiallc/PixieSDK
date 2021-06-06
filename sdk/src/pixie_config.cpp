@@ -56,6 +56,7 @@ namespace pixie
 {
 namespace config
 {
+using json = nlohmann::json;
 
 PIXIE_EXPORT void PIXIE_API
 read(const std::string& config_file_name, configuration& cfg)
@@ -123,6 +124,12 @@ read(const std::string& config_file_name, configuration& cfg)
     input.close();
 }
 
+static void
+throw_json_error(json::exception& e, const std::string& what)
+{
+    throw error(error::code::config_json_error, what + ": " + e.what());
+}
+
 void
 load(const std::string& filename,
      crate::crate& crate,
@@ -135,9 +142,13 @@ load(const std::string& filename,
                     ": " + std::strerror(errno));
     }
 
-    using json = nlohmann::json;
+    json config;
 
-    json config = json::parse(input_json_stream);
+    try {
+        config = json::parse(input_json_stream);
+    } catch (json::exception& e) {
+        throw_json_error(e, "parse config");
+    }
 
     if (config.size() > crate.num_modules) {
         log(log::warning) << "too many module configs (" << config.size()
@@ -156,20 +167,57 @@ load(const std::string& filename,
         } else {
             auto& settings = *ci;
 
-            auto rev =
-                settings["metadata"]["hardware_revision"].get<std::string>();
-            if (rev[0] != module.revision_label()) {
-                log(log::warning) << "config module " << mod
-                                  << " (rev " << rev
-                                  << ") loading on to "
-                                  << module.revision_label();
+            if (!settings.contains("metadata")) {
+                throw error(error::code::config_json_error,
+                            "'metadata' not found");
             }
 
-            auto slot = settings["module"]["input"]["SlotID"];
-            if (slot != module.slot) {
-                log(log::warning) << "config module " << mod
-                                  << " (slot " << slot
-                                  << ") has moved to slot " << module.slot;
+            if (!settings.contains("module")) {
+                throw error(error::code::config_json_error,
+                            "'module' not found");
+            }
+
+            if (!settings.contains("channel")) {
+                throw error(error::code::config_json_error,
+                            "'channel' not found");
+            }
+
+            auto metadata = settings["metadata"];
+            auto moddata = settings["module"];
+            auto chandata = settings["channel"];
+
+            if (!moddata.contains("input")) {
+                throw error(error::code::config_json_error,
+                            "module 'input' not found");
+            }
+
+            if (!chandata.contains("input")) {
+                throw error(error::code::config_json_error,
+                            "channel 'input' not found");
+            }
+
+            try {
+                auto rev = metadata["hardware_revision"].get<std::string>();
+                if (rev[0] != module.revision_label()) {
+                    log(log::warning) << "config module " << mod
+                                      << " (rev " << rev
+                                      << ") loading on to "
+                                      << module.revision_label();
+                }
+            } catch (json::exception& e) {
+                throw_json_error(e, "config rev");
+            }
+
+            try {
+                auto slot = moddata["input"]["SlotID"];
+                if (slot != module.slot) {
+                    log(log::warning) << "config module " << mod
+                                      << " (slot " << slot
+                                      << ") has moved to slot "
+                                      << module.slot;
+                }
+            } catch (json::exception& e) {
+                throw_json_error(e, "config slot-id");
             }
 
             /*
@@ -177,28 +225,41 @@ load(const std::string& filename,
              */
             auto& hw_config = module.configs[0];
 
-            auto adc_bits = settings["metadata"]["adc_bit_resolution"];
-            if (adc_bits != hw_config.adc_bits) {
-                log(log::warning) << "config module " << mod
-                                  << " (slot " << slot
-                                  << ") ADC BIT resolution has changed from "
-                                  << adc_bits << " to " << hw_config.adc_bits;
+            try {
+                auto adc_bits = metadata["adc_bit_resolution"];
+                if (adc_bits != hw_config.adc_bits) {
+                    log(log::warning) << "config module " << mod
+                                      << " (slot " << module.slot
+                                      << ") ADC BIT count has changed from "
+                                      << adc_bits << " to "
+                                      << hw_config.adc_bits;
+                }
+            } catch (json::exception& e) {
+                throw_json_error(e, "config adc-bits");
             }
 
-            auto adc_msps = settings["metadata"]["adc_sampling_frequency"];
-            if (adc_bits != hw_config.adc_bits) {
-                log(log::warning) << "config module " << mod
-                                  << " (slot " << slot
-                                  << ") ADC sampling freq has changed from "
-                                  << adc_msps << " to " << hw_config.adc_msps;
+            try {
+                auto adc_msps = metadata["adc_sampling_frequency"];
+                if (adc_msps != hw_config.adc_msps) {
+                    log(log::warning) << "config module " << mod
+                                      << " (slot " << module.slot
+                                      << ") ADC sampling freq changed from "
+                                      << adc_msps << " to "
+                                      << hw_config.adc_msps;
+                }
+            } catch (json::exception& e) {
+                throw_json_error(e, "config adc-freq");
             }
 
             /*
              * Load module variables
              */
-            for (auto& el : settings["module"]["input"].items()) {
+            for (auto& el : moddata["input"].items()) {
                 /*
-                 * Load variables first and if not a variable log a warning.
+                 * Load variables first and if not a variable check if it is a
+                 * parameter and if not a parameter log a warning. This puts
+                 * variables before parameters and ignores parameters if
+                 * present.
                  */
                 if (param::is_module_var(el.key())) {
                     auto var = param::lookup_module_var(el.key());
@@ -206,7 +267,7 @@ load(const std::string& filename,
                     if (desc.writable()) {
                         if (desc.size != el.value().size()) {
                             log(log::warning) << module::module_label(module)
-                                              << "size does not match config: "
+                                              << "size does not match: "
                                               << el.key();
                         } else {
                             log(log::debug) << module::module_label(module)
@@ -214,10 +275,28 @@ load(const std::string& filename,
                                             << el.key();
                             if (desc.size > 1) {
                                 for (size_t v = 0; v < desc.size; ++v) {
-                                    module.write_var(var, el.value()[v], v, false);
+                                    try {
+                                        module.write_var(var,
+                                                         el.value()[v],
+                                                         v,
+                                                         false);
+                                    } catch (json::exception& e) {
+                                        auto s = el.key() + ": " +
+                                            std::string(el.value());
+                                        throw_json_error(e, s);
+                                    }
                                 }
                             } else {
-                                module.write_var(var, el.value(), 0, false);
+                                try {
+                                    module.write_var(var,
+                                                     el.value(),
+                                                     0,
+                                                     false);
+                                } catch (json::exception& e) {
+                                    auto s = el.key() + ": " +
+                                        std::string(el.value());
+                                    throw_json_error(e, s);
+                                }
                             }
                         }
                     }
@@ -226,7 +305,7 @@ load(const std::string& filename,
                      * If not a parameter (ignore those) log a message
                      */
                     log(log::warning) << "config module " << mod
-                                      << " (slot " << slot
+                                      << " (slot " << module.slot
                                       << "): invalid variable: " << el.key();
                 }
             }
@@ -234,9 +313,12 @@ load(const std::string& filename,
             /*
              * Load channel variables
              */
-            for (auto& el : settings["channel"]["input"].items()) {
+            for (auto& el : chandata["input"].items()) {
                 /*
-                 * Load variables first and if not a variable log a warning.
+                 * Load variables first and if not a variable check if it is a
+                 * parameter and if not a parameter log a warning. This puts
+                 * variables before parameters and ignores parameters if
+                 * present.
                  */
                 if (param::is_channel_var(el.key())) {
                     auto var = param::lookup_channel_var(el.key());
@@ -251,14 +333,23 @@ load(const std::string& filename,
                                             << "channel var set: "
                                             << el.key()
                                             << ": " << el.value();
+                            size_t vchannels = el.value().size() / desc.size;
                             for (size_t channel = 0;
                                  channel < module.num_channels &&
+                                     channel < vchannels &&
                                      channel * desc.size < el.value().size();
                                  ++channel) {
+                                size_t vbase = channel * desc.size;
                                 for (size_t v = 0; v < desc.size; ++v) {
-                                    module.write_var(var,
-                                                     el.value()[0],
-                                                     channel, v, false);
+                                    try {
+                                        module.write_var(var,
+                                                         el.value()[vbase + v],
+                                                         channel, v, false);
+                                    } catch (json::exception& e) {
+                                        auto s = el.key() + ": " +
+                                            std::string(el.value()[vbase + v]);
+                                            throw_json_error(e, s);
+                                    }
                                 }
                             }
                         }
@@ -268,7 +359,7 @@ load(const std::string& filename,
                      * If not a parameter (ignore those) log a message
                      */
                     log(log::warning) << "config module " << mod
-                                      << " (slot " << slot
+                                      << " (slot " << module.slot
                                       << "): invalid variable: " << el.key();
                 }
             }
