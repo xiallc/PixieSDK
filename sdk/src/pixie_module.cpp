@@ -1562,6 +1562,8 @@ namespace module
          * Update the FIPPI with the values
          */
         hw::run::control(*this, hw::run::control_task::program_fippi);
+        hw::run::control(*this, hw::run::control_task::set_dacs);
+        hw::run::control(*this, hw::run::control_task::reset_adc);
     }
 
     void
