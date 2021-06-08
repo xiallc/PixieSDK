@@ -1563,7 +1563,9 @@ namespace module
          */
         hw::run::control(*this, hw::run::control_task::program_fippi);
         hw::run::control(*this, hw::run::control_task::set_dacs);
-        hw::run::control(*this, hw::run::control_task::reset_adc);
+        if (this->revision == 15) {
+            hw::run::control(*this, hw::run::control_task::reset_adc);
+        }
     }
 
     void
