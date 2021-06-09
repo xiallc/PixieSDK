@@ -40,14 +40,9 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
-#include <exception>
 #include <iostream>
-#include <string>
 #include <thread>
-#include <type_traits>
 #include <vector>
-
-#include "pixie_config.hpp"
 
 #include "args.hxx"
 #include "easylogging++.h"
@@ -60,6 +55,49 @@
 #endif
 
 INITIALIZE_EASYLOGGINGPP
+
+/**
+ * @brief A small configuration class to hold information useful to the legacy API.
+ */
+class Configuration {
+public:
+    unsigned short numModules;
+    unsigned short* slot_map;
+    std::string ComFPGAConfigFile;
+    std::string SPFPGAConfigFile;
+    std::string TrigFPGAConfigFile;
+    std::string DSPCodeFile;
+    std::string DSPParFile;
+    std::string DSPVarFile;
+};
+
+/**
+ * @brief Reads the provided configuration file into the Configuration class.
+ * @param config_file_name : The name of the configuration file we'll open.
+ * @return A populated instance of the Configuration class.
+ */
+Configuration read_configuration_file(const std::string& config_file_name) {
+    std::ifstream input(config_file_name, std::ios::in);
+
+    if (input.fail()) {
+        std::stringstream errmsg;
+        errmsg << "Could not open " << config_file_name << "!";
+        throw std::invalid_argument(errmsg.str());
+    }
+
+    Configuration cfg;
+    input >> cfg.numModules;
+    cfg.slot_map = new unsigned short[cfg.numModules + 1];
+    for (size_t i = 0; i < cfg.numModules; i++)
+        input >> cfg.slot_map[i];
+
+    input >> cfg.ComFPGAConfigFile >> cfg.SPFPGAConfigFile >> cfg.TrigFPGAConfigFile >>
+          cfg.DSPCodeFile >> cfg.DSPParFile >> cfg.DSPVarFile;
+
+    input.close();
+    return cfg;
+}
+
 
 /**
  * @brief Configures the EasyLogging++ logger
@@ -77,8 +115,6 @@ void configure_logging(int argc, char** argv) {
             el::ConfigurationType::Format, "%datetime{%Y-%M-%dT%H:%m:%s.%g} - %level - %msg");
     el::Loggers::reconfigureLogger("default", defaultConf);
 }
-
-
 
 
 int main(int argc, char* argv[]) {
@@ -174,9 +210,9 @@ int main(int argc, char* argv[]) {
     } else
         address = stoul(args::get(address_flag), nullptr, 0);
 
-    xia::pixie::config::configuration cfg;
+    Configuration cfg;
     try {
-        xia::pixie::config::read(configuration.Get(), cfg);
+        read_configuration_file(args::get(configuration));
     } catch (std::invalid_argument& invalidArgument) {
         LOG(ERROR) << invalidArgument.what();
         return EXIT_FAILURE;
@@ -187,11 +223,7 @@ int main(int argc, char* argv[]) {
         offline_mode = 1;
 
     LOG(INFO) << "Calling Pixie16InitSystem.";
-    std::shared_ptr<unsigned short> slot_map = std::make_shared<unsigned short>(cfg.num_modules + 1);
-    for (int s = 0; s < cfg.num_modules; ++s) {
-        slot_map.get()[s] = std::get<1>(cfg.slot_map[s]);
-    }
-    if (!verify_api_return_value(Pixie16InitSystem(cfg.num_modules, slot_map.get(), offline_mode),
+    if (!verify_api_return_value(Pixie16InitSystem(cfg.numModules, cfg.slot_map, offline_mode),
                                  "Pixie16InitSystem"))
         return EXIT_FAILURE;
 
@@ -203,9 +235,9 @@ int main(int argc, char* argv[]) {
                   << boot_pattern << std::dec;
 
         if (!verify_api_return_value(
-                Pixie16BootModule(cfg.com_fpga_config.c_str(), cfg.sp_fpga_config.c_str(),
-                                  NULL, cfg.dsp_code.c_str(),
-                                  cfg.dsp_param.c_str(), cfg.dsp_var.c_str(), cfg.num_modules,
+                Pixie16BootModule(cfg.ComFPGAConfigFile.c_str(), cfg.SPFPGAConfigFile.c_str(),
+                                  NULL, cfg.DSPCodeFile.c_str(),
+                                  cfg.DSPParFile.c_str(), cfg.DSPVarFile.c_str(), cfg.numModules,
                                   boot_pattern),
                 "Pixie16BootModule", "INFO - Finished booting!"))
             return EXIT_FAILURE;
