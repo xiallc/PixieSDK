@@ -615,7 +615,12 @@ namespace module
 
             present_ = true;
 
-            start_fifo_services();
+            /*
+             * @todo disable until LM FIFO burst support is added
+             */
+            if (*this != hw::rev_H) {
+                start_fifo_services();
+            }
         }
     }
 
