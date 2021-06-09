@@ -1470,12 +1470,72 @@ namespace module
             }
         }
 
+        sync_hw();
+    }
+
+    void
+    module::sync_hw()
+    {
         /*
          * Update the FIPPI with the values
          */
         hw::run::control(*this, hw::run::control_task::program_fippi);
+
+        /*
+         * Set the DAC
+         */
         hw::run::control(*this, hw::run::control_task::set_dacs);
-        if(*this == hw::rev_F) {
+
+        {
+            bus_guard guard(*this);
+
+            /*
+             * Get the current module CSRb parameter.
+             */
+            param::value_type csrb = read(param::module_param::module_csrb);
+
+            /*
+             * Set pullups for the trigger lines on the backplane
+             *
+             * Also enable connections of PXI nearest neighbor lines (J2) onto
+             * the backplane if the module is a Rev-B or C module
+             */
+            hw::word cpld_csr = 0xaaa;
+
+            if ((csrb & MODCSRB_CPLDPULLUP) != 0) {
+                cpld_csr |= (1 << CPLDCSR_PULLUP);
+            } else {
+                cpld_csr &= ~(1 << CPLDCSR_PULLUP);
+            }
+
+            /*
+             * Enable connections of PXI nearest neighbor lines (J2) onto the
+             * backplane if the module is a rev B or C module
+             */
+            if (*this == hw::rev_B || *this == hw::rev_C) {
+                cpld_csr |= (1 << CPLDCSR_BPCONNECT);
+            }
+
+            write_word(CFG_CTRLCS, cpld_csr);
+
+            /*
+             * Set pullups for the SYNCH lines on the backplane
+             */
+            hw::word csr = hw::csr::read(*this);
+
+            if ((csrb % MODCSRB_CHASSISMASTER) != 0) {
+                csr |= (1 << PULLUP_CTRL);
+            } else {
+                csr &= ~(1 << PULLUP_CTRL);
+            }
+
+            hw::csr::write(*this, csr);
+        }
+
+        /*
+         * Reset the DAC on rev F only.
+         */
+        if (*this == hw::rev_F) {
             hw::run::control(*this, hw::run::control_task::reset_adc);
         }
     }

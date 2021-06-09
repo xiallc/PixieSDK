@@ -386,7 +386,8 @@ namespace module
                        bool io = true);
 
         /*
-         * Synchronize dirty variables with the hardware
+         * Synchronize dirty variables with the hardware and then sync the
+         * hardware state.
          */
         void sync_vars();
 
@@ -514,6 +515,11 @@ namespace module
         void module_csrb(param::value_type value, bool io = true);
         void slow_filter_range(param::value_type value, bool io = true);
         void fast_filter_range(param::value_type value, bool io = true);
+
+        /*
+         * Sycn the hardware after the variables have been sync'ed.
+         */
+        void sync_hw();
 
         /*
          * Checks, throws errors.
