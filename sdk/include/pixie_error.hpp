@@ -99,6 +99,9 @@ enum struct code {
     device_dma_failure,
     device_dma_busy,
     device_fifo_failure,
+    device_eeprom_failure,
+    device_eeprom_bad_type,
+    device_eeprom_not_found,
     /*
      * Configuration
      */

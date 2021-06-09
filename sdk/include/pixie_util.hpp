@@ -179,16 +179,29 @@ struct crc32 {
 
     value_type value;
 
-    template <typename T> void update(const T val);
+    template <typename T> void update(const T val) {
+        update(static_cast<const unsigned char*>(&val), sizeof(T));
+    }
+
+    template <typename T> void update(const std::vector<T>& vals,
+                                      const size_t start = 0) {
+        const size_t so = ((vals.size() - start) *
+                           sizeof(typename std::vector<T>::value_type));
+        update(static_cast<const unsigned char*>(&vals[start]), so);
+    }
+
+    template <typename T> crc32& operator<<(const T& val) {
+        update(val);
+        return *this;
+    }
 
     crc32& operator<<(const std::string& val);
-
-    template <typename T> crc32& operator<<(const T val);
-    template <typename T> crc32& operator<<(const std::vector<T>& vals);
 
     operator const std::string() const;
 
     crc32();
+
+    void clear();
 
 private:
     void update(const unsigned char* data, int len);

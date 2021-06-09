@@ -340,9 +340,9 @@ namespace param
         { channel_var::FastTrigBackLen,   enable,  rw,  1, "FastTrigBackLen" },
         { channel_var::CFDDelay,          enable,  rw,  1, "CFDDelay" },
         { channel_var::CFDScale,          enable,  rw,  1, "CFDScale" },
+        { channel_var::ExternDelayLen,    enable,  rw,  1, "ExternDelayLen" },
         { channel_var::ExtTrigStretch,    enable,  rw,  1, "ExtTrigStretch" },
         { channel_var::VetoStretch,       enable,  rw,  1, "VetoStretch" },
-        { channel_var::ExternDelayLen,    enable,  rw,  1, "ExternDelayLen" },
         { channel_var::QDCLen0,           enable,  rw,  1, "QDCLen0" },
         { channel_var::QDCLen1,           enable,  rw,  1, "QDCLen1" },
         { channel_var::QDCLen2,           enable,  rw,  1, "QDCLen2" },
@@ -503,13 +503,13 @@ namespace param
     }
 
     void
-    address_map::set(const size_t num_channels,
+    address_map::set(const size_t max_channels,
                      const module_var_descs& module_descs,
                      const channel_var_descs& channel_descs)
     {
         vars_per_channel = channel_descs.size();
         module_vars = module_descs.size();
-        channel_vars = num_channels * vars_per_channel;
+        channel_vars = max_channels * vars_per_channel;
         vars = module_vars + channel_vars;
 
         desc_addresses da;
@@ -529,13 +529,13 @@ namespace param
         module.set_size();
 
         get(channel_descs, da, rwrowr::rw);
-        check_channel_gap(num_channels, channel_descs, da);
+        check_channel_gap(max_channels, channel_descs, da);
         channels_in.start = min(da);
         channels_in.end = max(da);
         channels_in.set_size();
 
         get(channel_descs, da, rwrowr::ro);
-        check_channel_gap(num_channels, channel_descs, da);
+        check_channel_gap(max_channels, channel_descs, da);
         channels_out.start = min(da);
         channels_out.end = max(da);
         channels_out.set_size();
@@ -569,7 +569,7 @@ namespace param
     }
 
     void
-    address_map::check_channel_gap(const size_t num_channels,
+    address_map::check_channel_gap(const size_t max_channels,
                                    const channel_var_descs& channel_descs,
                                    const desc_addresses& addresses)
     {
@@ -582,7 +582,7 @@ namespace param
             hw::address addr = std::get<1>(addresses[a]);
             size_t gap = std::get<1>(addresses[a + 1]) - addr;
             size_t gap_num_channels = gap / channel_descs[desc].size;
-            if (gap_num_channels != num_channels) {
+            if (gap_num_channels != max_channels) {
                 throw error(error::code::channel_invalid_var,
                             "invalid channel var address gap: " +
                             channel_descs[desc].name);
@@ -782,10 +782,32 @@ namespace param
          module_var_descs& module_var_descriptors,
          channel_var_descs& channel_var_descriptors)
     {
+        /*
+         * Sanity check for the enums and the tables so they match. If the enum
+         * does not reference the correct variable descriptor things break.
+         */
+        for (size_t d = 0; d < module_var_descriptors_default.size(); ++d) {
+            if (d != size_t(module_var_descriptors_default[d].par)) {
+                log(log::error) << "module desc: index=" << d
+                                << " enum=" << int(module_var_descriptors_default[d].par);
+                throw error(error::code::internal_failure,
+                            "module descriptor table does not match enum ordering");
+            }
+        }
+        for (size_t d = 0; d < channel_var_descriptors_default.size(); ++d) {
+            if (d != size_t(channel_var_descriptors_default[d].par)) {
+                log(log::error) << "channel desc: index=" << d
+                                << " enum=" << int(channel_var_descriptors_default[d].par);
+                throw error(error::code::internal_failure,
+                            "channel descriptor table does not match enum ordering");
+            }
+        }
+
         log(log::info) << "firmware: load vars: " << *firmware;
 
         if (firmware->device != "var") {
-            throw error(error::code::device_image_failure, "invalid image type");
+            throw error(error::code::device_image_failure,
+                        "invalid image type");
         }
         if (firmware->data.empty()) {
             throw error(error::code::device_image_failure, "no image loaded");
@@ -859,7 +881,8 @@ namespace param
             int v = static_cast<int>(f.var);
             for (size_t i = 0; i < dest.size(); ++i) {
                 dest[v].value[i].value =
-                    (dest[v].value[i].value & ~f.mask) | (source[v].value[i].value & f.mask);
+                    (dest[v].value[i].value & ~f.mask) |
+                    (source[v].value[i].value & f.mask);
                 dest[v].value[i].dirty = true;
             }
         }

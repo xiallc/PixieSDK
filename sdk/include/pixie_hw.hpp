@@ -51,6 +51,24 @@ namespace pixie
 namespace hw
 {
     /*
+     * Revision tags
+     */
+    enum rev_tag {
+        rev_A = 10,
+        rev_B,
+        rev_C,
+        rev_D,
+        rev_E,
+        rev_F,
+        rev_G,
+        rev_H,
+        rev_I,
+        rev_J,
+        rev_K,
+        rev_L
+    };
+
+    /*
      * Maximum number of slots in a crate.
      */
     static const int max_slots = 12;
@@ -89,6 +107,11 @@ namespace hw
      * DMA block size.
      */
     static const size_t max_dma_block_size = 8192;
+
+    /*
+     * EEPROM block size
+     */
+    static const size_t eeprom_block_size = 128;
 
     /*
      * Address.
@@ -144,7 +167,16 @@ namespace hw
         int adc_clk_div;
         int fpga_clk_mhz;
 
+        config(int adc_bits,
+               int adc_msps,
+               int adc_clk_div,
+               int fpga_clk_mhz);
         config();
+
+        bool operator==(const config& cfg);
+        bool operator!=(const config& cfg);
+
+        void clear();
     };
 
     typedef std::vector<config> configs;

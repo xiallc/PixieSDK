@@ -91,7 +91,7 @@ namespace crate
     }
 
     void
-    crate::initialize(size_t num_modules_, bool reg_trace)
+    crate::initialize(size_t num_modules_, bool reg_trace, bool keep_found)
     {
         const bool autodetect = num_modules_ == 0;
 
@@ -142,7 +142,9 @@ namespace crate
                                    << " serial-number:" << module.serial_num
                                    << " revision:" << module.revision_label();
                 } else {
-                    modules.pop_back();
+                    if (!keep_found) {
+                        modules.pop_back();
+                    }
                     if (last_module_found) {
                       break;
                     }

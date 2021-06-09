@@ -124,12 +124,12 @@ namespace crate
         /*
          * Return a module indexed by a slot.
          */
-        template<typename T> module::module& find(T slot) {
-            size_t slot_ = static_cast<size_t>(slot);
+        template<typename T> module::module_ptr find(T slot) {
+            int slot_ = static_cast<int>(slot);
             auto mod = std::find_if(modules.begin(),
                                     modules.end(),
-                                    [slot_](const module::module& m) {
-                                        return m.slot == slot_;
+                                    [slot_](const module::module_ptr m) {
+                                        return m->slot == slot_;
                                     });
             if (mod == modules.end()) {
                 throw error(pixie::error::code::module_number_invalid,
@@ -143,7 +143,8 @@ namespace crate
          * all slots are probed.
          */
         WINDOWS_DLLEXPORT void initialize(size_t num_modules = 0,
-                                          bool reg_trace = false);
+                                          bool reg_trace = false,
+                                          bool keep_found = false);
 
         /*
          * Probe the modules.

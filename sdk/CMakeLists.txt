@@ -36,6 +36,7 @@ set(PIXIE_SDK_SOURCES
         src/pixie_stats.cpp
         src/pixie_fw.cpp
         src/pixie_param.cpp
+        src/pixie_eeprom.cpp
         src/pixie_hw.cpp
         src/pixie_buffer.cpp
         src/pixie_util.cpp

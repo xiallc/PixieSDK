@@ -440,27 +440,20 @@ ieee_float::out() const
 }
 
 crc32::crc32()
-    : value(0)
 {
+    clear();
 }
 
-template <typename T> void
-crc32::update(const T val)
+void
+crc32::clear()
 {
-    update(static_cast<const unsigned char*>(&val), sizeof(T));
+    value = 0;
 }
 
 crc32&
 crc32::operator<<(const std::string& val)
 {
     update(reinterpret_cast<const unsigned char*>(val.c_str()), val.length());
-    return *this;
-}
-
-template <typename T> crc32&
-crc32::operator<<(const T val)
-{
-    update(val);
     return *this;
 }
 

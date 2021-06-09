@@ -185,9 +185,9 @@ namespace param
         SlotID,
         ModID,
         TrigConfig,
-        U00,
         HostRunTimePreset,
         PowerUpInitDone,
+        U00,
         /*
          * Out
          */
@@ -518,7 +518,7 @@ namespace param
         void output(std::ostream& out) const;
 
     private:
-        void check_channel_gap(const size_t num_channels,
+        void check_channel_gap(const size_t max_channels,
                                const channel_var_descs& channel_descs,
                                const desc_addresses& addresses);
 

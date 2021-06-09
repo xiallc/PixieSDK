@@ -116,6 +116,9 @@ static const std::map<code, result_code> result_codes =
     { code::device_dma_failure,        { 506, "device dma failure" } },
     { code::device_dma_busy,           { 507, "device dma busy" } },
     { code::device_fifo_failure,       { 508, "device fifo failure" } },
+    { code::device_eeprom_failure,     { 509, "device eeprom failure" } },
+    { code::device_eeprom_bad_type,    { 510, "device eeprom bad type" } },
+    { code::device_eeprom_not_found,   { 511, "device eeprom tag not found" } },
     /*
      * Configuration
      */
@@ -157,21 +160,21 @@ error::error(const code type_, const std::ostringstream& what)
     : runtime_error(what.str()),
       type(type_)
 {
-    log(log::debug) << "error(except): " << what.str();
+    log(log::error) << "error(except): " << what.str();
 }
 
 error::error(const code type_, const std::string& what)
     : runtime_error(what),
       type(type_)
 {
-    log(log::debug) << "error(except): " << what;
+    log(log::error) << "error(except): " << what;
 }
 
 error::error(const code type_, const char* what)
     : runtime_error(what),
       type(type_)
 {
-    log(log::debug) << "error(except): " << what;
+    log(log::error) << "error(except): " << what;
 }
 
 void

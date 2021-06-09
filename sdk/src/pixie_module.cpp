@@ -49,6 +49,7 @@
 #include <hw/dsp.hpp>
 #include <hw/fpga_comms.hpp>
 #include <hw/fpga_fippi.hpp>
+#include <hw/i2cm24c64.hpp>
 #include <hw/memory.hpp>
 #include <hw/pcf8574.hpp>
 #include <hw/run.hpp>
@@ -200,43 +201,6 @@ namespace module
         return oss.str();
     }
 
-    /*
-     * EEPROM module configuration handles the various format versions.
-     */
-    struct module_eeprom_format
-    {
-        std::pair<int, int> revisions;
-        int version;
-    };
-
-    static const std::vector<module_eeprom_format> module_eeprom_formats =
-    {
-        { { 0x0a, 0x0f }, 0 },
-        { { 0x0f, 0x0f }, 1 },
-        { { 0x48, 0xff }, 2 }
-    };
-
-    /*
-     * The early Pixie module EEPROMs do not contain the ADC data. Provide a
-     * table of configuration data.
-     */
-    struct module_config
-    {
-        std::pair<int, int> serial_num;
-        int adc_bits;
-        int adc_msps;
-        int num_channels;
-        int eeprom_format;
-        std::vector<int> revisions;
-    };
-
-    static const std::vector<module_config> module_configs =
-    {
-        { {    0,  255 }, 12, 100, 16, 0, { 0xA } },
-        { {  256,  274 }, 12, 100, 16, 1, { 0xB, 0xC, 0xD } },
-        { { 1000, 1034 }, 12, 250, 16, 1, { 0xF } }
-    };
-
     module::guard::guard(module& mod)
         : lock_(mod.lock_),
           guard_(lock_)
@@ -287,6 +251,8 @@ namespace module
           fifo_run_wait_usecs(default_fifo_run_wait_usec),
           fifo_idle_wait_usecs(default_fifo_idle_wait_usec),
           fifo_hold_usecs(default_fifo_hold_usec),
+          crate_revision(-1),
+          board_revision(-1),
           reg_trace(false),
           fifo_worker_running(false),
           fifo_worker_finished(false),
@@ -296,6 +262,7 @@ namespace module
           comms_fpga(false),
           fippi_fpga(false),
           have_hardware(false),
+          vars_loaded(false),
           device(std::make_unique<pci_bus_handle>())
     {
     }
@@ -321,6 +288,8 @@ namespace module
           fifo_run_wait_usecs(m.fifo_run_wait_usecs.load()),
           fifo_idle_wait_usecs(m.fifo_idle_wait_usecs.load()),
           fifo_hold_usecs(m.fifo_hold_usecs.load()),
+          crate_revision(m.crate_revision),
+          board_revision(m.board_revision),
           reg_trace(m.reg_trace),
           fifo_worker_running(false),
           fifo_worker_finished(false),
@@ -330,6 +299,7 @@ namespace module
           comms_fpga(m.comms_fpga),
           fippi_fpga(m.fippi_fpga),
           have_hardware(false),
+          vars_loaded(false),
           device(std::move(m.device))
     {
         m.slot = 0;
@@ -351,12 +321,15 @@ namespace module
         m.fifo_run_wait_usecs = default_fifo_run_wait_usec;
         m.fifo_idle_wait_usecs = default_fifo_idle_wait_usec;
         m.fifo_hold_usecs = default_fifo_hold_usec;
+        m.crate_revision = -1;
+        m.board_revision = -1;
         m.reg_trace = false;
         m.present_ = false;
         m.online_ = false;
         m.comms_fpga = false;
         m.fippi_fpga = false;
         m.have_hardware = false;
+        m.vars_loaded = false;
     }
 
     module::~module()
@@ -402,12 +375,15 @@ namespace module
         fifo_run_wait_usecs = m.fifo_run_wait_usecs.load();
         fifo_idle_wait_usecs = m.fifo_idle_wait_usecs.load();
         fifo_hold_usecs = m.fifo_hold_usecs.load();
+        crate_revision = m.crate_revision;
+        board_revision = m.board_revision;
         reg_trace = m.reg_trace;
         present_ = m.present_.load();
         online_ = m.online_.load();
         comms_fpga = m.comms_fpga;
         fippi_fpga = m.fippi_fpga;
         have_hardware = m.have_hardware;
+        vars_loaded = m.vars_loaded;
 
         device = std::move(m.device);
 
@@ -426,12 +402,15 @@ namespace module
         m.fifo_run_wait_usecs = default_fifo_run_wait_usec;
         m.fifo_idle_wait_usecs = default_fifo_idle_wait_usec;
         m.fifo_hold_usecs = default_fifo_hold_usec;
+        m.crate_revision = -1;
+        m.board_revision = -1;
         m.reg_trace = false;
         m.present_ = false;
         m.online_ = false;
         m.comms_fpga = false;
         m.fippi_fpga = false;
         m.have_hardware = false;
+        m.vars_loaded = false;
 
         return *this;
     }
@@ -600,47 +579,39 @@ namespace module
             }
 
             slot = (pio_value & 0xf8) >> 3;
+            crate_revision = pio_value & 0x7;
+
+            const uint32_t cfg_rdver = read_word(0xc);
+            board_revision = cfg_rdver & 0xffff;
+
+            log(log::debug) << module_label(*this)
+                            << "crate version: " << crate_revision
+                            << ", board version: " << std::hex << board_revision;
 
             hw::i2c::i2cm24c64 i2cm24c64(*this, I2CM24C64_ADDR,
                                          i2c_SDA, i2c_SCL, i2c_CTRL);
-            i2cm24c64.read(0, 128, eeprom);
+            i2cm24c64.read(0, hw::eeprom_block_size, eeprom.data);
 
-            if (eeprom.size() != 128) {
+            if (eeprom.data.size() != hw::eeprom_block_size) {
                 have_hardware = false;
                 std::ostringstream oss;
                 oss << "eeprom read: device: " << device_number
-                    << ": invalid data length:" << eeprom.size();
+                    << ": invalid data length:" << eeprom.data.size();
                 throw error(number, slot,
                             error::code::module_info_failure,
                             oss);
             }
 
             logging::memdump(log::debug, module_label(*this) + "EEPROM:",
-                             eeprom.data(), eeprom.size());
+                             eeprom.data.data(), eeprom.data.size());
 
-            if (!eeprom_v2()) {
-                /*
-                 *  Starting with serial number 256, serial number is stored in
-                 *  the first two bytes of EEPROM, followed by revision number,
-                 *  which is at least 11 (i.e. Rev-B)
-                 */
-                revision = eeprom[2];
+            eeprom.process();
 
-                if (revision >= rev_B) {
-                    serial_num =
-                        (static_cast<int>(eeprom[1]) << 8) |
-                        static_cast<int>(eeprom[0]);
-                } else {
-                    serial_num = static_cast<int>(eeprom[0]);
-                }
-
-                config_settings();
-            } else {
-                have_hardware = false;
-                throw error(number, slot,
-                            error::code::module_initialize_failure,
-                            "EEPROM format 2 not supported");
-            }
+            num_channels = eeprom.num_channels;
+            max_channels = eeprom.max_channels;
+            serial_num = eeprom.serial_num;
+            revision = eeprom.revision;
+            configs = eeprom.configs;
 
             present_ = true;
 
@@ -737,6 +708,8 @@ namespace module
 
         online_ = dsp_online = fippi_fpga = comms_fpga = false;
 
+        load_vars();
+
         erase_values();
 
         hw::fpga::comms comms(*this);
@@ -775,6 +748,8 @@ namespace module
         }
 
         online_ = false;
+
+        load_vars();
 
         if (boot_comms) {
             if (comms_fpga) {
@@ -840,74 +815,6 @@ namespace module
     void
     module::initialize()
     {
-    }
-
-    void
-    module::config_settings()
-    {
-        if (serial_num == 0xFFFF) {
-            throw error(number, slot,
-                        error::code::module_initialize_failure,
-                        "invalid serial number: blank EEPROM");
-        }
-
-        hw::config config;
-
-        if (serial_num > 1034) {
-            if (revision <= rev_F) {
-                num_channels = 16;
-            } else {
-                num_channels = 16;
-            }
-            eeprom_format = 1;
-            config.adc_bits = static_cast<int>(eeprom[99]);
-            config.adc_msps =
-                (static_cast<int>(eeprom[99 + 2]) << 8) |
-                static_cast<int>(eeprom[99 + 1]);
-        } else {
-            for (const auto& mod_config : module_configs) {
-                if (serial_num >= std::get<0>(mod_config.serial_num) &&
-                    serial_num <= std::get<1>(mod_config.serial_num)) {
-                    num_channels = mod_config.num_channels;
-                    eeprom_format = mod_config.eeprom_format;
-                    config.adc_bits = mod_config.adc_bits;
-                    config.adc_msps = mod_config.adc_msps;
-                    break;
-                }
-            }
-        }
-
-        if (config.adc_bits == 0) {
-            std::ostringstream oss;
-            oss << "unknown serial number to ADC config: "
-                << serial_num;
-            throw error(number, slot,
-                        error::code::module_initialize_failure,
-                        oss.str());
-        }
-
-        /*
-         * Set the FPGA ADC clock divider and the FPGA clock frequency.
-         */
-        switch (config.adc_msps) {
-        case 100:
-            config.adc_clk_div = 1;
-            break;
-        case 250:
-            config.adc_clk_div = 2;
-            break;
-        case 500:
-            config.adc_clk_div = 5;
-            break;
-        default:
-            throw error(number, slot,
-                        error::code::module_initialize_failure,
-                        "invalid ADC MSPS: " + std::to_string(config.adc_msps));
-        };
-
-        config.fpga_clk_mhz = config.adc_msps / config.adc_clk_div;
-
-        configs.resize(num_channels, config);
     }
 
     void
@@ -1890,39 +1797,56 @@ namespace module
     }
 
     bool
-    module::operator==(const rev_tag rev) const
+    module::operator==(const hw::rev_tag rev) const
     {
         return revision == int(rev);
     }
 
     bool
-    module::operator!=(const rev_tag rev) const
+    module::operator!=(const hw::rev_tag rev) const
     {
         return revision != int(rev);
     }
 
     bool
-    module::operator>=(const rev_tag rev) const
+    module::operator>=(const hw::rev_tag rev) const
     {
         return revision >= int(rev);
     }
 
     bool
-    module::operator<=(const rev_tag rev) const
+    module::operator<=(const hw::rev_tag rev) const
     {
         return revision <= int(rev);
     }
 
     bool
-    module::operator<(const rev_tag rev) const
+    module::operator<(const hw::rev_tag rev) const
     {
         return revision < int(rev);
     }
 
     bool
-    module::operator>(const rev_tag rev) const
+    module::operator>(const hw::rev_tag rev) const
     {
         return revision > int(rev);
+    }
+
+    void
+    module::load_vars()
+    {
+        if (!vars_loaded) {
+            firmware::firmware_ref vars = get("var");
+            param::load(vars,
+                        module_var_descriptors,
+                        channel_var_descriptors);
+            param_addresses.set(max_channels,
+                                module_var_descriptors,
+                            channel_var_descriptors);
+            vars_loaded = true;
+            log(log::info) << module_label(*this)
+                           << "address map: " << param_addresses;
+        }
     }
 
     void
@@ -1946,18 +1870,6 @@ namespace module
                         "invalid number of channels configurations");
         }
 
-        firmware::firmware_ref vars = get("var");
-        param::load(vars,
-                    module_var_descriptors,
-                    channel_var_descriptors);
-
-        param_addresses.set(num_channels,
-                            module_var_descriptors,
-                            channel_var_descriptors);
-
-        log(log::info) << module_label(*this)
-                       << "address map: " << param_addresses;
-
         erase_values();
         for (const auto& desc : module_var_descriptors) {
             module_vars.push_back(param::module_variable(desc));
@@ -1971,12 +1883,6 @@ namespace module
             }
         }
 
-    }
-
-    bool
-    module::eeprom_v2() const
-    {
-        return false;
     }
 
     void
@@ -2003,7 +1909,7 @@ namespace module
              * Enable connections of PXI nearest neighbor lines (J2) onto the
              * backplane if the module is a Rev-B or C module
              */
-            if (*this == rev_B || *this == rev_C) {
+            if (*this == hw::rev_B || *this == hw::rev_C) {
                 csr |= 1 << CPLDCSR_BPCONNECT;
             }
 

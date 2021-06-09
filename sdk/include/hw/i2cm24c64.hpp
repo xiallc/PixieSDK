@@ -36,6 +36,8 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------*/
 
+#include <pixie_eeprom.hpp>
+
 #include <hw/i2c_bitbash.hpp>
 
 namespace xia
@@ -54,8 +56,6 @@ namespace i2c
          */
         static const size_t size = 64 * 1024 / 8;
 
-        typedef std::vector<uint8_t> contents;
-
         i2cm24c64(module::module& module,
                   int reg,
                   uint32_t SDA,
@@ -65,12 +65,12 @@ namespace i2c
         /*
          * Read the EEPROM.
          */
-        void read(int address, size_t length, contents& data);
+        void read(int address, size_t length, eeprom::contents& data);
 
         /*
          * Read the entire EEPROM
          */
-        void read(contents& data);
+        void read(eeprom::contents& data);
     };
 }
 }

@@ -55,7 +55,7 @@ namespace i2c
     }
 
     void
-    i2cm24c64::read(int address, size_t length, contents& data)
+    i2cm24c64::read(int address, size_t length, eeprom::contents& data)
     {
         module::module::bus_guard guard(module);
         data.clear();
@@ -67,7 +67,7 @@ namespace i2c
         start();
 
         /*
-         * Send START, device select code, the address
+         * Send device select code, the address
          */
         write_ack(0xA0,
                   "i2cm24c64::sequential_read: no ACK after DevSel");
@@ -94,7 +94,7 @@ namespace i2c
     }
 
     void
-    i2cm24c64::read(contents& data)
+    i2cm24c64::read(eeprom::contents& data)
     {
         read(0, size, data);
     }

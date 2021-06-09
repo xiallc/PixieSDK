@@ -135,8 +135,8 @@ namespace dsp
                 }
 
                 /*
-                 * Download the boot kernel. Blocks of 3 bus words are written as a
-                 * time.
+                 * Download the boot kernel. Blocks of 3 bus words are written
+                 * as a time.
                  */
                 bus_write(EXT_MEM_TEST, EPB0);
                 for (size_t i = 0; i < 256; ++i) {
@@ -190,7 +190,8 @@ namespace dsp
                     default: {
                         std::ostringstream oss;
                         oss << "DSP image tag invalid: offset="
-                            << reader.offset;
+                            << reader.offset
+                            << " tag=" << std::hex << tag;
                         throw error(error::code::device_image_failure,
                                     make_what(oss.str().c_str()));
                     }
@@ -198,10 +199,11 @@ namespace dsp
                 }
 
                 /*
-                 * Wait until DSP variable PowerUpInitDone is set to 1 by the DSP
-                 * after it completes its initialization tasks on hard RESET. This
-                 * should prevent premature downloading of DSP parameters by the
-                 * host, which would cause corruption of DSP internal memory.
+                 * Wait until DSP variable PowerUpInitDone is set to 1 by the
+                 * DSP after it completes its initialization tasks on hard
+                 * RESET. This should prevent premature downloading of DSP
+                 * parameters by the host, which would cause corruption of DSP
+                 * internal memory.
                  */
                 guard.unlock();
                 size_t retry = 10;
@@ -236,13 +238,15 @@ namespace dsp
     bool
     dsp::init_done()
     {
+        const auto& power_up_init_done =
+            module.module_var_descriptors[int(param::module_var::PowerUpInitDone)];
         module::module::bus_guard guard(module);
         bus_write(REQUEST_HBR, 0);
-        bus_write(EXT_MEM_TEST, POWERUPINITDONE_ADDRESS);
+        bus_write(EXT_MEM_TEST, power_up_init_done.address);
         word value = bus_read(WRT_DSP_MMA);
         bus_write(HBR_DONE, 0);
         if (value == 1) {
-          csr::clear(module, 1 << DSPDOWNLOAD);
+            csr::clear(module, 1 << DSPDOWNLOAD);
         }
         return value == 1;
     }

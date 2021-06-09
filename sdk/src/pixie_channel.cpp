@@ -1512,13 +1512,13 @@ channel::extern_delay_len(double value)
     param::value_type externdelaylen_max;
 
     switch (mod.revision) {
-    case module::module::rev_B:
-    case module::module::rev_C:
-    case module::module::rev_D:
+    case hw::rev_B:
+    case hw::rev_C:
+    case hw::rev_D:
         externdelaylen_max = EXTDELAYLEN_MAX_REVBCD;
         break;
-    case module::module::rev_F:
-    case module::module::rev_H:
+    case hw::rev_F:
+    case hw::rev_H:
         externdelaylen_max = EXTDELAYLEN_MAX_REVF;
         break;
     default:
@@ -1564,13 +1564,13 @@ channel::ftrig_out_delay(double value)
     param::value_type ftrigoutdelay_max;
 
     switch (mod.revision) {
-    case module::module::rev_B:
-    case module::module::rev_C:
-    case module::module::rev_D:
+    case hw::rev_B:
+    case hw::rev_C:
+    case hw::rev_D:
         ftrigoutdelay_max = EXTDELAYLEN_MAX_REVBCD;
         break;
-    case module::module::rev_F:
-    case module::module::rev_H:
+    case hw::rev_F:
+    case hw::rev_H:
         ftrigoutdelay_max = EXTDELAYLEN_MAX_REVF;
         break;
     default:

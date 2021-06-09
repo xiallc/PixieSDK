@@ -240,7 +240,7 @@ namespace memory
         /*
          * Dummy read to make the FPGA not glitch at the end of addr write.
          */
-        if (module >= module::module::rev_H) {
+        if (module >= hw::rev_H) {
             (void) bus_read(MCA_MEM_DATA);
         }
 

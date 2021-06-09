@@ -46,6 +46,7 @@
 
 #include <pixie_buffer.hpp>
 #include <pixie_channel.hpp>
+#include <pixie_eeprom.hpp>
 #include <pixie_error.hpp>
 #include <pixie_fw.hpp>
 #include <pixie_hw.hpp>
@@ -53,7 +54,6 @@
 #include <pixie_param.hpp>
 #include <pixie_stats.hpp>
 
-#include <hw/i2cm24c64.hpp>
 #include <hw/run.hpp>
 
 namespace xia
@@ -147,20 +147,6 @@ namespace module
         };
 
         /*
-         * Revision tags
-         */
-        enum rev_tag {
-            rev_A = 10,
-            rev_B,
-            rev_C,
-            rev_D,
-            rev_E,
-            rev_F,
-            rev_G,
-            rev_H
-        };
-
-        /*
          * Defaults
          */
         static const size_t default_fifo_buffers = 100;
@@ -195,6 +181,11 @@ namespace module
         size_t num_channels;
 
         /*
+         * Maximum umber of channels
+         */
+        size_t max_channels;
+
+        /*
          * Module's register VM address.
          */
         void* vmaddr;
@@ -207,7 +198,7 @@ namespace module
         /*
          * EEPROM
          */
-        hw::i2c::i2cm24c64::contents eeprom;
+        eeprom::eeprom eeprom;
         int eeprom_format;
 
         /*
@@ -268,6 +259,16 @@ namespace module
         std::atomic_size_t fifo_hold_usecs;
 
         /*
+         * Crate revision
+         */
+        int crate_revision;
+
+        /*
+         * Board revision
+         */
+        int board_revision;
+
+        /*
          * Diagnostics
          */
         bool reg_trace;
@@ -317,11 +318,6 @@ namespace module
          * Initialise the module ready for use.
          */
         virtual void initialize();
-
-        /*
-         * Configure the settings from the revision and serial number.
-         */
-        virtual void config_settings();
 
         /*
          * Add or get the firmware.
@@ -482,12 +478,12 @@ namespace module
          * Revision tag operators to make comparisions of a version simpler to
          * code.
          */
-        bool operator==(const rev_tag rev) const;
-        bool operator!=(const rev_tag rev) const;
-        bool operator>=(const rev_tag rev) const;
-        bool operator<=(const rev_tag rev) const;
-        bool operator<(const rev_tag rev) const;
-        bool operator>(const rev_tag rev) const;
+        bool operator==(const hw::rev_tag rev) const;
+        bool operator!=(const hw::rev_tag rev) const;
+        bool operator>=(const hw::rev_tag rev) const;
+        bool operator<=(const hw::rev_tag rev) const;
+        bool operator<(const hw::rev_tag rev) const;
+        bool operator>(const hw::rev_tag rev) const;
 
     protected:
         /*
@@ -502,15 +498,15 @@ namespace module
         }
 
         /*
+         * Load the variable address map.
+         */
+        virtual void load_vars();
+
+        /*
          * Initialise the values.
          */
         virtual void erase_values();
         virtual void init_values();
-
-        /*
-         * Check the EEPROM for verison 2 format.
-         */
-        bool eeprom_v2() const;
 
         /*
          * Module parameter handlers.
@@ -583,6 +579,11 @@ namespace module
          * Have hardware?
          */
         bool have_hardware;
+
+        /*
+         * Vars loaded?
+         */
+        bool vars_loaded;
 
         /*
          * PCI bus. The type is opaque.
