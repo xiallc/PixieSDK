@@ -106,20 +106,33 @@ bool execute_baseline_capture(const unsigned int& module) {
                                  pixie->label("acquire_baselines")))
         return false;
 
-    const size_t num_baselines = 10;
+    double baselines[NUMBER_OF_CHANNELS][MAX_NUM_BASELINES];
+    double timestamps[MAX_NUM_BASELINES];
     for (unsigned int i = 0; i < NUMBER_OF_CHANNELS; i++) {
         LOG(INFO) << "Acquiring baselines for Channel " << i;
-        std::vector<double> baselines(num_baselines, 0);
-        std::vector<double> timestamps(num_baselines, 0);
-        if (!verify_api_return_value(pixie->read_sgl_chan_baselines(baselines.data(),
-                                                                    timestamps.data(),
-                                                                    num_baselines, module, i),
+        if (!verify_api_return_value(pixie->read_sgl_chan_baselines(baselines[i],
+                                                                    timestamps,
+                                                                    MAX_NUM_BASELINES, module, i),
                                      "read_sgl_chan_baselines"))
             return false;
-        for(size_t idx = 0; idx < num_baselines; idx++){
-            std::cout << "timestamp = " << timestamps[idx] << " ; baseline = " << baselines[idx] << std::endl;
-        }
     }
+
+    std::ofstream ofstream1("baselines-module" + std::to_string(module) + ".csv");
+    ofstream1 << "sample, timestamp,";
+    for (unsigned int i = 0; i < NUMBER_OF_CHANNELS; i++)
+        ofstream1 << "Chan" << i << ",";
+    ofstream1 << std::endl;
+    for (unsigned int i = 0; i < MAX_NUM_BASELINES; i++) {
+        ofstream1 << i << "," << timestamps[i] << ",";
+        for (unsigned int k = 0; k < NUMBER_OF_CHANNELS; k++) {
+            if (k != NUMBER_OF_CHANNELS - 1)
+                ofstream1 << baselines[k][i] << ",";
+            else
+                ofstream1 << baselines[k][i];
+        }
+        ofstream1 << std::endl;
+    }
+
     return true;
 }
 
