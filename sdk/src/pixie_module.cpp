@@ -874,14 +874,14 @@ namespace module
     param::value_type
     module::read(const std::string& par)
     {
-        log(log::info) << module_label(*this) << "write: par=" << par;
+        log(log::info) << module_label(*this) << "read: par=" << par;
         return read(param::lookup_module_param(par));
     }
 
     param::value_type
     module::read(param::module_param par)
     {
-        log(log::debug) << module_label(*this) << "write: par=" << int(par);
+        log(log::debug) << module_label(*this) << "read: par=" << int(par);
         online_check();
         const param::module_var var = param::map_module_param(par);
         size_t offset;
