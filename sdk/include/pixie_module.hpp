@@ -298,6 +298,11 @@ namespace module
         virtual void close();
 
         /*
+         * Force offline.
+         */
+        void force_offline();
+
+        /*
          * Range check the channel number.
          */
         template<typename T> void check_channel_num(T number);
@@ -573,6 +578,11 @@ namespace module
          * Online and ready to use.
          */
         std::atomic_bool online_;
+
+        /*
+         * Forced offline by the user.
+         */
+        std::atomic_bool forced_offline_;
 
         /*
          * System, FIPPI and DSP online.

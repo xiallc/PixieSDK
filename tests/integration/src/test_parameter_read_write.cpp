@@ -81,7 +81,7 @@ void setup_simulation() {
         auto fw = xia::pixie::firmware::parse(item, ',');
         xia::pixie::firmware::add(crate.firmware, fw);
     }
-    crate.initialize(module_defs.size(), false);
+    crate.initialize(false);
     crate.set_firmware();
     crate.probe();
     for (auto& mod : crate.modules) {

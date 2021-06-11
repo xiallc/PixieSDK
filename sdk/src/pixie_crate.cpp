@@ -91,27 +91,21 @@ namespace crate
     }
 
     void
-    crate::initialize(size_t num_modules_, bool reg_trace, bool keep_found)
+    crate::initialize(bool reg_trace)
     {
-        const bool autodetect = num_modules_ == 0;
+        log(log::info) << "crate: initialise";
 
-        log(log::info) << "crate: initialise: num-modules=" << num_modules_
-                       << " auto-detect=" << std::boolalpha << autodetect;
-
+        /*
+         * Set ready to true and if there is an issue return it to false.
+         */
         if (ready_.exchange(true)) {
             throw error(pixie::error::code::crate_already_open,
                         "create already initialised");
         }
 
         try {
-            size_t max_modules = num_modules = num_modules_;
-
-            if (max_modules == 0) {
-                max_modules = hw::max_slots;
-            }
-
             for (size_t device_number = 0;
-                 device_number < max_modules;
+                 device_number < hw::max_slots;
                  ++device_number) {
 
                 add_module();
@@ -128,9 +122,6 @@ namespace crate
                     module.reg_trace = reg_trace;
                     module.open(device_number);
                 } catch (pixie::error::error& e) {
-                    if (!autodetect) {
-                        throw;
-                    }
                     last_module_found = e.type == module::error::code::not_supported;
                     log(log::error) << "module: device " << device_number
                                     << ": error: " << e.what();
@@ -142,24 +133,41 @@ namespace crate
                                    << " serial-number:" << module.serial_num
                                    << " revision:" << module.revision_label();
                 } else {
-                    if (!keep_found) {
-                        modules.pop_back();
-                    }
                     if (last_module_found) {
-                      break;
+                        modules.pop_back();
+                        break;
                     }
+                    log(log::info) << "module offline: device " << device_number;
+                    std::move(std::prev(modules.end()),
+                              modules.end(),
+                              std::back_inserter(offline));
+                    modules.pop_back();
                 }
             }
 
-            module::set_number_by_slot(modules);
+            num_modules = modules.size();
 
-            if (num_modules == 0) {
-                num_modules = modules.size();
-            }
+            module::set_number_by_slot(modules);
+            order_by_slot(modules);
         } catch (...) {
             ready_ = false;
             throw;
         }
+    }
+
+    void
+    crate::set_offline(module::module_ptr module)
+    {
+        for (auto mi = modules.begin(); mi != modules.end(); ++mi) {
+            if (module == *mi) {
+                module->force_offline();
+                std::move(mi, std::next(mi), std::back_inserter(offline));
+                modules.erase(mi);
+                return;
+            }
+        }
+        throw error(error::code::module_not_found,
+                    "offline module not found in modules");
     }
 
     void
@@ -297,11 +305,33 @@ namespace crate
     }
 
     void
-    crate::assign(const module::number_slots& numbers)
+    crate::assign(const module::number_slots& numbers, bool force_offline)
     {
         ready();
-        module::assign(modules, numbers);
-        module::order_by_number(modules);
+        /*
+         * Any errors result in the crate being
+         */
+        try {
+          module::assign(modules, numbers);
+          /*
+           * Force offline any module not in the map. The loop resets the
+           * interator after any changes to modules.
+           */
+          while (force_offline) {
+              force_offline = false;
+              for (auto mod : modules) {
+                  if (mod->number == -1) {
+                      set_offline(mod);
+                      force_offline = true;
+                      break;
+                  }
+              }
+          }
+          module::order_by_number(modules);
+        } catch (...) {
+          module::set_number_by_slot(modules);
+          throw;
+        }
     }
 
     void

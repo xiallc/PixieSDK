@@ -259,6 +259,7 @@ namespace module
           in_use(0),
           present_(false),
           online_(false),
+          forced_offline_(false),
           comms_fpga(false),
           fippi_fpga(false),
           have_hardware(false),
@@ -296,6 +297,7 @@ namespace module
           in_use(0),
           present_(m.present_.load()),
           online_(m.online_.load()),
+          forced_offline_(m.forced_offline_.load()),
           comms_fpga(m.comms_fpga),
           fippi_fpga(m.fippi_fpga),
           have_hardware(false),
@@ -326,6 +328,7 @@ namespace module
         m.reg_trace = false;
         m.present_ = false;
         m.online_ = false;
+        m.forced_offline_ = false;
         m.comms_fpga = false;
         m.fippi_fpga = false;
         m.have_hardware = false;
@@ -380,6 +383,7 @@ namespace module
         reg_trace = m.reg_trace;
         present_ = m.present_.load();
         online_ = m.online_.load();
+        forced_offline_ = m.forced_offline_.load();
         comms_fpga = m.comms_fpga;
         fippi_fpga = m.fippi_fpga;
         have_hardware = m.have_hardware;
@@ -407,6 +411,7 @@ namespace module
         m.reg_trace = false;
         m.present_ = false;
         m.online_ = false;
+        m.forced_offline_ = false;
         m.comms_fpga = false;
         m.fippi_fpga = false;
         m.have_hardware = false;
@@ -424,7 +429,7 @@ namespace module
     bool
     module::online() const
     {
-        return online_.load();
+        return online_.load() && !forced_offline_.load();
     }
 
     void
@@ -665,6 +670,7 @@ namespace module
 
             device->device_number = -1;
             online_ = false;
+            forced_offline_ = false;
             have_hardware = false;
             present_ = false;
 
@@ -692,6 +698,17 @@ namespace module
                             error::code::module_close_failure,
                             oss.str());
             }
+        }
+    }
+
+    void
+    module::force_offline()
+    {
+        log(log::info) << module_label(*this) << "set offline";
+        lock_guard guard(lock_);
+        if (!forced_offline_.load()) {
+            stop_fifo_services();
+            forced_offline_ = true;
         }
     }
 
@@ -748,8 +765,12 @@ namespace module
     {
         lock_guard guard(lock_);
 
+        if (forced_offline_.load()) {
+            log(log::warning) << "module forced offline";
+        }
+
         if (online()) {
-            log(log::warning) << "boot online module";
+            log(log::warning) << "booting online module";
         }
 
         online_ = false;
@@ -1786,6 +1807,7 @@ namespace module
             << " slot: " << std::setw(2) << slot
             << " present:" << present_.load()
             << " online:" << online_.load()
+            << " forced-offline:" << forced_offline_.load()
             << " serial:" << serial_num
             << " rev:" << revision_label()
             << " (" << revision
@@ -2086,6 +2108,11 @@ namespace module
     void
     module::online_check() const
     {
+        if (forced_offline_.load()) {
+            throw error(number, slot,
+                        error::code::module_offline,
+                        "module is forced offline");
+        }
         if (!online()) {
             throw error(number, slot,
                         error::code::module_offline,
@@ -2317,12 +2344,26 @@ namespace module
     void
     assign(modules& modules_, const number_slots& numbers)
     {
-        for (auto number_slot : numbers) {
-            for (auto& mod : modules_) {
+        std::ostringstream oss;
+        for (auto& number_slot : numbers) {
+            oss << number_slot.second << "->" << number_slot.first << ' ';
+        }
+        log(log::info) << "assign slot map: " << oss.str();
+        for (auto& mod : modules_) {
+            mod->number = -1;
+        }
+        for (auto& mod : modules_) {
+            for (auto number_slot : numbers) {
                 if (mod->slot == number_slot.second) {
                     mod->number = number_slot.first;
                     break;
                 }
+            }
+        }
+        for (auto& mod : modules_) {
+            if (mod->number == -1) {
+                log(log::warning) << "module not found in slot map: "
+                                  << mod->slot;
             }
         }
     }
@@ -2333,7 +2374,10 @@ namespace module
         std::sort(mods.begin(),
                   mods.end(),
                   [](module_ptr& a, module_ptr& b) {
-                      return a->number < b->number; } );
+                      return
+                          a->number != -1 &&
+                          b->number != -1 &&
+                          a->number < b->number; } );
     }
 
     void

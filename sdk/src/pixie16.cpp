@@ -327,13 +327,15 @@ PixieBootModule(const char* ComFPGAConfigFile,
         if (ModNum == crate.num_modules) {
             xia::pixie::crate::crate::user user(crate);
             for (auto& module : crate.modules) {
-                PixieBootModule(*module,
-                                ComFPGAConfigFile,
-                                SPFPGAConfigFile,
-                                DSPCodeFile,
-                                DSPParFile,
-                                DSPVarFile,
-                                BootPattern);
+                if (module->online()) {
+                    PixieBootModule(*module,
+                                    ComFPGAConfigFile,
+                                    SPFPGAConfigFile,
+                                    DSPCodeFile,
+                                    DSPParFile,
+                                    DSPVarFile,
+                                    BootPattern);
+                }
             }
         } else {
             xia::pixie::crate::module_handle module(crate, ModNum);
@@ -658,11 +660,20 @@ PixieInitSystem(unsigned short NumModules,
          * number of modules (ie the length of the array) and the array.
          */
         if (NumModules > 0 && PXISlotMap != nullptr) {
+            /*
+             * If the number of modules does not match the slot map it is an
+             * error. A module may or may not have been found.
+             */
+            if (NumModules != crate.num_modules) {
+                throw xia_error(xia_error::code::module_total_invalid,
+                                "module count does not match user supplied " \
+                                "number of modules");
+            }
             xia::pixie::module::number_slots numbers;
             for (int i = 0; i < static_cast<int>(NumModules); ++i) {
                 typedef xia::pixie::module::number_slot number_slot;
                 xia_log(xia_log::info) << "PixieInitSystem: slot map: "
-                               << PXISlotMap[i] << " => " << i + 1;
+                                       << PXISlotMap[i] << " => " << i + 1;
                 numbers.push_back(number_slot(i, PXISlotMap[i]));
             }
             crate.assign(numbers);
@@ -1103,7 +1114,7 @@ PixieWriteSglModPar(const char* ModParName,
         if (bcast) {
             xia::pixie::crate::crate::user user(crate);
             for (auto& module : crate.modules) {
-                if (ModNum != module->number) {
+                if (ModNum != module->number && module->online()) {
                     module->write(ModParName, ModParData);
                 }
             }

@@ -79,9 +79,17 @@ namespace crate
         size_t num_modules;
 
         /*
-         * A crate contains a number of modules in slots.
+         * A crate contains a number of modules in slots. These modules are
+         * online and ready for use.
          */
         module::modules modules;
+
+        /*
+         * The offline modules have been detected by are not online. This lets
+         * a user check a crate and determine the state of all detected
+         * modules.
+         */
+        module::modules offline;
 
         /*
          * Firmware for the crate. Check the modules for the ones they have
@@ -132,19 +140,30 @@ namespace crate
                                         return m->slot == slot_;
                                     });
             if (mod == modules.end()) {
-                throw error(pixie::error::code::module_number_invalid,
-                            "module slot not found");
+                mod = std::find_if(offline.begin(),
+                                   offline.end(),
+                                   [slot_](const module::module_ptr m) {
+                                       return m->slot == slot_;
+                                   });
+                if (mod == offline.end()) {
+                    throw error(pixie::error::code::module_number_invalid,
+                                "module slot not found");
+                }
             }
             return *mod;
         }
 
         /*
-         * Initialise the crate and get it ready. If the number of slots is 0
-         * all slots are probed.
+         * Initialise the crate and get it ready.
          */
-        WINDOWS_DLLEXPORT void initialize(size_t num_modules = 0,
-                                          bool reg_trace = false,
-                                          bool keep_found = false);
+        WINDOWS_DLLEXPORT void initialize(bool reg_trace = false);
+
+        /*
+         * Mark a module as offline and move to the offline module list. This
+         * invalidates any iterators you may hold to the modules and offline
+         * containers.
+         */
+        void set_offline(module::module_ptr module);
 
         /*
          * Probe the modules.
@@ -157,9 +176,12 @@ namespace crate
         WINDOWS_DLLEXPORT void boot();
 
         /*
-         * Assign numbers to the modules by slot.
+         * Assign numbers to the modules by slot. Modules not in the map are
+         * forced offline. You can optionally stop this happening but the
+         * number for the modules not in the map will be invalid.
          */
-        void assign(const module::number_slots& numbers);
+        void assign(const module::number_slots& numbers,
+                    bool force_offline = true);
 
         /*
          * Set the firmwares into the modules in the crate.

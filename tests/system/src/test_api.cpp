@@ -913,10 +913,15 @@ main(int argc, char* argv[])
             }
         }
 
-        std::cout << "detecting modules" << std::endl;
-        crate.initialize(num_modules, reg_trace);
-        std::cout << "modules found: " << crate.modules.size()
+        std::cout << "crate: initialize" << std::endl;
+        crate.initialize(reg_trace);
+        std::cout << "modules: detected=" << crate.modules.size()
                   << std::endl;
+
+        if (num_modules != 0 && crate.num_modules != num_modules) {
+            throw std::runtime_error("invalid number of modules detected: detected = " +
+                                     std::to_string(crate.num_modules));
+        }
 
         if (slot_map_flag) {
             xia::pixie::module::number_slots slot_map;
@@ -924,6 +929,10 @@ main(int argc, char* argv[])
                 slot_map.emplace_back(std::make_pair(slot_map.size(), slot));
             crate.assign(slot_map);
         }
+
+        std::cout << "modules: online=" << crate.modules.size()
+                  << " offline=" << crate.offline.size()
+                  << std::endl;
 
         crate.set_firmware();
         crate.probe();

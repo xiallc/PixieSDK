@@ -78,6 +78,8 @@ enum struct code {
     module_param_readonly,
     module_param_writeonly,
     module_task_timeout,
+    module_invalid_slot,
+    module_not_found,
     /*
      * Channel
      */
