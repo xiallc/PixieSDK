@@ -88,7 +88,6 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
     PLX_STATUS rc;
 
     char sbuffer[100] = {0};   // Temporary buffer
-    unsigned int ModSerNum;
     unsigned char PlxBusNum[SYS_MAX_NUM_MODULES], PlxDeviceNum[SYS_MAX_NUM_MODULES];
     unsigned char Bus_Number[SYS_MAX_NUM_MODULES] = { 0 };        // PCI bus number for each module
     unsigned char Device_Number[SYS_MAX_NUM_MODULES] = { 0 };     // PCI device number for each module
@@ -423,46 +422,6 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
                     return (-12);
                 } else {
                     Pixie_Print_Debug(PIXIE_FUNC, "VAddr[%d][%d]=0x%lx", Bus_Number[k], k, VAddr[k]);
-                }
-
-                // Read module serial number which is stored in the beginning of the I2C serial EEPROM.
-                // First three words of EEPROM stores serial number and revision number
-                retval = I2CM24C64_Sequential_Read(k, 0, 3, sbuffer);
-                if (retval < 0) {
-                    Pixie_Print_Error(PIXIE_FUNC,
-                                      "Could not read serial number for Module=%d; retval=%d",
-                                      k, retval);
-                }
-                // Starting with serial number 256, serial number is stored in the first two bytes of EEPROM, followed by
-                // revision number, which is at least 11 (i.e. Rev-B)
-                unsigned int rev = sbuffer[2];
-                if (rev >= 0x0b) {
-                    ModSerNum = (unsigned short) (unsigned char) sbuffer[0] +
-                                256 * (unsigned short) (unsigned char) sbuffer[1];
-                } else {
-                    ModSerNum = (unsigned short) (unsigned char) sbuffer[0];
-                }
-                Pixie_Print_Debug(PIXIE_FUNC,
-                                  "Module # %d: Serial Number = %d and Revision = 0x%02x",
-                                  k, ModSerNum, rev);
-
-                if(rev > 0xF) {
-                    Pixie_Print_Error(PIXIE_FUNC,
-                                      "Module %d (SN = %d) is an unsupported revision (0x%02x)!!",
-                                      k, ModSerNum, rev);
-                    Pixie_Print_Info(PIXIE_FUNC,
-                                     "Please remove SN %d in Slot %d from your configuration!",
-                                     ModSerNum, Slot_Number[PlxModIndex[k]]);
-
-                    for (m = 0; m < k; m++) {
-                        retval = Pixie_ClosePCIDevices(m);
-                        if (retval < 0)
-                            Pixie_Print_Error(PIXIE_FUNC,
-                                              "Could not close PCI device for Module=%d; rc=%d",
-                                              m, rc);
-                    }
-
-                    return (-20);
                 }
             }
         } else {

@@ -54,6 +54,11 @@
 #include <unistd.h>
 #endif
 
+/*
+ * Set to 1 to enable register tracing
+ */
+int Pixie_Register_IO_Trace;
+
 /**
  * @defgroup COMMUNICATION Communication
  * @ingroup PRIVATE
@@ -783,9 +788,11 @@ int Pixie_Register_IO(unsigned short ModNum,  // the Pixie module to communicate
         *value = *(unsigned int*) (VAddr[ModNum] + address);
     }
 
-    Pixie_Print_Debug(PIXIE_FUNC, "IO %c %2d %p:%x %s %0x\n",
-                      direction == SYS_MOD_WRITE ? 'w' : 'r', ModNum, (unsigned int*) VAddr[ModNum],
-                      address, direction == SYS_MOD_WRITE ? "<=" : "=>", *value);
+    if (Pixie_Register_IO_Trace) {
+        Pixie_Print_Debug(PIXIE_FUNC, "IO %c %2d %p:%x %s %0x\n",
+                          direction == SYS_MOD_WRITE ? 'w' : 'r', ModNum, (unsigned int*) VAddr[ModNum],
+                          address, direction == SYS_MOD_WRITE ? "<=" : "=>", *value);
+    }
 
     return (0);
 }
