@@ -63,6 +63,25 @@ namespace crate
      */
     struct crate
     {
+    private:
+        /*
+         * Module lock
+         */
+        using lock_type = std::recursive_mutex;
+        using lock_guard = std::lock_guard<lock_type>;
+
+    public:
+        /*
+         * Module lock guard
+         */
+        class guard {
+            lock_type& lock_;
+            lock_guard guard_;
+        public:
+            guard(crate& crate_);
+            ~guard() = default;
+        };
+
         /*
          * Hold an instance while using a module.
          */
@@ -214,6 +233,11 @@ namespace crate
         virtual void add_module();
 
     private:
+        /*
+         * Crate lock
+         */
+        lock_type lock_;
+
         /*
          * Crate ready.
          */

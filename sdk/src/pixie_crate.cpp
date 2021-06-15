@@ -48,6 +48,12 @@ namespace pixie
 {
 namespace crate
 {
+    crate::guard::guard(crate& crate_)
+        : lock_(crate_.lock_),
+          guard_(lock_)
+    {
+    }
+
     crate::user::user(crate& crate__)
         : crate_(crate__)
     {
@@ -102,6 +108,8 @@ namespace crate
             throw error(pixie::error::code::crate_already_open,
                         "create already initialised");
         }
+
+        lock_guard guard(lock_);
 
         try {
             for (size_t device_number = 0;
@@ -159,6 +167,7 @@ namespace crate
     crate::set_offline(module::module_ptr module)
     {
         log(log::info) << "crate: set offline: slot=" << module->slot;
+        lock_guard guard(lock_);
         for (auto mi = modules.begin(); mi != modules.end(); ++mi) {
             if (module == *mi) {
                 module->force_offline();
@@ -177,6 +186,7 @@ namespace crate
     {
         log(log::info) << "crate: probe";
         ready();
+        lock_guard guard(lock_);
         firmware::load(firmware);
         for (auto& module : modules) {
             module->probe();
@@ -190,6 +200,7 @@ namespace crate
         log(log::info) << "crate: boot";
 
         ready();
+        lock_guard guard(lock_);
         firmware::load(firmware);
 
         typedef std::promise<error::code> promise_error;
@@ -243,6 +254,7 @@ namespace crate
     {
         log(log::info) << "crate: set firmware";
         ready();
+        lock_guard guard(lock_);
         for (auto& module : modules) {
             for (auto& config : module->configs) {
                 auto tag = firmware::tag(module->revision,
@@ -269,6 +281,7 @@ namespace crate
     {
         log(log::info) << "crate: load configuration";
         ready();
+        lock_guard guard(lock_);
         loaded.clear();
         config::load(json_file, *this, loaded);
         for (auto& module : modules) {
@@ -282,6 +295,7 @@ namespace crate
     crate::unload(const std::string json_file)
     {
         log(log::info) << "crate: unload configration";
+        lock_guard guard(lock_);
         config::unload(json_file, *this);
     }
 
@@ -293,6 +307,7 @@ namespace crate
          * list.
          */
         log(log::info) << "crate: move offlines";
+        lock_guard guard(lock_);
         bool have_moved = true;
         while (have_moved) {
             have_moved = false;
@@ -340,6 +355,7 @@ namespace crate
     crate::assign(const module::number_slots& numbers, bool force_offline)
     {
         ready();
+        lock_guard guard(lock_);
         /*
          * Any errors result in the crate being an unknown state.
          */
