@@ -86,6 +86,7 @@ enum struct code {
     channel_number_invalid,
     channel_invalid_param,
     channel_invalid_var,
+    channel_invalid_index,
     channel_param_disabled,
     channel_param_readonly,
     channel_param_writeonly,

@@ -1497,6 +1497,10 @@ namespace module
     void
     module::sync_hw()
     {
+        online_check();
+        log(log::info) << module_label(*this) << "sync hardware";
+        lock_guard guard(lock_);
+
         /*
          * Update the FIPPI with the values
          */
@@ -1507,13 +1511,13 @@ namespace module
          */
         hw::run::control(*this, hw::run::control_task::set_dacs);
 
+        /*
+         * Get the current module CSRb parameter.
+         */
+        param::value_type csrb = read(param::module_param::module_csrb);
+
         {
             bus_guard guard(*this);
-
-            /*
-             * Get the current module CSRb parameter.
-             */
-            param::value_type csrb = read(param::module_param::module_csrb);
 
             /*
              * Set pullups for the trigger lines on the backplane
@@ -1920,6 +1924,31 @@ namespace module
     }
 
     void
+    module::online_check() const
+    {
+        if (forced_offline_.load()) {
+            throw error(number, slot,
+                        error::code::module_offline,
+                        "module is forced offline");
+        }
+        if (!online()) {
+            throw error(number, slot,
+                        error::code::module_offline,
+                        "module is not online");
+        }
+    }
+
+    void
+    module::channel_check(const size_t channel) const
+    {
+        if (channel >= num_channels) {
+            throw error(number, slot,
+                        error::code::channel_number_invalid,
+                        "invalid channel number: " + std::to_string(number));
+        }
+    }
+
+    void
     module::load_vars()
     {
         if (!vars_loaded) {
@@ -1981,7 +2010,7 @@ namespace module
 
             bus_guard guard(*this);
 
-            param::value_type csr = 0xaa;
+            param::value_type csr = 0xaaa;
 
             /*
              * Set up Pull-up resistors
@@ -2102,32 +2131,6 @@ namespace module
              * Apply the settings to the FIPPI FPGA
              */
             hw::run::control(*this, hw::run::control_task::program_fippi);
-        }
-    }
-
-    void
-    module::online_check() const
-    {
-        if (forced_offline_.load()) {
-            throw error(number, slot,
-                        error::code::module_offline,
-                        "module is forced offline");
-        }
-        if (!online()) {
-            throw error(number, slot,
-                        error::code::module_offline,
-                        "module is not online");
-        }
-    }
-
-    void
-    module::channel_check(const size_t channel) const
-    {
-        if (channel >= num_channels) {
-            std::ostringstream oss;
-            oss << "invalid channel number: " << channel;
-            throw error(number, slot,
-                        error::code::channel_number_invalid, oss.str());
         }
     }
 

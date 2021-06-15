@@ -331,6 +331,16 @@ namespace module
         firmware::firmware_ref get(const std::string device);
 
         /*
+         * Range checking operator to index channels based on various index
+         * types.
+         */
+        template<typename T> channel::channel& operator[](T number) {
+            size_t number_ = static_cast<size_t>(number);
+            channel_check(number_);
+            return channels[number_];
+        }
+
+        /*
          * Read a parameter.
          */
         param::value_type read(const std::string& par);
@@ -491,6 +501,12 @@ namespace module
         bool operator<(const hw::rev_tag rev) const;
         bool operator>(const hw::rev_tag rev) const;
 
+        /*
+         * Checks, throws errors.
+         */
+        void online_check() const;
+        void channel_check(const size_t channel) const;
+
     protected:
         /*
          * Locks
@@ -525,12 +541,6 @@ namespace module
          * Sycn the hardware after the variables have been sync'ed.
          */
         void sync_hw();
-
-        /*
-         * Checks, throws errors.
-         */
-        void online_check() const;
-        void channel_check(const size_t channel) const;
 
         /*
          * Check if the FPGA devices are programmed and start the FIFO services

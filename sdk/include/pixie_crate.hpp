@@ -124,7 +124,8 @@ namespace crate
             size_t number_ = static_cast<size_t>(number);
             if (number_ >= num_modules) {
                 throw error(pixie::error::code::module_number_invalid,
-                            "module number out of range");
+                            "module number out of range: " +
+                            std::to_string(number));
             }
             return *(modules[number_]);
         }
@@ -197,6 +198,11 @@ namespace crate
          * Unload a configuration
          */
         void unload(const std::string json_file);
+
+        /*
+         * Move offline modules from the online list to offline.
+         */
+        void move_offlines();
 
         /*
          * Output the crate details.

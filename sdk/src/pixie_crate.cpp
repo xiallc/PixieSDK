@@ -158,21 +158,24 @@ namespace crate
     void
     crate::set_offline(module::module_ptr module)
     {
+        log(log::info) << "crate: set offline: slot=" << module->slot;
         for (auto mi = modules.begin(); mi != modules.end(); ++mi) {
             if (module == *mi) {
                 module->force_offline();
                 std::move(mi, std::next(mi), std::back_inserter(offline));
                 modules.erase(mi);
+                num_modules = modules.size();
                 return;
             }
         }
         throw error(error::code::module_not_found,
-                    "offline module not found in modules");
+                    "module not seen as online");
     }
 
     void
     crate::probe()
     {
+        log(log::info) << "crate: probe";
         ready();
         firmware::load(firmware);
         for (auto& module : modules) {
@@ -184,6 +187,8 @@ namespace crate
     void
     crate::boot()
     {
+        log(log::info) << "crate: boot";
+
         ready();
         firmware::load(firmware);
 
@@ -236,6 +241,7 @@ namespace crate
     void
     crate::set_firmware()
     {
+        log(log::info) << "crate: set firmware";
         ready();
         for (auto& module : modules) {
             for (auto& config : module->configs) {
@@ -261,6 +267,7 @@ namespace crate
     void
     crate::load(const std::string json_file, module::number_slots& loaded)
     {
+        log(log::info) << "crate: load configuration";
         ready();
         loaded.clear();
         config::load(json_file, *this, loaded);
@@ -274,7 +281,32 @@ namespace crate
     void
     crate::unload(const std::string json_file)
     {
+        log(log::info) << "crate: unload configration";
         config::unload(json_file, *this);
+    }
+
+    void
+    crate::move_offlines()
+    {
+        /*
+         * Move any modules in the online list that are offline to the offline
+         * list.
+         */
+        log(log::info) << "crate: move offlines";
+        bool have_moved = true;
+        while (have_moved) {
+            have_moved = false;
+            for (auto mi = modules.begin(); mi != modules.end(); ++mi) {
+                auto& module = *mi;
+                if (!module->online()) {
+                    std::move(mi, std::next(mi), std::back_inserter(offline));
+                    modules.erase(mi);
+                    have_moved = true;
+                    break;
+                }
+            }
+        }
+        num_modules = modules.size();
     }
 
     void
@@ -309,7 +341,7 @@ namespace crate
     {
         ready();
         /*
-         * Any errors result in the crate being
+         * Any errors result in the crate being an unknown state.
          */
         try {
           module::assign(modules, numbers);
@@ -327,8 +359,10 @@ namespace crate
                   }
               }
           }
+          num_modules = modules.size();
           module::order_by_number(modules);
         } catch (...) {
+          num_modules = modules.size();
           module::set_number_by_slot(modules);
           throw;
         }

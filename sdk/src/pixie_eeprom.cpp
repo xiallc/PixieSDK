@@ -269,6 +269,15 @@ eeprom::process()
         config.fpga_clk_mhz = config.adc_msps / config.adc_clk_div;
 
         configs.resize(num_channels, config);
+
+        /*
+         * V1 format channel indexs to the variables are 1:1 mapped.
+         */
+        int index = 0;
+        for (auto& cfg : configs) {
+            cfg.index = index;
+            ++index;
+        }
     } else {
         hdr.control = get8<uint8_t>(4);
         format = hdr.version();
@@ -281,11 +290,14 @@ eeprom::process()
          */
         std::vector<int> db_ids = { 4 };
 
+        int index = 0;
         for (auto id : db_ids) {
             for (auto db : v2_configs) {
                 if (id == db.id) {
                     for (int c = 0; c < db.channels; ++c) {
                         configs.push_back(db.config);
+                        configs.back().index = index;
+                        ++index;
                     }
                 }
             }
@@ -303,6 +315,16 @@ eeprom::process()
 
     max_channels = mc->second;
 
+    if (num_channels > max_channels) {
+        throw error(error::code::device_eeprom_failure,
+                    "number of channels exceeds max channels: " +
+                        std::to_string(num_channels) +
+                        " (max: " + std::to_string(max_channels));
+    }
+
+    /*
+     * Log the configuration
+     */
     log(log::info) << "eeprom: format=" << format
                    << " snum=" << serial_num
                    << " revision=" << revision

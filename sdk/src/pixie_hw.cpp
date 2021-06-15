@@ -48,7 +48,8 @@ config::config(int adc_bits_,
                int adc_msps_,
                int adc_clk_div_,
                int fpga_clk_mhz_)
-    : adc_bits(adc_bits_),
+    : index(-1),
+      adc_bits(adc_bits_),
       adc_msps(adc_msps_),
       adc_clk_div(adc_clk_div_),
       fpga_clk_mhz(fpga_clk_mhz_)

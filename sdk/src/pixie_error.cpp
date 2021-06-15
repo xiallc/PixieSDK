@@ -103,9 +103,10 @@ static const std::map<code, result_code> result_codes =
     { code::channel_number_invalid,    { 300, "invalid channel number" } },
     { code::channel_invalid_param,     { 301, "invalid channel parameter" } },
     { code::channel_invalid_var,       { 302, "invalid channel variable" } },
-    { code::channel_param_disabled,    { 303, "invalid channel variable" } },
-    { code::channel_param_readonly,    { 304, "channel parameter is readonly" } },
-    { code::channel_param_writeonly,   { 305, "channel parameter is writeonly" } },
+    { code::channel_invalid_index,     { 303, "invalid channel variable" } },
+    { code::channel_param_disabled,    { 304, "invalid channel index" } },
+    { code::channel_param_readonly,    { 305, "channel parameter is readonly" } },
+    { code::channel_param_writeonly,   { 306, "channel parameter is writeonly" } },
     /*
      * Device
      */

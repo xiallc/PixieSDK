@@ -162,6 +162,14 @@ namespace hw
      * Configuration
      */
     struct config {
+        /*
+         * Channel index in variable array.
+         */
+        int index;
+
+        /*
+         * Analog front end (AFE)
+         */
         int adc_bits;
         int adc_msps;
         int adc_clk_div;

@@ -101,7 +101,13 @@ namespace memory
     word
     dsp::read(const size_t channel, const address addr)
     {
-        return read(addr + (channel * sizeof(word)));
+        channel::channel& chan = module[channel];
+        if (chan.config.index < 0) {
+            throw error(error::code::channel_invalid_index,
+                        "dsp: invalid index: module=" + std::to_string(module.number)
+                        + " channel=" + std::to_string(channel));
+        }
+        return read(addr + (chan.config.index * sizeof(word)));
     }
 
     void
@@ -149,7 +155,13 @@ namespace memory
     void
     dsp::write(const size_t channel, const address addr, const word value)
     {
-        write(addr + (channel * sizeof(word)), value);
+        channel::channel& chan = module[channel];
+        if (chan.config.index < 0) {
+            throw error(error::code::channel_invalid_index,
+                        "dsp: invalid index: module=" + std::to_string(module.number)
+                        + " channel=" + std::to_string(channel));
+        }
+        write(addr + (chan.config.index * sizeof(word)), value);
     }
 
     void
