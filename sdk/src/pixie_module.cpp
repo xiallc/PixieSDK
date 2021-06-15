@@ -1573,9 +1573,8 @@ namespace module
         if (run_task == hw::run::run_task::nop) {
             log(log::warning) << module_label(*this)
                               << "run-end: no run active";
-        } else {
-            hw::run::end(*this);
         }
+        hw::run::end(*this);
     }
 
     bool
