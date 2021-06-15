@@ -35,8 +35,9 @@
 
 #include <algorithm>
 #include <cstring>
-#include <iostream>
 #include <fstream>
+#include <future>
+#include <iostream>
 #include <map>
 #include <numeric>
 #include <regex>
@@ -53,14 +54,14 @@
 /*
  * Localize the log and error
  */
-typedef xia::log xia_log;
-typedef xia::pixie::error::error error;
+using xia_log = xia::log;
+using error = xia::pixie::error::error;
 
 /*
  * Command processor.
  */
-typedef std::vector<std::string> options;
-typedef std::vector<options> commands;
+using options = std::vector<std::string>;
+using commands = std::vector<options>;
 
 struct command_def
 {
@@ -178,6 +179,40 @@ get_value(const std::string& opt)
     return value;
 }
 
+template<typename T> static std::vector<T>
+get_values(const std::string& opt, const size_t modules)
+{
+    std::vector<T> values;
+    if (opt == "all") {
+        values.resize(modules);
+        std::iota(values.begin(), values.end(), 0);
+    } else {
+        xia::util::strings ss;
+        xia::util::split(ss, opt, ',');
+        for (auto& s : ss) {
+            values.push_back(get_value<T>(s));
+        }
+    }
+    return values;
+}
+
+static void
+module_check(xia::pixie::crate::crate& crate,
+             std::vector<size_t> mod_nums) {
+    for (auto mod_num : mod_nums) {
+        if (mod_num > crate.num_modules) {
+            throw std::runtime_error(
+                std::string("invalid module number: " + std::to_string(mod_num))
+            );
+        }
+        if (!crate.modules[mod_num]->online()) {
+            throw std::runtime_error(
+                std::string("module offline: " + std::to_string(mod_num))
+            );
+        }
+    }
+}
+
 template<typename V>
 static void
 output_value(const std::string& name, V value)
@@ -191,10 +226,10 @@ output_value(const std::string& name, V value)
 }
 
 static bool
-make_command_sets(args::PositionalList<std::string>& cmd, commands& cmds)
+make_command_sets(const std::vector<std::string>& cmd_strings, commands& cmds)
 {
     options option;
-    for (auto opt : args::get(cmd)) {
+    for (auto opt : cmd_strings) {
         if (option.empty()) {
             auto search = command_defs.find(opt);
             if (search == command_defs.end()) {
@@ -241,6 +276,40 @@ make_command_sets(args::PositionalList<std::string>& cmd, commands& cmds)
     return true;
 }
 
+static bool
+make_command_sets(args::PositionalList<std::string>& cmd, commands& cmds)
+{
+    std::vector<std::string> cmd_strings;
+    for (auto opt : args::get(cmd)) {
+        cmd_strings.push_back(opt);
+    }
+    return make_command_sets(cmd_strings, cmds);
+}
+
+static bool
+make_command_sets(std::string cmd_file, commands& cmds)
+{
+    std::ifstream file(cmd_file, std::ios::binary);
+    if (!file) {
+        std::cerr << "error: cannot open command file: " << cmd_file
+                  << std::endl;
+        return false;
+    }
+    std::vector<std::string> cmd_strings;
+    for (std::string line; std::getline(file, line); ) {
+        xia::util::ltrim(line);
+        if (!line.empty() && line[0] != '#') {
+            xia::util::strings ss;
+            xia::util::split(ss, line);
+            for (auto& s : ss) {
+                cmd_strings.push_back(s);
+            }
+        }
+    }
+    file.close();
+    return make_command_sets(cmd_strings, cmds);
+}
+
 static void
 help(xia::pixie::crate::crate& , options& )
 {
@@ -264,7 +333,6 @@ boot(xia::pixie::crate::crate& crate, options& )
 {
   std::cout << "booting crate" << std::endl;
   crate.boot();
-  std::cout << "crate:" << std::endl << crate << std::endl;
 }
 
 static void
@@ -333,35 +401,39 @@ adc_save(xia::pixie::crate::crate& crate, options& cmd)
 static void
 bl_acq(xia::pixie::crate::crate& crate, options& cmd)
 {
-    auto mod_num = get_value<size_t>(cmd[1]);
-    crate[mod_num].acquire_baselines();
+    auto mod_nums = get_values<size_t>(cmd[1], crate.num_modules);
+    for (auto mod_num : mod_nums) {
+        crate[mod_num].acquire_baselines();
+    }
 }
 
 static void
 bl_save(xia::pixie::crate::crate& crate, options& cmd)
 {
-    auto mod_num = get_value<size_t>(cmd[1]);
-    xia::pixie::channel::range channels;
-    if (cmd.size() == 3) {
-        channels.resize(1);
-        channels[0] = get_value<size_t>(cmd[2]);
-    }
-    if (channels.empty()) {
-        channels.resize(crate[mod_num].num_channels);
-        xia::pixie::channel::range_set(channels);
-    }
-    xia::pixie::channel::baseline::channels_values baselines(channels.size());
-    crate[mod_num].bl_get(channels, baselines, false);
-    for (size_t channel = 0; channel < channels.size(); ++channel) {
-        std::ostringstream name;
-        name << std::setfill('0') << baseline_prefix
-             << '-' << std::setw(2) << mod_num
-             << '-' << std::setw(2) << channels[channel] << ".txt";
-        std::ofstream out(name.str(), std::ios::binary);
-        for (auto& value : baselines[channel]) {
-            out << "timestamp=" << std::get<0>(value)
-                << ",baseline=" << std::get<1>(value)
-                << std::endl;
+    auto mod_nums = get_values<size_t>(cmd[1], crate.num_modules);
+    for (auto mod_num : mod_nums) {
+        xia::pixie::channel::range channels;
+        if (cmd.size() == 3) {
+            channels.resize(1);
+            channels[0] = get_value<size_t>(cmd[2]);
+        }
+        if (channels.empty()) {
+            channels.resize(crate[mod_num].num_channels);
+            xia::pixie::channel::range_set(channels);
+        }
+        xia::pixie::channel::baseline::channels_values baselines(channels.size());
+        crate[mod_num].bl_get(channels, baselines, false);
+        for (size_t channel = 0; channel < channels.size(); ++channel) {
+            std::ostringstream name;
+            name << std::setfill('0') << baseline_prefix
+                 << '-' << std::setw(2) << mod_num
+                 << '-' << std::setw(2) << channels[channel] << ".txt";
+            std::ofstream out(name.str(), std::ios::binary);
+            for (auto& value : baselines[channel]) {
+                out << "timestamp=" << std::get<0>(value)
+                    << ",baseline=" << std::get<1>(value)
+                    << std::endl;
+            }
         }
     }
 }
@@ -369,11 +441,13 @@ bl_save(xia::pixie::crate::crate& crate, options& cmd)
 static void
 run_active(xia::pixie::crate::crate& crate, options& cmd)
 {
-    auto mod_num = get_value<size_t>(cmd[1]);
-    std::cout << "module=" << mod_num << " run-active="
-              << std::boolalpha
-              << crate[mod_num].run_active()
-              << std::endl;
+    auto mod_nums = get_values<size_t>(cmd[1], crate.num_modules);
+    for (auto mod_num : mod_nums) {
+        std::cout << "module=" << mod_num << " run-active="
+                  << std::boolalpha
+                  << crate[mod_num].run_active()
+                  << std::endl;
+    }
 }
 
 static void
@@ -432,30 +506,30 @@ hist_save(xia::pixie::crate::crate& crate, options& cmd)
 static void
 list_start(xia::pixie::crate::crate& crate, options& cmd)
 {
-    auto mod_num = get_value<size_t>(cmd[1]);
-    using namespace xia::pixie::hw::run;
-    crate[mod_num].start_listmode(run_mode::new_run);
+    auto mod_nums = get_values<size_t>(cmd[1], crate.num_modules);
+    for (auto mod_num : mod_nums) {
+        using namespace xia::pixie::hw::run;
+        crate[mod_num].start_listmode(run_mode::new_run);
+    }
 }
 
 static void
 list_resume(xia::pixie::crate::crate& crate, options& cmd)
 {
-    auto mod_num = get_value<size_t>(cmd[1]);
-    using namespace xia::pixie::hw::run;
-    crate[mod_num].start_listmode(run_mode::resume);
+    auto mod_nums = get_values<size_t>(cmd[1], crate.num_modules);
+    for (auto mod_num : mod_nums) {
+        using namespace xia::pixie::hw::run;
+        crate[mod_num].start_listmode(run_mode::resume);
+    }
 }
 
 static void
-list_save(xia::pixie::crate::crate& crate, options& cmd)
+list_save_worker(xia::pixie::module::module& module,
+                 size_t& total,
+                 size_t& seconds,
+                 std::string name)
 {
-    auto mod_num = get_value<size_t>(cmd[1]);
-    auto seconds = get_value<size_t>(cmd[2]);
-    auto name = cmd[3];
-    if (seconds == 0) {
-        throw std::runtime_error(
-            std::string("list mode save period is 0")
-        );
-    }
+    name += '-' + std::to_string(module.number) + ".lmd";
     std::ofstream out(name, std::ios::binary);
     if (!out) {
         throw std::runtime_error(
@@ -465,18 +539,18 @@ list_save(xia::pixie::crate::crate& crate, options& cmd)
     }
     const size_t poll_period_usecs = 100 * 1000;
     size_t secs_without_data = 0;
-    size_t total = 0;
     size_t secs = 0;
+    total = 0;
     while (secs < seconds) {
         size_t polls = 1 * 1000 * 1000 / poll_period_usecs;
         size_t last_total = total;
         while (polls-- > 0) {
             size_t data_available;
             do {
-                data_available = crate[mod_num].read_list_mode_level();
+                data_available = module.read_list_mode_level();
                 if (data_available > 0) {
                     xia::pixie::hw::words lm;
-                    crate[mod_num].read_list_mode(lm);
+                    module.read_list_mode(lm);
                     total += lm.size();
                     out.write(reinterpret_cast<char*>(lm.data()),
                               lm.size() * sizeof(xia::pixie::hw::word));
@@ -488,85 +562,147 @@ list_save(xia::pixie::crate::crate& crate, options& cmd)
         if ((total - last_total) == 0) {
             ++secs_without_data;
             if (secs_without_data > 5) {
-                std::cout << "warning: no data recieved" << std::endl;
+                std::cout << "warning: module " << module.number
+                          << "no data recieved" << std::endl;
                 secs_without_data = 0;
             }
         }
         ++secs;
     }
+}
+
+static void
+list_save(xia::pixie::crate::crate& crate, options& cmd)
+{
+    auto mod_nums = get_values<size_t>(cmd[1], crate.num_modules);
+    auto secs = get_value<size_t>(cmd[2]);
+    auto name = cmd[3];
+    module_check(crate, mod_nums);
+    if (secs == 0) {
+        throw std::runtime_error(
+            std::string("list mode save period is 0")
+        );
+    }
+    std::vector<size_t> seconds(mod_nums.size(), secs);
+    std::vector<size_t> totals(mod_nums.size());
+    using promise_error =std::promise<error::code>;
+    using future_error = std::future<error::code>;
+    std::vector<promise_error> promises(mod_nums.size());
+    std::vector<future_error> futures;
+    std::vector<std::thread> threads;
+    for (size_t m = 0; m < mod_nums.size(); ++m) {
+        auto module = crate.modules[mod_nums[m]];
+        futures.push_back(future_error(promises[m].get_future()));
+        threads.push_back(
+            std::thread(
+                [m, &promises, module, name, &seconds, &totals] {
+                    try {
+                        list_save_worker(*module, totals[m], seconds[m], name);
+                        promises[m].set_value(error::code::success);
+                    } catch (xia::pixie::error::error& e) {
+                        promises[m].set_value(e.type);
+                    } catch (...) {
+                        try {
+                            promises[m].set_exception(std::current_exception());
+                        } catch (...) { }
+                    }
+                }));
+    }
+    error::code first_error = error::code::success;
+    for (size_t t = 0; t < threads.size(); ++t) {
+        error::code e = futures[t].get();
+        if (first_error == error::code::success) {
+            first_error = e;
+        }
+        threads[t].join();
+    }
+    if (first_error != error::code::success) {
+        throw error(first_error, "list mode save error; see log");
+    }
+    size_t total = 0;
+    for (auto t : totals) {
+        total += t;
+    }
+    total *= sizeof(xia::pixie::hw::word);
     std::cout << "data received: " << total
-              << " bytes, rate: " << double(total) / seconds << " bytes/sec"
+              << " bytes, rate: " << double(total) / secs << " bytes/sec"
               << std::endl;
     xia_log(xia_log::info) << "data received: " << total
                            << " bytes, rate: "
-                           << double(total) / seconds << " bytes/sec";
+                           << double(total) / secs << " bytes/sec";
 }
 
 static void
 run_end(xia::pixie::crate::crate& crate, options& cmd)
 {
-    auto mod_num = get_value<size_t>(cmd[1]);
-    crate[mod_num].run_end();
+    auto mod_nums = get_values<size_t>(cmd[1], crate.num_modules);
+    for (auto mod_num : mod_nums) {
+        crate[mod_num].run_end();
+    }
 }
 
 static void
 par_write(xia::pixie::crate::crate& crate, options& cmd)
 {
-    auto mod_num = get_value<size_t>(cmd[1]);
-    if (cmd.size() == 4) {
-        auto value =
-            get_value<xia::pixie::param::value_type>(cmd[3]);
-        crate[mod_num].write(cmd[2], value);
-    } else {
-        auto channel_num = get_value<size_t>(cmd[2]);
-        auto value = get_value<double>(cmd[4]);
-        crate[mod_num].write(cmd[3], channel_num, value);
+    auto mod_nums = get_values<size_t>(cmd[1], crate.num_modules);
+    for (auto mod_num : mod_nums) {
+        if (cmd.size() == 4) {
+            auto value =
+                get_value<xia::pixie::param::value_type>(cmd[3]);
+            crate[mod_num].write(cmd[2], value);
+        } else {
+            auto channel_num = get_value<size_t>(cmd[2]);
+            auto value = get_value<double>(cmd[4]);
+            crate[mod_num].write(cmd[3], channel_num, value);
+        }
     }
 }
 
 static void
 par_read(xia::pixie::crate::crate& crate, options& cmd)
 {
-    auto mod_num = get_value<size_t>(cmd[1]);
-    int reg_name;
-    if (cmd.size() == 3) {
-        reg_name = 2;
-        std::cout << "# module param read: " << mod_num
-                  << ": " << cmd[reg_name] << std::endl;
-        if (cmd[reg_name] == "all") {
-            for (auto& par : xia::pixie::param::get_module_param_map()) {
-                try {
-                    output_value(par.first, crate[mod_num].read(par.second));
-                } catch (error& e) {
-                    if (e.type != error::code::module_param_disabled &&
-                        e.type != error::code::module_param_writeonly) {
-                        throw;
+    auto mod_nums = get_values<size_t>(cmd[1], crate.num_modules);
+    for (auto mod_num : mod_nums) {
+        int reg_name;
+        if (cmd.size() == 3) {
+            reg_name = 2;
+            std::cout << "# module param read: " << mod_num
+                      << ": " << cmd[reg_name] << std::endl;
+            if (cmd[reg_name] == "all") {
+                for (auto& par : xia::pixie::param::get_module_param_map()) {
+                    try {
+                        output_value(par.first, crate[mod_num].read(par.second));
+                    } catch (error& e) {
+                        if (e.type != error::code::module_param_disabled &&
+                            e.type != error::code::module_param_writeonly) {
+                            throw;
+                        }
                     }
                 }
+            } else {
+                output_value(cmd[reg_name], crate[mod_num].read(cmd[reg_name]));
             }
         } else {
-            output_value(cmd[reg_name], crate[mod_num].read(cmd[reg_name]));
-        }
-    } else {
-        reg_name = 3;
-        auto channel_num = get_value<size_t>(cmd[2]);
-        std::cout << "# channel param read: " << mod_num << ':' << channel_num
-                  << ": " << cmd[reg_name] << std::endl;
-        if (cmd[reg_name] == "all") {
-            for (auto& par : xia::pixie::param::get_channel_param_map()) {
-                try {
-                    output_value(par.first,
-                                 crate[mod_num].read(par.second, channel_num));
-                } catch (error& e) {
-                    if (e.type != error::code::channel_param_disabled &&
-                        e.type != error::code::channel_param_writeonly) {
-                        throw;
+            reg_name = 3;
+            auto channel_num = get_value<size_t>(cmd[2]);
+            std::cout << "# channel param read: " << mod_num << ':' << channel_num
+                      << ": " << cmd[reg_name] << std::endl;
+            if (cmd[reg_name] == "all") {
+                for (auto& par : xia::pixie::param::get_channel_param_map()) {
+                    try {
+                        output_value(par.first,
+                                     crate[mod_num].read(par.second, channel_num));
+                    } catch (error& e) {
+                        if (e.type != error::code::channel_param_disabled &&
+                            e.type != error::code::channel_param_writeonly) {
+                            throw;
+                        }
                     }
                 }
+            } else {
+                output_value(cmd[reg_name],
+                             crate[mod_num].read(cmd[reg_name], channel_num));
             }
-        } else {
-            output_value(cmd[reg_name],
-                         crate[mod_num].read(cmd[reg_name], channel_num));
         }
     }
 }
@@ -574,7 +710,7 @@ par_read(xia::pixie::crate::crate& crate, options& cmd)
 static void
 var_write(xia::pixie::crate::crate& crate, options& cmd)
 {
-    auto mod_num = get_value<size_t>(cmd[1]);
+    auto mod_nums = get_values<size_t>(cmd[1], crate.num_modules);
     int reg_name;
     size_t channel = 0;
     size_t offset = 0;
@@ -597,14 +733,16 @@ var_write(xia::pixie::crate::crate& crate, options& cmd)
         offset = get_value<size_t>(cmd[5]);
         break;
     }
-    auto value = get_value<xia::pixie::param::value_type>(cmd[val]);
-    crate[mod_num].write_var(cmd[reg_name], value, channel, offset);
+    for (auto mod_num : mod_nums) {
+        auto value = get_value<xia::pixie::param::value_type>(cmd[val]);
+        crate[mod_num].write_var(cmd[reg_name], value, channel, offset);
+    }
 }
 
 static void
 var_read(xia::pixie::crate::crate& crate, options& cmd)
 {
-    auto mod_num = get_value<size_t>(cmd[1]);
+    auto mod_nums = get_values<size_t>(cmd[1], crate.num_modules);
     bool is_module = false;
     int reg_name;
     size_t channel = 0;
@@ -625,92 +763,96 @@ var_read(xia::pixie::crate::crate& crate, options& cmd)
         offset = get_value<size_t>(cmd[4]);
         break;
     }
-    if (cmd[reg_name] == "all") {
-       if (is_module) {
-           std::cout << "# module var read: " << mod_num
-                     << ": " << cmd[reg_name] << std::endl;
-            for (auto& var : crate[mod_num].module_var_descriptors) {
-                try {
-                    output_value(var.name, crate[mod_num].read_var(var.par));
-                } catch (error& e) {
-                    if (e.type != error::code::module_param_disabled &&
-                        e.type != error::code::module_param_writeonly) {
-                        throw;
+    for (auto mod_num : mod_nums) {
+        if (cmd[reg_name] == "all") {
+            if (is_module) {
+                std::cout << "# module var read: " << mod_num
+                          << ": " << cmd[reg_name] << std::endl;
+                for (auto& var : crate[mod_num].module_var_descriptors) {
+                    try {
+                        output_value(var.name, crate[mod_num].read_var(var.par));
+                    } catch (error& e) {
+                        if (e.type != error::code::module_param_disabled &&
+                            e.type != error::code::module_param_writeonly) {
+                            throw;
+                        }
+                    }
+                }
+            } else {
+                std::cout << "# channel var read: " << mod_num << ':' << channel
+                          << ": " << cmd[reg_name] << std::endl;
+                for (auto& var : crate[mod_num].channel_var_descriptors) {
+                    try {
+                        output_value(var.name,
+                                     crate[mod_num].read_var(var.par,
+                                                             channel,
+                                                             offset));
+                    } catch (error& e) {
+                        if (e.type != error::code::channel_param_disabled &&
+                            e.type != error::code::channel_param_writeonly) {
+                            throw;
+                        }
                     }
                 }
             }
         } else {
-           std::cout << "# channel var read: " << mod_num << ':' << channel
-                     << ": " << cmd[reg_name] << std::endl;
-            for (auto& var : crate[mod_num].channel_var_descriptors) {
-                try {
-                    output_value(var.name,
-                                 crate[mod_num].read_var(var.par,
-                                                         channel,
-                                                         offset));
-                 } catch (error& e) {
-                    if (e.type != error::code::channel_param_disabled &&
-                        e.type != error::code::channel_param_writeonly) {
-                        throw;
-                    }
-                }
-           }
+            output_value(cmd[reg_name],
+                         crate[mod_num].read_var(cmd[reg_name],
+                                                 channel,
+                                                 offset));
         }
-    } else {
-        output_value(cmd[reg_name],
-                     crate[mod_num].read_var(cmd[reg_name],
-                                             channel,
-                                             offset));
     }
 }
 
 static void
 stats(xia::pixie::crate::crate& crate, options& cmd)
 {
-    auto mod_num = get_value<size_t>(cmd[1]);
-    std::string stat;
-    xia::pixie::channel::range channels;
-    if (cmd.size() == 3) {
-        stat = cmd[2];
-        channels.resize(crate[mod_num].num_channels);
-        xia::pixie::channel::range_set(channels);
-    } else {
-        channels.resize(1);
-        channels[0] = get_value<size_t>(cmd[2]);
-        stat = cmd[3];
-    }
-    xia::pixie::stats::stats stats(crate[mod_num].configs);
-    crate[mod_num].read_stats(stats);
-    if (stat == "pe") {
-        std::cout << "module " << mod_num
-                  << ": processed-events="
-                  << stats.mod.processed_events()
-                  << std::endl;
-    } else if (stat == "icr") {
-        for (auto channel : channels) {
-            std::cout << "module " << mod_num << " chan " << channel
-                  << ": input-count-rate="
-                  << stats.chans[channel].input_count_rate()
-                  << std::endl;
+    auto mod_nums = get_values<size_t>(cmd[1], crate.num_modules);
+    for (auto mod_num : mod_nums) {
+        std::string stat;
+        xia::pixie::channel::range channels;
+        if (cmd.size() == 3) {
+            stat = cmd[2];
+            channels.resize(crate[mod_num].num_channels);
+            xia::pixie::channel::range_set(channels);
+        } else {
+            channels.resize(1);
+            channels[0] = get_value<size_t>(cmd[2]);
+            stat = cmd[3];
         }
-    } else if (stat == "ocr") {
-        for (auto channel : channels) {
-            std::cout << "module " << mod_num << " chan " << channel
-                  << ": output-count-rate="
-                  << stats.chans[channel].output_count_rate()
-                  << std::endl;
-        }
-    } else if (stat == "rt") {
-        std::cout << "module " << mod_num
-                  << ": real-time="
-                  << stats.mod.real_time()
-                  << std::endl;
-    } else if (stat == "lt") {
-        for (auto channel : channels) {
-            std::cout << "module " << mod_num << " chan " << channel
-                  << ": live-time="
-                  << stats.chans[channel].live_time()
-                  << std::endl;
+        xia::pixie::stats::stats stats(crate[mod_num].configs);
+        crate[mod_num].read_stats(stats);
+        if (stat == "pe") {
+            std::cout << "module " << mod_num
+                      << ": processed-events="
+                      << stats.mod.processed_events()
+                      << std::endl;
+        } else if (stat == "icr") {
+            for (auto channel : channels) {
+                std::cout << "module " << mod_num << " chan " << channel
+                          << ": input-count-rate="
+                          << stats.chans[channel].input_count_rate()
+                          << std::endl;
+            }
+        } else if (stat == "ocr") {
+            for (auto channel : channels) {
+                std::cout << "module " << mod_num << " chan " << channel
+                          << ": output-count-rate="
+                          << stats.chans[channel].output_count_rate()
+                          << std::endl;
+            }
+        } else if (stat == "rt") {
+            std::cout << "module " << mod_num
+                      << ": real-time="
+                      << stats.mod.real_time()
+                      << std::endl;
+        } else if (stat == "lt") {
+            for (auto channel : channels) {
+                std::cout << "module " << mod_num << " chan " << channel
+                          << ": live-time="
+                          << stats.chans[channel].live_time()
+                          << std::endl;
+            }
         }
     }
 }
@@ -842,6 +984,11 @@ main(int argc, char* argv[])
                       "slot_map_flag",
                       "A list of slots used to define the slot to index mapping.",
                       {'s', "slot_map"});
+    args::ValueFlag<std::string>
+        cmd_file_flag(option_group,
+                      "cmd_file_flag",
+                      "Command file to execue.",
+                      {'c', "cmd"});
 
     args::Group command_group(parser, "Commands");
     args::PositionalList<std::string>
@@ -939,6 +1086,11 @@ main(int argc, char* argv[])
 
         commands cmds;
 
+        if (cmd_file_flag) {
+            if (!make_command_sets(args::get(cmd_file_flag), cmds)) {
+                return EXIT_FAILURE;
+            }
+        }
         if (cmd_flag) {
             if (!make_command_sets(cmd_flag, cmds)) {
                 return EXIT_FAILURE;
