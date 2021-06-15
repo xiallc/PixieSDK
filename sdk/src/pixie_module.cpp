@@ -1482,7 +1482,7 @@ namespace module
                             if (have_hardware) {
                                 hw::word word;
                                 hw::convert(value.value, word);
-                                dsp.write(desc.address, word);
+                                dsp.write(channel.number, desc.address, word);
                                 value.dirty = false;
                             }
                         }
