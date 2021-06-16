@@ -6138,7 +6138,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16CopyDSPParameters(unsigned short Bit
  * @see EXTFIFO_READ_THRESH
  *
  * @param[in] FileName: Absolute path to the file that we'll write data into
- * @param[in] nFIFOWords: The number of words read from the FIFO and written to the file.
+ * @param[out] nFIFOWords: The number of words read from the FIFO and written to the file.
  * @param[in] ModNum: The module number for the module whose external FIFO we want to read.
  * @param[in] EndOfRunRead: Provide a 1 if this is the final read of a run, 0 otherwise. This is
  *     necessary since the external FIFO needs special treatment when the host reads the last few
