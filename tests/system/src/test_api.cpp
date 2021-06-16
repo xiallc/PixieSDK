@@ -187,10 +187,27 @@ get_values(const std::string& opt, const size_t modules)
         values.resize(modules);
         std::iota(values.begin(), values.end(), 0);
     } else {
-        xia::util::strings ss;
-        xia::util::split(ss, opt, ',');
-        for (auto& s : ss) {
-            values.push_back(get_value<T>(s));
+        xia::util::strings sc;
+        xia::util::split(sc, opt, ',');
+        for (auto& slots : sc) {
+            xia::util::strings sd;
+            xia::util::split(sd, slots, '-');
+            if (sd.size() == 1) {
+                values.push_back(get_value<T>(sd[0]));
+            } else if (sd.size() == 2) {
+                auto start = get_value<T>(sd[0]);
+                auto end = get_value<T>(sd[1]);
+                if (start > end) {
+                    throw std::runtime_error(
+                        "invalid slots, start before end: " + opt
+                    );
+                }
+                for (T s = start; s <= end; ++s) {
+                    values.push_back(s);
+                }
+            } else {
+                throw std::runtime_error("invalid slots: " + opt);
+            }
         }
     }
     return values;
@@ -331,8 +348,12 @@ help(xia::pixie::crate::crate& , options& )
 static void
 boot(xia::pixie::crate::crate& crate, options& )
 {
-  std::cout << "booting crate" << std::endl;
-  crate.boot();
+    xia::util::timepoint tp;
+    std::cout << "booting crate" << std::endl;
+    tp.start();
+    crate.boot();
+    tp.end();
+    std::cout << "boot time=" << tp << std::endl;
 }
 
 static void
@@ -538,36 +559,20 @@ list_save_worker(xia::pixie::module::module& module,
         );
     }
     const size_t poll_period_usecs = 100 * 1000;
-    size_t secs_without_data = 0;
-    size_t secs = 0;
     total = 0;
-    while (secs < seconds) {
-        size_t polls = 1 * 1000 * 1000 / poll_period_usecs;
-        size_t last_total = total;
-        while (polls-- > 0) {
-            size_t data_available;
-            do {
-                data_available = module.read_list_mode_level();
-                if (data_available > 0) {
-                    xia::pixie::hw::words lm;
-                    module.read_list_mode(lm);
-                    total += lm.size();
-                    out.write(reinterpret_cast<char*>(lm.data()),
-                              lm.size() * sizeof(xia::pixie::hw::word));
-                    secs_without_data = 0;
-                }
-            } while (data_available > 0);
+    xia::util::timepoint duration(true);
+    while (duration.msecs() < (seconds * 1000)) {
+        size_t data_available = module.read_list_mode_level();
+        if (data_available > 0) {
+            xia::pixie::hw::words lm;
+            module.read_list_mode(lm);
+            total += lm.size();
+            out.write(reinterpret_cast<char*>(lm.data()),
+                      lm.size() * sizeof(xia::pixie::hw::word));
+        }
+        if (data_available == 0) {
             xia::pixie::hw::wait(poll_period_usecs);
         }
-        if ((total - last_total) == 0) {
-            ++secs_without_data;
-            if (secs_without_data > 5) {
-                std::cout << "warning: module " << module.number
-                          << "no data recieved" << std::endl;
-                secs_without_data = 0;
-            }
-        }
-        ++secs;
     }
 }
 
@@ -625,7 +630,8 @@ list_save(xia::pixie::crate::crate& crate, options& cmd)
     }
     total *= sizeof(xia::pixie::hw::word);
     std::cout << "data received: " << total
-              << " bytes, rate: " << double(total) / secs << " bytes/sec"
+              << " bytes, rate: "
+              << xia::util::humanize(double(total) / secs, " bytes/sec")
               << std::endl;
     xia_log(xia_log::info) << "data received: " << total
                            << " bytes, rate: "
@@ -860,9 +866,14 @@ stats(xia::pixie::crate::crate& crate, options& cmd)
 static void
 load(xia::pixie::crate::crate& crate, options& cmd)
 {
+    xia::util::timepoint tp;
     xia::pixie::module::number_slots modules;
+    tp.start();
     crate.load(cmd[1], modules);
-    std::cout << "Modules loaded: " << modules.size() << std::endl;
+    tp.end();
+    std::cout << "Modules loaded: " << modules.size()
+              << " time=" << tp
+              << std::endl;
 }
 
 static void
@@ -877,6 +888,19 @@ wait(xia::pixie::crate::crate& , options& cmd)
     auto msecs = get_value<size_t>(cmd[1]);
     std::cout << "waiting " << msecs << " msecs" << std::endl;
     xia::pixie::hw::wait(msecs * 1000);
+}
+
+static void
+initialize(xia::pixie::crate::crate& crate, bool reg_trace)
+{
+    xia::util::timepoint tp;
+    std::cout << "crate: initialize" << std::endl;
+    tp.start();
+    crate.initialize(reg_trace);
+    tp.end();
+    std::cout << "modules: detected=" << crate.modules.size()
+              << " time=" << tp
+              << std::endl;
 }
 
 static bool
@@ -979,7 +1003,7 @@ main(int argc, char* argv[])
                       "log_file_flag",
                       "Log file. Use `stdout` for the console.",
                       {'l', "log"});
-    args::ValueFlagList<size_t>
+    args::ValueFlagList<std::string>
         slot_map_flag(option_group,
                       "slot_map_flag",
                       "A list of slots used to define the slot to index mapping.",
@@ -1010,6 +1034,9 @@ main(int argc, char* argv[])
     }
 
     try {
+        xia::util::timepoint run;
+        run.start();
+
         std::string log;
         if (log_file_flag) {
             log = args::get(log_file_flag);
@@ -1060,20 +1087,23 @@ main(int argc, char* argv[])
             }
         }
 
-        std::cout << "crate: initialize" << std::endl;
-        crate.initialize(reg_trace);
-        std::cout << "modules: detected=" << crate.modules.size()
-                  << std::endl;
+        initialize(crate, reg_trace);
 
         if (num_modules != 0 && crate.num_modules != num_modules) {
-            throw std::runtime_error("invalid number of modules detected: detected = " +
+            throw std::runtime_error("invalid number of modules detected: " \
+                                     "found " +
                                      std::to_string(crate.num_modules));
         }
 
         if (slot_map_flag) {
             xia::pixie::module::number_slots slot_map;
-            for (const auto& slot : args::get(slot_map_flag))
-                slot_map.emplace_back(std::make_pair(slot_map.size(), slot));
+            for (const auto& slot : args::get(slot_map_flag)) {
+                std::vector<size_t> slots =
+                    get_values<size_t>(slot, crate.num_modules);
+                for (auto s : slots) {
+                    slot_map.emplace_back(std::make_pair(slot_map.size(), s));
+                }
+            }
             crate.assign(slot_map);
         }
 
@@ -1100,6 +1130,9 @@ main(int argc, char* argv[])
         if (!process_command_sets(crate, cmds)) {
             return EXIT_FAILURE;
         }
+
+        run.end();
+        std::cout << "run time=" << run << std::endl;
     } catch (xia::pixie::error::error& e) {
         xia_log(xia_log::error) << e;
         std::cerr << e << std::endl;

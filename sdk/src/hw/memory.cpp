@@ -311,7 +311,7 @@ namespace memory
         if (polls == 0) {
             throw module::error(module.number, module.slot,
                                 module::error::code::device_fifo_failure,
-                                "FIFO failed to reach watermack");
+                                "FIFO failed to reach watermark");
         }
 
         module.dma_read(FIFO_MEM_DMA, buffer, length);

@@ -71,7 +71,7 @@ namespace hw
     /*
      * Maximum number of slots in a crate.
      */
-    static const int max_slots = 12;
+    static const int max_slots = 13;
 
     /*
      * Maximum number of channels a module can have.

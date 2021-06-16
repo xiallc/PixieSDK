@@ -620,12 +620,7 @@ namespace module
 
             present_ = true;
 
-            /*
-             * @todo disable until LM FIFO burst support is added
-             */
-            if (*this != hw::rev_H) {
-                start_fifo_services();
-            }
+            start_fifo_services();
         }
     }
 
@@ -774,6 +769,8 @@ namespace module
         }
 
         online_ = false;
+
+        stop_fifo_services();
 
         load_vars();
 
@@ -2161,6 +2158,12 @@ namespace module
     void
     module::start_fifo_worker()
     {
+        /*
+         * @todo disable until LM FIFO burst support is added
+         */
+        if (*this == hw::rev_H) {
+            return;
+        }
         log(log::debug) << module_label(*this)
                         << std::boolalpha
                         << "FIFO worker: starting: running="
@@ -2175,6 +2178,12 @@ namespace module
     void
     module::stop_fifo_worker()
     {
+        /*
+         * @todo disable until LM FIFO burst support is added
+         */
+        if (*this == hw::rev_H) {
+            return;
+        }
         log(log::debug) << module_label(*this)
                         << std::boolalpha
                         << "FIFO worker: stopping: running="
@@ -2199,6 +2208,8 @@ namespace module
 
             bool pool_empty_logged = false;
             bool fifo_full_logged = false;
+
+            (void) fifo.level();
 
             while (fifo_worker_running.load()) {
                 if (!online()) {
@@ -2259,6 +2270,13 @@ namespace module
                     if (level == 0 ||
                         (hold_time < fifo_hold_usecs.load() &&
                          level < hw::max_dma_block_size)) {
+                        break;
+                    }
+                    if (level == std::numeric_limits<hw::word>::max()) {
+                        auto level2 = fifo.level();
+                        log(log::debug) << module_label(*this)
+                                        << "invalid FIFO level: " << level
+                                        << " repeat read: " << level2;
                         break;
                     }
                     buffer::handle buf;

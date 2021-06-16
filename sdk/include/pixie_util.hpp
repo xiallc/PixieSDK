@@ -38,6 +38,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <iomanip>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -88,6 +89,30 @@ void trim(std::string& s);
  * Dequote a string
  */
 void dequote(std::string& s);
+
+/*
+ * Humanize a number
+ */
+template<typename T>
+std::string humanize(T value, const std::string suffix = "") {
+    const char* units = " KMGTPEZY";
+    const char* unit = units;
+    double num = static_cast<double>(value);
+    while (*unit != '\0') {
+        if (std::abs(num) < 1024.0) {
+            break;
+        }
+        ++unit;
+        num /= 1024.0;
+    }
+    if (*unit == '\0') {
+        --unit;
+    }
+    std::ostringstream oss;
+    oss << std::setprecision(3) << std::fixed
+        << num << *unit << suffix;
+    return oss.str();
+}
 
 /*
  * Save and restore the output stream's settings.
@@ -207,6 +232,7 @@ private:
     void update(const unsigned char* data, int len);
     static const value_type table[256];
 };
+
 }
 }
 
