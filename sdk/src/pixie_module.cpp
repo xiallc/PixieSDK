@@ -1239,7 +1239,7 @@ namespace module
     module::read_var(param::module_var var, size_t offset, bool io)
     {
         log(log::debug) << module_label(*this)
-                        << "read: var=" << int(var)
+                        << "read_var: module var=" << int(var)
                         << " offset=" << offset;
         online_check();
         const size_t index = static_cast<size_t>(var);
@@ -1287,7 +1287,7 @@ namespace module
                      bool io)
     {
         log(log::debug) << module_label(*this)
-                        << "read: var=" << int(var)
+                        << "read_var: channel var=" << int(var)
                         << " channel=" << channel
                         << " offset=" << offset
                         << " io=" << io;
@@ -1358,7 +1358,7 @@ namespace module
                       bool io)
     {
         log(log::debug) << module_label(*this)
-                        << "write: var=" << int(var)
+                        << "write_var: module var=" << int(var)
                         << " value[" << offset << "]=" << value
                         << " (0x" << std::hex << value << ')';
         online_check();
@@ -1405,7 +1405,7 @@ namespace module
                       bool io)
     {
         log(log::debug) << module_label(*this)
-                        << "write: var=" << int(var)
+                        << "write_var: channel var=" << int(var)
                         << " channel=" << channel
                         << " value[" << offset << "]=" << value
                         << " (0x" << std::hex << value << ')';

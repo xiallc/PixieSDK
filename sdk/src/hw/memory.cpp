@@ -107,7 +107,7 @@ namespace memory
                         "dsp: invalid index: module=" + std::to_string(module.number)
                         + " channel=" + std::to_string(channel));
         }
-        return read(addr + (chan.config.index * sizeof(word)));
+        return read(addr + chan.config.index);
     }
 
     void
@@ -161,7 +161,7 @@ namespace memory
                         "dsp: invalid index: module=" + std::to_string(module.number)
                         + " channel=" + std::to_string(channel));
         }
-        write(addr + (chan.config.index * sizeof(word)), value);
+        write(addr + chan.config.index, value);
     }
 
     void
