@@ -73,6 +73,8 @@ control_task_labels(control_task control_tsk)
         return "tau_finder";
     case control_task::reset_adc:
         return "reset_adc";
+    case control_task::fill_ext_fifo:
+        return "fill_ext_fifo";
     default:
         break;
     }
@@ -92,7 +94,7 @@ run_task_labels(run_task run_tsk)
     case run_task::list_mode:
         return "list_mode";
     case run_task::histogram:
-        return "hostogram";
+        return "histogram";
     default:
         break;
     }

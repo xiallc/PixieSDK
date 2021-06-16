@@ -75,6 +75,7 @@ enum struct control_task {
     get_baselines = 6,
     adjust_offsets = 7,
     tau_finder = 8,
+    fill_ext_fifo = 11,
     reset_adc = 23,
     nop = 100
 };
