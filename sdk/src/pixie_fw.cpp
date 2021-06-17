@@ -125,6 +125,21 @@ namespace firmware
     {
     }
 
+    std::string
+    firmware::basename() const
+    {
+        auto pos = filename.find_last_of('/');
+        if (pos == std::string::npos) {
+            pos = filename.find_last_of('\\');
+        }
+        if (pos == std::string::npos) {
+            pos = 0;
+        } else {
+            ++pos;
+        }
+        return filename.substr(pos);
+    }
+
     void
     firmware::load()
     {

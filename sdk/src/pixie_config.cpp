@@ -135,8 +135,8 @@ load(const std::string& filename,
      crate::crate& crate,
      module::number_slots& loaded)
 {
-    std::ifstream input_json_stream(filename);
-    if (!input_json_stream) {
+    std::ifstream input_json(filename);
+    if (!input_json) {
         throw error(pixie::error::code::file_open_failure,
                     "opening json config: " + filename +
                     ": " + std::strerror(errno));
@@ -145,7 +145,7 @@ load(const std::string& filename,
     json config;
 
     try {
-        config = json::parse(input_json_stream);
+        config = json::parse(input_json);
     } catch (json::exception& e) {
         throw_json_error(e, "parse config");
     }
@@ -209,7 +209,7 @@ load(const std::string& filename,
             }
 
             try {
-                auto slot = moddata["input"]["SlotID"];
+                auto slot = metadata["slot"];
                 if (slot != module.slot) {
                     log(log::warning) << "config module " << mod
                                       << " (slot " << slot
@@ -218,37 +218,6 @@ load(const std::string& filename,
                 }
             } catch (json::exception& e) {
                 throw_json_error(e, "config slot-id");
-            }
-
-            /*
-             * Only check channel 0 until the metadata has arrays
-             */
-            auto& hw_config = module.configs[0];
-
-            try {
-                auto adc_bits = metadata["adc_bit_resolution"];
-                if (adc_bits != hw_config.adc_bits) {
-                    log(log::warning) << "config module " << mod
-                                      << " (slot " << module.slot
-                                      << ") ADC BIT count has changed from "
-                                      << adc_bits << " to "
-                                      << hw_config.adc_bits;
-                }
-            } catch (json::exception& e) {
-                throw_json_error(e, "config adc-bits");
-            }
-
-            try {
-                auto adc_msps = metadata["adc_sampling_frequency"];
-                if (adc_msps != hw_config.adc_msps) {
-                    log(log::warning) << "config module " << mod
-                                      << " (slot " << module.slot
-                                      << ") ADC sampling freq changed from "
-                                      << adc_msps << " to "
-                                      << hw_config.adc_msps;
-                }
-            } catch (json::exception& e) {
-                throw_json_error(e, "config adc-freq");
             }
 
             /*
@@ -379,11 +348,95 @@ load(const std::string& filename,
     }
 }
 
-void
-unload(const std::string& json_file, crate::crate& crate)
+static json
+json_firmware(const firmware::firmware_ref fw)
 {
-    (void) json_file;
-    (void) crate;
+    json jfw;
+    jfw["tag"] = fw->tag;
+    jfw["file"] = fw->basename();
+    jfw["version"] = fw->version;
+    jfw["rev"] = fw->mod_revision;
+    jfw["adc_msps"] = fw->mod_adc_msps;
+    jfw["adc_bits"] = fw->mod_adc_bits;
+    return jfw;
+}
+
+void
+unload(const std::string& filename, crate::crate& crate)
+{
+    json config;
+
+    for (auto m : crate.modules) {
+        module::module& mod = *m;
+
+        json metadata;
+        char rv[2] = { mod.revision_label(), '\0' };
+        metadata["number"] = mod.number;
+        metadata["slot"] = mod.slot;
+        metadata["serial-num"] = mod.serial_num;
+        metadata["hardware_revision"] = rv;
+        metadata["num-channels"] = mod.num_channels;
+        metadata["sys"] = json_firmware(mod.get("sys"));
+        metadata["fippi"] = json_firmware(mod.get("fippi"));
+        metadata["dsp"] = json_firmware(mod.get("dsp"));
+        metadata["var"] = json_firmware(mod.get("var"));
+        metadata["fifo"]["buffers"] = mod.fifo_buffers;
+        metadata["fifo"]["run-wait"] = mod.fifo_run_wait_usecs.load();
+        metadata["fifo"]["idle-wait"] = mod.fifo_idle_wait_usecs.load();
+        metadata["fifo"]["hold"] = mod.fifo_hold_usecs.load();
+        metadata["config"] = json::array();
+        for (auto& chan : mod.channels) {
+            json cfg;
+            cfg["adc_bits"] = chan.config.adc_bits;
+            cfg["adc_msps"] = chan.config.adc_msps;
+            cfg["adc_clk_div"] = chan.config.adc_clk_div;
+            cfg["fpga_clk_mhz"] = chan.config.fpga_clk_mhz;
+            metadata["config"].push_back(cfg);
+        }
+
+        json module;
+        for (auto& var : mod.module_vars) {
+            auto& desc = var.var;
+            if (desc.mode != param::ro) {
+                if (desc.size == 1) {
+                    module[desc.name] = var.value[0].value;
+                } else {
+                    json value;
+                    for (auto v : var.value) {
+                        value.push_back(v.value);
+                    }
+                    module[desc.name] = value;
+                }
+            }
+        }
+
+        json channel;
+        for (auto& desc : mod.channel_var_descriptors) {
+            json values;
+            for (auto& chan : mod.channels) {
+                for (auto& v : chan.vars[int(desc.par)].value) {
+                    values.push_back(v.value);
+                }
+            }
+            channel[desc.name] = values;
+        }
+
+        json mod_config;
+        mod_config["metadata"] = metadata;
+        mod_config["module"] = { { "input" , module } };
+        mod_config["channel"] = { { "input", channel } };
+
+        config.push_back(mod_config);
+    }
+
+    std::ofstream output_json(filename);
+    if (!output_json) {
+        throw error(pixie::error::code::file_open_failure,
+                    "opening json config: " + filename +
+                    ": " + std::strerror(errno));
+    }
+
+    output_json << std::setw(4) << config << std::endl;
 }
 
 }

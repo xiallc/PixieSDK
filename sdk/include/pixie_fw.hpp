@@ -117,6 +117,7 @@ namespace firmware
          * The firmware's file in a file system.
          */
         std::string filename;
+        std::string basename() const;
 
         /*
          * The specification.
