@@ -879,7 +879,12 @@ load(xia::pixie::crate::crate& crate, options& cmd)
 static void
 unload(xia::pixie::crate::crate& crate, options& cmd)
 {
+    xia::util::timepoint tp;
+    tp.start();
     crate.unload(cmd[1]);
+    tp.end();
+    std::cout << "Modules unload time=" << tp
+              << std::endl;
 }
 
 static void
