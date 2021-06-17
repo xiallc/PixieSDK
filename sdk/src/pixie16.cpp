@@ -33,7 +33,8 @@
 * SUCH DAMAGE.
 *----------------------------------------------------------------------**/
 /// @file pixie16.cpp
-/// @brief C wrappers for the C++ API that expose the same signature as the legacy code
+/// @brief C wrappers for the C++ API that expose the same signature as the
+/// legacy code
 /// @author C. Johns / S. V. Paulauskas
 /// @date March 29, 2021
 
@@ -142,6 +143,9 @@ PixieAcquireADCTrace(unsigned short ModNum)
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
@@ -168,6 +172,9 @@ PixieAcquireBaselines(unsigned short ModNum)
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
@@ -194,6 +201,9 @@ PixieAdjustOffsets(unsigned short ModNum)
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
@@ -230,6 +240,9 @@ Pixie16BLcutFinder(unsigned short ModNum,
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
@@ -350,6 +363,9 @@ PixieBootModule(const char* ComFPGAConfigFile,
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
@@ -380,6 +396,9 @@ PixieCheckExternalFIFOStatus(unsigned int* nFIFOWords,
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
@@ -410,6 +429,9 @@ PixieCheckRunStatus(unsigned short ModNum)
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
@@ -448,6 +470,9 @@ PixieComputeInputCountRate(unsigned int* Statistics,
         result = stats->channels[ChanNum].input_count_rate();
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
     } catch (...) {
@@ -484,6 +509,9 @@ PixieComputeLiveTime(unsigned int* Statistics,
         result = stats->channels[ChanNum].live_time();
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
     } catch (...) {
@@ -520,6 +548,9 @@ PixieComputeOutputCountRate(unsigned int* Statistics,
         result = stats->channels[ChanNum].output_count_rate();
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
     } catch (...) {
@@ -550,6 +581,9 @@ PixieComputeProcessedEvents(unsigned int* Statistics,
         result = stats->module.processed_events();
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
     } catch (...) {
@@ -584,6 +618,9 @@ PixieEndRun(unsigned short ModNum)
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
@@ -617,6 +654,9 @@ PixieExitSystem(unsigned short ModNum)
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
@@ -690,6 +730,9 @@ PixieInitSystem(unsigned short NumModules,
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
@@ -763,6 +806,9 @@ PixieReadSglChanADCTrace(unsigned short* Trace_Buffer,
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
@@ -810,6 +856,9 @@ PixieReadSglChanBaselines(double* Baselines,
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
@@ -845,6 +894,9 @@ PixieReadSglChanPar(const char* ChanParName,
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
@@ -877,6 +929,9 @@ PixieReadSglModPar(const char* ModParName,
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
@@ -917,6 +972,9 @@ PixieReadStatisticsFromModule(unsigned int* Statistics,
         }
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
     } catch (...) {
@@ -960,6 +1018,9 @@ PixieSetDACs(unsigned short ModNum)
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
@@ -1000,6 +1061,9 @@ PixieStartHistogramRun(unsigned short ModNum,
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
@@ -1047,6 +1111,9 @@ PixieStartListModeRun(unsigned short ModNum,
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
@@ -1079,6 +1146,9 @@ PixieWriteSglChanPar(const char* ChanParName,
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
@@ -1122,6 +1192,9 @@ PixieWriteSglModPar(const char* ModParName,
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();

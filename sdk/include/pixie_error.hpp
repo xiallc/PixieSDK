@@ -135,6 +135,7 @@ enum struct code {
      */
     unknown_error,
     internal_failure,
+    bad_allocation,
     bad_error_code,
     last
 };
@@ -175,6 +176,11 @@ std::string api_result_text(enum code type);
  * Turn the API result into a result code.
  */
 int return_code(int result);
+
+/*
+ * Bad allocatino error helper.
+ */
+int api_result_bad_alloc_error();
 
 /*
  * Unknown error helper.

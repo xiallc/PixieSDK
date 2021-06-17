@@ -152,6 +152,7 @@ static const std::map<code, result_code> result_codes =
      */
     { code::unknown_error,             { 900, "unknown error" } },
     { code::internal_failure,          { 901, "internal failure" } },
+    { code::bad_allocation,            { 902, "bad allocation" } },
     { code::bad_error_code,            { 990, "bad error code" } },
 };
 
@@ -238,6 +239,12 @@ int
 return_code(int result)
 {
     return 0 - result;
+}
+
+int
+api_result_bad_alloc_error()
+{
+    return api_result(code::bad_allocation);
 }
 
 int
