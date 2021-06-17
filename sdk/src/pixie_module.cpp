@@ -159,6 +159,9 @@ namespace module
         PLX_DEVICE_KEY key;
         PLX_DMA_PROP dma;
         pci_bus_handle();
+        unsigned int domain() const;
+        unsigned int bus() const;
+        unsigned int slot() const;
     };
 
     pci_bus_handle::pci_bus_handle()
@@ -168,6 +171,27 @@ namespace module
         ::memset(&dma, 0, sizeof(PLX_DMA_PROP));
         key.VendorId = vendor_id;
         key.DeviceId = device_id;
+    }
+
+    unsigned int
+    pci_bus_handle::domain() const
+    {
+        unsigned int val(key.domain);
+        return val;
+    }
+
+    unsigned int
+    pci_bus_handle::bus() const
+    {
+        unsigned int val(key.bus);
+        return val;
+    }
+
+    unsigned int
+    pci_bus_handle::slot() const
+    {
+        unsigned int val(key.slot);
+        return val;
     }
 
     int
@@ -497,7 +521,7 @@ namespace module
                             oss);
             }
 
-            log(log::info) << "PLX: driver: version=" << int(drv_major)
+            log(log::info) << "module: PLX: driver: version=" << int(drv_major)
                            << '.' << int(drv_minor) << '.' << int(drv_rev);
 
             U16 chip_type;
@@ -512,7 +536,7 @@ namespace module
                             oss);
             }
 
-            log(log::info) << "PLX: device: type=" << std::hex << chip_type
+            log(log::info) << "module: PLX: device: type=" << std::hex << chip_type
                            << " rev=" << std::dec << int(chip_rev);
 
             /*
@@ -527,6 +551,11 @@ namespace module
                             error::code::module_initialize_failure,
                             oss);
             }
+
+            log(log::info) << "module: PLX: pci: device-number=" << device_number
+                           << " domain=" << device->domain()
+                           << " bus=" << device->bus()
+                           << " slot=" << device->slot();
 
             /*
              * DMA channel for block transfers.
