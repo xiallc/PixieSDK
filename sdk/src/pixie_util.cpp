@@ -77,10 +77,10 @@ split(strings& split_string,
     split_string.clear();
     while (std::getline(ss, e, delimiter))
     {
-        if (strip_quotes)
-            dequote(e);
         if (strip_whitespace)
             trim(e);
+        if (strip_quotes)
+            dequote(e);
         if (empty || !e.empty())
         {
             split_string.push_back(e);
