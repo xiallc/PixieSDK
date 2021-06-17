@@ -234,8 +234,6 @@ namespace fpga
         what += msg;
         return what;
     }
-
-
 };
 };
 };

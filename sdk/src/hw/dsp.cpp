@@ -40,10 +40,47 @@
 #include <pixie_log.hpp>
 
 #include <hw/csr.hpp>
+#include <hw/defs.hpp>
 #include <hw/dsp.hpp>
 
-#include <pixie16sys_defs.h>
-#include <def21160.h>
+/*
+ * AD21160
+ */
+/*
+ * System configuration register
+ */
+#define SYSCON 0x00
+/*
+ * EP DMA10 control register
+ */
+#define DMAC10 0x1c
+/*
+ * External port DMA buffer 0
+ */
+#define EPB0 0x04
+
+/*
+ * DSP code tag types
+ */
+#define FINAL_INIT 0X0000
+#define ZERO_DM16 0X0001
+#define ZERO_DM32 0X0002
+#define ZERO_DM40 0X0003
+#define INIT_DM16 0X0004
+#define INIT_DM32 0X0005
+#define INIT_DM40 0X0006
+#define ZERO_PM16 0X0007
+#define ZERO_PM32 0X0008
+#define ZERO_PM40 0X0009
+#define ZERO_PM48 0X000A
+#define INIT_PM16 0X000B
+#define INIT_PM32 0X000C
+#define INIT_PM40 0X000D
+#define INIT_PM48 0X000E
+#define ZERO_DM64 0X000F
+#define INIT_DM64 0X0010
+#define ZERO_PM64 0X0011
+#define INIT_PM64 0X0012
 
 namespace xia
 {
@@ -84,7 +121,7 @@ namespace dsp
         /*
          * Guard the download bit so it is cleared when we exit.
          */
-        csr::set_clear csr(module, 1 << DSPDOWNLOAD);
+        csr::set_clear csr(module, 1 << hw::bit::DSPDOWNLOAD);
 
         while (!running) {
             --retries;
@@ -101,25 +138,26 @@ namespace dsp
                 /*
                  * Reset the DSP and wait 1msec. The reset bit self clears
                  */
-                bus_write(CSR_ADDR, bus_read(CSR_ADDR) | (1 << DSPRESET));
+                bus_write(hw::device::CSR,
+                          bus_read(hw::device::CSR) | (1 << hw::bit::DSPRESET));
                 wait(1000);
 
                 /*
                  * HBR done for reset (not sure what this means!)
                  */
-                bus_write(HBR_DONE, 0);
+                bus_write(hw::device::HBR_DONE, 0);
                 wait(1000);
 
                 /*
                  * SYSCON address
                  */
-                bus_write(EXT_MEM_TEST, SYSCON);
+                bus_write(hw::device::EXT_MEM_TEST, SYSCON);
 
                 /*
                  * HBR request
                  */
-                ok = checked_write(REQUEST_HBR, SYSCON, WRT_DSP_MMA,
-                                   0x10, 1000);
+                ok = checked_write(hw::device::REQUEST_HBR, SYSCON,
+                                   hw::device::WRT_DSP_MMA, 0x10, 1000);
                 if (!ok) {
                     throw error(error::code::device_load_failure,
                                 make_what("DSP SYSCON set failure"));
@@ -128,7 +166,8 @@ namespace dsp
                 /*
                  * Check DSP DMAC10
                  */
-                ok = checked_write(EXT_MEM_TEST, DMAC10, WRT_DSP_MMA, 0xa1);
+                ok = checked_write(hw::device::EXT_MEM_TEST, DMAC10,
+                                   hw::device::WRT_DSP_MMA, 0xa1);
                 if (!ok) {
                     throw error(error::code::device_load_failure,
                                 make_what("DSP DMAC10 set failure"));
@@ -138,17 +177,17 @@ namespace dsp
                  * Download the boot kernel. Blocks of 3 bus words are written
                  * as a time.
                  */
-                bus_write(EXT_MEM_TEST, EPB0);
+                bus_write(hw::device::EXT_MEM_TEST, EPB0);
                 for (size_t i = 0; i < 256; ++i) {
-                    bus_write(WRT_DSP_MMA, reader.get());
-                    bus_write(WRT_DSP_MMA, reader.get());
-                    bus_write(WRT_DSP_MMA, reader.get());
+                    bus_write(hw::device::WRT_DSP_MMA, reader.get());
+                    bus_write(hw::device::WRT_DSP_MMA, reader.get());
+                    bus_write(hw::device::WRT_DSP_MMA, reader.get());
                 }
 
                 /*
                  * De-assert HBR
                  */
-                bus_write(HBR_DONE, 0);
+                bus_write(hw::device::HBR_DONE, 0);
 
                 /*
                  * Load the image
@@ -180,11 +219,11 @@ namespace dsp
                         section_load(reader, 2 * sizeof(load_value_type));
                         break;
                     case FINAL_INIT:
-                        bus_write(REQUEST_HBR, 0);
+                      bus_write(hw::device::REQUEST_HBR, 0);
                         for (size_t i = 0; i < 258; ++i) {
-                            bus_write(WRT_DSP_MMA, reader.get());
-                            bus_write(WRT_DSP_MMA, reader.get());
-                            bus_write(WRT_DSP_MMA, reader.get());
+                            bus_write(hw::device::WRT_DSP_MMA, reader.get());
+                            bus_write(hw::device::WRT_DSP_MMA, reader.get());
+                            bus_write(hw::device::WRT_DSP_MMA, reader.get());
                         }
                         break;
                     default: {
@@ -241,12 +280,12 @@ namespace dsp
         const auto& power_up_init_done =
             module.module_var_descriptors[int(param::module_var::PowerUpInitDone)];
         module::module::bus_guard guard(module);
-        bus_write(REQUEST_HBR, 0);
-        bus_write(EXT_MEM_TEST, power_up_init_done.address);
-        word value = bus_read(WRT_DSP_MMA);
-        bus_write(HBR_DONE, 0);
+        bus_write(hw::device::REQUEST_HBR, 0);
+        bus_write(hw::device::EXT_MEM_TEST, power_up_init_done.address);
+        word value = bus_read(hw::device::WRT_DSP_MMA);
+        bus_write(hw::device::HBR_DONE, 0);
         if (value == 1) {
-            csr::clear(module, 1 << DSPDOWNLOAD);
+          csr::clear(module, 1 << hw::bit::DSPDOWNLOAD);
         }
         return value == 1;
     }
@@ -254,17 +293,17 @@ namespace dsp
     void
     dsp::section_load(firmware::reader& reader, const size_t wordsize)
     {
-        bus_write(REQUEST_HBR, 0);
-        bus_write(WRT_DSP_MMA, reader.get());
-        bus_write(WRT_DSP_MMA, reader.get());
-        bus_write(WRT_DSP_MMA, reader.get());
-        bus_write(HBR_DONE, 0);
+        bus_write(hw::device::REQUEST_HBR, 0);
+        bus_write(hw::device::WRT_DSP_MMA, reader.get());
+        bus_write(hw::device::WRT_DSP_MMA, reader.get());
+        bus_write(hw::device::WRT_DSP_MMA, reader.get());
+        bus_write(hw::device::HBR_DONE, 0);
         size_t wordcount = reader.peek();
-        bus_write(REQUEST_HBR, 0);
-        bus_write(WRT_DSP_MMA, reader.get());
-        bus_write(WRT_DSP_MMA, reader.get());
-        bus_write(WRT_DSP_MMA, reader.get());
-        bus_write(HBR_DONE, 0);
+        bus_write(hw::device::REQUEST_HBR, 0);
+        bus_write(hw::device::WRT_DSP_MMA, reader.get());
+        bus_write(hw::device::WRT_DSP_MMA, reader.get());
+        bus_write(hw::device::WRT_DSP_MMA, reader.get());
+        bus_write(hw::device::HBR_DONE, 0);
         if (wordsize != 0) {
             if ((reader.remaining()) < (wordcount * 3 * wordsize)) {
                 throw error(error::code::device_image_failure,
@@ -272,11 +311,11 @@ namespace dsp
             }
             wordcount *= wordsize / sizeof(load_value_type);
             for (size_t i = 0; i < wordcount; ++i) {
-                bus_write(REQUEST_HBR, 0);
-                bus_write(WRT_DSP_MMA, reader.get());
-                bus_write(WRT_DSP_MMA, reader.get());
-                bus_write(WRT_DSP_MMA, reader.get());
-                bus_write(HBR_DONE, 0);
+                bus_write(hw::device::REQUEST_HBR, 0);
+                bus_write(hw::device::WRT_DSP_MMA, reader.get());
+                bus_write(hw::device::WRT_DSP_MMA, reader.get());
+                bus_write(hw::device::WRT_DSP_MMA, reader.get());
+                bus_write(hw::device::HBR_DONE, 0);
             }
         }
     }

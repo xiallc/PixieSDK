@@ -38,10 +38,9 @@
 #include <pixie_util.hpp>
 
 #include <hw/csr.hpp>
+#include <hw/defs.hpp>
 #include <hw/memory.hpp>
 #include <hw/run.hpp>
-
-#include <pixie16sys_defs.h>
 
 namespace xia
 {
@@ -141,7 +140,7 @@ start(module::module& module,
                      param::value_type(mode));
 
     module::module::bus_guard guard(module);
-    csr::set(module, 1 << RUNENA);
+    csr::set(module, 1 << hw::bit::RUNENA);
 }
 
 void
@@ -155,7 +154,7 @@ end(module::module& module)
         tp.start();
         {
           module::module::bus_guard guard(module);
-          csr::clear(module, 1 << RUNENA);
+          csr::clear(module, 1 << hw::bit::RUNENA);
         }
         for (int msecs = 0; msecs < 2 * 1000; ++msecs) {
             if (!hw::run::active(module)) {
@@ -175,7 +174,8 @@ bool
 active(module::module& module)
 {
     module::module::bus_guard guard(module);
-    return (csr::read(module) & ((1 << RUNENA) | (1 << RUNACTIVE))) != 0;
+    return (csr::read(module) &
+            ((1 << hw::bit::RUNENA) | (1 << hw::bit::RUNACTIVE))) != 0;
 }
 
 void

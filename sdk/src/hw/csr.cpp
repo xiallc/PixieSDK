@@ -35,9 +35,8 @@
 
 #include <pixie_module.hpp>
 
+#include <hw/defs.hpp>
 #include <hw/csr.hpp>
-
-#include <pixie16sys_defs.h>
 
 namespace xia
 {
@@ -49,17 +48,20 @@ namespace csr
 {
 void reset(module::module& module)
 {
-    clear(module, (1 << RUNENA) | (1 << DSPDOWNLOAD) | (1 << PCIACTIVE));
+    clear(module,
+          (1 << hw::bit::RUNENA) |
+          (1 << hw::bit::DSPDOWNLOAD) |
+          (1 << hw::bit::PCIACTIVE));
 }
 
 word read(module::module& module)
 {
-    return module.read_word(CSR_ADDR);
+    return module.read_word(hw::device::CSR);
 }
 
 void write(module::module& module, word value)
 {
-    module.write_word(CSR_ADDR, value);
+    module.write_word(hw::device::CSR, value);
 }
 
 void
@@ -91,7 +93,7 @@ fifo_ready_wait(module::module& module, const size_t polls)
 {
     size_t count = 0;
     while (count++ < polls) {
-        if ((read(module) & (1 << EXTFIFO_WML)) != 0) {
+        if ((read(module) & (1 << hw::bit::EXTFIFO_WML)) != 0) {
             return;
         }
     }

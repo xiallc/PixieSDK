@@ -46,6 +46,7 @@
 #include <pixie_util.hpp>
 
 #include <hw/csr.hpp>
+#include <hw/defs.hpp>
 #include <hw/dsp.hpp>
 #include <hw/fpga_comms.hpp>
 #include <hw/fpga_fippi.hpp>
@@ -53,12 +54,6 @@
 #include <hw/memory.hpp>
 #include <hw/pcf8574.hpp>
 #include <hw/run.hpp>
-
-/*
- * @todo move the few defines out of these at some point
- */
-#include <pixie16sys_defs.h>
-#include <pixie16app_defs.h>
 
 #include <PlxApi.h>
 
@@ -579,7 +574,7 @@ namespace module
             const uint32_t i2c_SCL = 1 << 1;
             const uint32_t i2c_SDA = 1 << 0;
 
-            hw::i2c::pcf8574 pio(*this, PCF8574_ADDR,
+            hw::i2c::pcf8574 pio(*this, hw::device::PCF8574,
                                  i2c_SDA, i2c_SCL, i2c_CTRL,
                                  reg_trace);
             uint8_t pio_value = pio.read_a_byte();
@@ -604,7 +599,7 @@ namespace module
                             << "crate version: " << crate_revision
                             << ", board version: " << std::hex << board_revision;
 
-            hw::i2c::i2cm24c64 i2cm24c64(*this, I2CM24C64_ADDR,
+            hw::i2c::i2cm24c64 i2cm24c64(*this, hw::device::I2CM24C64,
                                          i2c_SDA, i2c_SCL, i2c_CTRL);
             i2cm24c64.read(0, hw::eeprom_block_size, eeprom.data);
 
@@ -1535,10 +1530,10 @@ namespace module
              */
             hw::word cpld_csr = 0xaaa;
 
-            if ((csrb & MODCSRB_CPLDPULLUP) != 0) {
-                cpld_csr |= (1 << CPLDCSR_PULLUP);
+            if ((csrb & (1 << hw::bit::MODCSRB_CPLDPULLUP)) != 0) {
+                cpld_csr |= (1 << hw::bit::CPLDCSR_PULLUP);
             } else {
-                cpld_csr &= ~(1 << CPLDCSR_PULLUP);
+                cpld_csr &= ~(1 << hw::bit::CPLDCSR_PULLUP);
             }
 
             /*
@@ -1546,20 +1541,20 @@ namespace module
              * backplane if the module is a rev B or C module
              */
             if (*this == hw::rev_B || *this == hw::rev_C) {
-                cpld_csr |= (1 << CPLDCSR_BPCONNECT);
+                cpld_csr |= (1 << hw::bit::CPLDCSR_BPCONNECT);
             }
 
-            write_word(CFG_CTRLCS, cpld_csr);
+            write_word(hw::device::CFG_CTRLCS, cpld_csr);
 
             /*
              * Set pullups for the SYNCH lines on the backplane
              */
             hw::word csr = hw::csr::read(*this);
 
-            if ((csrb % MODCSRB_CHASSISMASTER) != 0) {
-                csr |= (1 << PULLUP_CTRL);
+            if ((csrb & (1 << hw::bit::MODCSRB_CHASSISMASTER)) != 0) {
+                csr |= (1 << hw::bit::PULLUP_CTRL);
             } else {
-                csr &= ~(1 << PULLUP_CTRL);
+                csr &= ~(1 << hw::bit::PULLUP_CTRL);
             }
 
             hw::csr::write(*this, csr);
@@ -2042,10 +2037,10 @@ namespace module
             /*
              * Set up Pull-up resistors
              */
-            if ((value & (1 << MODCSRB_CPLDPULLUP)) != 0) {
-                csr |= 1 << MODCSRB_CPLDPULLUP;
+            if ((value & (1 << hw::bit::MODCSRB_CPLDPULLUP)) != 0) {
+                csr |= 1 << hw::bit::MODCSRB_CPLDPULLUP;
             } else {
-                csr &= ~(1 << MODCSRB_CPLDPULLUP);
+                csr &= ~(1 << hw::bit::MODCSRB_CPLDPULLUP);
             }
 
             /*
@@ -2053,20 +2048,20 @@ namespace module
              * backplane if the module is a Rev-B or C module
              */
             if (*this == hw::rev_B || *this == hw::rev_C) {
-                csr |= 1 << CPLDCSR_BPCONNECT;
+                csr |= 1 << hw::bit::CPLDCSR_BPCONNECT;
             }
 
-            write_word(CFG_CTRLCS, csr);
+            write_word(hw::device::CFG_CTRLCS, csr);
 
             /*
              * Set pullups for the SYNCH lines on the backplane
              */
             csr = hw::csr::read(*this);
 
-            if ((csr & (1 << MODCSRB_CHASSISMASTER)) != 0) {
-                csr |= 1 << PULLUP_CTRL;
+            if ((csr & (1 << hw::bit::MODCSRB_CHASSISMASTER)) != 0) {
+                csr |= 1 << hw::bit::PULLUP_CTRL;
             } else {
-                csr &= ~(1 << PULLUP_CTRL);
+                csr &= ~(1 << hw::bit::PULLUP_CTRL);
             }
             hw::csr::write(*this, csr);
         }
@@ -2075,14 +2070,14 @@ namespace module
     void
     module::slow_filter_range(param::value_type value, bool io)
     {
-        if (value < SLOWFILTERRANGE_MIN) {
+        if (value < hw::limit::SLOWFILTERRANGE_MIN) {
             std::stringstream oss;
             oss << "slow filter value below min: " << value;
             throw error(number, slot,
                         error::code::module_invalid_param,
                         oss.str());
         }
-        if (value > SLOWFILTERRANGE_MAX) {
+        if (value > hw::limit::SLOWFILTERRANGE_MAX) {
             std::stringstream oss;
             oss << "slow filter value above max: " << value;
             throw error(number, slot,
@@ -2123,19 +2118,17 @@ namespace module
     void
     module::fast_filter_range(param::value_type value, bool io)
     {
-        if (value > FASTFILTERRANGE_MAX) {
-            value = FASTFILTERRANGE_MAX;
+        if (value > hw::limit::FASTFILTERRANGE_MAX) {
+            value = hw::limit::FASTFILTERRANGE_MAX;
             log(log::warning) << "setting FAST_FILTER_RANGE to max: "
-                              << FASTFILTERRANGE_MAX;
+                              << hw::limit::FASTFILTERRANGE_MAX;
         }
 
-#if FASTFILTERRANGE_MIN > 0
-        if (value < FASTFILTERRANGE_MIN) {
-            value = FASTFILTERRANGE_MIN;
+        if (int(value) < int(hw::limit::FASTFILTERRANGE_MIN)) {
+            value = hw::limit::FASTFILTERRANGE_MIN;
             log(log::warning) << "setting FAST_FILTER_RANGE to min: "
-                              << FASTFILTERRANGE_MIN;
+                              << hw::limit::FASTFILTERRANGE_MIN;
         }
-#endif
 
         write_var(param::module_var::FastFilterRange, value, io);
 

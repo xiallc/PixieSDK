@@ -38,9 +38,8 @@
 
 #include <pixie_module.hpp>
 
+#include <hw/defs.hpp>
 #include <hw/fpga_comms.hpp>
-
-#include <pixie16sys_defs.h>
 
 namespace xia
 {
@@ -55,7 +54,9 @@ namespace fpga
                "comms",
                control::controls(0xfffff000, 0x00000553, 0x003),
                control::controls(0xfffff000, 0x00000551, 0x001),
-               control::regs(CFG_DATACS, CFG_CTRLCS, CFG_RDCS),
+               control::regs(hw::device::CFG_DATACS,
+                             hw::device::CFG_CTRLCS,
+                             hw::device::CFG_RDCS),
                trace)
     {
     }

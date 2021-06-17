@@ -43,6 +43,7 @@
 #include <pixie_module.hpp>
 #include <pixie_util.hpp>
 
+#include <hw/defs.hpp>
 #include <hw/memory.hpp>
 #include <hw/run.hpp>
 
@@ -52,44 +53,6 @@ namespace pixie
 {
 namespace channel
 {
-/*
- * Length of each baseline (default: 2 timestamp words + 16 baselines)
- */
-static const size_t BASELINES_BLOCK_LEN = 18;
-
-/*
- * Limits.
- */
-static const size_t FASTFILTER_MAX_LEN = 127;
-static const size_t FASTLENGTH_MIN_LEN = 2;
-static const size_t FAST_THRESHOLD_MAX = 65535;
-static const size_t SLOWFILTER_MAX_LEN = 127;
-static const size_t SLOWLENGTH_MIN_LEN = 2;
-static const size_t SLOWGAP_MIN_LEN = 3;
-static const size_t TRACEDELAY_MAX = 1023;
-static const size_t DAC_VOLTAGE_RANGE = 3;
-static const size_t DSP_CLOCK_MHZ = 100;
-static const size_t FASTTRIGBACKLEN_MIN_100MHZFIPCLK = 1;
-static const size_t FASTTRIGBACKLEN_MIN_125MHZFIPCLK = 2;
-static const size_t FASTTRIGBACKLEN_MAX = 4095;
-static const size_t CCSRA_ENARELAY = 14;
-static const size_t CFDDELAY_MIN = 1;
-static const size_t CFDDELAY_MAX = 63;
-static const size_t CFDSCALE_MAX = 7;
-static const size_t CFDTHRESH_MIN = 1;
-static const size_t CFDTHRESH_MAX = 65535;
-static const size_t QDCLEN_MIN = 1;
-static const size_t QDCLEN_MAX = 32767;
-static const size_t EXTTRIGSTRETCH_MIN = 1;
-static const size_t EXTTRIGSTRETCH_MAX = 4095;
-static const size_t VETOSTRETCH_MIN = 1;
-static const size_t VETOSTRETCH_MAX = 4095;
-static const size_t EXTDELAYLEN_MAX_REVBCD = 255;
-static const size_t EXTDELAYLEN_MAX_REVF = 511;
-static const size_t EXTDELAYLEN_MIN = 0;
-static const size_t CHANTRIGSTRETCH_MIN = 1;
-static const size_t CHANTRIGSTRETCH_MAX = 4095;
-
 static std::string
 channel_label(const int num, const int slot, const int chan)
 {
@@ -459,13 +422,14 @@ channel::trigger_risetime(double value)
     param::value_type fast_length =
         std::round((value * config.fpga_clk_mhz) / ffr_mask);
 
-    if ((fast_length + fast_gap) > FASTFILTER_MAX_LEN) {
-        fast_length = FASTFILTER_MAX_LEN - fast_gap;
+    if ((fast_length + fast_gap) > hw::limit::FASTFILTER_MAX_LEN) {
+        fast_length = hw::limit::FASTFILTER_MAX_LEN - fast_gap;
     }
-    if (fast_length < FASTLENGTH_MIN_LEN) {
-        fast_length = FASTLENGTH_MIN_LEN;
-        if ((fast_length + fast_gap) > FASTFILTER_MAX_LEN) {
-            fast_gap = FASTFILTER_MAX_LEN - FASTLENGTH_MIN_LEN;
+    if (fast_length < hw::limit::FASTLENGTH_MIN_LEN) {
+        fast_length = hw::limit::FASTLENGTH_MIN_LEN;
+        if ((fast_length + fast_gap) > hw::limit::FASTFILTER_MAX_LEN) {
+            fast_gap =
+              hw::limit::FASTFILTER_MAX_LEN - hw::limit::FASTLENGTH_MIN_LEN;
         }
     }
 
@@ -504,8 +468,8 @@ channel::trigger_flattop(double value)
     param::value_type fast_gap =
         std::round((value * config.fpga_clk_mhz) / ffr_mask);
 
-    if ((fast_length + fast_gap) > FASTFILTER_MAX_LEN) {
-        fast_gap = FASTFILTER_MAX_LEN - fast_length;
+    if ((fast_length + fast_gap) > hw::limit::FASTFILTER_MAX_LEN) {
+        fast_gap = hw::limit::FASTFILTER_MAX_LEN - fast_length;
     }
 
     mod.write_var(param::channel_var::FastGap, fast_gap, number);
@@ -540,10 +504,11 @@ channel::trigger_threshold(double value)
     param::value_type fast_thresh =
         static_cast<param::value_type>(value * fast_length * config.adc_clk_div);
 
-    if (fast_thresh >= FAST_THRESHOLD_MAX) {
+    if (fast_thresh >= hw::limit::FAST_THRESHOLD_MAX) {
         double dbl_fast_thresh(fast_thresh);
         value =
-            (double(FAST_THRESHOLD_MAX) / (dbl_fast_thresh - 0.5)) * dbl_fast_thresh;
+            (double(hw::limit::FAST_THRESHOLD_MAX) /
+             (dbl_fast_thresh - 0.5)) * dbl_fast_thresh;
         fast_thresh = static_cast<param::value_type>(value);
     }
 
@@ -610,26 +575,28 @@ channel::energy_risetime_flattop(param::channel_param par, double value)
     if (par == param::channel_param::energy_risetime) {
         slow_length = std::round((value * config.fpga_clk_mhz) / sfr_mask);
         slow_gap = mod.read_var(param::channel_var::SlowGap, number, 0, false);
-        if ((slow_length + slow_gap) > SLOWFILTER_MAX_LEN) {
-            slow_length = SLOWFILTER_MAX_LEN - slow_gap;
+        if ((slow_length + slow_gap) > hw::limit::SLOWFILTER_MAX_LEN) {
+            slow_length = hw::limit::SLOWFILTER_MAX_LEN - slow_gap;
         }
-        if (slow_length < SLOWLENGTH_MIN_LEN) {
-            slow_length = SLOWLENGTH_MIN_LEN;
-            if ((slow_length + slow_gap) > SLOWFILTER_MAX_LEN) {
-                slow_gap = SLOWFILTER_MAX_LEN - SLOWLENGTH_MIN_LEN;
+        if (slow_length < hw::limit::SLOWLENGTH_MIN_LEN) {
+            slow_length = hw::limit::SLOWLENGTH_MIN_LEN;
+            if ((slow_length + slow_gap) > hw::limit::SLOWFILTER_MAX_LEN) {
+                slow_gap =
+                  hw::limit::SLOWFILTER_MAX_LEN - hw::limit::SLOWLENGTH_MIN_LEN;
             }
         }
     } else if (par == param::channel_param::energy_flattop) {
         slow_gap = std::round((value * config.fpga_clk_mhz) / sfr_mask);
         slow_length =
             mod.read_var(param::channel_var::SlowLength, number, 0, false);
-        if ((slow_length + slow_gap) > SLOWFILTER_MAX_LEN) {
-            slow_gap = SLOWFILTER_MAX_LEN - slow_length;
+        if ((slow_length + slow_gap) > hw::limit::SLOWFILTER_MAX_LEN) {
+            slow_gap = hw::limit::SLOWFILTER_MAX_LEN - slow_length;
         }
-        if (slow_gap < SLOWGAP_MIN_LEN) {
-            slow_gap = SLOWGAP_MIN_LEN;
-            if ((slow_length + slow_gap) > SLOWFILTER_MAX_LEN) {
-                slow_length = SLOWFILTER_MAX_LEN - SLOWGAP_MIN_LEN;
+        if (slow_gap < hw::limit::SLOWGAP_MIN_LEN) {
+            slow_gap = hw::limit::SLOWGAP_MIN_LEN;
+            if ((slow_length + slow_gap) > hw::limit::SLOWFILTER_MAX_LEN) {
+                slow_length =
+                  hw::limit::SLOWFILTER_MAX_LEN - hw::limit::SLOWGAP_MIN_LEN;
             }
         }
     } else {
@@ -785,8 +752,8 @@ channel::trace_delay(double value)
         trace_delay = trace_length / 2;
     }
 
-    if (trace_delay > TRACEDELAY_MAX) {
-        trace_delay = TRACEDELAY_MAX;
+    if (trace_delay > hw::limit::TRACEDELAY_MAX) {
+        trace_delay = hw::limit::TRACEDELAY_MAX;
     }
 
     update_fifo(trace_delay);
@@ -802,7 +769,7 @@ channel::voffset()
     param::value_type value =
         mod.read_var(param::channel_var::OffsetDAC, number);
 
-    return DAC_VOLTAGE_RANGE * (value / 65536.0 - 0.5);
+    return hw::limit::DAC_VOLTAGE_RANGE * (value / 65536.0 - 0.5);
 }
 
 void
@@ -811,7 +778,8 @@ channel::voffset(double value)
     module::module& mod = module.get();
 
     auto offset_dac =
-        param::value_type (65536 * (value / DAC_VOLTAGE_RANGE + 0.5));
+        param::value_type (65536 *
+                           (value / hw::limit::DAC_VOLTAGE_RANGE + 0.5));
 
     /*
      * 16-bit DAC, range check.
@@ -833,7 +801,7 @@ channel::xdt()
     param::value_type value =
         mod.read_var(param::channel_var::Xwait, number);
 
-    double result = double(value) / DSP_CLOCK_MHZ;
+    double result = double(value) / hw::limit::DSP_CLOCK_MHZ;
 
     return result;
 }
@@ -848,7 +816,7 @@ channel::xdt(double value)
     param::value_type current_xwait =
         mod.read_var(param::channel_var::Xwait, number);
 
-    param::value_type xwait = std::round(value * DSP_CLOCK_MHZ);
+    param::value_type xwait = std::round(value * hw::limit::DSP_CLOCK_MHZ);
 
     double multiple;
 
@@ -1035,8 +1003,8 @@ channel::csra(double value)
     hw::run::control(mod, hw::run::control_task::program_fippi);
     hw::run::control(mod, hw::run::control_task::set_dacs);
 
-    if ((csra & (1 << CCSRA_ENARELAY)) !=
-        (current_csra & (1 << CCSRA_ENARELAY))) {
+    if ((csra & (1 << hw::bit::CCSRA_ENARELAY)) !=
+        (current_csra & (1 << hw::bit::CCSRA_ENARELAY))) {
         range chans = { number };
         baseline bl(mod, chans);
         bl.find_cut();
@@ -1144,17 +1112,17 @@ channel::fast_trig_backlen(double value)
     switch (config.adc_msps) {
     case 100:
     case 500:
-        fast_trig_blen_min = FASTTRIGBACKLEN_MIN_100MHZFIPCLK;
+        fast_trig_blen_min = hw::limit::FASTTRIGBACKLEN_MIN_100MHZFIPCLK;
         break;
     default:
-        fast_trig_blen_min = FASTTRIGBACKLEN_MIN_125MHZFIPCLK;
+        fast_trig_blen_min = hw::limit::FASTTRIGBACKLEN_MIN_125MHZFIPCLK;
         break;
     }
 
     if (fast_trig_blen < fast_trig_blen_min) {
         fast_trig_blen = fast_trig_blen_min;
-    } else if (fast_trig_blen > FASTTRIGBACKLEN_MAX) {
-        fast_trig_blen = FASTTRIGBACKLEN_MAX;
+    } else if (fast_trig_blen > hw::limit::FASTTRIGBACKLEN_MAX) {
+        fast_trig_blen = hw::limit::FASTTRIGBACKLEN_MAX;
     }
 
     mod.write_var(param::channel_var::FastTrigBackLen, fast_trig_blen, number);
@@ -1184,11 +1152,11 @@ channel::cfd_delay(double value)
 
     param::value_type cfddelay = std::round(value * config.fpga_clk_mhz);
 
-    if (cfddelay < CFDDELAY_MIN) {
-        cfddelay = CFDDELAY_MIN;
+    if (cfddelay < hw::limit::CFDDELAY_MIN) {
+        cfddelay = hw::limit::CFDDELAY_MIN;
     }
-    if (cfddelay > CFDDELAY_MAX) {
-        cfddelay = CFDDELAY_MAX;
+    if (cfddelay > hw::limit::CFDDELAY_MAX) {
+        cfddelay = hw::limit::CFDDELAY_MAX;
     }
 
      mod.write_var(param::channel_var::CFDDelay, cfddelay, number);
@@ -1217,8 +1185,8 @@ channel::cfd_scale(double value)
 
     param::value_type cfdscale = value;
 
-    if (cfdscale > CFDSCALE_MAX) {
-        cfdscale = CFDSCALE_MAX;
+    if (cfdscale > hw::limit::CFDSCALE_MAX) {
+        cfdscale = hw::limit::CFDSCALE_MAX;
     }
 
     mod.write_var(param::channel_var::CFDScale, cfdscale, number);
@@ -1246,7 +1214,8 @@ channel::cfd_thresh(double value)
 
     param::value_type cfdthresh = value;
 
-    if (cfdthresh < CFDTHRESH_MIN || cfdthresh > CFDTHRESH_MAX) {
+    if (cfdthresh < hw::limit::CFDTHRESH_MIN ||
+        cfdthresh > hw::limit::CFDTHRESH_MAX) {
         std::ostringstream oss;
         oss << ": out of range CFDThresh: " << cfdthresh;
         throw error(mod.number, mod.slot, number,
@@ -1356,11 +1325,11 @@ channel::qdc_len(param::channel_param par, double value)
 
     param::value_type qdclen = std::round(value * multiplier);
 
-    if (qdclen < QDCLEN_MIN) {
-        qdclen = QDCLEN_MIN;
+    if (qdclen < hw::limit::QDCLEN_MIN) {
+        qdclen = hw::limit::QDCLEN_MIN;
     }
-    if (qdclen > QDCLEN_MAX) {
-        qdclen = QDCLEN_MAX;
+    if (qdclen > hw::limit::QDCLEN_MAX) {
+        qdclen = hw::limit::QDCLEN_MAX;
     }
 
     mod.write_var(var, qdclen, number);
@@ -1390,11 +1359,11 @@ channel::ext_trig_stretch(double value)
 
     param::value_type exttrigstretch = std::round(value * config.fpga_clk_mhz);
 
-    if (exttrigstretch < EXTTRIGSTRETCH_MIN) {
-        exttrigstretch = EXTTRIGSTRETCH_MIN;
+    if (exttrigstretch < hw::limit::EXTTRIGSTRETCH_MIN) {
+        exttrigstretch = hw::limit::EXTTRIGSTRETCH_MIN;
     }
-    if (exttrigstretch > EXTTRIGSTRETCH_MAX) {
-        exttrigstretch = EXTTRIGSTRETCH_MAX;
+    if (exttrigstretch > hw::limit::EXTTRIGSTRETCH_MAX) {
+        exttrigstretch = hw::limit::EXTTRIGSTRETCH_MAX;
     }
 
     mod.write_var(param::channel_var::ExtTrigStretch, exttrigstretch, number);
@@ -1424,11 +1393,11 @@ channel::veto_stretch(double value)
 
     param::value_type vetostretch = std::round(value * config.fpga_clk_mhz);
 
-    if (vetostretch < VETOSTRETCH_MIN) {
-        vetostretch = VETOSTRETCH_MIN;
+    if (vetostretch < hw::limit::VETOSTRETCH_MIN) {
+        vetostretch = hw::limit::VETOSTRETCH_MIN;
     }
-    if (vetostretch > VETOSTRETCH_MAX) {
-        vetostretch = VETOSTRETCH_MAX;
+    if (vetostretch > hw::limit::VETOSTRETCH_MAX) {
+        vetostretch = hw::limit::VETOSTRETCH_MAX;
     }
 
     mod.write_var(param::channel_var::VetoStretch, vetostretch, number);
@@ -1515,11 +1484,11 @@ channel::extern_delay_len(double value)
     case hw::rev_B:
     case hw::rev_C:
     case hw::rev_D:
-        externdelaylen_max = EXTDELAYLEN_MAX_REVBCD;
+        externdelaylen_max = hw::limit::EXTDELAYLEN_MAX_REVBCD;
         break;
     case hw::rev_F:
     case hw::rev_H:
-        externdelaylen_max = EXTDELAYLEN_MAX_REVF;
+        externdelaylen_max = hw::limit::EXTDELAYLEN_MAX_REVF;
         break;
     default:
         throw error(mod.number, mod.slot, number,
@@ -1528,8 +1497,8 @@ channel::extern_delay_len(double value)
     }
 
 #if EXTDELAYLEN_MIN > 0
-    if (externdelaylen < EXTDELAYLEN_MIN) {
-        externdelaylen = EXTDELAYLEN_MIN;
+    if (externdelaylen < hw::limit::EXTDELAYLEN_MIN) {
+        externdelaylen = hw::limit::EXTDELAYLEN_MIN;
     }
 #endif
     if (externdelaylen > externdelaylen_max) {
@@ -1567,11 +1536,11 @@ channel::ftrig_out_delay(double value)
     case hw::rev_B:
     case hw::rev_C:
     case hw::rev_D:
-        ftrigoutdelay_max = EXTDELAYLEN_MAX_REVBCD;
+        ftrigoutdelay_max = hw::limit::EXTDELAYLEN_MAX_REVBCD;
         break;
     case hw::rev_F:
     case hw::rev_H:
-        ftrigoutdelay_max = EXTDELAYLEN_MAX_REVF;
+        ftrigoutdelay_max = hw::limit::EXTDELAYLEN_MAX_REVF;
         break;
     default:
         throw error(mod.number, mod.slot, number,
@@ -1580,8 +1549,8 @@ channel::ftrig_out_delay(double value)
     }
 
 #if FASTTRIGBACKDELAY_MIN_MIN > 0
-    if (ftrigoutdelay < FASTTRIGBACKDELAY_MIN) {
-        ftrigoutdelay = FASTTRIGBACKDELAY_MIN;
+    if (ftrigoutdelay < hw::limit::FASTTRIGBACKDELAY_MIN) {
+        ftrigoutdelay = hw::limit::FASTTRIGBACKDELAY_MIN;
     }
 #endif
     if (ftrigoutdelay > ftrigoutdelay_max) {
@@ -1615,11 +1584,11 @@ channel::chan_trig_stretch(double value)
 
     param::value_type chantrigstretch = std::round(value * config.fpga_clk_mhz);
 
-    if (chantrigstretch < CHANTRIGSTRETCH_MIN) {
-        chantrigstretch = CHANTRIGSTRETCH_MIN;
+    if (chantrigstretch < hw::limit::CHANTRIGSTRETCH_MIN) {
+        chantrigstretch = hw::limit::CHANTRIGSTRETCH_MIN;
     }
-    if (chantrigstretch > CHANTRIGSTRETCH_MAX) {
-        chantrigstretch = CHANTRIGSTRETCH_MAX;
+    if (chantrigstretch > hw::limit::CHANTRIGSTRETCH_MAX) {
+        chantrigstretch = hw::limit::CHANTRIGSTRETCH_MAX;
     }
 
     mod.write_var(param::channel_var::ChanTrigStretch, chantrigstretch, number);

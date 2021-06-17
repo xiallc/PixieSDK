@@ -40,8 +40,6 @@
 #include <stdexcept>
 #include <sstream>
 
-#include <pixie16app_defs.h>
-
 #include <pixie_channel.hpp>
 #include <pixie_error.hpp>
 #include <pixie_fw.hpp>
@@ -49,6 +47,8 @@
 #include <pixie_module.hpp>
 #include <pixie_param.hpp>
 #include <pixie_util.hpp>
+
+#include <hw/defs.hpp>
 
 namespace xia
 {
@@ -408,7 +408,8 @@ namespace param
     };
 
     const copy_filter analog_signal_cond_filter = {
-        { channel_var::ChanCSRa, CCSRA_POLARITY | CCSRA_ENARELAY },
+        { channel_var::ChanCSRa,
+          1 << hw::bit::CCSRA_POLARITY | 1 << hw::bit::CCSRA_ENARELAY },
         channel_var::OffsetDAC
     };
 

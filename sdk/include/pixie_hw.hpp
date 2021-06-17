@@ -114,6 +114,13 @@ namespace hw
     static const size_t eeprom_block_size = 128;
 
     /*
+     * Baselines block length
+     *
+     * Length of each baseline (default: 2 timestamp words + 16 baselines)
+     */
+    static const size_t baselines_block_len = 18;
+
+    /*
      * Address.
      */
     typedef uint32_t address;

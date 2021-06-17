@@ -40,10 +40,16 @@
 #include <pixie_log.hpp>
 
 #include <hw/csr.hpp>
+#include <hw/defs.hpp>
 #include <hw/memory.hpp>
 
-#include <pixie16sys_defs.h>
-#include <def21160.h>
+/*
+ * AD21160
+ */
+/*
+ * DMA channel status register
+ */
+#define DMASTAT 0x37
 
 namespace xia
 {
@@ -66,13 +72,13 @@ namespace memory
         }
         void request() {
             if (!holding) {
-                module.write_word(REQUEST_HBR, 7);
+                module.write_word(hw::device::REQUEST_HBR, 7);
                 holding = true;
             }
         }
         void release() {
             if (holding) {
-                module.write_word(HBR_DONE, 7);
+                module.write_word(hw::device::HBR_DONE, 7);
                 holding = false;
             }
         }
@@ -93,8 +99,8 @@ namespace memory
     {
         module::module::bus_guard guard(module);
         host_bus_request hbr(module);
-        bus_write(EXT_MEM_TEST, addr);
-        word value = bus_read(WRT_DSP_MMA);
+        bus_write(hw::device::EXT_MEM_TEST, addr);
+        word value = bus_read(hw::device::WRT_DSP_MMA);
         return value;
     }
 
@@ -134,10 +140,10 @@ namespace memory
         }
         if (size > 0) {
             host_bus_request hbr(module);
-            bus_write(EXT_MEM_TEST, addr + offset);
+            bus_write(hw::device::EXT_MEM_TEST, addr + offset);
             buffer += offset;
             while (size-- > 0) {
-                *buffer = bus_read(WRT_DSP_MMA);
+                *buffer = bus_read(hw::device::WRT_DSP_MMA);
                 ++buffer;
             }
        }
@@ -148,8 +154,8 @@ namespace memory
     {
         module::module::bus_guard guard(module);
         host_bus_request hbr(module);
-        bus_write(EXT_MEM_TEST, addr);
-        bus_write(WRT_DSP_MMA, value);
+        bus_write(hw::device::EXT_MEM_TEST, addr);
+        bus_write(hw::device::WRT_DSP_MMA, value);
     }
 
     void
@@ -169,9 +175,9 @@ namespace memory
     {
         module::module::bus_guard guard(module);
         host_bus_request hbr(module);
-        bus_write(EXT_MEM_TEST, addr);
+        bus_write(hw::device::EXT_MEM_TEST, addr);
         for (auto value : values) {
-            bus_write(WRT_DSP_MMA, value);
+            bus_write(hw::device::WRT_DSP_MMA, value);
         }
     }
 
@@ -188,32 +194,32 @@ namespace memory
 
         host_bus_request hbr(module);
 
-        bus_write(EXT_MEM_TEST, DMASTAT);
-        if ((bus_read(WRT_DSP_MMA) & (1 << 11)) != 0) {
+        bus_write(hw::device::EXT_MEM_TEST, DMASTAT);
+        if ((bus_read(hw::device::WRT_DSP_MMA) & (1 << 11)) != 0) {
             throw error(error::code::device_dma_busy, "dsp: DMA busy");
         }
 
-        bus_write(WRT_DSP_II11, addr);
-        bus_write(WRT_DSP_C11, length);
-        bus_write(WRT_DSP_IM11, 1);
-        bus_write(WRT_DSP_EC11, length);
-        bus_write(WRT_DSP_DMAC11, 0x905);
-        bus_write(RD_WRT_FIFO_WML, length / 2);
+        bus_write(hw::device::WRT_DSP_II11, addr);
+        bus_write(hw::device::WRT_DSP_C11, length);
+        bus_write(hw::device::WRT_DSP_IM11, 1);
+        bus_write(hw::device::WRT_DSP_EC11, length);
+        bus_write(hw::device::WRT_DSP_DMAC11, 0x905);
+        bus_write(hw::device::RD_WRT_FIFO_WML, length / 2);
 
         hbr.release();
 
         try {
-            bus_write(SET_INT_FIFO, 0);
+            bus_write(hw::device::SET_INT_FIFO, 0);
             csr::fifo_ready_wait(module);
             module.dma_read(DSP_MEM_DMA, buffer, length);
         } catch (...) {
             hbr.request();
-            bus_write(WRT_DSP_DMAC11, 0x904);
+            bus_write(hw::device::WRT_DSP_DMAC11, 0x904);
             throw;
         }
 
         hbr.request();
-        bus_write(WRT_DSP_DMAC11, 0x904);
+        bus_write(hw::device::WRT_DSP_DMAC11, 0x904);
     }
 
     void
@@ -242,12 +248,12 @@ namespace memory
         /*
          * Guard the PCI active bit so it is cleared when we exit.
          */
-        csr::set_clear csr(module, 1 << PCIACTIVE);
+        csr::set_clear csr(module, 1 << hw::bit::PCIACTIVE);
 
         /*
          * Set up the address to read from.
          */
-        bus_write(WRT_EXT_MEM, addr);
+        bus_write(hw::device::WRT_EXT_MEM, addr);
 
         /*
          * Dummy read to make the FPGA not glitch at the end of addr write.
@@ -259,7 +265,7 @@ namespace memory
         /*
          * Set up short FIFO in System FPGA
          */
-        bus_write(SET_EXMEM_FIFO, 0);
+        bus_write(hw::device::SET_EXMEM_FIFO, 0);
 
         /*
          * Read the data using DMA.
@@ -275,9 +281,9 @@ namespace memory
         /*
          * Guard the PCI active  bit so it is cleared when we exit.
          */
-        csr::set_clear csr(module, 1 << PCIACTIVE);
+        csr::set_clear csr(module, 1 << hw::bit::PCIACTIVE);
 
-        bus_write(WRT_EXT_MEM, addr);
+        bus_write(hw::device::WRT_EXT_MEM, addr);
         for (auto value : values) {
             bus_write(MCA_MEM_DATA, value);
         }
@@ -292,7 +298,7 @@ namespace memory
     fifo::level()
     {
         module::module::bus_guard guard(module);
-        return size_t(bus_read(RD_WRT_FIFO_WML));
+        return size_t(bus_read(hw::device::RD_WRT_FIFO_WML));
     }
 
     void
@@ -300,11 +306,11 @@ namespace memory
     {
         module::module::bus_guard guard(module);
 
-        bus_write(SET_EXT_FIFO, length);
+        bus_write(hw::device::SET_EXT_FIFO, length);
 
         size_t polls = 1000;
         while (polls-- > 0) {
-            if (bus_read(RD_WRT_FIFO_WML) >= length) {
+            if (bus_read(hw::device::RD_WRT_FIFO_WML) >= length) {
                 break;
             }
         }
