@@ -194,24 +194,6 @@ namespace module
         return val;
     }
 
-    int
-    pci_bus(const bus_handle& device)
-    {
-        if (device) {
-            return device->key.bus;
-        }
-        return -1;
-    }
-
-    int
-    pci_slot(const bus_handle& device)
-    {
-        if (device) {
-            return device->key.slot;
-        }
-        return -1;
-    }
-
     std::string
     pci_error_text(PLX_STATUS ps)
     {
@@ -1971,6 +1953,26 @@ namespace module
                         error::code::channel_number_invalid,
                         "invalid channel number: " + std::to_string(number));
         }
+    }
+
+    int
+    module::pci_bus()
+    {
+        lock_guard guard(lock_);
+        if (device) {
+            return device->bus();
+        }
+        return -1;
+    }
+
+    int
+    module::pci_slot()
+    {
+        lock_guard guard(lock_);
+        if (device) {
+            return device->slot();
+        }
+        return -1;
     }
 
     void

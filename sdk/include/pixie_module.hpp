@@ -90,8 +90,6 @@ namespace module
      */
     struct pci_bus_handle;
     typedef std::unique_ptr<pci_bus_handle> bus_handle;
-    int pci_bus(const bus_handle& device);
-    int pci_slot(const bus_handle& device);
 
     /*
      * Module
@@ -506,6 +504,12 @@ namespace module
          */
         void online_check() const;
         void channel_check(const size_t channel) const;
+
+        /*
+         * PCI bus.
+         */
+        int pci_bus();
+        int pci_slot();
 
     protected:
         /*

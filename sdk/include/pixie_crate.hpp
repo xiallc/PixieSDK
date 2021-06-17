@@ -98,6 +98,11 @@ namespace crate
         size_t num_modules;
 
         /*
+         * Crate revision
+         */
+        int revision;
+
+        /*
          * A crate contains a number of modules in slots. These modules are
          * online and ready for use.
          */
@@ -233,6 +238,16 @@ namespace crate
         virtual void add_module();
 
     private:
+        /*
+         * Check the module slots.
+         */
+        void check_slots();
+
+        /*
+         * Check the crate revisions all match.
+         */
+        void check_revision();
+
         /*
          * Crate lock
          */

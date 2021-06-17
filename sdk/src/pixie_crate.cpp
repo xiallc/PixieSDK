@@ -67,6 +67,7 @@ namespace crate
 
     crate::crate()
         : num_modules(0),
+          revision(-1),
           ready_(false)
     {
     }
@@ -155,12 +156,16 @@ namespace crate
 
             num_modules = modules.size();
 
+            check_revision();
+            check_slots();
+
             module::set_number_by_slot(modules);
             order_by_slot(modules);
         } catch (...) {
             ready_ = false;
             throw;
         }
+
     }
 
     void
@@ -388,6 +393,105 @@ namespace crate
     crate::add_module()
     {
         modules.push_back(std::make_unique<module::module>());
+    }
+
+
+    void
+    crate::check_slots()
+    {
+        using duplicate = std::pair<module::module_ptr, module::module_ptr>;
+        using duplicates = std::vector<duplicate>;
+
+        struct find_dups {
+            duplicates dups;
+
+            void check(module::module_ptr& mod, module::modules& mods) {
+                if (mod->present()) {
+                    for (auto compare : mods) {
+                        if (compare->present() && mod != compare) {
+                            if (mod->slot == compare->slot) {
+                                auto di =
+                                    std::find_if(
+                                        dups.begin(), dups.end(),
+                                        [&mod](const duplicate& dup) {
+                                            auto dmod = std::get<0>(dup);
+                                            return mod->slot == dmod->slot;
+                                        });
+                                if (di == dups.end()) {
+                                    dups.push_back(duplicate(mod, compare));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        find_dups dups;
+
+        for (auto module : modules) {
+            dups.check(module, modules);
+            dups.check(module, offline);
+        }
+
+        for (auto module : offline) {
+            dups.check(module, modules);
+            dups.check(module, offline);
+        }
+
+        for (auto& dup : dups.dups) {
+            auto mod1 = std::get<0>(dup);
+            auto mod2 = std::get<1>(dup);
+            if (revision == 2) {
+                if (mod1->slot == 5 &&
+                    mod1->pci_bus() == mod2->pci_bus()) {
+                    if (mod1->pci_slot() == 13) {
+                        mod1->slot = 4;
+                    } else if (mod2->pci_slot() == 13) {
+                        mod2->slot = 4;
+                    }
+                }
+            }
+            if (mod1->slot == mod2->slot) {
+                log(log::error) << "crate: duplicate slot: " << mod1->slot
+                                << " 1:pci=" << mod1->pci_bus()
+                                << ':' << mod1->pci_slot()
+                                << " 2:pci=" << mod2->pci_bus()
+                                << ':' << mod2->pci_slot();
+            }
+        }
+    }
+
+    void
+    crate::check_revision()
+    {
+        revision = -1;
+        for (auto module : modules) {
+            if (module->present()) {
+                if (revision < 0) {
+                    revision = module->crate_revision;
+                    log(log::info) << "crate: crate revision: "
+                                   << revision;
+                } else if (revision != module->crate_revision) {
+                    log(log::warning) << "crate: crate revision mismatch: "
+                                      << module->crate_revision
+                                      << " module slot=" << module->slot;
+                }
+            }
+        }
+        for (auto module : offline) {
+            if (module->present()) {
+                if (revision < 0) {
+                    revision = module->crate_revision;
+                    log(log::info) << "crate: crate revision: "
+                                   << revision;
+                } else if (revision != module->crate_revision) {
+                    log(log::warning) << "crate: crate revision mismatch: "
+                                      << module->crate_revision
+                                      << " module slot=" << module->slot;
+                }
+            }
+        }
     }
 
     module_handle::module_handle(crate& crate_, size_t number)
