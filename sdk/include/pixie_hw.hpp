@@ -101,7 +101,7 @@ namespace hw
     /*
      * FIFO size in words
      */
-    static const size_t fifo_size_words = 32768;
+    static const size_t fifo_size_words = 131072;
 
     /*
      * DMA block size.
