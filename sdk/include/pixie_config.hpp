@@ -65,16 +65,16 @@ struct configuration {
 PIXIE_EXPORT void PIXIE_API read(const std::string& config_file_name, configuration& cfg);
 
 /*
- * Load a JSON confuguration into a crate.
+ * Import a JSON confuguration into a crate's internal variables.
  */
-void load(const std::string& filename,
-          crate::crate& crate,
-          module::number_slots& loaded);
+void import_json(const std::string& filename,
+                 crate::crate& crate,
+                 module::number_slots& loaded);
 
 /*
- * Unload a crate's configuration to a JSON file.
+ * Export the crate's configuration to a JSON file.
  */
-void unload(const std::string& filename, crate::crate& crate);
+void export_json(const std::string& filename, crate::crate& crate);
 
 }
 }

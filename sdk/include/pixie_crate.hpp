@@ -214,14 +214,15 @@ namespace crate
         WINDOWS_DLLEXPORT void set_firmware();
 
         /*
-         * Load a configuration returning a list of loaded modules.
+         * Import a configuration. Returning a list of loaded modules.
          */
-        void load(const std::string json_file, module::number_slots& loaded);
+        void import_config(const std::string json_file,
+                           module::number_slots& loaded);
 
         /*
-         * Unload a configuration
+         * Export the configuration
          */
-        void unload(const std::string json_file);
+        void export_config(const std::string json_file);
 
         /*
          * Move offline modules from the online list to offline.

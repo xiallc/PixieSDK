@@ -282,13 +282,14 @@ namespace crate
     }
 
     void
-    crate::load(const std::string json_file, module::number_slots& loaded)
+    crate::import_config(const std::string json_file,
+                         module::number_slots& loaded)
     {
-        log(log::info) << "crate: load configuration";
+        log(log::info) << "crate: import configuration";
         ready();
         lock_guard guard(lock_);
         loaded.clear();
-        config::load(json_file, *this, loaded);
+        config::import_json(json_file, *this, loaded);
         for (auto& module : modules) {
             if (module->online()) {
                 module->sync_vars();
@@ -297,11 +298,11 @@ namespace crate
     }
 
     void
-    crate::unload(const std::string json_file)
+    crate::export_config(const std::string json_file)
     {
-        log(log::info) << "crate: unload configration";
+        log(log::info) << "crate: export configration";
         lock_guard guard(lock_);
-        config::unload(json_file, *this);
+        config::export_json(json_file, *this);
     }
 
     void

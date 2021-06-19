@@ -131,9 +131,9 @@ throw_json_error(json::exception& e, const std::string& what)
 }
 
 void
-load(const std::string& filename,
-     crate::crate& crate,
-     module::number_slots& loaded)
+import_json(const std::string& filename,
+            crate::crate& crate,
+            module::number_slots& loaded)
 {
     std::ifstream input_json(filename);
     if (!input_json) {
@@ -221,7 +221,7 @@ load(const std::string& filename,
             }
 
             /*
-             * Load module variables
+             * Write the config to the module variables
              */
             for (auto& el : moddata["input"].items()) {
                 /*
@@ -280,7 +280,7 @@ load(const std::string& filename,
             }
 
             /*
-             * Load channel variables
+             * Write the config to the channel variables
              */
             for (auto& el : chandata["input"].items()) {
                 /*
@@ -362,7 +362,7 @@ json_firmware(const firmware::firmware_ref fw)
 }
 
 void
-unload(const std::string& filename, crate::crate& crate)
+export_json(const std::string& filename, crate::crate& crate)
 {
     json config;
 

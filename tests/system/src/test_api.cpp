@@ -96,8 +96,8 @@ static void par_read(xia::pixie::crate::crate& crate, options& cmd);
 static void var_write(xia::pixie::crate::crate& crate, options& cmd);
 static void var_read(xia::pixie::crate::crate& crate, options& cmd);
 static void stats(xia::pixie::crate::crate& crate, options& cmd);
-static void load(xia::pixie::crate::crate& crate, options& cmd);
-static void unload(xia::pixie::crate::crate& crate, options& cmd);
+static void import(xia::pixie::crate::crate& crate, options& cmd);
+static void export_(xia::pixie::crate::crate& crate, options& cmd);
 static void test(xia::pixie::crate::crate& crate, options& cmd);
 static void wait(xia::pixie::crate::crate& crate, options& cmd);
 
@@ -125,8 +125,8 @@ static const std::map<std::string, command_def> command_defs =
     { "var-read",    { { 2, 3, 4 }, "read module/channel variable" } },
     { "var-write",   { { 3, 4, 5 }, "write module/channel variable" } },
     { "stats",       { { 2, 3 },    "module/channel stats" } },
-    { "load",        { { 1 },       "load a JSON configuration file" } },
-    { "unload",      { { 1 },       "unload a configuration to a JSON file" } },
+    { "import",      { { 1 },       "import a JSON configuration file" } },
+    { "export",      { { 1 },       "export a configuration to a JSON file" } },
     { "test",        { { 3 },       "start a test" } },
     { "wait",        { { 1 },       "wait a number of msecs" } }
 };
@@ -154,8 +154,8 @@ static const std::vector<cmd_handler> cmd_handlers = {
     { "var-write",   var_write },
     { "var-read",    var_read },
     { "stats",       stats },
-    { "load",        load },
-    { "unload",      unload },
+    { "import",      import },
+    { "export",      export_ },
     { "test",        test },
     { "wait",        wait },
 };
@@ -911,26 +911,26 @@ stats(xia::pixie::crate::crate& crate, options& cmd)
 }
 
 static void
-load(xia::pixie::crate::crate& crate, options& cmd)
+import(xia::pixie::crate::crate& crate, options& cmd)
 {
     xia::util::timepoint tp;
     xia::pixie::module::number_slots modules;
     tp.start();
-    crate.load(cmd[1], modules);
+    crate.import_config(cmd[1], modules);
     tp.end();
-    std::cout << "Modules loaded: " << modules.size()
+    std::cout << "Modules imported: " << modules.size()
               << " time=" << tp
               << std::endl;
 }
 
 static void
-unload(xia::pixie::crate::crate& crate, options& cmd)
+export_(xia::pixie::crate::crate& crate, options& cmd)
 {
     xia::util::timepoint tp;
     tp.start();
-    crate.unload(cmd[1]);
+    crate.export_config(cmd[1]);
     tp.end();
-    std::cout << "Modules unload time=" << tp
+    std::cout << "Modules export time=" << tp
               << std::endl;
 }
 
