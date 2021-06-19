@@ -80,6 +80,7 @@ enum struct code {
     module_task_timeout,
     module_invalid_slot,
     module_not_found,
+    module_test_invalid,
     /*
      * Channel
      */

@@ -145,6 +145,14 @@ namespace module
         };
 
         /*
+         * Test mode
+         */
+        enum struct test {
+            off = 0,
+            lm_fifo
+        };
+
+        /*
          * Defaults
          */
         static const size_t default_fifo_buffers = 100;
@@ -511,6 +519,18 @@ namespace module
         int pci_bus();
         int pci_slot();
 
+        /*
+         * Test modes
+         *
+         * The following provide module test modes. These are use to check the
+         * hardware and not the signal or signal analysis quality.
+         *
+         * Please consult with XIA support services if you are considering
+         * using these calls.
+         */
+        void start_test(const test mode);
+        void end_test();
+
     protected:
         /*
          * Locks
@@ -599,6 +619,11 @@ namespace module
         std::atomic_bool forced_offline_;
 
         /*
+         * Pause the FIFO worker.
+         */
+        std::atomic_bool pause_fifo_worker;
+
+        /*
          * System, FIPPI and DSP online.
          */
         bool comms_fpga;
@@ -619,6 +644,11 @@ namespace module
          * PCI bus. The type is opaque.
          */
         bus_handle device;
+
+        /*
+         * Current test mode.
+         */
+        std::atomic<test> test_mode;
     };
 
     inline hw::word

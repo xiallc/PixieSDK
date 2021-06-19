@@ -191,7 +191,7 @@ control(module::module& module, control_task control_tsk, int wait_msecs)
     for (int msecs = 0; msecs < wait_msecs; ++msecs) {
         if (!active(module)) {
             tp.end();
-            log(log::debug) << module::module_label(module, "run")
+            log(log::debug) << module::module_label(module, "control")
                             << "control=" << control_task_labels(control_tsk)
                             << " duration=" << tp;
             return;

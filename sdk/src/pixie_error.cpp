@@ -97,6 +97,7 @@ static const std::map<code, result_code> result_codes =
     { code::module_task_timeout,       { 214, "module task timeout" } },
     { code::module_invalid_slot,       { 215, "invalid module slot number" } },
     { code::module_not_found,          { 216, "module not found" } },
+    { code::module_test_invalid,       { 217, "module test invalid" } },
     /*
      * Channel
      */

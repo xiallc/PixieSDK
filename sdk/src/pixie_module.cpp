@@ -261,11 +261,13 @@ namespace module
           present_(false),
           online_(false),
           forced_offline_(false),
+          pause_fifo_worker(false),
           comms_fpga(false),
           fippi_fpga(false),
           have_hardware(false),
           vars_loaded(false),
-          device(std::make_unique<pci_bus_handle>())
+          device(std::make_unique<pci_bus_handle>()),
+          test_mode(test::off)
     {
     }
 
@@ -299,11 +301,13 @@ namespace module
           present_(m.present_.load()),
           online_(m.online_.load()),
           forced_offline_(m.forced_offline_.load()),
+          pause_fifo_worker(m.pause_fifo_worker.load()),
           comms_fpga(m.comms_fpga),
           fippi_fpga(m.fippi_fpga),
           have_hardware(false),
           vars_loaded(false),
-          device(std::move(m.device))
+          device(std::move(m.device)),
+          test_mode(m.test_mode.load())
     {
         m.slot = 0;
         m.number = -1;
@@ -330,10 +334,12 @@ namespace module
         m.present_ = false;
         m.online_ = false;
         m.forced_offline_ = false;
+        m.pause_fifo_worker = false;
         m.comms_fpga = false;
         m.fippi_fpga = false;
         m.have_hardware = false;
         m.vars_loaded = false;
+        m.test_mode = test::off;
     }
 
     module::~module()
@@ -385,10 +391,12 @@ namespace module
         present_ = m.present_.load();
         online_ = m.online_.load();
         forced_offline_ = m.forced_offline_.load();
+        pause_fifo_worker = m.pause_fifo_worker.load();
         comms_fpga = m.comms_fpga;
         fippi_fpga = m.fippi_fpga;
         have_hardware = m.have_hardware;
         vars_loaded = m.vars_loaded;
+        test_mode = m.test_mode.load();
 
         device = std::move(m.device);
 
@@ -413,10 +421,12 @@ namespace module
         m.present_ = false;
         m.online_ = false;
         m.forced_offline_ = false;
+        m.pause_fifo_worker = false;
         m.comms_fpga = false;
         m.fippi_fpga = false;
         m.have_hardware = false;
         m.vars_loaded = false;
+        m.test_mode = test::off;
 
         return *this;
     }
@@ -1631,10 +1641,15 @@ namespace module
                        << "start-histograms: mode=" << int(mode);
         online_check();
         lock_guard guard(lock_);
-        if (run_task != hw::run::run_task::nop) {
+        if (run_task.load() != hw::run::run_task::nop) {
             throw error(number, slot,
                         error::code::module_invalid_operation,
                         "module already runinng a task");
+        }
+        if (test_mode.load() != test::off) {
+            throw error(number, slot,
+                        error::code::module_test_invalid,
+                        "test running; cannot start a run task");
         }
         hw::run::run(*this, mode, hw::run::run_task::histogram);
     }
@@ -1650,6 +1665,11 @@ namespace module
             throw error(number, slot,
                         error::code::module_invalid_operation,
                         "module already runinng a task");
+        }
+        if (test_mode.load() != test::off) {
+            throw error(number, slot,
+                        error::code::module_test_invalid,
+                        "test running; cannot start a run task");
         }
         fifo_data.flush();
         hw::run::run(*this, mode, hw::run::run_task::list_mode);
@@ -1971,6 +1991,45 @@ namespace module
     }
 
     void
+    module::start_test(const test mode)
+    {
+        log(log::info) << module_label(*this)
+                       << "start-test: mode=" << int(mode);
+        online_check();
+        lock_guard guard(lock_);
+        if (test_mode.load() != test::off) {
+            throw error(number, slot,
+                        error::code::module_test_invalid,
+                        "test already running");
+        }
+        if (run_task.load() != hw::run::run_task::nop) {
+            throw error(number, slot,
+                        error::code::module_test_invalid,
+                        "module run task active; cannot start a test");
+        }
+        switch (mode) {
+        case test::lm_fifo:
+            log(log::debug) << "pause the FIFO worker";
+            pause_fifo_worker = true;
+            test_mode = mode;
+            hw::run::control(*this, hw::run::control_task::fill_ext_fifo);
+            log(log::debug) << "unpause the FIFO worker";
+            pause_fifo_worker = false;
+            break;
+        default:
+            throw error(number, slot,
+                        error::code::invalid_value,
+                        "invalid start test mode");
+        }
+    }
+
+    void
+    module::end_test()
+    {
+        test_mode = test::off;
+    }
+
+    void
     module::load_vars()
     {
         if (!vars_loaded) {
@@ -2247,6 +2306,9 @@ namespace module
                  * If list mode is running the wait period is the currently
                  * configured run period.
                  *
+                 * If fill ext FIFO mode is running check the FIFO level
+                 * and refill when we drop below a threadhold.
+                 *
                  * Any other mode will decay the wait period every hold period
                  * until capped at the idle wait period.
                  */
@@ -2262,6 +2324,8 @@ namespace module
                         log(log::info) << module_label(*this)
                                        << "FIFO worker: run not active";
                     }
+                } if (test_mode.load() != test::off) {
+                    wait_time = fifo_run_wait_usecs.load();
                 } else {
                     const size_t idle_wait_time = fifo_idle_wait_usecs.load();
                     /*
@@ -2289,7 +2353,8 @@ namespace module
                  * and reading data the hold time is reset so the wait time
                  * only starts to decay once we do not see data.
                  */
-                while (fifo_worker_running.load()) {
+                while (fifo_worker_running.load() &&
+                       !pause_fifo_worker.load()) {
                     size_t level = fifo.level();
                     if (level == 0 ||
                         (hold_time < fifo_hold_usecs.load() &&
@@ -2303,6 +2368,20 @@ namespace module
                                         << " repeat read: " << level2;
                         break;
                     }
+                    if (test_mode.load() == test::lm_fifo) {
+                        if (level < (hw::max_dma_block_size * 2)) {
+                            log(log::debug) << module_label(*this)
+                                            << "FIFO fill, level=" << level;
+                            hw::run::control(
+                                *this,
+                                hw::run::control_task::fill_ext_fifo
+                            );
+                        }
+                    }
+                    bool queue_buf =
+                        this_run_tsk == hw::run::run_task::list_mode ||
+                        test_mode.load() != test::off;
+
                     buffer::handle buf;
                     if (fifo_pool.empty()) {
                         if (!pool_empty_logged) {
@@ -2325,7 +2404,9 @@ namespace module
                         }
                         buf->resize(level);
                         fifo.read(*buf, level);
-                        fifo_data.push(buf);
+                        if (queue_buf) {
+                            fifo_data.push(buf);
+                        }
                         hold_time = 0;
                         pool_empty_logged = false;
                         fifo_full_logged = false;
