@@ -45,6 +45,8 @@
 #include <pixie_log.hpp>
 #include <simulation.hpp>
 
+
+
 static xia::pixie::sim::crate crate;
 
 static const std::vector<std::string> module_defs = {
@@ -72,7 +74,7 @@ static const double a_big_value = 1e6;
 static const double a_small_value = 1.e-6;
 
 void setup_simulation() {
-    xia::logging::start("log", "stdout", xia::log::level::debug, false);
+    xia::logging::start("log", "/dev/null", xia::log::level::debug, false);
     std::stringstream def;
     for (const auto& mod_def : module_defs)
         def << mod_def << std::endl;
