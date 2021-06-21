@@ -151,4 +151,27 @@ TEST_SUITE("xia::util") {
             CHECK(result == xia::util::strings{"a", "b", "c  ", "d"});
         }
     }
+
+    TEST_CASE("crc32") {
+        std::vector<unsigned char> vec_val = {'1', '2', '3', '4', '5', '6', '7', '8', '9'};
+        const uint32_t expected = 0xcbf43926;
+
+        SUBCASE("Update with a vector") {
+            auto chksum1 = xia::util::crc32();
+            chksum1.update(vec_val);
+            CHECK(chksum1.value == expected);
+        }
+        SUBCASE("Update with a stream") {
+            auto chksum2 = xia::util::crc32();
+            for (const auto val : vec_val)
+                chksum2 << val;
+            CHECK(chksum2.value == expected);
+        }
+        SUBCASE("Clear") {
+            auto chksum3 = xia::util::crc32();
+            chksum3.value = expected;
+            chksum3.clear();
+            CHECK(chksum3.value == 0);
+        }
+    }
 }
