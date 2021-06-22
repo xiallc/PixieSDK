@@ -6,7 +6,7 @@ add_executable(test_direct_communication
         $<TARGET_OBJECTS:EasyLoggingObjLib>)
 target_include_directories(test_direct_communication PUBLIC
         include
-        ${PROJECT_SOURCE_DIR}/sdk/include
+        ${PROJECT_SOURCE_DIR}/sdk/legacy/include
         ${PROJECT_SOURCE_DIR}/externals/analog_devices
         ${PROJECT_SOURCE_DIR}/externals/args
         ${PROJECT_SOURCE_DIR}/externals/easylogging)
