@@ -665,7 +665,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules,
     /*
      * Create a log file.
      */
-    xia::logging::start("log", "PixieMsg.txt", xia_log::info, false);
+    xia::logging::start("log", "Pixie16Msg.log", xia_log::info, true);
 
     xia_log(xia_log::info) << "Pixie16InitSystem: NumModules=" << NumModules
                            << " PXISlotMap=" << PXISlotMap

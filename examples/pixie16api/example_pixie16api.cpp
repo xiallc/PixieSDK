@@ -51,7 +51,6 @@
 #include "easylogging++.h"
 
 #include "pixie16app_defs.h"
-#include "pixie16sys_defs.h"
 
 #if defined(_WIN64) || defined(_WIN32)
 #include <Windows.h>
