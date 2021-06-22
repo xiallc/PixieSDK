@@ -1,15 +1,14 @@
 #------------- BUILD pixie_sdk_example --------------------------
 add_executable(pixie_sdk_example
         src/pixie_sdk_example.cpp
-        src/pixie_api_select.cpp
         $<TARGET_OBJECTS:EasyLoggingObjLib>)
 target_include_directories(pixie_sdk_example PUBLIC
-        include/
         ${PROJECT_SOURCE_DIR}/sdk/include/
+        ${PROJECT_SOURCE_DIR}/sdk/legacy/include/
         ${PROJECT_SOURCE_DIR}/externals/analog_devices
         ${PROJECT_SOURCE_DIR}/externals/args
         ${PROJECT_SOURCE_DIR}/externals/easylogging)
-xia_configure_target(TARGET pixie_sdk_example USE_PLX LIBS PixieSDK LINUX_LIBS -Wl,--no-as-needed)
+xia_configure_target(TARGET pixie_sdk_example USE_PLX LIBS Pixie16Api LINUX_LIBS -Wl,--no-as-needed)
 
 #------------- INSTALL pixie_sdk_example --------------------------
 file(GLOB PIXIESDK_EXAMPLE_PUBLIC_HEADERS include/*.hpp
