@@ -113,56 +113,58 @@ TEST_SUITE("app/pixie16app.c") {
         Module_Information[module_number].Module_ADCMSPS = 250;
         Module_Information[module_number].Module_ADCBits = 16;
 
-        static const unsigned int trace_length = 124;
-        unsigned short trc[trace_length] = {
-                437, 436,  434,  434,  437,  437,  438,  435,  434,  438,  439,  437,  438, 434, 435, 439, 438, 434,
-                434, 435,  437,  440,  439,  435,  437,  439,  438,  435,  436,  436,  437, 439, 435, 433, 434, 436,
-                439, 441,  436,  437,  439,  438,  438,  435,  434,  434,  438,  438,  434, 434, 437, 440, 439, 438,
-                434, 436,  439,  439,  437,  436,  434,  436,  438,  437,  436,  437,  440, 440, 439, 436, 435, 437,
-                501, 1122, 2358, 3509, 3816, 3467, 2921, 2376, 1914, 1538, 1252, 1043, 877, 750, 667, 619, 591, 563,
-                526, 458,  395,  403,  452,  478,  492,  498,  494,  477,  460,  459,  462, 461, 460, 456, 452, 452,
-                455, 453,  446,  441,  440,  444,  456,  459,  451,  450,  447,  445,  449, 456, 456, 455};
+        static std::vector<unsigned short> trc = {
+            437, 436,  434,  434,  437,  437,  438,  435,  434,  438,  439,  437,  438, 434, 435, 439, 438, 434,
+            434, 435,  437,  440,  439,  435,  437,  439,  438,  435,  436,  436,  437, 439, 435, 433, 434, 436,
+            439, 441,  436,  437,  439,  438,  438,  435,  434,  434,  438,  438,  434, 434, 437, 440, 439, 438,
+            434, 436,  439,  439,  437,  436,  434,  436,  438,  437,  436,  437,  440, 440, 439, 436, 435, 437,
+            501, 1122, 2358, 3509, 3816, 3467, 2921, 2376, 1914, 1538, 1252, 1043, 877, 750, 667, 619, 591, 563,
+            526, 458,  395,  403,  452,  478,  492,  498,  494,  477,  460,  459,  462, 461, 460, 456, 452, 452,
+            455, 453,  446,  441,  440,  444,  456,  459,  451,  450,  447,  445,  449, 456, 456, 455};
+        auto trace_length = trc.size();
+
+        std::string filename = std::tmpnam(nullptr);
+        std::ofstream outfile(filename, std::ios::binary | std::ios::out);
+        for (uint16_t val : trc)
+            outfile.write(reinterpret_cast<const char*>(&val), sizeof(val));
+        outfile.close();
+
         SUBCASE("Check trace is valid") {
             CHECK(Pixie16ComputeFastFiltersOffline(nullptr, module_number, channel_number, 0, trace_length, nullptr,
                                                    nullptr, nullptr) == -1);
         }
 
         SUBCASE("Check if results array is valid") {
-            CHECK(Pixie16ComputeFastFiltersOffline(nullptr, module_number, channel_number, 0, trace_length, trc,
+            CHECK(Pixie16ComputeFastFiltersOffline(nullptr, module_number, channel_number, 0, trace_length, trc.data(),
                                                    nullptr, nullptr) == -2);
         };
 
-        double result[trace_length];
+        std::vector<double> result(trace_length,1337);
         SUBCASE("Check if CFD array is valid") {
-            CHECK(Pixie16ComputeFastFiltersOffline(nullptr, module_number, channel_number, 0, trace_length, trc, result,
-                                                   nullptr) == -3);
+            CHECK(Pixie16ComputeFastFiltersOffline(nullptr, module_number, channel_number, 0, trace_length, trc.data(),
+                                                   result.data(), nullptr) == -3);
         }
 
-        double cfd[trace_length];
+        std::vector<double> cfd(trace_length, 1337);
         SUBCASE("Check if Module number is valid") {
             /// NOTE: This value depends on the global variable PRESET_MAX_MODULES, which has a value of 24 (e.g. 2 crates)
-            CHECK(Pixie16ComputeFastFiltersOffline(nullptr, 40, channel_number, 0, trace_length, trc, result, cfd) ==
-                  -4);
+            CHECK(Pixie16ComputeFastFiltersOffline(nullptr, 40, channel_number, 0, trace_length, trc.data(),
+                                                   result.data(), cfd.data()) == -4);
         }
 
         SUBCASE("Verify that the trace length is long enough") {
-            CHECK(Pixie16ComputeFastFiltersOffline(nullptr, module_number, channel_number, 0, 1, trc, result, cfd) ==
-                  -5);
+            CHECK(Pixie16ComputeFastFiltersOffline(nullptr, module_number, channel_number, 0, 1, trc.data(),
+                                                   result.data(), cfd.data()) == -5);
         }
 
-        std::string filename = std::tmpnam(nullptr);
         SUBCASE("Verify the binary can be opened") {
-            std::ofstream outfile(filename, std::ios::binary | std::ios::out);
-            for (uint16_t val : trc)
-                outfile.write(reinterpret_cast<const char*>(&val), sizeof(val));
-            outfile.close();
             CHECK(Pixie16ComputeFastFiltersOffline("/tmp/notavalidfile.bin", module_number, channel_number, 0,
-                                                   trace_length, trc, result, cfd) == -6);
+                                                   trace_length, trc.data(), result.data(), cfd.data()) == -6);
         }
 
         SUBCASE("Verify the fast filter is correct") {
-            Pixie16ComputeFastFiltersOffline(filename.c_str(), module_number, channel_number, 0,
-                                             trace_length, trc, result, cfd);
+            CHECK(Pixie16ComputeFastFiltersOffline(filename.c_str(), module_number, channel_number, 0,
+                                                   trace_length, trc.data(), result.data(), cfd.data()) == 0);
 
             std::vector<double> expected_fast_filter = {
                     0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,
@@ -185,8 +187,8 @@ TEST_SUITE("app/pixie16app.c") {
         }
 
         SUBCASE("Verify the CFD results") {
-            Pixie16ComputeFastFiltersOffline(filename.c_str(), module_number, channel_number, 0,
-                                             trace_length, trc, result, cfd);
+            CHECK(Pixie16ComputeFastFiltersOffline(filename.c_str(), module_number, channel_number, 0,
+                                             trace_length, trc.data(), result.data(), cfd.data()) == 0);
             std::vector<double> expected_cfd = {
                     0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,
                     0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,
@@ -205,8 +207,8 @@ TEST_SUITE("app/pixie16app.c") {
 
         SUBCASE("Sets an invalid module variant") {
             Module_Information[module_number].Module_ADCMSPS = 1000;
-            Pixie16ComputeFastFiltersOffline(filename.c_str(), module_number, channel_number,
-                                             0, trace_length, trc, result, cfd);
+            CHECK(Pixie16ComputeFastFiltersOffline(filename.c_str(), module_number, channel_number, 0,
+                                                   trace_length, trc.data(), result.data(), cfd.data()) == 0);
             for (auto i : cfd)
                 CHECK(0.0 == i);
         }
