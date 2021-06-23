@@ -47,10 +47,3 @@ set_target_properties(PixieSDK PROPERTIES PUBLIC_HEADER "${PIXIESDK_PUBLIC_HEADE
 #---- Install PixieSDK
 install(TARGETS PixieSDK LIBRARY PUBLIC_HEADER)
 
-#--- Build Pixie16 API
-add_library(Pixie16Api SHARED src/pixie16.cpp $<TARGET_OBJECTS:PixieSdkObjLib>)
-target_include_directories(Pixie16Api PUBLIC include/
-        ${PROJECT_SOURCE_DIR}/externals/analog_devices
-        ${PROJECT_SOURCE_DIR}/externals/nolhmann)
-xia_configure_target(TARGET Pixie16Api USE_PLX)
-install(TARGETS Pixie16Api LIBRARY PUBLIC_HEADER)

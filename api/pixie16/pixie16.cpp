@@ -38,7 +38,7 @@
 /// @author C. Johns / S. V. Paulauskas
 /// @date March 29, 2021
 
-#include <pixie16.h>
+#include "pixie16.h"
 
 #include <pixie_crate.hpp>
 #include <pixie_error.hpp>
