@@ -2,7 +2,7 @@
 add_executable(test_direct_communication
         src/test_direct_communication.cpp
         src/system_test_utilities.cpp
-        $<TARGET_OBJECTS:LegacyPixieSdkObjLib>
+        $<TARGET_OBJECTS:LegacyObjLib>
         $<TARGET_OBJECTS:EasyLoggingObjLib>)
 target_include_directories(test_direct_communication PUBLIC
         include
@@ -15,8 +15,7 @@ xia_configure_target(TARGET test_direct_communication USE_PLX)
 #---- System test for module construction
 add_executable(test_api src/test_api
         src/simulation.cpp
-        $<TARGET_OBJECTS:PixieSdkObjLib>
-        $<TARGET_OBJECTS:LegacyPixieSdkObjLib>)
+        $<TARGET_OBJECTS:PixieSdkObjLib>)
 target_include_directories(test_api PUBLIC
         include
         ${PROJECT_SOURCE_DIR}/sdk/include
