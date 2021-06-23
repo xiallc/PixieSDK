@@ -39,19 +39,14 @@
 #define _USE_MATH_DEFINES
 
 #ifndef NOMINMAX
-# define NOMINMAX
+#define NOMINMAX
 #endif
 
 #define PIXIE_EXPORT __declspec(dllexport)
 #define PIXIE_API _stdcall
-/*
- * Here until removed.
- */
-#define WINDOWS_DLLEXPORT __declspec(dllexport)
 #else
 #define PIXIE_EXPORT
 #define PIXIE_API
-#define WINDOWS_DLLEXPORT
 #endif
 
-#endif  /* XIA_WINDOWS_COMPAT_HPP */
+#endif /* XIA_WINDOWS_COMPAT_HPP */

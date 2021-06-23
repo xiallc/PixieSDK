@@ -144,11 +144,11 @@ namespace firmware
          * The firmware's version, module revision (it can be loaded on) and
          * device are invariant.
          */
-        WINDOWS_DLLEXPORT firmware(const std::string version,
-                                   const int mod_revision,
-                                   const int mod_adc_msps,
-                                   const int mod_adc_bits,
-                                   const std::string device);
+        firmware(const std::string version,
+                 const int mod_revision,
+                 const int mod_adc_msps,
+                 const int mod_adc_bits,
+                 const std::string device);
 
         /*
          * Load the firmware from it's file.
@@ -206,12 +206,12 @@ namespace firmware
     /*
      * Add the firmware to a crate.
      */
-    WINDOWS_DLLEXPORT void add(crate& firmwares, firmware& fw);
+    void add(crate& firmwares, firmware& fw);
 
     /*
      * Check is a firmware is already in the crate.
      */
-    WINDOWS_DLLEXPORT bool check(const crate& firmwares, const firmware& fw);
+    bool check(const crate& firmwares, const firmware& fw);
 
     /*
      * Find the matching firmware. If a firmware has a specific slot it is
@@ -245,7 +245,7 @@ namespace firmware
      *   device: string
      *   filename: string
      */
-    WINDOWS_DLLEXPORT firmware parse(const std::string fw_desc, const char delimiter = ':');
+    firmware parse(const std::string fw_desc, const char delimiter = ':');
 }
 }
 }
@@ -255,9 +255,9 @@ namespace firmware
  */
 std::ostringstream&
 operator<<(std::ostringstream& out, const xia::pixie::firmware::firmware& fw);
-WINDOWS_DLLEXPORT std::ostream&
+std::ostream&
 operator<<(std::ostream& out, const xia::pixie::firmware::firmware& fw);
-WINDOWS_DLLEXPORT std::ostream&
+std::ostream&
 operator<<(std::ostream& out, const xia::pixie::firmware::module& mod_fw);
 
 #endif  // PIXIE_FW_H

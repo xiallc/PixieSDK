@@ -121,8 +121,8 @@ namespace crate
          */
         firmware::crate firmware;
 
-        WINDOWS_DLLEXPORT crate();
-        WINDOWS_DLLEXPORT virtual ~crate();
+        crate();
+        virtual ~crate();
 
         /*
          * Check the crate has been intialised and ready for use. Throws an
@@ -181,7 +181,7 @@ namespace crate
         /*
          * Initialise the crate and get it ready.
          */
-        WINDOWS_DLLEXPORT void initialize(bool reg_trace = false);
+        void initialize(bool reg_trace = false);
 
         /*
          * Mark a module as offline and move to the offline module list. This
@@ -198,7 +198,7 @@ namespace crate
         /*
          * Boot all modules.
          */
-        WINDOWS_DLLEXPORT void boot();
+        void boot();
 
         /*
          * Assign numbers to the modules by slot. Modules not in the map are
@@ -211,7 +211,7 @@ namespace crate
         /*
          * Set the firmwares into the modules in the crate.
          */
-        WINDOWS_DLLEXPORT void set_firmware();
+        void set_firmware();
 
         /*
          * Import a configuration. Returning a list of loaded modules.
@@ -295,7 +295,7 @@ namespace crate
 /*
  * Output stream operator.
  */
-WINDOWS_DLLEXPORT std::ostream&
+std::ostream&
 operator<<(std::ostream& out, const xia::pixie::crate::crate& crate);
 
 #endif  // PIXIE_CRATE_H
