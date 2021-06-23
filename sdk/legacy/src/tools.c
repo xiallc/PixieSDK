@@ -47,6 +47,7 @@
 #include "pixie16sys_common.h"
 #include "pixie16sys_defs.h"
 #include "pixie16sys_export.h"
+#include "xia_common.h"
 
 #if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
 #include <windows.h>
@@ -232,6 +233,8 @@ PIXIE16SYS_EXPORT void PIXIE16SYS_API wait_for_a_short_time(int cycles) {
 ****************************************************************/
 
 PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_SetBit(unsigned short bit, unsigned short value) {
+    if(bit > 15)
+        return value;
     return (value | (unsigned short) (pow(2.0, (double) bit)));
 }
 
@@ -243,6 +246,8 @@ PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_SetBit(unsigned short bit,
 ****************************************************************/
 
 PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_ClrBit(unsigned short bit, unsigned short value) {
+    if(bit > 15)
+        return value;
     value = SYS16_SetBit(bit, value);
     return (value ^ (unsigned short) (pow(2.0, (double) bit)));
 }
@@ -255,6 +260,8 @@ PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_ClrBit(unsigned short bit,
 ****************************************************************/
 
 PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_TstBit(unsigned short bit, unsigned short value) {
+    if(bit > 15)
+        return FALSE_;
     return (((value & (unsigned short) (pow(2.0, (double) bit))) >> bit));
 }
 
@@ -266,6 +273,8 @@ PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_TstBit(unsigned short bit,
 ****************************************************************/
 
 PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_SetBit(unsigned short bit, unsigned int value) {
+    if(bit > 31)
+        return value;
     return (value | (unsigned int) (pow(2.0, (double) bit)));
 }
 
@@ -277,6 +286,8 @@ PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_SetBit(unsigned short bit, u
 ****************************************************************/
 
 PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_ClrBit(unsigned short bit, unsigned int value) {
+    if(bit > 31)
+        return value;
     value = SYS32_SetBit(bit, value);
     return (value ^ (unsigned int) (pow(2.0, (double) bit)));
 }
@@ -289,6 +300,8 @@ PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_ClrBit(unsigned short bit, u
 ****************************************************************/
 
 PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_TstBit(unsigned short bit, unsigned int value) {
+    if(bit > 31)
+        return FALSE_;
     return (((value & (unsigned int) (pow(2.0, (double) bit))) >> bit));
 }
 

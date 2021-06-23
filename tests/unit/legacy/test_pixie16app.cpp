@@ -8,8 +8,6 @@
 
 #include <complex>
 #include <fstream>
-#include <iomanip>
-#include <iostream>
 #include <vector>
 
 TEST_SUITE("app/pixie16app.c") {
@@ -152,7 +150,7 @@ TEST_SUITE("app/pixie16app.c") {
                   -5);
         }
 
-        char filename[255] = "/tmp/test-trace.bin";
+        std::string filename = std::tmpnam(nullptr);
         SUBCASE("Verify the binary can be opened") {
             std::ofstream outfile(filename, std::ios::binary | std::ios::out);
             for (uint16_t val : trc)
@@ -163,8 +161,8 @@ TEST_SUITE("app/pixie16app.c") {
         }
 
         SUBCASE("Verify the fast filter is correct") {
-            Pixie16ComputeFastFiltersOffline(filename, module_number, channel_number, 0, trace_length, trc, result,
-                                             cfd);
+            Pixie16ComputeFastFiltersOffline(filename.c_str(), module_number, channel_number, 0,
+                                             trace_length, trc, result, cfd);
 
             std::vector<double> expected_fast_filter = {
                     0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,      0.3,
@@ -187,8 +185,8 @@ TEST_SUITE("app/pixie16app.c") {
         }
 
         SUBCASE("Verify the CFD results") {
-            Pixie16ComputeFastFiltersOffline(filename, module_number, channel_number, 0, trace_length, trc, result,
-                                             cfd);
+            Pixie16ComputeFastFiltersOffline(filename.c_str(), module_number, channel_number, 0,
+                                             trace_length, trc, result, cfd);
             std::vector<double> expected_cfd = {
                     0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,
                     0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,
@@ -207,8 +205,8 @@ TEST_SUITE("app/pixie16app.c") {
 
         SUBCASE("Sets an invalid module variant") {
             Module_Information[module_number].Module_ADCMSPS = 1000;
-            Pixie16ComputeFastFiltersOffline(filename, module_number, channel_number, 0, trace_length, trc, result,
-                                             cfd);
+            Pixie16ComputeFastFiltersOffline(filename.c_str(), module_number, channel_number,
+                                             0, trace_length, trc, result, cfd);
             for (auto i : cfd)
                 CHECK(0.0 == i);
         }
@@ -365,12 +363,13 @@ TEST_SUITE("app/pixie16app.c") {
         }
 
         SUBCASE("Verify results") {
-            char filename[255] = "/tmp/test-trace.bin";
+            std::string filename = std::tmpnam(nullptr);
             std::ofstream outfile(filename, std::ios::binary | std::ios::out);
             for (uint16_t val : trc)
                 outfile.write(reinterpret_cast<const char*>(&val), sizeof(val));
             outfile.close();
-            Pixie16ComputeSlowFiltersOffline(filename, module_number, channel_number, 0, trace_length, trc, result);
+            Pixie16ComputeSlowFiltersOffline(filename.c_str(), module_number, channel_number,
+                                             0, trace_length, trc, result);
 
             std::vector<double> expected = {0,        0,         0,        0,         0,
                                             0,        0,         0,        0,         0,

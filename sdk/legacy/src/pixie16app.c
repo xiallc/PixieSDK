@@ -1982,6 +1982,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16complexFFT(double* data, unsigned in
  * @return 0 if the bit was set, 1 otherwise.
  */
 PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_TstBit(unsigned short bit, unsigned short value) {
+    if (bit > 15)
+        return FALSE_;
     return (((value & (unsigned short) (pow(2.0, (double) bit))) >> bit));
 }
 
@@ -1993,6 +1995,8 @@ PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_TstBit(unsigned short bit,
  * @return The new integer after the bit has been toggled.
  */
 PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_SetBit(unsigned short bit, unsigned short value) {
+    if(bit > 15)
+        return value;
     return (value | (unsigned short) (pow(2.0, (double) bit)));
 }
 
@@ -2004,6 +2008,8 @@ PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_SetBit(unsigned short bit,
  * @return The new integer after the bit has been toggled.
  */
 PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_ClrBit(unsigned short bit, unsigned short value) {
+    if(bit > 15)
+        return value;
     value = APP16_SetBit(bit, value);
     return (value ^ (unsigned short) (pow(2.0, (double) bit)));
 }
@@ -2016,6 +2022,8 @@ PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_ClrBit(unsigned short bit,
  * @return The new integer after the bit has been toggled.
  */
 PIXIE16APP_EXPORT unsigned int PIXIE16APP_API APP32_SetBit(unsigned short bit, unsigned int value) {
+    if(bit > 31)
+        return value;
     return (value | (unsigned int) (pow(2.0, (double) bit)));
 }
 
@@ -2027,6 +2035,8 @@ PIXIE16APP_EXPORT unsigned int PIXIE16APP_API APP32_SetBit(unsigned short bit, u
  * @return The new integer after the bit has been toggled.
  */
 PIXIE16APP_EXPORT unsigned int PIXIE16APP_API APP32_ClrBit(unsigned short bit, unsigned int value) {
+    if (bit > 31)
+        return value;
     value = APP32_SetBit(bit, value);
     return (value ^ (unsigned int) (pow(2.0, (double) bit)));
 }
@@ -2039,6 +2049,8 @@ PIXIE16APP_EXPORT unsigned int PIXIE16APP_API APP32_ClrBit(unsigned short bit, u
  * @return 0 if the bit was set, 1 otherwise.
  */
 PIXIE16APP_EXPORT unsigned int PIXIE16APP_API APP32_TstBit(unsigned short bit, unsigned int value) {
+    if(bit > 31)
+        return FALSE_;
     return (((value & (unsigned int) (pow(2.0, (double) bit))) >> bit));
 }
 
