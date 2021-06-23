@@ -36,7 +36,6 @@
 /// @brief Functional tests for reading and writing parameters. ONLY testing non-trivial parameters.
 /// @author S. V. Paulauskas
 /// @date May 12, 2021
-#include <cmath>
 #include <sstream>
 
 #include <doctest.h>
@@ -44,8 +43,6 @@
 #include <pixie_error.hpp>
 #include <pixie_log.hpp>
 #include <simulation.hpp>
-
-
 
 static xia::pixie::sim::crate crate;
 
@@ -74,7 +71,10 @@ static const double a_big_value = 1e6;
 static const double a_small_value = 1.e-6;
 
 void setup_simulation() {
-    xia::logging::start("log", "/dev/null", xia::log::level::debug, false);
+    std::string logname = tmpnam(nullptr);
+    std::cout << "Logging can be found in " << logname << std::endl;
+    xia::logging::start("log", logname, xia::log::level::debug, false);
+    xia::log(xia::log::level::info) << "Logging for test_parameter_read_write integration tests.";
     std::stringstream def;
     for (const auto& mod_def : module_defs)
         def << mod_def << std::endl;
