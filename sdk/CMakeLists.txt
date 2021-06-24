@@ -39,8 +39,6 @@ target_include_directories(PixieSDK PUBLIC include/
         ${PROJECT_SOURCE_DIR}/externals/analog_devices)
 xia_configure_target(TARGET PixieSDK USE_PLX)
 
-file(GLOB PIXIESDK_PUBLIC_HEADERS include/*.hpp include/hw/*.hpp)
-set_target_properties(PixieSDK PROPERTIES PUBLIC_HEADER "${PIXIESDK_PUBLIC_HEADERS}")
-
-install(TARGETS PixieSDK LIBRARY PUBLIC_HEADER)
+install(TARGETS PixieSDK LIBRARY)
+install(DIRECTORY include/ TYPE INCLUDE)
 
