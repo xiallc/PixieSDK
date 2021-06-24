@@ -1,7 +1,17 @@
-#set(SDK_HW_SOURCES )
-#set(SDK_FRAMEWORK_SOURCES )
+set(SDK_HW_SOURCES
+        src/hw/csr.cpp
+        src/hw/dsp.cpp
+        src/hw/fpga.cpp
+        src/hw/fpga_comms.cpp
+        src/hw/fpga_fippi.cpp
+        src/hw/i2c_bitbash.cpp
+        src/hw/i2cm24c64.cpp
+        src/hw/memory.cpp
+        src/hw/pcf8574.cpp
+        src/hw/run.cpp
+        )
 
-set(PIXIE_SDK_SOURCES
+set(SDK_FRAMEWORK_SOURCES
         src/pixie_buffer.cpp
         src/pixie_channel.cpp
         src/pixie_config.cpp
@@ -16,19 +26,9 @@ set(PIXIE_SDK_SOURCES
         src/pixie_sim.cpp
         src/pixie_stats.cpp
         src/pixie_util.cpp
-        src/hw/csr.cpp
-        src/hw/dsp.cpp
-        src/hw/fpga.cpp
-        src/hw/fpga_comms.cpp
-        src/hw/fpga_fippi.cpp
-        src/hw/i2c_bitbash.cpp
-        src/hw/i2cm24c64.cpp
-        src/hw/memory.cpp
-        src/hw/pcf8574.cpp
-        src/hw/run.cpp
         )
 
-add_library(PixieSdkObjLib OBJECT ${PIXIE_SDK_SOURCES})
+add_library(PixieSdkObjLib OBJECT ${SDK_HW_SOURCES} ${SDK_FRAMEWORK_SOURCES})
 set_property(TARGET PixieSdkObjLib PROPERTY POSITION_INDEPENDENT_CODE 1)
 target_include_directories(PixieSdkObjLib PUBLIC include/
         ${PROJECT_SOURCE_DIR}/externals/nolhmann)
