@@ -37,6 +37,6 @@ add_library(PixieSDK STATIC $<TARGET_OBJECTS:PixieSdkObjLib>)
 target_include_directories(PixieSDK PUBLIC include/ ${PROJECT_SOURCE_DIR}/externals/)
 xia_configure_target(TARGET PixieSDK USE_PLX)
 
-install(TARGETS PixieSDK LIBRARY)
-install(DIRECTORY include/ TYPE INCLUDE)
+install(TARGETS PixieSDK ARCHIVE DESTINATION lib)
+install(DIRECTORY include/ DESTINATION include)
 

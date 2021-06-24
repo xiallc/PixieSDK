@@ -6,4 +6,4 @@ target_include_directories(example_pixie16app PUBLIC
         ${PROJECT_SOURCE_DIR}/externals/)
 xia_configure_target(TARGET example_pixie16app USE_PLX LIBS Pixie16App LINUX_LIBS -Wl,--no-as-needed)
 
-install(TARGETS example_pixie16app RUNTIME)
+install(TARGETS example_pixie16app RUNTIME DESTINATION bin)

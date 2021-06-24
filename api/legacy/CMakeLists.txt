@@ -19,5 +19,5 @@ target_include_directories(Pixie16App PUBLIC include/)
 xia_configure_target(TARGET Pixie16App USE_PLX)
 
 #---- Install LegacyPixieSDK
-install(TARGETS Pixie16App LIBRARY PUBLIC_HEADER)
-install(DIRECTORY include TYPE INCLUDE)
+install(TARGETS Pixie16App LIBRARY DESTINATION lib)
+install(DIRECTORY include/ DESTINATION include)

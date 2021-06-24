@@ -11,10 +11,6 @@ target_include_directories(test_direct_communication PUBLIC
 xia_configure_target(TARGET test_direct_communication USE_PLX)
 
 #---- System test for module construction
-add_executable(test_api src/test_api
-        $<TARGET_OBJECTS:PixieSdkObjLib>)
-target_include_directories(test_api PUBLIC
-        ${PROJECT_SOURCE_DIR}/sdk/include
-        ${PROJECT_SOURCE_DIR}/externals/args
-        ${PROJECT_SOURCE_DIR}/externals/nolhmann)
+add_executable(test_api src/test_api $<TARGET_OBJECTS:PixieSdkObjLib>)
+target_include_directories(test_api PUBLIC ${PROJECT_SOURCE_DIR}/sdk/include ${PROJECT_SOURCE_DIR}/externals/)
 xia_configure_target(TARGET test_api USE_PLX)

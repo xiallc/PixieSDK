@@ -8,10 +8,5 @@ target_include_directories(example_pixie16api PUBLIC
         ${PROJECT_SOURCE_DIR}/externals/)
 xia_configure_target(TARGET example_pixie16api USE_PLX LIBS Pixie16Api LINUX_LIBS -Wl,--no-as-needed)
 
-file(GLOB PIXIESDK_EXAMPLE_PUBLIC_HEADERS include/*.hpp
-        ${PROJECT_SOURCE_DIR}/externals/easylogging/easylogging++.h
-        ${PROJECT_SOURCE_DIR}/externals/args/args.hxx)
-set_target_properties(example_pixie16api PROPERTIES PUBLIC_HEADER "${PIXIESDK_EXAMPLE_PUBLIC_HEADERS}")
-
-install(TARGETS example_pixie16api DESTINATION bin PUBLIC_HEADER DESTINATION include)
+install(TARGETS example_pixie16api RUNTIME DESTINATION bin)
 install(FILES example_pixie16api.py DESTINATION bin)
