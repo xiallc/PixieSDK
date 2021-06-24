@@ -618,16 +618,29 @@ adc_save(xia::pixie::crate::crate& crate, options& cmd)
         channels.resize(crate[mod_num].num_channels);
         xia::pixie::channel::range_set(channels);
     }
+
+    std::vector<xia::pixie::hw::adc_trace> traces;
+    std::ostringstream name;
+    name << std::setfill('0') << adc_prefix
+         << '-' << std::setw(2) << mod_num << ".csv";
+    std::ofstream out(name.str());
+    out << "bin,";
+
     for (auto channel : channels) {
         xia::pixie::hw::adc_trace adc_trace(length);
         crate[mod_num].read_adc(channel, adc_trace, false);
-        std::ostringstream name;
-        name << std::setfill('0') << adc_prefix
-             << '-' << std::setw(2) << mod_num
-             << '-' << std::setw(2) << channel << ".bin";
-        std::ofstream out(name.str(), std::ios::binary);
-        out.write(reinterpret_cast<char*>(adc_trace.data()),
-                  adc_trace.size() * sizeof(xia::pixie::hw::adc_trace::value_type));
+        traces.push_back(adc_trace);
+        out << "Chan" << channel << ",";
+    }
+
+    out << std::endl;
+
+    for(unsigned int bin = 0; bin < length; bin++) {
+        out << bin << ",";
+        for(auto trc: traces){
+            out << trc[bin] << ",";
+        }
+        out << std::endl;
     }
 }
 
