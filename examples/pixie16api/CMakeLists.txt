@@ -3,7 +3,7 @@ add_executable(example_pixie16api
         $<TARGET_OBJECTS:EasyLoggingObjLib>)
 target_include_directories(example_pixie16api PUBLIC
         ${PROJECT_SOURCE_DIR}/sdk/include/
-        ${PROJECT_SOURCE_DIR}/sdk/legacy/include/
+        ${PROJECT_SOURCE_DIR}/api/legacy/include/
         ${PROJECT_SOURCE_DIR}/api/pixie16/
         ${PROJECT_SOURCE_DIR}/externals/analog_devices
         ${PROJECT_SOURCE_DIR}/externals/args

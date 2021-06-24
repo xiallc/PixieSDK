@@ -1,6 +1,6 @@
-add_subdirectory(legacy)
+#set(SDK_HW_SOURCES )
+#set(SDK_FRAMEWORK_SOURCES )
 
-#---- Build SDK
 set(PIXIE_SDK_SOURCES
         src/pixie_buffer.cpp
         src/pixie_channel.cpp

@@ -2,7 +2,7 @@ add_executable(example_pixie16app
         example_pixie16app.cpp
         $<TARGET_OBJECTS:EasyLoggingObjLib>)
 target_include_directories(example_pixie16app PUBLIC
-        ${PROJECT_SOURCE_DIR}/sdk/legacy/include/
+        ${PROJECT_SOURCE_DIR}/api/legacy/include/
         ${PROJECT_SOURCE_DIR}/externals/analog_devices
         ${PROJECT_SOURCE_DIR}/externals/args
         ${PROJECT_SOURCE_DIR}/externals/easylogging)
