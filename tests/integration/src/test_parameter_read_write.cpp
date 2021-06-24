@@ -36,13 +36,14 @@
 /// @brief Functional tests for reading and writing parameters. ONLY testing non-trivial parameters.
 /// @author S. V. Paulauskas
 /// @date May 12, 2021
+#include <fstream>
 #include <sstream>
 
 #include <doctest.h>
 #include <pixie_channel.hpp>
 #include <pixie_error.hpp>
 #include <pixie_log.hpp>
-#include <simulation.hpp>
+#include <pixie_sim.hpp>
 
 static xia::pixie::sim::crate crate;
 
@@ -51,19 +52,19 @@ static const std::vector<std::string> module_defs = {
     "device-number=1,slot=3, revision=15, eeprom-format=1, serial-num=1000, num-channels=16, adc-msps=250, adc-bits=16, adc-clk-div=2",
     "device-number=2,slot=4, revision=15, eeprom-format=1, serial-num=1001, num-channels=16, adc-msps=500, adc-bits=14, adc-clk-div=5"};
 
-static const std::vector<std::string> firmware_defs = {
-    "version=sim, revision=13, adc-msps=100, adc-bits=16, device=sys, file=@PROJECT_SOURCE_DIR@/tests/assets/simulation/sim_sys.bin",
-    "version=sim, revision=13, adc-msps=100, adc-bits=16, device=fippi, file=@PROJECT_SOURCE_DIR@/tests/assets/simulation/sim_fippi.bin",
-    "version=sim, revision=13, adc-msps=100, adc-bits=16, device=dsp, file=@PROJECT_SOURCE_DIR@/tests/assets/simulation/sim_dsp.ldr",
-    "version=sim, revision=13, adc-msps=100, adc-bits=16, device=var, file=@PROJECT_SOURCE_DIR@/tests/assets/simulation/sim_dsp.var",
-    "version=sim, revision=15, adc-msps=250, adc-bits=16, device=sys, file=@PROJECT_SOURCE_DIR@/tests/assets/simulation/sim_sys.bin",
-    "version=sim, revision=15, adc-msps=250, adc-bits=16, device=fippi, file=@PROJECT_SOURCE_DIR@/tests/assets/simulation/sim_fippi.bin",
-    "version=sim, revision=15, adc-msps=250, adc-bits=16, device=dsp, file=@PROJECT_SOURCE_DIR@/tests/assets/simulation/sim_dsp.ldr",
-    "version=sim, revision=15, adc-msps=250, adc-bits=16, device=var, file=@PROJECT_SOURCE_DIR@/tests/assets/simulation/sim_dsp.var",
-    "version=sim, revision=15, adc-msps=500, adc-bits=14, device=sys, file=@PROJECT_SOURCE_DIR@/tests/assets/simulation/sim_sys.bin",
-    "version=sim, revision=15, adc-msps=500, adc-bits=14, device=fippi, file=@PROJECT_SOURCE_DIR@/tests/assets/simulation/sim_fippi.bin",
-    "version=sim, revision=15, adc-msps=500, adc-bits=14, device=dsp, file=@PROJECT_SOURCE_DIR@/tests/assets/simulation/sim_dsp.ldr",
-    "version=sim, revision=15, adc-msps=500, adc-bits=14, device=var, file=@PROJECT_SOURCE_DIR@/tests/assets/simulation/sim_dsp.var",
+static const std::vector<std::string> firmware_def_template = {
+    "version=sim, revision=13, adc-msps=100, adc-bits=16, device=sys, file=",
+    "version=sim, revision=13, adc-msps=100, adc-bits=16, device=fippi, file=",
+    "version=sim, revision=13, adc-msps=100, adc-bits=16, device=dsp, file=",
+    "version=sim, revision=13, adc-msps=100, adc-bits=16, device=var, file=",
+    "version=sim, revision=15, adc-msps=250, adc-bits=16, device=sys, file=",
+    "version=sim, revision=15, adc-msps=250, adc-bits=16, device=fippi, file=",
+    "version=sim, revision=15, adc-msps=250, adc-bits=16, device=dsp, file=",
+    "version=sim, revision=15, adc-msps=250, adc-bits=16, device=var, file=",
+    "version=sim, revision=15, adc-msps=500, adc-bits=14, device=sys, file=",
+    "version=sim, revision=15, adc-msps=500, adc-bits=14, device=fippi, file=",
+    "version=sim, revision=15, adc-msps=500, adc-bits=14, device=dsp, file=",
+    "version=sim, revision=15, adc-msps=500, adc-bits=14, device=var, file=",
 };
 
 static const uint32_t max_fifo_length = 16380;
@@ -75,17 +76,25 @@ void setup_simulation() {
     std::cout << "Logging can be found in " << logname << std::endl;
     xia::logging::start("log", logname, xia::log::level::debug, false);
     xia::log(xia::log::level::info) << "Logging for test_parameter_read_write integration tests.";
+
     std::stringstream def;
     for (const auto& mod_def : module_defs)
         def << mod_def << std::endl;
     xia::pixie::sim::load_module_defs(def);
-    for (const auto& item : firmware_defs) {
-        auto fw = xia::pixie::firmware::parse(item, ',');
+
+    std::string firmware_file = tmpnam(nullptr);
+    std::ofstream outfile(firmware_file, std::ios::binary | std::ios::out);
+    outfile.close();
+
+    for (auto& item : firmware_def_template) {
+        auto fw = xia::pixie::firmware::parse(item + firmware_file, ',');
         xia::pixie::firmware::add(crate.firmware, fw);
     }
+
     crate.initialize(false);
     crate.set_firmware();
     crate.probe();
+
     for (auto& mod : crate.modules) {
         mod->write_var("FastFilterRange", xia::pixie::param::value_type(0), 0);
         mod->write_var("SlowFilterRange", xia::pixie::param::value_type(3), 0);

@@ -47,7 +47,7 @@
 #include <pixie_log.hpp>
 #include <pixie_util.hpp>
 
-#include "simulation.hpp"
+#include "pixie_sim.hpp"
 
 #include "args.hxx"
 

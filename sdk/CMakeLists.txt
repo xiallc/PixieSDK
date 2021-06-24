@@ -15,6 +15,7 @@ set(PIXIE_SDK_SOURCES
         src/pixie_util.cpp
         src/pixie_log.cpp
         src/pixie_error.cpp
+        src/pixie_sim.cpp
         src/hw/csr.cpp
         src/hw/dsp.cpp
         src/hw/fpga_comms.cpp

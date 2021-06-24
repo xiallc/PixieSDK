@@ -14,10 +14,8 @@ xia_configure_target(TARGET test_direct_communication USE_PLX)
 
 #---- System test for module construction
 add_executable(test_api src/test_api
-        src/simulation.cpp
         $<TARGET_OBJECTS:PixieSdkObjLib>)
 target_include_directories(test_api PUBLIC
-        include
         ${PROJECT_SOURCE_DIR}/sdk/include
         ${PROJECT_SOURCE_DIR}/externals/args
         ${PROJECT_SOURCE_DIR}/externals/nolhmann)
