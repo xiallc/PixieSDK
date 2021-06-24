@@ -44,7 +44,9 @@
 #include <hw/dsp.hpp>
 
 /*
- * AD21160
+ * ADSP-21160 registers defined from
+ * https://www.analog.com/media/en/dsp-documentation/processor-manuals/ADSP-21160_hwr_rev4.1.pdf
+ * last accessed on 2021-06-24
  */
 /*
  * System configuration register

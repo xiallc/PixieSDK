@@ -83,6 +83,15 @@ extern "C" {
 #define SYS_MAX_NUM_MODULES 32  // Preset maximum number of modules for defining data structures
 #define SYS_MAX_PXI_SLOTS   14  // Maximum number of PXI slots for one PXI chassis (currently 14-slot is the biggest chassis)
 
+/*
+ * ADSP-21160 registers defined from
+ * https://www.analog.com/media/en/dsp-documentation/processor-manuals/ADSP-21160_hwr_rev4.1.pdf
+ * last accessed on 2021-06-24
+ */
+#define SYSCON 0x00        	/* System configuration register                   	*/
+#define EPB0   0x04        	/* External port DMA buffer 0                      	*/
+#define DMAC10 0x1c	       	/* EP DMA10 control register			      		*/
+#define DMASTAT 0x37	   	/* DMA channel status register		      			*/
 
 /*-------------------------------------
 	Multiplication factor for the ns_per_cycle

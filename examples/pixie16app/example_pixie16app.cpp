@@ -43,8 +43,8 @@
 #include <vector>
 #include <thread>
 
-#include "args.hxx"
-#include "easylogging++.h"
+#include "args/args.hxx"
+#include "easylogging/easylogging++.h"
 
 #include "pixie16app_defs.h"
 #include "pixie16app_export.h"

@@ -43,7 +43,6 @@
 
 #include <PlxApi.h>
 
-#include "def21160.h"
 #include "pixie16sys_common.h"
 #include "pixie16sys_defs.h"
 #include "pixie16sys_export.h"
