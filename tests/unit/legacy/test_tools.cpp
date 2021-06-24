@@ -2,7 +2,7 @@
 /// @brief
 /// @author S. V. Paulauskas
 /// @date November 23, 2020
-#include "doctest.h"
+#include "doctest/doctest.h"
 #include "pixie16sys_common.h"
 #include "pixie16sys_export.h"
 

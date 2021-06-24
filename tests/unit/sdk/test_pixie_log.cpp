@@ -39,7 +39,7 @@
 
 #include <iostream>
 
-#include "doctest.h"
+#include "doctest/doctest.h"
 #include "pixie_error.hpp"
 #include "pixie_log.hpp"
 

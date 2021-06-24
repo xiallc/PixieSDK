@@ -37,7 +37,7 @@
 /// @author S. V. Paulauskas
 /// @date April 19, 2021
 
-#include "doctest.h"
+#include "doctest/doctest.h"
 #include "pixie_error.hpp"
 
 TEST_SUITE("xia::pixie::error") {

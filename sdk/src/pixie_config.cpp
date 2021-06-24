@@ -48,7 +48,7 @@
 #include <pixie_param.hpp>
 #include <pixie_util.hpp>
 
-#include "json.hpp"
+#include "nolhmann/json.hpp"
 
 namespace xia
 {

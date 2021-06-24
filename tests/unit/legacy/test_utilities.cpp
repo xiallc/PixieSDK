@@ -4,7 +4,7 @@
 /// @date November 23, 2020
 #include "pixie16app_export.h"
 
-#include "doctest.h"
+#include "doctest/doctest.h"
 
 TEST_SUITE("app/utilities.c") {
     TEST_CASE("Decimal2IEEEFloating"){

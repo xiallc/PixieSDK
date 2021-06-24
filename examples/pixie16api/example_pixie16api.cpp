@@ -47,8 +47,8 @@
 
 #include "pixie_config.hpp"
 
-#include "args.hxx"
-#include "easylogging++.h"
+#include "args/args.hxx"
+#include "easylogging/easylogging++.h"
 
 #include "pixie16app_defs.h"
 

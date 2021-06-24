@@ -7,9 +7,7 @@ add_executable(test_direct_communication
 target_include_directories(test_direct_communication PUBLIC
         include
         ${PROJECT_SOURCE_DIR}/api/legacy/include
-        ${PROJECT_SOURCE_DIR}/externals/analog_devices
-        ${PROJECT_SOURCE_DIR}/externals/args
-        ${PROJECT_SOURCE_DIR}/externals/easylogging)
+        ${PROJECT_SOURCE_DIR}/externals/)
 xia_configure_target(TARGET test_direct_communication USE_PLX)
 
 #---- System test for module construction

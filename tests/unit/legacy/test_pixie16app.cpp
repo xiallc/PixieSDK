@@ -2,7 +2,7 @@
 /// @brief Unittets
 /// @author S. V. Paulauskas
 /// @date November 23, 2020
-#include "doctest.h"
+#include "doctest/doctest.h"
 #include "pixie16app_export.h"
 #include "pixie16app_globals.h"
 

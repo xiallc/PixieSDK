@@ -37,7 +37,7 @@
 /// @author S. V. Paulauskas
 /// @date April 20, 2021
 
-#include "doctest.h"
+#include "doctest/doctest.h"
 #include "pixie_util.hpp"
 
 TEST_SUITE("xia::util") {

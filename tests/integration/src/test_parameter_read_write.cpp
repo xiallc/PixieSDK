@@ -39,7 +39,7 @@
 #include <fstream>
 #include <sstream>
 
-#include <doctest.h>
+#include <doctest/doctest.h>
 #include <pixie_channel.hpp>
 #include <pixie_error.hpp>
 #include <pixie_log.hpp>

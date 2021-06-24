@@ -37,7 +37,7 @@
 /// @author S. V. Paulauskas
 /// @date February 26, 2021
 #include "system_test_utilities.hpp"
-#include "easylogging++.h"
+#include "easylogging/easylogging++.h"
 
 #include <iostream>
 

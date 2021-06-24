@@ -49,7 +49,7 @@
 
 #include "pixie_sim.hpp"
 
-#include "args.hxx"
+#include "args/args.hxx"
 
 /*
  * Localize the log and error

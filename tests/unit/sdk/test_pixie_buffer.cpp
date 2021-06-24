@@ -37,7 +37,7 @@
 /// @author Chris Johns
 /// @date May 5, 2021
 
-#include "doctest.h"
+#include "doctest/doctest.h"
 #include "pixie_buffer.hpp"
 
 #include <cstring>
