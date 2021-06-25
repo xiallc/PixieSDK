@@ -109,7 +109,7 @@ private:
 
 static outputters_ptr outputs;
 
-outputters_ptr make_outputters()
+PIXIE_EXPORT outputters_ptr PIXIE_API make_outputters()
 {
     if (!outputs) {
         outputs = std::make_shared<outputters>();

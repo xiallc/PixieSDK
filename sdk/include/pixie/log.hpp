@@ -53,7 +53,7 @@ namespace logging
 struct outputter;
 typedef std::list<outputter> outputters;
 typedef std::shared_ptr<outputters> outputters_ptr;
-outputters_ptr make_outputters();
+PIXIE_EXPORT outputters_ptr PIXIE_API make_outputters();
 static outputters_ptr outputs_ptr = make_outputters();
 };
 
