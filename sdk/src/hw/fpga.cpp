@@ -111,7 +111,7 @@ namespace fpga
             uint32_t data;
 
             bool cleared = false;
-            int timeout_usec = 250;
+            int timeout_msec = 25;
 
             while (!cleared) {
                 log(log::debug) << "fpga-" << name
@@ -135,7 +135,7 @@ namespace fpga
                 bus_write(reg.CTRLCS, data);
 
                 while (true) {
-                    wait(10);
+                    wait(1000);
                     data = bus_read(reg.RDCS);
                     if ((data & clear_ctrl.done) == clear_ctrl.done) {
                         /*
@@ -144,8 +144,8 @@ namespace fpga
                         cleared = true;
                         break;
                     }
-                    timeout_usec -= 10;
-                    if (timeout_usec <= 0) {
+                    --timeout_msec;
+                    if (timeout_msec <= 0) {
                         --retries;
                         if (retries <= 0) {
                             throw error(error::code::device_load_failure,
@@ -177,7 +177,7 @@ namespace fpga
                             << " [slot " << module.slot
                             << "] waiting for done";
 
-            timeout_usec = 250000;
+            timeout_msec = 25;
 
             while (true) {
                 wait(1000);
@@ -189,8 +189,8 @@ namespace fpga
                     programmed = true;
                     break;
                 }
-                timeout_usec -= 1000;
-                if (timeout_usec <= 0) {
+                --timeout_msec;
+                if (timeout_msec <= 0) {
                     --retries;
                     if (retries <= 0) {
                         throw error(error::code::device_load_failure,

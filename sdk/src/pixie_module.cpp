@@ -252,6 +252,12 @@ namespace module
           fifo_run_wait_usecs(default_fifo_run_wait_usec),
           fifo_idle_wait_usecs(default_fifo_idle_wait_usec),
           fifo_hold_usecs(default_fifo_hold_usec),
+          fifo_bandwidth(0),
+          data_dma_in(0),
+          data_fifo_in(0),
+          data_fifo_out(0),
+          data_fifo_run_in(0),
+          data_fifo_run_out(0),
           crate_revision(-1),
           board_revision(-1),
           reg_trace(false),
@@ -261,7 +267,7 @@ namespace module
           present_(false),
           online_(false),
           forced_offline_(false),
-          pause_fifo_worker(false),
+          pause_fifo_worker(true),
           comms_fpga(false),
           fippi_fpga(false),
           have_hardware(false),
@@ -292,6 +298,12 @@ namespace module
           fifo_run_wait_usecs(m.fifo_run_wait_usecs.load()),
           fifo_idle_wait_usecs(m.fifo_idle_wait_usecs.load()),
           fifo_hold_usecs(m.fifo_hold_usecs.load()),
+          fifo_bandwidth(m.fifo_bandwidth.load()),
+          data_dma_in(m.data_dma_in.load()),
+          data_fifo_in(m.data_fifo_in.load()),
+          data_fifo_out(m.data_fifo_out.load()),
+          data_fifo_run_in(m.data_fifo_run_in.load()),
+          data_fifo_run_out(m.data_fifo_run_out.load()),
           crate_revision(m.crate_revision),
           board_revision(m.board_revision),
           reg_trace(m.reg_trace),
@@ -328,13 +340,19 @@ namespace module
         m.fifo_run_wait_usecs = default_fifo_run_wait_usec;
         m.fifo_idle_wait_usecs = default_fifo_idle_wait_usec;
         m.fifo_hold_usecs = default_fifo_hold_usec;
+        m.fifo_bandwidth = 0;
+        m.data_dma_in = 0;
+        m.data_fifo_in = 0;
+        m.data_fifo_out = 0;
+        m.data_fifo_run_in = 0;
+        m.data_fifo_run_out = 0;
         m.crate_revision = -1;
         m.board_revision = -1;
         m.reg_trace = false;
         m.present_ = false;
         m.online_ = false;
         m.forced_offline_ = false;
-        m.pause_fifo_worker = false;
+        m.pause_fifo_worker = true;
         m.comms_fpga = false;
         m.fippi_fpga = false;
         m.have_hardware = false;
@@ -385,6 +403,12 @@ namespace module
         fifo_run_wait_usecs = m.fifo_run_wait_usecs.load();
         fifo_idle_wait_usecs = m.fifo_idle_wait_usecs.load();
         fifo_hold_usecs = m.fifo_hold_usecs.load();
+        fifo_bandwidth = m.fifo_bandwidth.load();
+        data_dma_in = m.data_dma_in.load();
+        data_fifo_in = m.data_fifo_in.load();
+        data_fifo_out = m.data_fifo_out.load();
+        data_fifo_run_in = m.data_fifo_run_in.load();
+        data_fifo_run_out = m.data_fifo_run_out.load();
         crate_revision = m.crate_revision;
         board_revision = m.board_revision;
         reg_trace = m.reg_trace;
@@ -415,13 +439,19 @@ namespace module
         m.fifo_run_wait_usecs = default_fifo_run_wait_usec;
         m.fifo_idle_wait_usecs = default_fifo_idle_wait_usec;
         m.fifo_hold_usecs = default_fifo_hold_usec;
+        m.fifo_bandwidth = 0;
+        m.data_dma_in = 0;
+        m.data_fifo_in = 0;
+        m.data_fifo_out = 0;
+        m.data_fifo_run_in = 0;
+        m.data_fifo_run_out = 0;
         m.crate_revision = -1;
         m.board_revision = -1;
         m.reg_trace = false;
         m.present_ = false;
         m.online_ = false;
         m.forced_offline_ = false;
-        m.pause_fifo_worker = false;
+        m.pause_fifo_worker = true;
         m.comms_fpga = false;
         m.fippi_fpga = false;
         m.have_hardware = false;
@@ -1587,6 +1617,8 @@ namespace module
             log(log::warning) << module_label(*this)
                               << "run-end: no run active";
         }
+        run_interval.end();
+        pause_fifo_worker = true;
         hw::run::end(*this);
     }
 
@@ -1652,6 +1684,7 @@ namespace module
                         "test running; cannot start a run task");
         }
         hw::run::run(*this, mode, hw::run::run_task::histogram);
+        run_interval.restart();
     }
 
     void
@@ -1673,6 +1706,8 @@ namespace module
         }
         fifo_data.flush();
         hw::run::run(*this, mode, hw::run::run_task::list_mode);
+        pause_fifo_worker = false;
+        run_interval.restart();
     }
 
     void
@@ -1795,6 +1830,9 @@ namespace module
         if (!fifo_data.empty()) {
             lock_guard guard(lock_);
             fifo_data.copy(values);
+            auto out = values.size();
+            data_fifo_out += out;
+            data_fifo_run_out += out;
             log(log::debug) << module_label(*this)
                             << "read-list-mode: values=" << values.size()
                             << " fifo-size=" << fifo_data.size();
@@ -2010,9 +2048,13 @@ namespace module
         switch (mode) {
         case test::lm_fifo:
             log(log::debug) << "pause the FIFO worker";
-            pause_fifo_worker = true;
             test_mode = mode;
-            hw::run::control(*this, hw::run::control_task::fill_ext_fifo);
+            data_fifo_run_in = 0;
+            data_fifo_run_out = 0;
+            hw::run::start(*this,
+                           hw::run::run_mode::new_run,
+                           hw::run::run_task::nop,
+                           hw::run::control_task::fill_ext_fifo);
             log(log::debug) << "unpause the FIFO worker";
             pause_fifo_worker = false;
             break;
@@ -2026,7 +2068,15 @@ namespace module
     void
     module::end_test()
     {
+        pause_fifo_worker = true;
         test_mode = test::off;
+        auto word_size = sizeof(hw::word);
+        log(log::info) << module_label(*this)
+                       << "run: in=" << data_fifo_run_in.load() * word_size
+                       << " out=" << data_fifo_run_out.load() * word_size
+                       << " total: in=" << data_fifo_in.load() * word_size
+                       << " out=" << data_fifo_out.load() * word_size
+                       << " dma: in=" << data_dma_in.load() * word_size;
     }
 
     void
@@ -2222,7 +2272,7 @@ namespace module
             if (fippi.done()) {
                 hw::csr::reset(*this);
                 if (!fifo_pool.valid()) {
-                    fifo_pool.create(fifo_buffers, hw::max_dma_block_size);
+                    fifo_pool.create(fifo_buffers, 64 * 1024);
                     start_fifo_worker();
                     hw::run::end(*this);
                 }
@@ -2252,6 +2302,7 @@ namespace module
                         << "FIFO worker: starting: running="
                         << fifo_worker_running.load();
         if (!fifo_worker_running.load()) {
+            pause_fifo_worker = true;
             fifo_worker_finished = false;
             fifo_worker_running = true;;
             fifo_thread = std::thread(&module::fifo_worker, this);
@@ -2294,9 +2345,16 @@ namespace module
 
             (void) fifo.level();
 
+            size_t last_dma_in = 0;
+            util::timepoint bw_interval(true);
+
             while (fifo_worker_running.load()) {
+                /*
+                 * If not online do nothing.
+                 */
                 if (!online()) {
                     hw::wait(250 * 1000);
+                    bw_interval.restart();
                     continue;
                 }
 
@@ -2368,20 +2426,9 @@ namespace module
                                         << " repeat read: " << level2;
                         break;
                     }
-                    if (test_mode.load() == test::lm_fifo) {
-                        if (level < (hw::max_dma_block_size * 2)) {
-                            log(log::debug) << module_label(*this)
-                                            << "FIFO fill, level=" << level;
-                            hw::run::control(
-                                *this,
-                                hw::run::control_task::fill_ext_fifo
-                            );
-                        }
-                    }
                     bool queue_buf =
                         this_run_tsk == hw::run::run_task::list_mode ||
                         test_mode.load() != test::off;
-
                     buffer::handle buf;
                     if (fifo_pool.empty()) {
                         if (!pool_empty_logged) {
@@ -2404,7 +2451,10 @@ namespace module
                         }
                         buf->resize(level);
                         fifo.read(*buf, level);
+                        data_dma_in += level;
                         if (queue_buf) {
+                            data_fifo_in += level;
+                            data_fifo_run_in += level;
                             fifo_data.push(buf);
                         }
                         hold_time = 0;
@@ -2423,6 +2473,28 @@ namespace module
                                               << "FIFO worker: FIFO full";
                         }
                         break;
+                    }
+
+                    /*
+                     * Allocated bandwidth used?
+                     */
+                    auto bandwidth = fifo_bandwidth.load();
+                    if (bandwidth > 0) {
+                        auto dma_in = data_dma_in.load();
+                        auto data_delta = (dma_in - last_dma_in) * sizeof(hw::word);
+                        size_t data_in = data_delta / 1000000;
+                        if (data_in >= bandwidth) {
+                            last_dma_in = dma_in;
+                            size_t slice =
+                                (1000 - ((1000 * bandwidth) /
+                                         hw::pci_bus_datarate)) * 1000;
+                            if (wait_time < slice) {
+                                wait_time = slice;
+                            }
+                            log(log::debug) << "BW limiter: data in:: "
+                                            << data_in << "MB";
+                            break;
+                        }
                     }
                 }
 

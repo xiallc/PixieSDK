@@ -135,22 +135,29 @@ struct ostream_guard {
 struct timepoint {
     using marker = std::chrono::time_point<std::chrono::steady_clock>;
 
-    bool active;
-    bool suspended;
-    bool captured;
+    std::atomic_bool active;
+    std::atomic_bool suspended;
+    std::atomic_bool captured;
+
     marker start_mark;
     marker end_mark;
 
     timepoint(bool autostart = false);
     ~timepoint();
 
+    bool running() const {
+        return active.load() && !suspended.load();
+    }
+
     void reset();
     void start();
     void end();
+    void stop() { end(); }
     void restart();
     void pause();
     void resume();
 
+    uint64_t secs();
     uint64_t msecs();
     uint64_t usecs();
 

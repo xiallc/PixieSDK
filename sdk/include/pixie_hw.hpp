@@ -121,6 +121,11 @@ namespace hw
     static const size_t baselines_block_len = 18;
 
     /*
+     * PCI Bus maximum data transfer rate in MBytes.
+     */
+    static const size_t pci_bus_datarate = 100;
+
+    /*
      * Address.
      */
     typedef uint32_t address;

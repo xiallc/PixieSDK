@@ -58,6 +58,27 @@ using xia_log = xia::log;
 using error = xia::pixie::error::error;
 
 /*
+ * Module threading worker base
+ */
+struct module_thread_worker
+{
+    int number;
+    int slot;
+    int pci_bus;
+    int pci_slot;
+
+    std::atomic_bool running;
+    bool has_error;
+    xia::util::timepoint period;
+    size_t total;
+    size_t last_total;
+
+    module_thread_worker();
+
+    virtual void worker(xia::pixie::module::module& module) = 0;
+};
+
+/*
  * Command processor.
  */
 using options = std::vector<std::string>;
@@ -127,7 +148,7 @@ static const std::map<std::string, command_def> command_defs =
     { "stats",       { { 2, 3 },    "module/channel stats" } },
     { "import",      { { 1 },       "import a JSON configuration file" } },
     { "export",      { { 1 },       "export a configuration to a JSON file" } },
-    { "test",        { { 3 },       "start a test" } },
+    { "test",        { { 2 },       "start a test" } },
     { "wait",        { { 1 },       "wait a number of msecs" } }
 };
 
@@ -334,7 +355,8 @@ template<typename W> void
 module_threads(xia::pixie::crate::crate& crate,
                std::vector<size_t>& mod_nums,
                std::vector<W>& workers,
-               std::string error_message)
+               std::string error_message,
+               bool show_performance = true)
 {
     if (workers.size() != mod_nums.size()) {
         throw std::runtime_error("workers and modules counts mismatch");
@@ -352,6 +374,7 @@ module_threads(xia::pixie::crate::crate& crate,
             std::thread(
                 [m, &promises, module, &worker] {
                     try {
+                        worker.running = true;
                         worker.worker(*module);
                         promises[m].set_value(error::code::success);
                     } catch (xia::pixie::error::error& e) {
@@ -361,44 +384,159 @@ module_threads(xia::pixie::crate::crate& crate,
                             promises[m].set_exception(std::current_exception());
                         } catch (...) { }
                     }
+                    worker.running = false;
                 }));
     }
     error::code first_error = error::code::success;
-    for (size_t t = 0; t < threads.size(); ++t) {
-        error::code e = futures[t].get();
-        if (first_error == error::code::success) {
-            first_error = e;
+    size_t finished = 0;
+    size_t show_secs = 5;
+    xia::util::timepoint duration(true);
+    xia::util::timepoint interval(true);
+    while (finished != threads.size()) {
+        finished = threads.size();
+        for (size_t t = 0; t < threads.size(); ++t) {
+            auto& future = futures[t];
+            if (future.valid()) {
+                auto zero = std::chrono::seconds(0);
+                if (future.wait_for(zero) == std::future_status::ready) {
+                    workers[t].period.stop();
+                    error::code e = future.get();
+                    if (e != error::code::success) {
+                        std::cout << "module " << t
+                                  << ": error: "
+                                  << xia::pixie::error::api_result_text(e)
+                                  << std::endl;
+                    }
+                    if (first_error == error::code::success) {
+                        first_error = e;
+                    }
+                    threads[t].join();
+                } else {
+                    --finished;
+                }
+            }
         }
-        threads[t].join();
+        xia::pixie::hw::wait(20 * 1000);
+        if (show_performance && interval.secs() > show_secs) {
+            auto secs = interval.secs();
+            interval.restart();
+            std::cout << "running: " << threads.size() - finished
+                      << std::endl;
+            size_t all_total = 0;
+            for (auto& w : workers) {
+                if (w.period.secs() > 0) {
+                    auto total = w.total;
+                    auto bytes =
+                        (total - w.last_total) * sizeof(xia::pixie::hw::word);
+                    auto rate = double(bytes) / secs;
+                    all_total += total;
+                    bytes = total * sizeof(xia::pixie::hw::word);
+                    char active = w.running.load() ? '>' : ' ';
+                    w.last_total = total;
+                    std::ostringstream oss;
+                    oss << ' '
+                        << active
+                        << std::setw(2) << w.number
+                        << ": total: " << std::setw(8)
+                        << xia::util::humanize(bytes)
+                        << " rate: " << std::setw(8)
+                        << xia::util::humanize(rate)
+                        << " bytes/sec pci: bus=" << w.pci_bus
+                        << " slot=" << w.pci_slot;
+                    std::cout << oss.str() << std::endl;
+                    xia_log(xia_log::info) << oss.str();
+                } else {
+                    std::cout << ' ' << std::setw(2) << w.number
+                              << ": not running"
+                              << std::endl;
+                }
+            }
+            all_total *= sizeof(xia::pixie::hw::word);
+            std::ostringstream oss;
+            oss << " all: total: " << std::setw(8)
+                << xia::util::humanize(all_total)
+                << " rate: " << std::setw(8)
+                << xia::util::humanize(double(all_total) / duration.secs())
+                << " bytes/sec";
+            std::cout << oss.str() << std::endl;
+            xia_log(xia_log::info) << oss.str();
+        }
     }
     if (first_error != error::code::success) {
         throw error(first_error, error_message);
     }
 }
 
-template<typename W> void
-set_seconds(std::vector<W>& workers, const size_t secs)
+module_thread_worker::module_thread_worker()
+    : number(-1),
+      slot(-1),
+      pci_bus(-1),
+      pci_slot(-1),
+      running(false),
+      has_error(false),
+      total(0),
+      last_total(0)
 {
-    for (auto& w : workers) {
-        w.seconds = secs;
+}
+
+template<typename W> void
+set_num_slot(xia::pixie::crate::crate& crate,
+             std::vector<size_t>& mod_nums,
+             std::vector<W>& workers)
+{
+    for (size_t m = 0; m < mod_nums.size(); ++m) {
+        auto module = crate.modules[mod_nums[m]];
+        auto& worker = workers[m];
+        worker.number = module->number;
+        worker.slot = module->slot;
+        worker.pci_bus = module->pci_bus();
+        worker.pci_slot = module->pci_slot();
     }
 }
 
 template<typename W> void
-performance_stats(std::vector<W>& workers, const size_t secs)
+performance_stats(std::vector<W>& workers,
+                  bool show_workers = false)
 {
     size_t total = 0;
+    size_t secs = 0;
     for (auto& w : workers) {
+        if (w.period.secs() > secs) {
+            secs = w.period.secs();
+        }
         total += w.total;
+        if (show_workers) {
+            if (w.has_error) {
+                std::stringstream he_oss;
+                he_oss << "module: num:" << std::setw(2) << w.number
+                       << " slot:" << std::setw(2) << w.slot
+                       << ": has an error; check the log";
+                std::cout << he_oss.str() << std::endl;
+                xia_log(xia_log::info) << he_oss.str();
+            }
+            std::stringstream dr_oss;
+            auto bytes = w.total * sizeof(xia::pixie::hw::word);
+            auto rate = double(bytes) / w.period.secs();
+            dr_oss << "module: num:" << std::setw(2) << w.number
+                   << " slot:" << std::setw(2) << w.slot
+                   << ": data received: " << std::setw(8)
+                   << xia::util::humanize(bytes)
+                   << " bytes (" << std::setw(9) << bytes
+                   << "), rate: " << std::setw(8)
+                   << xia::util::humanize(rate)
+                   << " bytes/sec pci: bus=" << w.pci_bus
+                   << " slot=" << w.pci_slot;
+            std::cout << dr_oss.str() << std::endl;
+            xia_log(xia_log::info) << dr_oss.str();
+        }
     }
     total *= sizeof(xia::pixie::hw::word);
-    std::cout << "data received: " << total
-              << " bytes, rate: "
-              << xia::util::humanize(double(total) / secs, " bytes/sec")
-              << std::endl;
-    xia_log(xia_log::info) << "data received: " << total
-                           << " bytes, rate: "
-                           << double(total) / secs << " bytes/sec";
+    std::stringstream oss;
+    oss << "data received: " << xia::util::humanize(total) << " bytes ("
+        << total << "), rate: "
+        << xia::util::humanize(double(total) / secs, " bytes/sec");
+    std::cout << oss.str() << std::endl;
+    xia_log(xia_log::info) << oss.str();
 }
 
 static void
@@ -619,9 +757,9 @@ list_resume(xia::pixie::crate::crate& crate, options& cmd)
 }
 
 struct list_save_worker
+    : public module_thread_worker
 {
     std::string name;
-    size_t total;
     size_t seconds;
 
     list_save_worker();
@@ -630,8 +768,7 @@ struct list_save_worker
 };
 
 list_save_worker::list_save_worker()
-    : total(0),
-      seconds(0)
+    : seconds(0)
 {
 }
 
@@ -648,8 +785,8 @@ list_save_worker::worker(xia::pixie::module::module& module)
     }
     const size_t poll_period_usecs = 100 * 1000;
     total = 0;
-    xia::util::timepoint duration(true);
-    while (duration.msecs() < (seconds * 1000)) {
+    period.start();
+    while (period.secs() < seconds) {
         size_t data_available = module.read_list_mode_level();
         if (data_available > 0) {
             xia::pixie::hw::words lm;
@@ -662,6 +799,7 @@ list_save_worker::worker(xia::pixie::module::module& module)
             xia::pixie::hw::wait(poll_period_usecs);
         }
     }
+    period.end();
 }
 
 static void
@@ -677,12 +815,13 @@ list_save(xia::pixie::crate::crate& crate, options& cmd)
         );
     }
     auto saves = std::vector<list_save_worker>(mod_nums.size());
+    set_num_slot(crate, mod_nums, saves);
     for (auto& s : saves) {
         s.name = name;
+        s.seconds = secs;
     };
-    set_seconds(saves, secs);
     module_threads(crate, mod_nums, saves, "list mode save error; see log");
-    performance_stats(saves, secs);
+    performance_stats(saves);
 }
 
 static void
@@ -934,17 +1073,17 @@ export_(xia::pixie::crate::crate& crate, options& cmd)
               << std::endl;
 }
 
-struct test_fifo_worker {
-    size_t total;
-    size_t seconds;
+struct test_fifo_worker
+    : public module_thread_worker
+{
+    size_t length;
 
     test_fifo_worker();
     void worker(xia::pixie::module::module& module);
 };
 
 test_fifo_worker::test_fifo_worker()
-    : total(0),
-      seconds(0)
+    : length(0)
 {
 }
 
@@ -953,9 +1092,9 @@ test_fifo_worker::worker(xia::pixie::module::module& module)
 {
     try {
         module.start_test(xia::pixie::module::module::test::lm_fifo);
-        const size_t poll_period_usecs = 100 * 1000;
-        xia::util::timepoint duration(true);
-        while (duration.msecs() < (seconds * 1000)) {
+        const size_t poll_period_usecs = 10 * 1000;
+        period.start();
+        while (total < length) {
             size_t data_available = module.read_list_mode_level();
             if (data_available > 0) {
                 xia::pixie::hw::words lm;
@@ -966,8 +1105,11 @@ test_fifo_worker::worker(xia::pixie::module::module& module)
                 xia::pixie::hw::wait(poll_period_usecs);
             }
         }
+        period.end();
         module.end_test();
     } catch (...) {
+        period.end();
+        has_error = true;
         module.end_test();
         throw;
     }
@@ -984,12 +1126,18 @@ test(xia::pixie::crate::crate& crate, options& cmd)
     if (mode == xia::pixie::module::module::test::off) {
         throw std::runtime_error(std::string("invalid test mode: " + cmd[1]));
     }
+    size_t bytes = 500 * 1024 * 1000;
     auto mod_nums = get_values<size_t>(cmd[2], crate.num_modules);
-    auto secs = get_value<size_t>(cmd[3]);
     auto tests = std::vector<test_fifo_worker>(mod_nums.size());
-    set_seconds(tests, secs);
+    set_num_slot(crate, mod_nums, tests);
+    for (auto& t : tests) {
+        t.length = (bytes) / sizeof(xia::pixie::hw::word);;
+    };
+    std::cout << "Test: " << cmd[1]
+              << " length=" << xia::util::humanize(bytes)
+              << std::endl;
     module_threads(crate, mod_nums, tests, "fifo test error; see log");
-    performance_stats(tests, secs);
+    performance_stats(tests, true);
 }
 
 static void

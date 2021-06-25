@@ -145,7 +145,7 @@ void
 timepoint::start()
 {
     lock();
-    if (!active && !captured) {
+    if (!active.load() && !captured.load()) {
         active = true;
         start_mark = std::chrono::steady_clock::now();
     }
@@ -156,7 +156,7 @@ void
 timepoint::end()
 {
     lock();
-    if (active && !captured) {
+    if (!active.load() && !captured.load()) {
         active = false;
         suspended = false;
         captured = true;
@@ -168,19 +168,15 @@ timepoint::end()
 void
 timepoint::pause()
 {
-    lock();
-    if (active) {
+    if (active.load()) {
         suspended = true;
     }
-    unlock();
 }
 
 void
 timepoint::resume()
 {
-    lock();
     suspended = false;
-    unlock();
 }
 
 void
@@ -195,14 +191,20 @@ timepoint::restart()
 }
 
 uint64_t
+timepoint::secs()
+{
+    return msecs() / 1000;
+}
+
+uint64_t
 timepoint::msecs()
 {
     lock();
-    if (active && !suspended && !captured) {
+    if (active.load() && !suspended.load() && !captured.load()) {
         end_mark = std::chrono::steady_clock::now();
     }
     uint64_t period = 0;
-    if (active || captured) {
+    if (active.load() || captured.load()) {
         using namespace std::literals;
         period = (end_mark - start_mark) / 1ms;
     }
@@ -214,11 +216,11 @@ uint64_t
 timepoint::usecs()
 {
     lock();
-    if (active && !suspended && !captured) {
+    if (active && !suspended.load() && !captured.load()) {
         end_mark = std::chrono::steady_clock::now();
     }
     uint64_t period = 0;
-    if (active || captured) {
+    if (active.load() || captured.load()) {
         using namespace std::literals;
         period = (end_mark - start_mark) / 1us;
     }
@@ -236,10 +238,10 @@ std::string
 timepoint::output()
 {
     lock();
-    if (active && !captured) {
+    if (active.load() && !captured.load()) {
         end_mark = std::chrono::steady_clock::now();
     }
-    if (!active && !captured) {
+    if (!active.load() && !captured.load()) {
         unlock();
         return std::string("n/a");
     }

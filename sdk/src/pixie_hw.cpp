@@ -89,9 +89,16 @@ config::clear()
 void
 wait(size_t microseconds)
 {
-    std::this_thread::sleep_for(
-        std::chrono::microseconds(microseconds)
-        );
+    if (microseconds < 100) {
+        volatile size_t count = 10 * microseconds;
+        while (count > 0) {
+            --count;
+        }
+    } else {
+        std::this_thread::sleep_for(
+            std::chrono::microseconds(microseconds)
+            );
+    }
 }
 };
 };

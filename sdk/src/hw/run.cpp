@@ -156,14 +156,15 @@ end(module::module& module)
           module::module::bus_guard guard(module);
           csr::clear(module, 1 << hw::bit::RUNENA);
         }
-        for (int msecs = 0; msecs < 2 * 1000; ++msecs) {
+        int wait_msecs = 1000;
+        for (int msecs = 0; msecs < wait_msecs; ++msecs) {
             if (!hw::run::active(module)) {
                 tp.end();
                 log(log::debug) << module::module_label(module, "run")
                                 << "end duration=" << tp;
                 return;
             }
-            hw::wait(500);
+            hw::wait(1000);
         }
         throw error(error::code::module_task_timeout,
                     "failed to stop task");
@@ -186,7 +187,6 @@ control(module::module& module, control_task control_tsk, int wait_msecs)
                     << " wait=" << wait_msecs;
     util::timepoint tp;
     tp.start();
-    wait_msecs *= 2;
     start(module, run_mode::new_run, run_task::nop, control_tsk);
     for (int msecs = 0; msecs < wait_msecs; ++msecs) {
         if (!active(module)) {
@@ -196,7 +196,7 @@ control(module::module& module, control_task control_tsk, int wait_msecs)
                             << " duration=" << tp;
             return;
         }
-        hw::wait(500);
+        hw::wait(1000);
     }
     std::ostringstream oss;
     oss << "control task failed to start: " << int(control_tsk);

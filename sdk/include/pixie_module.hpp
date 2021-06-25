@@ -265,6 +265,26 @@ namespace module
         std::atomic_size_t fifo_hold_usecs;
 
         /*
+         * Maximum bandwidth the module is to use. The value is Mbytes/secs. If
+         * set to 0 there is no throttling of the bandwidth.
+         */
+        std::atomic_size_t fifo_bandwidth;
+
+        /*
+         * Dataflow stats
+         */
+        std::atomic_size_t data_dma_in;       /* DMA data in */
+        std::atomic_size_t data_fifo_in;      /* Data into the fifo queue */
+        std::atomic_size_t data_fifo_out;     /* Data read from the fifo queue */
+
+        /*
+         * Run stats
+         */
+        util::timepoint run_interval;         /* Period of the run */
+        std::atomic_size_t data_fifo_run_in;  /* DMA data into the fifo queue */
+        std::atomic_size_t data_fifo_run_out; /* Data read from the fifo queue */
+
+        /*
          * Crate revision
          */
         int crate_revision;
