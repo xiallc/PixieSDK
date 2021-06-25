@@ -43,17 +43,17 @@
 #include <vector>
 #include <thread>
 
-#include <pixie16.h>
+#include <pixie16/pixie16.h>
 
-#include "pixie_config.hpp"
+#include <pixie/config.hpp>
 
-#include "args/args.hxx"
-#include "easylogging/easylogging++.h"
+#include <legacy/pixie16app_defs.h>
 
-#include "pixie16app_defs.h"
+#include <args/args.hxx>
+#include <easylogging/easylogging++.h>
 
 #if defined(_WIN64) || defined(_WIN32)
-#include <Windows.h>
+#include <windows.h>
 #else
 #include <unistd.h>
 #endif

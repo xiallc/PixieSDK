@@ -1,4 +1,7 @@
-/**----------------------------------------------------------------------
+#ifndef PIXIE_HW_CSR_H
+#define PIXIE_HW_CSR_H
+
+/*----------------------------------------------------------------------
 * Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
@@ -31,29 +34,55 @@
 * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
-*----------------------------------------------------------------------**/
-/// @file test_pixie_error.cpp
-/// @brief
-/// @author S. V. Paulauskas
-/// @date April 19, 2021
+*----------------------------------------------------------------------*/
 
-#include <doctest/doctest.h>
-#include <pixie/error.hpp>
+#include <cstdint>
 
-TEST_SUITE("xia::pixie::error") {
-    TEST_CASE("Result Generation") {
-        SUBCASE("Valid Error Code") {
-            CHECK(xia::pixie::error::api_result_text(xia::pixie::error::code::unknown_error) ==
-                  "unknown error");
-            CHECK(xia::pixie::error::api_result(xia::pixie::error::code::unknown_error) == 900);
-        }
-        SUBCASE("Invalid Error Code") {
-            CHECK(xia::pixie::error::api_result_text(xia::pixie::error::code::last) ==
-                  "bad error code");
-            CHECK(xia::pixie::error::api_result(xia::pixie::error::code::last) == 990);
-        }
-    }
-    TEST_CASE("Result_codes size matches code::last") {
-        CHECK(xia::pixie::error::check_code_match());
-    }
+#include <pixie/pixie16/hw.hpp>
+
+namespace xia
+{
+namespace pixie
+{
+namespace module
+{
+    class module;
 }
+namespace hw
+{
+namespace csr
+{
+/*
+ * Reset the CSR to a default state.
+ */
+void reset(module::module& module);
+
+/*
+ * Low level read/write and bit set/clear support.
+ */
+word read(module::module& module);
+void write(module::module& module, word value);
+void set(module::module& module, word mask);
+void clear(module::module& module, word mask);
+
+/*
+ * Set the bit mask into the CSR when constructed and clear
+ * in the destructor.
+ */
+struct set_clear {
+    module::module& module;
+    const uint32_t mask;
+    set_clear(module::module& module, uint32_t mask);
+    ~set_clear();
+};
+
+/*
+ * Wait for external FIFO
+ */
+void fifo_ready_wait(module::module& module, const size_t polls = 1000);
+}
+}
+}
+}
+
+#endif  // PIXIE_HW_CSR_H

@@ -1,4 +1,7 @@
-/**----------------------------------------------------------------------
+#ifndef PIXIE_HW_I2CM24C64_H
+#define PIXIE_HW_I2CM24C64_H
+
+/*----------------------------------------------------------------------
 * Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
@@ -31,29 +34,47 @@
 * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
-*----------------------------------------------------------------------**/
-/// @file test_pixie_error.cpp
-/// @brief
-/// @author S. V. Paulauskas
-/// @date April 19, 2021
+*----------------------------------------------------------------------*/
 
-#include <doctest/doctest.h>
-#include <pixie/error.hpp>
+#include <pixie/eeprom.hpp>
 
-TEST_SUITE("xia::pixie::error") {
-    TEST_CASE("Result Generation") {
-        SUBCASE("Valid Error Code") {
-            CHECK(xia::pixie::error::api_result_text(xia::pixie::error::code::unknown_error) ==
-                  "unknown error");
-            CHECK(xia::pixie::error::api_result(xia::pixie::error::code::unknown_error) == 900);
-        }
-        SUBCASE("Invalid Error Code") {
-            CHECK(xia::pixie::error::api_result_text(xia::pixie::error::code::last) ==
-                  "bad error code");
-            CHECK(xia::pixie::error::api_result(xia::pixie::error::code::last) == 990);
-        }
-    }
-    TEST_CASE("Result_codes size matches code::last") {
-        CHECK(xia::pixie::error::check_code_match());
-    }
+#include <pixie/pixie16/i2c_bitbash.hpp>
+
+namespace xia
+{
+namespace pixie
+{
+namespace hw
+{
+namespace i2c
+{
+    struct i2cm24c64
+        : public bitbash
+    {
+        /*
+         * Size of the device in bytes,
+         */
+        static const size_t size = 64 * 1024 / 8;
+
+        i2cm24c64(module::module& module,
+                  int reg,
+                  uint32_t SDA,
+                  uint32_t SCL,
+                  uint32_t CTRL);
+
+        /*
+         * Read the EEPROM.
+         */
+        void read(int address, size_t length, eeprom::contents& data);
+
+        /*
+         * Read the entire EEPROM
+         */
+        void read(eeprom::contents& data);
+    };
 }
+}
+}
+}
+
+#endif  // PIXIE_HW_I2CM24C64_H

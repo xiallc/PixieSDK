@@ -1,4 +1,7 @@
-/**----------------------------------------------------------------------
+#ifndef PIXIE_STATS_H
+#define PIXIE_STATS_H
+
+/*----------------------------------------------------------------------
 * Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
@@ -31,29 +34,76 @@
 * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
-*----------------------------------------------------------------------**/
-/// @file test_pixie_error.cpp
-/// @brief
-/// @author S. V. Paulauskas
-/// @date April 19, 2021
+*----------------------------------------------------------------------*/
 
-#include <doctest/doctest.h>
-#include <pixie/error.hpp>
+#include <vector>
 
-TEST_SUITE("xia::pixie::error") {
-    TEST_CASE("Result Generation") {
-        SUBCASE("Valid Error Code") {
-            CHECK(xia::pixie::error::api_result_text(xia::pixie::error::code::unknown_error) ==
-                  "unknown error");
-            CHECK(xia::pixie::error::api_result(xia::pixie::error::code::unknown_error) == 900);
-        }
-        SUBCASE("Invalid Error Code") {
-            CHECK(xia::pixie::error::api_result_text(xia::pixie::error::code::last) ==
-                  "bad error code");
-            CHECK(xia::pixie::error::api_result(xia::pixie::error::code::last) == 990);
-        }
-    }
-    TEST_CASE("Result_codes size matches code::last") {
-        CHECK(xia::pixie::error::check_code_match());
-    }
+#include <pixie/param.hpp>
+
+#include <pixie/pixie16/hw.hpp>
+
+namespace xia
+{
+namespace pixie
+{
+namespace module
+{
+    class module;
 }
+namespace stats
+{
+/*
+ * Statistics
+ *
+ * The channel and module stats cannot contain any containers while they
+ * are used in the legacy API.
+ */
+struct channel {
+    param::value_type fast_peaks_a;
+    param::value_type fast_peaks_b;
+    param::value_type live_time_a;
+    param::value_type live_time_b;
+    param::value_type chan_events_a;
+    param::value_type chan_events_b;
+    param::value_type runtime_a;
+    param::value_type runtime_b;
+
+    hw::config config;
+
+    channel(const hw::config& config);
+    channel();
+
+    double input_count_rate() const;
+    double output_count_rate() const;
+    double live_time() const;
+};
+
+typedef std::vector<channel> channels;
+
+struct module {
+    param::value_type num_events_a;
+    param::value_type num_events_b;
+    param::value_type runtime_a;
+    param::value_type runtime_b;
+
+    module();
+
+    uint64_t processed_events() const;
+    double real_time() const;
+};
+
+    typedef std::vector<module> modules;
+
+struct stats {
+    module mod;
+    channels chans;
+
+    stats(const hw::configs& configs);
+};
+
+void read(pixie::module::module& module_, stats& stats_);
+}
+}
+}
+
+#endif  // PIXIE_STATS_H

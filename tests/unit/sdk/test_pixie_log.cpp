@@ -39,9 +39,9 @@
 
 #include <iostream>
 
-#include "doctest/doctest.h"
-#include "pixie_error.hpp"
-#include "pixie_log.hpp"
+#include <doctest/doctest.h>
+#include <pixie/error.hpp>
+#include <pixie/log.hpp>
 
 static const std::string test_message = "Curiouser and curiouser!";
 

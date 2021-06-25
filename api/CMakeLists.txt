@@ -1,2 +1,0 @@
-add_subdirectory(pixie16)
-add_subdirectory(legacy)

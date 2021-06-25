@@ -1,4 +1,4 @@
-/**----------------------------------------------------------------------
+/*----------------------------------------------------------------------
 * Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
@@ -31,29 +31,75 @@
 * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
-*----------------------------------------------------------------------**/
-/// @file test_pixie_error.cpp
-/// @brief
-/// @author S. V. Paulauskas
-/// @date April 19, 2021
+*----------------------------------------------------------------------*/
 
-#include <doctest/doctest.h>
-#include <pixie/error.hpp>
+#include <pixie/pixie16/csr.hpp>
+#include <pixie/pixie16/defs.hpp>
+#include <pixie/pixie16/module.hpp>
 
-TEST_SUITE("xia::pixie::error") {
-    TEST_CASE("Result Generation") {
-        SUBCASE("Valid Error Code") {
-            CHECK(xia::pixie::error::api_result_text(xia::pixie::error::code::unknown_error) ==
-                  "unknown error");
-            CHECK(xia::pixie::error::api_result(xia::pixie::error::code::unknown_error) == 900);
-        }
-        SUBCASE("Invalid Error Code") {
-            CHECK(xia::pixie::error::api_result_text(xia::pixie::error::code::last) ==
-                  "bad error code");
-            CHECK(xia::pixie::error::api_result(xia::pixie::error::code::last) == 990);
+namespace xia
+{
+namespace pixie
+{
+namespace hw
+{
+namespace csr
+{
+void reset(module::module& module)
+{
+    clear(module,
+          (1 << hw::bit::RUNENA) |
+          (1 << hw::bit::DSPDOWNLOAD) |
+          (1 << hw::bit::PCIACTIVE));
+}
+
+word read(module::module& module)
+{
+    return module.read_word(hw::device::CSR);
+}
+
+void write(module::module& module, word value)
+{
+    module.write_word(hw::device::CSR, value);
+}
+
+void
+set(module::module& module, word mask)
+{
+    write(module, read(module) | mask);
+}
+
+void
+clear(module::module& module, word mask)
+{
+    write(module, read(module) & ~mask);
+}
+
+set_clear::set_clear(module::module& module_, word mask_)
+    : module(module_),
+      mask(mask_)
+{
+    set(module, mask);
+}
+
+set_clear::~set_clear()
+{
+    clear(module, mask);
+}
+
+void
+fifo_ready_wait(module::module& module, const size_t polls)
+{
+    size_t count = 0;
+    while (count++ < polls) {
+        if ((read(module) & (1 << hw::bit::EXTFIFO_WML)) != 0) {
+            return;
         }
     }
-    TEST_CASE("Result_codes size matches code::last") {
-        CHECK(xia::pixie::error::check_code_match());
-    }
+    throw error(error::code::device_dma_busy,
+                "csr: EXT FIFO failed to get ready for read");
+}
+}
+}
+}
 }

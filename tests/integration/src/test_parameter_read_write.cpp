@@ -40,10 +40,13 @@
 #include <sstream>
 
 #include <doctest/doctest.h>
-#include <pixie_channel.hpp>
-#include <pixie_error.hpp>
-#include <pixie_log.hpp>
-#include <pixie_sim.hpp>
+
+#include <pixie/error.hpp>
+#include <pixie/log.hpp>
+
+#include <pixie/pixie16/channel.hpp>
+#include <pixie/pixie16/sim.hpp>
+
 
 static xia::pixie::sim::crate crate;
 

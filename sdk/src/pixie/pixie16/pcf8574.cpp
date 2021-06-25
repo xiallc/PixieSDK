@@ -1,4 +1,4 @@
-/**----------------------------------------------------------------------
+/*----------------------------------------------------------------------
 * Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
@@ -31,29 +31,54 @@
 * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
-*----------------------------------------------------------------------**/
-/// @file test_pixie_error.cpp
-/// @brief
-/// @author S. V. Paulauskas
-/// @date April 19, 2021
+*----------------------------------------------------------------------*/
 
-#include <doctest/doctest.h>
-#include <pixie/error.hpp>
+#include <pixie/pixie16/module.hpp>
+#include <pixie/pixie16/pcf8574.hpp>
 
-TEST_SUITE("xia::pixie::error") {
-    TEST_CASE("Result Generation") {
-        SUBCASE("Valid Error Code") {
-            CHECK(xia::pixie::error::api_result_text(xia::pixie::error::code::unknown_error) ==
-                  "unknown error");
-            CHECK(xia::pixie::error::api_result(xia::pixie::error::code::unknown_error) == 900);
-        }
-        SUBCASE("Invalid Error Code") {
-            CHECK(xia::pixie::error::api_result_text(xia::pixie::error::code::last) ==
-                  "bad error code");
-            CHECK(xia::pixie::error::api_result(xia::pixie::error::code::last) == 990);
-        }
+namespace xia
+{
+namespace pixie
+{
+namespace hw
+{
+namespace i2c
+{
+    pcf8574::pcf8574(module::module& module,
+                     int reg,
+                     uint32_t SDA,
+                     uint32_t SCL,
+                     uint32_t CTRL,
+                     bool trace)
+      : bitbash(module, reg, SDA, SCL, CTRL, trace)
+    {
     }
-    TEST_CASE("Result_codes size matches code::last") {
-        CHECK(xia::pixie::error::check_code_match());
+
+    uint8_t
+    pcf8574::read_a_byte()
+    {
+        module::module::bus_guard guard(module);
+
+        /*
+         * Send START, device select code
+         */
+        start();
+        write_ack(0x43,
+                  "pcf8574::read_a_byte: no ACK after DevSel");
+
+        /*
+         * Read a byte
+         */
+        uint8_t value = read_ack();
+
+        /*
+         * Send "STOP"
+         */
+        stop();
+
+        return value;
     }
-}
+};
+};
+};
+};

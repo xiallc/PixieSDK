@@ -37,10 +37,10 @@
 /// @author Chris Johns
 /// @date May 5, 2021
 
-#include "doctest/doctest.h"
-#include "pixie_buffer.hpp"
-
 #include <cstring>
+
+#include <doctest/doctest.h>
+#include <pixie/buffer.hpp>
 
 TEST_SUITE("xia::buffer") {
     TEST_CASE("pool create/destroy") {

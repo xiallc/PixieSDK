@@ -1,4 +1,7 @@
-/**----------------------------------------------------------------------
+#ifndef PIXIE_HW_RUN_H
+#define PIXIE_HW_RUN_H
+
+/*----------------------------------------------------------------------
 * Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
 *
@@ -31,29 +34,76 @@
 * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
-*----------------------------------------------------------------------**/
-/// @file test_pixie_error.cpp
-/// @brief
-/// @author S. V. Paulauskas
-/// @date April 19, 2021
+*----------------------------------------------------------------------*/
 
-#include <doctest/doctest.h>
-#include <pixie/error.hpp>
+#include <cstdint>
 
-TEST_SUITE("xia::pixie::error") {
-    TEST_CASE("Result Generation") {
-        SUBCASE("Valid Error Code") {
-            CHECK(xia::pixie::error::api_result_text(xia::pixie::error::code::unknown_error) ==
-                  "unknown error");
-            CHECK(xia::pixie::error::api_result(xia::pixie::error::code::unknown_error) == 900);
-        }
-        SUBCASE("Invalid Error Code") {
-            CHECK(xia::pixie::error::api_result_text(xia::pixie::error::code::last) ==
-                  "bad error code");
-            CHECK(xia::pixie::error::api_result(xia::pixie::error::code::last) == 990);
-        }
-    }
-    TEST_CASE("Result_codes size matches code::last") {
-        CHECK(xia::pixie::error::check_code_match());
-    }
+#include <pixie/pixie16/hw.hpp>
+
+namespace xia
+{
+namespace pixie
+{
+namespace module
+{
+class module;
 }
+namespace hw
+{
+namespace run
+{
+/*
+ * Run and control settings
+ */
+enum struct run_mode {
+    new_run = 1,
+    resume = 0
+};
+
+enum struct run_task {
+    nop = 0,
+    list_mode = 0x101,
+    histogram = 0x301
+};
+
+enum struct control_task {
+    set_dacs = 0,
+    enable_input = 1,
+    ramp_offsetdacs = 3,
+    get_traces = 4,
+    program_fippi = 5,
+    get_baselines = 6,
+    adjust_offsets = 7,
+    tau_finder = 8,
+    fill_ext_fifo = 11,
+    reset_adc = 23,
+    nop = 100
+};
+
+/*
+ * Run and control task management.
+ */
+void start(module::module& module,
+           run_mode mode,
+           run_task run_tsk,
+           control_task control_tsk);
+void end(module::module& module);
+bool active(module::module& module);
+
+/*
+ * Control task
+ */
+void control(module::module& module,
+             control_task control_tsk,
+             int wait_msecs = 10000);
+
+/*
+ * Run task
+ */
+void run(module::module& module, run_mode mode, run_task run_tsk);
+}
+}
+}
+}
+
+#endif  // PIXIE_HW_RUN_H

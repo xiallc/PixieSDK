@@ -1,3 +1,5 @@
+#ifndef PIXIE_CONFIG_HPP
+#define PIXIE_CONFIG_HPP
 /**----------------------------------------------------------------------
 * Copyright (c) 2005 - 2021, XIA LLC
 * All rights reserved.
@@ -32,28 +34,50 @@
 * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 * SUCH DAMAGE.
 *----------------------------------------------------------------------**/
-/// @file test_pixie_error.cpp
-/// @brief
+/// @file configuration.hpp
+/// @brief Namespace and functions commonly used by the utilities programs.
 /// @author S. V. Paulauskas
-/// @date April 19, 2021
+/// @date November 13, 2020
 
-#include <doctest/doctest.h>
+#include <string>
+
 #include <pixie/error.hpp>
+#include <pixie/os_compat.hpp>
 
-TEST_SUITE("xia::pixie::error") {
-    TEST_CASE("Result Generation") {
-        SUBCASE("Valid Error Code") {
-            CHECK(xia::pixie::error::api_result_text(xia::pixie::error::code::unknown_error) ==
-                  "unknown error");
-            CHECK(xia::pixie::error::api_result(xia::pixie::error::code::unknown_error) == 900);
-        }
-        SUBCASE("Invalid Error Code") {
-            CHECK(xia::pixie::error::api_result_text(xia::pixie::error::code::last) ==
-                  "bad error code");
-            CHECK(xia::pixie::error::api_result(xia::pixie::error::code::last) == 990);
-        }
-    }
-    TEST_CASE("Result_codes size matches code::last") {
-        CHECK(xia::pixie::error::check_code_match());
-    }
+#include <pixie/pixie16/crate.hpp>
+
+namespace xia {
+namespace pixie {
+namespace config {
+
+typedef pixie::error::error error;
+
+struct configuration {
+    int num_modules;
+    module::number_slots slot_map;
+    std::string com_fpga_config;
+    std::string sp_fpga_config;
+    std::string dsp_code;
+    std::string dsp_param;
+    std::string dsp_var;
+};
+
+PIXIE_EXPORT void PIXIE_API read(const std::string& config_file_name, configuration& cfg);
+
+/*
+ * Import a JSON confuguration into a crate's internal variables.
+ */
+void import_json(const std::string& filename,
+                 crate::crate& crate,
+                 module::number_slots& loaded);
+
+/*
+ * Export the crate's configuration to a JSON file.
+ */
+void export_json(const std::string& filename, crate::crate& crate);
+
 }
+}
+}
+
+#endif  // PIXIE_CONFIG_HPP

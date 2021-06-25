@@ -43,13 +43,13 @@
 #include <regex>
 #include <sstream>
 
-#include <pixie_crate.hpp>
-#include <pixie_log.hpp>
-#include <pixie_util.hpp>
+#include <pixie/log.hpp>
+#include <pixie/util.hpp>
 
-#include "pixie_sim.hpp"
+#include <pixie/pixie16/crate.hpp>
+#include <pixie/pixie16/sim.hpp>
 
-#include "args/args.hxx"
+#include <args/args.hxx>
 
 /*
  * Localize the log and error

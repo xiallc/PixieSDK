@@ -34,7 +34,6 @@ IF (${CMAKE_VERSION} VERSION_LESS "3.13")
 ENDIF (${CMAKE_VERSION} VERSION_LESS "3.13")
 
 add_subdirectory(sdk)
-add_subdirectory(api)
 add_subdirectory(tests)
 add_subdirectory(examples)
 add_subdirectory(externals)
