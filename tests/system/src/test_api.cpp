@@ -743,16 +743,28 @@ hist_save(xia::pixie::crate::crate& crate, options& cmd)
         channels.resize(crate[mod_num].num_channels);
         xia::pixie::channel::range_set(channels);
     }
+
+    std::vector<xia::pixie::hw::words> histos;
+    std::ostringstream name;
+    name << std::setfill('0') << histogram_prefix
+         << '-' << std::setw(2) << mod_num << ".csv";
+    std::ofstream out(name.str());
+    out << "bin,";
+
     for (auto channel : channels) {
         xia::pixie::hw::words histogram(length);
         crate[mod_num].read_histogram(channel, histogram);
-        std::ostringstream name;
-        name << std::setfill('0') << histogram_prefix
-             << '-' << std::setw(2) << mod_num
-             << '-' << std::setw(2) << channel << ".bin";
-        std::ofstream out(name.str(), std::ios::binary);
-        out.write(reinterpret_cast<char*>(histogram.data()),
-                  histogram.size() * sizeof(xia::pixie::hw::word));
+        histos.push_back(histogram);
+        out << "Chan" << channel << ",";
+    }
+    out << std::endl;
+
+    for(unsigned int bin = 0; bin < length; bin++) {
+        out << bin << ",";
+        for(auto trc: histos){
+            out << trc[bin] << ",";
+        }
+        out << std::endl;
     }
 }
 
