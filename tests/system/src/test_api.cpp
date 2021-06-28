@@ -183,7 +183,7 @@ static const std::vector<cmd_handler> cmd_handlers = {
 
 static std::string adc_prefix = "adc-trace";
 static std::string histogram_prefix = "histo";
-static std::string baseline_prefix = "baseline";
+static std::string baseline_prefix = "baselines";
 
 static bool
 check_number(const std::string& opt)
@@ -669,17 +669,24 @@ bl_save(xia::pixie::crate::crate& crate, options& cmd)
         }
         xia::pixie::channel::baseline::channels_values baselines(channels.size());
         crate[mod_num].bl_get(channels, baselines, false);
-        for (size_t channel = 0; channel < channels.size(); ++channel) {
-            std::ostringstream name;
-            name << std::setfill('0') << baseline_prefix
-                 << '-' << std::setw(2) << mod_num
-                 << '-' << std::setw(2) << channels[channel] << ".txt";
-            std::ofstream out(name.str(), std::ios::binary);
-            for (auto& value : baselines[channel]) {
-                out << "timestamp=" << std::get<0>(value)
-                    << ",baseline=" << std::get<1>(value)
-                    << std::endl;
+
+        std::ostringstream name;
+        name << std::setfill('0') << baseline_prefix
+             << '-' << std::setw(2) << mod_num << ".csv";
+        std::ofstream out(name.str());
+        out << "sample, time,";
+
+        for (auto channel : channels) {
+            out << "Chan" << channel << ",";
+        }
+        out << std::endl;
+
+        for(unsigned int sample = 0; sample < baselines.front().size(); sample++) {
+            out << sample << "," << std::get<0>(baselines.front()[sample]) << ",";
+            for(auto chan: channels) {
+                out << std::get<1>(baselines[chan][sample]) << ",";
             }
+            out << std::endl;
         }
     }
 }
