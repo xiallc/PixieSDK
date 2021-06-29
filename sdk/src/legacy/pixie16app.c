@@ -118,6 +118,19 @@ CRC32_update(uint32_t crc, const unsigned char* data, int len)
     return crc;
 }
 
+/*
+ * The use of fread does not match the documentation. Paper over
+ * here.
+ */
+int Pixie16_fread(void *buffer, size_t size, size_t count, FILE *stream)
+{
+    size_t r = fread(buffer, size, count, stream);
+    if (r != count) {
+        return -1;
+    }
+    return (int) r;
+}
+
 /**
  * @defgroup PUBLIC_API Public API
  * Functions for use in end-user software.
@@ -593,7 +606,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
                 }
 
                 // Read communication FPGA configuration
-                retval = fread(configuration, sizeof(unsigned int), FPGA_ConfigSize, configfil);
+                retval = Pixie16_fread(configuration, sizeof(unsigned int), FPGA_ConfigSize, configfil);
                 if (retval < 0) {
                     Pixie_Print_Error(PIXIE_FUNC,
                                       "failed to read config, error=%d",
@@ -698,7 +711,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
                 }
 
                 // Read trigger FPGA configuration
-                retval = fread(configuration, sizeof(unsigned int), FPGA_ConfigSize, configfil);
+                retval = Pixie16_fread(configuration, sizeof(unsigned int), FPGA_ConfigSize, configfil);
                 if (retval < 0) {
                     Pixie_Print_Error(PIXIE_FUNC,
                                       "failed to read config, error=%d",
@@ -782,7 +795,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
 
                 // Read DSP executable code
                 for (k = 0; k < TotalWords; k++) {
-                    retval = fread(&dspcode, sizeof(unsigned short), 1, configfil);
+                  retval = Pixie16_fread(&dspcode, sizeof(unsigned short), 1, configfil);
                     if (retval < 0) {
                         Pixie_Print_Error(PIXIE_FUNC, "failed config read for module %d, error=%d",
                                           k, errno);
@@ -883,7 +896,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
 
             // Read DSP parameters
             for (k = 0; k < PRESET_MAX_MODULES; k++) {
-                retval = fread(Pixie_Devices[k].DSP_Parameter_Values, sizeof(unsigned int), N_DSP_PAR, configfil);
+              retval = Pixie16_fread(Pixie_Devices[k].DSP_Parameter_Values, sizeof(unsigned int), N_DSP_PAR, configfil);
                 if (retval < 0) {
                     Pixie_Print_Error(PIXIE_FUNC, "failed config read for module %d, error=%d",
                                       k, errno);
@@ -5263,7 +5276,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* File
     unsigned int index;
     unsigned int* MCAData[NUMBER_OF_CHANNELS];
     unsigned short ModuleNumber, ChannelNumber;
-    unsigned short strlength;
+    size_t strlength;
     FILE* outfil_mca;
     char outfilename[1024];
     unsigned int run_statistics[448];
@@ -5513,7 +5526,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16GetModuleEvents(const char* FileName
         TotalSkippedWords = 0;
 
         do {
-            retval = fread(&eventdata, 4, 1, ListModeFile);
+          retval = Pixie16_fread(&eventdata, 4, 1, ListModeFile);
             if (retval < 0) {
                 Pixie_Print_Error(PIXIE_FUNC, "failed listmode read, error=%d",
                                   errno);
@@ -5640,7 +5653,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16GetEventsInfo(const char* FileName,
         NumEvents = 0;
 
         do {
-            retval = fread(&eventdata, 4, 1, ListModeFile);
+            retval = Pixie16_fread(&eventdata, 4, 1, ListModeFile);
             if (retval < 0) {
                 Pixie_Print_Error(PIXIE_FUNC, "failed listmode read for module %d, error=%d",
                                   ModuleNumber, errno);
@@ -5665,11 +5678,11 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16GetEventsInfo(const char* FileName,
             // Finish code
             EventInformation[EVENT_INFO_LENGTH * NumEvents + 6] = (eventdata & 0x80000000) >> 31;
 
-            retval = fread(&eventdata, 4, 1, ListModeFile);
+            retval = Pixie16_fread(&eventdata, 4, 1, ListModeFile);
             // EventTime_Low
             EventInformation[EVENT_INFO_LENGTH * NumEvents + 7] = eventdata;
 
-            retval = fread(&eventdata, 4, 1, ListModeFile);
+            retval = Pixie16_fread(&eventdata, 4, 1, ListModeFile);
             if (retval < 0) {
                 Pixie_Print_Error(PIXIE_FUNC, "failed listmode read for module %d, error=%d",
                                   ModuleNumber, errno);
@@ -5680,7 +5693,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16GetEventsInfo(const char* FileName,
             // EventTime_High
             EventInformation[EVENT_INFO_LENGTH * NumEvents + 8] = (eventdata & 0xFFFF);
 
-            retval = fread(&eventdata, 4, 1, ListModeFile);
+            retval = Pixie16_fread(&eventdata, 4, 1, ListModeFile);
             if (retval < 0) {
                 Pixie_Print_Error(PIXIE_FUNC, "failed listmode read for module %d, error=%d",
                                   ModuleNumber, errno);
@@ -5762,7 +5775,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadListModeTrace(const char* FileNa
         }
 
         // Read trace
-        retval = fread(Trace_Data, 2, NumWords, ListModeFile);
+        retval = Pixie16_fread(Trace_Data, 2, NumWords, ListModeFile);
         if (retval < 0) {
             Pixie_Print_Error(PIXIE_FUNC, "failed listmode read, error=%d",
                               errno);
@@ -5866,7 +5879,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadHistogramFromFile(const char* Fi
             return (-5);
         }
 
-        retval = fread(Histogram, 4, NumWords, HistogramFile);
+        retval = Pixie16_fread(Histogram, 4, NumWords, HistogramFile);
         if (retval < 0) {
             Pixie_Print_Error(PIXIE_FUNC, "failed histogram read, error=%d",
                               errno);
@@ -5927,8 +5940,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveDSPParametersToFile(const char* 
 
         // Write DSP parameter values to the settings file
         for (ModNum = 0; ModNum < PRESET_MAX_MODULES; ModNum++) {
-            retval = fwrite(Pixie_Devices[ModNum].DSP_Parameter_Values, sizeof(unsigned int), N_DSP_PAR, DSPSettingsFile);
-            if (retval < 0) {
+          retval = (int) fwrite(Pixie_Devices[ModNum].DSP_Parameter_Values, sizeof(unsigned int), N_DSP_PAR, DSPSettingsFile);
+            if (retval != N_DSP_PAR) {
                 Pixie_Print_Error(PIXIE_FUNC,
                                   "failed to write DSP parameter values from module %d, error=%d",
                                   ModNum, errno);
@@ -6009,7 +6022,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16LoadDSPParametersFromFile(const char
 
         // Read DSP parameters
         for (k = 0; k < PRESET_MAX_MODULES; k++) {
-            retval = fread(&Pixie_Devices[k].DSP_Parameter_Values[0], sizeof(unsigned int), N_DSP_PAR, DSPSettingsFile);
+            retval = Pixie16_fread(&Pixie_Devices[k].DSP_Parameter_Values[0], sizeof(unsigned int), N_DSP_PAR, DSPSettingsFile);
             if (retval < 0) {
                 Pixie_Print_Error(PIXIE_FUNC,
                                   "failed to read Fippi settings in module %d, error=%d",
@@ -6529,7 +6542,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ComputeFastFiltersOffline(const char
         }
 
         // Read trace
-        retval = fread(RcdTrace, 2, RcdTraceLength, ListModeFile);
+        retval = Pixie16_fread(RcdTrace, 2, RcdTraceLength, ListModeFile);
         if (retval < 0) {
             Pixie_Print_Error(PIXIE_FUNC, "failed to read listmode file for module %d, error=%d",
                               ModuleNumber, errno);
@@ -6581,7 +6594,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ComputeFastFiltersOffline(const char
             }
 
             // Extend the value of cfd[CFD_Delay] to all non-computed ones
-            for (x = 0; x < (B + D); x++) { cfd[x] = cfd[B + D]; }
+            for (x = 0; x < (unsigned int) (B + D); x++) { cfd[x] = cfd[B + D]; }
             cfd[RcdTraceLength - 1] = cfd[RcdTraceLength - 2];
         } else  //invalid module variant
         {
@@ -6719,7 +6732,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ComputeSlowFiltersOffline(const char
         }
 
         // Read trace
-        retval = fread(RcdTrace, 2, RcdTraceLength, ListModeFile);
+        retval = Pixie16_fread(RcdTrace, 2, RcdTraceLength, ListModeFile);
         if (retval < 0) {
             Pixie_Print_Error(PIXIE_FUNC, "failure read listmode data, error=%d",
                               errno);

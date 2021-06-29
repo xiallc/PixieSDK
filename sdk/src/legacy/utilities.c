@@ -1924,7 +1924,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadMSGFile(char* ReturnMsgStr) {
             }
 
             // Read all bytes
-            if ((n = fread(data, 1, len, msgfil)) < len) {
+            if ((n = (int) fread(data, 1, len, msgfil)) < len) {
                 fclose(msgfil);
                 Pixie_Print_Error(PIXIE_FUNC, "expected %d, got %d bytes from Pixie16msg.txt", len, n);
                 return (-4);
@@ -1950,11 +1950,11 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadMSGFile(char* ReturnMsgStr) {
 
                 // Write out the line, including the EOL character(s)
                 if (firstline == 0) {
-                    totalchars += (e - b + 1);
+                  totalchars += (int)(e - b + 1);
                     strncpy(ReturnMsgStr, b, e - b + 1);
                     firstline = 1;
                 } else {
-                    totalchars += (e - b);
+                  totalchars += (int)(e - b);
                     if (totalchars < 65535) {
                         strncat(ReturnMsgStr, b, e - b);
                     }
