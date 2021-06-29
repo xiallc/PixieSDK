@@ -37,6 +37,7 @@ add_subdirectory(sdk)
 add_subdirectory(tests)
 add_subdirectory(examples)
 add_subdirectory(externals)
+add_subdirectory(bin)
 
 option(PIXIESDK_DOCO "Tells CMake to build documentation" OFF)
 if(PIXIESDK_DOCO)
