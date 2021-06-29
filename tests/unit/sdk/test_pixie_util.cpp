@@ -155,11 +155,13 @@ TEST_SUITE("xia::util") {
     TEST_CASE("crc32") {
         std::vector<unsigned char> vec_val = {'1', '2', '3', '4', '5', '6', '7', '8', '9'};
         const uint32_t expected = 0xcbf43926;
+        const std::string expected_str = "cbf43926";
 
         SUBCASE("Update with a vector") {
             auto chksum1 = xia::util::crc32();
             chksum1.update(vec_val);
             CHECK(chksum1.value == expected);
+            CHECK(static_cast<std::string>(chksum1) == expected_str);
         }
         SUBCASE("Update with a stream") {
             auto chksum2 = xia::util::crc32();

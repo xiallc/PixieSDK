@@ -470,9 +470,11 @@ crc32::operator const std::string() const
 void
 crc32::update(const unsigned char* data, int len)
 {
-    while (--len > 0) {
+    value = ~value;
+    while (len-- != 0) {
         value = table[(value ^ *data++) & 0xff] ^ (value >> 8);
     }
+    value = ~value;
 }
 
 const crc32::value_type crc32::table[256] =
