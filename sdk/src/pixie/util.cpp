@@ -387,7 +387,7 @@ ieee_float::in(const double dec_num) const
         /*
          * 127 is the exponent bias
          */
-        value_type exponent = 127 + k - 1;
+        value_type exponent = value_type(127 + k - 1);
 
         result += exponent * (1 << 23);
 
@@ -455,7 +455,8 @@ crc32::clear()
 crc32&
 crc32::operator<<(const std::string& val)
 {
-    update(reinterpret_cast<const unsigned char*>(val.c_str()), val.length());
+    update(reinterpret_cast<const unsigned char*>(val.c_str()),
+           int(val.length()));
     return *this;
 }
 
@@ -527,7 +528,7 @@ const crc32::value_type crc32::table[256] =
     0xbdbdf21cL, 0xcabac28aL, 0x53b39330L, 0x24b4a3a6L, 0xbad03605L,
     0xcdd70693L, 0x54de5729L, 0x23d967bfL, 0xb3667a2eL, 0xc4614ab8L,
     0x5d681b02L, 0x2a6f2b94L, 0xb40bbe37L, 0xc30c8ea1L, 0x5a05df1bL,
-    0x2d02ef8dL
+    0x2d02ef8dUL
 };
 
 }

@@ -332,7 +332,7 @@ namespace firmware
             } else if (label_value[0] == "revision") {
                 try {
                     mod_revision = std::stoi(label_value[1]);
-                } catch (std::invalid_argument& e) {
+                } catch (std::invalid_argument& ) {
                     throw error(error::code::device_image_failure,
                                 "firmware: module revision not a number: " +
                                 field);
@@ -340,7 +340,7 @@ namespace firmware
             } else if (label_value[0] == "adc-msps") {
                 try {
                     mod_adc_msps = std::stoi(label_value[1]);
-                } catch (std::invalid_argument& e) {
+                } catch (std::invalid_argument& ) {
                     throw error(error::code::device_image_failure,
                                 "firmware: module ADC MSPS not a number: " +
                                 field);
@@ -348,7 +348,7 @@ namespace firmware
             } else if (label_value[0] == "adc-bits") {
                 try {
                     mod_adc_bits = std::stoi(label_value[1]);
-                } catch (std::invalid_argument& e) {
+                } catch (std::invalid_argument& ) {
                     throw error(error::code::device_image_failure,
                                 "firmware: module ADC BITS not a number: " +
                                 field);

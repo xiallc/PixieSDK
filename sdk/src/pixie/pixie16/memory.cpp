@@ -136,13 +136,13 @@ namespace memory
         while (size > 48) {
             const size_t block_size =
                 size > hw::max_dma_block_size ? hw::max_dma_block_size : size;
-            dma_read(addr + offset, buffer + offset, block_size);
+            dma_read(hw::address(addr + offset), buffer + offset, block_size);
             size -= block_size;
             offset += block_size;
         }
         if (size > 0) {
             host_bus_request hbr(module);
-            bus_write(hw::device::EXT_MEM_TEST, addr + offset);
+            bus_write(hw::device::EXT_MEM_TEST, hw::word(addr + offset));
             buffer += offset;
             while (size-- > 0) {
                 *buffer = bus_read(hw::device::WRT_DSP_MMA);
@@ -202,11 +202,11 @@ namespace memory
         }
 
         bus_write(hw::device::WRT_DSP_II11, addr);
-        bus_write(hw::device::WRT_DSP_C11, length);
+        bus_write(hw::device::WRT_DSP_C11, hw::word(length));
         bus_write(hw::device::WRT_DSP_IM11, 1);
-        bus_write(hw::device::WRT_DSP_EC11, length);
+        bus_write(hw::device::WRT_DSP_EC11, hw::word(length));
         bus_write(hw::device::WRT_DSP_DMAC11, 0x905);
-        bus_write(hw::device::RD_WRT_FIFO_WML, length / 2);
+        bus_write(hw::device::RD_WRT_FIFO_WML, hw::word(length) / 2);
 
         hbr.release();
 
@@ -228,7 +228,7 @@ namespace memory
     dsp::write(const size_t channel,
                const address addr, const words& values)
     {
-        write(addr + (channel * sizeof(word)), values);
+      write(hw::address(addr + (channel * sizeof(word))), values);
     }
 
     mca::mca(module::module& module_)
@@ -308,7 +308,7 @@ namespace memory
     {
         module::module::bus_guard guard(module);
 
-        bus_write(hw::device::SET_EXT_FIFO, length);
+        bus_write(hw::device::SET_EXT_FIFO, hw::word(length));
 
         size_t polls = 1000;
         while (polls-- > 0) {

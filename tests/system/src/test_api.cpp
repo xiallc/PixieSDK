@@ -1388,10 +1388,10 @@ main(int argc, char* argv[])
         if (slot_map_flag) {
             xia::pixie::module::number_slots slot_map;
             for (const auto& slot : args::get(slot_map_flag)) {
-                std::vector<size_t> slots =
-                    get_values<size_t>(slot, crate.num_modules);
+                std::vector<int> slots =
+                    get_values<int>(slot, crate.num_modules);
                 for (auto s : slots) {
-                    slot_map.emplace_back(std::make_pair(slot_map.size(), s));
+                    slot_map.emplace_back(std::make_pair(int(slot_map.size()), s));
                 }
             }
             crate.assign(slot_map);

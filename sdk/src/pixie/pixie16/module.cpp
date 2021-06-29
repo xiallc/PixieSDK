@@ -496,7 +496,7 @@ namespace module
         if (device->device_number < 0) {
             PLX_STATUS ps;
 
-            ps = ::PlxPci_DeviceFind(&device->key, device_number);
+            ps = ::PlxPci_DeviceFind(&device->key, uint32_t(device_number));
             if (ps != PLX_STATUS_OK) {
                 std::ostringstream oss;
                 oss << "PCI find: device: " << device_number
@@ -509,7 +509,7 @@ namespace module
                 throw error(number, slot, ec, oss);
             }
 
-            device->device_number = device_number;
+            device->device_number = int(device_number);
 
             ps = ::PlxPci_DeviceOpen(&device->key, &device->handle);
             if (ps != PLX_STATUS_OK) {
@@ -1924,7 +1924,7 @@ namespace module
         dma_params.Direction = PLX_DMA_LOC_TO_PCI;
 #endif
         dma_params.LocalAddr = source;
-        dma_params.ByteCount = size * sizeof(hw::words::value_type);
+        dma_params.ByteCount = U32(size * sizeof(hw::words::value_type));
 
         /*
          * Wait while reading. The call will block until the interrupt happens.

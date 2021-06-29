@@ -94,13 +94,6 @@ static const size_t fifo_hold_usecs = 50000;
  */
 static xia::pixie::crate::crate crate;
 
-/*
- * Return an error code for an unhandled exception. If true the exception is
- * thrown and you can catch it in a debugger or see it on the console to find
- * out what it is.
- */
-static bool throw_unhandled;
-
 stats_legacy::stats_legacy(const xia::pixie::hw::configs& configs)
     : marker_1(mark_1),
       marker_2(mark_2)
@@ -148,9 +141,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16AcquireADCTrace(unsigned short ModNum)
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
@@ -176,9 +166,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16AcquireBaselines(unsigned short ModNum)
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
@@ -204,9 +191,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16AdjustOffsets(unsigned short ModNum)
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
@@ -243,9 +227,6 @@ Pixie16BLcutFinder(unsigned short ModNum,
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
@@ -366,9 +347,6 @@ Pixie16BootModule(const char* ComFPGAConfigFile,
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
@@ -387,7 +365,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckExternalFIFOStatus(unsigned int* nFIFOWor
     try {
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
-        *nFIFOWords = module->read_list_mode_level();
+        *nFIFOWords = unsigned int(module->read_list_mode_level());
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
@@ -398,9 +376,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckExternalFIFOStatus(unsigned int* nFIFOWor
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
@@ -430,9 +405,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckRunStatus(unsigned short ModNum)
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
@@ -469,9 +441,6 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeInputCountRate(unsigned int* Statist
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
     }
 
@@ -507,9 +476,6 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeLiveTime(unsigned int* Statistics,
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
     }
 
@@ -545,9 +511,6 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeOutputCountRate(unsigned int* Statis
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
     }
 
@@ -568,7 +531,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeProcessedEvents(unsigned int* Statis
         }
         stats_legacy_ptr stats = reinterpret_cast<stats_legacy_ptr>(Statistics);
         stats->validate();
-        result = stats->module.processed_events();
+        result = double(stats->module.processed_events());
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
     } catch (std::bad_alloc& e) {
@@ -577,9 +540,6 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeProcessedEvents(unsigned int* Statis
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
     }
 
@@ -613,9 +573,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16EndRun(unsigned short ModNum)
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
@@ -648,9 +605,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16ExitSystem(unsigned short ModNum)
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
@@ -723,9 +677,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules,
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
@@ -795,9 +746,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buff
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
@@ -844,9 +792,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanBaselines(double* Baselines,
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
@@ -881,9 +826,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanPar(const char* ChanParName,
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
@@ -915,9 +857,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglModPar(const char* ModParName,
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
@@ -956,9 +895,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadStatisticsFromModule(unsigned int* Statist
     } catch (std::exception& e) {
         xia_log(xia_log::error) << "unknown error: " << e.what();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
     }
 
@@ -1000,9 +936,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16SetDACs(unsigned short ModNum)
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
@@ -1042,9 +975,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartHistogramRun(unsigned short ModNum,
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
@@ -1091,9 +1021,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum,
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
@@ -1125,9 +1052,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglChanPar(const char* ChanParName,
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }
@@ -1170,9 +1094,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglModPar(const char* ModParName,
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
-        if (throw_unhandled) {
-            throw;
-        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::api_result_unknown_error();
     }

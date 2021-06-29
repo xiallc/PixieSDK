@@ -303,7 +303,7 @@ eeprom::process()
             }
         }
 
-        num_channels = configs.size();
+        num_channels = int(configs.size());
     }
 
     auto mc = rev_max_channels.find(hw::rev_tag(revision));
@@ -362,7 +362,8 @@ eeprom::get_string(const tag key, size_t count)
         throw_bad_tag_type(key);
     }
     size_t offset = find(key, count);
-    return std::string(data[offset], desc.size);
+    const char* dp = reinterpret_cast<const char*>(data.data()) + offset;
+    return std::string(dp, desc.size);
 }
 
 int

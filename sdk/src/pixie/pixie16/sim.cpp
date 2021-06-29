@@ -289,7 +289,7 @@ add_module_def(const std::string mod_desc, const char delimiter)
                 throw error(error::code::invalid_value,
                             "invalid module definition: " + field);
             }
-        } catch (error& e) {
+        } catch (error& ) {
             throw;
         } catch (...) {
             throw error(error::code::invalid_value,

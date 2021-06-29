@@ -54,7 +54,7 @@ namespace pixie
 namespace channel
 {
 static std::string
-channel_label(const int num, const int slot, const int chan)
+channel_label(const int num, const int slot, const size_t chan)
 {
     std::ostringstream oss;
     oss << "channel: num=" << num << ",slot=" << slot
@@ -69,20 +69,20 @@ channel_label(const channel& chan)
     return channel_label(mod.number, mod.slot, chan.number);
 }
 
-error::error(const int num, const int slot, const int channel,
+error::error(const int num, const int slot, const size_t channel,
              const code type, const std::ostringstream& what)
     : pixie::error::error(type,
                           make_what(num, slot, channel, what.str().c_str()))
 {
 }
 
-error::error(const int num, const int slot, const int channel,
+error::error(const int num, const int slot, const size_t channel,
              const code type, const std::string& what)
     : pixie::error::error(type, make_what(num, slot, channel, what.c_str()))
 {
 }
 
-error::error(const int num, const int slot, const int channel,
+error::error(const int num, const int slot, const size_t channel,
              const code type, const char* what)
     : pixie::error::error(type, make_what(num, slot, channel, what))
 {
@@ -100,7 +100,7 @@ error::output(std::ostream& out)
 std::string
 error::make_what(const int num,
                  const int slot,
-                 const int channel,
+                 const size_t channel,
                  const char* what_)
 {
     std::ostringstream oss;
@@ -324,8 +324,8 @@ channel::operator=(const channel& c)
 void
 channel::read_adc(hw::adc_word* buffer, size_t size)
 {
-    const hw::address addr =
-        hw::memory::IO_BUFFER_ADDR + (number * (hw::max_adc_trace_length / 2));
+    const hw::address addr = (hw::memory::IO_BUFFER_ADDR +
+                              (int(number) * (hw::max_adc_trace_length / 2)));
 
     hw::memory::dsp dsp(module);
     hw::adc_trace_buffer adc_trace;
@@ -342,8 +342,8 @@ void
 channel::read_histogram(hw::word_ptr values, const size_t size)
 {
     if (size != 0) {
-        const hw::address addr =
-            hw::memory::HISTOGRAM_MEMORY + (number * hw::max_histogram_length);
+        const hw::address addr = (hw::memory::HISTOGRAM_MEMORY +
+                                  (int(number) * hw::max_histogram_length));
         hw::memory::mca mca(module);
         mca.read(addr, values, size);
     }
@@ -420,7 +420,7 @@ channel::trigger_risetime(double value)
         mod.read_var(param::channel_var::FastGap, number, 0, false);
 
     param::value_type fast_length =
-        std::round((value * config.fpga_clk_mhz) / ffr_mask);
+      param::value_type(std::round((value * config.fpga_clk_mhz) / ffr_mask));
 
     if ((fast_length + fast_gap) > hw::limit::FASTFILTER_MAX_LEN) {
         fast_length = hw::limit::FASTFILTER_MAX_LEN - fast_gap;
@@ -466,7 +466,7 @@ channel::trigger_flattop(double value)
         mod.read_var(param::channel_var::FastLength, number, 0, false);
 
     param::value_type fast_gap =
-        std::round((value * config.fpga_clk_mhz) / ffr_mask);
+      param::value_type(std::round((value * config.fpga_clk_mhz) / ffr_mask));
 
     if ((fast_length + fast_gap) > hw::limit::FASTFILTER_MAX_LEN) {
         fast_gap = hw::limit::FASTFILTER_MAX_LEN - fast_length;
@@ -573,7 +573,8 @@ channel::energy_risetime_flattop(param::channel_param par, double value)
     param::value_type slow_gap;
 
     if (par == param::channel_param::energy_risetime) {
-        slow_length = std::round((value * config.fpga_clk_mhz) / sfr_mask);
+        slow_length =
+            param::value_type(std::round((value * config.fpga_clk_mhz) / sfr_mask));
         slow_gap = mod.read_var(param::channel_var::SlowGap, number, 0, false);
         if ((slow_length + slow_gap) > hw::limit::SLOWFILTER_MAX_LEN) {
             slow_length = hw::limit::SLOWFILTER_MAX_LEN - slow_gap;
@@ -586,7 +587,8 @@ channel::energy_risetime_flattop(param::channel_param par, double value)
             }
         }
     } else if (par == param::channel_param::energy_flattop) {
-        slow_gap = std::round((value * config.fpga_clk_mhz) / sfr_mask);
+        slow_gap =
+            param::value_type(std::round((value * config.fpga_clk_mhz) / sfr_mask));
         slow_length =
             mod.read_var(param::channel_var::SlowLength, number, 0, false);
         if ((slow_length + slow_gap) > hw::limit::SLOWFILTER_MAX_LEN) {
@@ -686,9 +688,10 @@ channel::trace_length(double value)
     param::value_type ffr_mask =
         1 << mod.read_var(param::module_var::FastFilterRange);
     param::value_type fifo_length =
-         mod.read_var(param::module_var::FIFOLength);
+        mod.read_var(param::module_var::FIFOLength);
 
-    param::value_type trace_length = value * config.adc_msps / ffr_mask;
+    param::value_type trace_length =
+        param::value_type(value * config.adc_msps / ffr_mask);
 
     /*
      * Adjust the length to suit the FPGA requirements
@@ -746,7 +749,8 @@ channel::trace_delay(double value)
     param::value_type trace_length =
         mod.read_var(param::channel_var::TraceLength, number);
 
-    param::value_type trace_delay = value * config.fpga_clk_mhz / ffr_mask;
+    param::value_type trace_delay =
+        param::value_type(value * config.fpga_clk_mhz / ffr_mask);
 
     if (trace_delay > trace_length) {
         trace_delay = trace_length / 2;
@@ -778,8 +782,8 @@ channel::voffset(double value)
     module::module& mod = module.get();
 
     auto offset_dac =
-        param::value_type (65536 *
-                           (value / hw::limit::DAC_VOLTAGE_RANGE + 0.5));
+        param::value_type(65536 *
+                          (value / hw::limit::DAC_VOLTAGE_RANGE + 0.5));
 
     /*
      * 16-bit DAC, range check.
@@ -816,7 +820,8 @@ channel::xdt(double value)
     param::value_type current_xwait =
         mod.read_var(param::channel_var::Xwait, number);
 
-    param::value_type xwait = std::round(value * hw::limit::DSP_CLOCK_MHZ);
+    param::value_type xwait =
+        param::value_type(std::round(value * hw::limit::DSP_CLOCK_MHZ));
 
     double multiple;
 
@@ -838,12 +843,14 @@ channel::xdt(double value)
     }
 
     if (xwait < multiple) {
-        xwait = multiple;
+        xwait = param::value_type(multiple);
     }
     if (xwait > current_xwait) {
-        xwait = std::ceil(double(xwait) / multiple) * multiple;
+        xwait =
+            param::value_type(std::ceil(double(xwait) / multiple) * multiple);
     } else {
-        xwait = std::floor(double(xwait) / multiple) * multiple;
+        xwait =
+            param::value_type(std::floor(double(xwait) / multiple) * multiple);
     }
 
     mod.write_var(param::channel_var::Xwait, xwait, number);
@@ -869,7 +876,7 @@ channel::baseline_percent(double value)
 
     module::module& mod = module.get();
 
-    param::value_type bl_percent = value;
+    param::value_type bl_percent = param::value_type(value);
 
     if (bl_percent < 1) {
         bl_percent = 1;
@@ -900,7 +907,9 @@ channel::emin(double value)
 
     module::module& mod = module.get();
 
-    mod.write_var(param::channel_var::EnergyLow, value, number);
+    mod.write_var(param::channel_var::EnergyLow,
+                  param::value_type(value),
+                  number);
 }
 
 double
@@ -923,7 +932,7 @@ channel::binfactor(double value)
 
     module::module& mod = module.get();
 
-    param::value_type log2ebin = value;
+    param::value_type log2ebin = param::value_type(value);
 
     if (log2ebin < 1) {
         log2ebin = 1;
@@ -931,7 +940,7 @@ channel::binfactor(double value)
         log2ebin = 6;
     }
 
-    log2ebin = (1ULL << 32) - uint64_t(log2ebin);
+    log2ebin = param::value_type((1ULL << 32) - uint64_t(log2ebin));
 
     mod.write_var(param::channel_var::Log2Ebin, log2ebin, number);
 }
@@ -962,13 +971,13 @@ channel::baseline_average(double value)
 
     module::module& mod = module.get();
 
-    param::value_type bl_avg = value;
+    param::value_type bl_avg = param::value_type(value);
 
     if (bl_avg > 16) {
         bl_avg = 16;
     }
 
-    bl_avg = (1ULL << 32) - uint64_t(bl_avg);
+    bl_avg = param::value_type((1ULL << 32) - uint64_t(bl_avg));
 
     mod.write_var(param::channel_var::Log2Bweight, bl_avg, number);
 }
@@ -996,7 +1005,7 @@ channel::csra(double value)
     param::value_type current_csra =
         mod.read_var(param::channel_var::ChanCSRa, number);
 
-    param::value_type csra = value;
+    param::value_type csra = param::value_type(value);
 
     mod.write_var(param::channel_var::ChanCSRa, csra, number);
 
@@ -1031,7 +1040,9 @@ channel::csrb(double value)
 
     module::module& mod = module.get();
 
-    mod.write_var(param::channel_var::ChanCSRb, value, number);
+    mod.write_var(param::channel_var::ChanCSRb,
+                  param::value_type(value),
+                  number);
 }
 
 double
@@ -1054,7 +1065,9 @@ channel::bl_cut(double value)
 
     module::module& mod = module.get();
 
-    mod.write_var(param::channel_var::BLcut, value, number);
+    mod.write_var(param::channel_var::BLcut,
+                  param::value_type(value),
+                  number);
 }
 
 double
@@ -1081,7 +1094,9 @@ channel::integrator(double value)
         value = 7;
     }
 
-    mod.write_var(param::channel_var::Integrator, value, number);
+    mod.write_var(param::channel_var::Integrator,
+                  param::value_type(value),
+                  number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
@@ -1106,7 +1121,8 @@ channel::fast_trig_backlen(double value)
 
     module::module& mod = module.get();
 
-    param::value_type fast_trig_blen = std::round(value * config.fpga_clk_mhz);
+    param::value_type fast_trig_blen =
+        param::value_type(std::round(value * config.fpga_clk_mhz));
 
     param::value_type fast_trig_blen_min;
     switch (config.adc_msps) {
@@ -1150,7 +1166,8 @@ channel::cfd_delay(double value)
 
     module::module& mod = module.get();
 
-    param::value_type cfddelay = std::round(value * config.fpga_clk_mhz);
+    param::value_type cfddelay =
+        param::value_type(std::round(value * config.fpga_clk_mhz));
 
     if (cfddelay < hw::limit::CFDDELAY_MIN) {
         cfddelay = hw::limit::CFDDELAY_MIN;
@@ -1183,7 +1200,7 @@ channel::cfd_scale(double value)
     ///@TODO Need range checking to prevent negative values.
     module::module& mod = module.get();
 
-    param::value_type cfdscale = value;
+    param::value_type cfdscale = param::value_type(value);
 
     if (cfdscale > hw::limit::CFDSCALE_MAX) {
         cfdscale = hw::limit::CFDSCALE_MAX;
@@ -1212,7 +1229,7 @@ channel::cfd_thresh(double value)
 {
     module::module& mod = module.get();
 
-    param::value_type cfdthresh = value;
+    param::value_type cfdthresh = param::value_type(value);
 
     if (cfdthresh < hw::limit::CFDTHRESH_MIN ||
         cfdthresh > hw::limit::CFDTHRESH_MAX) {
@@ -1323,7 +1340,8 @@ channel::qdc_len(param::channel_param par, double value)
         multiplier /= 5;
     }
 
-    param::value_type qdclen = std::round(value * multiplier);
+    param::value_type qdclen =
+        param::value_type(std::round(value * multiplier));
 
     if (qdclen < hw::limit::QDCLEN_MIN) {
         qdclen = hw::limit::QDCLEN_MIN;
@@ -1354,10 +1372,13 @@ void
 channel::ext_trig_stretch(double value)
 {
     ///@TODO Need range checking to prevent negative values.
+
     ///@Note this logic is identical to channel::chan_trig_stretch and channel::veto_stretch.
+
     module::module& mod = module.get();
 
-    param::value_type exttrigstretch = std::round(value * config.fpga_clk_mhz);
+    param::value_type exttrigstretch =
+        param::value_type(std::round(value * config.fpga_clk_mhz));
 
     if (exttrigstretch < hw::limit::EXTTRIGSTRETCH_MIN) {
         exttrigstretch = hw::limit::EXTTRIGSTRETCH_MIN;
@@ -1391,7 +1412,8 @@ channel::veto_stretch(double value)
     ///@Note this logic is identical to channel::chan_trig_stretch and channel::ext_trig_stretch.
     module::module& mod = module.get();
 
-    param::value_type vetostretch = std::round(value * config.fpga_clk_mhz);
+    param::value_type vetostretch =
+        param::value_type(std::round(value * config.fpga_clk_mhz));
 
     if (vetostretch < hw::limit::VETOSTRETCH_MIN) {
         vetostretch = hw::limit::VETOSTRETCH_MIN;
@@ -1424,9 +1446,11 @@ channel::multiplicity_mask_l(double value)
     ///@TODO Need range checking to prevent negative values.
     module::module& mod = module.get();
 
-    param::value_type multiplicitymaskl = value;
+    param::value_type multiplicitymaskl = param::value_type(value);
 
-    mod.write_var(param::channel_var::MultiplicityMaskL, multiplicitymaskl, number);
+    mod.write_var(param::channel_var::MultiplicityMaskL,
+                  multiplicitymaskl,
+                  number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
@@ -1450,9 +1474,11 @@ channel::multiplicity_mask_h(double value)
     ///@TODO Need range checking to prevent negative values.
     module::module& mod = module.get();
 
-    param::value_type multiplicitymaskh = value;
+    param::value_type multiplicitymaskh = param::value_type(value);
 
-    mod.write_var(param::channel_var::MultiplicityMaskH, multiplicitymaskh, number);
+    mod.write_var(param::channel_var::MultiplicityMaskH,
+                  multiplicitymaskh,
+                  number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
@@ -1477,7 +1503,8 @@ channel::extern_delay_len(double value)
     ///@NOTE This function's logic is identical to channel::ftrig_out_delay, maybe we can simplify?
     module::module& mod = module.get();
 
-    param::value_type externdelaylen = std::round(value * config.fpga_clk_mhz);
+    param::value_type externdelaylen =
+        param::value_type(std::round(value * config.fpga_clk_mhz));
     param::value_type externdelaylen_max;
 
     switch (mod.revision) {
@@ -1529,7 +1556,8 @@ channel::ftrig_out_delay(double value)
     ///@TODO Need range checking to prevent negative values. For now negative values get set to max.
     module::module& mod = module.get();
 
-    param::value_type ftrigoutdelay = std::round(value * config.fpga_clk_mhz);
+    param::value_type ftrigoutdelay =
+        param::value_type(std::round(value * config.fpga_clk_mhz));
     param::value_type ftrigoutdelay_max;
 
     switch (mod.revision) {
@@ -1548,11 +1576,6 @@ channel::ftrig_out_delay(double value)
                     "FtrigoutDelay not supported on this revision");
     }
 
-#if FASTTRIGBACKDELAY_MIN_MIN > 0
-    if (ftrigoutdelay < hw::limit::FASTTRIGBACKDELAY_MIN) {
-        ftrigoutdelay = hw::limit::FASTTRIGBACKDELAY_MIN;
-    }
-#endif
     if (ftrigoutdelay > ftrigoutdelay_max) {
         ftrigoutdelay = ftrigoutdelay_max;
     }
@@ -1580,9 +1603,11 @@ channel::chan_trig_stretch(double value)
 {
     ///@TODO Need range checking here. Negative values get set to max.
     ///@Note this logic is identical to channel::veto_stretch and channel::ext_trig_stretch.
+
     module::module& mod = module.get();
 
-    param::value_type chantrigstretch = std::round(value * config.fpga_clk_mhz);
+    param::value_type chantrigstretch =
+        param::value_type(std::round(value * config.fpga_clk_mhz));
 
     if (chantrigstretch < hw::limit::CHANTRIGSTRETCH_MIN) {
         chantrigstretch = hw::limit::CHANTRIGSTRETCH_MIN;

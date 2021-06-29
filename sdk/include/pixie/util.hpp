@@ -219,7 +219,7 @@ struct crc32 {
                                       const size_t start = 0) {
         const size_t so = ((vals.size() - start) *
                            sizeof(typename std::vector<T>::value_type));
-        update(static_cast<const unsigned char*>(&vals[start]), so);
+        update(static_cast<const unsigned char*>(&vals[start]), int(so));
     }
 
     template <typename T> crc32& operator<<(const T& val) {
@@ -237,7 +237,9 @@ struct crc32 {
 
 private:
     void update(const unsigned char* data, int len);
-    /// A precomputed lookup table for the CRC32 bitwise algorithm
+    /*
+     * A precomputed lookup table for the CRC32 bitwise algorithm
+     */
     static const value_type table[256];
 };
 

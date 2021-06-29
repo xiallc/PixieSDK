@@ -50,6 +50,12 @@ make_u64(const param::value_type high, const param::value_type low)
     return (uint64_t(high) << 32) | uint64_t(low);
 }
 
+static double
+make_u64_double(const param::value_type high, const param::value_type low)
+{
+    return double(make_u64(high, low));
+}
+
 channel::channel(const hw::config& config)
     : fast_peaks_a(0),
       fast_peaks_b(0),
@@ -78,8 +84,8 @@ channel::channel()
 double
 channel::input_count_rate() const
 {
-    const double fast_peaks = make_u64(fast_peaks_a, fast_peaks_b);
-    const double live_time =  make_u64(live_time_a, live_time_b);
+    const double fast_peaks = make_u64_double(fast_peaks_a, fast_peaks_b);
+    const double live_time =  make_u64_double(live_time_a, live_time_b);
     if (live_time == 0.0) {
         return 0.0;
     }
@@ -89,8 +95,8 @@ channel::input_count_rate() const
 double
 channel::output_count_rate() const
 {
-    const double chan_events = make_u64(chan_events_a, chan_events_b);
-    const double real_time =  make_u64(runtime_a, runtime_b);
+    const double chan_events = make_u64_double(chan_events_a, chan_events_b);
+    const double real_time =  make_u64_double(runtime_a, runtime_b);
     if (real_time == 0.0) {
         return 0.0;
     }
@@ -100,7 +106,7 @@ channel::output_count_rate() const
 double
 channel::live_time() const
 {
-    const double live_time =  make_u64(live_time_a, live_time_b);
+    const double live_time =  make_u64_double(live_time_a, live_time_b);
     return live_time * config.adc_clk_div * (1.0e-6 / config.adc_msps);
 }
 
@@ -119,7 +125,8 @@ module::processed_events() const
 double
 module::real_time() const
 {
-    return make_u64(runtime_a, runtime_b) * (1.0e-6 / hw::system_clock_mhz);
+    return make_u64_double(runtime_a,
+                           runtime_b) * (1.0e-6 / hw::system_clock_mhz);
 }
 
 stats::stats(const hw::configs& configs)

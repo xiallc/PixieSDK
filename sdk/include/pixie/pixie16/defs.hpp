@@ -230,6 +230,7 @@ struct limit {
     static const size_t FASTFILTER_MAX_LEN = 127;
     static const size_t FASTLENGTH_MIN_LEN = 2;
     static const size_t FASTTRIGBACKLEN_MAX = 4095;
+    static const size_t FASTTRIGBACKDELAY_MIN = 0;
     static const size_t FASTTRIGBACKLEN_MIN_100MHZFIPCLK = 1;
     static const size_t FASTTRIGBACKLEN_MIN_125MHZFIPCLK = 2;
     static const size_t FAST_THRESHOLD_MAX = 65535;
