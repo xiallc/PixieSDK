@@ -43,7 +43,10 @@
 #include <pixie/error.hpp>
 #include <pixie/log.hpp>
 #include <pixie/stats.hpp>
+#include <pixie/os_compat.hpp>
+
 #include <pixie/pixie16/crate.hpp>
+
 
 /*
  * Local types for convenience.
@@ -365,7 +368,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckExternalFIFOStatus(unsigned int* nFIFOWor
     try {
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
-        *nFIFOWords = unsigned int(module->read_list_mode_level());
+        *nFIFOWords = static_cast<unsigned int>(module->read_list_mode_level());
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
