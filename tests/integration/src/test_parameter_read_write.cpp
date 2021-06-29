@@ -407,7 +407,7 @@ TEST_SUITE("Channel Parameter Reads and Writes") {
         ///TODO: Remove this try/catch after we simulate get_baselines control task.
         try {
             crate[1].write("TAU", 0, expected_par);
-        } catch (xia::pixie::error::error& e) {
+        } catch (xia::pixie::error::error&) {
             //do nothing
         }
         CHECK(crate[1].read_var("PreampTau", 0, 0) == 1045220556);
@@ -667,6 +667,55 @@ TEST_SUITE("Channel Parameter Reads and Writes") {
                 xia::pixie::param::channel_param::energy_flattop, a_small_value);
             CHECK(crate[1].read_var("PeakSep", 0, 0) == 15);
             CHECK(crate[1].read_var("PeakSample", 0, 0) == 13);
+        }
+    }
+
+    TEST_CASE("MODULE_CSRB") {
+        SUBCASE("Happy Path") {
+            ///TODO: Remove this try/catch after we simulate get_baselines control task.
+            try {
+                crate[1].write("MODULE_CSRB", 1);
+            } catch (xia::pixie::error::error&) {
+                //do nothing
+            }
+            CHECK(crate[1].read("MODULE_CSRB") == 1);
+        }
+    }
+    TEST_CASE("SLOW_FILTER_RANGE") {
+        SUBCASE("Happy Path") {
+            ///TODO: Remove this try/catch after we simulate get_baselines control task.
+            try {
+                crate[1].write("SLOW_FILTER_RANGE", 1);
+            } catch (xia::pixie::error::error&) {
+                //do nothing
+            }
+            CHECK(crate[1].read("SLOW_FILTER_RANGE") == 1);
+        }
+        SUBCASE("Too Small") {
+            CHECK_THROWS_AS(crate[1].write("SLOW_FILTER_RANGE", 0), xia::pixie::module::error);
+        }
+        SUBCASE("Too Big") {
+            CHECK_THROWS_AS(crate[1].write("SLOW_FILTER_RANGE", 200), xia::pixie::module::error);
+        }
+    }
+    TEST_CASE("FAST_FILTER_RANGE") {
+        SUBCASE("Happy Path") {
+            ///TODO: Remove this try/catch after we simulate get_baselines control task.
+            try {
+                crate[1].write("FAST_FILTER_RANGE", 0);
+            } catch (xia::pixie::error::error&) {
+                //do nothing
+            }
+            CHECK(crate[1].read("FAST_FILTER_RANGE") == 0);
+        }
+        SUBCASE("Too Big") {
+            ///TODO: Remove this try/catch after we simulate get_baselines control task.
+            try {
+                crate[1].write("FAST_FILTER_RANGE", 200);
+            } catch (xia::pixie::error::error&) {
+                //do nothing
+            }
+            CHECK(crate[1].read("FAST_FILTER_RANGE") == 0);
         }
     }
 }

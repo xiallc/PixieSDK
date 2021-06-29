@@ -2133,9 +2133,9 @@ namespace module
     }
 
     void
-    module::module_csrb(param::value_type value, bool io)
+    module::module_csrb(param::value_type value, size_t offset, bool io)
     {
-        write_var(param::module_var::ModCSRB, value, io);
+        write_var(param::module_var::ModCSRB, value, offset, io);
         if (io) {
             hw::run::control(*this, hw::run::control_task::program_fippi);
 
@@ -2177,7 +2177,7 @@ namespace module
     }
 
     void
-    module::slow_filter_range(param::value_type value, bool io)
+    module::slow_filter_range(param::value_type value, size_t offset, bool io)
     {
         if (value < hw::limit::SLOWFILTERRANGE_MIN) {
             std::stringstream oss;
@@ -2194,7 +2194,7 @@ namespace module
                         oss.str());
         }
 
-        write_var(param::module_var::SlowFilterRange, value, io);
+        write_var(param::module_var::SlowFilterRange, value, offset, io);
 
         if (io) {
             /*
@@ -2225,7 +2225,7 @@ namespace module
     }
 
     void
-    module::fast_filter_range(param::value_type value, bool io)
+    module::fast_filter_range(param::value_type value, size_t offset, bool io)
     {
         if (value > hw::limit::FASTFILTERRANGE_MAX) {
             value = hw::limit::FASTFILTERRANGE_MAX;
@@ -2239,7 +2239,7 @@ namespace module
                               << hw::limit::FASTFILTERRANGE_MIN;
         }
 
-        write_var(param::module_var::FastFilterRange, value, io);
+        write_var(param::module_var::FastFilterRange, value, offset, io);
 
         if (io) {
             param::value_type last_ffr =

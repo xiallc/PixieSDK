@@ -577,9 +577,9 @@ namespace module
         /*
          * Module parameter handlers.
          */
-        void module_csrb(param::value_type value, bool io = true);
-        void slow_filter_range(param::value_type value, bool io = true);
-        void fast_filter_range(param::value_type value, bool io = true);
+        void module_csrb(param::value_type value, size_t offset = 0, bool io = true);
+        void slow_filter_range(param::value_type value, size_t offset = 0, bool io = true);
+        void fast_filter_range(param::value_type value, size_t offset = 0, bool io = true);
 
         /*
          * Sycn the hardware after the variables have been sync'ed.
