@@ -37,19 +37,20 @@
 /// @author H.Tan and S.V.Paulauskas
 /// @date November 14, 2020
 
+#include <cmath>
 #include <chrono>
 #include <cstring>
 #include <iostream>
 #include <vector>
 #include <thread>
 
-#include "args/args.hxx"
-#include "easylogging/easylogging++.h"
+#include <args/args.hxx>
+#include <easylogging/easylogging++.h>
 
-#include "pixie16app_defs.h"
-#include "pixie16app_export.h"
-#include "pixie16sys_defs.h"
-#include "pixie16sys_export.h"
+#include <pixie16app_defs.h>
+#include <pixie16app_export.h>
+#include <pixie16sys_defs.h>
+#include <pixie16sys_export.h>
 
 #if defined(_WIN64) || defined(_WIN32)
 #include <windows.h>
@@ -305,6 +306,65 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
     return true;
 }
 
+bool execute_mca_run(const unsigned int& mod, const double& runtime_in_seconds) {
+    LOG(INFO) << "Calling " << "Pixie16WriteSglModPar to write HOST_RT_PRESET to "
+              << runtime_in_seconds;
+    if (!verify_api_return_value(
+            Pixie16WriteSglModPar("HOST_RT_PRESET", Decimal2IEEEFloating(runtime_in_seconds), mod),
+                                 "Pixie16WriteSglModPar - HOST_RT_PRESET"))
+        return false;
+    LOG(INFO) << "Calling " << "Pixie16WriteSglModPar"
+              << " to write SYNCH_WAIT = 0 in Module 0.";
+    if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", 0, mod),
+                                 "Pixie16WriteSglModPar - SYNC_WAIT"))
+        return false;
+
+    LOG(INFO) << "Calling " << "Pixie16WriteSglModPar"
+              << " to write IN_SYNCH  = 1 in Module 0.";
+    if (!verify_api_return_value(Pixie16WriteSglModPar("IN_SYNCH", 1, mod),
+                                 "Pixie16WriteSglModPar - IN_SYNC"))
+        return false;
+
+    LOG(INFO) << "Starting MCA data run for " << runtime_in_seconds << " s.";
+    if (!verify_api_return_value(Pixie16StartHistogramRun(mod, NEW_RUN),
+                                 "Pixie16StartHistogramRun"))
+        return false;
+
+    std::chrono::steady_clock::time_point run_start_time = std::chrono::steady_clock::now();
+    while (std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::steady_clock::now() - run_start_time).count() <
+           runtime_in_seconds) {
+        //do nothing
+    }
+    LOG(INFO) << "Stopping MCA data run after "
+              << std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::steady_clock::now() - run_start_time).count()
+              << " s.";
+    if (!verify_api_return_value(Pixie16EndRun(mod),
+                                 "Pixie16EndRun"))
+        return false;
+
+    std::string name = "pixie16app-hists-mod" + std::to_string(mod) + ".csv";
+    std::ofstream out(name);
+    out << "bin,";
+
+    std::vector<std::vector<uint32_t>> hists;
+    for(unsigned int i = 0; i < NUMBER_OF_CHANNELS; i++) {
+        std::vector<uint32_t> hist(MAX_HISTOGRAM_LENGTH, 0);
+        Pixie16ReadHistogramFromModule(hist.data(), MAX_HISTOGRAM_LENGTH, mod, i);
+        hists.push_back(hist);
+        out << "Chan" << i << ",";
+    }
+    out << std::endl;
+
+    for(unsigned int bin = 0; bin < MAX_HISTOGRAM_LENGTH; bin++) {
+        out << bin << ",";
+        for(auto hist:hists) {
+            out << hist[bin] << ",";
+        }
+        out << std::endl;
+    }
+    return true;
+}
+
 bool execute_parameter_read(args::ValueFlag<std::string>& parameter,
                             args::ValueFlag<unsigned int>& crate,
                             args::ValueFlag<unsigned int>& module,
@@ -446,7 +506,7 @@ int main(int argc, char** argv) {
     args::Command adjust_offsets(commands, "adjust_offsets",
                                  "Adjusts the DC offsets for all modules in the config file.");
     args::Command baseline(commands, "baseline", "Acquire and print baselines from the module");
-    //args::Command mca(commands, "mca", "Starts an MCA data run.");
+    args::Command mca(commands, "mca", "Starts an MCA data run.");
 
     args::Group arguments(parser, "arguments", args::Group::Validators::AtLeastOne,
                           args::Options::Global);
@@ -487,6 +547,7 @@ int main(int argc, char** argv) {
     write.Add(module);
     write.Add(channel);
     baseline.Add(module);
+    mca.Add(module);
 
     try {
         parser.ParseCLI(argc, argv);
@@ -604,11 +665,11 @@ int main(int argc, char** argv) {
         return EXIT_SUCCESS;
     }
 
-    if (histogram) {
-        LOG(INFO) << "Starting to write histograms from the module.";
-        for (int i = 0; i < cfg.num_modules; i++)
-          Pixie16SaveHistogramToFile(("module" + std::to_string(i) + ".his").c_str(), i);
-        LOG(INFO) << "Finished writing histograms from the module.";
+    if (mca) {
+        if (!execute_mca_run(args::get(module), run_time.Get()))
+            return EXIT_FAILURE;
+        execute_close_module_connection(cfg.num_modules);
+        return EXIT_SUCCESS;
     }
 
     execute_close_module_connection(cfg.num_modules);

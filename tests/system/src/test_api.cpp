@@ -761,8 +761,8 @@ hist_save(xia::pixie::crate::crate& crate, options& cmd)
 
     for(unsigned int bin = 0; bin < length; bin++) {
         out << bin << ",";
-        for(auto trc: histos){
-            out << trc[bin] << ",";
+        for(auto hist: histos){
+            out << hist[bin] << ",";
         }
         out << std::endl;
     }
