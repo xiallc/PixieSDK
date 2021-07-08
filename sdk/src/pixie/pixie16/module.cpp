@@ -496,7 +496,7 @@ namespace module
         if (device->device_number < 0) {
             PLX_STATUS ps;
 
-            ps = ::PlxPci_DeviceFind(&device->key, uint32_t(device_number));
+            ps = ::PlxPci_DeviceFind(&device->key, uint16_t(device_number));
             if (ps != PLX_STATUS_OK) {
                 std::ostringstream oss;
                 oss << "PCI find: device: " << device_number

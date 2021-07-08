@@ -121,7 +121,7 @@ TEST_SUITE("app/pixie16app.c") {
             501, 1122, 2358, 3509, 3816, 3467, 2921, 2376, 1914, 1538, 1252, 1043, 877, 750, 667, 619, 591, 563,
             526, 458,  395,  403,  452,  478,  492,  498,  494,  477,  460,  459,  462, 461, 460, 456, 452, 452,
             455, 453,  446,  441,  440,  444,  456,  459,  451,  450,  447,  445,  449, 456, 456, 455};
-        auto trace_length = trc.size();
+        auto trace_length = static_cast<unsigned short>(trc.size());
 
         std::string filename = std::tmpnam(nullptr);
         std::ofstream outfile(filename, std::ios::binary | std::ios::out);

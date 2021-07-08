@@ -502,7 +502,7 @@ performance_stats(std::vector<W>& workers,
     size_t secs = 0;
     for (auto& w : workers) {
         if (w.period.secs() > secs) {
-            secs = w.period.secs();
+            secs = size_t(w.period.secs());
         }
         total += w.total;
         if (show_workers) {
