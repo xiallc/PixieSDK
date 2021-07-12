@@ -433,6 +433,11 @@ namespace module
         void sync_vars();
 
         /*
+         * Sync the hardware after the variables have been sync'ed.
+         */
+        void sync_hw();
+
+        /*
          * Run control and status
          */
         void run_end();
@@ -580,11 +585,6 @@ namespace module
         void module_csrb(param::value_type value, size_t offset = 0, bool io = true);
         void slow_filter_range(param::value_type value, size_t offset = 0, bool io = true);
         void fast_filter_range(param::value_type value, size_t offset = 0, bool io = true);
-
-        /*
-         * Sycn the hardware after the variables have been sync'ed.
-         */
-        void sync_hw();
 
         /*
          * Check if the FPGA devices are programmed and start the FIFO services

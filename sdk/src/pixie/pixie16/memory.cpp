@@ -107,7 +107,13 @@ namespace memory
     }
 
     word
-    dsp::read(const size_t channel, const address addr)
+    dsp::read(const size_t offset, const address addr)
+    {
+        return read(addr + offset);
+    }
+
+    word
+    dsp::read(const size_t channel, const size_t offset, const address addr)
     {
         channel::channel& chan = module[channel];
         if (chan.config.index < 0) {
@@ -115,16 +121,12 @@ namespace memory
                         "dsp: invalid index: module=" + std::to_string(module.number)
                         + " channel=" + std::to_string(channel));
         }
-        return read(addr + chan.config.index);
+        return read(addr + chan.config.index + offset);
     }
 
     void
     dsp::read(const address addr, word_ptr buffer, const size_t length)
     {
-        log(log::debug) << module::module_label(module)
-                        << "dsp read: addr=0x" << std::hex << addr
-                        << " length=" << std::dec << length;
-
         module::module::bus_guard guard(module);
 
         size_t size = length;
@@ -161,15 +163,25 @@ namespace memory
     }
 
     void
-    dsp::write(const size_t channel, const address addr, const word value)
+    dsp::write(const size_t offset, const address addr, const word value)
+    {
+        write(addr + offset, value);
+    }
+
+    void
+    dsp::write(const size_t channel,
+               const size_t offset,
+               const address addr,
+               const word value)
     {
         channel::channel& chan = module[channel];
         if (chan.config.index < 0) {
             throw error(error::code::channel_invalid_index,
-                        "dsp: invalid index: module=" + std::to_string(module.number)
+                        "dsp: invalid index: module=" +
+                        std::to_string(module.number)
                         + " channel=" + std::to_string(channel));
         }
-        write(addr + chan.config.index, value);
+        write(addr + chan.config.index + offset, value);
     }
 
     void

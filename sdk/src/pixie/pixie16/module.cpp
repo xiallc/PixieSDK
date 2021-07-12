@@ -1316,7 +1316,7 @@ namespace module
         param::value_type value;
         if (have_hardware && io) {
             hw::memory::dsp dsp(*this);
-            hw::word mem = dsp.read(desc.address);
+            hw::word mem = dsp.read(offset, desc.address);
             hw::convert(mem, value);
             module_vars[index].value[offset].value = value;
             module_vars[index].value[offset].dirty = false;
@@ -1366,7 +1366,7 @@ namespace module
         param::value_type value;
         if (have_hardware && io) {
             hw::memory::dsp dsp(*this);
-            hw::convert(dsp.read(channel, desc.address), value);
+            hw::convert(dsp.read(channel, offset, desc.address), value);
             channels[channel].vars[index].value[offset].value = value;
             channels[channel].vars[index].value[offset].dirty = false;
         } else {
@@ -1438,7 +1438,7 @@ namespace module
             hw::word word;
             hw::convert(value, word);
             hw::memory::dsp dsp(*this);
-            dsp.write(desc.address, word);
+            dsp.write(offset, desc.address, word);
             module_vars[index].value[offset].dirty = false;
         }
     }
@@ -1487,7 +1487,7 @@ namespace module
             hw::word word;
             hw::convert(value, word);
             hw::memory::dsp dsp(*this);
-            dsp.write(channel, desc.address, word);
+            dsp.write(channel, offset, desc.address, word);
             channels[channel].vars[index].value[offset].dirty = false;
         }
     }
@@ -1503,12 +1503,13 @@ namespace module
             const auto& desc = var.var;
             if (desc.state == param::enable &&
                 desc.mode != param::ro) {
-                for (auto& value : var.value) {
+                for (size_t v = 0; v < var.value.size(); ++v) {
+                    auto& value = var.value[v];
                     if (value.dirty) {
                         if (have_hardware) {
                             hw::word word;
                             hw::convert(value.value, word);
-                            dsp.write(desc.address, word);
+                            dsp.write(v, desc.address, word);
                         }
                         value.dirty = false;
                     }
@@ -1520,12 +1521,13 @@ namespace module
                 const auto& desc = var.var;
                 if (desc.state == param::enable &&
                     desc.mode != param::ro) {
-                    for (auto& value : var.value) {
+                    for (size_t v = 0; v < var.value.size(); ++v) {
+                        auto& value = var.value[v];
                         if (value.dirty) {
                             if (have_hardware) {
                                 hw::word word;
                                 hw::convert(value.value, word);
-                                dsp.write(channel.number, desc.address, word);
+                                dsp.write(channel.number, v, desc.address, word);
                                 value.dirty = false;
                             }
                         }
@@ -1533,8 +1535,6 @@ namespace module
                 }
             }
         }
-
-        sync_hw();
     }
 
     void
@@ -2089,7 +2089,7 @@ namespace module
                         channel_var_descriptors);
             param_addresses.set(max_channels,
                                 module_var_descriptors,
-                            channel_var_descriptors);
+                                channel_var_descriptors);
             vars_loaded = true;
             log(log::info) << module_label(*this)
                            << "address map: " << param_addresses;

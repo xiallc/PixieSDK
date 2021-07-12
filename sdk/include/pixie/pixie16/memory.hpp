@@ -97,7 +97,10 @@ namespace memory
          * Memory read.
          */
         word read(const address addr);
-        word read(const size_t channel, const address addr);
+        word read(const size_t offset, const address addr);
+        word read(const size_t channel,
+                  const size_t offset,
+                  const address addr);
 
         /*
          * Memory block read.
@@ -112,8 +115,13 @@ namespace memory
          * Memory write.
          */
         void write(const address addr, const word value);
+        void write(const size_t offset,
+                   const address addr,
+                   const word value);
         void write(const size_t channel,
-                   const address addr, const word value);
+                   const size_t offset,
+                   const address addr,
+                   const word value);
 
         /*
          * Memory block write.

@@ -294,6 +294,7 @@ namespace crate
         for (auto& module : modules) {
             if (module->online()) {
                 module->sync_vars();
+                module->sync_hw();
             }
         }
     }
