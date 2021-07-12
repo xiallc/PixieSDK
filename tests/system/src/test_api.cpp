@@ -43,10 +43,12 @@
 #include <regex>
 #include <sstream>
 
+#include <pixie/config.hpp>
 #include <pixie/log.hpp>
 #include <pixie/util.hpp>
 
 #include <pixie/pixie16/crate.hpp>
+#include <pixie/pixie16/legacy.hpp>
 #include <pixie/pixie16/sim.hpp>
 
 #include <args/args.hxx>
@@ -116,6 +118,9 @@ static void par_write(xia::pixie::crate::crate& crate, options& cmd);
 static void par_read(xia::pixie::crate::crate& crate, options& cmd);
 static void var_write(xia::pixie::crate::crate& crate, options& cmd);
 static void var_read(xia::pixie::crate::crate& crate, options& cmd);
+static void lset_report(xia::pixie::crate::crate& crate, options& cmd);
+static void lset_import(xia::pixie::crate::crate& crate, options& cmd);
+static void lset_load(xia::pixie::crate::crate& crate, options& cmd);
 static void stats(xia::pixie::crate::crate& crate, options& cmd);
 static void import(xia::pixie::crate::crate& crate, options& cmd);
 static void export_(xia::pixie::crate::crate& crate, options& cmd);
@@ -145,6 +150,9 @@ static const std::map<std::string, command_def> command_defs =
     { "par-write",   { { 3, 4 },    "write module/channel parameter" } },
     { "var-read",    { { 2, 3, 4 }, "read module/channel variable" } },
     { "var-write",   { { 3, 4, 5 }, "write module/channel variable" } },
+    { "lset-report", { { 2 } ,      "output a legacy settings file in a readable format" } },
+    { "lset-import", { { 2, 3 },    "import a legacy settings file to a module" } },
+    { "lset-load",   { { 2, 3 },    "load a legacy settings file to a module's DSP memory" } },
     { "stats",       { { 2, 3 },    "module/channel stats" } },
     { "import",      { { 1 },       "import a JSON configuration file" } },
     { "export",      { { 1 },       "export a configuration to a JSON file" } },
@@ -174,6 +182,9 @@ static const std::vector<cmd_handler> cmd_handlers = {
     { "par-read",    par_read },
     { "var-write",   var_write },
     { "var-read",    var_read },
+    { "lset-report", lset_report },
+    { "lset-import", lset_import },
+    { "lset-load",   lset_load },
     { "stats",       stats },
     { "import",      import },
     { "export",      export_ },
@@ -196,7 +207,9 @@ check_number(const std::string& opt)
 template<typename T> static T
 get_value(const std::string& opt)
 {
-    check_number(opt);
+    if (!check_number(opt)) {
+        throw std::runtime_error("invalid number: " + opt);
+    }
     std::istringstream iss(opt);
     T value;
     iss >> value;
@@ -204,11 +217,11 @@ get_value(const std::string& opt)
 }
 
 template<typename T> static std::vector<T>
-get_values(const std::string& opt, const size_t modules)
+get_values(const std::string& opt, const size_t max_count)
 {
     std::vector<T> values;
     if (opt == "all") {
-        values.resize(modules);
+        values.resize(max_count);
         std::iota(values.begin(), values.end(), 0);
     } else {
         xia::util::strings sc;
@@ -223,14 +236,14 @@ get_values(const std::string& opt, const size_t modules)
                 auto end = get_value<T>(sd[1]);
                 if (start > end) {
                     throw std::runtime_error(
-                        "invalid slots, start before end: " + opt
+                        "invalid range, start before end: " + opt
                     );
                 }
                 for (T s = start; s <= end; ++s) {
                     values.push_back(s);
                 }
             } else {
-                throw std::runtime_error("invalid slots: " + opt);
+                throw std::runtime_error("invalid range: " + opt);
             }
         }
     }
@@ -722,21 +735,27 @@ hist_resume(xia::pixie::crate::crate& crate, options& cmd)
 static void
 hist_save(xia::pixie::crate::crate& crate, options& cmd)
 {
+    /*
+     * hist-save <mod> [channels [length]]
+     */
     auto mod_num = get_value<size_t>(cmd[1]);
     using namespace xia::pixie::hw::run;
     xia::pixie::channel::range channels;
     size_t length = xia::pixie::hw::max_histogram_length;
     if (cmd.size() == 3) {
-        auto value = get_value<size_t>(cmd[2]);
-        if (value > crate[mod_num].num_channels) {
-            length = value;
+        auto chans = get_values<size_t>(cmd[2], crate[mod_num].num_channels);
+        if (chans.size() == 1 and chans[0] > crate[mod_num].num_channels) {
+            length = chans[0];
         } else {
-            channels.resize(1);
-            channels[0] = value;
+            for (auto c : chans) {
+                channels.push_back(c);
+            }
         }
     } else if (cmd.size() == 4) {
-        channels.resize(1);
-        channels[0] = get_value<size_t>(cmd[2]);
+        auto chans = get_values<size_t>(cmd[2], crate[mod_num].num_channels);
+        for (auto c : chans) {
+            channels.push_back(c);
+        }
         length = get_value<size_t>(cmd[3]);
     }
     if (channels.empty()) {
@@ -744,13 +763,13 @@ hist_save(xia::pixie::crate::crate& crate, options& cmd)
         xia::pixie::channel::range_set(channels);
     }
 
-    std::vector<xia::pixie::hw::words> histos;
     std::ostringstream name;
     name << std::setfill('0') << histogram_prefix
          << '-' << std::setw(2) << mod_num << ".csv";
     std::ofstream out(name.str());
     out << "bin,";
 
+    std::vector<xia::pixie::hw::words> histos;
     for (auto channel : channels) {
         xia::pixie::hw::words histogram(length);
         crate[mod_num].read_histogram(channel, histogram);
@@ -759,9 +778,9 @@ hist_save(xia::pixie::crate::crate& crate, options& cmd)
     }
     out << std::endl;
 
-    for(unsigned int bin = 0; bin < length; bin++) {
+    for (unsigned int bin = 0; bin < length; bin++) {
         out << bin << ",";
-        for(auto hist: histos){
+        for(auto hist : histos){
             out << hist[bin] << ",";
         }
         out << std::endl;
@@ -1029,6 +1048,77 @@ var_read(xia::pixie::crate::crate& crate, options& cmd)
 }
 
 static void
+lset_report(xia::pixie::crate::crate& crate, options& cmd)
+{
+    /*
+     * lset-report <module> <settings file>
+     */
+    auto mod_nums = get_values<size_t>(cmd[1], crate.num_modules);
+    for (auto mod_num : mod_nums) {
+      xia::pixie::legacy::settings settings(crate[mod_num]);
+        settings.load(cmd[2]);
+        std::cout << settings;
+    }
+
+}
+
+static void
+lset_import(xia::pixie::crate::crate& crate, options& cmd)
+{
+    /*
+     * lset-import <module> <settings file> [flush/sync]
+     */
+    auto mod_nums = get_values<size_t>(cmd[1], crate.num_modules);
+    for (auto mod_num : mod_nums) {
+        xia::pixie::module::module& module = crate[mod_num];
+        xia::pixie::legacy::settings settings(module);
+        settings.load(cmd[2]);
+        settings.import(module);
+        if (module.online() && cmd.size() == 4) {
+            if (cmd[3] == "flush") {
+                module.sync_vars();
+            } else if (cmd[3] == "sync") {
+                module.sync_vars();
+                module.sync_hw();
+            } else {
+                throw std::runtime_error(
+                    std::string("invalid post settingsimport operation: " +
+                                cmd[3])
+                );
+            }
+        }
+    }
+}
+
+static void
+lset_load(xia::pixie::crate::crate& crate, options& cmd)
+{
+    /*
+     * lset-import <module> <settings file> [flush/sync]
+     */
+    auto mod_nums = get_values<size_t>(cmd[1], crate.num_modules);
+    for (auto mod_num : mod_nums) {
+        xia::pixie::module::module& module = crate[mod_num];
+        xia::pixie::legacy::settings settings(module);
+        settings.load(cmd[2]);
+        settings.write(module);
+        if (module.online() && cmd.size() == 4) {
+            if (cmd[3] == "flush") {
+                module.sync_vars();
+            } else if (cmd[3] == "sync") {
+                module.sync_vars();
+                module.sync_hw();
+            } else {
+                throw std::runtime_error(
+                    std::string("invalid post settings load operation: " +
+                                cmd[3])
+                );
+            }
+        }
+    }
+}
+
+static void
 stats(xia::pixie::crate::crate& crate, options& cmd)
 {
     auto mod_nums = get_values<size_t>(cmd[1], crate.num_modules);
@@ -1197,6 +1287,8 @@ static bool
 process_command_sets(xia::pixie::crate::crate& crate, commands& cmds)
 {
     for (auto& cmd : cmds) {
+        xia_log(xia_log::info) << "test: cmd: "
+                               << xia::util::join<options>(cmd);
         for (const auto& handler : cmd_handlers) {
             if (handler.cmd == cmd[0]) {
                 handler.func(crate, cmd);
