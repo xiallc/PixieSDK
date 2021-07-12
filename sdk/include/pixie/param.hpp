@@ -362,7 +362,7 @@ namespace param
               state(state_),
               name(name_) {
         }
-        bool writable() const {
+        bool writeable() const {
             return state == enable && mode != ro;
         }
     };

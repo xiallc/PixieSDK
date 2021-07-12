@@ -234,7 +234,7 @@ import_json(const std::string& filename,
                 if (param::is_module_var(el.key())) {
                     auto var = param::lookup_module_var(el.key());
                     auto& desc = module.module_var_descriptors[int(var)];
-                    if (desc.writable()) {
+                    if (desc.writeable()) {
                         if (desc.size != el.value().size()) {
                             log(log::warning) << module::module_label(module)
                                               << "size does not match: "
@@ -293,7 +293,7 @@ import_json(const std::string& filename,
                 if (param::is_channel_var(el.key())) {
                     auto var = param::lookup_channel_var(el.key());
                     auto& desc = module.channel_var_descriptors[int(var)];
-                    if (desc.writable()) {
+                    if (desc.writeable()) {
                         if ((el.value().size() % desc.size) != 0) {
                             log(log::warning) << module::module_label(module)
                                               << "size does not match config: "
