@@ -228,7 +228,7 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
 
     unsigned int boot_pattern = stoul(args::get(boot_pattern_flag), nullptr, 0);
-    if (boot_pattern == 0 || is_dry_run || external_fifo) {
+    if (is_dry_run || external_fifo) {
         LOG(INFO) << "Will not boot the module!";
     } else {
         LOG(INFO) << "Calling Pixie16BootModule with boot pattern: " << std::showbase << std::hex

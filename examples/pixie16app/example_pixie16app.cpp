@@ -593,27 +593,23 @@ int main(int argc, char** argv) {
     if (is_fast_boot)
         boot_pattern = 0x70;
 
-    if (boot_pattern == 0) {
-        LOG(INFO) << "Will not boot the module!";
-    } else {
-      LOG(INFO) << "Calling Pixie16BootModule with boot pattern: "
-                << std::showbase << std::hex
-                << boot_pattern << std::dec;
+    LOG(INFO) << "Calling Pixie16BootModule with boot pattern: "
+              << std::showbase << std::hex
+              << boot_pattern << std::dec;
 
-        if (!verify_api_return_value(
-                Pixie16BootModule(cfg.com_fpga_config.c_str(), cfg.sp_fpga_config.c_str(),
-                                   NULL, cfg.dsp_code.c_str(),
-                                   cfg.dsp_param.c_str(), cfg.dsp_var.c_str(), cfg.num_modules,
-                                   boot_pattern),
-                "Pixie16BootModule", "Finished booting!"))
-            return EXIT_FAILURE;
-        LOG(INFO) << "Finished Pixie16BootModule in "
-                  << calculate_duration_in_seconds(start, std::chrono::system_clock::now())
-                  << " s.";
-        if (boot) {
-            execute_close_module_connection(cfg.num_modules);
-            return EXIT_SUCCESS;
-        }
+    if (!verify_api_return_value(
+          Pixie16BootModule(cfg.com_fpga_config.c_str(), cfg.sp_fpga_config.c_str(),
+                            NULL, cfg.dsp_code.c_str(),
+                            cfg.dsp_param.c_str(), cfg.dsp_var.c_str(), cfg.num_modules,
+                            boot_pattern),
+          "Pixie16BootModule", "Finished booting!"))
+      return EXIT_FAILURE;
+    LOG(INFO) << "Finished Pixie16BootModule in "
+              << calculate_duration_in_seconds(start, std::chrono::system_clock::now())
+              << " s.";
+    if (boot) {
+      execute_close_module_connection(cfg.num_modules);
+      return EXIT_SUCCESS;
     }
 
     if (read) {
