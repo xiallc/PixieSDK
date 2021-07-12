@@ -236,10 +236,13 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
     while (std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::steady_clock::now() - run_start_time).count() <
            runtime_in_seconds) {
         for (int k = 0; k < cfg.num_modules; k++) {
-            /*
-             * Error check this call?
-             */
-            Pixie16CheckExternalFIFOStatus(&mod_numwordsread, k);
+            if(!verify_api_return_value(Pixie16CheckExternalFIFOStatus(&mod_numwordsread, k),
+                                         "Pixie16CheckExternalFIFOStatus", false))
+                return false;
+
+            if (mod_numwordsread > 0)
+                LOG(INFO) << "External FIFO has " << mod_numwordsread << " words.";
+
             if (!verify_api_return_value(
                 Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(), &mod_numwordsread,
                                                   k, 0),
@@ -265,12 +268,18 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
         return false;
 
     // Make sure all modules indeed finish their run successfully.
-    const unsigned int number_of_finalize_attempts = 10;
+    const unsigned int number_of_finalize_attempts = 50;
     for (int k = 0; k < cfg.num_modules; k++) {
         size_t finalize_attempt_number = 0;
         while (finalize_attempt_number < number_of_finalize_attempts) {
             if (Pixie16CheckRunStatus(k) == 0) {
-                Pixie16CheckExternalFIFOStatus(&mod_numwordsread, k);
+                if(!verify_api_return_value(Pixie16CheckExternalFIFOStatus(&mod_numwordsread, k),
+                                             "Pixie16CheckExternalFIFOStatus", false))
+                    return false;
+
+                if (mod_numwordsread > 0)
+                    LOG(INFO) << "External FIFO has " << mod_numwordsread << " words.";
+
                 if (!verify_api_return_value(
                     Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(), &mod_numwordsread,
                                                       k, 1),
@@ -293,7 +302,13 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
 
     // All modules have their run stopped successfully.Now read out the possible last words from the external FIFO
     for (int k = 0; k < cfg.num_modules; k++) {
-        Pixie16CheckExternalFIFOStatus(&mod_numwordsread, k);
+        if(!verify_api_return_value(Pixie16CheckExternalFIFOStatus(&mod_numwordsread, k),
+                                     "Pixie16CheckExternalFIFOStatus", false))
+            return false;
+
+        if (mod_numwordsread > 0)
+            LOG(INFO) << "External FIFO has " << mod_numwordsread << " words.";
+
         if (!verify_api_return_value(
                 Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(), &mod_numwordsread,
                                                        k, 1),
@@ -313,6 +328,7 @@ bool execute_mca_run(const unsigned int& mod, const double& runtime_in_seconds) 
             Pixie16WriteSglModPar("HOST_RT_PRESET", Decimal2IEEEFloating(runtime_in_seconds), mod),
                                  "Pixie16WriteSglModPar - HOST_RT_PRESET"))
         return false;
+
     LOG(INFO) << "Calling " << "Pixie16WriteSglModPar"
               << " to write SYNCH_WAIT = 0 in Module 0.";
     if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", 0, mod),
