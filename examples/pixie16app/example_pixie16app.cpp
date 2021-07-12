@@ -242,7 +242,7 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
             Pixie16CheckExternalFIFOStatus(&mod_numwordsread, k);
             if (!verify_api_return_value(
                 Pixie16SaveExternalFIFODataToFile(output_file_names[k].c_str(), &mod_numwordsread,
-                                                  k, 1),
+                                                  k, 0),
                 "Pixie16SaveExternalFIFODataToFile for Module " + std::to_string(k), false)) {
                 free(lmdata);
                 return false;
@@ -536,18 +536,23 @@ int main(int argc, char** argv) {
                                             "The value of the parameter we want to write.",
                                             {'v', "value"});
     adjust_offsets.Add(conf_flag);
+    adjust_offsets.Add(boot_pattern_flag);
     baseline.Add(is_fast_boot);
+    baseline.Add(boot_pattern_flag);
+    baseline.Add(module);
     boot.Add(conf_flag);
+    boot.Add(boot_pattern_flag);
+    mca.Add(module);
+    mca.Add(boot_pattern_flag);
     read.Add(conf_flag);
     trace.Add(conf_flag);
     trace.Add(module);
+    trace.Add(boot_pattern_flag);
     write.Add(conf_flag);
     write.Add(parameter);
     write.Add(crate);
     write.Add(module);
     write.Add(channel);
-    baseline.Add(module);
-    mca.Add(module);
 
     try {
         parser.ParseCLI(argc, argv);
@@ -594,22 +599,22 @@ int main(int argc, char** argv) {
         boot_pattern = 0x70;
 
     LOG(INFO) << "Calling Pixie16BootModule with boot pattern: "
-              << std::showbase << std::hex
-              << boot_pattern << std::dec;
+            << std::showbase << std::hex
+            << boot_pattern << std::dec;
 
     if (!verify_api_return_value(
-          Pixie16BootModule(cfg.com_fpga_config.c_str(), cfg.sp_fpga_config.c_str(),
-                            NULL, cfg.dsp_code.c_str(),
-                            cfg.dsp_param.c_str(), cfg.dsp_var.c_str(), cfg.num_modules,
-                            boot_pattern),
-          "Pixie16BootModule", "Finished booting!"))
-      return EXIT_FAILURE;
+            Pixie16BootModule(cfg.com_fpga_config.c_str(), cfg.sp_fpga_config.c_str(),
+                               NULL, cfg.dsp_code.c_str(),
+                               cfg.dsp_param.c_str(), cfg.dsp_var.c_str(), cfg.num_modules,
+                               boot_pattern),
+            "Pixie16BootModule", "Finished booting!"))
+        return EXIT_FAILURE;
     LOG(INFO) << "Finished Pixie16BootModule in "
               << calculate_duration_in_seconds(start, std::chrono::system_clock::now())
               << " s.";
     if (boot) {
-      execute_close_module_connection(cfg.num_modules);
-      return EXIT_SUCCESS;
+        execute_close_module_connection(cfg.num_modules);
+        return EXIT_SUCCESS;
     }
 
     if (read) {
