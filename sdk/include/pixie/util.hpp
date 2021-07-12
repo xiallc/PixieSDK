@@ -71,6 +71,20 @@ void split(strings& split_string,
            bool empty = false);
 
 /*
+ * Join the strings into a single string.
+ */
+template<typename T> std::string join(T& ss, const char c = ' ') {
+    std::string ns;
+    for (auto& s : ss) {
+        if (!ss.empty()) {
+            ns += c;
+        }
+        ns += s;
+    }
+    return ns;
+}
+
+/*
  * Remove spaces from the front of the string.
  */
 void ltrim(std::string& s);
