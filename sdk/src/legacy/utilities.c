@@ -73,6 +73,9 @@ int Pixie_Start_Run(unsigned short mode,  // mode = NEW_RUN or RESUME_RUN
     unsigned short k;
     int retval;
 
+    Pixie_Print_Info(PIXIE_FUNC, "start: mod_num=%d mode=%d run_task=%d contro_task=%d",
+                     ModNum, mode, run_task, control_task);
+
     if (ModNum == Number_Modules)  // Start run in all modules
     {
         // Prepare for a run: ending a previous run, clear external memory, set parameters
@@ -123,6 +126,7 @@ int Pixie_Start_Run(unsigned short mode,  // mode = NEW_RUN or RESUME_RUN
         // Check if there is a run in progresss; if so, end it
         retval = Pixie_Check_Run_Status(ModNum);
         if (retval == 1) {
+            Pixie_Print_Info(PIXIE_FUNC, "start: ending active task");
             retval = Pixie_End_Run(ModNum);
             // Check if Pixie_End_Run returned without errors
             if (retval < 0) {
@@ -134,6 +138,7 @@ int Pixie_Start_Run(unsigned short mode,  // mode = NEW_RUN or RESUME_RUN
 
         // Clear external memory first before starting a new data acquisition run
         if ((mode == NEW_RUN) && (run_task != 0) && (control_task == 0)) {
+            Pixie_Print_Info(PIXIE_FUNC, "start: clearing MCA memory");
             // Clear histogram memory; channel by channel
             Pixie_Main_Memory_IO(buffer, MAX_HISTOGRAM_LENGTH * 0, MAX_HISTOGRAM_LENGTH * 4, MOD_WRITE, ModNum);
             Pixie_Main_Memory_IO(buffer, MAX_HISTOGRAM_LENGTH * 4, MAX_HISTOGRAM_LENGTH * 4, MOD_WRITE, ModNum);
@@ -279,7 +284,6 @@ int Pixie_End_Run(unsigned short ModNum) {
 
 int Pixie_Check_Run_Status(unsigned short ModNum) {
     unsigned int CSR;
-
     Pixie_ReadCSR(ModNum, &CSR);
     return ((CSR & (0x1 << RUNACTIVE)) >> RUNACTIVE);
 }
