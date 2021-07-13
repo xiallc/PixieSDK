@@ -62,7 +62,7 @@ enum struct run_mode {
 
 enum struct run_task {
     nop = 0,
-    list_mode = 0x101,
+    list_mode = 0x100,
     histogram = 0x301
 };
 
