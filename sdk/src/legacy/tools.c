@@ -314,40 +314,19 @@ PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_TstBit(unsigned short bit, u
 *			-1 - Can't open the message file
 *
 ****************************************************************/
-#define TIMESTAMP_POS 120
+
 static int Pixie_Print_Buffer(char* message) {
-    struct timeval tv;
     time_t rawtime;
     struct tm* timeinfo;
     FILE* Pixie16msg = NULL;
-    size_t mlen = strlen(message);
-    char datestr[32];
 
     // Get current date and time
-    gettimeofday(&tv, NULL);
-    rawtime = tv.tv_sec;
+    time(&rawtime);
     timeinfo = localtime(&rawtime);
 
-    if (mlen < TIMESTAMP_POS) {
-        memset(&message[mlen], ' ', TIMESTAMP_POS - mlen);
-        mlen = TIMESTAMP_POS;
-    } else {
-        message[mlen] = ' ';
-        mlen++;
-    }
-    message[mlen++] = '[';
-
     // Append current date and time
-    asctime_r(timeinfo, &datestr[0]);
-    datestr[24] = '\0';
-    memcpy(&message[mlen], datestr, 10);
-    mlen += 10;
-    memcpy(&message[mlen], &datestr[19], 5);
-    mlen += 5;
-    memcpy(&message[mlen], &datestr[10], 9);
-    mlen += 9;
-    message[mlen++] = '.';
-    sprintf(&message[mlen], "%06lu", tv.tv_usec);
+    strcat(message, "\t\t[");
+    strncat(message, asctime(timeinfo), strlen(asctime(timeinfo)) - 1);
     strcat(message, "]\n");
 
     // Write to file
