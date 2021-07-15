@@ -744,7 +744,7 @@ hist_save(xia::pixie::crate::crate& crate, options& cmd)
     size_t length = xia::pixie::hw::max_histogram_length;
     if (cmd.size() == 3) {
         auto chans = get_values<size_t>(cmd[2], crate[mod_num].num_channels);
-        if (chans.size() == 1 and chans[0] > crate[mod_num].num_channels) {
+        if (chans.size() == 1 && chans[0] > crate[mod_num].num_channels) {
             length = chans[0];
         } else {
             for (auto c : chans) {
