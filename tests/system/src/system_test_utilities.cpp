@@ -88,8 +88,8 @@ int verify_data_read(const unsigned int* expected, const unsigned int* returned,
     unsigned int error_count = 0;
     for (unsigned int idx = 0; idx < size; idx++) {
         if (expected[idx] != returned[idx]) {
-            LOG(ERROR) << " Data mismatch in module " << module_number << ", rd_data="
-                       << std::hex << returned[idx] << ", wr_data=" << expected[idx]
+            LOG(ERROR) << " Data mismatch in module " << module_number << ", rd_data=" << std::hex
+                       << returned[idx] << ", wr_data=" << expected[idx]
                        << ", position=" << std::dec << idx << std::endl;
             error_count++;
         }

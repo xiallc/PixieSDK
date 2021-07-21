@@ -30,20 +30,15 @@
 #include <pixie/pixie16/crate.hpp>
 #include <pixie/pixie16/module.hpp>
 
-namespace xia
-{
-namespace pixie
-{
-namespace sim
-{
+namespace xia {
+namespace pixie {
+namespace sim {
 typedef xia::pixie::error::error error;
 
 /*
  * Simulated a module.
  */
-class module
-    : public xia::pixie::module::module
-{
+class module : public xia::pixie::module::module {
 public:
     static const size_t pci_addr_space_size = 8 * 1024 * 1024;
 
@@ -54,9 +49,7 @@ public:
     void open(size_t device_number) override;
     void close() override;
     void probe() override;
-    void boot(bool boot_comms = true,
-              bool boot_fippi = true,
-              bool boot_dsp = true) override;
+    void boot(bool boot_comms = true, bool boot_fippi = true, bool boot_dsp = true) override;
     void initialize() override;
     void init_values() override;
 
@@ -70,9 +63,7 @@ public:
 /*
  * Simulated a crate. Crates the simulated module.
  */
-class crate
-    : public xia::pixie::crate::crate
-{
+class crate : public xia::pixie::crate::crate {
 public:
     typedef xia::pixie::crate::error error;
 
@@ -82,8 +73,7 @@ public:
 /*
  * Module definition.
  */
-struct module_def
-{
+struct module_def {
     size_t device_number;
     int slot;
     int revision;
@@ -105,8 +95,8 @@ extern module_defs mod_defs;
 void load_module_defs(const std::string mod_def_file);
 void load_module_defs(std::istream& input);
 void add_module_def(const std::string mod_desc, const char delimiter = ' ');
-}
-}
-}
+}  // namespace sim
+}  // namespace pixie
+}  // namespace xia
 
-#endif // PIXIE_SDK_SYSTEM_SIMULATION_HPP
+#endif  // PIXIE_SDK_SYSTEM_SIMULATION_HPP

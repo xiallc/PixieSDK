@@ -24,69 +24,48 @@
 #include <pixie/pixie16/defs.hpp>
 #include <pixie/pixie16/module.hpp>
 
-namespace xia
-{
-namespace pixie
-{
-namespace hw
-{
-namespace csr
-{
-void reset(module::module& module)
-{
-    clear(module,
-          (1 << hw::bit::RUNENA) |
-          (1 << hw::bit::DSPDOWNLOAD) |
-          (1 << hw::bit::PCIACTIVE));
+namespace xia {
+namespace pixie {
+namespace hw {
+namespace csr {
+void reset(module::module& module) {
+    clear(module, (1 << hw::bit::RUNENA) | (1 << hw::bit::DSPDOWNLOAD) | (1 << hw::bit::PCIACTIVE));
 }
 
-word read(module::module& module)
-{
+word read(module::module& module) {
     return module.read_word(hw::device::CSR);
 }
 
-void write(module::module& module, word value)
-{
+void write(module::module& module, word value) {
     module.write_word(hw::device::CSR, value);
 }
 
-void
-set(module::module& module, word mask)
-{
+void set(module::module& module, word mask) {
     write(module, read(module) | mask);
 }
 
-void
-clear(module::module& module, word mask)
-{
+void clear(module::module& module, word mask) {
     write(module, read(module) & ~mask);
 }
 
-set_clear::set_clear(module::module& module_, word mask_)
-    : module(module_),
-      mask(mask_)
-{
+set_clear::set_clear(module::module& module_, word mask_) : module(module_), mask(mask_) {
     set(module, mask);
 }
 
-set_clear::~set_clear()
-{
+set_clear::~set_clear() {
     clear(module, mask);
 }
 
-void
-fifo_ready_wait(module::module& module, const size_t polls)
-{
+void fifo_ready_wait(module::module& module, const size_t polls) {
     size_t count = 0;
     while (count++ < polls) {
         if ((read(module) & (1 << hw::bit::EXTFIFO_WML)) != 0) {
             return;
         }
     }
-    throw error(error::code::device_dma_busy,
-                "csr: EXT FIFO failed to get ready for read");
+    throw error(error::code::device_dma_busy, "csr: EXT FIFO failed to get ready for read");
 }
-}
-}
-}
-}
+}  // namespace csr
+}  // namespace hw
+}  // namespace pixie
+}  // namespace xia

@@ -23,8 +23,8 @@
 #ifndef PIXIE_EEPROM_H
 #define PIXIE_EEPROM_H
 
-#include <cstdint>
 #include <array>
+#include <cstdint>
 #include <vector>
 
 #include <pixie/error.hpp>
@@ -32,12 +32,9 @@
 
 #include <pixie/pixie16/hw.hpp>
 
-namespace xia
-{
-namespace pixie
-{
-namespace eeprom
-{
+namespace xia {
+namespace pixie {
+namespace eeprom {
 /*
  * Local error
  */
@@ -47,20 +44,20 @@ typedef pixie::error::error error;
  * Supported tags. Gaps allow additions in each section.
  */
 enum struct tag {
-    null = 0,    /* invalid */
+    null = 0, /* invalid */
     /*
      * Build state
      */
-    model = 10,  /* model, part number */
-    serial_num,  /* serial number */
-    revision,    /* revision string */
-    mod_strike,  /* hardware modifications */
+    model = 10, /* model, part number */
+    serial_num, /* serial number */
+    revision, /* revision string */
+    mod_strike, /* hardware modifications */
     /*
      * Parameters
      */
-    index = 30,  /* number, index, slot, id */
-    size,        /* number of items, channels, modules */
-    format_ver,  /* format version */
+    index = 30, /* number, index, slot, id */
+    size, /* number of items, channels, modules */
+    format_ver, /* format version */
     /*
      * Analog Front End (AFE)
      */
@@ -74,16 +71,7 @@ enum struct tag {
     end = 0xff
 };
 
-enum element_type {
-    null,
-    string,
-    num8,
-    num16,
-    num32,
-    ieee_float,
-    mac,
-    ipv4
-};
+enum element_type { null, string, num8, num16, num32, ieee_float, mac, ipv4 };
 
 using mac_addr = std::array<uint8_t, 6>;
 using ipv4_addr = std::array<uint8_t, 4>;
@@ -156,9 +144,12 @@ struct eeprom {
     /*
      * Little endian reads of values from the data.
      */
-    template <typename T> T get32(const size_t offset) const;
-    template <typename T> T get16(const size_t offset) const;
-    template <typename T> T get8(const size_t offset) const;
+    template<typename T>
+    T get32(const size_t offset) const;
+    template<typename T>
+    T get16(const size_t offset) const;
+    template<typename T>
+    T get8(const size_t offset) const;
 
     /*
      * Find an instance of a tag in the data
@@ -174,26 +165,24 @@ protected:
     void throw_bad_tag_type(const tag key);
 };
 
-template <typename T> inline T
-eeprom::get32(const size_t offset) const {
-    return static_cast<T>((data[offset + 3] << 24) |
-                          (data[offset + 2] << 16) |
-                          (data[offset + 1] << 8) |
-                          data[offset + 0]);
+template<typename T>
+inline T eeprom::get32(const size_t offset) const {
+    return static_cast<T>((data[offset + 3] << 24) | (data[offset + 2] << 16) |
+                          (data[offset + 1] << 8) | data[offset + 0]);
 }
 
-template <typename T> inline T
-eeprom::get16(const size_t offset) const {
+template<typename T>
+inline T eeprom::get16(const size_t offset) const {
     return static_cast<T>((data[offset + 1] << 8) | data[offset + 0]);
 }
 
-template <typename T> inline T
-eeprom::get8(const size_t offset) const {
+template<typename T>
+inline T eeprom::get8(const size_t offset) const {
     return static_cast<T>(data[offset + 0]);
 }
 
-}
-}
-}
+}  // namespace eeprom
+}  // namespace pixie
+}  // namespace xia
 
 #endif  // PIXIE_EEPROM_H

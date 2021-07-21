@@ -20,8 +20,8 @@
  * @brief Implements common data structures for the FPGAs on the Pixie-16 modules.
  */
 
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
 #include <pixie/log.hpp>
 
@@ -29,200 +29,149 @@
 #include <pixie/pixie16/module.hpp>
 
 
-namespace xia
-{
-namespace pixie
-{
-namespace hw
-{
-namespace fpga
-{
-    /*
-     * The module bus lock is not held here. Hold at the
-     * FPGA instance level.
-     */
-    control::controls::controls(const uint32_t clear_,
-                                const uint32_t set_,
-                                const uint32_t done_)
-        : clear(clear_),
-          set(set_),
-          done(done_)
-    {
+namespace xia {
+namespace pixie {
+namespace hw {
+namespace fpga {
+/*
+ * The module bus lock is not held here. Hold at the
+ * FPGA instance level.
+ */
+control::controls::controls(const uint32_t clear_, const uint32_t set_, const uint32_t done_)
+    : clear(clear_), set(set_), done(done_) {}
+
+control::regs::regs(const int DATACS_, const int CTRLCS_, const int RDCS_)
+    : DATACS(DATACS_), CTRLCS(CTRLCS_), RDCS(RDCS_) {}
+
+control::control(module::module& module_, const std::string name_, const controls& load_ctrl_,
+                 const controls& clear_ctrl_, const regs& reg_, bool trace_)
+    : module(module_), name(name_), load_ctrl(load_ctrl_), clear_ctrl(clear_ctrl_), reg(reg_),
+      trace(trace_) {}
+
+void control::load(const firmware::image& image, int retries) {
+    log(log::info) << "fpga-" << name << " [slot " << module.slot
+                   << "] load: length=" << image.size() << " retries=" << retries << std::hex
+                   << " clear-controls: clear=0x" << clear_ctrl.clear << ",set=0x" << clear_ctrl.set
+                   << ",done=0x" << clear_ctrl.done << " load-controls: clear=0x" << load_ctrl.clear
+                   << ",set=0x" << load_ctrl.set << ",done=0x" << load_ctrl.done;
+
+    if (image.empty()) {
+        throw error(error::code::device_image_failure, "no image loaded");
     }
 
-    control::regs::regs(const int DATACS_,
-                        const int CTRLCS_,
-                        const int RDCS_)
-        : DATACS(DATACS_),
-          CTRLCS(CTRLCS_),
-          RDCS(RDCS_)
-    {
-    }
+    bool programmed = false;
 
-    control::control(module::module& module_,
-                   const std::string name_,
-                   const controls& load_ctrl_,
-                   const controls& clear_ctrl_,
-                   const regs& reg_,
-                   bool trace_)
-      : module(module_),
-        name(name_),
-        load_ctrl(load_ctrl_),
-        clear_ctrl(clear_ctrl_),
-        reg(reg_),
-        trace(trace_)
-    {
-    }
+    while (!programmed) {
+        uint32_t data;
 
-    void
-    control::load(const firmware::image& image, int retries)
-    {
-        log(log::info) << "fpga-" << name
-                       << " [slot " << module.slot
-                       << "] load: length=" << image.size()
-                       << " retries=" << retries
-                       << std::hex
-                       << " clear-controls: clear=0x" << clear_ctrl.clear
-                       << ",set=0x" << clear_ctrl.set
-                       << ",done=0x" << clear_ctrl.done
-                       << " load-controls: clear=0x" << load_ctrl.clear
-                       << ",set=0x" << load_ctrl.set
-                       << ",done=0x" << load_ctrl.done;
+        bool cleared = false;
+        int timeout_msec = 25;
 
-        if (image.empty()) {
-            throw error(error::code::device_image_failure, "no image loaded");
-        }
-
-        bool programmed = false;
-
-        while (!programmed) {
-            uint32_t data;
-
-            bool cleared = false;
-            int timeout_msec = 25;
-
-            while (!cleared) {
-                log(log::debug) << "fpga-" << name
-                                << " [slot " << module.slot
-                                << "] clearing retries=" << retries;
-
-                /*
-                 * Clear the FPGA(s)
-                 */
-                data = bus_read(reg.RDCS);
-                data &= clear_ctrl.clear;
-                data |= clear_ctrl.set;
-                bus_write(reg.CTRLCS, data);
-
-                /*
-                 * Ready the FPGA(s)
-                 */
-                data = bus_read(reg.RDCS);
-                data &= load_ctrl.clear;
-                data |= load_ctrl.set;
-                bus_write(reg.CTRLCS, data);
-
-                while (true) {
-                    wait(1000);
-                    data = bus_read(reg.RDCS);
-                    if ((data & clear_ctrl.done) == clear_ctrl.done) {
-                        /*
-                         * Clear
-                         */
-                        cleared = true;
-                        break;
-                    }
-                    --timeout_msec;
-                    if (timeout_msec <= 0) {
-                        --retries;
-                        if (retries <= 0) {
-                            throw error(error::code::device_load_failure,
-                                        make_what("clear failure"));
-                        }
-                        break;
-                    }
-                }
-            }
-
-            log(log::debug) << "fpga-" << name
-                            << " [slot " << module.slot
-                            << "] programming";
+        while (!cleared) {
+            log(log::debug) << "fpga-" << name << " [slot " << module.slot
+                            << "] clearing retries=" << retries;
 
             /*
-             * Load the data.
+             * Clear the FPGA(s)
              */
-            size_t i = 0;
-            while (i < image.size()) {
-                firmware::image_value_type value;
-                value  = image[i++];
-                value |= ((firmware::image_value_type) image[i++]) << 8;
-                value |= ((firmware::image_value_type) image[i++]) << 16;
-                value |= ((firmware::image_value_type) image[i++]) << 24;
-                bus_write(reg.DATACS, value);
-            }
+            data = bus_read(reg.RDCS);
+            data &= clear_ctrl.clear;
+            data |= clear_ctrl.set;
+            bus_write(reg.CTRLCS, data);
 
-            log(log::debug) << "fpga-" << name
-                            << " [slot " << module.slot
-                            << "] waiting for done";
-
-            timeout_msec = 25;
+            /*
+             * Ready the FPGA(s)
+             */
+            data = bus_read(reg.RDCS);
+            data &= load_ctrl.clear;
+            data |= load_ctrl.set;
+            bus_write(reg.CTRLCS, data);
 
             while (true) {
                 wait(1000);
-                auto is_done = done();
-                if (is_done) {
+                data = bus_read(reg.RDCS);
+                if ((data & clear_ctrl.done) == clear_ctrl.done) {
                     /*
-                     * Programmed
+                     * Clear
                      */
-                    programmed = true;
+                    cleared = true;
                     break;
                 }
                 --timeout_msec;
                 if (timeout_msec <= 0) {
                     --retries;
                     if (retries <= 0) {
-                        throw error(error::code::device_load_failure,
-                                    make_what("programming failure"));
+                        throw error(error::code::device_load_failure, make_what("clear failure"));
                     }
                     break;
                 }
             }
         }
 
-        log(log::debug) << "fpga-" << name
-                        << " [slot " << module.slot
-                        << "] done";
+        log(log::debug) << "fpga-" << name << " [slot " << module.slot << "] programming";
+
+        /*
+         * Load the data.
+         */
+        size_t i = 0;
+        while (i < image.size()) {
+            firmware::image_value_type value;
+            value = image[i++];
+            value |= ((firmware::image_value_type) image[i++]) << 8;
+            value |= ((firmware::image_value_type) image[i++]) << 16;
+            value |= ((firmware::image_value_type) image[i++]) << 24;
+            bus_write(reg.DATACS, value);
+        }
+
+        log(log::debug) << "fpga-" << name << " [slot " << module.slot << "] waiting for done";
+
+        timeout_msec = 25;
+
+        while (true) {
+            wait(1000);
+            auto is_done = done();
+            if (is_done) {
+                /*
+                 * Programmed
+                 */
+                programmed = true;
+                break;
+            }
+            --timeout_msec;
+            if (timeout_msec <= 0) {
+                --retries;
+                if (retries <= 0) {
+                    throw error(error::code::device_load_failure, make_what("programming failure"));
+                }
+                break;
+            }
+        }
     }
 
-    bool
-    control::done()
-    {
-        return (bus_read(reg.RDCS) & load_ctrl.done) == load_ctrl.done;
-    }
+    log(log::debug) << "fpga-" << name << " [slot " << module.slot << "] done";
+}
 
-    void
-    control::bus_write(int reg, uint32_t data)
-    {
-        module.write_word(reg, data);
-    }
+bool control::done() {
+    return (bus_read(reg.RDCS) & load_ctrl.done) == load_ctrl.done;
+}
 
-    uint32_t
-    control::bus_read(int reg)
-    {
-        return module.read_word(reg);
-    }
+void control::bus_write(int reg, uint32_t data) {
+    module.write_word(reg, data);
+}
 
-    std::string
-    control::make_what(const char* msg)
-    {
-        std::string what;
-        what = "fpga-";
-        what += name;
-        what += ' ';
-        what += msg;
-        return what;
-    }
-};
-};
-};
-};
+uint32_t control::bus_read(int reg) {
+    return module.read_word(reg);
+}
+
+std::string control::make_what(const char* msg) {
+    std::string what;
+    what = "fpga-";
+    what += name;
+    what += ' ';
+    what += msg;
+    return what;
+}
+};  // namespace fpga
+};  // namespace hw
+};  // namespace pixie
+};  // namespace xia

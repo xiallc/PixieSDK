@@ -29,16 +29,12 @@
 
 #include <pixie/pixie16/hw.hpp>
 
-namespace xia
-{
-namespace pixie
-{
-namespace module
-{
-    class module;
+namespace xia {
+namespace pixie {
+namespace module {
+class module;
 }
-namespace stats
-{
+namespace stats {
 /*
  * Statistics
  *
@@ -79,7 +75,7 @@ struct module {
     double real_time() const;
 };
 
-    typedef std::vector<module> modules;
+typedef std::vector<module> modules;
 
 struct stats {
     module mod;
@@ -89,8 +85,8 @@ struct stats {
 };
 
 void read(pixie::module::module& module_, stats& stats_);
-}
-}
-}
+}  // namespace stats
+}  // namespace pixie
+}  // namespace xia
 
 #endif  // PIXIE_STATS_H

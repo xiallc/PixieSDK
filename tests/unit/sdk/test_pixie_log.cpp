@@ -102,23 +102,23 @@ TEST_SUITE("xia::log") {
         std::cout.rdbuf(old);
 
         xia::log(xia::log::level::off) << test_message;
-            CHECK(test_stream.str() == "");
+        CHECK(test_stream.str() == "");
         test_stream.str("");
 
         xia::log(xia::log::level::error) << test_message;
-            CHECK(test_stream.str() == "[ERROR] " + test_message + "\n");
+        CHECK(test_stream.str() == "[ERROR] " + test_message + "\n");
         test_stream.str("");
 
         xia::log(xia::log::level::warning) << test_message;
-            CHECK(test_stream.str() == "[WARN ] " + test_message + "\n");
+        CHECK(test_stream.str() == "[WARN ] " + test_message + "\n");
         test_stream.str("");
 
         xia::log(xia::log::level::info) << test_message;
-            CHECK(test_stream.str() == "");
+        CHECK(test_stream.str() == "");
         test_stream.str("");
 
         xia::log(xia::log::level::debug) << test_message;
-            CHECK(test_stream.str() == "");
+        CHECK(test_stream.str() == "");
         test_stream.str("");
 
         xia::logging::stop("warning");
@@ -132,23 +132,23 @@ TEST_SUITE("xia::log") {
         std::cout.rdbuf(old);
 
         xia::log(xia::log::level::off) << test_message;
-            CHECK(test_stream.str() == "");
+        CHECK(test_stream.str() == "");
         test_stream.str("");
 
         xia::log(xia::log::level::error) << test_message;
-            CHECK(test_stream.str() == "[ERROR] " + test_message + "\n");
+        CHECK(test_stream.str() == "[ERROR] " + test_message + "\n");
         test_stream.str("");
 
         xia::log(xia::log::level::warning) << test_message;
-            CHECK(test_stream.str() == "[WARN ] " + test_message + "\n");
+        CHECK(test_stream.str() == "[WARN ] " + test_message + "\n");
         test_stream.str("");
 
         xia::log(xia::log::level::info) << test_message;
-            CHECK(test_stream.str() == "[INFO ] " + test_message + "\n");
+        CHECK(test_stream.str() == "[INFO ] " + test_message + "\n");
         test_stream.str("");
 
         xia::log(xia::log::level::debug) << test_message;
-            CHECK(test_stream.str() == "");
+        CHECK(test_stream.str() == "");
         test_stream.str("");
 
         xia::logging::stop("info");
@@ -162,23 +162,23 @@ TEST_SUITE("xia::log") {
         std::cout.rdbuf(old);
 
         xia::log(xia::log::level::off) << test_message;
-            CHECK(test_stream.str() == "");
+        CHECK(test_stream.str() == "");
         test_stream.str("");
 
         xia::log(xia::log::level::error) << test_message;
-            CHECK(test_stream.str() == "[ERROR] " + test_message + "\n");
+        CHECK(test_stream.str() == "[ERROR] " + test_message + "\n");
         test_stream.str("");
 
         xia::log(xia::log::level::warning) << test_message;
-            CHECK(test_stream.str() == "[WARN ] " + test_message + "\n");
+        CHECK(test_stream.str() == "[WARN ] " + test_message + "\n");
         test_stream.str("");
 
         xia::log(xia::log::level::info) << test_message;
-            CHECK(test_stream.str() == "[INFO ] " + test_message + "\n");
+        CHECK(test_stream.str() == "[INFO ] " + test_message + "\n");
         test_stream.str("");
 
         xia::log(xia::log::level::debug) << test_message;
-            CHECK(test_stream.str() == "[DEBUG] " + test_message + "\n");
+        CHECK(test_stream.str() == "[DEBUG] " + test_message + "\n");
         test_stream.str("");
 
         xia::logging::stop("debug");

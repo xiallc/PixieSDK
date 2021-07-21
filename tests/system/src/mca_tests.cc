@@ -140,8 +140,8 @@ int main(int argc, char* argv[]) {
         cout << "Init OK " << retval << endl;
     }
 
-    retval = Pixie16BootModule(ComFPGAConfigFile, SPFPGAConfigFile, "", DSPCodeFile, DSPParFile_G09, DSPVarFile,
-                               NumModules, 0x7F);
+    retval = Pixie16BootModule(ComFPGAConfigFile, SPFPGAConfigFile, "", DSPCodeFile, DSPParFile_G09,
+                               DSPVarFile, NumModules, 0x7F);
     if (retval < 0) {
         printf("*ERROR* Pixie16BootModule @ gain = 0.9 failed, retval = %d", retval);
         sprintf(ErrMSG, "*ERROR* Pixie16BootModule @ gain = 0.9 failed, retval = %d", retval);
@@ -164,7 +164,8 @@ int main(int argc, char* argv[]) {
             return (-3);
         }
 
-        SN = (unsigned short) (unsigned char) IOBytes[k][0] + 256 * (unsigned short) (unsigned char) IOBytes[k][1];
+        SN = (unsigned short) (unsigned char) IOBytes[k][0] +
+             256 * (unsigned short) (unsigned char) IOBytes[k][1];
 
         if (IOBytes[k][2] >= 11) {
             ModSerNum[k] = SN;
@@ -178,7 +179,9 @@ int main(int argc, char* argv[]) {
     for (k = 0; k < NumModules; k++) {
         // Wait for system ready - user needs to connect the 16 input signals
         printf("\nPlease enter 'S' to start acquiring mca histograms in module %d when ready ", k);
-        do { scanf("%s", command); } while (strcmp(command, "S") != 0);
+        do {
+            scanf("%s", command);
+        } while (strcmp(command, "S") != 0);
 
         // Adjust offsets for all channels
         retval = Pixie16AdjustOffsets(k);
@@ -190,7 +193,8 @@ int main(int argc, char* argv[]) {
 
         // MCA run
         runtime = 120.;  // in seconds
-        runtime_IEEE = Decimal2IEEEFloating(runtime);  // convert to IEEE 32-bit floating point format
+        runtime_IEEE =
+            Decimal2IEEEFloating(runtime);  // convert to IEEE 32-bit floating point format
         retval = Pixie16WriteSglModPar("HOST_RT_PRESET", runtime_IEEE, k);
         if (retval < 0) {
             printf("Error writing host preset run time\n");
@@ -222,8 +226,8 @@ int main(int argc, char* argv[]) {
         retval = Pixie16SaveDSPParametersToFile(setfilenam);
 
         // Set gain to 4.0
-        retval = Pixie16BootModule(ComFPGAConfigFile, SPFPGAConfigFile, "", DSPCodeFile, DSPParFile_G40, DSPVarFile, k,
-                                   0x70);
+        retval = Pixie16BootModule(ComFPGAConfigFile, SPFPGAConfigFile, "", DSPCodeFile,
+                                   DSPParFile_G40, DSPVarFile, k, 0x70);
         if (retval < 0) {
             sprintf(ErrMSG, "*ERROR* Pixie16BootModule @ gain = 4.0 failed, retval = %d", retval);
             Pixie_Print_MSG(ErrMSG);
@@ -239,7 +243,8 @@ int main(int argc, char* argv[]) {
         }
 
         // Write runtime to DSP
-        runtime_IEEE = Decimal2IEEEFloating(runtime);  // convert to IEEE 32-bit floating point format
+        runtime_IEEE =
+            Decimal2IEEEFloating(runtime);  // convert to IEEE 32-bit floating point format
         retval = Pixie16WriteSglModPar("HOST_RT_PRESET", runtime_IEEE, k);
         if (retval < 0) {
             printf("Error writing host preset run time\n");

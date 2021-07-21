@@ -41,9 +41,10 @@ int Pixie_End_Run(unsigned short ModNum);
 
 int Pixie_Check_Run_Status(unsigned short ModNum);
 
-int Pixie_Control_Task_Run(unsigned short ModNum,  // Pixie module number
-                           unsigned short ControlTask,  // Control task number
-                           unsigned int Max_Poll);  // Timeout control in unit of ms for control task run
+int Pixie_Control_Task_Run(
+    unsigned short ModNum,  // Pixie module number
+    unsigned short ControlTask,  // Control task number
+    unsigned int Max_Poll);  // Timeout control in unit of ms for control task run
 
 int Pixie_Broadcast(const char* str,  // variable name whose value is to be broadcasted
                     unsigned short SourceModule);  // the source module number

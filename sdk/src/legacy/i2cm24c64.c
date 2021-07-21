@@ -80,8 +80,7 @@ int I2CM24C64_Write_One_Byte(unsigned short ModNum,  // Pixie module module
     // Get Acknowledge
     ackvalue = I2CM24C64_getACK(ModNum);
     if (ackvalue != 0) {
-        Pixie_Print_Error(PIXIE_FUNC,
-                          "Failed to get Acknowledge after sending address byte (MSB)");
+        Pixie_Print_Error(PIXIE_FUNC, "Failed to get Acknowledge after sending address byte (MSB)");
         return (-3);
     }
 
@@ -90,8 +89,7 @@ int I2CM24C64_Write_One_Byte(unsigned short ModNum,  // Pixie module module
     // Get Acknowledge
     ackvalue = I2CM24C64_getACK(ModNum);
     if (ackvalue != 0) {
-        Pixie_Print_Error(PIXIE_FUNC,
-                          "Failed to get Acknowledge after sending address byte (LSB)");
+        Pixie_Print_Error(PIXIE_FUNC, "Failed to get Acknowledge after sending address byte (LSB)");
         return (-4);
     }
 
@@ -164,8 +162,7 @@ int I2CM24C64_Read_One_Byte(unsigned short ModNum,  // Pixie module number
     // Get Acknowledge
     ackvalue = I2CM24C64_getACK(ModNum);
     if (ackvalue != 0) {
-        Pixie_Print_Error(PIXIE_FUNC,
-                          "Failed to get Acknowledge after sending address byte (MSB)");
+        Pixie_Print_Error(PIXIE_FUNC, "Failed to get Acknowledge after sending address byte (MSB)");
         return (-3);
     }
 
@@ -174,8 +171,7 @@ int I2CM24C64_Read_One_Byte(unsigned short ModNum,  // Pixie module number
     // Get Acknowledge
     ackvalue = I2CM24C64_getACK(ModNum);
     if (ackvalue != 0) {
-        Pixie_Print_Error(PIXIE_FUNC,
-                          "Failed to get Acknowledge after sending address byte (LSB)");
+        Pixie_Print_Error(PIXIE_FUNC, "Failed to get Acknowledge after sending address byte (LSB)");
         return (-4);
     }
 
@@ -217,10 +213,11 @@ int I2CM24C64_Read_One_Byte(unsigned short ModNum,  // Pixie module number
  *
  ****************************************************************/
 
-int I2CM24C64_Page_Write(unsigned short ModNum,  // Pixie module module
-                         unsigned short Address,  // The starting address to write this page
-                         unsigned short NumBytesToWrite,  // The number of bytes for this page to write
-                         char* ByteValue)  // The byte values
+int I2CM24C64_Page_Write(
+    unsigned short ModNum,  // Pixie module module
+    unsigned short Address,  // The starting address to write this page
+    unsigned short NumBytesToWrite,  // The number of bytes for this page to write
+    char* ByteValue)  // The byte values
 {
     char IOByte;
     char ackvalue, byteaddrMSB, byteaddrLSB;
@@ -304,10 +301,11 @@ int I2CM24C64_Page_Write(unsigned short ModNum,  // Pixie module module
  *
  ****************************************************************/
 
-int I2CM24C64_Sequential_Read(unsigned short ModNum,  // Pixie module number
-                              unsigned short Address,  // The starting address to read
-                              unsigned short NumBytesToRead,  // Number of bytes to read (maximum 32 bytes)
-                              char* ByteValue)  // The byte values
+int I2CM24C64_Sequential_Read(
+    unsigned short ModNum,  // Pixie module number
+    unsigned short Address,  // The starting address to read
+    unsigned short NumBytesToRead,  // Number of bytes to read (maximum 32 bytes)
+    char* ByteValue)  // The byte values
 {
     char IOByte;
     char ackvalue, byteaddrMSB, byteaddrLSB;
@@ -343,8 +341,7 @@ int I2CM24C64_Sequential_Read(unsigned short ModNum,  // Pixie module number
     // Get Acknowledge
     ackvalue = I2CM24C64_getACK(ModNum);
     if (ackvalue != 0) {
-        Pixie_Print_Error(PIXIE_FUNC,
-                          "Failed to get Acknowledge after sending address byte (MSB)");
+        Pixie_Print_Error(PIXIE_FUNC, "Failed to get Acknowledge after sending address byte (MSB)");
         return (-3);
     }
 
@@ -353,8 +350,7 @@ int I2CM24C64_Sequential_Read(unsigned short ModNum,  // Pixie module number
     // Get Acknowledge
     ackvalue = I2CM24C64_getACK(ModNum);
     if (ackvalue != 0) {
-        Pixie_Print_Error(PIXIE_FUNC,
-                          "Failed to get Acknowledge after sending address byte (LSB)");
+        Pixie_Print_Error(PIXIE_FUNC, "Failed to get Acknowledge after sending address byte (LSB)");
         return (-4);
     }
 
@@ -551,9 +547,11 @@ int I2CM24C64_byte_read(unsigned short ModNum, char* ByteToReceive) {
         ByteReceived = (char) buffer[0];
 
         if (SYS16_TstBit(0, (unsigned short) ByteReceived) == 1)
-            *ByteToReceive = (char) SYS16_SetBit((unsigned short) i, (unsigned short) *ByteToReceive);
+            *ByteToReceive =
+                (char) SYS16_SetBit((unsigned short) i, (unsigned short) *ByteToReceive);
         else
-            *ByteToReceive = (char) SYS16_ClrBit((unsigned short) i, (unsigned short) *ByteToReceive);
+            *ByteToReceive =
+                (char) SYS16_ClrBit((unsigned short) i, (unsigned short) *ByteToReceive);
 
         //***************************
         //	Set SCL to 0

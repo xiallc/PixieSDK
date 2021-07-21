@@ -22,8 +22,8 @@
 
 #ifndef PIXIE_SDK_SYSTEM_TEST_UTILITIES_HPP
 #define PIXIE_SDK_SYSTEM_TEST_UTILITIES_HPP
-#include <vector>
 #include <string>
+#include <vector>
 
 enum class DATA_PATTERN {
     HI_LO,
@@ -36,10 +36,7 @@ enum class DATA_PATTERN {
     ZERO
 };
 
-enum class DATA_IO {
-    WRITE = 0,
-    READ = 1
-};
+enum class DATA_IO { WRITE = 0, READ = 1 };
 
 std::vector<unsigned int> prepare_data_to_write(const DATA_PATTERN& data_pattern,
                                                 const unsigned int& size);
@@ -52,4 +49,4 @@ int verify_data_read(const unsigned int* expected, const unsigned int* returned,
 
 bool verify_power_of_two(const unsigned int& value);
 
-#endif //PIXIE_SDK_SYSTEM_TEST_UTILITIES_HPP
+#endif  //PIXIE_SDK_SYSTEM_TEST_UTILITIES_HPP

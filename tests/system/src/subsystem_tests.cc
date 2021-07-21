@@ -126,8 +126,8 @@ int main(int argc, char* argv[]) {
         cout << "Init OK " << retval << endl;
     }
 
-    retval = Pixie16BootModule(ComFPGAConfigFile, SPFPGAConfigFile, "", DSPCodeFile, DSPParFile, DSPVarFile, NumModules,
-                               0x7F);
+    retval = Pixie16BootModule(ComFPGAConfigFile, SPFPGAConfigFile, "", DSPCodeFile, DSPParFile,
+                               DSPVarFile, NumModules, 0x7F);
     if (retval < 0) {
         printf("*ERROR* Pixie16BootModule failed, retval = %d", retval);
         sprintf(ErrMSG, "*ERROR* Pixie16BootModule failed, retval = %d", retval);
@@ -162,8 +162,10 @@ int test_analogfrontend(unsigned short nummodules) {
 
     // Check if nummodules is valid
     if (nummodules > PRESET_MAX_MODULES) {
-        sprintf(ErrMSG, "*ERROR* (test_analogfrontend): nummodules %d exceeds maximum allowed number of modules %d",
-                nummodules, PRESET_MAX_MODULES);
+        sprintf(
+            ErrMSG,
+            "*ERROR* (test_analogfrontend): nummodules %d exceeds maximum allowed number of modules %d",
+            nummodules, PRESET_MAX_MODULES);
         Pixie_Print_MSG(ErrMSG);
         return (-1);
     }
@@ -172,13 +174,16 @@ int test_analogfrontend(unsigned short nummodules) {
     for (k = 0; k < nummodules; k++) {
         retval = I2CM24C64_Sequential_Read((unsigned short) k, 0, 8192, IOBytes[k]);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (test_analogfrontend): Could not read I2C-EEPROM in Module=%ld; retval=%d", k,
-                    retval);
+            sprintf(
+                ErrMSG,
+                "*ERROR* (test_analogfrontend): Could not read I2C-EEPROM in Module=%ld; retval=%d",
+                k, retval);
             Pixie_Print_MSG(ErrMSG);
             return (-2);
         }
 
-        SN = (unsigned short) (unsigned char) IOBytes[k][0] + 256 * (unsigned short) (unsigned char) IOBytes[k][1];
+        SN = (unsigned short) (unsigned char) IOBytes[k][0] +
+             256 * (unsigned short) (unsigned char) IOBytes[k][1];
 
         if (IOBytes[k][2] >= 11) {
             ModSerNum[k] = SN;
@@ -197,7 +202,9 @@ int test_analogfrontend(unsigned short nummodules) {
             Pixie_Print_MSG(ErrMSG);
 
             // Close files that were already opened
-            for (m = 0; m < k; m++) { fclose(datfil[m]); }
+            for (m = 0; m < k; m++) {
+                fclose(datfil[m]);
+            }
             return (-3);
         }
     }
@@ -206,11 +213,15 @@ int test_analogfrontend(unsigned short nummodules) {
     for (k = 0; k < nummodules; k++) {
         fprintf(datfil[k], "Module serial number: %hu\n\n", ModSerNum[k]);
         fprintf(datfil[k], "Module I2C-EEPROM information:\n");
-        for (m = 0; m < 8192; m++) { fprintf(datfil[k], "%d\n", (unsigned char) IOBytes[k][m]); }
+        for (m = 0; m < 8192; m++) {
+            fprintf(datfil[k], "%d\n", (unsigned char) IOBytes[k][m]);
+        }
     }
 
     // Going through each of the 65536 steps of the 16-bit DAC
-    for (k = 0; k < nummodules; k++) { fprintf(datfil[k], "\nADC values vs. OffsetDAC steps\n\n"); }
+    for (k = 0; k < nummodules; k++) {
+        fprintf(datfil[k], "\nADC values vs. OffsetDAC steps\n\n");
+    }
     for (k = 0; k < 65535; k++) {
         offsetvolts = (double) k / 65536.0 * DAC_VOLTAGE_RANGE - DAC_VOLTAGE_RANGE / 2.0;
 
@@ -218,13 +229,16 @@ int test_analogfrontend(unsigned short nummodules) {
             for (n = 0; n < 16; n++) {
                 retval = Pixie16WriteSglChanPar("VOFFSET", offsetvolts, m, n);
                 if (retval < 0) {
-                    sprintf(ErrMSG,
-                            "*ERROR* (test_analogfrontend): Pixie16WriteSglChanPar failed in mod %d, chan %d, retval=%d",
-                            m, n, retval);
+                    sprintf(
+                        ErrMSG,
+                        "*ERROR* (test_analogfrontend): Pixie16WriteSglChanPar failed in mod %d, chan %d, retval=%d",
+                        m, n, retval);
                     Pixie_Print_MSG(ErrMSG);
 
                     // Close all data files
-                    for (i = 0; i < nummodules; i++) { fclose(datfil[i]); }
+                    for (i = 0; i < nummodules; i++) {
+                        fclose(datfil[i]);
+                    }
                     return (-4);
                 }
             }
@@ -236,35 +250,45 @@ int test_analogfrontend(unsigned short nummodules) {
         for (m = 0; m < nummodules; m++) {
             retval = Pixie16AcquireADCTrace(m);
             if (retval < 0) {
-                sprintf(ErrMSG, "*ERROR* (test_analogfrontend): Pixie16AcquireADCTrace failed in mod %d, retval=%d", m,
-                        retval);
+                sprintf(
+                    ErrMSG,
+                    "*ERROR* (test_analogfrontend): Pixie16AcquireADCTrace failed in mod %d, retval=%d",
+                    m, retval);
                 Pixie_Print_MSG(ErrMSG);
                 // Close all data files
-                for (i = 0; i < nummodules; i++) { fclose(datfil[i]); }
+                for (i = 0; i < nummodules; i++) {
+                    fclose(datfil[i]);
+                }
                 return (-5);
             }
 
             for (n = 0; n < 16; n++) {
                 retval = Pixie16ReadSglChanADCTrace(ADCTrace, MAX_ADC_TRACE_LEN, m, n);
                 if (retval < 0) {
-                    sprintf(ErrMSG,
-                            "*ERROR* (test_analogfrontend): Pixie16ReadSglChanADCTrace failed in mod %d, chan %d, retval=%d",
-                            m, n, retval);
+                    sprintf(
+                        ErrMSG,
+                        "*ERROR* (test_analogfrontend): Pixie16ReadSglChanADCTrace failed in mod %d, chan %d, retval=%d",
+                        m, n, retval);
                     Pixie_Print_MSG(ErrMSG);
                     // Close all data files
-                    for (i = 0; i < nummodules; i++) { fclose(datfil[i]); }
+                    for (i = 0; i < nummodules; i++) {
+                        fclose(datfil[i]);
+                    }
                     return (-6);
                 }
 
-                retval = Pixie16IMbufferIO((unsigned int*) &offsetdac, 1, (unsigned long) (OffsetDAC_Address[m] + n),
-                                           MOD_READ, m);
+                retval = Pixie16IMbufferIO((unsigned int*) &offsetdac, 1,
+                                           (unsigned long) (OffsetDAC_Address[m] + n), MOD_READ, m);
                 if (retval < 0) {
-                    sprintf(ErrMSG,
-                            "*ERROR* (test_analogfrontend): Pixie16IMbufferIO failed in mod %d, chan %d, retval=%d", m,
-                            n, retval);
+                    sprintf(
+                        ErrMSG,
+                        "*ERROR* (test_analogfrontend): Pixie16IMbufferIO failed in mod %d, chan %d, retval=%d",
+                        m, n, retval);
                     Pixie_Print_MSG(ErrMSG);
                     // Close all data files
-                    for (i = 0; i < nummodules; i++) { fclose(datfil[i]); }
+                    for (i = 0; i < nummodules; i++) {
+                        fclose(datfil[i]);
+                    }
                     return (-7);
                 }
 
@@ -281,20 +305,25 @@ int test_analogfrontend(unsigned short nummodules) {
     }
 
     // Check FFT of ADC traces
-    for (k = 0; k < nummodules; k++) { fprintf(datfil[k], "\nFFT of ADC Traces @ OffsetDAC = 32768\n\n"); }
+    for (k = 0; k < nummodules; k++) {
+        fprintf(datfil[k], "\nFFT of ADC Traces @ OffsetDAC = 32768\n\n");
+    }
     // First set OffsetDAC to 32768
     offsetvolts = 32768.0 / 65536.0 * DAC_VOLTAGE_RANGE - DAC_VOLTAGE_RANGE / 2.0;
     for (m = 0; m < nummodules; m++) {
         for (n = 0; n < 16; n++) {
             retval = Pixie16WriteSglChanPar("VOFFSET", offsetvolts, m, n);
             if (retval < 0) {
-                sprintf(ErrMSG,
-                        "*ERROR* (test_analogfrontend): Pixie16WriteSglChanPar failed in mod %d, chan %d, retval=%d", m,
-                        n, retval);
+                sprintf(
+                    ErrMSG,
+                    "*ERROR* (test_analogfrontend): Pixie16WriteSglChanPar failed in mod %d, chan %d, retval=%d",
+                    m, n, retval);
                 Pixie_Print_MSG(ErrMSG);
 
                 // Close all data files
-                for (i = 0; i < nummodules; i++) { fclose(datfil[i]); }
+                for (i = 0; i < nummodules; i++) {
+                    fclose(datfil[i]);
+                }
                 return (-8);
             }
         }
@@ -305,23 +334,30 @@ int test_analogfrontend(unsigned short nummodules) {
     for (m = 0; m < nummodules; m++) {
         retval = Pixie16AcquireADCTrace(m);
         if (retval < 0) {
-            sprintf(ErrMSG, "*ERROR* (test_analogfrontend): Pixie16AcquireADCTrace failed in mod %d, retval=%d", m,
-                    retval);
+            sprintf(
+                ErrMSG,
+                "*ERROR* (test_analogfrontend): Pixie16AcquireADCTrace failed in mod %d, retval=%d",
+                m, retval);
             Pixie_Print_MSG(ErrMSG);
             // Close all data files
-            for (i = 0; i < nummodules; i++) { fclose(datfil[i]); }
+            for (i = 0; i < nummodules; i++) {
+                fclose(datfil[i]);
+            }
             return (-9);
         }
 
         for (n = 0; n < 16; n++) {
             retval = Pixie16ReadSglChanADCTrace(ADCTrace, MAX_ADC_TRACE_LEN, m, n);
             if (retval < 0) {
-                sprintf(ErrMSG,
-                        "*ERROR* (test_analogfrontend): Pixie16ReadSglChanADCTrace failed in mod %d, chan %d, retval=%d",
-                        m, n, retval);
+                sprintf(
+                    ErrMSG,
+                    "*ERROR* (test_analogfrontend): Pixie16ReadSglChanADCTrace failed in mod %d, chan %d, retval=%d",
+                    m, n, retval);
                 Pixie_Print_MSG(ErrMSG);
                 // Close all data files
-                for (i = 0; i < nummodules; i++) { fclose(datfil[i]); }
+                for (i = 0; i < nummodules; i++) {
+                    fclose(datfil[i]);
+                }
                 return (-10);
             }
 
@@ -334,17 +370,22 @@ int test_analogfrontend(unsigned short nummodules) {
             retval = Pixie16complexFFT(fftTrace, MAX_ADC_TRACE_LEN);
             // Compute power
             for (i = 0; i < MAX_ADC_TRACE_LEN; i++) {
-                power[i] = sqrt(pow(fftTrace[i * 2], 2.0) + pow(fftTrace[i * 2 + 1], 2.0)) / (double) MAX_ADC_TRACE_LEN;
+                power[i] = sqrt(pow(fftTrace[i * 2], 2.0) + pow(fftTrace[i * 2 + 1], 2.0)) /
+                           (double) MAX_ADC_TRACE_LEN;
             }
             // clear out the DC offset
             power[0] = 0.0;
             // Write to the output file
-            for (i = 0; i < MAX_ADC_TRACE_LEN; i++) { fprintf(datfil[m], "%d\t%d\t%f\n", m, n, power[i]); }
+            for (i = 0; i < MAX_ADC_TRACE_LEN; i++) {
+                fprintf(datfil[m], "%d\t%d\t%f\n", m, n, power[i]);
+            }
         }
     }
 
     // Close all data files
-    for (k = 0; k < nummodules; k++) { fclose(datfil[k]); }
+    for (k = 0; k < nummodules; k++) {
+        fclose(datfil[k]);
+    }
 
     return (0);
 }
@@ -356,7 +397,9 @@ double get_average(unsigned short* data, unsigned long numpnts) {
     unsigned long k;
 
     avg = 0.0;
-    for (k = 0; k < numpnts; k++) { avg += data[k]; }
+    for (k = 0; k < numpnts; k++) {
+        avg += data[k];
+    }
     avg /= numpnts;
 
     return avg;
@@ -368,7 +411,9 @@ double get_deviation(unsigned short* data, unsigned long numpnts, double avg) {
     unsigned long k;
 
     dev = 0.0;
-    for (k = 0; k < numpnts; k++) { dev += ((double) data[k] - avg) * ((double) data[k] - avg); }
+    for (k = 0; k < numpnts; k++) {
+        dev += ((double) data[k] - avg) * ((double) data[k] - avg);
+    }
     dev /= numpnts;
 
     return dev;

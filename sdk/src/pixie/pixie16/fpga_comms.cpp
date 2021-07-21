@@ -20,47 +20,33 @@
  * @brief Implements how we interact with the Pixie-16 communication FPGA.
  */
 
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
 #include <pixie/pixie16/defs.hpp>
 #include <pixie/pixie16/fpga_comms.hpp>
 #include <pixie/pixie16/module.hpp>
 
-namespace xia
-{
-namespace pixie
-{
-namespace hw
-{
-namespace fpga
-{
-    comms::comms(module::module& module, bool trace)
-        : ctrl(module,
-               "comms",
-               control::controls(0xfffff000, 0x00000553, 0x003),
-               control::controls(0xfffff000, 0x00000551, 0x001),
-               control::regs(hw::device::CFG_DATACS,
-                             hw::device::CFG_CTRLCS,
-                             hw::device::CFG_RDCS),
-               trace)
-    {
-    }
+namespace xia {
+namespace pixie {
+namespace hw {
+namespace fpga {
+comms::comms(module::module& module, bool trace)
+    : ctrl(module, "comms", control::controls(0xfffff000, 0x00000553, 0x003),
+           control::controls(0xfffff000, 0x00000551, 0x001),
+           control::regs(hw::device::CFG_DATACS, hw::device::CFG_CTRLCS, hw::device::CFG_RDCS),
+           trace) {}
 
-    void
-    comms::boot(const firmware::image& image, int retries)
-    {
-        module::module::bus_guard guard(ctrl.module);
-        ctrl.load(image, retries);
-    }
+void comms::boot(const firmware::image& image, int retries) {
+    module::module::bus_guard guard(ctrl.module);
+    ctrl.load(image, retries);
+}
 
-    bool
-    comms::done()
-    {
-        module::module::bus_guard guard(ctrl.module);
-        return ctrl.done();
-    }
-};
-};
-};
-};
+bool comms::done() {
+    module::module::bus_guard guard(ctrl.module);
+    return ctrl.done();
+}
+};  // namespace fpga
+};  // namespace hw
+};  // namespace pixie
+};  // namespace xia

@@ -93,7 +93,8 @@ unsigned int ChanNum_Address[PRESET_MAX_MODULES];  // ChanNum
 unsigned int HostIO_Address[PRESET_MAX_MODULES];  // HostIO
 unsigned int UserIn_Address[PRESET_MAX_MODULES];  // UserIn
 unsigned int U00_Address[PRESET_MAX_MODULES];  // U00
-unsigned int FastTrigBackplaneEna_Address[PRESET_MAX_MODULES];  // Enabling sending fast trigger to backplane
+unsigned int
+    FastTrigBackplaneEna_Address[PRESET_MAX_MODULES];  // Enabling sending fast trigger to backplane
 unsigned int CrateID_Address[PRESET_MAX_MODULES];  // CrateID
 unsigned int SlotID_Address[PRESET_MAX_MODULES];  // SlotID
 unsigned int ModID_Address[PRESET_MAX_MODULES];  // ModID
@@ -133,7 +134,8 @@ unsigned int TrigOutLen_Address[PRESET_MAX_MODULES];  // TrigOutLen
 unsigned int EnergyLow_Address[PRESET_MAX_MODULES];  // EnergyLow
 unsigned int Log2Ebin_Address[PRESET_MAX_MODULES];  // Log2Ebin
 
-unsigned int MultiplicityMaskL_Address[PRESET_MAX_MODULES];  // Multiplicity contribution mask - low 32-bit
+unsigned int
+    MultiplicityMaskL_Address[PRESET_MAX_MODULES];  // Multiplicity contribution mask - low 32-bit
 
 unsigned int PSAoffset_Address[PRESET_MAX_MODULES];  // PSAoffset
 unsigned int PSAlength_Address[PRESET_MAX_MODULES];  // PSAlength
@@ -142,18 +144,21 @@ unsigned int Integrator_Address[PRESET_MAX_MODULES];  // Integrator
 unsigned int BLcut_Address[PRESET_MAX_MODULES];  // BLcut
 unsigned int BaselinePercent_Address[PRESET_MAX_MODULES];  // BaselinePercent
 
-unsigned int FtrigoutDelay_Address[PRESET_MAX_MODULES];  // Fast trigger output delay for system synchronization
+unsigned int FtrigoutDelay_Address
+    [PRESET_MAX_MODULES];  // Fast trigger output delay for system synchronization
 
 unsigned int Log2Bweight_Address[PRESET_MAX_MODULES];  // Log2Bweight
 unsigned int PreampTau_Address[PRESET_MAX_MODULES];  // PreampTau
 
-unsigned int MultiplicityMaskH_Address[PRESET_MAX_MODULES];  // Multiplicity contribution mask - high 32-bit
+unsigned int
+    MultiplicityMaskH_Address[PRESET_MAX_MODULES];  // Multiplicity contribution mask - high 32-bit
 
 unsigned int FastTrigBackLen_Address[PRESET_MAX_MODULES];  // FastTrigBackLen
 
 unsigned int CFDDelay_Address[PRESET_MAX_MODULES];  // CFD delay
 unsigned int CFDScale_Address[PRESET_MAX_MODULES];  // CFD scale
-unsigned int ExternDelayLen_Address[PRESET_MAX_MODULES];  // delay length for each channel's input signal
+unsigned int
+    ExternDelayLen_Address[PRESET_MAX_MODULES];  // delay length for each channel's input signal
 unsigned int ExtTrigStretch_Address[PRESET_MAX_MODULES];  // external trigger stretch
 unsigned int VetoStretch_Address[PRESET_MAX_MODULES];  // veto stretch
 unsigned int QDCLen0_Address[PRESET_MAX_MODULES];  // QDC #0 length

@@ -27,78 +27,68 @@
 
 #include <stdint.h>
 
-namespace xia
-{
-namespace pixie
-{
-namespace module
-{
-    class module;
+namespace xia {
+namespace pixie {
+namespace module {
+class module;
 }
-namespace hw
-{
-namespace i2c
-{
-    struct bitbash
-    {
-        module::module& module;
+namespace hw {
+namespace i2c {
+struct bitbash {
+    module::module& module;
 
-        /*
-         * The register offset in the module's address space.
-         */
-        const int reg;
+    /*
+     * The register offset in the module's address space.
+     */
+    const int reg;
 
-        /*
-         * Bit mask of the signals.
-         */
-        const uint32_t SDA;
-        const uint32_t SCL;
-        const uint32_t CTRL;
+    /*
+     * Bit mask of the signals.
+     */
+    const uint32_t SDA;
+    const uint32_t SCL;
+    const uint32_t CTRL;
 
-        const bool trace;
+    const bool trace;
 
-        bitbash(module::module& module,
-                int reg,
-                uint32_t SDA,
-                uint32_t SCL,
-                uint32_t CTRL,
-                bool trace = false);
-        virtual ~bitbash();
+    bitbash(module::module& module, int reg, uint32_t SDA, uint32_t SCL, uint32_t CTRL,
+            bool trace = false);
+    virtual ~bitbash();
 
-        /*
-         * Bus control
-         */
-        void start();
-        void stop();
+    /*
+     * Bus control
+     */
+    void start();
+    void stop();
 
-        /*
-         * Byte level writes and reads with ACKs
-         */
-        void write_ack(uint8_t data, const char* what);
-        uint8_t read_ack(bool ack = true);
+    /*
+     * Byte level writes and reads with ACKs
+     */
+    void write_ack(uint8_t data, const char* what);
+    uint8_t read_ack(bool ack = true);
 
-        /*
-         * Low level byte wide access.
-         */
-        void write(uint8_t data);
-        uint8_t read();
+    /*
+     * Low level byte wide access.
+     */
+    void write(uint8_t data);
+    uint8_t read();
 
-        /*
-         * ACK control
-         */
-        bool get_ack();
-        void send_ack();
-        void send_nack();
+    /*
+     * ACK control
+     */
+    bool get_ack();
+    void send_ack();
+    void send_nack();
 
-        /*
-         * Low level I2C access.
-         */
-        void bus_write(uint8_t data);
-        uint8_t bus_read();
-    };
-}
-}
-}
-}
+    /*
+     * Low level I2C access.
+     */
+    void bus_write(uint8_t data);
+    uint8_t bus_read();
+};
+}  // namespace i2c
+}  // namespace hw
+}  // namespace pixie
+}  // namespace xia
 
 #endif  // PIXIE_HW_I2C_BITBASH_H

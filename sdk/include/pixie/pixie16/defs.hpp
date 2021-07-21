@@ -27,12 +27,9 @@
 
 #include <pixie/pixie16/hw.hpp>
 
-namespace xia
-{
-namespace pixie
-{
-namespace hw
-{
+namespace xia {
+namespace pixie {
+namespace hw {
 struct device {
     /*
      * PCI address decoding and control registers
@@ -60,7 +57,6 @@ struct device {
     static const address SET_EXMEM_FIFO = 0xec;
     static const address SET_INT_FIFO = 0xf0;
     static const address WRT_RESET_RFCNT = 0xf4;
-
 };
 
 /*
@@ -228,8 +224,8 @@ struct limit {
     static const size_t VETOSTRETCH_MAX = 4095;
     static const size_t VETOSTRETCH_MIN = 1;
 };
-}
-}
-}
+}  // namespace hw
+}  // namespace pixie
+}  // namespace xia
 
 #endif  // PIXIE_HW_DEFS_H

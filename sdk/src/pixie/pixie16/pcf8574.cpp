@@ -23,49 +23,36 @@
 #include <pixie/pixie16/module.hpp>
 #include <pixie/pixie16/pcf8574.hpp>
 
-namespace xia
-{
-namespace pixie
-{
-namespace hw
-{
-namespace i2c
-{
-    pcf8574::pcf8574(module::module& module,
-                     int reg,
-                     uint32_t SDA,
-                     uint32_t SCL,
-                     uint32_t CTRL,
-                     bool trace)
-      : bitbash(module, reg, SDA, SCL, CTRL, trace)
-    {
-    }
+namespace xia {
+namespace pixie {
+namespace hw {
+namespace i2c {
+pcf8574::pcf8574(module::module& module, int reg, uint32_t SDA, uint32_t SCL, uint32_t CTRL,
+                 bool trace)
+    : bitbash(module, reg, SDA, SCL, CTRL, trace) {}
 
-    uint8_t
-    pcf8574::read_a_byte()
-    {
-        module::module::bus_guard guard(module);
+uint8_t pcf8574::read_a_byte() {
+    module::module::bus_guard guard(module);
 
-        /*
-         * Send START, device select code
-         */
-        start();
-        write_ack(0x43,
-                  "pcf8574::read_a_byte: no ACK after DevSel");
+    /*
+     * Send START, device select code
+     */
+    start();
+    write_ack(0x43, "pcf8574::read_a_byte: no ACK after DevSel");
 
-        /*
-         * Read a byte
-         */
-        uint8_t value = read_ack();
+    /*
+     * Read a byte
+     */
+    uint8_t value = read_ack();
 
-        /*
-         * Send "STOP"
-         */
-        stop();
+    /*
+     * Send "STOP"
+     */
+    stop();
 
-        return value;
-    }
-};
-};
-};
-};
+    return value;
+}
+};  // namespace i2c
+};  // namespace hw
+};  // namespace pixie
+};  // namespace xia

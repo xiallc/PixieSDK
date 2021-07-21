@@ -40,6 +40,6 @@ add_subdirectory(externals)
 add_subdirectory(bin)
 
 option(PIXIESDK_DOCO "Tells CMake to build documentation" OFF)
-if(PIXIESDK_DOCO)
+if (PIXIESDK_DOCO)
     add_subdirectory(doc)
-endif()
+endif ()

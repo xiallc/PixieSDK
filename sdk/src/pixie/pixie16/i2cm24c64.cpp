@@ -23,68 +23,50 @@
 #include <pixie/pixie16/i2cm24c64.hpp>
 #include <pixie/pixie16/module.hpp>
 
-namespace xia
-{
-namespace pixie
-{
-namespace hw
-{
-namespace i2c
-{
-    i2cm24c64::i2cm24c64(module::module& module,
-                         int reg,
-                         uint32_t SDA,
-                         uint32_t SCL,
-                         uint32_t CTRL)
-        : bitbash(module, reg, SDA, SCL, CTRL)
-    {
+namespace xia {
+namespace pixie {
+namespace hw {
+namespace i2c {
+i2cm24c64::i2cm24c64(module::module& module, int reg, uint32_t SDA, uint32_t SCL, uint32_t CTRL)
+    : bitbash(module, reg, SDA, SCL, CTRL) {}
+
+void i2cm24c64::read(int address, size_t length, eeprom::contents& data) {
+    module::module::bus_guard guard(module);
+    data.clear();
+    data.reserve(length);
+
+    /*
+     *  Send "START"
+     */
+    start();
+
+    /*
+     * Send device select code, the address
+     */
+    write_ack(0xA0, "i2cm24c64::sequential_read: no ACK after DevSel");
+    write_ack(address >> 8, "i2cm24c64::sequential_read: no ACK after addr (MSB)");
+    write_ack(address & 0xff, "i2cm24c64::sequential_read: no ACK after addr (LSB)");
+
+    /*
+     * Send "START", device select code, read data
+     */
+    start();
+    write_ack(0xA1, "i2cm24c64::sequential_read: no ACK after DevSel");
+    for (size_t k = 0; k < length - 1; k++) {
+        data.push_back(read_ack());
     }
+    data.push_back(read_ack(false));
 
-    void
-    i2cm24c64::read(int address, size_t length, eeprom::contents& data)
-    {
-        module::module::bus_guard guard(module);
-        data.clear();
-        data.reserve(length);
+    /*
+     * Send "STOP"
+     */
+    stop();
+}
 
-        /*
-         *  Send "START"
-         */
-        start();
-
-        /*
-         * Send device select code, the address
-         */
-        write_ack(0xA0,
-                  "i2cm24c64::sequential_read: no ACK after DevSel");
-        write_ack(address >> 8,
-                  "i2cm24c64::sequential_read: no ACK after addr (MSB)");
-        write_ack(address & 0xff,
-                  "i2cm24c64::sequential_read: no ACK after addr (LSB)");
-
-        /*
-         * Send "START", device select code, read data
-         */
-        start();
-        write_ack(0xA1,
-                  "i2cm24c64::sequential_read: no ACK after DevSel");
-        for (size_t k = 0; k < length - 1; k++) {
-            data.push_back(read_ack());
-        }
-        data.push_back(read_ack(false));
-
-        /*
-         * Send "STOP"
-         */
-        stop();
-    }
-
-    void
-    i2cm24c64::read(eeprom::contents& data)
-    {
-        read(0, size, data);
-    }
-};
-};
-};
-};
+void i2cm24c64::read(eeprom::contents& data) {
+    read(0, size, data);
+}
+};  // namespace i2c
+};  // namespace hw
+};  // namespace pixie
+};  // namespace xia

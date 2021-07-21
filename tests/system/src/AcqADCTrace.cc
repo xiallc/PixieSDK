@@ -119,8 +119,8 @@ int main(int argc, char* argv[]) {
         cout << "Init OK " << retval << endl;
     }
 
-    retval = Pixie16BootModule(ComFPGAConfigFile, SPFPGAConfigFile, "", DSPCodeFile, DSPParFile, DSPVarFile, NumModules,
-                               0x00);
+    retval = Pixie16BootModule(ComFPGAConfigFile, SPFPGAConfigFile, "", DSPCodeFile, DSPParFile,
+                               DSPVarFile, NumModules, 0x00);
     if (retval < 0) {
         printf("*ERROR* Pixie16BootModule failed, retval = %d", retval);
         sprintf(ErrMSG, "*ERROR* Pixie16BootModule failed, retval = %d", retval);
@@ -146,16 +146,19 @@ int acquire_adctrace(unsigned short ModNum) {
 
     retval = Pixie16AcquireADCTrace(ModNum);
     if (retval < 0) {
-        sprintf(ErrMSG, "*ERROR* (test_analogfrontend): Pixie16AcquireADCTrace failed in mod %d, retval=%d", ModNum,
-                retval);
+        sprintf(ErrMSG,
+                "*ERROR* (test_analogfrontend): Pixie16AcquireADCTrace failed in mod %d, retval=%d",
+                ModNum, retval);
         Pixie_Print_MSG(ErrMSG);
         return (-1);
     }
 
     retval = Pixie16ReadSglChanADCTrace(ADCTrace, MAX_ADC_TRACE_LEN, ModNum, 0);
     if (retval < 0) {
-        sprintf(ErrMSG, "*ERROR* (test_analogfrontend): Pixie16ReadSglChanADCTrace failed in mod %d, chan 0, retval=%d",
-                ModNum, retval);
+        sprintf(
+            ErrMSG,
+            "*ERROR* (test_analogfrontend): Pixie16ReadSglChanADCTrace failed in mod %d, chan 0, retval=%d",
+            ModNum, retval);
         Pixie_Print_MSG(ErrMSG);
         return (-2);
     }
@@ -177,8 +180,10 @@ int acquire_adctrace(unsigned short ModNum) {
 
     retval = Pixie16ReadSglChanADCTrace(ADCTrace, MAX_ADC_TRACE_LEN, ModNum, 1);
     if (retval < 0) {
-        sprintf(ErrMSG, "*ERROR* (test_analogfrontend): Pixie16ReadSglChanADCTrace failed in mod %d, chan 1, retval=%d",
-                ModNum, retval);
+        sprintf(
+            ErrMSG,
+            "*ERROR* (test_analogfrontend): Pixie16ReadSglChanADCTrace failed in mod %d, chan 1, retval=%d",
+            ModNum, retval);
         Pixie_Print_MSG(ErrMSG);
 
         // Close adc data file
@@ -211,7 +216,9 @@ double get_average(unsigned short* data, unsigned long numpnts) {
     unsigned long k;
 
     avg = 0.0;
-    for (k = 0; k < numpnts; k++) { avg += data[k]; }
+    for (k = 0; k < numpnts; k++) {
+        avg += data[k];
+    }
     avg /= numpnts;
 
     return avg;

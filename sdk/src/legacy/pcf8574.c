@@ -38,33 +38,30 @@
  *
  ****************************************************************/
 
-int PCF8574_Read_One_Byte (
-        unsigned short ModNum,		// Pixie module number
-        char *ByteValue )			// The byte value
+int PCF8574_Read_One_Byte(unsigned short ModNum,  // Pixie module number
+                          char* ByteValue)  // The byte value
 {
     char IOByte;
     char ackvalue;
 
     // Check if ModNum is valid
-    if(ModNum >= SYS_MAX_NUM_MODULES)
-    {
+    if (ModNum >= SYS_MAX_NUM_MODULES) {
         Pixie_Print_Error(PIXIE_FUNC, "Invalid Pixie module number %d", ModNum);
-        return(-1);
+        return (-1);
     }
 
     // Send "START"
     PCF8574_start(ModNum);
 
     // Send Device Select Code
-    IOByte = (char)0x43;
+    IOByte = (char) 0x43;
     PCF8574_byte_write(ModNum, IOByte);
 
     // Get Acknowledge
     ackvalue = PCF8574_getACK(ModNum);
-    if(ackvalue != 0)
-    {
+    if (ackvalue != 0) {
         Pixie_Print_Error(PIXIE_FUNC, "Failed to get Acknowledge after sending DevSel byte");
-        return(-2);
+        return (-2);
     }
 
     // Receive one byte
@@ -78,7 +75,7 @@ int PCF8574_Read_One_Byte (
     // Send "STOP"
     PCF8574_stop(ModNum);
 
-    return(0);
+    return (0);
 }
 
 /* ----------------------------------------------------- */
@@ -86,8 +83,7 @@ int PCF8574_Read_One_Byte (
 //   Bus master sends "START" to PCF8574
 /* ----------------------------------------------------- */
 
-int PCF8574_start(unsigned short ModNum)
-{
+int PCF8574_start(unsigned short ModNum) {
     unsigned int buffer[4];
 
     //***************************
@@ -98,7 +94,7 @@ int PCF8574_start(unsigned short ModNum)
     Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
     /* Wait for 6000 ns */
-    wait_for_a_short_time((int)(6000.0 / (double)Ns_Per_Cycle));
+    wait_for_a_short_time((int) (6000.0 / (double) Ns_Per_Cycle));
 
     //***************************
     //	Set SDA to 0 while keep SCL at 1
@@ -108,9 +104,9 @@ int PCF8574_start(unsigned short ModNum)
     Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
     /* Wait for 6000 ns */
-    wait_for_a_short_time((int)(6000.0 / (double)Ns_Per_Cycle));
+    wait_for_a_short_time((int) (6000.0 / (double) Ns_Per_Cycle));
 
-    return(0);
+    return (0);
 }
 
 
@@ -119,8 +115,7 @@ int PCF8574_start(unsigned short ModNum)
 //   Bus master sends "STOP" to PCF8574
 /* ----------------------------------------------------- */
 
-int PCF8574_stop(unsigned short ModNum)
-{
+int PCF8574_stop(unsigned short ModNum) {
     unsigned int buffer[4];
 
     //***************************
@@ -131,7 +126,7 @@ int PCF8574_stop(unsigned short ModNum)
     Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
     /* Wait for 6000 ns */
-    wait_for_a_short_time((int)(6000.0 / (double)Ns_Per_Cycle));
+    wait_for_a_short_time((int) (6000.0 / (double) Ns_Per_Cycle));
 
     //***************************
     //	Set SDA to 1 while keep SCL at 1
@@ -141,9 +136,9 @@ int PCF8574_stop(unsigned short ModNum)
     Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
     /* Wait for 6000 ns */
-    wait_for_a_short_time((int)(6000.0 / (double)Ns_Per_Cycle));
+    wait_for_a_short_time((int) (6000.0 / (double) Ns_Per_Cycle));
 
-    return(0);
+    return (0);
 }
 
 
@@ -152,8 +147,7 @@ int PCF8574_stop(unsigned short ModNum)
 //   Bus master sends a byte to PCF8574
 /* ----------------------------------------------------- */
 
-int PCF8574_byte_write(unsigned short ModNum, char ByteToSend)
-{
+int PCF8574_byte_write(unsigned short ModNum, char ByteToSend) {
     short i;
     unsigned int buffer[4];
 
@@ -161,23 +155,22 @@ int PCF8574_byte_write(unsigned short ModNum, char ByteToSend)
 
     buffer[0] = CTRL;
 
-    for(i = 7; i >= 0; i --)
-    {
+    for (i = 7; i >= 0; i--) {
         //***************************
         //	Set SCL to 0
         //***************************
 
-        buffer[0] = (unsigned int)SYS16_ClrBit(1, (unsigned short)buffer[0]);
+        buffer[0] = (unsigned int) SYS16_ClrBit(1, (unsigned short) buffer[0]);
         Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
         /* Wait for 6000 ns */
-        wait_for_a_short_time((int)(6000.0 / (double)Ns_Per_Cycle));
+        wait_for_a_short_time((int) (6000.0 / (double) Ns_Per_Cycle));
 
         //***************************
         //	Send bit i
         //***************************
 
-        if(SYS16_TstBit((unsigned short)i, (unsigned short)ByteToSend) == 1)
+        if (SYS16_TstBit((unsigned short) i, (unsigned short) ByteToSend) == 1)
             buffer[0] = SDA | CTRL;
         else
             buffer[0] = CTRL;
@@ -185,16 +178,16 @@ int PCF8574_byte_write(unsigned short ModNum, char ByteToSend)
         Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
         /* Wait for 1000 ns */
-        wait_for_a_short_time((int)(1000.0 / (double)Ns_Per_Cycle));
+        wait_for_a_short_time((int) (1000.0 / (double) Ns_Per_Cycle));
 
         //***************************
         //	Set SCL to 1
         //***************************
-        buffer[0] = SYS16_SetBit(1, (unsigned short)buffer[0]);
+        buffer[0] = SYS16_SetBit(1, (unsigned short) buffer[0]);
         Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
         /* Wait for 6000 ns */
-        wait_for_a_short_time((int)(6000.0 / (double)Ns_Per_Cycle));
+        wait_for_a_short_time((int) (6000.0 / (double) Ns_Per_Cycle));
     }
 
     //************************************************************
@@ -205,9 +198,9 @@ int PCF8574_byte_write(unsigned short ModNum, char ByteToSend)
     Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
     /* Wait for 6000 ns */
-    wait_for_a_short_time((int)(6000.0 / (double)Ns_Per_Cycle));
+    wait_for_a_short_time((int) (6000.0 / (double) Ns_Per_Cycle));
 
-    return(0);
+    return (0);
 }
 
 
@@ -216,25 +209,23 @@ int PCF8574_byte_write(unsigned short ModNum, char ByteToSend)
 //   Bus master receives a byte from PCF8574
 /* ----------------------------------------------------- */
 
-int PCF8574_byte_read(unsigned short ModNum, char *ByteToReceive)
-{
+int PCF8574_byte_read(unsigned short ModNum, char* ByteToReceive) {
     short i;
     unsigned int buffer[4];
     char ByteReceived;
 
     buffer[0] = 0x0;
 
-    for(i = 7; i >= 0; i --)
-    {
+    for (i = 7; i >= 0; i--) {
         //***************************
         //	Set SCL to 1
         //***************************
 
-        buffer[0] = (unsigned int)SYS16_SetBit(1, (unsigned short)buffer[0]);
+        buffer[0] = (unsigned int) SYS16_SetBit(1, (unsigned short) buffer[0]);
         Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
         /* Wait for 6000 ns */
-        wait_for_a_short_time((int)(6000.0 / (double)Ns_Per_Cycle));
+        wait_for_a_short_time((int) (6000.0 / (double) Ns_Per_Cycle));
 
         //***************************
         //	Receive bit i
@@ -243,24 +234,26 @@ int PCF8574_byte_read(unsigned short ModNum, char *ByteToReceive)
         buffer[0] = 0x0;
 
         Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_READ, buffer);
-        ByteReceived = (char)buffer[0];
+        ByteReceived = (char) buffer[0];
 
-        if(SYS16_TstBit(0, (unsigned short)ByteReceived) == 1)
-            *ByteToReceive = (char)SYS16_SetBit((unsigned short)i, (unsigned short)*ByteToReceive);
+        if (SYS16_TstBit(0, (unsigned short) ByteReceived) == 1)
+            *ByteToReceive =
+                (char) SYS16_SetBit((unsigned short) i, (unsigned short) *ByteToReceive);
         else
-            *ByteToReceive = (char)SYS16_ClrBit((unsigned short)i, (unsigned short)*ByteToReceive);
+            *ByteToReceive =
+                (char) SYS16_ClrBit((unsigned short) i, (unsigned short) *ByteToReceive);
 
         //***************************
         //	Set SCL to 0
         //***************************
-        buffer[0] = (unsigned int)SYS16_ClrBit(1, (unsigned short)buffer[0]);
+        buffer[0] = (unsigned int) SYS16_ClrBit(1, (unsigned short) buffer[0]);
         Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
         /* Wait for 6000 ns */
-        wait_for_a_short_time((int)(6000.0 / (double)Ns_Per_Cycle));
+        wait_for_a_short_time((int) (6000.0 / (double) Ns_Per_Cycle));
     }
 
-    return(0);
+    return (0);
 }
 
 
@@ -270,8 +263,7 @@ int PCF8574_byte_read(unsigned short ModNum, char *ByteToReceive)
 //   keep CTRL = 0 to leave bus to memory for reading
 /* ----------------------------------------------------- */
 
-char PCF8574_getACK(unsigned short ModNum)
-{
+char PCF8574_getACK(unsigned short ModNum) {
     unsigned int buffer[4], rbuf[4];
     char retval;
 
@@ -283,7 +275,7 @@ char PCF8574_getACK(unsigned short ModNum)
     Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
     /* Wait for 6000 ns */
-    wait_for_a_short_time((int)(6000.0 / (double)Ns_Per_Cycle));
+    wait_for_a_short_time((int) (6000.0 / (double) Ns_Per_Cycle));
 
     //***************************
     //	Read SDA
@@ -298,10 +290,10 @@ char PCF8574_getACK(unsigned short ModNum)
     Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
     /* Wait for 6000 ns */
-    wait_for_a_short_time((int)(6000.0 / (double)Ns_Per_Cycle));
+    wait_for_a_short_time((int) (6000.0 / (double) Ns_Per_Cycle));
 
-    retval = (char)(rbuf[0] & 0x1);
-    return(retval);
+    retval = (char) (rbuf[0] & 0x1);
+    return (retval);
 }
 
 
@@ -310,8 +302,7 @@ char PCF8574_getACK(unsigned short ModNum)
 //   Bus master sends ACKNOWLEDGE to PCF8574
 /* ----------------------------------------------------- */
 
-char PCF8574_sendACK(unsigned short ModNum)
-{
+char PCF8574_sendACK(unsigned short ModNum) {
     unsigned int buffer[4];
 
     //***************************
@@ -321,7 +312,7 @@ char PCF8574_sendACK(unsigned short ModNum)
     Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
     /* Wait for 1000 ns */
-    wait_for_a_short_time((int)(1000.0 / (double)Ns_Per_Cycle));
+    wait_for_a_short_time((int) (1000.0 / (double) Ns_Per_Cycle));
 
     //***************************
     //	Set SCL to 1 while keep SDA LOW
@@ -331,7 +322,7 @@ char PCF8574_sendACK(unsigned short ModNum)
     Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
     /* Wait for 6000 ns */
-    wait_for_a_short_time((int)(6000.0 / (double)Ns_Per_Cycle));
+    wait_for_a_short_time((int) (6000.0 / (double) Ns_Per_Cycle));
 
     //***************************
     //	Set SCL to 0
@@ -341,7 +332,7 @@ char PCF8574_sendACK(unsigned short ModNum)
     Pixie_Register_IO(ModNum, PCF8574_ADDR, SYS_MOD_WRITE, buffer);
 
     /* Wait for 6000 ns */
-    wait_for_a_short_time((int)(6000.0 / (double)Ns_Per_Cycle));
+    wait_for_a_short_time((int) (6000.0 / (double) Ns_Per_Cycle));
 
-    return(0);
+    return (0);
 }

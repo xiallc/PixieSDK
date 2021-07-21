@@ -31,78 +31,67 @@
 
 #include <pixie/pixie16/hw.hpp>
 
-namespace xia
-{
-namespace pixie
-{
-namespace module
-{
-    class module;
+namespace xia {
+namespace pixie {
+namespace module {
+class module;
 }
-namespace hw
-{
-namespace dsp
-{
-    struct dsp
-    {
-        /*
-         * The word loaded into the DSP.
-         */
-        typedef uint16_t load_value_type;
+namespace hw {
+namespace dsp {
+struct dsp {
+    /*
+     * The word loaded into the DSP.
+     */
+    typedef uint16_t load_value_type;
 
-        module::module& module;
+    module::module& module;
 
-        /*
-         * Online?
-         */
-        bool online;
+    /*
+     * Online?
+     */
+    bool online;
 
-        /*
-         * Trace the load operation
-         */
-        bool trace;
+    /*
+     * Trace the load operation
+     */
+    bool trace;
 
-        dsp(module::module& module, bool trace = false);
-        dsp& operator=(dsp&& d);
+    dsp(module::module& module, bool trace = false);
+    dsp& operator=(dsp&& d);
 
-        /*
-         * Boot
-         */
-        void boot(const firmware::image& image, int retries = 10);
+    /*
+     * Boot
+     */
+    void boot(const firmware::image& image, int retries = 10);
 
-        /*
-         * Is the DSP loaded and runing?
-         */
-        bool init_done();
+    /*
+     * Is the DSP loaded and runing?
+     */
+    bool init_done();
 
-    private:
+private:
+    /*
+     * Checked write, writes and value then checks for a reply.
+     */
+    bool checked_write(const word out, const word value, const word in, const word result,
+                       const int out_wait = 0, const int in_wait = 1000);
 
-        /*
-         * Checked write, writes and value then checks for a reply.
-         */
-        bool checked_write(const word out,
-                           const word value,
-                           const word in,
-                           const word result,
-                           const int out_wait = 0,
-                           const int in_wait = 1000);
+    /*
+     * Image section loader.
+     */
+    void section_load(firmware::reader& reader, const size_t wordsize);
 
-        /*
-         * Image section loader.
-         */
-        void section_load(firmware::reader& reader, const size_t wordsize);
+    /*
+     * Low level access.
+     */
+    void bus_write(int reg, uint32_t data);
+    uint32_t bus_read(int reg);
 
-        /*
-         * Low level access.
-         */
-        void bus_write(int reg, uint32_t data);
-        uint32_t bus_read(int reg);
-
-        std::string make_what(const char* msg);
-    };
-}
-}
-}
-}
+    std::string make_what(const char* msg);
+};
+}  // namespace dsp
+}  // namespace hw
+}  // namespace pixie
+}  // namespace xia
 
 #endif  // PIXIE_HW_DSP_H

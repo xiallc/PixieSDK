@@ -19,7 +19,7 @@
 /** @file log.hpp
  * @brief Defines logging infrastructure components.
  */
- 
+
 #ifndef PIXIE_LOG_H
 #define PIXIE_LOG_H
 
@@ -30,10 +30,8 @@
 
 #include <pixie/os_compat.hpp>
 
-namespace xia
-{
-namespace logging
-{
+namespace xia {
+namespace logging {
 /*
  * An outputter outputs a log stream. Destruct them last.
  */
@@ -42,7 +40,7 @@ typedef std::list<outputter> outputters;
 typedef std::shared_ptr<outputters> outputters_ptr;
 PIXIE_EXPORT outputters_ptr PIXIE_API make_outputters();
 static outputters_ptr outputs_ptr = make_outputters();
-};
+};  // namespace logging
 
 /**
  * Log class.
@@ -50,9 +48,9 @@ static outputters_ptr outputs_ptr = make_outputters();
  * This class lives in the pixie namespace to make the references in the code
  * simpler.
  */
-class log
-{
+class log {
     friend logging::outputter;
+
 public:
     /*
      * A log level.
@@ -60,27 +58,18 @@ public:
      * The levels are ordered from high priority to lower priority with `off`
      * always being first and 0.
      */
-    enum level {
-        off = 0,
-        error,
-        warning,
-        info,
-        debug,
-        max_level
-    };
+    enum level { off = 0, error, warning, info, debug, max_level };
 
-    log(level level__)
-        : level_(level__) {
-    }
+    log(level level__) : level_(level__) {}
     ~log();
 
-    template <typename T>
+    template<typename T>
     std::ostringstream& operator<<(T item) {
         output << item;
         return output;
     }
 
-    log::level get_level() const{
+    log::level get_level() const {
         return level_.load();
     }
 
@@ -89,14 +78,11 @@ private:
     std::ostringstream output;
 };
 
-namespace logging
-{
- /*
+namespace logging {
+/*
   * Start and stop a log output stream.
   */
-void start(const std::string name,
-           const std::string file,
-           log::level level = log::warning,
+void start(const std::string name, const std::string file, log::level level = log::warning,
            bool append = true);
 void stop(const std::string name);
 
@@ -124,14 +110,9 @@ bool level_logging(log::level level);
  *
  * From https://git.rtems.org/rtems-tools/tree/rtemstoolkit/rtems-utils.cpp#n39
  */
-void memdump(log::level level,
-             const std::string label,
-             const void* addr,
-             size_t length,
-             size_t size = 1,
-             size_t line_length = 16,
-             size_t offset = 0);
-}
-}
+void memdump(log::level level, const std::string label, const void* addr, size_t length,
+             size_t size = 1, size_t line_length = 16, size_t offset = 0);
+}  // namespace logging
+}  // namespace xia
 
 #endif  // PIXIE_LOG_H

@@ -209,19 +209,23 @@ extern "C" {
 	CHANCSRA bits definitions
  --------------------------------------*/
 
-#define CCSRA_FTRIGSEL 0  // fast trigger selection - 1: select external fast trigger; 0: select group trigger
-#define CCSRA_EXTTRIGSEL                                                                                               \
+#define CCSRA_FTRIGSEL                                                                             \
+    0  // fast trigger selection - 1: select external fast trigger; 0: select group trigger
+#define CCSRA_EXTTRIGSEL                                                                           \
     1  // module validation signal selection - 1: select module gate signal; 0: select global validation signal (RevD & RevF only)
-#define CCSRA_GOOD 2  // good-channel bit - 1: channel data will be read out; 0: channel data will not be read out
-#define CCSRA_CHANTRIGSEL                                                                                              \
+#define CCSRA_GOOD                                                                                 \
+    2  // good-channel bit - 1: channel data will be read out; 0: channel data will not be read out
+#define CCSRA_CHANTRIGSEL                                                                          \
     3  // channel validation signal selection - 1: select channel gate signal; 0: select channel validation signal (RevD & RevF only)
-#define CCSRA_SYNCDATAACQ 4  // block data acquisition if trace or header DPMs are full - 1: enable; 0: disable
+#define CCSRA_SYNCDATAACQ                                                                          \
+    4  // block data acquisition if trace or header DPMs are full - 1: enable; 0: disable
 #define CCSRA_POLARITY 5  // input signal polarity control
 #define CCSRA_VETOENA 6  // veto channel trigger - 1: enable; 0: disable
 #define CCSRA_HISTOE 7  // histogram energy in the on-board MCA
 #define CCSRA_TRACEENA 8  // trace capture and associated header data - 1: enable; 0: disable
 #define CCSRA_QDCENA 9  // QDC summing and associated header data - 1: enable; 0: dsiable
-#define CCSRA_CFDMODE 10  // CFD for real time, trace capture and QDC capture - 1: enable; 0: disable
+#define CCSRA_CFDMODE                                                                              \
+    10  // CFD for real time, trace capture and QDC capture - 1: enable; 0: disable
 #define CCSRA_GLOBTRIG 11  // global trigger for validation - 1: enable; 0: disable
 #define CCSRA_ESUMSENA 12  // raw energy sums and baseline in event header - 1: enable; 0: disable
 #define CCSRA_CHANTRIG 13  // channel trigger for validation - 1: enable; 0: disable
@@ -237,9 +241,12 @@ extern "C" {
 #define CCSRA_INVERSEPILEUP 16
 
 #define CCSRA_ENAENERGYCUT 17  // Enable "no trace for large pulses" feature - 1: enable; 0: disable
-#define CCSRA_GROUPTRIGSEL 18  // Group trigger selection - 1: external group trigger; 0: local fast trigger
-#define CCSRA_CHANVETOSEL 19  // Channel veto selection - 1: channel validation trigger; 0: front panel channel veto
-#define CCSRA_MODVETOSEL 20  // Module veto selection - 1: module validation trigger; 0: front panel module veto
+#define CCSRA_GROUPTRIGSEL                                                                         \
+    18  // Group trigger selection - 1: external group trigger; 0: local fast trigger
+#define CCSRA_CHANVETOSEL                                                                          \
+    19  // Channel veto selection - 1: channel validation trigger; 0: front panel channel veto
+#define CCSRA_MODVETOSEL                                                                           \
+    20  // Module veto selection - 1: module validation trigger; 0: front panel module veto
 #define CCSRA_EXTTSENA 21  // External timestamps in event header - 1: enable; 0: disable
 
 /*-------------------------------------
@@ -248,12 +255,13 @@ extern "C" {
 
 #define MODCSRB_CPLDPULLUP 0  // Control pullups for PXI trigger lines on the backplane through CPLD
 #define MODCSRB_DIRMOD 4  // Set this module as the Director module (1) or non-Director module (0)
-#define MODCSRB_CHASSISMASTER                                                                                          \
+#define MODCSRB_CHASSISMASTER                                                                      \
     6  // Control chassis master module: 1: chassis master module; 0: chassis non-master module
 #define MODCSRB_GFTSEL 7  // Select global fast trigger source
 #define MODCSRB_ETSEL 8  // Select external trigger source
-#define MODCSRB_INHIBITENA 10  // Control external INHIBIT signal: use INHIBIT (1) or don't use INHIBIT (0)
-#define MODCSRB_MULTCRATES                                                                                             \
+#define MODCSRB_INHIBITENA                                                                         \
+    10  // Control external INHIBIT signal: use INHIBIT (1) or don't use INHIBIT (0)
+#define MODCSRB_MULTCRATES                                                                         \
     11  // Distribute clock and triggers in multiple crates: multiple crates (1) or only single crate (0)
 #define MODCSRB_SORTEVENTS 12  // Sort (1) or don't sort events based on their timestamps
 #define MODCSRB_BKPLFASTTRIG 13  // Enable connection of fast triggers to backplane
@@ -262,7 +270,7 @@ extern "C" {
 	CPLD CSR bits definitions
  --------------------------------------*/
 
-#define CPLDCSR_BPCONNECT                                                                                              \
+#define CPLDCSR_BPCONNECT                                                                          \
     12  // Control connections of PXI nearest neighbor lines (J2) onto the backplane for Rev-B/C/D modules
 #define CPLDCSR_PULLUP 13  // Control backplane pullups: 1: pulled up, 0: not pulled up
 
@@ -274,9 +282,12 @@ extern "C" {
 #define RANDOMINDICES_LENGTH 8192  // number of random indices (currently only used for tau finder)
 #define MAX_ERRMSG_LENGTH 1024  // Maximum length of error message
 
-#define BASELINES_BLOCK_LEN 18  // Length of each baselines length (default: 2 timestamp words + 16 baselines)
-#define MAX_NUM_BASELINES 3640  // Maximum number of baselines available after each baseline acquisition run
-#define MAX_NUM_DCVALUES 16384  // Maximum number of DC values available after each RampOffsetDACs run
+#define BASELINES_BLOCK_LEN                                                                        \
+    18  // Length of each baselines length (default: 2 timestamp words + 16 baselines)
+#define MAX_NUM_BASELINES                                                                          \
+    3640  // Maximum number of baselines available after each baseline acquisition run
+#define MAX_NUM_DCVALUES                                                                           \
+    16384  // Maximum number of DC values available after each RampOffsetDACs run
 
 #define EXTFIFO_READ_THRESH 1024  // Reading out threshold for external FIFO watermmark level
 

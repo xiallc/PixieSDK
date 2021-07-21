@@ -53,7 +53,7 @@
 
 static void USleep(double nanoseconds) {
     // determine if we need to sleep for seconds
-    uint32_t sec = (uint32_t)(nanoseconds / (SECOND));
+    uint32_t sec = (uint32_t) (nanoseconds / (SECOND));
 
     // determine the left over nanoseconds
     uint32_t remainder = nanoseconds - sec * SECOND;
@@ -65,7 +65,9 @@ static void USleep(double nanoseconds) {
     // This loop deals with the case that nanosleep is interrupted by
     // a signal. In that case, sleepRemaining will be set to the unslept
     // time.
-    while (nanosleep(&sleepAmount, &sleepRemaining) != 0) { sleepAmount = sleepRemaining; }
+    while (nanosleep(&sleepAmount, &sleepRemaining) != 0) {
+        sleepAmount = sleepRemaining;
+    }
 }
 #endif
 
@@ -114,7 +116,9 @@ PIXIE16SYS_EXPORT int PIXIE16SYS_API get_ns_per_cycle(double* ns_per_cycle) {
 
             start = timeGetTime();
 
-            do { count--; } while (count >= 0);
+            do {
+                count--;
+            } while (count >= 0);
 
             finish = timeGetTime();
 
@@ -129,7 +133,8 @@ PIXIE16SYS_EXPORT int PIXIE16SYS_API get_ns_per_cycle(double* ns_per_cycle) {
             return (-2);
         }
     } else {
-        sprintf(ErrMSG, "*ERROR* (get_ns_per_cycle): minimum timer resolution is greater than 1 ms");
+        sprintf(ErrMSG,
+                "*ERROR* (get_ns_per_cycle): minimum timer resolution is greater than 1 ms");
         Pixie_Print_MSG(ErrMSG);
         return (-3);
     }
@@ -150,7 +155,9 @@ PIXIE16SYS_EXPORT int PIXIE16SYS_API get_ns_per_cycle(double* ns_per_cycle) {
     // record the start time
     gettimeofday(&start_time, NULL);
 
-    do { count--; } while (count >= 0);
+    do {
+        count--;
+    } while (count >= 0);
 
     // record the end time
     gettimeofday(&end_time, NULL);
@@ -187,7 +194,9 @@ PIXIE16SYS_EXPORT void PIXIE16SYS_API wait_for_a_short_time(int cycles) {
 
 #if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
 
-    do { cycles--; } while (cycles >= 0);
+    do {
+        cycles--;
+    } while (cycles >= 0);
 
 #elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI
 
@@ -198,7 +207,9 @@ PIXIE16SYS_EXPORT void PIXIE16SYS_API wait_for_a_short_time(int cycles) {
 
 #ifndef USE_USLEEP  // USleep function will NOT be used
 
-    do { cycles--; } while (cycles >= 0);
+    do {
+        cycles--;
+    } while (cycles >= 0);
 
 #else  // USleep function will be used
 
@@ -216,8 +227,9 @@ PIXIE16SYS_EXPORT void PIXIE16SYS_API wait_for_a_short_time(int cycles) {
 *
 ****************************************************************/
 
-PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_SetBit(unsigned short bit, unsigned short value) {
-    if(bit > 15)
+PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_SetBit(unsigned short bit,
+                                                             unsigned short value) {
+    if (bit > 15)
         return value;
     return (value | (unsigned short) (pow(2.0, (double) bit)));
 }
@@ -229,8 +241,9 @@ PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_SetBit(unsigned short bit,
 *
 ****************************************************************/
 
-PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_ClrBit(unsigned short bit, unsigned short value) {
-    if(bit > 15)
+PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_ClrBit(unsigned short bit,
+                                                             unsigned short value) {
+    if (bit > 15)
         return value;
     value = SYS16_SetBit(bit, value);
     return (value ^ (unsigned short) (pow(2.0, (double) bit)));
@@ -243,8 +256,9 @@ PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_ClrBit(unsigned short bit,
 *
 ****************************************************************/
 
-PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_TstBit(unsigned short bit, unsigned short value) {
-    if(bit > 15)
+PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_TstBit(unsigned short bit,
+                                                             unsigned short value) {
+    if (bit > 15)
         return FALSE_;
     return (((value & (unsigned short) (pow(2.0, (double) bit))) >> bit));
 }
@@ -257,7 +271,7 @@ PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_TstBit(unsigned short bit,
 ****************************************************************/
 
 PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_SetBit(unsigned short bit, unsigned int value) {
-    if(bit > 31)
+    if (bit > 31)
         return value;
     return (value | (unsigned int) (pow(2.0, (double) bit)));
 }
@@ -270,7 +284,7 @@ PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_SetBit(unsigned short bit, u
 ****************************************************************/
 
 PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_ClrBit(unsigned short bit, unsigned int value) {
-    if(bit > 31)
+    if (bit > 31)
         return value;
     value = SYS32_SetBit(bit, value);
     return (value ^ (unsigned int) (pow(2.0, (double) bit)));
@@ -284,7 +298,7 @@ PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_ClrBit(unsigned short bit, u
 ****************************************************************/
 
 PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_TstBit(unsigned short bit, unsigned int value) {
-    if(bit > 31)
+    if (bit > 31)
         return FALSE_;
     return (((value & (unsigned int) (pow(2.0, (double) bit))) >> bit));
 }

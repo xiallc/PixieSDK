@@ -24,33 +24,28 @@
 
 #include <pixie/pixie16/fpga.hpp>
 
-namespace xia
-{
-namespace pixie
-{
-namespace hw
-{
-namespace fpga
-{
-    struct fippi
-    {
-        module::module& module;
+namespace xia {
+namespace pixie {
+namespace hw {
+namespace fpga {
+struct fippi {
+    module::module& module;
 
-        /*
-         * 4 FPGA devices grouped in pairs.
-         */
-        control ctrl_1_2;
-        control ctrl_3_4;
+    /*
+     * 4 FPGA devices grouped in pairs.
+     */
+    control ctrl_1_2;
+    control ctrl_3_4;
 
-        fippi(module::module& module, bool trace = false);
+    fippi(module::module& module, bool trace = false);
 
-        void boot(const firmware::image& image, int retries = 10);
+    void boot(const firmware::image& image, int retries = 10);
 
-        bool done();
-    };
-}
-}
-}
-}
+    bool done();
+};
+}  // namespace fpga
+}  // namespace hw
+}  // namespace pixie
+}  // namespace xia
 
 #endif  // PIXIE_HW_FPGA_FIPPI_H

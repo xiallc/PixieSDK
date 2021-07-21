@@ -27,31 +27,19 @@
 
 #include <pixie/pixie16/hw.hpp>
 
-namespace xia
-{
-namespace pixie
-{
-namespace module
-{
+namespace xia {
+namespace pixie {
+namespace module {
 class module;
 }
-namespace hw
-{
-namespace run
-{
+namespace hw {
+namespace run {
 /*
  * Run and control settings
  */
-enum struct run_mode {
-    new_run = 1,
-    resume = 0
-};
+enum struct run_mode { new_run = 1, resume = 0 };
 
-enum struct run_task {
-    nop = 0,
-    list_mode = 0x100,
-    histogram = 0x301
-};
+enum struct run_task { nop = 0, list_mode = 0x100, histogram = 0x301 };
 
 enum struct control_task {
     set_dacs = 0,
@@ -70,27 +58,22 @@ enum struct control_task {
 /*
  * Run and control task management.
  */
-void start(module::module& module,
-           run_mode mode,
-           run_task run_tsk,
-           control_task control_tsk);
+void start(module::module& module, run_mode mode, run_task run_tsk, control_task control_tsk);
 void end(module::module& module);
 bool active(module::module& module);
 
 /*
  * Control task
  */
-void control(module::module& module,
-             control_task control_tsk,
-             int wait_msecs = 10000);
+void control(module::module& module, control_task control_tsk, int wait_msecs = 10000);
 
 /*
  * Run task
  */
 void run(module::module& module, run_mode mode, run_task run_tsk);
-}
-}
-}
-}
+}  // namespace run
+}  // namespace hw
+}  // namespace pixie
+}  // namespace xia
 
 #endif  // PIXIE_HW_RUN_H

@@ -27,18 +27,13 @@
 
 #include <pixie/pixie16/hw.hpp>
 
-namespace xia
-{
-namespace pixie
-{
-namespace module
-{
-    class module;
+namespace xia {
+namespace pixie {
+namespace module {
+class module;
 }
-namespace hw
-{
-namespace csr
-{
+namespace hw {
+namespace csr {
 /*
  * Reset the CSR to a default state.
  */
@@ -67,9 +62,9 @@ struct set_clear {
  * Wait for external FIFO
  */
 void fifo_ready_wait(module::module& module, const size_t polls = 1000);
-}
-}
-}
-}
+}  // namespace csr
+}  // namespace hw
+}  // namespace pixie
+}  // namespace xia
 
 #endif  // PIXIE_HW_CSR_H

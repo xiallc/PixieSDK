@@ -144,8 +144,8 @@ int main(int argc, char* argv[]) {
         cout << "Init OK " << retval << endl;
     }
 
-    retval = Pixie16BootModule(ComFPGAConfigFile, SPFPGAConfigFile, TrigFPGAConfigFile, DSPCodeFile, DSPParFile_LMTest,
-                               DSPVarFile, NumModules, 0x7F);
+    retval = Pixie16BootModule(ComFPGAConfigFile, SPFPGAConfigFile, TrigFPGAConfigFile, DSPCodeFile,
+                               DSPParFile_LMTest, DSPVarFile, NumModules, 0x7F);
     if (retval < 0) {
         sprintf(ErrMSG, "*ERROR* Pixie16BootModule failed, retval = %d", retval);
         Pixie_Print_MSG(ErrMSG);

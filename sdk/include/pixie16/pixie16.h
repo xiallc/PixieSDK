@@ -182,7 +182,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16AdjustOffsets(unsigned short ModNum);
  * @retval -3 - failed to read baselines from the data memory
  */
 PIXIE_EXPORT int PIXIE_API Pixie16BLcutFinder(unsigned short ModNum, unsigned short ChanNum,
-                                            unsigned int* BLcut);
+                                              unsigned int* BLcut);
 
 /**
  * @ingroup PUBLIC_API
@@ -255,10 +255,11 @@ PIXIE_EXPORT int PIXIE_API Pixie16BLcutFinder(unsigned short ModNum, unsigned sh
  * @retval -28 - Failed to read DSPParFile
  */
 PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
-                                           const char* SPFPGAConfigFile,
-                                           const char* TrigFPGAConfigFile, const char* DSPCodeFile,
-                                           const char* DSPParFile, const char* DSPVarFile,
-                                           unsigned short ModNum, unsigned short BootPattern);
+                                             const char* SPFPGAConfigFile,
+                                             const char* TrigFPGAConfigFile,
+                                             const char* DSPCodeFile, const char* DSPParFile,
+                                             const char* DSPVarFile, unsigned short ModNum,
+                                             unsigned short BootPattern);
 
 /**
  * @ingroup LIST_MODE_DATA_PROCESSING
@@ -282,7 +283,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
  * @retval  0 - Successful
  * @retval -1 - Invalid Pixie module number
  */
-PIXIE_EXPORT int PIXIE_API Pixie16CheckExternalFIFOStatus(unsigned int* nFIFOWords, unsigned short ModNum);
+PIXIE_EXPORT int PIXIE_API Pixie16CheckExternalFIFOStatus(unsigned int* nFIFOWords,
+                                                          unsigned short ModNum);
 
 /**
  * @ingroup PUBLIC_API
@@ -329,8 +331,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckRunStatus(unsigned short ModNum);
  * @return 0 if the live time was 0. The number of triggers divided by the live time in seconds
  *     otherwise.
  */
-PIXIE_EXPORT double PIXIE_API Pixie16ComputeInputCountRate(unsigned int* Statistics, unsigned short ModNum,
-                                    unsigned short ChanNum);
+PIXIE_EXPORT double PIXIE_API Pixie16ComputeInputCountRate(unsigned int* Statistics,
+                                                           unsigned short ModNum,
+                                                           unsigned short ChanNum);
 
 /**
  * @ingroup RUN_STATISTICS
@@ -352,8 +355,8 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeInputCountRate(unsigned int* Statist
  * @param[in] ChanNum: ChanNum is the channel number, which starts counting at 0.
  * @return The live time of the module in seconds.
  */
-PIXIE_EXPORT double PIXIE_API Pixie16ComputeLiveTime(unsigned int* Statistics, unsigned short ModNum,
-                              unsigned short ChanNum);
+PIXIE_EXPORT double PIXIE_API Pixie16ComputeLiveTime(unsigned int* Statistics,
+                                                     unsigned short ModNum, unsigned short ChanNum);
 
 /**
  * @ingroup RUN_STATISTICS
@@ -378,8 +381,9 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeLiveTime(unsigned int* Statistics, u
  * @return 0 if the live time was 0. Otherwise, the number of channel events divided by the
  *     live time in seconds.
  */
-PIXIE_EXPORT double PIXIE_API Pixie16ComputeOutputCountRate(unsigned int* Statistics, unsigned short ModNum,
-                                     unsigned short ChanNum);
+PIXIE_EXPORT double PIXIE_API Pixie16ComputeOutputCountRate(unsigned int* Statistics,
+                                                            unsigned short ModNum,
+                                                            unsigned short ChanNum);
 
 /**
  * @ingroup RUN_STATISTICS
@@ -402,7 +406,8 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeOutputCountRate(unsigned int* Statis
  * @param[in] ModNum: ModNum is the module number, which starts counting at 0.
  * @return The number of events processed by the module.
  */
-PIXIE_EXPORT double PIXIE_API Pixie16ComputeProcessedEvents(unsigned int* Statistics, unsigned short ModNum);
+PIXIE_EXPORT double PIXIE_API Pixie16ComputeProcessedEvents(unsigned int* Statistics,
+                                                            unsigned short ModNum);
 
 /**
  * @ingroup RUN_STATISTICS
@@ -423,7 +428,8 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeProcessedEvents(unsigned int* Statis
  * @param[in] ModNum: The module number, which starts counting at 0.
  * @return The number of seconds that the module spent on data acquisition.
  */
-PIXIE_EXPORT double PIXIE_API Pixie16ComputeRealTime(unsigned int* Statistics, unsigned short ModNum);
+PIXIE_EXPORT double PIXIE_API Pixie16ComputeRealTime(unsigned int* Statistics,
+                                                     unsigned short ModNum);
 
 /**
  * @ingroup PUBLIC_API
@@ -494,7 +500,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ExitSystem(unsigned short ModNum);
  * @retval -4 - Failed to read the module's information
  */
 PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
-                                           unsigned short OfflineMode);
+                                             unsigned short OfflineMode);
 
 /**
  * @ingroup LIST_MODE_DATA_PROCESSING
@@ -516,8 +522,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned
  * @retval -1 - Invalid Pixie module number
  * @retval -2 - Failed to read data from external FIFO
  */
-PIXIE_EXPORT int PIXIE_API Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO_Data, unsigned int nFIFOWords,
-                                    unsigned short ModNum);
+PIXIE_EXPORT int PIXIE_API Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO_Data,
+                                                           unsigned int nFIFOWords,
+                                                           unsigned short ModNum);
 
 /**
  * @ingroup DATA_PROCESSING
@@ -538,8 +545,10 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO
  * @retval -2 - Invalid Pixie channel number
  * @retval -3 - Failed to get the histogram data. If this happens reboot the module.
  */
-PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogram, unsigned int NumWords,
-                                   unsigned short ModNum, unsigned short ChanNum);
+PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogram,
+                                                          unsigned int NumWords,
+                                                          unsigned short ModNum,
+                                                          unsigned short ChanNum);
 
 /**
  * @ingroup PUBLIC_API
@@ -562,8 +571,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
  * @retval: -3 - Failed to read the ADC information from I2C serial EEPROM
  */
 PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned short* ModRev,
-                                               unsigned int* ModSerNum, unsigned short* ModADCBits,
-                                               unsigned short* ModADCMSPS);
+                                                 unsigned int* ModSerNum,
+                                                 unsigned short* ModADCBits,
+                                                 unsigned short* ModADCMSPS);
 
 /**
  * @ingroup PUBLIC_API
@@ -595,8 +605,10 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned
  * @retval -4 - Failed to allocate memory to store ADC traces
  * @retval -5 - Failed to read ADC traces
  */
-PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buffer, unsigned int Trace_Length,
-                               unsigned short ModNum, unsigned short ChanNum);
+PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buffer,
+                                                      unsigned int Trace_Length,
+                                                      unsigned short ModNum,
+                                                      unsigned short ChanNum);
 
 /**
  * @ingroup CONFIGURATION
@@ -625,8 +637,10 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buff
  * @retval -3 - Failed to allocate memory to store baselines
  * @retval -4 - Failed to read baselines
  */
-PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanBaselines(double* Baselines, double* TimeStamps, unsigned short NumBases,
-                                unsigned short ModNum, unsigned short ChanNum);
+PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanBaselines(double* Baselines, double* TimeStamps,
+                                                       unsigned short NumBases,
+                                                       unsigned short ModNum,
+                                                       unsigned short ChanNum);
 
 /**
  * @ingroup CONFIGURATION
@@ -683,8 +697,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanBaselines(double* Baselines, double
  * @retval -2 - Invalid Pixie channel number
  * @retval -3 - Invalid channel parameter name
  */
-PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanPar(const char* ChanParName, double* ChanParData, unsigned short ModNum,
-                          unsigned short ChanNum);
+PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanPar(const char* ChanParName, double* ChanParData,
+                                                 unsigned short ModNum, unsigned short ChanNum);
 
 /**
  * @ingroup CONFIGURATION
@@ -720,7 +734,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanPar(const char* ChanParName, double
  * @retval -1 - Invalid Pixie module number
  * @retval -2 - Invalid module parameter name
  */
-PIXIE_EXPORT int PIXIE_API Pixie16ReadSglModPar(const char* ModParName, unsigned int* ModParData, unsigned short ModNum);
+PIXIE_EXPORT int PIXIE_API Pixie16ReadSglModPar(const char* ModParName, unsigned int* ModParData,
+                                                unsigned short ModNum);
 
 /**
  * @ingroup DATA_PROCESSING
@@ -739,7 +754,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglModPar(const char* ModParName, unsigned
  * @retval -1 - Invalid Pixie module number
  * @retval -2 - Failed to get statistics data. If this happens, then reboot the module.
  */
-PIXIE_EXPORT int PIXIE_API Pixie16ReadStatisticsFromModule(unsigned int* Statistics, unsigned short ModNum);
+PIXIE_EXPORT int PIXIE_API Pixie16ReadStatisticsFromModule(unsigned int* Statistics,
+                                                           unsigned short ModNum);
 
 /**
  * @ingroup CONFIGURATION
@@ -868,7 +884,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartHistogramRun(unsigned short ModNum, unsig
  * @retval -3 - Failed to start list-mode run
  * @retval -4 - Invalid run type
  */
-PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsigned short RunType, unsigned short mode);
+PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsigned short RunType,
+                                                   unsigned short mode);
 
 /**
  * @ingroup CONFIGURATION
@@ -928,8 +945,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsign
  * @retval -5 - BLcutFinder failed downloading channel parameter
  * @retval -6 - SetDACs failed downloading channel parameter
  */
-PIXIE_EXPORT int PIXIE_API Pixie16WriteSglChanPar(const char* ChanParName, double ChanParData, unsigned short ModNum,
-                           unsigned short ChanNum);
+PIXIE_EXPORT int PIXIE_API Pixie16WriteSglChanPar(const char* ChanParName, double ChanParData,
+                                                  unsigned short ModNum, unsigned short ChanNum);
 
 /**
  * @ingroup CONFIGURATION
@@ -967,7 +984,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglChanPar(const char* ChanParName, doubl
  * @retval -3 - Failed to program Fippi after downloading module parameter
  * @retval -4 - Failed to find BLcut after downloading module parameter
  */
-PIXIE_EXPORT int PIXIE_API Pixie16WriteSglModPar(const char* ModParName, unsigned int ModParData, unsigned short ModNum);
+PIXIE_EXPORT int PIXIE_API Pixie16WriteSglModPar(const char* ModParName, unsigned int ModParData,
+                                                 unsigned short ModNum);
 
 #ifdef __cplusplus
 }

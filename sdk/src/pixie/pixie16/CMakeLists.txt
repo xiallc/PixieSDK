@@ -9,7 +9,7 @@ set(SDK_PIXIE16_SOURCES
         pixie16/hw.cpp
         pixie16/i2c_bitbash.cpp
         pixie16/i2cm24c64.cpp
-	pixie16/legacy.cpp
+        pixie16/legacy.cpp
         pixie16/memory.cpp
         pixie16/module.cpp
         pixie16/pcf8574.cpp

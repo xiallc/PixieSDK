@@ -31,155 +31,130 @@
 #include <pixie/pixie16/hw.hpp>
 #include <pixie/pixie16/module.hpp>
 
-namespace xia
-{
-namespace pixie
-{
-namespace module
-{
-    class module;
+namespace xia {
+namespace pixie {
+namespace module {
+class module;
 }
-namespace hw
-{
-namespace memory
-{
+namespace hw {
+namespace memory {
+/*
+ * Bus addresses
+ */
+static const address IO_BUFFER_ADDR = 0x00050000; /* R */
+static const address FIFO_MEM_DMA = 0x00200000; /* R */
+static const address DSP_MEM_DMA = 0x00300000; /* R */
+static const address MCA_MEM_DMA = 0x00400000; /* R */
+static const address MCA_MEM_DATA = 0x00400000; /* R W */
+
+/*
+ * MCA addresses
+ */
+static const address HISTOGRAM_MEMORY = 0x00000000;
+
+struct bus {
+    module::module& module;
+
+    bus(module::module& module);
+
+protected:
     /*
-     * Bus addresses
+     * Low level access.
      */
-    static const address IO_BUFFER_ADDR = 0x00050000; /* R */
-    static const address FIFO_MEM_DMA   = 0x00200000; /* R */
-    static const address DSP_MEM_DMA    = 0x00300000; /* R */
-    static const address MCA_MEM_DMA    = 0x00400000; /* R */
-    static const address MCA_MEM_DATA   = 0x00400000; /* R W */
+    void bus_write(int reg, uint32_t data) {
+        module.write_word(reg, data);
+    }
+    uint32_t bus_read(int reg) {
+        return module.read_word(reg);
+    }
+};
+
+struct dsp : public bus {
+    dsp(module::module& module);
 
     /*
-     * MCA addresses
+     * Memory read.
      */
-    static const address HISTOGRAM_MEMORY = 0x00000000;
+    word read(const address addr);
+    word read(const size_t offset, const address addr);
+    word read(const size_t channel, const size_t offset, const address addr);
 
-    struct bus
-    {
-        module::module& module;
-
-        bus(module::module& module);
-
-    protected:
-        /*
-         * Low level access.
-         */
-        void bus_write(int reg, uint32_t data) {
-            module.write_word(reg, data);
-        }
-        uint32_t bus_read(int reg) {
-            return module.read_word(reg);
-        }
-    };
-
-    struct dsp
-        : public bus
-    {
-        dsp(module::module& module);
-
-        /*
-         * Memory read.
-         */
-        word read(const address addr);
-        word read(const size_t offset, const address addr);
-        word read(const size_t channel,
-                  const size_t offset,
-                  const address addr);
-
-        /*
-         * Memory block read.
-         *
-         * If length is not 0 only the length of data will be read.
-         */
-        template<class B>
-        void read(const address addr, B& values, const size_t length = 0);
-        void read(const address addr, word_ptr buffer, const size_t length);
-
-        /*
-         * Memory write.
-         */
-        void write(const address addr, const word value);
-        void write(const size_t offset,
-                   const address addr,
-                   const word value);
-        void write(const size_t channel,
-                   const size_t offset,
-                   const address addr,
-                   const word value);
-
-        /*
-         * Memory block write.
-         */
-        void write(const address addr, const words& values);
-        void write(const size_t channel,
-                   const address addr, const words& values);
-
-    private:
-
-        /*
-         * DMA set up
-         */
-        void dma_read(const address addr,
-                      word_ptr buffer,
-                      const size_t length);
-    };
-
+    /*
+     * Memory block read.
+     *
+     * If length is not 0 only the length of data will be read.
+     */
     template<class B>
-    inline void dsp::read(const address addr, B& values, const size_t length) {
-        if (length > values.size()) {
-            throw error(error::code::invalid_value,
-                        "dsp: read length greater than buffer size");
-        }
-        read(addr, values.data(), length != 0 ? length : values.size());
+    void read(const address addr, B& values, const size_t length = 0);
+    void read(const address addr, word_ptr buffer, const size_t length);
+
+    /*
+     * Memory write.
+     */
+    void write(const address addr, const word value);
+    void write(const size_t offset, const address addr, const word value);
+    void write(const size_t channel, const size_t offset, const address addr, const word value);
+
+    /*
+     * Memory block write.
+     */
+    void write(const address addr, const words& values);
+    void write(const size_t channel, const address addr, const words& values);
+
+private:
+    /*
+     * DMA set up
+     */
+    void dma_read(const address addr, word_ptr buffer, const size_t length);
+};
+
+template<class B>
+inline void dsp::read(const address addr, B& values, const size_t length) {
+    if (length > values.size()) {
+        throw error(error::code::invalid_value, "dsp: read length greater than buffer size");
     }
+    read(addr, values.data(), length != 0 ? length : values.size());
+}
 
-    struct mca
-        : public bus
-    {
-        mca(module::module& module);
+struct mca : public bus {
+    mca(module::module& module);
 
-        /*
-         * Block read and write.
-         */
-        void read(const address addr, words& values);
-        void read(const address addr, word_ptr values, size_t size);
-        void write(const address addr, const words& values);
-    };
+    /*
+     * Block read and write.
+     */
+    void read(const address addr, words& values);
+    void read(const address addr, word_ptr values, size_t size);
+    void write(const address addr, const words& values);
+};
 
-    struct fifo
-        : public bus
-    {
-        fifo(module::module& module);
+struct fifo : public bus {
+    fifo(module::module& module);
 
-        /*
-         * Level of data currently in the FIFO in words
-         */
-        size_t level();
+    /*
+     * Level of data currently in the FIFO in words
+     */
+    size_t level();
 
-        /*
-         * Memory block read.
-         *
-         * If length is not 0 only the length of data will be read.
-         */
-        template<typename B>
-        void read(B& values, const size_t length = 0);
-        void read(word_ptr buffer, const size_t length);
-    };
+    /*
+     * Memory block read.
+     *
+     * If length is not 0 only the length of data will be read.
+     */
+    template<typename B>
+    void read(B& values, const size_t length = 0);
+    void read(word_ptr buffer, const size_t length);
+};
 
-    template<class B>
-    inline void fifo::read(B& values, const size_t length) {
-        if (length > values.size()) {
-            throw error(error::code::invalid_value,
-                        "fifo: read length greater than buffer size");
-        }
-        read(values.data(), length != 0 ? length : values.size());
+template<class B>
+inline void fifo::read(B& values, const size_t length) {
+    if (length > values.size()) {
+        throw error(error::code::invalid_value, "fifo: read length greater than buffer size");
     }
+    read(values.data(), length != 0 ? length : values.size());
 }
-}
-}
-}
+}  // namespace memory
+}  // namespace hw
+}  // namespace pixie
+}  // namespace xia
 
 #endif  // PIXIE_HW_MEMORY_H

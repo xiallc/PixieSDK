@@ -53,8 +53,7 @@ TEST_SUITE("xia::buffer") {
             CHECK(!pool.empty());
             {
                 xia::buffer::handle buf = pool.request();
-                CHECK_THROWS_WITH_AS(pool.destroy(),
-                                     "pool destroy made while busy",
+                CHECK_THROWS_WITH_AS(pool.destroy(), "pool destroy made while busy",
                                      xia::buffer::error);
             }
             pool.destroy();
@@ -64,9 +63,7 @@ TEST_SUITE("xia::buffer") {
         xia::buffer::pool pool;
         SUBCASE("one") {
             pool.create(100, 8 * 1024);
-            CHECK_THROWS_WITH_AS(pool.create(1, 1),
-                                 "pool is already created",
-                                 xia::buffer::error);
+            CHECK_THROWS_WITH_AS(pool.create(1, 1), "pool is already created", xia::buffer::error);
             pool.destroy();
         }
         SUBCASE("two") {
@@ -89,9 +86,7 @@ TEST_SUITE("xia::buffer") {
             for (size_t b = 0; b < pool.number; ++b) {
                 handles.push_back(pool.request());
             }
-            CHECK_THROWS_WITH_AS(pool.request(),
-                                 "no buffers avaliable",
-                                 xia::buffer::error);
+            CHECK_THROWS_WITH_AS(pool.request(), "no buffers avaliable", xia::buffer::error);
             CHECK(pool.empty());
             CHECK(!pool.full());
             CHECK(pool.count() == 0);
@@ -342,12 +337,10 @@ TEST_SUITE("xia::buffer") {
                 queue.push(buf);
             }
             buffer.clear();
-            xia::buffer::buffer_value_ptr bufp =
-                new xia::buffer::buffer_value[total];
+            xia::buffer::buffer_value_ptr bufp = new xia::buffer::buffer_value[total];
             CHECK(bufp != nullptr);
             queue.compact();
-            CHECK_THROWS_WITH_AS(queue.copy(bufp, total + 1),
-                                 "not enough data in queue",
+            CHECK_THROWS_WITH_AS(queue.copy(bufp, total + 1), "not enough data in queue",
                                  xia::buffer::error);
             queue.copy(bufp, total);
             v = 0;
@@ -372,7 +365,7 @@ TEST_SUITE("xia::buffer") {
                 ++value;
             }
             CHECK(matched);
-            delete [] bufp;
+            delete[] bufp;
         }
         pool.destroy();
     }

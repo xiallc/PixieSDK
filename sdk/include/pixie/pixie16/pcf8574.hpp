@@ -25,32 +25,22 @@
 
 #include <pixie/pixie16/i2c_bitbash.hpp>
 
-namespace xia
-{
-namespace pixie
-{
-namespace hw
-{
-namespace i2c
-{
-    struct pcf8574
-        : public bitbash
-    {
-        pcf8574(module::module& module,
-                int reg,
-                uint32_t SDA,
-                uint32_t SCL,
-                uint32_t CTRL,
-                bool trace = false);
+namespace xia {
+namespace pixie {
+namespace hw {
+namespace i2c {
+struct pcf8574 : public bitbash {
+    pcf8574(module::module& module, int reg, uint32_t SDA, uint32_t SCL, uint32_t CTRL,
+            bool trace = false);
 
-        /*
-         * Read a byte.
-         */
-        uint8_t read_a_byte();
-    };
-}
-}
-}
-}
+    /*
+     * Read a byte.
+     */
+    uint8_t read_a_byte();
+};
+}  // namespace i2c
+}  // namespace hw
+}  // namespace pixie
+}  // namespace xia
 
 #endif  // PIXIE_HW_PCF8574_H

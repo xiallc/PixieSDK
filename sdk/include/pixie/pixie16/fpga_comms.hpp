@@ -25,27 +25,22 @@
 
 #include <pixie/pixie16/fpga.hpp>
 
-namespace xia
-{
-namespace pixie
-{
-namespace hw
-{
-namespace fpga
-{
-    struct comms
-    {
-        control ctrl;
+namespace xia {
+namespace pixie {
+namespace hw {
+namespace fpga {
+struct comms {
+    control ctrl;
 
-        comms(module::module& module, bool trace = false);
+    comms(module::module& module, bool trace = false);
 
-        void boot(const firmware::image& image, int retries = 10);
+    void boot(const firmware::image& image, int retries = 10);
 
-        bool done();
-    };
-}
-}
-}
-}
+    bool done();
+};
+}  // namespace fpga
+}  // namespace hw
+}  // namespace pixie
+}  // namespace xia
 
 #endif  // PIXIE_HW_FPGA_COMMS_H

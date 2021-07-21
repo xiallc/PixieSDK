@@ -34,94 +34,60 @@
 #include <pixie/pixie16/module.hpp>
 #include <pixie/pixie16/run.hpp>
 
-namespace xia
-{
-namespace pixie
-{
-namespace channel
-{
-static std::string
-channel_label(const int num, const int slot, const size_t chan)
-{
+namespace xia {
+namespace pixie {
+namespace channel {
+static std::string channel_label(const int num, const int slot, const size_t chan) {
     std::ostringstream oss;
-    oss << "channel: num=" << num << ",slot=" << slot
-        << ",chan=" << chan << ": ";
+    oss << "channel: num=" << num << ",slot=" << slot << ",chan=" << chan << ": ";
     return oss.str();
 }
 
-static std::string
-channel_label(const channel& chan)
-{
+static std::string channel_label(const channel& chan) {
     module::module& mod = chan.module.get();
     return channel_label(mod.number, mod.slot, chan.number);
 }
 
-error::error(const int num, const int slot, const size_t channel,
-             const code type, const std::ostringstream& what)
-    : pixie::error::error(type,
-                          make_what(num, slot, channel, what.str().c_str()))
-{
-}
+error::error(const int num, const int slot, const size_t channel, const code type,
+             const std::ostringstream& what)
+    : pixie::error::error(type, make_what(num, slot, channel, what.str().c_str())) {}
 
-error::error(const int num, const int slot, const size_t channel,
-             const code type, const std::string& what)
-    : pixie::error::error(type, make_what(num, slot, channel, what.c_str()))
-{
-}
+error::error(const int num, const int slot, const size_t channel, const code type,
+             const std::string& what)
+    : pixie::error::error(type, make_what(num, slot, channel, what.c_str())) {}
 
-error::error(const int num, const int slot, const size_t channel,
-             const code type, const char* what)
-    : pixie::error::error(type, make_what(num, slot, channel, what))
-{
-}
+error::error(const int num, const int slot, const size_t channel, const code type, const char* what)
+    : pixie::error::error(type, make_what(num, slot, channel, what)) {}
 
-void
-error::output(std::ostream& out)
-{
+void error::output(std::ostream& out) {
     util::ostream_guard flags(out);
-    out << std::setfill(' ')
-        << "error: code=" << std::setw(2) << result()
-        << ' ' << what();
+    out << std::setfill(' ') << "error: code=" << std::setw(2) << result() << ' ' << what();
 }
 
-std::string
-error::make_what(const int num,
-                 const int slot,
-                 const size_t channel,
-                 const char* what_)
-{
+std::string error::make_what(const int num, const int slot, const size_t channel,
+                             const char* what_) {
     std::ostringstream oss;
     oss << channel_label(num, slot, channel) << what_;
     return oss.str();
 }
 
-void
-range_set(range& range_, size_t first)
-{
+void range_set(range& range_, size_t first) {
     std::iota(range_.begin(), range_.end(), first);
 }
 
 baseline::baseline(module::module& module, range& channels_)
-    : module(module),
-      channels(channels_),
-      cuts(channels.size())
-{
+    : module(module), channels(channels_), cuts(channels.size()) {
     if (channels.size() > module.num_channels) {
-        throw module::error(module.number, module.slot,
-                            error::code::invalid_value,
+        throw module::error(module.number, module.slot, error::code::invalid_value,
                             "more channels in range than module has");
     }
 }
 
-void
-baseline::find_cut(size_t num)
-{
-    log(log::info) << module::module_label(module)
-                   << "find bl cut: num=" << num;
+void baseline::find_cut(size_t num) {
+    log(log::info) << module::module_label(module) << "find bl cut: num=" << num;
 
     if (num > max_num) {
-        throw module::error(module.number, module.slot,
-                            error::code::invalid_value,
+        throw module::error(module.number, module.slot, error::code::invalid_value,
                             "baseline values size exceeds max");
     }
 
@@ -133,10 +99,8 @@ baseline::find_cut(size_t num)
     bl_values.resize(channels.size());
 
     for (auto chan : channels) {
-        log2_bweight[chan] =
-            module.read_var(param::channel_var::Log2Bweight, chan, 0, false);
-        current_bl_cut[chan] =
-            module.read_var(param::channel_var::BLcut, chan, 0, false);
+        log2_bweight[chan] = module.read_var(param::channel_var::Log2Bweight, chan, 0, false);
+        current_bl_cut[chan] = module.read_var(param::channel_var::BLcut, chan, 0, false);
         module.write_var(param::channel_var::Log2Bweight, 0, chan);
         module.write_var(param::channel_var::BLcut, 0, chan);
     }
@@ -149,18 +113,14 @@ baseline::find_cut(size_t num)
         compute_cut(num);
         for (auto chan : channels) {
             module.write_var(param::channel_var::BLcut, cuts[chan], chan);
-            log(log::info) << module::module_label(module)
-                           << "channel=" << chan << " bl cut=" << cuts[chan];
+            log(log::info) << module::module_label(module) << "channel=" << chan
+                           << " bl cut=" << cuts[chan];
         }
     } catch (...) {
         try {
             for (auto chan : channels) {
-                module.write_var(param::channel_var::Log2Bweight,
-                                 log2_bweight[chan],
-                                 chan);
-                module.write_var(param::channel_var::Log2Bweight,
-                                 current_bl_cut[chan],
-                                 chan);
+                module.write_var(param::channel_var::Log2Bweight, log2_bweight[chan], chan);
+                module.write_var(param::channel_var::Log2Bweight, current_bl_cut[chan], chan);
             }
         } catch (...) {
             /* ignore nesting exceptions, keep the first */
@@ -169,23 +129,17 @@ baseline::find_cut(size_t num)
     }
 
     for (auto chan : channels) {
-        module.write_var(param::channel_var::Log2Bweight,
-                         log2_bweight[chan],
-                         chan);
-        log(log::info) << module::module_label(module)
-                       << "channel=" << chan
+        module.write_var(param::channel_var::Log2Bweight, log2_bweight[chan], chan);
+        log(log::info) << module::module_label(module) << "channel=" << chan
                        << "find bl cut: cut=" << cuts[chan];
     }
 
     tp.end();
 
-    log(log::info) << module::module_label(module)
-                   << "find bl cut: duration=" << tp;
+    log(log::info) << module::module_label(module) << "find bl cut: duration=" << tp;
 }
 
-double
-baseline::time(hw::word time_word0, hw::word time_word1)
-{
+double baseline::time(hw::word time_word0, hw::word time_word1) {
     double time;
     time = double(static_cast<uint64_t>(time_word0) << 32);
     time += double(time_word1);
@@ -193,14 +147,11 @@ baseline::time(hw::word time_word0, hw::word time_word1)
     return time;
 }
 
-void
-baseline::get(baseline::channels_values& chan_values, bool run)
-{
+void baseline::get(baseline::channels_values& chan_values, bool run) {
     hw::memory::dsp dsp(module);
     hw::io_buffer buffer;
 
-    log(log::debug) << module::module_label(module)
-                    << "baseline get: channels=" << channels.size()
+    log(log::debug) << module::module_label(module) << "baseline get: channels=" << channels.size()
                     << " chan-values=" << chan_values.size();
 
     /*
@@ -213,20 +164,17 @@ baseline::get(baseline::channels_values& chan_values, bool run)
     const size_t bl_block_len = 2 + module.num_channels;
 
     if (channels.size() == 0) {
-        throw module::error(module.number, module.slot,
-                            error::code::invalid_value,
+        throw module::error(module.number, module.slot, error::code::invalid_value,
                             "no channels in the channel range");
     }
 
     if (channels.size() > chan_values.size()) {
-        throw module::error(module.number, module.slot,
-                            error::code::invalid_value,
+        throw module::error(module.number, module.slot, error::code::invalid_value,
                             "more channels in range than value slots");
     }
 
     if (chan_values[channels[0]].size() > (buffer.size() / bl_block_len)) {
-        throw module::error(module.number, module.slot,
-                            error::code::invalid_value,
+        throw module::error(module.number, module.slot, error::code::invalid_value,
                             "channels values more than avaliable baselines");
     }
 
@@ -240,8 +188,7 @@ baseline::get(baseline::channels_values& chan_values, bool run)
     size_t offset = 2;
 
     for (size_t bl = 0; bl < max_num; ++bl, offset += bl_block_len) {
-        double timestamp =
-            time(buffer[offset], buffer[offset + 1]) - starttime;
+        double timestamp = time(buffer[offset], buffer[offset + 1]) - starttime;
         for (auto chan : channels) {
             values& chan_vals = chan_values[chan];
             if (bl < chan_vals.size()) {
@@ -252,9 +199,7 @@ baseline::get(baseline::channels_values& chan_values, bool run)
     }
 }
 
-void
-baseline::compute_cut(size_t num)
-{
+void baseline::compute_cut(size_t num) {
     for (size_t count = 0; count < 10; ++count) {
         get(bl_values);
         for (auto chan : channels) {
@@ -262,8 +207,8 @@ baseline::compute_cut(size_t num)
             size_t sdev_count = 0;
             cuts[chan] = 0;
             for (size_t bl = 0; bl < (num - 1); ++bl) {
-                double val = (std::fabs(bl_values[chan][bl].second -
-                                        bl_values[chan][bl + 1].second));
+                double val =
+                    (std::fabs(bl_values[chan][bl].second - bl_values[chan][bl + 1].second));
                 if (val != 0) {
                     if (val < (10.0 * bl_values[chan][bl].second) &&
                         val < (10.0 * bl_values[chan][bl + 1].second)) {
@@ -287,32 +232,24 @@ baseline::compute_cut(size_t num)
                 cuts[chan] = 0;
             }
 
-            log(log::debug) << module::module_label(module)
-                            << " channel=" << chan << "computed cut=" << cuts[chan];
+            log(log::debug) << module::module_label(module) << " channel=" << chan
+                            << "computed cut=" << cuts[chan];
         }
     }
 }
 
-channel::channel(module::module& module_)
-    : number(-1),
-      module(module_)
-{
-}
+channel::channel(module::module& module_) : number(-1), module(module_) {}
 
-channel&
-channel::operator=(const channel& c)
-{
+channel& channel::operator=(const channel& c) {
     number = c.number;
     module = c.module;
     std::copy(c.vars.begin(), c.vars.end(), std::back_inserter(vars));
     return *this;
 }
 
-void
-channel::read_adc(hw::adc_word* buffer, size_t size)
-{
-    const hw::address addr = (hw::memory::IO_BUFFER_ADDR +
-                              (int(number) * (hw::max_adc_trace_length / 2)));
+void channel::read_adc(hw::adc_word* buffer, size_t size) {
+    const hw::address addr =
+        (hw::memory::IO_BUFFER_ADDR + (int(number) * (hw::max_adc_trace_length / 2)));
 
     hw::memory::dsp dsp(module);
     hw::adc_trace_buffer adc_trace;
@@ -325,28 +262,21 @@ channel::read_adc(hw::adc_word* buffer, size_t size)
     }
 }
 
-void
-channel::read_histogram(hw::word_ptr values, const size_t size)
-{
+void channel::read_histogram(hw::word_ptr values, const size_t size) {
     if (size != 0) {
-        const hw::address addr = (hw::memory::HISTOGRAM_MEMORY +
-                                  (int(number) * hw::max_histogram_length));
+        const hw::address addr =
+            (hw::memory::HISTOGRAM_MEMORY + (int(number) * hw::max_histogram_length));
         hw::memory::mca mca(module);
         mca.read(addr, values, size);
     }
 }
 
-void
-channel::read_histogram(hw::words& values)
-{
+void channel::read_histogram(hw::words& values) {
     read_histogram(values.data(), values.size());
 }
 
-void
-channel::update_fifo(param::value_type trace_delay)
-{
-    log(log::debug) << channel_label(*this)
-                    << "fifo update: trace-delay=" << trace_delay;
+void channel::update_fifo(param::value_type trace_delay) {
+    log(log::debug) << channel_label(*this) << "fifo update: trace-delay=" << trace_delay;
 
     module::module& mod = module.get();
 
@@ -354,10 +284,8 @@ channel::update_fifo(param::value_type trace_delay)
         1 << mod.read_var(param::module_var::SlowFilterRange, 0, false);
     const param::value_type ffr_mask =
         1 << mod.read_var(param::module_var::FastFilterRange, 0, false);
-    const param::value_type fifo_length =
-        mod.read_var(param::module_var::FIFOLength, 0, false);
-    const param::value_type peak_sep =
-        mod.read_var(param::channel_var::PeakSep, number, 0, false);
+    const param::value_type fifo_length = mod.read_var(param::module_var::FIFOLength, 0, false);
+    const param::value_type peak_sep = mod.read_var(param::channel_var::PeakSep, number, 0, false);
 
     param::value_type trigger_delay;
     param::value_type paf_length;
@@ -380,34 +308,25 @@ channel::update_fifo(param::value_type trace_delay)
     mod.write_var(param::channel_var::PAFlength, paf_length, number);
 }
 
-double
-channel::trigger_risetime()
-{
+double channel::trigger_risetime() {
     module::module& mod = module.get();
 
-    param::value_type ffr_mask =
-        1 << mod.read_var(param::module_var::FastFilterRange);
-    double fast_length =
-        mod.read_var(param::channel_var::FastLength, number);
+    param::value_type ffr_mask = 1 << mod.read_var(param::module_var::FastFilterRange);
+    double fast_length = mod.read_var(param::channel_var::FastLength, number);
 
-    double result =
-        (fast_length * ffr_mask) / config.fpga_clk_mhz;
+    double result = (fast_length * ffr_mask) / config.fpga_clk_mhz;
 
     return result;
 }
 
-void
-channel::trigger_risetime(double value)
-{
+void channel::trigger_risetime(double value) {
     module::module& mod = module.get();
 
-    param::value_type ffr_mask =
-        1 << mod.read_var(param::module_var::FastFilterRange, 0, false);
-    param::value_type fast_gap =
-        mod.read_var(param::channel_var::FastGap, number, 0, false);
+    param::value_type ffr_mask = 1 << mod.read_var(param::module_var::FastFilterRange, 0, false);
+    param::value_type fast_gap = mod.read_var(param::channel_var::FastGap, number, 0, false);
 
     param::value_type fast_length =
-      param::value_type(std::round((value * config.fpga_clk_mhz) / ffr_mask));
+        param::value_type(std::round((value * config.fpga_clk_mhz) / ffr_mask));
 
     if ((fast_length + fast_gap) > hw::limit::FASTFILTER_MAX_LEN) {
         fast_length = hw::limit::FASTFILTER_MAX_LEN - fast_gap;
@@ -415,8 +334,7 @@ channel::trigger_risetime(double value)
     if (fast_length < hw::limit::FASTLENGTH_MIN_LEN) {
         fast_length = hw::limit::FASTLENGTH_MIN_LEN;
         if ((fast_length + fast_gap) > hw::limit::FASTFILTER_MAX_LEN) {
-            fast_gap =
-              hw::limit::FASTFILTER_MAX_LEN - hw::limit::FASTLENGTH_MIN_LEN;
+            fast_gap = hw::limit::FASTFILTER_MAX_LEN - hw::limit::FASTLENGTH_MIN_LEN;
         }
     }
 
@@ -426,34 +344,25 @@ channel::trigger_risetime(double value)
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
 
-double
-channel::trigger_flattop()
-{
+double channel::trigger_flattop() {
     module::module& mod = module.get();
 
-    param::value_type ffr_mask =
-        1 << mod.read_var(param::module_var::FastFilterRange);
-    double fast_gap =
-        mod.read_var(param::channel_var::FastGap, number);
+    param::value_type ffr_mask = 1 << mod.read_var(param::module_var::FastFilterRange);
+    double fast_gap = mod.read_var(param::channel_var::FastGap, number);
 
-    double result =
-        (fast_gap * ffr_mask) / config.fpga_clk_mhz;
+    double result = (fast_gap * ffr_mask) / config.fpga_clk_mhz;
 
     return result;
 }
 
-void
-channel::trigger_flattop(double value)
-{
+void channel::trigger_flattop(double value) {
     module::module& mod = module.get();
 
-    param::value_type ffr_mask =
-        1 << mod.read_var(param::module_var::FastFilterRange, 0, false);
-    param::value_type fast_length =
-        mod.read_var(param::channel_var::FastLength, number, 0, false);
+    param::value_type ffr_mask = 1 << mod.read_var(param::module_var::FastFilterRange, 0, false);
+    param::value_type fast_length = mod.read_var(param::channel_var::FastLength, number, 0, false);
 
     param::value_type fast_gap =
-      param::value_type(std::round((value * config.fpga_clk_mhz) / ffr_mask));
+        param::value_type(std::round((value * config.fpga_clk_mhz) / ffr_mask));
 
     if ((fast_length + fast_gap) > hw::limit::FASTFILTER_MAX_LEN) {
         fast_gap = hw::limit::FASTFILTER_MAX_LEN - fast_length;
@@ -464,38 +373,28 @@ channel::trigger_flattop(double value)
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
 
-double
-channel::trigger_threshold()
-{
+double channel::trigger_threshold() {
     module::module& mod = module.get();
 
-    double fast_thresh =
-        mod.read_var(param::channel_var::FastThresh, number);
-    double fast_length =
-        mod.read_var(param::channel_var::FastLength, number);
+    double fast_thresh = mod.read_var(param::channel_var::FastThresh, number);
+    double fast_length = mod.read_var(param::channel_var::FastLength, number);
 
-    double result =
-        fast_thresh / (fast_length * double(config.adc_clk_div));
+    double result = fast_thresh / (fast_length * double(config.adc_clk_div));
 
     return result;
 }
 
-void
-channel::trigger_threshold(double value)
-{
+void channel::trigger_threshold(double value) {
     module::module& mod = module.get();
 
-    double fast_length =
-        mod.read_var(param::channel_var::FastLength, number);
+    double fast_length = mod.read_var(param::channel_var::FastLength, number);
 
     param::value_type fast_thresh =
         static_cast<param::value_type>(value * fast_length * config.adc_clk_div);
 
     if (fast_thresh >= hw::limit::FAST_THRESHOLD_MAX) {
         double dbl_fast_thresh(fast_thresh);
-        value =
-            (double(hw::limit::FAST_THRESHOLD_MAX) /
-             (dbl_fast_thresh - 0.5)) * dbl_fast_thresh;
+        value = (double(hw::limit::FAST_THRESHOLD_MAX) / (dbl_fast_thresh - 0.5)) * dbl_fast_thresh;
         fast_thresh = static_cast<param::value_type>(value);
     }
 
@@ -504,64 +403,47 @@ channel::trigger_threshold(double value)
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
 
-double
-channel::energy_risetime()
-{
+double channel::energy_risetime() {
     module::module& mod = module.get();
 
-    param::value_type sfr_mask =
-        1 << mod.read_var(param::module_var::SlowFilterRange);
-    double slow_length =
-        mod.read_var(param::channel_var::SlowLength, number);
+    param::value_type sfr_mask = 1 << mod.read_var(param::module_var::SlowFilterRange);
+    double slow_length = mod.read_var(param::channel_var::SlowLength, number);
 
-    double result =
-        (slow_length * sfr_mask) / config.fpga_clk_mhz;
+    double result = (slow_length * sfr_mask) / config.fpga_clk_mhz;
 
     return result;
 }
 
-double
-channel::energy_flattop()
-{
+double channel::energy_flattop() {
     module::module& mod = module.get();
 
-    param::value_type sfr_mask =
-        1 << mod.read_var(param::module_var::SlowFilterRange);
-    double slow_gap =
-        mod.read_var(param::channel_var::SlowGap, number);
+    param::value_type sfr_mask = 1 << mod.read_var(param::module_var::SlowFilterRange);
+    double slow_gap = mod.read_var(param::channel_var::SlowGap, number);
 
-    double result =
-        (slow_gap * sfr_mask) / config.fpga_clk_mhz;
+    double result = (slow_gap * sfr_mask) / config.fpga_clk_mhz;
 
     return result;
 }
 
-void
-channel::energy_risetime_flattop(param::channel_param par, double value)
-{
+void channel::energy_risetime_flattop(param::channel_param par, double value) {
     ///@TODO Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
-    param::value_type ffr_mask =
-        1 << mod.read_var(param::module_var::FastFilterRange, 0, false);
-    param::value_type sfr =
-        mod.read_var(param::module_var::SlowFilterRange, 0, false);
+    param::value_type ffr_mask = 1 << mod.read_var(param::module_var::FastFilterRange, 0, false);
+    param::value_type sfr = mod.read_var(param::module_var::SlowFilterRange, 0, false);
     param::value_type sfr_mask = 1 << sfr;
-    param::value_type paf_length =
-        mod.read_var(param::channel_var::PAFlength, number, 0, false);
+    param::value_type paf_length = mod.read_var(param::channel_var::PAFlength, number, 0, false);
     param::value_type trigger_delay =
         mod.read_var(param::channel_var::TriggerDelay, number, 0, false);
 
-    param::value_type trace_delay =
-        paf_length - (trigger_delay / ffr_mask);
+    param::value_type trace_delay = paf_length - (trigger_delay / ffr_mask);
 
     param::value_type slow_length;
     param::value_type slow_gap;
 
     if (par == param::channel_param::energy_risetime) {
-        slow_length =
-            param::value_type(std::round((value * config.fpga_clk_mhz) / sfr_mask));
+        slow_length = param::value_type(std::round((value * config.fpga_clk_mhz) / sfr_mask));
         slow_gap = mod.read_var(param::channel_var::SlowGap, number, 0, false);
         if ((slow_length + slow_gap) > hw::limit::SLOWFILTER_MAX_LEN) {
             slow_length = hw::limit::SLOWFILTER_MAX_LEN - slow_gap;
@@ -569,28 +451,23 @@ channel::energy_risetime_flattop(param::channel_param par, double value)
         if (slow_length < hw::limit::SLOWLENGTH_MIN_LEN) {
             slow_length = hw::limit::SLOWLENGTH_MIN_LEN;
             if ((slow_length + slow_gap) > hw::limit::SLOWFILTER_MAX_LEN) {
-                slow_gap =
-                  hw::limit::SLOWFILTER_MAX_LEN - hw::limit::SLOWLENGTH_MIN_LEN;
+                slow_gap = hw::limit::SLOWFILTER_MAX_LEN - hw::limit::SLOWLENGTH_MIN_LEN;
             }
         }
     } else if (par == param::channel_param::energy_flattop) {
-        slow_gap =
-            param::value_type(std::round((value * config.fpga_clk_mhz) / sfr_mask));
-        slow_length =
-            mod.read_var(param::channel_var::SlowLength, number, 0, false);
+        slow_gap = param::value_type(std::round((value * config.fpga_clk_mhz) / sfr_mask));
+        slow_length = mod.read_var(param::channel_var::SlowLength, number, 0, false);
         if ((slow_length + slow_gap) > hw::limit::SLOWFILTER_MAX_LEN) {
             slow_gap = hw::limit::SLOWFILTER_MAX_LEN - slow_length;
         }
         if (slow_gap < hw::limit::SLOWGAP_MIN_LEN) {
             slow_gap = hw::limit::SLOWGAP_MIN_LEN;
             if ((slow_length + slow_gap) > hw::limit::SLOWFILTER_MAX_LEN) {
-                slow_length =
-                  hw::limit::SLOWFILTER_MAX_LEN - hw::limit::SLOWGAP_MIN_LEN;
+                slow_length = hw::limit::SLOWFILTER_MAX_LEN - hw::limit::SLOWGAP_MIN_LEN;
             }
         }
     } else {
-        throw error(mod.number, mod.slot, number,
-                    error::code::channel_invalid_param,
+        throw error(mod.number, mod.slot, number, error::code::channel_invalid_param,
                     "param not energy risetime or flattop");
     }
 
@@ -601,21 +478,21 @@ channel::energy_risetime_flattop(param::channel_param par, double value)
     param::value_type peak_sample;
 
     switch (sfr) {
-    case 1:
-        peak_sample = peak_sep - 3;
-        break;
-    case 5:
-        peak_sample = peak_sep;
-        break;
-    case 4:
-    case 6:
-        peak_sample = peak_sep - 1;
-        break;
-    case 2:
-    case 3:
-    default:
-        peak_sample = peak_sep - 2;
-        break;
+        case 1:
+            peak_sample = peak_sep - 3;
+            break;
+        case 5:
+            peak_sample = peak_sep;
+            break;
+        case 4:
+        case 6:
+            peak_sample = peak_sep - 1;
+            break;
+        case 2:
+        case 3:
+        default:
+            peak_sample = peak_sep - 2;
+            break;
     }
 
     mod.write_var(param::channel_var::PeakSample, peak_sample, number);
@@ -626,73 +503,58 @@ channel::energy_risetime_flattop(param::channel_param par, double value)
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
 
-double
-channel::tau()
-{
+double channel::tau() {
     module::module& mod = module.get();
-    util::ieee_float preamp_tau =
-        mod.read_var(param::channel_var::PreampTau, number);
+    util::ieee_float preamp_tau = mod.read_var(param::channel_var::PreampTau, number);
     return preamp_tau;
 }
 
-void
-channel::tau(double value)
-{
+void channel::tau(double value) {
     module::module& mod = module.get();
 
     param::value_type preamp_tau = util::ieee_float(value);
 
     mod.write_var(param::channel_var::PreampTau, preamp_tau, number);
 
-    range chans = { number };
+    range chans = {number};
     baseline bl(mod, chans);
     bl.find_cut();
 }
 
-double
-channel::trace_length()
-{
+double channel::trace_length() {
     module::module& mod = module.get();
 
-    double trace_len =
-        mod.read_var(param::channel_var::TraceLength, number);
-    param::value_type ffr_mask =
-        1 << mod.read_var(param::module_var::FastFilterRange);
+    double trace_len = mod.read_var(param::channel_var::TraceLength, number);
+    param::value_type ffr_mask = 1 << mod.read_var(param::module_var::FastFilterRange);
 
-    double result =
-        trace_len / (double(config.adc_msps) * ffr_mask);
+    double result = trace_len / (double(config.adc_msps) * ffr_mask);
 
     return result;
 }
 
-void
-channel::trace_length(double value)
-{
+void channel::trace_length(double value) {
     ///@TODO Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
-    param::value_type ffr_mask =
-        1 << mod.read_var(param::module_var::FastFilterRange);
-    param::value_type fifo_length =
-        mod.read_var(param::module_var::FIFOLength);
+    param::value_type ffr_mask = 1 << mod.read_var(param::module_var::FastFilterRange);
+    param::value_type fifo_length = mod.read_var(param::module_var::FIFOLength);
 
-    param::value_type trace_length =
-        param::value_type(value * config.adc_msps / ffr_mask);
+    param::value_type trace_length = param::value_type(value * config.adc_msps / ffr_mask);
 
     /*
      * Adjust the length to suit the FPGA requirements
      */
     switch (config.adc_msps) {
-    case 500:
-        trace_length = (trace_length / 10) * 10;
-        break;
-    case 250:
-    case 100:
-        trace_length = (trace_length / 2) * 2;
-        break;
-    default:
-        break;
+        case 500:
+            trace_length = (trace_length / 10) * 10;
+            break;
+        case 250:
+        case 100:
+            trace_length = (trace_length / 2) * 2;
+            break;
+        default:
+            break;
     }
 
     if (trace_length > fifo_length) {
@@ -704,40 +566,28 @@ channel::trace_length(double value)
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
 
-double
-channel::trace_delay()
-{
+double channel::trace_delay() {
     module::module& mod = module.get();
 
-    double paf_length =
-        mod.read_var(param::channel_var::PAFlength, number);
-    double trigger_delay =
-        mod.read_var(param::channel_var::TriggerDelay, number);
-    param::value_type fast_filter_range =
-        mod.read_var(param::module_var::FastFilterRange);
+    double paf_length = mod.read_var(param::channel_var::PAFlength, number);
+    double trigger_delay = mod.read_var(param::channel_var::TriggerDelay, number);
+    param::value_type fast_filter_range = mod.read_var(param::module_var::FastFilterRange);
     param::value_type ffr_mask = 1 << fast_filter_range;
 
-    double result =
-        (paf_length - (trigger_delay / ffr_mask)) /
-        config.fpga_clk_mhz * ffr_mask;
+    double result = (paf_length - (trigger_delay / ffr_mask)) / config.fpga_clk_mhz * ffr_mask;
 
     return result;
 }
 
-void
-channel::trace_delay(double value)
-{
+void channel::trace_delay(double value) {
     ///@TODO Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
-    param::value_type ffr_mask =
-        1 << mod.read_var(param::module_var::FastFilterRange);
-    param::value_type trace_length =
-        mod.read_var(param::channel_var::TraceLength, number);
+    param::value_type ffr_mask = 1 << mod.read_var(param::module_var::FastFilterRange);
+    param::value_type trace_length = mod.read_var(param::channel_var::TraceLength, number);
 
-    param::value_type trace_delay =
-        param::value_type(value * config.fpga_clk_mhz / ffr_mask);
+    param::value_type trace_delay = param::value_type(value * config.fpga_clk_mhz / ffr_mask);
 
     if (trace_delay > trace_length) {
         trace_delay = trace_length / 2;
@@ -752,25 +602,18 @@ channel::trace_delay(double value)
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
 
-double
-channel::voffset()
-{
+double channel::voffset() {
     module::module& mod = module.get();
 
-    param::value_type value =
-        mod.read_var(param::channel_var::OffsetDAC, number);
+    param::value_type value = mod.read_var(param::channel_var::OffsetDAC, number);
 
     return hw::limit::DAC_VOLTAGE_RANGE * (value / 65536.0 - 0.5);
 }
 
-void
-channel::voffset(double value)
-{
+void channel::voffset(double value) {
     module::module& mod = module.get();
 
-    auto offset_dac =
-        param::value_type(65536 *
-                          (value / hw::limit::DAC_VOLTAGE_RANGE + 0.5));
+    auto offset_dac = param::value_type(65536 * (value / hw::limit::DAC_VOLTAGE_RANGE + 0.5));
 
     /*
      * 16-bit DAC, range check.
@@ -784,81 +627,67 @@ channel::voffset(double value)
     hw::run::control(mod, hw::run::control_task::set_dacs);
 }
 
-double
-channel::xdt()
-{
+double channel::xdt() {
     module::module& mod = module.get();
 
-    param::value_type value =
-        mod.read_var(param::channel_var::Xwait, number);
+    param::value_type value = mod.read_var(param::channel_var::Xwait, number);
 
     double result = double(value) / hw::limit::DSP_CLOCK_MHZ;
 
     return result;
 }
 
-void
-channel::xdt(double value)
-{
+void channel::xdt(double value) {
     ///@TODO Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
-    param::value_type current_xwait =
-        mod.read_var(param::channel_var::Xwait, number);
+    param::value_type current_xwait = mod.read_var(param::channel_var::Xwait, number);
 
-    param::value_type xwait =
-        param::value_type(std::round(value * hw::limit::DSP_CLOCK_MHZ));
+    param::value_type xwait = param::value_type(std::round(value * hw::limit::DSP_CLOCK_MHZ));
 
     double multiple;
 
     switch (config.adc_msps) {
-    case 100:
-    case 500:
-        /*
+        case 100:
+        case 500:
+            /*
          * For 100 MSPS RevB/C/D or RevF, or 500 MSPS RevF, xwait should be
          * multiples of 6
          */
-        multiple = 6;
-        break;
-    default:
-        /*
+            multiple = 6;
+            break;
+        default:
+            /*
          * For 250 RevF, xwait should be multiples of 8
          */
-        multiple = 8;
-        break;
+            multiple = 8;
+            break;
     }
 
     if (xwait < multiple) {
         xwait = param::value_type(multiple);
     }
     if (xwait > current_xwait) {
-        xwait =
-            param::value_type(std::ceil(double(xwait) / multiple) * multiple);
+        xwait = param::value_type(std::ceil(double(xwait) / multiple) * multiple);
     } else {
-        xwait =
-            param::value_type(std::floor(double(xwait) / multiple) * multiple);
+        xwait = param::value_type(std::floor(double(xwait) / multiple) * multiple);
     }
 
     mod.write_var(param::channel_var::Xwait, xwait, number);
 }
 
-double
-channel::baseline_percent()
-{
+double channel::baseline_percent() {
     module::module& mod = module.get();
 
-    param::value_type value =
-        mod.read_var(param::channel_var::BaselinePercent, number);
+    param::value_type value = mod.read_var(param::channel_var::BaselinePercent, number);
 
     double result = double(value);
 
     return result;
 }
 
-void
-channel::baseline_percent(double value)
-{
+void channel::baseline_percent(double value) {
     ///@TODO Need range checking to prevent negative values.
 
     module::module& mod = module.get();
@@ -874,47 +703,35 @@ channel::baseline_percent(double value)
     mod.write_var(param::channel_var::BaselinePercent, bl_percent, number);
 }
 
-double
-channel::emin()
-{
+double channel::emin() {
     module::module& mod = module.get();
 
-    param::value_type value =
-        mod.read_var(param::channel_var::EnergyLow, number);
+    param::value_type value = mod.read_var(param::channel_var::EnergyLow, number);
 
     double result = double(value);
 
     return result;
 }
 
-void
-channel::emin(double value)
-{
+void channel::emin(double value) {
     ///@TODO Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
-    mod.write_var(param::channel_var::EnergyLow,
-                  param::value_type(value),
-                  number);
+    mod.write_var(param::channel_var::EnergyLow, param::value_type(value), number);
 }
 
-double
-channel::binfactor()
-{
+double channel::binfactor() {
     module::module& mod = module.get();
 
-    param::value_type value =
-        mod.read_var(param::channel_var::Log2Ebin, number);
+    param::value_type value = mod.read_var(param::channel_var::Log2Ebin, number);
 
     double result = double(1ULL << 32) - double(value);
 
     return result;
 }
 
-void
-channel::binfactor(double value)
-{
+void channel::binfactor(double value) {
     ///@TODO Need range checking to prevent negative values.
 
     module::module& mod = module.get();
@@ -932,13 +749,10 @@ channel::binfactor(double value)
     mod.write_var(param::channel_var::Log2Ebin, log2ebin, number);
 }
 
-double
-channel::baseline_average()
-{
+double channel::baseline_average() {
     module::module& mod = module.get();
 
-    param::value_type value =
-        mod.read_var(param::channel_var::Log2Bweight, number);
+    param::value_type value = mod.read_var(param::channel_var::Log2Bweight, number);
 
     double result;
 
@@ -951,9 +765,7 @@ channel::baseline_average()
     return result;
 }
 
-void
-channel::baseline_average(double value)
-{
+void channel::baseline_average(double value) {
     ///@TODO Need range checking to prevent negative values.
 
     module::module& mod = module.get();
@@ -969,28 +781,22 @@ channel::baseline_average(double value)
     mod.write_var(param::channel_var::Log2Bweight, bl_avg, number);
 }
 
-double
-channel::csra()
-{
+double channel::csra() {
     module::module& mod = module.get();
 
-    param::value_type value =
-        mod.read_var(param::channel_var::ChanCSRa, number);
+    param::value_type value = mod.read_var(param::channel_var::ChanCSRa, number);
 
     double result = double(value);
 
     return result;
 }
 
-void
-channel::csra(double value)
-{
+void channel::csra(double value) {
     ///@TODO Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
-    param::value_type current_csra =
-        mod.read_var(param::channel_var::ChanCSRa, number);
+    param::value_type current_csra = mod.read_var(param::channel_var::ChanCSRa, number);
 
     param::value_type csra = param::value_type(value);
 
@@ -1001,78 +807,59 @@ channel::csra(double value)
 
     if ((csra & (1 << hw::bit::CCSRA_ENARELAY)) !=
         (current_csra & (1 << hw::bit::CCSRA_ENARELAY))) {
-        range chans = { number };
+        range chans = {number};
         baseline bl(mod, chans);
         bl.find_cut();
     }
 }
 
-double
-channel::csrb()
-{
+double channel::csrb() {
     module::module& mod = module.get();
 
-    param::value_type value =
-        mod.read_var(param::channel_var::ChanCSRb, number);
+    param::value_type value = mod.read_var(param::channel_var::ChanCSRb, number);
 
     double result = double(value);
 
     return result;
 }
 
-void
-channel::csrb(double value)
-{
+void channel::csrb(double value) {
     ///@TODO Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
-    mod.write_var(param::channel_var::ChanCSRb,
-                  param::value_type(value),
-                  number);
+    mod.write_var(param::channel_var::ChanCSRb, param::value_type(value), number);
 }
 
-double
-channel::bl_cut()
-{
+double channel::bl_cut() {
     module::module& mod = module.get();
 
-    param::value_type value =
-        mod.read_var(param::channel_var::BLcut, number);
+    param::value_type value = mod.read_var(param::channel_var::BLcut, number);
 
     double result = double(value);
 
     return result;
 }
 
-void
-channel::bl_cut(double value)
-{
+void channel::bl_cut(double value) {
     ///@TODO Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
-    mod.write_var(param::channel_var::BLcut,
-                  param::value_type(value),
-                  number);
+    mod.write_var(param::channel_var::BLcut, param::value_type(value), number);
 }
 
-double
-channel::integrator()
-{
+double channel::integrator() {
     module::module& mod = module.get();
 
-    param::value_type value =
-        mod.read_var(param::channel_var::Integrator, number);
+    param::value_type value = mod.read_var(param::channel_var::Integrator, number);
 
     double result = double(value);
 
     return result;
 }
 
-void
-channel::integrator(double value)
-{
+void channel::integrator(double value) {
     ///@TODO Need range checking to prevent negative values.
     ///@Note This variable is disabled. Do we still need this functionality??
     module::module& mod = module.get();
@@ -1081,45 +868,37 @@ channel::integrator(double value)
         value = 7;
     }
 
-    mod.write_var(param::channel_var::Integrator,
-                  param::value_type(value),
-                  number);
+    mod.write_var(param::channel_var::Integrator, param::value_type(value), number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
 
-double
-channel::fast_trig_backlen()
-{
+double channel::fast_trig_backlen() {
     module::module& mod = module.get();
 
-    param::value_type value =
-        mod.read_var(param::channel_var::FastTrigBackLen, number);
+    param::value_type value = mod.read_var(param::channel_var::FastTrigBackLen, number);
 
     double result = double(value) / config.fpga_clk_mhz;
 
     return result;
 }
 
-void
-channel::fast_trig_backlen(double value)
-{
+void channel::fast_trig_backlen(double value) {
     ///@TODO Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
-    param::value_type fast_trig_blen =
-        param::value_type(std::round(value * config.fpga_clk_mhz));
+    param::value_type fast_trig_blen = param::value_type(std::round(value * config.fpga_clk_mhz));
 
     param::value_type fast_trig_blen_min;
     switch (config.adc_msps) {
-    case 100:
-    case 500:
-        fast_trig_blen_min = hw::limit::FASTTRIGBACKLEN_MIN_100MHZFIPCLK;
-        break;
-    default:
-        fast_trig_blen_min = hw::limit::FASTTRIGBACKLEN_MIN_125MHZFIPCLK;
-        break;
+        case 100:
+        case 500:
+            fast_trig_blen_min = hw::limit::FASTTRIGBACKLEN_MIN_100MHZFIPCLK;
+            break;
+        default:
+            fast_trig_blen_min = hw::limit::FASTTRIGBACKLEN_MIN_125MHZFIPCLK;
+            break;
     }
 
     if (fast_trig_blen < fast_trig_blen_min) {
@@ -1133,28 +912,22 @@ channel::fast_trig_backlen(double value)
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
 
-double
-channel::cfd_delay()
-{
+double channel::cfd_delay() {
     module::module& mod = module.get();
 
-    param::value_type value =
-        mod.read_var(param::channel_var::CFDDelay, number);
+    param::value_type value = mod.read_var(param::channel_var::CFDDelay, number);
 
     double result = double(value) / config.fpga_clk_mhz;
 
     return result;
 }
 
-void
-channel::cfd_delay(double value)
-{
+void channel::cfd_delay(double value) {
     ///@TODO Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
-    param::value_type cfddelay =
-        param::value_type(std::round(value * config.fpga_clk_mhz));
+    param::value_type cfddelay = param::value_type(std::round(value * config.fpga_clk_mhz));
 
     if (cfddelay < hw::limit::CFDDELAY_MIN) {
         cfddelay = hw::limit::CFDDELAY_MIN;
@@ -1163,27 +936,22 @@ channel::cfd_delay(double value)
         cfddelay = hw::limit::CFDDELAY_MAX;
     }
 
-     mod.write_var(param::channel_var::CFDDelay, cfddelay, number);
+    mod.write_var(param::channel_var::CFDDelay, cfddelay, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
 
-double
-channel::cfd_scale()
-{
+double channel::cfd_scale() {
     module::module& mod = module.get();
 
-    param::value_type value =
-        mod.read_var(param::channel_var::CFDScale, number);
+    param::value_type value = mod.read_var(param::channel_var::CFDScale, number);
 
     auto result = double(value);
 
     return result;
 }
 
-void
-channel::cfd_scale(double value)
-{
+void channel::cfd_scale(double value) {
     ///@TODO Need range checking to prevent negative values.
     module::module& mod = module.get();
 
@@ -1198,33 +966,25 @@ channel::cfd_scale(double value)
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
 
-double
-channel::cfd_thresh()
-{
+double channel::cfd_thresh() {
     module::module& mod = module.get();
 
-    param::value_type value =
-        mod.read_var(param::channel_var::CFDThresh, number);
+    param::value_type value = mod.read_var(param::channel_var::CFDThresh, number);
 
     double result = double(value);
 
     return result;
 }
 
-void
-channel::cfd_thresh(double value)
-{
+void channel::cfd_thresh(double value) {
     module::module& mod = module.get();
 
     param::value_type cfdthresh = param::value_type(value);
 
-    if (cfdthresh < hw::limit::CFDTHRESH_MIN ||
-        cfdthresh > hw::limit::CFDTHRESH_MAX) {
+    if (cfdthresh < hw::limit::CFDTHRESH_MIN || cfdthresh > hw::limit::CFDTHRESH_MAX) {
         std::ostringstream oss;
         oss << ": out of range CFDThresh: " << cfdthresh;
-        throw error(mod.number, mod.slot, number,
-                    error::code::channel_invalid_param,
-                    oss.str());
+        throw error(mod.number, mod.slot, number, error::code::channel_invalid_param, oss.str());
     }
 
     mod.write_var(param::channel_var::CFDThresh, cfdthresh, number);
@@ -1232,42 +992,39 @@ channel::cfd_thresh(double value)
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
 
-double
-channel::qdc_len(param::channel_param par)
-{
+double channel::qdc_len(param::channel_param par) {
     module::module& mod = module.get();
 
     param::channel_var var;
 
     switch (par) {
-    case param::channel_param::qdclen0:
-        var = param::channel_var::QDCLen0;
-        break;
-    case param::channel_param::qdclen1:
-        var = param::channel_var::QDCLen1;
-        break;
-    case param::channel_param::qdclen2:
-        var = param::channel_var::QDCLen2;
-        break;
-    case param::channel_param::qdclen3:
-        var = param::channel_var::QDCLen3;
-        break;
-    case param::channel_param::qdclen4:
-        var = param::channel_var::QDCLen4;
-        break;
-    case param::channel_param::qdclen5:
-        var = param::channel_var::QDCLen5;
-        break;
-    case param::channel_param::qdclen6:
-        var = param::channel_var::QDCLen6;
-        break;
-    case param::channel_param::qdclen7:
-        var = param::channel_var::QDCLen7;
-        break;
-    default:
-        throw error(mod.number, mod.slot, number,
-                    error::code::channel_invalid_param,
-                    "invalid QDCLen param offset");
+        case param::channel_param::qdclen0:
+            var = param::channel_var::QDCLen0;
+            break;
+        case param::channel_param::qdclen1:
+            var = param::channel_var::QDCLen1;
+            break;
+        case param::channel_param::qdclen2:
+            var = param::channel_var::QDCLen2;
+            break;
+        case param::channel_param::qdclen3:
+            var = param::channel_var::QDCLen3;
+            break;
+        case param::channel_param::qdclen4:
+            var = param::channel_var::QDCLen4;
+            break;
+        case param::channel_param::qdclen5:
+            var = param::channel_var::QDCLen5;
+            break;
+        case param::channel_param::qdclen6:
+            var = param::channel_var::QDCLen6;
+            break;
+        case param::channel_param::qdclen7:
+            var = param::channel_var::QDCLen7;
+            break;
+        default:
+            throw error(mod.number, mod.slot, number, error::code::channel_invalid_param,
+                        "invalid QDCLen param offset");
     }
 
     double divider = config.adc_msps;
@@ -1282,9 +1039,7 @@ channel::qdc_len(param::channel_param par)
     return result;
 }
 
-void
-channel::qdc_len(param::channel_param par, double value)
-{
+void channel::qdc_len(param::channel_param par, double value) {
     ///@TODO Need range checking to prevent negative values.
 
     module::module& mod = module.get();
@@ -1292,34 +1047,33 @@ channel::qdc_len(param::channel_param par, double value)
     param::channel_var var;
 
     switch (par) {
-    case param::channel_param::qdclen0:
-        var = param::channel_var::QDCLen0;
-        break;
-    case param::channel_param::qdclen1:
-        var = param::channel_var::QDCLen1;
-        break;
-    case param::channel_param::qdclen2:
-        var = param::channel_var::QDCLen2;
-        break;
-    case param::channel_param::qdclen3:
-        var = param::channel_var::QDCLen3;
-        break;
-    case param::channel_param::qdclen4:
-        var = param::channel_var::QDCLen4;
-        break;
-    case param::channel_param::qdclen5:
-        var = param::channel_var::QDCLen5;
-        break;
-    case param::channel_param::qdclen6:
-        var = param::channel_var::QDCLen6;
-        break;
-    case param::channel_param::qdclen7:
-        var = param::channel_var::QDCLen7;
-        break;
-    default:
-        throw error(mod.number, mod.slot, number,
-                    error::code::channel_invalid_param,
-                    "invalid QDCLen param offset");
+        case param::channel_param::qdclen0:
+            var = param::channel_var::QDCLen0;
+            break;
+        case param::channel_param::qdclen1:
+            var = param::channel_var::QDCLen1;
+            break;
+        case param::channel_param::qdclen2:
+            var = param::channel_var::QDCLen2;
+            break;
+        case param::channel_param::qdclen3:
+            var = param::channel_var::QDCLen3;
+            break;
+        case param::channel_param::qdclen4:
+            var = param::channel_var::QDCLen4;
+            break;
+        case param::channel_param::qdclen5:
+            var = param::channel_var::QDCLen5;
+            break;
+        case param::channel_param::qdclen6:
+            var = param::channel_var::QDCLen6;
+            break;
+        case param::channel_param::qdclen7:
+            var = param::channel_var::QDCLen7;
+            break;
+        default:
+            throw error(mod.number, mod.slot, number, error::code::channel_invalid_param,
+                        "invalid QDCLen param offset");
     }
 
     double multiplier = config.adc_msps;
@@ -1327,8 +1081,7 @@ channel::qdc_len(param::channel_param par, double value)
         multiplier /= 5;
     }
 
-    param::value_type qdclen =
-        param::value_type(std::round(value * multiplier));
+    param::value_type qdclen = param::value_type(std::round(value * multiplier));
 
     if (qdclen < hw::limit::QDCLEN_MIN) {
         qdclen = hw::limit::QDCLEN_MIN;
@@ -1342,30 +1095,24 @@ channel::qdc_len(param::channel_param par, double value)
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
 
-double
-channel::ext_trig_stretch()
-{
+double channel::ext_trig_stretch() {
     module::module& mod = module.get();
 
-    param::value_type value =
-        mod.read_var(param::channel_var::ExtTrigStretch, number);
+    param::value_type value = mod.read_var(param::channel_var::ExtTrigStretch, number);
 
     double result = double(value) / config.fpga_clk_mhz;
 
     return result;
 }
 
-void
-channel::ext_trig_stretch(double value)
-{
+void channel::ext_trig_stretch(double value) {
     ///@TODO Need range checking to prevent negative values.
 
     ///@Note this logic is identical to channel::chan_trig_stretch and channel::veto_stretch.
 
     module::module& mod = module.get();
 
-    param::value_type exttrigstretch =
-        param::value_type(std::round(value * config.fpga_clk_mhz));
+    param::value_type exttrigstretch = param::value_type(std::round(value * config.fpga_clk_mhz));
 
     if (exttrigstretch < hw::limit::EXTTRIGSTRETCH_MIN) {
         exttrigstretch = hw::limit::EXTTRIGSTRETCH_MIN;
@@ -1379,28 +1126,22 @@ channel::ext_trig_stretch(double value)
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
 
-double
-channel::veto_stretch()
-{
+double channel::veto_stretch() {
     module::module& mod = module.get();
 
-    param::value_type value =
-        mod.read_var(param::channel_var::VetoStretch, number);
+    param::value_type value = mod.read_var(param::channel_var::VetoStretch, number);
 
     double result = double(value) / config.fpga_clk_mhz;
 
     return result;
 }
 
-void
-channel::veto_stretch(double value)
-{
+void channel::veto_stretch(double value) {
     ///@TODO Need range checking to prevent negative values.
     ///@Note this logic is identical to channel::chan_trig_stretch and channel::ext_trig_stretch.
     module::module& mod = module.get();
 
-    param::value_type vetostretch =
-        param::value_type(std::round(value * config.fpga_clk_mhz));
+    param::value_type vetostretch = param::value_type(std::round(value * config.fpga_clk_mhz));
 
     if (vetostretch < hw::limit::VETOSTRETCH_MIN) {
         vetostretch = hw::limit::VETOSTRETCH_MIN;
@@ -1414,100 +1155,79 @@ channel::veto_stretch(double value)
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
 
-double
-channel::multiplicity_mask_l()
-{
+double channel::multiplicity_mask_l() {
     module::module& mod = module.get();
 
-    param::value_type value =
-        mod.read_var(param::channel_var::MultiplicityMaskL, number);
+    param::value_type value = mod.read_var(param::channel_var::MultiplicityMaskL, number);
 
     double result = double(value);
 
     return result;
 }
 
-void
-channel::multiplicity_mask_l(double value)
-{
+void channel::multiplicity_mask_l(double value) {
     ///@TODO Need range checking to prevent negative values.
     module::module& mod = module.get();
 
     param::value_type multiplicitymaskl = param::value_type(value);
 
-    mod.write_var(param::channel_var::MultiplicityMaskL,
-                  multiplicitymaskl,
-                  number);
+    mod.write_var(param::channel_var::MultiplicityMaskL, multiplicitymaskl, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
 
-double
-channel::multiplicity_mask_h()
-{
+double channel::multiplicity_mask_h() {
     module::module& mod = module.get();
 
-    param::value_type value =
-        mod.read_var(param::channel_var::MultiplicityMaskH, number);
+    param::value_type value = mod.read_var(param::channel_var::MultiplicityMaskH, number);
 
     double result = double(value);
 
     return result;
 }
 
-void
-channel::multiplicity_mask_h(double value)
-{
+void channel::multiplicity_mask_h(double value) {
     ///@TODO Need range checking to prevent negative values.
     module::module& mod = module.get();
 
     param::value_type multiplicitymaskh = param::value_type(value);
 
-    mod.write_var(param::channel_var::MultiplicityMaskH,
-                  multiplicitymaskh,
-                  number);
+    mod.write_var(param::channel_var::MultiplicityMaskH, multiplicitymaskh, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
 
-double
-channel::extern_delay_len()
-{
+double channel::extern_delay_len() {
     module::module& mod = module.get();
 
-    param::value_type value =
-        mod.read_var(param::channel_var::ExternDelayLen, number);
+    param::value_type value = mod.read_var(param::channel_var::ExternDelayLen, number);
 
     double result = double(value) / config.fpga_clk_mhz;
 
     return result;
 }
 
-void
-channel::extern_delay_len(double value)
-{
+void channel::extern_delay_len(double value) {
     ///@TODO Need range checking to prevent negative values. For now negative values get set to max.
     ///@NOTE This function's logic is identical to channel::ftrig_out_delay, maybe we can simplify?
     module::module& mod = module.get();
 
-    param::value_type externdelaylen =
-        param::value_type(std::round(value * config.fpga_clk_mhz));
+    param::value_type externdelaylen = param::value_type(std::round(value * config.fpga_clk_mhz));
     param::value_type externdelaylen_max;
 
     switch (mod.revision) {
-    case hw::rev_B:
-    case hw::rev_C:
-    case hw::rev_D:
-        externdelaylen_max = hw::limit::EXTDELAYLEN_MAX_REVBCD;
-        break;
-    case hw::rev_F:
-    case hw::rev_H:
-        externdelaylen_max = hw::limit::EXTDELAYLEN_MAX_REVF;
-        break;
-    default:
-        throw error(mod.number, mod.slot, number,
-                    error::code::not_supported,
-                    "ExternDelayLen not supported on this revision");
+        case hw::rev_B:
+        case hw::rev_C:
+        case hw::rev_D:
+            externdelaylen_max = hw::limit::EXTDELAYLEN_MAX_REVBCD;
+            break;
+        case hw::rev_F:
+        case hw::rev_H:
+            externdelaylen_max = hw::limit::EXTDELAYLEN_MAX_REVF;
+            break;
+        default:
+            throw error(mod.number, mod.slot, number, error::code::not_supported,
+                        "ExternDelayLen not supported on this revision");
     }
 
 #if EXTDELAYLEN_MIN > 0
@@ -1524,43 +1244,36 @@ channel::extern_delay_len(double value)
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
 
-double
-channel::ftrig_out_delay()
-{
+double channel::ftrig_out_delay() {
     module::module& mod = module.get();
 
-    param::value_type value =
-        mod.read_var(param::channel_var::FtrigoutDelay, number);
+    param::value_type value = mod.read_var(param::channel_var::FtrigoutDelay, number);
 
     double result = double(value) / config.fpga_clk_mhz;
 
     return result;
 }
 
-void
-channel::ftrig_out_delay(double value)
-{
+void channel::ftrig_out_delay(double value) {
     ///@TODO Need range checking to prevent negative values. For now negative values get set to max.
     module::module& mod = module.get();
 
-    param::value_type ftrigoutdelay =
-        param::value_type(std::round(value * config.fpga_clk_mhz));
+    param::value_type ftrigoutdelay = param::value_type(std::round(value * config.fpga_clk_mhz));
     param::value_type ftrigoutdelay_max;
 
     switch (mod.revision) {
-    case hw::rev_B:
-    case hw::rev_C:
-    case hw::rev_D:
-        ftrigoutdelay_max = hw::limit::EXTDELAYLEN_MAX_REVBCD;
-        break;
-    case hw::rev_F:
-    case hw::rev_H:
-        ftrigoutdelay_max = hw::limit::EXTDELAYLEN_MAX_REVF;
-        break;
-    default:
-        throw error(mod.number, mod.slot, number,
-                    error::code::not_supported,
-                    "FtrigoutDelay not supported on this revision");
+        case hw::rev_B:
+        case hw::rev_C:
+        case hw::rev_D:
+            ftrigoutdelay_max = hw::limit::EXTDELAYLEN_MAX_REVBCD;
+            break;
+        case hw::rev_F:
+        case hw::rev_H:
+            ftrigoutdelay_max = hw::limit::EXTDELAYLEN_MAX_REVF;
+            break;
+        default:
+            throw error(mod.number, mod.slot, number, error::code::not_supported,
+                        "FtrigoutDelay not supported on this revision");
     }
 
     if (ftrigoutdelay > ftrigoutdelay_max) {
@@ -1572,29 +1285,23 @@ channel::ftrig_out_delay(double value)
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
 
-double
-channel::chan_trig_stretch()
-{
+double channel::chan_trig_stretch() {
     module::module& mod = module.get();
 
-    param::value_type value =
-        mod.read_var(param::channel_var::ChanTrigStretch, number);
+    param::value_type value = mod.read_var(param::channel_var::ChanTrigStretch, number);
 
     double result = double(value) / config.fpga_clk_mhz;
 
     return result;
 }
 
-void
-channel::chan_trig_stretch(double value)
-{
+void channel::chan_trig_stretch(double value) {
     ///@TODO Need range checking here. Negative values get set to max.
     ///@Note this logic is identical to channel::veto_stretch and channel::ext_trig_stretch.
 
     module::module& mod = module.get();
 
-    param::value_type chantrigstretch =
-        param::value_type(std::round(value * config.fpga_clk_mhz));
+    param::value_type chantrigstretch = param::value_type(std::round(value * config.fpga_clk_mhz));
 
     if (chantrigstretch < hw::limit::CHANTRIGSTRETCH_MIN) {
         chantrigstretch = hw::limit::CHANTRIGSTRETCH_MIN;
@@ -1608,6 +1315,6 @@ channel::chan_trig_stretch(double value)
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
 
-}
-}
-}
+}  // namespace channel
+}  // namespace pixie
+}  // namespace xia

@@ -29,30 +29,20 @@
 
 #include <pixie/pixie16/sim.hpp>
 
-namespace xia
-{
-namespace pixie
-{
-namespace sim
-{
+namespace xia {
+namespace pixie {
+namespace sim {
 module_defs mod_defs;
 
-module::~module()
-{
-}
+module::~module() {}
 
-void
-module::open(size_t device_number)
-{
+void module::open(size_t device_number) {
     if (vmaddr != nullptr) {
-        throw error(number, slot,
-                    error::code::module_already_open,
-                    "module has a vaddr");
+        throw error(number, slot, error::code::module_already_open, "module has a vaddr");
     }
 
     for (auto& mod_def : mod_defs) {
-        if (mod_def.num_channels != 0 &&
-            device_number == mod_def.device_number) {
+        if (mod_def.num_channels != 0 && device_number == mod_def.device_number) {
             log(log::info) << "sim: module: open: device=" << device_number;
 
             pci_memory = std::make_unique<uint8_t[]>(pci_addr_space_size);
@@ -79,33 +69,23 @@ module::open(size_t device_number)
         }
     }
 
-    throw error(number, slot,
-                error::code::module_initialize_failure,
-                "no device found");
+    throw error(number, slot, error::code::module_initialize_failure, "no device found");
 }
 
-void
-module::close()
-{
+void module::close() {
     log(log::info) << "sim: module: close";
     present_ = false;
     vmaddr = nullptr;
     pci_memory.release();
 }
 
-void
-module::probe()
-{
+void module::probe() {
     log(log::info) << "sim: module: probe";
     online_ = dsp_online = fippi_fpga = comms_fpga = true;
     init_values();
 }
 
-void
-module::boot(bool boot_comms,
-             bool boot_fippi,
-             bool boot_dsp)
-{
+void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
     log(log::info) << "sim: module: boot";
     if (boot_comms) {
         comms_fpga = true;
@@ -118,71 +98,55 @@ module::boot(bool boot_comms,
     }
 }
 
-void
-module::initialize()
-{
-}
+void module::initialize() {}
 
-void
-module::init_values()
-{
+void module::init_values() {
     pixie::module::module::init_values();
     if (!var_defaults.empty()) {
         load_var_defaults(var_defaults);
     }
 }
 
-void
-module::load_var_defaults(std::istream& input)
-{
-    for (std::string line; std::getline(input, line); ) {
+void module::load_var_defaults(std::istream& input) {
+    for (std::string line; std::getline(input, line);) {
         line = line.substr(0, line.find('#', 0));
         if (!line.empty()) {
             util::trim(line);
             util::strings label_value;
             util::split(label_value, line, '=');
             if (label_value.size() == 2) {
-                label_value[1] =
-                    label_value[1].substr(0, label_value[1].find('(', 0));
+                label_value[1] = label_value[1].substr(0, label_value[1].find('(', 0));
                 if (param::is_module_var(label_value[0])) {
-                    param::module_var var =
-                        param::lookup_module_var(label_value[0]);
+                    param::module_var var = param::lookup_module_var(label_value[0]);
                     size_t index = static_cast<size_t>(var);
                     param::value_type value = std::stoul(label_value[1]);
                     module_vars[index].value[0].value = value;
                     module_vars[index].value[0].dirty = true;
-                    log(log::debug) << "sim: module: mod var: "
-                                    << label_value[0] << '=' << label_value[1];
+                    log(log::debug)
+                        << "sim: module: mod var: " << label_value[0] << '=' << label_value[1];
                 } else if (param::is_channel_var(label_value[0])) {
-                    param::channel_var var =
-                        param::lookup_channel_var(label_value[0]);
+                    param::channel_var var = param::lookup_channel_var(label_value[0]);
                     size_t index = static_cast<size_t>(var);
                     param::value_type value = std::stoul(label_value[1]);
-                    for (size_t channel = 0;
-                         channel < num_channels;
-                         ++channel) {
+                    for (size_t channel = 0; channel < num_channels; ++channel) {
                         channels[channel].vars[index].value[0].value = value;
                         channels[channel].vars[index].value[0].dirty = true;
                     }
-                    log(log::debug) << "sim: module: chan var: "
-                                    << label_value[0] << '=' << label_value[1];
+                    log(log::debug)
+                        << "sim: module: chan var: " << label_value[0] << '=' << label_value[1];
                 }
             }
         }
     }
 }
 
-void
-module::load_var_defaults(const std::string& file)
-{
+void module::load_var_defaults(const std::string& file) {
     log(log::info) << "sim: module: load var defaults: " << file;
 
     std::ifstream input(file, std::ios::in | std::ios::binary);
     if (!input) {
-        throw error(number, slot,
-                    error::code::file_read_failure,
-                    std::string("module var defaults open: ") + file +
-                    ": " + std::strerror(errno));
+        throw error(number, slot, error::code::file_read_failure,
+                    std::string("module var defaults open: ") + file + ": " + std::strerror(errno));
     }
 
     load_var_defaults(input);
@@ -190,54 +154,36 @@ module::load_var_defaults(const std::string& file)
     input.close();
 }
 
-void
-crate::add_module()
-{
+void crate::add_module() {
     log(log::info) << "sim: module: add";
     modules.push_back(std::make_unique<module>());
 }
 
 module_def::module_def()
-    : device_number(0),
-      slot(0),
-      revision(0),
-      eeprom_format (0),
-      serial_num(0),
-      num_channels(0),
-      adc_bits(0),
-      adc_msps(0),
-      adc_clk_div(0)
-{
-}
+    : device_number(0), slot(0), revision(0), eeprom_format(0), serial_num(0), num_channels(0),
+      adc_bits(0), adc_msps(0), adc_clk_div(0) {}
 
-void
-load_module_defs(const std::string mod_def_file)
-{
+void load_module_defs(const std::string mod_def_file) {
     log(log::info) << "sim: load module defs: " << mod_def_file;
     std::ifstream input(mod_def_file, std::ios::in | std::ios::binary);
     if (!input) {
-        throw error(error::code::file_read_failure,
-                    std::string("module def file open: ") + mod_def_file +
-                    ": " + std::strerror(errno));
+        throw error(error::code::file_read_failure, std::string("module def file open: ") +
+                                                        mod_def_file + ": " + std::strerror(errno));
     }
     load_module_defs(input);
     input.close();
     log(log::info) << "sim: module defs: " << mod_defs.size();
 }
 
-void
-load_module_defs(std::istream& input)
-{
-    for (std::string line; std::getline(input, line); ) {
+void load_module_defs(std::istream& input) {
+    for (std::string line; std::getline(input, line);) {
         if (!line.empty()) {
             add_module_def(line, ',');
         }
     }
 }
 
-void
-add_module_def(const std::string mod_desc, const char delimiter)
-{
+void add_module_def(const std::string mod_desc, const char delimiter) {
     util::strings fields;
     util::split(fields, mod_desc, delimiter);
 
@@ -247,8 +193,7 @@ add_module_def(const std::string mod_desc, const char delimiter)
         util::strings label_value;
         util::split(label_value, field, '=');
         if (label_value.size() != 2) {
-            throw error(error::code::invalid_value,
-                        "invalid module definition: " + field);
+            throw error(error::code::invalid_value, "invalid module definition: " + field);
         }
 
         try {
@@ -273,15 +218,13 @@ add_module_def(const std::string mod_desc, const char delimiter)
             } else if (label_value[0] == "var-defaults") {
                 mod_def.var_defaults = label_value[1];
             } else {
-                throw error(error::code::invalid_value,
-                            "invalid module definition: " + field);
+                throw error(error::code::invalid_value, "invalid module definition: " + field);
             }
-        } catch (error& ) {
+        } catch (error&) {
             throw;
         } catch (...) {
             throw error(error::code::invalid_value,
-                        "invalid module definition: bad value: " +
-                        label_value[1]);
+                        "invalid module definition: bad value: " + label_value[1]);
         }
     }
 
@@ -289,6 +232,6 @@ add_module_def(const std::string mod_desc, const char delimiter)
 
     mod_defs.push_back(mod_def);
 }
-}
-}
-}
+}  // namespace sim
+}  // namespace pixie
+}  // namespace xia

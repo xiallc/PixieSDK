@@ -30,10 +30,8 @@
 #include <string>
 #include <vector>
 
-namespace xia
-{
-namespace util
-{
+namespace xia {
+namespace util {
 /*
  * String trim and split support.
  */
@@ -49,18 +47,15 @@ typedef std::vector<std::string> strings;
  * @param strip_quotes Remove quotes from string fragments
  * @param empty Include empty string fragments
  */
-void split(strings& split_string,
-           const std::string& s,
-           const char delimiter = ' ',
-           size_t count = 0,
-           bool strip_whitespace = true,
-           bool strip_quotes = true,
+void split(strings& split_string, const std::string& s, const char delimiter = ' ',
+           size_t count = 0, bool strip_whitespace = true, bool strip_quotes = true,
            bool empty = false);
 
 /*
  * Join the strings into a single string.
  */
-template<typename T> std::string join(T& ss, const char c = ' ') {
+template<typename T>
+std::string join(T& ss, const char c = ' ') {
     std::string ns;
     for (auto& s : ss) {
         if (!ss.empty()) {
@@ -110,8 +105,7 @@ std::string humanize(T value, const std::string suffix = "") {
         --unit;
     }
     std::ostringstream oss;
-    oss << std::setprecision(3) << std::fixed
-        << num << *unit << suffix;
+    oss << std::setprecision(3) << std::fixed << num << *unit << suffix;
     return oss.str();
 }
 
@@ -121,10 +115,7 @@ std::string humanize(T value, const std::string suffix = "") {
 struct ostream_guard {
     std::ostream& o;
     std::ios_base::fmtflags flags;
-    ostream_guard(std::ostream& o_)
-      : o(o_),
-        flags(o_.flags()) {
-    }
+    ostream_guard(std::ostream& o_) : o(o_), flags(o_.flags()) {}
     ~ostream_guard() {
         o.flags(flags);
     }
@@ -153,7 +144,9 @@ struct timepoint {
     void reset();
     void start();
     void end();
-    void stop() { end(); }
+    void stop() {
+        end();
+    }
     void restart();
     void pause();
     void resume();
@@ -162,11 +155,10 @@ struct timepoint {
     uint64_t msecs();
     uint64_t usecs();
 
-    operator std::string ();
+    operator std::string();
     std::string output();
 
 private:
-
     void lock();
     void unlock();
 
@@ -212,18 +204,19 @@ struct crc32 {
 
     value_type value;
 
-    template <typename T> void update(const T val) {
+    template<typename T>
+    void update(const T val) {
         update(static_cast<const unsigned char*>(&val), sizeof(T));
     }
 
-    template <typename T> void update(const std::vector<T>& vals,
-                                      const size_t start = 0) {
-        const size_t so = ((vals.size() - start) *
-                           sizeof(typename std::vector<T>::value_type));
+    template<typename T>
+    void update(const std::vector<T>& vals, const size_t start = 0) {
+        const size_t so = ((vals.size() - start) * sizeof(typename std::vector<T>::value_type));
         update(static_cast<const unsigned char*>(&vals[start]), int(so));
     }
 
-    template <typename T> crc32& operator<<(const T& val) {
+    template<typename T>
+    crc32& operator<<(const T& val) {
         update(val);
         return *this;
     }
@@ -244,13 +237,12 @@ private:
     static const value_type table[256];
 };
 
-}
-}
+}  // namespace util
+}  // namespace xia
 
 /*
  * Output stream operator.
  */
-std::ostream&
-operator<<(std::ostream& out, xia::util::timepoint& timepoint);
+std::ostream& operator<<(std::ostream& out, xia::util::timepoint& timepoint);
 
 #endif  // PIXIE16_UTIL_H

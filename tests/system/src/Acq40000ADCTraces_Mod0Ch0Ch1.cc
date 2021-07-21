@@ -119,8 +119,8 @@ int main(int argc, char* argv[]) {
         cout << "Init OK " << retval << endl;
     }
 
-    retval = Pixie16BootModule(ComFPGAConfigFile, SPFPGAConfigFile, "", DSPCodeFile, DSPParFile, DSPVarFile, NumModules,
-                               0x00);
+    retval = Pixie16BootModule(ComFPGAConfigFile, SPFPGAConfigFile, "", DSPCodeFile, DSPParFile,
+                               DSPVarFile, NumModules, 0x00);
     if (retval < 0) {
         printf("*ERROR* Pixie16BootModule failed, retval = %d", retval);
         sprintf(ErrMSG, "*ERROR* Pixie16BootModule failed, retval = %d", retval);
@@ -133,7 +133,9 @@ int main(int argc, char* argv[]) {
     //==== Capture 40000 ADC traces to study ADC DNL ====//
     cout << "Acquire ADC traces " << endl;
 
-    for (index = 0; index < 40000; index++) { retval = acquire_adctrace(0); }
+    for (index = 0; index < 40000; index++) {
+        retval = acquire_adctrace(0);
+    }
 
     return (1);
 }
@@ -146,16 +148,19 @@ int acquire_adctrace(unsigned short ModNum) {
 
     retval = Pixie16AcquireADCTrace(ModNum);
     if (retval < 0) {
-        sprintf(ErrMSG, "*ERROR* (test_analogfrontend): Pixie16AcquireADCTrace failed in mod %d, retval=%d", ModNum,
-                retval);
+        sprintf(ErrMSG,
+                "*ERROR* (test_analogfrontend): Pixie16AcquireADCTrace failed in mod %d, retval=%d",
+                ModNum, retval);
         Pixie_Print_MSG(ErrMSG);
         return (-1);
     }
 
     retval = Pixie16ReadSglChanADCTrace(ADCTrace, MAX_ADC_TRACE_LEN, ModNum, 0);
     if (retval < 0) {
-        sprintf(ErrMSG, "*ERROR* (test_analogfrontend): Pixie16ReadSglChanADCTrace failed in mod %d, chan 0, retval=%d",
-                ModNum, retval);
+        sprintf(
+            ErrMSG,
+            "*ERROR* (test_analogfrontend): Pixie16ReadSglChanADCTrace failed in mod %d, chan 0, retval=%d",
+            ModNum, retval);
         Pixie_Print_MSG(ErrMSG);
         return (-2);
     }
@@ -175,8 +180,10 @@ int acquire_adctrace(unsigned short ModNum) {
 
     retval = Pixie16ReadSglChanADCTrace(ADCTrace, MAX_ADC_TRACE_LEN, ModNum, 1);
     if (retval < 0) {
-        sprintf(ErrMSG, "*ERROR* (test_analogfrontend): Pixie16ReadSglChanADCTrace failed in mod %d, chan 1, retval=%d",
-                ModNum, retval);
+        sprintf(
+            ErrMSG,
+            "*ERROR* (test_analogfrontend): Pixie16ReadSglChanADCTrace failed in mod %d, chan 1, retval=%d",
+            ModNum, retval);
         Pixie_Print_MSG(ErrMSG);
 
         // Close adc data file

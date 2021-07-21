@@ -24,22 +24,20 @@
 #define PIXIE_BUFFER_H
 
 #include <atomic>
+#include <cstdint>
 #include <deque>
 #include <forward_list>
 #include <iostream>
 #include <memory>
 #include <mutex>
-#include <cstdint>
 #include <vector>
 
 #include <pixie/error.hpp>
 
 #include <pixie/pixie16/hw.hpp>
 
-namespace xia
-{
-namespace buffer
-{
+namespace xia {
+namespace buffer {
 /*
  * Local error
  */
@@ -64,8 +62,7 @@ typedef std::shared_ptr<buffer> handle;
 /*
  * Pool of buffers
  */
-struct pool
-{
+struct pool {
     pool();
     ~pool();
 
@@ -96,7 +93,6 @@ struct pool
     void output(std::ostream& out);
 
 private:
-
     struct releaser;
     void release(buffer_ptr buf);
 
@@ -110,8 +106,7 @@ private:
 /*
  * Queue of buffers
  */
-struct queue
-{
+struct queue {
     typedef std::deque<handle> handles;
 
     queue();
@@ -148,8 +143,8 @@ private:
     std::atomic_size_t count_;
 };
 
-}
-}
+}  // namespace buffer
+}  // namespace xia
 
 std::ostream& operator<<(std::ostream& out, xia::buffer::pool& pool);
 std::ostream& operator<<(std::ostream& out, xia::buffer::queue& queue);

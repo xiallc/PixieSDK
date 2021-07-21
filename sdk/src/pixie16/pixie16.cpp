@@ -24,8 +24,8 @@
 
 #include <pixie/error.hpp>
 #include <pixie/log.hpp>
-#include <pixie/stats.hpp>
 #include <pixie/os_compat.hpp>
+#include <pixie/stats.hpp>
 
 #include <pixie/pixie16/crate.hpp>
 
@@ -39,12 +39,12 @@ typedef xia::pixie::error::error xia_error;
 /*
  * Boot patterns
  */
-#define BOOTPATTERN_COMFPGA_BIT   0
-#define BOOTPATTERN_SPFPGA_BIT    2
-#define BOOTPATTERN_DSPCODE_BIT   3
-#define BOOTPATTERN_DSPPAR_BIT    4
+#define BOOTPATTERN_COMFPGA_BIT 0
+#define BOOTPATTERN_SPFPGA_BIT 2
+#define BOOTPATTERN_DSPCODE_BIT 3
+#define BOOTPATTERN_DSPPAR_BIT 4
 #define BOOTPATTERN_PROGFIPPI_BIT 5
-#define BOOTPATTERN_SETDACS_BIT   6
+#define BOOTPATTERN_SETDACS_BIT 6
 
 /*
  * Legacy API stats data exported to users as opaque data
@@ -55,7 +55,7 @@ struct stats_legacy {
 
     unsigned int marker_1;
     size_t num_channels;
-    xia::pixie::stats::module module;;
+    xia::pixie::stats::module module;
     xia::pixie::stats::channel channels[xia::pixie::hw::max_channels];
     unsigned int marker_2;
 
@@ -80,36 +80,28 @@ static const size_t fifo_hold_usecs = 50000;
 static xia::pixie::crate::crate crate;
 
 stats_legacy::stats_legacy(const xia::pixie::hw::configs& configs)
-    : marker_1(mark_1),
-      marker_2(mark_2)
-{
+    : marker_1(mark_1), marker_2(mark_2) {
     for (size_t channel = 0; channel < configs.size(); ++channel) {
         channels[channel].config = configs[channel];
     }
 }
 
-void
-stats_legacy::validate() const
-{
+void stats_legacy::validate() const {
     if (marker_1 != mark_1 || marker_2 != mark_2) {
         throw xia_error(xia_error::code::invalid_value, "statistics data corrupt");
     }
 }
 
-static int
-not_supported()
-{
+static int not_supported() {
     int error = xia::pixie::error::api_result_not_supported();
     return xia::pixie::error::return_code(error);
 }
 
-PIXIE_EXPORT unsigned int PIXIE_API Pixie16GetStatisticsSize(void)
-{
+PIXIE_EXPORT unsigned int PIXIE_API Pixie16GetStatisticsSize(void) {
     return sizeof(stats_legacy);
 }
 
-PIXIE_EXPORT int PIXIE_API Pixie16AcquireADCTrace(unsigned short ModNum)
-{
+PIXIE_EXPORT int PIXIE_API Pixie16AcquireADCTrace(unsigned short ModNum) {
     xia_log(xia_log::info) << "Pixie16AcquireADCTrace: ModNum=" << ModNum;
 
     try {
@@ -133,8 +125,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16AcquireADCTrace(unsigned short ModNum)
     return 0;
 }
 
-PIXIE_EXPORT int PIXIE_API Pixie16AcquireBaselines(unsigned short ModNum)
-{
+PIXIE_EXPORT int PIXIE_API Pixie16AcquireBaselines(unsigned short ModNum) {
     xia_log(xia_log::info) << "Pixie16AcquireBaselines: ModNum=" << ModNum;
 
     try {
@@ -158,8 +149,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16AcquireBaselines(unsigned short ModNum)
     return 0;
 }
 
-PIXIE_EXPORT int PIXIE_API Pixie16AdjustOffsets(unsigned short ModNum)
-{
+PIXIE_EXPORT int PIXIE_API Pixie16AdjustOffsets(unsigned short ModNum) {
     xia_log(xia_log::info) << "Pixie16AdjustOffsets: ModNum=" << ModNum;
 
     try {
@@ -183,22 +173,17 @@ PIXIE_EXPORT int PIXIE_API Pixie16AdjustOffsets(unsigned short ModNum)
     return 0;
 }
 
-PIXIE_EXPORT int PIXIE_API
-Pixie16BLcutFinder(unsigned short ModNum,
-                   unsigned short ChanNum,
-                   unsigned int* BLcut)
-{
-    xia_log(xia_log::info) << "Pixie16BLcutFinder: ModNum=" << ModNum
-                           << " ChanNum=" << ChanNum;
+PIXIE_EXPORT int PIXIE_API Pixie16BLcutFinder(unsigned short ModNum, unsigned short ChanNum,
+                                              unsigned int* BLcut) {
+    xia_log(xia_log::info) << "Pixie16BLcutFinder: ModNum=" << ModNum << " ChanNum=" << ChanNum;
 
     try {
         if (BLcut == nullptr) {
-            throw xia_error(xia_error::code::invalid_value,
-                            "BLcut is NULL");
+            throw xia_error(xia_error::code::invalid_value, "BLcut is NULL");
         }
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
-        xia::pixie::channel::range channels = { size_t(ChanNum) };
+        xia::pixie::channel::range channels = {size_t(ChanNum)};
         xia::pixie::param::values values;
         module->bl_find_cut(channels, values);
         *BLcut = values[0];
@@ -219,35 +204,22 @@ Pixie16BLcutFinder(unsigned short ModNum,
     return 0;
 }
 
-static void
-PixieBootModule(xia::pixie::module::module& module,
-                const char* ComFPGAConfigFile,
-                const char* SPFPGAConfigFile,
-                const char* DSPCodeFile,
-                const char* DSPParFile,
-                const char* DSPVarFile,
-                unsigned short BootPattern)
-{
+static void PixieBootModule(xia::pixie::module::module& module, const char* ComFPGAConfigFile,
+                            const char* SPFPGAConfigFile, const char* DSPCodeFile,
+                            const char* DSPParFile, const char* DSPVarFile,
+                            unsigned short BootPattern) {
     typedef xia::pixie::firmware::firmware firmware;
 
     (void) DSPParFile;
 
-    firmware comm_fw("n/a", module.revision,
-                     module.channels[0].config.adc_msps,
-                     module.channels[0].config.adc_bits,
-                     "sys");
-    firmware fippi_fw("n/a", module.revision,
-                      module.channels[0].config.adc_msps,
-                      module.channels[0].config.adc_bits,
-                      "fippi");
-    firmware dsp_fw("n/a", module.revision,
-                    module.channels[0].config.adc_msps,
-                    module.channels[0].config.adc_bits,
-                    "dsp");
-    firmware dsp_var("n/a", module.revision,
-                     module.channels[0].config.adc_msps,
-                     module.channels[0].config.adc_bits,
-                     "var");
+    firmware comm_fw("n/a", module.revision, module.channels[0].config.adc_msps,
+                     module.channels[0].config.adc_bits, "sys");
+    firmware fippi_fw("n/a", module.revision, module.channels[0].config.adc_msps,
+                      module.channels[0].config.adc_bits, "fippi");
+    firmware dsp_fw("n/a", module.revision, module.channels[0].config.adc_msps,
+                    module.channels[0].config.adc_bits, "dsp");
+    firmware dsp_var("n/a", module.revision, module.channels[0].config.adc_msps,
+                     module.channels[0].config.adc_bits, "var");
 
     comm_fw.filename = ComFPGAConfigFile;
     comm_fw.slot.push_back(module.slot);
@@ -274,18 +246,12 @@ PixieBootModule(xia::pixie::module::module& module,
     module.boot(boot_comm, boot_fippi, boot_dsp);
 }
 
-PIXIE_EXPORT int PIXIE_API
-Pixie16BootModule(const char* ComFPGAConfigFile,
-                const char* SPFPGAConfigFile,
-                const char* ,
-                const char* DSPCodeFile,
-                const char* DSPParFile,
-                const char* DSPVarFile,
-                unsigned short ModNum,
-                unsigned short BootPattern)
-{
-    xia_log(xia_log::info) << "Pixie16BootModule: ModNum=" << ModNum
-                           << std::hex
+PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
+                                             const char* SPFPGAConfigFile, const char*,
+                                             const char* DSPCodeFile, const char* DSPParFile,
+                                             const char* DSPVarFile, unsigned short ModNum,
+                                             unsigned short BootPattern) {
+    xia_log(xia_log::info) << "Pixie16BootModule: ModNum=" << ModNum << std::hex
                            << " BootPattern=0x" << BootPattern;
     xia_log(xia_log::info) << "Pixie16BootModule: ModNum=" << ModNum
                            << " ComFPGAConfigFile=" << ComFPGAConfigFile;
@@ -303,24 +269,14 @@ Pixie16BootModule(const char* ComFPGAConfigFile,
             xia::pixie::crate::crate::user user(crate);
             for (auto& module : crate.modules) {
                 if (module->online()) {
-                    PixieBootModule(*module,
-                                    ComFPGAConfigFile,
-                                    SPFPGAConfigFile,
-                                    DSPCodeFile,
-                                    DSPParFile,
-                                    DSPVarFile,
-                                    BootPattern);
+                    PixieBootModule(*module, ComFPGAConfigFile, SPFPGAConfigFile, DSPCodeFile,
+                                    DSPParFile, DSPVarFile, BootPattern);
                 }
             }
         } else {
             xia::pixie::crate::module_handle module(crate, ModNum);
-            PixieBootModule(*module,
-                            ComFPGAConfigFile,
-                            SPFPGAConfigFile,
-                            DSPCodeFile,
-                            DSPParFile,
-                            DSPVarFile,
-                            BootPattern);
+            PixieBootModule(*module, ComFPGAConfigFile, SPFPGAConfigFile, DSPCodeFile, DSPParFile,
+                            DSPVarFile, BootPattern);
         }
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
@@ -340,10 +296,8 @@ Pixie16BootModule(const char* ComFPGAConfigFile,
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16CheckExternalFIFOStatus(unsigned int* nFIFOWords,
-                             unsigned short ModNum)
-{
-    xia_log(xia_log::info) << "Pixie16CheckExternalFIFOStatus: ModNum="
-                           << ModNum;
+                                                          unsigned short ModNum) {
+    xia_log(xia_log::info) << "Pixie16CheckExternalFIFOStatus: ModNum=" << ModNum;
 
     int result = 0;
 
@@ -368,8 +322,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckExternalFIFOStatus(unsigned int* nFIFOWor
     return result;
 }
 
-PIXIE_EXPORT int PIXIE_API Pixie16CheckRunStatus(unsigned short ModNum)
-{
+PIXIE_EXPORT int PIXIE_API Pixie16CheckRunStatus(unsigned short ModNum) {
     xia_log(xia_log::info) << "Pixie16CheckRunStatus: ModNum=" << ModNum;
 
     int result = 0;
@@ -398,9 +351,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckRunStatus(unsigned short ModNum)
 }
 
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeInputCountRate(unsigned int* Statistics,
-                           unsigned short ModNum,
-                           unsigned short ChanNum)
-{
+                                                           unsigned short ModNum,
+                                                           unsigned short ChanNum) {
     xia_log(xia_log::info) << "Pixie16ComputeInputCountRate: ModNum=" << ModNum
                            << " ChanNum=" << ChanNum;
 
@@ -408,14 +360,12 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeInputCountRate(unsigned int* Statist
 
     try {
         if (Statistics == nullptr) {
-            throw xia_error(xia_error::code::invalid_value,
-                            "statistics pointer is NULL");
+            throw xia_error(xia_error::code::invalid_value, "statistics pointer is NULL");
         }
         stats_legacy_ptr stats = reinterpret_cast<stats_legacy_ptr>(Statistics);
         stats->validate();
         if (ChanNum >= stats->num_channels) {
-            throw xia_error(xia_error::code::channel_number_invalid,
-                            "invalid channel number");
+            throw xia_error(xia_error::code::channel_number_invalid, "invalid channel number");
         }
         result = stats->channels[ChanNum].input_count_rate();
     } catch (xia_error& e) {
@@ -433,24 +383,20 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeInputCountRate(unsigned int* Statist
 }
 
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeLiveTime(unsigned int* Statistics,
-                     unsigned short ModNum,
-                     unsigned short ChanNum)
-{
-    xia_log(xia_log::info) << "Pixie16ComputeLiveTime: ModNum=" << ModNum
-                           << " ChanNum=" << ChanNum;
+                                                     unsigned short ModNum,
+                                                     unsigned short ChanNum) {
+    xia_log(xia_log::info) << "Pixie16ComputeLiveTime: ModNum=" << ModNum << " ChanNum=" << ChanNum;
 
     double result = 0;
 
     try {
         if (Statistics == nullptr) {
-            throw xia_error(xia_error::code::invalid_value,
-                            "statistics pointer is NULL");
+            throw xia_error(xia_error::code::invalid_value, "statistics pointer is NULL");
         }
         stats_legacy_ptr stats = reinterpret_cast<stats_legacy_ptr>(Statistics);
         stats->validate();
         if (ChanNum >= stats->num_channels) {
-            throw xia_error(xia_error::code::channel_number_invalid,
-                            "invalid channel number");
+            throw xia_error(xia_error::code::channel_number_invalid, "invalid channel number");
         }
         result = stats->channels[ChanNum].live_time();
     } catch (xia_error& e) {
@@ -468,9 +414,8 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeLiveTime(unsigned int* Statistics,
 }
 
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeOutputCountRate(unsigned int* Statistics,
-                            unsigned short ModNum,
-                            unsigned short ChanNum)
-{
+                                                            unsigned short ModNum,
+                                                            unsigned short ChanNum) {
     xia_log(xia_log::info) << "Pixie16ComputeOutputCountRate: ModNum=" << ModNum
                            << " ChanNum=" << ChanNum;
 
@@ -478,14 +423,12 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeOutputCountRate(unsigned int* Statis
 
     try {
         if (Statistics == nullptr) {
-            throw xia_error(xia_error::code::invalid_value,
-                            "statistics pointer is NULL");
+            throw xia_error(xia_error::code::invalid_value, "statistics pointer is NULL");
         }
         stats_legacy_ptr stats = reinterpret_cast<stats_legacy_ptr>(Statistics);
         stats->validate();
         if (ChanNum >= stats->num_channels) {
-            throw xia_error(xia_error::code::channel_number_invalid,
-                            "invalid channel number");
+            throw xia_error(xia_error::code::channel_number_invalid, "invalid channel number");
         }
         result = stats->channels[ChanNum].output_count_rate();
     } catch (xia_error& e) {
@@ -503,16 +446,14 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeOutputCountRate(unsigned int* Statis
 }
 
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeProcessedEvents(unsigned int* Statistics,
-                            unsigned short ModNum)
-{
+                                                            unsigned short ModNum) {
     xia_log(xia_log::info) << "Pixie16ComputeProcessedEvents: ModNum=" << ModNum;
 
     double result = 0;
 
     try {
         if (Statistics == nullptr) {
-            throw xia_error(xia_error::code::invalid_value,
-                            "statistics pointer is NULL");
+            throw xia_error(xia_error::code::invalid_value, "statistics pointer is NULL");
         }
         stats_legacy_ptr stats = reinterpret_cast<stats_legacy_ptr>(Statistics);
         stats->validate();
@@ -532,16 +473,14 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeProcessedEvents(unsigned int* Statis
 }
 
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeRealTime(unsigned int* Statistics,
-                     unsigned short ModNum)
-{
+                                                     unsigned short ModNum) {
     xia_log(xia_log::info) << "Pixie16ComputeRealTime: ModNum=" << ModNum;
 
     (void) Statistics;
     return not_supported();
 }
 
-PIXIE_EXPORT int PIXIE_API Pixie16EndRun(unsigned short ModNum)
-{
+PIXIE_EXPORT int PIXIE_API Pixie16EndRun(unsigned short ModNum) {
     xia_log(xia_log::info) << "Pixie16EndRun: ModNum=" << ModNum;
 
     try {
@@ -565,8 +504,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16EndRun(unsigned short ModNum)
     return 0;
 }
 
-PIXIE_EXPORT int PIXIE_API Pixie16ExitSystem(unsigned short ModNum)
-{
+PIXIE_EXPORT int PIXIE_API Pixie16ExitSystem(unsigned short ModNum) {
     xia_log(xia_log::info) << "Pixie16ExitSystem: ModNum=" << ModNum;
 
     try {
@@ -597,18 +535,15 @@ PIXIE_EXPORT int PIXIE_API Pixie16ExitSystem(unsigned short ModNum)
     return 0;
 }
 
-PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules,
-                unsigned short* PXISlotMap,
-                unsigned short OfflineMode)
-{
+PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
+                                             unsigned short OfflineMode) {
     /*
      * Create a log file.
      */
     xia::logging::start("log", "Pixie16Msg.log", xia_log::info, true);
 
     xia_log(xia_log::info) << "Pixie16InitSystem: NumModules=" << NumModules
-                           << " PXISlotMap=" << PXISlotMap
-                           << " OfflineMode=" << OfflineMode;
+                           << " PXISlotMap=" << PXISlotMap << " OfflineMode=" << OfflineMode;
 
     /*
      * Not supported. We now have tools that can access the DSP variables.
@@ -631,14 +566,14 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules,
              */
             if (NumModules != crate.num_modules) {
                 throw xia_error(xia_error::code::module_total_invalid,
-                                "module count does not match user supplied " \
+                                "module count does not match user supplied "
                                 "number of modules");
             }
             xia::pixie::module::number_slots numbers;
             for (int i = 0; i < static_cast<int>(NumModules); ++i) {
                 typedef xia::pixie::module::number_slot number_slot;
-                xia_log(xia_log::info) << "Pixie16InitSystem: slot map: "
-                                       << PXISlotMap[i] << " => " << i + 1;
+                xia_log(xia_log::info)
+                    << "Pixie16InitSystem: slot map: " << PXISlotMap[i] << " => " << i + 1;
                 numbers.push_back(number_slot(i, PXISlotMap[i]));
             }
             crate.assign(numbers);
@@ -648,9 +583,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules,
          * Set the FIFO realtime settings.
          */
         for (auto& module : crate.modules) {
-          module->fifo_buffers = fifo_buffers;
-          module->fifo_run_wait_usecs = fifo_run_wait_usecs;
-          module->fifo_hold_usecs = fifo_hold_usecs;
+            module->fifo_buffers = fifo_buffers;
+            module->fifo_run_wait_usecs = fifo_run_wait_usecs;
+            module->fifo_hold_usecs = fifo_hold_usecs;
         }
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
@@ -670,9 +605,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules,
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO_Data,
-                              unsigned int nFIFOWords,
-                              unsigned short ModNum)
-{
+                                                           unsigned int nFIFOWords,
+                                                           unsigned short ModNum) {
     xia_log(xia_log::info) << "Pixie16ReadDataFromExternalFIFO: ModNum=" << ModNum
                            << " nFIFOWords=" << nFIFOWords;
 
@@ -681,24 +615,20 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogram,
-                             unsigned int NumWords,
-                             unsigned short ModNum,
-                             unsigned short ChanNum)
-{
+                                                          unsigned int NumWords,
+                                                          unsigned short ModNum,
+                                                          unsigned short ChanNum) {
     xia_log(xia_log::info) << "Pixie16ReadHistogramFromModule: ModNum=" << ModNum
-                           << " ChanNum=" << ChanNum
-                           << " NumWords=" << NumWords;
+                           << " ChanNum=" << ChanNum << " NumWords=" << NumWords;
 
     (void) Histogram;
     return not_supported();
 }
 
-PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum,
-                    unsigned short* ModRev,
-                    unsigned int* ModSerNum,
-                    unsigned short* ModADCBits,
-                    unsigned short* ModADCMSPS)
-{
+PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned short* ModRev,
+                                                 unsigned int* ModSerNum,
+                                                 unsigned short* ModADCBits,
+                                                 unsigned short* ModADCMSPS) {
     xia_log(xia_log::info) << "Pixie16ReadModuleInfo: ModNum=" << ModNum;
 
     (void) ModRev;
@@ -709,13 +639,11 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum,
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buffer,
-                         unsigned int Trace_Length,
-                         unsigned short ModNum,
-                         unsigned short ChanNum)
-{
+                                                      unsigned int Trace_Length,
+                                                      unsigned short ModNum,
+                                                      unsigned short ChanNum) {
     xia_log(xia_log::info) << "Pixie16ReadSglChanADCTrace: ModNum=" << ModNum
-                           << " ChanNum=" << ChanNum
-                           << " Trace_Length=" << Trace_Length;
+                           << " ChanNum=" << ChanNum << " Trace_Length=" << Trace_Length;
 
     try {
         crate.ready();
@@ -738,28 +666,23 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buff
     return 0;
 }
 
-PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanBaselines(double* Baselines,
-                          double* TimeStamps,
-                          unsigned short NumBases,
-                          unsigned short ModNum,
-                          unsigned short ChanNum)
-{
+PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanBaselines(double* Baselines, double* TimeStamps,
+                                                       unsigned short NumBases,
+                                                       unsigned short ModNum,
+                                                       unsigned short ChanNum) {
     xia_log(xia_log::info) << "Pixie16ReadSglChanADCTrace: ModNum=" << ModNum
-                           << " ChanNum=" << ChanNum
-                           << " NumBases=" << NumBases;
+                           << " ChanNum=" << ChanNum << " NumBases=" << NumBases;
 
     try {
         if (Baselines == nullptr) {
-            throw xia_error(xia_error::code::invalid_value,
-                            "Baselines is NULL");
+            throw xia_error(xia_error::code::invalid_value, "Baselines is NULL");
         }
         if (TimeStamps == nullptr) {
-            throw xia_error(xia_error::code::invalid_value,
-                            "TimeStamps is NULL");
+            throw xia_error(xia_error::code::invalid_value, "TimeStamps is NULL");
         }
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
-        xia::pixie::channel::range channels = { size_t(ChanNum) };
+        xia::pixie::channel::range channels = {size_t(ChanNum)};
         xia::pixie::channel::baseline::channels_values values(1);
         module->bl_get(channels, values, false);
         xia::pixie::channel::baseline::values& cv = values[0];
@@ -784,13 +707,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanBaselines(double* Baselines,
     return 0;
 }
 
-PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanPar(const char* ChanParName,
-                    double* ChanParData,
-                    unsigned short ModNum,
-                    unsigned short ChanNum)
-{
-    xia_log(xia_log::info) << "Pixie16ReadSglChanPar: ModNum=" << ModNum
-                           << " ChanNum=" << ChanNum
+PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanPar(const char* ChanParName, double* ChanParData,
+                                                 unsigned short ModNum, unsigned short ChanNum) {
+    xia_log(xia_log::info) << "Pixie16ReadSglChanPar: ModNum=" << ModNum << " ChanNum=" << ChanNum
                            << " ChanParName=" << ChanParName;
 
     try {
@@ -798,8 +717,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanPar(const char* ChanParName,
         xia::pixie::crate::module_handle module(crate, ModNum);
         *ChanParData = module->read(ChanParName, ChanNum);
         xia_log(xia_log::debug) << "Pixie16ReadSglChanPar: ModNum=" << ModNum
-                                << " ChanNum=" << ChanNum
-                                << " ChanParName=" << ChanParName
+                                << " ChanNum=" << ChanNum << " ChanParName=" << ChanParName
                                 << " ChanParData=" << *ChanParData;
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
@@ -818,10 +736,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanPar(const char* ChanParName,
     return 0;
 }
 
-PIXIE_EXPORT int PIXIE_API Pixie16ReadSglModPar(const char* ModParName,
-                   unsigned int* ModParData,
-                   unsigned short ModNum)
-{
+PIXIE_EXPORT int PIXIE_API Pixie16ReadSglModPar(const char* ModParName, unsigned int* ModParData,
+                                                unsigned short ModNum) {
     xia_log(xia_log::info) << "Pixie16ReadSglModPar: ModNum=" << ModNum
                            << " ModParName=" << ModParName;
 
@@ -830,8 +746,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglModPar(const char* ModParName,
         xia::pixie::crate::module_handle module(crate, ModNum);
         *ModParData = module->read(ModParName);
         xia_log(xia_log::debug) << "Pixie16ReadSglModPar: ModNum=" << ModNum
-                                << " ModParName=" << ModParName
-                                << " ModParData=" << *ModParData;
+                                << " ModParName=" << ModParName << " ModParData=" << *ModParData;
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
@@ -850,20 +765,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglModPar(const char* ModParName,
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16ReadStatisticsFromModule(unsigned int* Statistics,
-                              unsigned short ModNum)
-{
-    xia_log(xia_log::info) << "Pixie16ReadStatisticsFromModule: ModNum="
-                           << ModNum;
+                                                           unsigned short ModNum) {
+    xia_log(xia_log::info) << "Pixie16ReadStatisticsFromModule: ModNum=" << ModNum;
 
     try {
         if (Statistics == nullptr) {
-            throw xia_error(xia_error::code::invalid_value,
-                            "statistics pointer is NULL");
+            throw xia_error(xia_error::code::invalid_value, "statistics pointer is NULL");
         }
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
-        stats_legacy_ptr legacy_stats =
-            new(Statistics) stats_legacy(module->configs);
+        stats_legacy_ptr legacy_stats = new (Statistics) stats_legacy(module->configs);
         legacy_stats->validate();
         xia::pixie::stats::stats stats(module->configs);
         module->read_stats(stats);
@@ -886,25 +797,20 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadStatisticsFromModule(unsigned int* Statist
     return 0;
 }
 
-PIXIE_EXPORT int PIXIE_API Pixie16SaveDSPParametersToFile(const char* FileName)
-{
-    xia_log(xia_log::info) << "Pixie16ReadStatisticsFromModule: FileName="
-                           << FileName;
+PIXIE_EXPORT int PIXIE_API Pixie16SaveDSPParametersToFile(const char* FileName) {
+    xia_log(xia_log::info) << "Pixie16ReadStatisticsFromModule: FileName=" << FileName;
 
     return not_supported();
 }
 
-PIXIE_EXPORT int PIXIE_API Pixie16SaveHistogramToFile(const char* FileName,
-                         unsigned short ModNum)
-{
+PIXIE_EXPORT int PIXIE_API Pixie16SaveHistogramToFile(const char* FileName, unsigned short ModNum) {
     xia_log(xia_log::info) << "Pixie16SaveHistogramToFile: ModNum=" << ModNum
                            << " FileName=" << FileName;
 
     return not_supported();
 }
 
-PIXIE_EXPORT int PIXIE_API Pixie16SetDACs(unsigned short ModNum)
-{
+PIXIE_EXPORT int PIXIE_API Pixie16SetDACs(unsigned short ModNum) {
     xia_log(xia_log::info) << "Pixie16SetDACs: ModNum=" << ModNum;
 
     try {
@@ -928,24 +834,20 @@ PIXIE_EXPORT int PIXIE_API Pixie16SetDACs(unsigned short ModNum)
     return 0;
 }
 
-PIXIE_EXPORT int PIXIE_API Pixie16StartHistogramRun(unsigned short ModNum,
-                       unsigned short mode)
-{
-    xia_log(xia_log::info) << "Pixie16StartHistogramRun: ModNum=" << ModNum
-                           << " mode=" << mode;
+PIXIE_EXPORT int PIXIE_API Pixie16StartHistogramRun(unsigned short ModNum, unsigned short mode) {
+    xia_log(xia_log::info) << "Pixie16StartHistogramRun: ModNum=" << ModNum << " mode=" << mode;
 
     try {
         xia::pixie::hw::run::run_mode run_mode;
         switch (mode) {
-        case 0:
-            run_mode = xia::pixie::hw::run::run_mode::resume;
-            break;
-        case 1:
-            run_mode = xia::pixie::hw::run::run_mode::new_run;
-            break;
-        default:
-            throw xia_error(xia_error::code::invalid_value,
-                            "invalid histogram start run mode");
+            case 0:
+                run_mode = xia::pixie::hw::run::run_mode::resume;
+                break;
+            case 1:
+                run_mode = xia::pixie::hw::run::run_mode::new_run;
+                break;
+            default:
+                throw xia_error(xia_error::code::invalid_value, "invalid histogram start run mode");
         }
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
@@ -967,12 +869,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartHistogramRun(unsigned short ModNum,
     return 0;
 }
 
-PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum,
-                      unsigned short RunType,
-                      unsigned short mode)
-{
-    xia_log(xia_log::info) << "Pixie16StartListModeRun: ModNum=" << ModNum
-                           << " RunType=" << RunType
+PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsigned short RunType,
+                                                   unsigned short mode) {
+    xia_log(xia_log::info) << "Pixie16StartListModeRun: ModNum=" << ModNum << " RunType=" << RunType
                            << " mode=" << mode;
 
 
@@ -983,15 +882,14 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum,
         }
         xia::pixie::hw::run::run_mode run_mode;
         switch (mode) {
-        case 0:
-            run_mode = xia::pixie::hw::run::run_mode::resume;
-            break;
-        case 1:
-            run_mode = xia::pixie::hw::run::run_mode::new_run;
-            break;
-        default:
-            throw xia_error(xia_error::code::invalid_value,
-                            "invalid listmode start run mode");
+            case 0:
+                run_mode = xia::pixie::hw::run::run_mode::resume;
+                break;
+            case 1:
+                run_mode = xia::pixie::hw::run::run_mode::new_run;
+                break;
+            default:
+                throw xia_error(xia_error::code::invalid_value, "invalid listmode start run mode");
         }
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
@@ -1013,15 +911,10 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum,
     return 0;
 }
 
-PIXIE_EXPORT int PIXIE_API Pixie16WriteSglChanPar(const char* ChanParName,
-                     double ChanParData,
-                     unsigned short ModNum,
-                     unsigned short ChanNum)
-{
-    xia_log(xia_log::info) << "Pixie16WriteSglChanPar: ModNum=" << ModNum
-                           << " ChanNum=" << ChanNum
-                           << " ChanParName=" << ChanParName
-                           << " ChanParData=" << ChanParData;
+PIXIE_EXPORT int PIXIE_API Pixie16WriteSglChanPar(const char* ChanParName, double ChanParData,
+                                                  unsigned short ModNum, unsigned short ChanNum) {
+    xia_log(xia_log::info) << "Pixie16WriteSglChanPar: ModNum=" << ModNum << " ChanNum=" << ChanNum
+                           << " ChanParName=" << ChanParName << " ChanParData=" << ChanParData;
 
     try {
         crate.ready();
@@ -1044,13 +937,10 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglChanPar(const char* ChanParName,
     return 0;
 }
 
-PIXIE_EXPORT int PIXIE_API Pixie16WriteSglModPar(const char* ModParName,
-                    unsigned int ModParData,
-                    unsigned short ModNum)
-{
+PIXIE_EXPORT int PIXIE_API Pixie16WriteSglModPar(const char* ModParName, unsigned int ModParData,
+                                                 unsigned short ModNum) {
     xia_log(xia_log::info) << "Pixie16WriteSglModPar: ModNum=" << ModNum
-                           << " ModParName=" << ModParName
-                           << " ModParData=" << ModParData;
+                           << " ModParName=" << ModParName << " ModParData=" << ModParData;
 
     try {
         crate.ready();

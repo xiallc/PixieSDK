@@ -33,17 +33,12 @@
 
 #include <nolhmann/json.hpp>
 
-namespace xia
-{
-namespace pixie
-{
-namespace config
-{
+namespace xia {
+namespace pixie {
+namespace config {
 using json = nlohmann::json;
 
-PIXIE_EXPORT void PIXIE_API
-read(const std::string& config_file_name, configuration& cfg)
-{
+PIXIE_EXPORT void PIXIE_API read(const std::string& config_file_name, configuration& cfg) {
     std::ifstream input(config_file_name, std::ios::in);
     if (input.fail()) {
         throw error(error::code::file_open_failure,
@@ -52,8 +47,7 @@ read(const std::string& config_file_name, configuration& cfg)
 
     input >> cfg.num_modules;
     if (cfg.num_modules == 0 || cfg.num_modules > hw::max_slots) {
-        throw error(error::code::config_invalid_param,
-                    "invalid number of modules");
+        throw error(error::code::config_invalid_param, "invalid number of modules");
     }
 
     cfg.slot_map.clear();
@@ -62,67 +56,53 @@ read(const std::string& config_file_name, configuration& cfg)
         if (input >> slot) {
             cfg.slot_map.push_back(module::number_slot(num, slot));
         } else {
-            throw error(error::code::config_invalid_param,
-                        "invalid slot");
+            throw error(error::code::config_invalid_param, "invalid slot");
         }
     }
 
     input >> cfg.com_fpga_config;
     if (!input) {
-        throw error(error::code::config_invalid_param,
-                    "invalid COM FPGA file name");
+        throw error(error::code::config_invalid_param, "invalid COM FPGA file name");
     }
 
     input >> cfg.sp_fpga_config;
     if (!input) {
-        throw error(error::code::config_invalid_param,
-                    "invalid FP FPGA file name");
+        throw error(error::code::config_invalid_param, "invalid FP FPGA file name");
     }
 
     std::string trig_holder;
     input >> trig_holder;
     if (!input) {
-        throw error(error::code::config_invalid_param,
-                    "invalid Trigg file name");
+        throw error(error::code::config_invalid_param, "invalid Trigg file name");
     }
 
     input >> cfg.dsp_code;
     if (!input) {
-        throw error(error::code::config_invalid_param,
-                    "invalid DSP code file name");
+        throw error(error::code::config_invalid_param, "invalid DSP code file name");
     }
 
     input >> cfg.dsp_param;
     if (!input) {
-        throw error(error::code::config_invalid_param,
-                    "invalid DSP parameters file name");
+        throw error(error::code::config_invalid_param, "invalid DSP parameters file name");
     }
 
     input >> cfg.dsp_var;
     if (!input) {
-        throw error(error::code::config_invalid_param,
-                    "invalid DSP variables file name");
+        throw error(error::code::config_invalid_param, "invalid DSP variables file name");
     }
 
     input.close();
 }
 
-static void
-throw_json_error(json::exception& e, const std::string& what)
-{
+static void throw_json_error(json::exception& e, const std::string& what) {
     throw error(error::code::config_json_error, what + ": " + e.what());
 }
 
-void
-import_json(const std::string& filename,
-            crate::crate& crate,
-            module::number_slots& loaded)
-{
+void import_json(const std::string& filename, crate::crate& crate, module::number_slots& loaded) {
     std::ifstream input_json(filename);
     if (!input_json) {
         throw error(pixie::error::code::file_open_failure,
-                    "opening json config: " + filename +
-                    ": " + std::strerror(errno));
+                    "opening json config: " + filename + ": " + std::strerror(errno));
     }
 
     json config;
@@ -134,9 +114,8 @@ import_json(const std::string& filename,
     }
 
     if (config.size() > crate.num_modules) {
-        log(log::warning) << "too many module configs (" << config.size()
-                          << "), crate only has " << crate.num_modules
-                          << " modules ";
+        log(log::warning) << "too many module configs (" << config.size() << "), crate only has "
+                          << crate.num_modules << " modules ";
     }
 
     size_t mod = 0;
@@ -151,18 +130,15 @@ import_json(const std::string& filename,
             auto& settings = *ci;
 
             if (!settings.contains("metadata")) {
-                throw error(error::code::config_json_error,
-                            "'metadata' not found");
+                throw error(error::code::config_json_error, "'metadata' not found");
             }
 
             if (!settings.contains("module")) {
-                throw error(error::code::config_json_error,
-                            "'module' not found");
+                throw error(error::code::config_json_error, "'module' not found");
             }
 
             if (!settings.contains("channel")) {
-                throw error(error::code::config_json_error,
-                            "'channel' not found");
+                throw error(error::code::config_json_error, "'channel' not found");
             }
 
             auto metadata = settings["metadata"];
@@ -170,22 +146,18 @@ import_json(const std::string& filename,
             auto chandata = settings["channel"];
 
             if (!moddata.contains("input")) {
-                throw error(error::code::config_json_error,
-                            "module 'input' not found");
+                throw error(error::code::config_json_error, "module 'input' not found");
             }
 
             if (!chandata.contains("input")) {
-                throw error(error::code::config_json_error,
-                            "channel 'input' not found");
+                throw error(error::code::config_json_error, "channel 'input' not found");
             }
 
             try {
                 auto rev = metadata["hardware_revision"].get<std::string>();
                 if (rev[0] != module.revision_label()) {
-                    log(log::warning) << "config module " << mod
-                                      << " (rev " << rev
-                                      << ") loading on to "
-                                      << module.revision_label();
+                    log(log::warning) << "config module " << mod << " (rev " << rev
+                                      << ") loading on to " << module.revision_label();
                 }
             } catch (json::exception& e) {
                 throw_json_error(e, "config rev");
@@ -194,10 +166,8 @@ import_json(const std::string& filename,
             try {
                 auto slot = metadata["slot"];
                 if (slot != module.slot) {
-                    log(log::warning) << "config module " << mod
-                                      << " (slot " << slot
-                                      << ") has moved to slot "
-                                      << module.slot;
+                    log(log::warning) << "config module " << mod << " (slot " << slot
+                                      << ") has moved to slot " << module.slot;
                 }
             } catch (json::exception& e) {
                 throw_json_error(e, "config slot-id");
@@ -219,34 +189,24 @@ import_json(const std::string& filename,
                     if (desc.writeable()) {
                         if (desc.size != el.value().size()) {
                             log(log::warning) << module::module_label(module)
-                                              << "size does not match: "
-                                              << el.key();
+                                              << "size does not match: " << el.key();
                         } else {
-                            log(log::debug) << module::module_label(module)
-                                            << "module var set: "
-                                            << el.key();
+                            log(log::debug)
+                                << module::module_label(module) << "module var set: " << el.key();
                             if (desc.size > 1) {
                                 for (size_t v = 0; v < desc.size; ++v) {
                                     try {
-                                        module.write_var(var,
-                                                         el.value()[v],
-                                                         v,
-                                                         false);
+                                        module.write_var(var, el.value()[v], v, false);
                                     } catch (json::exception& e) {
-                                        auto s = el.key() + ": " +
-                                            std::string(el.value());
+                                        auto s = el.key() + ": " + std::string(el.value());
                                         throw_json_error(e, s);
                                     }
                                 }
                             } else {
                                 try {
-                                    module.write_var(var,
-                                                     el.value(),
-                                                     0,
-                                                     false);
+                                    module.write_var(var, el.value(), 0, false);
                                 } catch (json::exception& e) {
-                                    auto s = el.key() + ": " +
-                                        std::string(el.value());
+                                    auto s = el.key() + ": " + std::string(el.value());
                                     throw_json_error(e, s);
                                 }
                             }
@@ -256,8 +216,7 @@ import_json(const std::string& filename,
                     /*
                      * If not a parameter (ignore those) log a message
                      */
-                    log(log::warning) << "config module " << mod
-                                      << " (slot " << module.slot
+                    log(log::warning) << "config module " << mod << " (slot " << module.slot
                                       << "): invalid variable: " << el.key();
                 }
             }
@@ -278,29 +237,25 @@ import_json(const std::string& filename,
                     if (desc.writeable()) {
                         if ((el.value().size() % desc.size) != 0) {
                             log(log::warning) << module::module_label(module)
-                                              << "size does not match config: "
-                                              << el.key();
+                                              << "size does not match config: " << el.key();
                         } else {
-                            log(log::debug) << module::module_label(module)
-                                            << "channel var set: "
-                                            << el.key()
-                                            << ": " << el.value();
+                            log(log::debug)
+                                << module::module_label(module) << "channel var set: " << el.key()
+                                << ": " << el.value();
                             size_t vchannels = el.value().size() / desc.size;
                             for (size_t channel = 0;
-                                 channel < module.num_channels &&
-                                     channel < vchannels &&
-                                     channel * desc.size < el.value().size();
+                                 channel < module.num_channels && channel < vchannels &&
+                                 channel * desc.size < el.value().size();
                                  ++channel) {
                                 size_t vbase = channel * desc.size;
                                 for (size_t v = 0; v < desc.size; ++v) {
                                     try {
-                                        module.write_var(var,
-                                                         el.value()[vbase + v],
-                                                         channel, v, false);
+                                        module.write_var(var, el.value()[vbase + v], channel, v,
+                                                         false);
                                     } catch (json::exception& e) {
-                                        auto s = el.key() + ": " +
-                                            std::string(el.value()[vbase + v]);
-                                            throw_json_error(e, s);
+                                        auto s =
+                                            el.key() + ": " + std::string(el.value()[vbase + v]);
+                                        throw_json_error(e, s);
                                     }
                                 }
                             }
@@ -310,8 +265,7 @@ import_json(const std::string& filename,
                     /*
                      * If not a parameter (ignore those) log a message
                      */
-                    log(log::warning) << "config module " << mod
-                                      << " (slot " << module.slot
+                    log(log::warning) << "config module " << mod << " (slot " << module.slot
                                       << "): invalid variable: " << el.key();
                 }
             }
@@ -331,9 +285,7 @@ import_json(const std::string& filename,
     }
 }
 
-static json
-json_firmware(const firmware::firmware_ref fw)
-{
+static json json_firmware(const firmware::firmware_ref fw) {
     json jfw;
     jfw["tag"] = fw->tag;
     jfw["file"] = fw->basename();
@@ -344,16 +296,14 @@ json_firmware(const firmware::firmware_ref fw)
     return jfw;
 }
 
-void
-export_json(const std::string& filename, crate::crate& crate)
-{
+void export_json(const std::string& filename, crate::crate& crate) {
     json config;
 
     for (auto m : crate.modules) {
         module::module& mod = *m;
 
         json metadata;
-        char rv[2] = { mod.revision_label(), '\0' };
+        char rv[2] = {mod.revision_label(), '\0'};
         metadata["number"] = mod.number;
         metadata["slot"] = mod.slot;
         metadata["serial-num"] = mod.serial_num;
@@ -406,8 +356,8 @@ export_json(const std::string& filename, crate::crate& crate)
 
         json mod_config;
         mod_config["metadata"] = metadata;
-        mod_config["module"] = { { "input" , module } };
-        mod_config["channel"] = { { "input", channel } };
+        mod_config["module"] = {{"input", module}};
+        mod_config["channel"] = {{"input", channel}};
 
         config.push_back(mod_config);
     }
@@ -415,13 +365,12 @@ export_json(const std::string& filename, crate::crate& crate)
     std::ofstream output_json(filename);
     if (!output_json) {
         throw error(pixie::error::code::file_open_failure,
-                    "opening json config: " + filename +
-                    ": " + std::strerror(errno));
+                    "opening json config: " + filename + ": " + std::strerror(errno));
     }
 
     output_json << std::setw(4) << config << std::endl;
 }
 
-}
-}
-}
+}  // namespace config
+}  // namespace pixie
+}  // namespace xia

@@ -25,68 +25,43 @@
 
 #include <pixie/pixie16/hw.hpp>
 
-namespace xia
-{
-namespace pixie
-{
-namespace hw
-{
-config::config(int adc_bits_,
-               int adc_msps_,
-               int adc_clk_div_,
-               int fpga_clk_mhz_)
-    : index(-1),
-      adc_bits(adc_bits_),
-      adc_msps(adc_msps_),
-      adc_clk_div(adc_clk_div_),
-      fpga_clk_mhz(fpga_clk_mhz_)
-{
-}
+namespace xia {
+namespace pixie {
+namespace hw {
+config::config(int adc_bits_, int adc_msps_, int adc_clk_div_, int fpga_clk_mhz_)
+    : index(-1), adc_bits(adc_bits_), adc_msps(adc_msps_), adc_clk_div(adc_clk_div_),
+      fpga_clk_mhz(fpga_clk_mhz_) {}
 
-config::config()
-{
+config::config() {
     clear();
 }
 
-bool
-config::operator==(const config& cfg)
-{
-    return
-        adc_bits == cfg.adc_bits ||
-        adc_msps == cfg.adc_msps ||
-        adc_clk_div == cfg.adc_clk_div ||
-        fpga_clk_mhz == cfg.fpga_clk_mhz;
+bool config::operator==(const config& cfg) {
+    return adc_bits == cfg.adc_bits || adc_msps == cfg.adc_msps || adc_clk_div == cfg.adc_clk_div ||
+           fpga_clk_mhz == cfg.fpga_clk_mhz;
 }
 
-bool
-config::operator!=(const config& cfg)
-{
+bool config::operator!=(const config& cfg) {
     return !(*this == cfg);
 }
 
-void
-config::clear()
-{
+void config::clear() {
     adc_bits = 0;
     adc_msps = 0;
     adc_clk_div = 0;
     fpga_clk_mhz = 0;
 }
 
-void
-wait(size_t microseconds)
-{
+void wait(size_t microseconds) {
     if (microseconds < 100) {
         volatile size_t count = 10 * microseconds;
         while (count > 0) {
             --count;
         }
     } else {
-        std::this_thread::sleep_for(
-            std::chrono::microseconds(microseconds)
-            );
+        std::this_thread::sleep_for(std::chrono::microseconds(microseconds));
     }
 }
-};
-};
-};
+};  // namespace hw
+};  // namespace pixie
+};  // namespace xia

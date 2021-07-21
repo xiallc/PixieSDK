@@ -46,7 +46,8 @@ TEST_SUITE("sys/tools.c") {
         REQUIRE(file.is_open());
         //From: http://cplusplus.com/forum/general/108679/#msg591060
         std::string line;
-        while (file >> std::ws && std::getline(file, line));
+        while (file >> std::ws && std::getline(file, line)) {
+        }
         CHECK(line.find(std::to_string(random_val)) != std::string::npos);
         file.close();
     }
@@ -86,9 +87,9 @@ TEST_SUITE("sys/tools.c") {
         ///          the usleep option, and greater than 0.
         auto start = std::chrono::steady_clock::now();
         wait_for_a_short_time(10);
-        double result =
-                std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::steady_clock::now() - start)
-                        .count();
+        double result = std::chrono::duration_cast<std::chrono::duration<double>>(
+                            std::chrono::steady_clock::now() - start)
+                            .count();
         CHECK(result <= 10.5);
         CHECK(result > 0);
     }

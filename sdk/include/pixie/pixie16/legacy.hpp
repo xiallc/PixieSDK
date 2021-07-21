@@ -88,29 +88,18 @@ struct settings {
     /*
      * Read a var value from the internal DSP memory buffer
      */
-    param::value_type read_var(param::module_var var,
-                               int module,
-                               size_t offset = 0) const;
-    param::value_type read_var(param::channel_var var,
-                               int module,
-                               int channel,
+    param::value_type read_var(param::module_var var, int module, size_t offset = 0) const;
+    param::value_type read_var(param::channel_var var, int module, int channel,
                                size_t offset = 0) const;
 
     /*
      * Values of interest when looking at par files.
      */
-    size_t index(const param::module_var_desc& desc,
-                 int module,
+    size_t index(const param::module_var_desc& desc, int module, size_t offset = 0) const;
+    size_t index(const param::channel_var_desc& desc, int module, int channel,
                  size_t offset = 0) const;
-    size_t index(const param::channel_var_desc& desc,
-                 int module,
-                 int channel,
-                 size_t offset = 0) const;
-    size_t address(const param::module_var_desc& desc,
-                   size_t offset = 0) const;
-    size_t address(const param::channel_var_desc& desc,
-                   int channel,
-                   size_t offset = 0) const;
+    size_t address(const param::module_var_desc& desc, size_t offset = 0) const;
+    size_t address(const param::channel_var_desc& desc, int channel, size_t offset = 0) const;
 
     /*
      * Output the settings file contents in a readable format
@@ -118,14 +107,13 @@ struct settings {
     void output(std::ostream& out) const;
 };
 
-}
-}
-}
+}  // namespace legacy
+}  // namespace pixie
+}  // namespace xia
 
 /*
  * Output stream operator.
  */
-std::ostream&
-operator<<(std::ostream& out, const xia::pixie::legacy::settings& settings);
+std::ostream& operator<<(std::ostream& out, const xia::pixie::legacy::settings& settings);
 
 #endif  // PIXIE_PIXIE16_LEGACY_HPP

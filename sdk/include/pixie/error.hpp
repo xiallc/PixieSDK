@@ -24,15 +24,12 @@
 #define PIXIE_ERROR_H
 
 #include <iostream>
-#include <stdexcept>
 #include <sstream>
+#include <stdexcept>
 
-namespace xia
-{
-namespace pixie
-{
-namespace error
-{
+namespace xia {
+namespace pixie {
+namespace error {
 /*
  * Codes
  */
@@ -131,8 +128,7 @@ enum struct code {
 /*
  * All exceptions need to be based on this error.
  */
-struct error
-    : public std::runtime_error {
+struct error : public std::runtime_error {
     typedef pixie::error::code code;
     const code type;
 
@@ -179,9 +175,9 @@ int api_result_unknown_error();
  * Not support helper.
  */
 int api_result_not_supported();
-}
-}
-}
+}  // namespace error
+}  // namespace pixie
+}  // namespace xia
 
 std::ostringstream& operator<<(std::ostringstream& out, xia::pixie::error::error& error);
 std::ostream& operator<<(std::ostream& out, xia::pixie::error::error& error);

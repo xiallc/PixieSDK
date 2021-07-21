@@ -39,63 +39,45 @@
 
 #include <stdint.h>
 
-static uint32_t
-CRC32_update(uint32_t crc, const unsigned char* data, int len)
-{
-    const uint32_t table[256] =  {
-        0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,
-        0x706af48fL, 0xe963a535L, 0x9e6495a3L, 0x0edb8832L, 0x79dcb8a4L,
-        0xe0d5e91eL, 0x97d2d988L, 0x09b64c2bL, 0x7eb17cbdL, 0xe7b82d07L,
-        0x90bf1d91L, 0x1db71064L, 0x6ab020f2L, 0xf3b97148L, 0x84be41deL,
-        0x1adad47dL, 0x6ddde4ebL, 0xf4d4b551L, 0x83d385c7L, 0x136c9856L,
-        0x646ba8c0L, 0xfd62f97aL, 0x8a65c9ecL, 0x14015c4fL, 0x63066cd9L,
-        0xfa0f3d63L, 0x8d080df5L, 0x3b6e20c8L, 0x4c69105eL, 0xd56041e4L,
-        0xa2677172L, 0x3c03e4d1L, 0x4b04d447L, 0xd20d85fdL, 0xa50ab56bL,
-        0x35b5a8faL, 0x42b2986cL, 0xdbbbc9d6L, 0xacbcf940L, 0x32d86ce3L,
-        0x45df5c75L, 0xdcd60dcfL, 0xabd13d59L, 0x26d930acL, 0x51de003aL,
-        0xc8d75180L, 0xbfd06116L, 0x21b4f4b5L, 0x56b3c423L, 0xcfba9599L,
-        0xb8bda50fL, 0x2802b89eL, 0x5f058808L, 0xc60cd9b2L, 0xb10be924L,
-        0x2f6f7c87L, 0x58684c11L, 0xc1611dabL, 0xb6662d3dL, 0x76dc4190L,
-        0x01db7106L, 0x98d220bcL, 0xefd5102aL, 0x71b18589L, 0x06b6b51fL,
-        0x9fbfe4a5L, 0xe8b8d433L, 0x7807c9a2L, 0x0f00f934L, 0x9609a88eL,
-        0xe10e9818L, 0x7f6a0dbbL, 0x086d3d2dL, 0x91646c97L, 0xe6635c01L,
-        0x6b6b51f4L, 0x1c6c6162L, 0x856530d8L, 0xf262004eL, 0x6c0695edL,
-        0x1b01a57bL, 0x8208f4c1L, 0xf50fc457L, 0x65b0d9c6L, 0x12b7e950L,
-        0x8bbeb8eaL, 0xfcb9887cL, 0x62dd1ddfL, 0x15da2d49L, 0x8cd37cf3L,
-        0xfbd44c65L, 0x4db26158L, 0x3ab551ceL, 0xa3bc0074L, 0xd4bb30e2L,
-        0x4adfa541L, 0x3dd895d7L, 0xa4d1c46dL, 0xd3d6f4fbL, 0x4369e96aL,
-        0x346ed9fcL, 0xad678846L, 0xda60b8d0L, 0x44042d73L, 0x33031de5L,
-        0xaa0a4c5fL, 0xdd0d7cc9L, 0x5005713cL, 0x270241aaL, 0xbe0b1010L,
-        0xc90c2086L, 0x5768b525L, 0x206f85b3L, 0xb966d409L, 0xce61e49fL,
-        0x5edef90eL, 0x29d9c998L, 0xb0d09822L, 0xc7d7a8b4L, 0x59b33d17L,
-        0x2eb40d81L, 0xb7bd5c3bL, 0xc0ba6cadL, 0xedb88320L, 0x9abfb3b6L,
-        0x03b6e20cL, 0x74b1d29aL, 0xead54739L, 0x9dd277afL, 0x04db2615L,
-        0x73dc1683L, 0xe3630b12L, 0x94643b84L, 0x0d6d6a3eL, 0x7a6a5aa8L,
-        0xe40ecf0bL, 0x9309ff9dL, 0x0a00ae27L, 0x7d079eb1L, 0xf00f9344L,
-        0x8708a3d2L, 0x1e01f268L, 0x6906c2feL, 0xf762575dL, 0x806567cbL,
-        0x196c3671L, 0x6e6b06e7L, 0xfed41b76L, 0x89d32be0L, 0x10da7a5aL,
-        0x67dd4accL, 0xf9b9df6fL, 0x8ebeeff9L, 0x17b7be43L, 0x60b08ed5L,
-        0xd6d6a3e8L, 0xa1d1937eL, 0x38d8c2c4L, 0x4fdff252L, 0xd1bb67f1L,
-        0xa6bc5767L, 0x3fb506ddL, 0x48b2364bL, 0xd80d2bdaL, 0xaf0a1b4cL,
-        0x36034af6L, 0x41047a60L, 0xdf60efc3L, 0xa867df55L, 0x316e8eefL,
-        0x4669be79L, 0xcb61b38cL, 0xbc66831aL, 0x256fd2a0L, 0x5268e236L,
-        0xcc0c7795L, 0xbb0b4703L, 0x220216b9L, 0x5505262fL, 0xc5ba3bbeL,
-        0xb2bd0b28L, 0x2bb45a92L, 0x5cb36a04L, 0xc2d7ffa7L, 0xb5d0cf31L,
-        0x2cd99e8bL, 0x5bdeae1dL, 0x9b64c2b0L, 0xec63f226L, 0x756aa39cL,
-        0x026d930aL, 0x9c0906a9L, 0xeb0e363fL, 0x72076785L, 0x05005713L,
-        0x95bf4a82L, 0xe2b87a14L, 0x7bb12baeL, 0x0cb61b38L, 0x92d28e9bL,
-        0xe5d5be0dL, 0x7cdcefb7L, 0x0bdbdf21L, 0x86d3d2d4L, 0xf1d4e242L,
-        0x68ddb3f8L, 0x1fda836eL, 0x81be16cdL, 0xf6b9265bL, 0x6fb077e1L,
-        0x18b74777L, 0x88085ae6L, 0xff0f6a70L, 0x66063bcaL, 0x11010b5cL,
-        0x8f659effL, 0xf862ae69L, 0x616bffd3L, 0x166ccf45L, 0xa00ae278L,
-        0xd70dd2eeL, 0x4e048354L, 0x3903b3c2L, 0xa7672661L, 0xd06016f7L,
-        0x4969474dL, 0x3e6e77dbL, 0xaed16a4aL, 0xd9d65adcL, 0x40df0b66L,
-        0x37d83bf0L, 0xa9bcae53L, 0xdebb9ec5L, 0x47b2cf7fL, 0x30b5ffe9L,
-        0xbdbdf21cL, 0xcabac28aL, 0x53b39330L, 0x24b4a3a6L, 0xbad03605L,
-        0xcdd70693L, 0x54de5729L, 0x23d967bfL, 0xb3667a2eL, 0xc4614ab8L,
-        0x5d681b02L, 0x2a6f2b94L, 0xb40bbe37L, 0xc30c8ea1L, 0x5a05df1bL,
-        0x2d02ef8dL
-    };
+static uint32_t CRC32_update(uint32_t crc, const unsigned char* data, int len) {
+    const uint32_t table[256] = {
+        0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L, 0x706af48fL, 0xe963a535L,
+        0x9e6495a3L, 0x0edb8832L, 0x79dcb8a4L, 0xe0d5e91eL, 0x97d2d988L, 0x09b64c2bL, 0x7eb17cbdL,
+        0xe7b82d07L, 0x90bf1d91L, 0x1db71064L, 0x6ab020f2L, 0xf3b97148L, 0x84be41deL, 0x1adad47dL,
+        0x6ddde4ebL, 0xf4d4b551L, 0x83d385c7L, 0x136c9856L, 0x646ba8c0L, 0xfd62f97aL, 0x8a65c9ecL,
+        0x14015c4fL, 0x63066cd9L, 0xfa0f3d63L, 0x8d080df5L, 0x3b6e20c8L, 0x4c69105eL, 0xd56041e4L,
+        0xa2677172L, 0x3c03e4d1L, 0x4b04d447L, 0xd20d85fdL, 0xa50ab56bL, 0x35b5a8faL, 0x42b2986cL,
+        0xdbbbc9d6L, 0xacbcf940L, 0x32d86ce3L, 0x45df5c75L, 0xdcd60dcfL, 0xabd13d59L, 0x26d930acL,
+        0x51de003aL, 0xc8d75180L, 0xbfd06116L, 0x21b4f4b5L, 0x56b3c423L, 0xcfba9599L, 0xb8bda50fL,
+        0x2802b89eL, 0x5f058808L, 0xc60cd9b2L, 0xb10be924L, 0x2f6f7c87L, 0x58684c11L, 0xc1611dabL,
+        0xb6662d3dL, 0x76dc4190L, 0x01db7106L, 0x98d220bcL, 0xefd5102aL, 0x71b18589L, 0x06b6b51fL,
+        0x9fbfe4a5L, 0xe8b8d433L, 0x7807c9a2L, 0x0f00f934L, 0x9609a88eL, 0xe10e9818L, 0x7f6a0dbbL,
+        0x086d3d2dL, 0x91646c97L, 0xe6635c01L, 0x6b6b51f4L, 0x1c6c6162L, 0x856530d8L, 0xf262004eL,
+        0x6c0695edL, 0x1b01a57bL, 0x8208f4c1L, 0xf50fc457L, 0x65b0d9c6L, 0x12b7e950L, 0x8bbeb8eaL,
+        0xfcb9887cL, 0x62dd1ddfL, 0x15da2d49L, 0x8cd37cf3L, 0xfbd44c65L, 0x4db26158L, 0x3ab551ceL,
+        0xa3bc0074L, 0xd4bb30e2L, 0x4adfa541L, 0x3dd895d7L, 0xa4d1c46dL, 0xd3d6f4fbL, 0x4369e96aL,
+        0x346ed9fcL, 0xad678846L, 0xda60b8d0L, 0x44042d73L, 0x33031de5L, 0xaa0a4c5fL, 0xdd0d7cc9L,
+        0x5005713cL, 0x270241aaL, 0xbe0b1010L, 0xc90c2086L, 0x5768b525L, 0x206f85b3L, 0xb966d409L,
+        0xce61e49fL, 0x5edef90eL, 0x29d9c998L, 0xb0d09822L, 0xc7d7a8b4L, 0x59b33d17L, 0x2eb40d81L,
+        0xb7bd5c3bL, 0xc0ba6cadL, 0xedb88320L, 0x9abfb3b6L, 0x03b6e20cL, 0x74b1d29aL, 0xead54739L,
+        0x9dd277afL, 0x04db2615L, 0x73dc1683L, 0xe3630b12L, 0x94643b84L, 0x0d6d6a3eL, 0x7a6a5aa8L,
+        0xe40ecf0bL, 0x9309ff9dL, 0x0a00ae27L, 0x7d079eb1L, 0xf00f9344L, 0x8708a3d2L, 0x1e01f268L,
+        0x6906c2feL, 0xf762575dL, 0x806567cbL, 0x196c3671L, 0x6e6b06e7L, 0xfed41b76L, 0x89d32be0L,
+        0x10da7a5aL, 0x67dd4accL, 0xf9b9df6fL, 0x8ebeeff9L, 0x17b7be43L, 0x60b08ed5L, 0xd6d6a3e8L,
+        0xa1d1937eL, 0x38d8c2c4L, 0x4fdff252L, 0xd1bb67f1L, 0xa6bc5767L, 0x3fb506ddL, 0x48b2364bL,
+        0xd80d2bdaL, 0xaf0a1b4cL, 0x36034af6L, 0x41047a60L, 0xdf60efc3L, 0xa867df55L, 0x316e8eefL,
+        0x4669be79L, 0xcb61b38cL, 0xbc66831aL, 0x256fd2a0L, 0x5268e236L, 0xcc0c7795L, 0xbb0b4703L,
+        0x220216b9L, 0x5505262fL, 0xc5ba3bbeL, 0xb2bd0b28L, 0x2bb45a92L, 0x5cb36a04L, 0xc2d7ffa7L,
+        0xb5d0cf31L, 0x2cd99e8bL, 0x5bdeae1dL, 0x9b64c2b0L, 0xec63f226L, 0x756aa39cL, 0x026d930aL,
+        0x9c0906a9L, 0xeb0e363fL, 0x72076785L, 0x05005713L, 0x95bf4a82L, 0xe2b87a14L, 0x7bb12baeL,
+        0x0cb61b38L, 0x92d28e9bL, 0xe5d5be0dL, 0x7cdcefb7L, 0x0bdbdf21L, 0x86d3d2d4L, 0xf1d4e242L,
+        0x68ddb3f8L, 0x1fda836eL, 0x81be16cdL, 0xf6b9265bL, 0x6fb077e1L, 0x18b74777L, 0x88085ae6L,
+        0xff0f6a70L, 0x66063bcaL, 0x11010b5cL, 0x8f659effL, 0xf862ae69L, 0x616bffd3L, 0x166ccf45L,
+        0xa00ae278L, 0xd70dd2eeL, 0x4e048354L, 0x3903b3c2L, 0xa7672661L, 0xd06016f7L, 0x4969474dL,
+        0x3e6e77dbL, 0xaed16a4aL, 0xd9d65adcL, 0x40df0b66L, 0x37d83bf0L, 0xa9bcae53L, 0xdebb9ec5L,
+        0x47b2cf7fL, 0x30b5ffe9L, 0xbdbdf21cL, 0xcabac28aL, 0x53b39330L, 0x24b4a3a6L, 0xbad03605L,
+        0xcdd70693L, 0x54de5729L, 0x23d967bfL, 0xb3667a2eL, 0xc4614ab8L, 0x5d681b02L, 0x2a6f2b94L,
+        0xb40bbe37L, 0xc30c8ea1L, 0x5a05df1bL, 0x2d02ef8dL};
     crc = ~crc;
     while (len-- != 0) {
         crc = table[(crc ^ *data++) & 0xff] ^ (crc >> 8);
@@ -107,8 +89,7 @@ CRC32_update(uint32_t crc, const unsigned char* data, int len)
  * The use of fread does not match the documentation. Paper over
  * here.
  */
-int Pixie16_fread(void *buffer, size_t size, size_t count, FILE *stream)
-{
+int Pixie16_fread(void* buffer, size_t size, size_t count, FILE* stream) {
     size_t r = fread(buffer, size, count, stream);
     if (r != count) {
         return -1;
@@ -153,7 +134,8 @@ int Pixie16_fread(void *buffer, size_t size, size_t count, FILE *stream)
  * @retval -3 - Failed to initialize system
  * @retval -4 - Failed to read the module's information
  */
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16InitSystem(unsigned short NumModules,
+                                                       unsigned short* PXISlotMap,
                                                        unsigned short OfflineMode) {
     int retval;  // return value
     unsigned short k;
@@ -175,7 +157,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16InitSystem(unsigned short NumModules
     }
 
     // Assign module variant if running in offline mode
-    for (k = 0; k < Number_Modules; k++) { Module_Information[k].Module_OfflineVariant = OfflineMode; }
+    for (k = 0; k < Number_Modules; k++) {
+        Module_Information[k].Module_OfflineVariant = OfflineMode;
+    }
 
     // The physical address (slot number) of each Pixie16 module is in PXISlotMap
     if (PXISlotMap == NULL)  // Check if PXISlotMap is valid
@@ -192,9 +176,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16InitSystem(unsigned short NumModules
 
         // Read and store module information
         for (k = 0; k < Number_Modules; k++) {
-            retval =
-                    Pixie16ReadModuleInfo(k, &Module_Information[k].Module_Rev, &Module_Information[k].Module_SerNum,
-                                          &Module_Information[k].Module_ADCBits, &Module_Information[k].Module_ADCMSPS);
+            retval = Pixie16ReadModuleInfo(
+                k, &Module_Information[k].Module_Rev, &Module_Information[k].Module_SerNum,
+                &Module_Information[k].Module_ADCBits, &Module_Information[k].Module_ADCMSPS);
             if (retval < 0) {
                 Pixie_Print_Error(PIXIE_FUNC,
                                   "failed to read module information in module %d, retval=%d", k,
@@ -257,8 +241,10 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ExitSystem(unsigned short ModNum) {
  * @retval: -2 - Failed to read the serial number from I2C serial EEPROM
  * @retval: -3 - Failed to read the ADC information from I2C serial EEPROM
  */
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned short* ModRev,
-                                                           unsigned int* ModSerNum, unsigned short* ModADCBits,
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadModuleInfo(unsigned short ModNum,
+                                                           unsigned short* ModRev,
+                                                           unsigned int* ModSerNum,
+                                                           unsigned short* ModADCBits,
                                                            unsigned short* ModADCMSPS) {
 
     int retval;  // return values
@@ -346,7 +332,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadModuleInfo(unsigned short ModNum
     }
     // CRC covers all data except the CRC field in the header
     int crc = CRC32_update(0, &sbuffer[4], 128 - 4);
-    int eeprom_crc = (int)sbuffer[0] | ((int)sbuffer[1] << 8) | ((int)sbuffer[2] << 16) | ((int)sbuffer[3] << 24);
+    int eeprom_crc = (int) sbuffer[0] | ((int) sbuffer[1] << 8) | ((int) sbuffer[2] << 16) |
+                     ((int) sbuffer[3] << 24);
     if (eeprom_crc == crc) {
         // Version 2 format
         int offset = 4 + 1 + 1;
@@ -354,38 +341,41 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadModuleInfo(unsigned short ModNum
         *ModRev = 0;
         while (offset < 128) {
             switch (sbuffer[offset]) {
-            case 11:
-                ++offset;
-                *ModSerNum =
-                    (int)sbuffer[offset + 0] | ((int)sbuffer[offset + 1] << 8) |
-                    ((int)sbuffer[2] << 16) | ((int)sbuffer[3] << 24);
-                offset += 4;
-                break;
-            case 12:
-                ++offset;
-                *ModRev = (int)sbuffer[offset + 0];
-                offset += 1;
-                break;
-            case 13:
-                ++offset;
-                offset += 1;
-                break;
-            case 255:
-                offset = 128;
-                break;
-            default:
-                Pixie_Print_Error(PIXIE_FUNC, "Invalid EEPROM tag for Module=%d; tag=%d offset=%d",
-                                  ModNum, sbuffer[offset], offset);
-                return (-2);
+                case 11:
+                    ++offset;
+                    *ModSerNum = (int) sbuffer[offset + 0] | ((int) sbuffer[offset + 1] << 8) |
+                                 ((int) sbuffer[2] << 16) | ((int) sbuffer[3] << 24);
+                    offset += 4;
+                    break;
+                case 12:
+                    ++offset;
+                    *ModRev = (int) sbuffer[offset + 0];
+                    offset += 1;
+                    break;
+                case 13:
+                    ++offset;
+                    offset += 1;
+                    break;
+                case 255:
+                    offset = 128;
+                    break;
+                default:
+                    Pixie_Print_Error(PIXIE_FUNC,
+                                      "Invalid EEPROM tag for Module=%d; tag=%d offset=%d", ModNum,
+                                      sbuffer[offset], offset);
+                    return (-2);
             }
         }
         if (*ModSerNum == 0) {
-            Pixie_Print_Error(PIXIE_FUNC, "Could not find serial numnber in EEPROM contents for Module=%d; retval=%d",
-                              ModNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "Could not find serial numnber in EEPROM contents for Module=%d; retval=%d", ModNum,
+                retval);
             return (-2);
         }
         if (*ModRev == 0) {
-            Pixie_Print_Error(PIXIE_FUNC, "Could not find revision in EEPROM contents for Module=%d; retval=%d",
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "Could not find revision in EEPROM contents for Module=%d; retval=%d",
                               ModNum, retval);
             return (-2);
         }
@@ -396,7 +386,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadModuleInfo(unsigned short ModNum
         *ModADCMSPS = 250;
 
         if (*ModRev > 15) {
-            Pixie_Print_Error(PIXIE_FUNC, "Module revision not supported by the API for Module=%d: rev=%d",
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "Module revision not supported by the API for Module=%d: rev=%d",
                               ModNum, *ModRev);
             return (-20);
         }
@@ -406,7 +397,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadModuleInfo(unsigned short ModNum
         // first two bytes of EEPROM, follwed by revision number, which is at
         // least 11 (i.e. Rev-B)
         if (sbuffer[2] >= 11) {
-            *ModSerNum = (unsigned short) (unsigned char) sbuffer[0] + 256 * (unsigned short) (unsigned char) sbuffer[1];
+            *ModSerNum = (unsigned short) (unsigned char) sbuffer[0] +
+                         256 * (unsigned short) (unsigned char) sbuffer[1];
             *ModRev = (unsigned short) (unsigned char) sbuffer[2];
 
             // For serial number below 275, no ADC information is stored in the I2C serial EEPROM.
@@ -425,9 +417,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadModuleInfo(unsigned short ModNum
             else if (*ModSerNum >= 1035) {
                 // ADC information is stored in the I2C serial EEPROM, starting at address 99
                 *ModADCBits = (unsigned short) (unsigned char) sbuffer[99];
-                *ModADCMSPS =
-                    (unsigned short) (unsigned char) sbuffer[99 + 1] + 256 *
-                    (unsigned short) (unsigned char) sbuffer[99 + 2];
+                *ModADCMSPS = (unsigned short) (unsigned char) sbuffer[99 + 1] +
+                              256 * (unsigned short) (unsigned char) sbuffer[99 + 2];
             }
         } else {
             *ModSerNum = (unsigned short) (unsigned char) sbuffer[0];
@@ -512,10 +503,10 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadModuleInfo(unsigned short ModNum
  * @retval -27 - Failed to boot DSP
  * @retval -28 - Failed to read DSPParFile
  */
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfigFile, const char* SPFPGAConfigFile,
-                                                       const char* TrigFPGAConfigFile, const char* DSPCodeFile,
-                                                       const char* DSPParFile, const char* DSPVarFile,
-                                                       unsigned short ModNum, unsigned short BootPattern) {
+PIXIE16APP_EXPORT int PIXIE16APP_API
+Pixie16BootModule(const char* ComFPGAConfigFile, const char* SPFPGAConfigFile,
+                  const char* TrigFPGAConfigFile, const char* DSPCodeFile, const char* DSPParFile,
+                  const char* DSPVarFile, unsigned short ModNum, unsigned short BootPattern) {
     int retval;  // return values
     FILE* configfil;
     unsigned int* configuration;
@@ -539,7 +530,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
 
     if ((APP16_TstBit(BOOTPATTERN_COMFPGA_BIT, BootPattern)) && (Offline == 0)) {
         // Open communication FPGA configuration file
-        if ((configfil = fopen(ComFPGAConfigFile, "rb")) != NULL)  // Make sure ComFPGAConfigFile is opened successfully
+        if ((configfil = fopen(ComFPGAConfigFile, "rb")) !=
+            NULL)  // Make sure ComFPGAConfigFile is opened successfully
         {
             // Download to one or all modules
             if (ModNum == Number_Modules)  // Download to all modules
@@ -561,9 +553,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
             // Check if file size is consistent with predefined length FPGA_ConfigSize
             retval = fseek(configfil, 0, SEEK_END);
             if (retval < 0) {
-                Pixie_Print_Error(PIXIE_FUNC,
-                                  "failed to seek config, error=%d",
-                                  errno);
+                Pixie_Print_Error(PIXIE_FUNC, "failed to seek config, error=%d", errno);
                 (void) fclose(configfil);
                 return (-3);
             }
@@ -571,35 +561,34 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
             TotalWords = (ftell(configfil) + 1) / 4;
 
             if (TotalWords != FPGA_ConfigSize) {
-                Pixie_Print_Error(PIXIE_FUNC,
-                                  "size of ComFPGAConfigFile is invalid. Check ComFPGAConfigFile name");
+                Pixie_Print_Error(
+                    PIXIE_FUNC,
+                    "size of ComFPGAConfigFile is invalid. Check ComFPGAConfigFile name");
                 (void) fclose(configfil);
                 return (-2);
             }
 
             // Allocate memory
-            if ((configuration = (unsigned int*) malloc(sizeof(unsigned int) * FPGA_ConfigSize)) != NULL) {
+            if ((configuration = (unsigned int*) malloc(sizeof(unsigned int) * FPGA_ConfigSize)) !=
+                NULL) {
                 // Point configfil to the beginning of file
                 retval = fseek(configfil, 0, SEEK_SET);
                 if (retval < 0) {
-                    Pixie_Print_Error(PIXIE_FUNC,
-                                      "failed to seek config, error=%d",
-                                      errno);
-                  free(configuration);
-                  (void) fclose(configfil);
-                  return (-3);
+                    Pixie_Print_Error(PIXIE_FUNC, "failed to seek config, error=%d", errno);
+                    free(configuration);
+                    (void) fclose(configfil);
+                    return (-3);
                 }
 
                 // Read communication FPGA configuration
-                retval = Pixie16_fread(configuration, sizeof(unsigned int), FPGA_ConfigSize, configfil);
+                retval =
+                    Pixie16_fread(configuration, sizeof(unsigned int), FPGA_ConfigSize, configfil);
                 if (retval < 0) {
-                    Pixie_Print_Error(PIXIE_FUNC,
-                                      "failed to read config, error=%d",
-                                      errno);
-                  free(configuration);
-                  (void) fclose(configfil);
+                    Pixie_Print_Error(PIXIE_FUNC, "failed to read config, error=%d", errno);
+                    free(configuration);
+                    (void) fclose(configfil);
 
-                  return (-3);
+                    return (-3);
                 }
 
                 if (ModNum == Number_Modules)  // Download to all modules
@@ -609,9 +598,10 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
 
                         retval = Pixie_Boot_CompFPGA(k, configuration, FPGA_ConfigSize);
                         if (retval < 0) {
-                            Pixie_Print_Error(PIXIE_FUNC,
-                                              "failed to boot Communication FPGA in module %d, retval=%d",
-                                              k, retval);
+                            Pixie_Print_Error(
+                                PIXIE_FUNC,
+                                "failed to boot Communication FPGA in module %d, retval=%d", k,
+                                retval);
                             free(configuration);
                             (void) fclose(configfil);
                             return (-25);
@@ -623,9 +613,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
 
                     retval = Pixie_Boot_CompFPGA(ModNum, configuration, FPGA_ConfigSize);
                     if (retval < 0) {
-                        Pixie_Print_Error(PIXIE_FUNC,
-                                          "failed to boot Communication FPGA in module %d, retval=%d",
-                                          ModNum, retval);
+                        Pixie_Print_Error(
+                            PIXIE_FUNC, "failed to boot Communication FPGA in module %d, retval=%d",
+                            ModNum, retval);
                         free(configuration);
                         (void) fclose(configfil);
                         return (-25);
@@ -653,7 +643,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
 
     if ((APP16_TstBit(BOOTPATTERN_SPFPGA_BIT, BootPattern)) && (Offline == 0)) {
         // Open signal processing FPGA configuration file
-        if ((configfil = fopen(SPFPGAConfigFile, "rb")) != NULL)  // Make sure SPFPGAConfigFile is opened successfully
+        if ((configfil = fopen(SPFPGAConfigFile, "rb")) !=
+            NULL)  // Make sure SPFPGAConfigFile is opened successfully
         {
             // Download to one or all modules
             if (ModNum == Number_Modules)  // Download to all modules
@@ -677,30 +668,28 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
             TotalWords = (ftell(configfil) + 1) / 4;
 
             if (TotalWords != FPGA_ConfigSize) {
-                Pixie_Print_Error(PIXIE_FUNC,
-                                  "size of SPFPGAConfigFile is invalid. Check SPFPGAConfigFile name");
+                Pixie_Print_Error(
+                    PIXIE_FUNC, "size of SPFPGAConfigFile is invalid. Check SPFPGAConfigFile name");
                 return (-10);
             }
 
             // Allocate memory
-            if ((configuration = (unsigned int*) malloc(sizeof(unsigned int) * FPGA_ConfigSize)) != NULL) {
+            if ((configuration = (unsigned int*) malloc(sizeof(unsigned int) * FPGA_ConfigSize)) !=
+                NULL) {
                 // Point configfil to the beginning of file
                 retval = fseek(configfil, 0, SEEK_SET);
                 if (retval < 0) {
-                    Pixie_Print_Error(PIXIE_FUNC,
-                                      "failed to seek config, error=%d",
-                                      errno);
+                    Pixie_Print_Error(PIXIE_FUNC, "failed to seek config, error=%d", errno);
                     free(configuration);
                     (void) fclose(configfil);
                     return (-11);
                 }
 
                 // Read trigger FPGA configuration
-                retval = Pixie16_fread(configuration, sizeof(unsigned int), FPGA_ConfigSize, configfil);
+                retval =
+                    Pixie16_fread(configuration, sizeof(unsigned int), FPGA_ConfigSize, configfil);
                 if (retval < 0) {
-                    Pixie_Print_Error(PIXIE_FUNC,
-                                      "failed to read config, error=%d",
-                                      errno);
+                    Pixie_Print_Error(PIXIE_FUNC, "failed to read config, error=%d", errno);
                     free(configuration);
                     (void) fclose(configfil);
                     return (-11);
@@ -714,9 +703,10 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
 
                         retval = Pixie_Boot_FIPPI(k, configuration, FPGA_ConfigSize);
                         if (retval < 0) {
-                            Pixie_Print_Error(PIXIE_FUNC,
-                                              "failed to boot signal processing FPGA in module %d, retval=%d",
-                                              k, retval);
+                            Pixie_Print_Error(
+                                PIXIE_FUNC,
+                                "failed to boot signal processing FPGA in module %d, retval=%d", k,
+                                retval);
                             free(configuration);
                             (void) fclose(configfil);
                             return (-26);
@@ -728,9 +718,10 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
 
                     retval = Pixie_Boot_FIPPI(ModNum, configuration, FPGA_ConfigSize);
                     if (retval < 0) {
-                        Pixie_Print_Error(PIXIE_FUNC,
-                                          "failed to boot signal processing FPGA in module %d, retval=%d",
-                                          ModNum, retval);
+                        Pixie_Print_Error(
+                            PIXIE_FUNC,
+                            "failed to boot signal processing FPGA in module %d, retval=%d", ModNum,
+                            retval);
                         free(configuration);
                         (void) fclose(configfil);
                         return (-26);
@@ -757,19 +748,20 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
     //**************************************************
     if ((APP16_TstBit(BOOTPATTERN_DSPCODE_BIT, BootPattern)) && (Offline == 0)) {
         // Open DSP executable code file
-        if ((configfil = fopen(DSPCodeFile, "rb")) != NULL)  // Make sure DSPCodeFile is opened successfully
+        if ((configfil = fopen(DSPCodeFile, "rb")) !=
+            NULL)  // Make sure DSPCodeFile is opened successfully
         {
             // Check the file size
             fseek(configfil, 0, SEEK_END);
             TotalWords = (ftell(configfil) + 1) / 2;
 
             // Allocate memory
-            if ((configuration = (unsigned int*) malloc(sizeof(unsigned int) * TotalWords)) != NULL) {
+            if ((configuration = (unsigned int*) malloc(sizeof(unsigned int) * TotalWords)) !=
+                NULL) {
                 // Point configfil to the beginning of file
                 retval = fseek(configfil, 0, SEEK_SET);
                 if (retval < 0) {
-                    Pixie_Print_Error(PIXIE_FUNC, "failed config seek, error=%d",
-                                      errno);
+                    Pixie_Print_Error(PIXIE_FUNC, "failed config seek, error=%d", errno);
 
                     // free allocated memory and close opened files
                     free(configuration);
@@ -780,7 +772,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
 
                 // Read DSP executable code
                 for (k = 0; k < TotalWords; k++) {
-                  retval = Pixie16_fread(&dspcode, sizeof(unsigned short), 1, configfil);
+                    retval = Pixie16_fread(&dspcode, sizeof(unsigned short), 1, configfil);
                     if (retval < 0) {
                         Pixie_Print_Error(PIXIE_FUNC, "failed config read for module %d, error=%d",
                                           k, errno);
@@ -804,8 +796,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
 
                         retval = Pixie_Boot_DSP(k, configuration, TotalWords);
                         if (retval < 0) {
-                            Pixie_Print_Error(PIXIE_FUNC, "failed to boot DSP in module %d, retval=%d",
-                                              k, retval);
+                            Pixie_Print_Error(PIXIE_FUNC,
+                                              "failed to boot DSP in module %d, retval=%d", k,
+                                              retval);
 
                             // free allocated memory and close opened files
                             free(configuration);
@@ -834,7 +827,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
                 // free allocated memory
                 free(configuration);
             } else {
-                Pixie_Print_Error(PIXIE_FUNC, "failed to allocate memory to store DSP executable code");
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "failed to allocate memory to store DSP executable code");
                 return (-15);
             }
 
@@ -852,20 +846,21 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
 
     if (APP16_TstBit(BOOTPATTERN_DSPPAR_BIT, BootPattern)) {
         // Open DSP parameters file
-        if ((configfil = fopen(DSPParFile, "rb")) != NULL)  // Make sure DSPParFile is opened successfully
+        if ((configfil = fopen(DSPParFile, "rb")) !=
+            NULL)  // Make sure DSPParFile is opened successfully
         {
             // Check if file size is consistent with predefined length (N_DSP_PAR * PRESET_MAX_MODULES)
             retval = fseek(configfil, 0, SEEK_END);
             if (retval < 0) {
-                Pixie_Print_Error(PIXIE_FUNC, "failed config seek, error=%d",
-                                  errno);
+                Pixie_Print_Error(PIXIE_FUNC, "failed config seek, error=%d", errno);
                 (void) fclose(configfil);
                 return (-28);
             }
 
             TotalWords = (ftell(configfil) + 1) / 4;
             if (TotalWords != (N_DSP_PAR * PRESET_MAX_MODULES)) {
-                Pixie_Print_Error(PIXIE_FUNC, "size of DSPParFile is invalid. Check DSPParFile name");
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "size of DSPParFile is invalid. Check DSPParFile name");
                 fclose(configfil);
                 return (-17);
             }
@@ -873,18 +868,18 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
             // Point configfil to the beginning of file
             retval = fseek(configfil, 0, SEEK_SET);
             if (retval < 0) {
-                Pixie_Print_Error(PIXIE_FUNC, "failed config seek, error=%d",
-                                  errno);
+                Pixie_Print_Error(PIXIE_FUNC, "failed config seek, error=%d", errno);
                 (void) fclose(configfil);
                 return (-28);
             }
 
             // Read DSP parameters
             for (k = 0; k < PRESET_MAX_MODULES; k++) {
-              retval = Pixie16_fread(Pixie_Devices[k].DSP_Parameter_Values, sizeof(unsigned int), N_DSP_PAR, configfil);
+                retval = Pixie16_fread(Pixie_Devices[k].DSP_Parameter_Values, sizeof(unsigned int),
+                                       N_DSP_PAR, configfil);
                 if (retval < 0) {
-                    Pixie_Print_Error(PIXIE_FUNC, "failed config read for module %d, error=%d",
-                                      k, errno);
+                    Pixie_Print_Error(PIXIE_FUNC, "failed config read for module %d, error=%d", k,
+                                      errno);
                     (void) fclose(configfil);
                     return (-28);
                 }
@@ -897,13 +892,13 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
             if (ModNum == Number_Modules)  // Download to all modules
             {
                 for (k = 0; k < Number_Modules; k++) {
-                    Pixie_DSP_Memory_IO(Pixie_Devices[k].DSP_Parameter_Values, DATA_MEMORY_ADDRESS, DSP_IO_BORDER,
-                                        MOD_WRITE, k);
+                    Pixie_DSP_Memory_IO(Pixie_Devices[k].DSP_Parameter_Values, DATA_MEMORY_ADDRESS,
+                                        DSP_IO_BORDER, MOD_WRITE, k);
                 }
             } else  // Download to just one module
             {
-                Pixie_DSP_Memory_IO(Pixie_Devices[ModNum].DSP_Parameter_Values, DATA_MEMORY_ADDRESS, DSP_IO_BORDER,
-                                    MOD_WRITE, ModNum);
+                Pixie_DSP_Memory_IO(Pixie_Devices[ModNum].DSP_Parameter_Values, DATA_MEMORY_ADDRESS,
+                                    DSP_IO_BORDER, MOD_WRITE, ModNum);
             }
 
             // close opened files
@@ -967,8 +962,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
             for (k = 0; k < Number_Modules; k++) {
                 retval = Pixie16ProgramFippi(k);
                 if (retval < 0) {
-                    Pixie_Print_Error(PIXIE_FUNC, "failed to program Fippi in module %d, retval=%d", k,
-                                      retval);
+                    Pixie_Print_Error(PIXIE_FUNC, "failed to program Fippi in module %d, retval=%d",
+                                      k, retval);
                     return (-21);
                 }
             }
@@ -976,8 +971,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
         {
             retval = Pixie16ProgramFippi(ModNum);
             if (retval < 0) {
-                Pixie_Print_Error(PIXIE_FUNC, "failed to program Fippi in module %d, retval=%d", ModNum,
-                                  retval);
+                Pixie_Print_Error(PIXIE_FUNC, "failed to program Fippi in module %d, retval=%d",
+                                  ModNum, retval);
                 return (-21);
             }
         }
@@ -1024,7 +1019,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
 
             // Pull-up
             if (APP32_TstBit(MODCSRB_CPLDPULLUP,
-                             Pixie_Devices[k].DSP_Parameter_Values[ModCSRB_Address[k] - DATA_MEMORY_ADDRESS])) {
+                             Pixie_Devices[k]
+                                 .DSP_Parameter_Values[ModCSRB_Address[k] - DATA_MEMORY_ADDRESS])) {
                 CPLD_CSR = APP32_SetBit(CPLDCSR_PULLUP, CPLD_CSR);
             } else {
                 CPLD_CSR = APP32_ClrBit(CPLDCSR_PULLUP, CPLD_CSR);
@@ -1032,7 +1028,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
 
             // Enable connections of PXI nearest neighbor lines (J2) onto the
             // backplane if the module is a Rev-B or C module
-            if ((Module_Information[k].Module_Rev == 0xB) || (Module_Information[k].Module_Rev == 0xC)) {
+            if ((Module_Information[k].Module_Rev == 0xB) ||
+                (Module_Information[k].Module_Rev == 0xC)) {
                 CPLD_CSR = APP32_SetBit(CPLDCSR_BPCONNECT, CPLD_CSR);
             }
 
@@ -1045,7 +1042,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
 
         // Pull-up
         if (APP32_TstBit(MODCSRB_CPLDPULLUP,
-                         Pixie_Devices[ModNum].DSP_Parameter_Values[ModCSRB_Address[ModNum] - DATA_MEMORY_ADDRESS])) {
+                         Pixie_Devices[ModNum].DSP_Parameter_Values[ModCSRB_Address[ModNum] -
+                                                                    DATA_MEMORY_ADDRESS])) {
             CPLD_CSR = APP32_SetBit(CPLDCSR_PULLUP, CPLD_CSR);
         } else {
             CPLD_CSR = APP32_ClrBit(CPLDCSR_PULLUP, CPLD_CSR);
@@ -1053,7 +1051,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
 
         // Enable connections of PXI nearest neighbor lines (J2) onto the
         // backplane if the module is a Rev-B or C module
-        if ((Module_Information[ModNum].Module_Rev == 0xB) || (Module_Information[ModNum].Module_Rev == 0xC)) {
+        if ((Module_Information[ModNum].Module_Rev == 0xB) ||
+            (Module_Information[ModNum].Module_Rev == 0xC)) {
             CPLD_CSR = APP32_SetBit(CPLDCSR_BPCONNECT, CPLD_CSR);
         }
 
@@ -1069,7 +1068,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
         for (k = 0; k < Number_Modules; k++) {
             Pixie_ReadCSR(k, &CSR);
             if (APP32_TstBit(MODCSRB_CHASSISMASTER,
-                             Pixie_Devices[k].DSP_Parameter_Values[ModCSRB_Address[k] - DATA_MEMORY_ADDRESS])) {
+                             Pixie_Devices[k]
+                                 .DSP_Parameter_Values[ModCSRB_Address[k] - DATA_MEMORY_ADDRESS])) {
                 CSR = APP32_SetBit(PULLUP_CTRL, CSR);
             } else {
                 CSR = APP32_ClrBit(PULLUP_CTRL, CSR);
@@ -1080,7 +1080,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
         // Set module by module
         Pixie_ReadCSR(ModNum, &CSR);
         if (APP32_TstBit(MODCSRB_CHASSISMASTER,
-                         Pixie_Devices[ModNum].DSP_Parameter_Values[ModCSRB_Address[ModNum] - DATA_MEMORY_ADDRESS])) {
+                         Pixie_Devices[ModNum].DSP_Parameter_Values[ModCSRB_Address[ModNum] -
+                                                                    DATA_MEMORY_ADDRESS])) {
             CSR = APP32_SetBit(PULLUP_CTRL, CSR);
         } else {
             CSR = APP32_ClrBit(PULLUP_CTRL, CSR);
@@ -1103,8 +1104,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
                                       retval);
                     return (-23);
                 } else if (retval == -2) {
-                    Pixie_Print_Error(PIXIE_FUNC, "RESET_ADC run timed out in module %d; retval=%d", k,
-                                      retval);
+                    Pixie_Print_Error(PIXIE_FUNC, "RESET_ADC run timed out in module %d; retval=%d",
+                                      k, retval);
                     return (-24);  // Time Out
                 }
             }
@@ -1114,12 +1115,13 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BootModule(const char* ComFPGAConfig
         if (Module_Information[ModNum].Module_Rev == 0xF) {
             retval = Pixie_Control_Task_Run(ModNum, RESET_ADC, 10000);
             if (retval == -1) {
-                Pixie_Print_Error(PIXIE_FUNC, "failed to start RESET_ADC run in module %d; retval=%d",
-                                  ModNum, retval);
+                Pixie_Print_Error(PIXIE_FUNC,
+                                  "failed to start RESET_ADC run in module %d; retval=%d", ModNum,
+                                  retval);
                 return (-23);
             } else if (retval == -2) {
-                Pixie_Print_Error(PIXIE_FUNC, "RESET_ADC run timed out in module %d; retval=%d", ModNum,
-                                  retval);
+                Pixie_Print_Error(PIXIE_FUNC, "RESET_ADC run timed out in module %d; retval=%d",
+                                  ModNum, retval);
                 return (-24);  // Time Out
             }
         }
@@ -1228,8 +1230,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AcquireADCTrace(unsigned short ModNu
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buffer,
                                                                 unsigned int Trace_Length,
                                                                 unsigned short ModNum,
-                                                                unsigned short ChanNum)
-{
+                                                                unsigned short ChanNum) {
     unsigned int count;
     unsigned int* ADCData;
     int retval;
@@ -1248,16 +1249,16 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanADCTrace(unsigned short* 
 
     // Check if Trace_Length is valid
     if (Trace_Length > MAX_ADC_TRACE_LEN) {
-        Pixie_Print_Error(PIXIE_FUNC, "invalid ADC trace length %u for channel %d",
-                          Trace_Length, ChanNum);
+        Pixie_Print_Error(PIXIE_FUNC, "invalid ADC trace length %u for channel %d", Trace_Length,
+                          ChanNum);
         return (-3);
     }
 
     // Allocate memory to store ADC trace data temporarily
     if ((ADCData = (unsigned int*) malloc(sizeof(unsigned int) * Trace_Length)) != NULL) {
         // Read out ADC trace for the requested channel
-        retval = Pixie_DSP_Memory_IO(ADCData, (IO_BUFFER_ADDRESS + MAX_ADC_TRACE_LEN / 2 * ChanNum), (Trace_Length / 2),
-                                     MOD_READ, ModNum);
+        retval = Pixie_DSP_Memory_IO(ADCData, (IO_BUFFER_ADDRESS + MAX_ADC_TRACE_LEN / 2 * ChanNum),
+                                     (Trace_Length / 2), MOD_READ, ModNum);
         if (retval < 0) {
             Pixie_Print_Error(PIXIE_FUNC, "reading ADC trace failed for module %d, retval=%d",
                               ModNum, retval);
@@ -1275,9 +1276,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanADCTrace(unsigned short* 
         // Release memory
         free(ADCData);
     } else {
-        Pixie_Print_Error(PIXIE_FUNC,
-                          "failed to allocate memory to store ADC trace data for module %d",
-                          ModNum);
+        Pixie_Print_Error(
+            PIXIE_FUNC, "failed to allocate memory to store ADC trace data for module %d", ModNum);
         return (-4);
     }
 
@@ -1319,8 +1319,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanADCTrace(unsigned short* 
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16IMbufferIO(unsigned int* Buffer, unsigned int NumWords,
                                                        unsigned int Address,
                                                        unsigned short Direction,
-                                                       unsigned short ModNum)
-{
+                                                       unsigned short ModNum) {
     int retval;  // return values
     unsigned int k;
 
@@ -1361,7 +1360,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16IMbufferIO(unsigned int* Buffer, uns
         // Only return parameter values stored in DSP_Parameter_Values for MOD_READ
         if ((Direction == MOD_READ)) {
             for (k = 0; k < NumWords; k++) {
-                Buffer[k] = Pixie_Devices[ModNum].DSP_Parameter_Values[Address + k - DATA_MEMORY_ADDRESS];
+                Buffer[k] =
+                    Pixie_Devices[ModNum].DSP_Parameter_Values[Address + k - DATA_MEMORY_ADDRESS];
             }
         }
     }
@@ -1369,7 +1369,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16IMbufferIO(unsigned int* Buffer, uns
     // I/O
     retval = Pixie_DSP_Memory_IO(Buffer, Address, NumWords, Direction, ModNum);
     if (retval < 0) {
-        Pixie_Print_Error(PIXIE_FUNC, "IMbuffer I/O failed for module %d, retval=%d", ModNum, retval);
+        Pixie_Print_Error(PIXIE_FUNC, "IMbuffer I/O failed for module %d, retval=%d", ModNum,
+                          retval);
         return (-6);
     }
 
@@ -1411,8 +1412,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16IMbufferIO(unsigned int* Buffer, uns
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16EMbufferIO(unsigned int* Buffer, unsigned int NumWords,
                                                        unsigned int Address,
                                                        unsigned short Direction,
-                                                       unsigned short ModNum)
-{
+                                                       unsigned short ModNum) {
     int retval;  // return values
 
     if (Buffer == NULL) {
@@ -1450,7 +1450,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16EMbufferIO(unsigned int* Buffer, uns
 
     retval = Pixie_Main_Memory_IO(Buffer, Address, NumWords, Direction, ModNum);
     if (retval < 0) {
-        Pixie_Print_Error(PIXIE_FUNC, "EMbuffer I/O failed for module %d, retval=%d", ModNum, retval);
+        Pixie_Print_Error(PIXIE_FUNC, "EMbuffer I/O failed for module %d, retval=%d", ModNum,
+                          retval);
         return (-6);
     }
 
@@ -1493,9 +1494,10 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16EMbufferIO(unsigned int* Buffer, uns
  * @retval -3 - Failed to start list-mode run
  * @retval -4 - Invalid run type
  */
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16StartListModeRun(unsigned short ModNum,  // module number
-                                                             unsigned short RunType,  // run type
-                                                             unsigned short mode)  // run mode
+PIXIE16APP_EXPORT int PIXIE16APP_API
+Pixie16StartListModeRun(unsigned short ModNum,  // module number
+                        unsigned short RunType,  // run type
+                        unsigned short mode)  // run mode
 {
     int retval;  // return values
 
@@ -1562,8 +1564,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16StartListModeRun(unsigned short ModN
  * @retval -2 - Invalid mode
  * @retval -3 - Failed to start histogram run
  */
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16StartHistogramRun(unsigned short ModNum,  // module number
-                                                              unsigned short mode)  // run mode
+PIXIE16APP_EXPORT int PIXIE16APP_API
+Pixie16StartHistogramRun(unsigned short ModNum,  // module number
+                         unsigned short mode)  // run mode
 {
     int retval;  // return values
 
@@ -1615,8 +1618,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16StartHistogramRun(unsigned short Mod
  * @retval  1 - Run is still in progress
  * @retval -1 - Invalid Pixie module number
  */
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16CheckRunStatus(unsigned short ModNum)
-{
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16CheckRunStatus(unsigned short ModNum) {
     int retval;  // return values
 
     // Check if ModNum is valid
@@ -1712,19 +1714,26 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16EndRun(unsigned short ModNum)  // Pi
  * @return 0 if the live time was 0. The number of triggers divided by the live time in seconds
  *     otherwise.
  */
-PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeInputCountRate(unsigned int* Statistics, unsigned short ModNum,
+PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeInputCountRate(unsigned int* Statistics,
+                                                                     unsigned short ModNum,
                                                                      unsigned short ChanNum) {
     double FastPeaks, LiveTime;
 
     // The fast peaks start after DSP_IO_BORDER
-    FastPeaks = (double) Statistics[FastPeaksA_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS - DSP_IO_BORDER] *
-                pow(2.0, 32.0);
-    FastPeaks += (double) Statistics[FastPeaksB_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS - DSP_IO_BORDER];
+    FastPeaks =
+        (double)
+            Statistics[FastPeaksA_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS - DSP_IO_BORDER] *
+        pow(2.0, 32.0);
+    FastPeaks += (double)
+        Statistics[FastPeaksB_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS - DSP_IO_BORDER];
 
     // The live times start after DSP_IO_BORDER
-    LiveTime = (double) Statistics[LiveTimeA_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS - DSP_IO_BORDER] *
-               pow(2.0, 32.0);
-    LiveTime += (double) Statistics[LiveTimeB_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS - DSP_IO_BORDER];
+    LiveTime =
+        (double)
+            Statistics[LiveTimeA_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS - DSP_IO_BORDER] *
+        pow(2.0, 32.0);
+    LiveTime += (double)
+        Statistics[LiveTimeB_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS - DSP_IO_BORDER];
 
     if (Module_Information[ModNum].Module_ADCMSPS == 100)
         LiveTime *= 1.0e-6 / (double) Module_Information[ModNum].Module_ADCMSPS;
@@ -1762,17 +1771,21 @@ PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeInputCountRate(unsigned in
  * @return 0 if the live time was 0. Otherwise, the number of channel events divided by the
  *     live time in seconds.
  */
-PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeOutputCountRate(unsigned int* Statistics, unsigned short ModNum,
+PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeOutputCountRate(unsigned int* Statistics,
+                                                                      unsigned short ModNum,
                                                                       unsigned short ChanNum) {
     double ChanEvents, RealTime;
 
     // The channel processed events start after DSP_IO_BORDER
-    ChanEvents = (double) Statistics[ChanEventsA_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS - DSP_IO_BORDER] *
+    ChanEvents = (double) Statistics[ChanEventsA_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS -
+                                     DSP_IO_BORDER] *
                  pow(2.0, 32.0);
-    ChanEvents += (double) Statistics[ChanEventsB_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS - DSP_IO_BORDER];
+    ChanEvents += (double)
+        Statistics[ChanEventsB_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS - DSP_IO_BORDER];
 
     // The real times start after DSP_IO_BORDER
-    RealTime = (double) Statistics[RunTimeA_Address[ModNum] - DATA_MEMORY_ADDRESS - DSP_IO_BORDER] * pow(2.0, 32.0);
+    RealTime = (double) Statistics[RunTimeA_Address[ModNum] - DATA_MEMORY_ADDRESS - DSP_IO_BORDER] *
+               pow(2.0, 32.0);
     RealTime += (double) Statistics[RunTimeB_Address[ModNum] - DATA_MEMORY_ADDRESS - DSP_IO_BORDER];
     RealTime *= 1.0e-6 / (double) SYSTEM_CLOCK_MHZ;
 
@@ -1802,14 +1815,18 @@ PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeOutputCountRate(unsigned i
  * @param[in] ChanNum: ChanNum is the channel number, which starts counting at 0.
  * @return The live time of the module in seconds.
  */
-PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeLiveTime(unsigned int* Statistics, unsigned short ModNum,
+PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeLiveTime(unsigned int* Statistics,
+                                                               unsigned short ModNum,
                                                                unsigned short ChanNum) {
     double LiveTime;
 
     // The live times start after DSP_IO_BORDER
-    LiveTime = (double) Statistics[LiveTimeA_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS - DSP_IO_BORDER] *
-               pow(2.0, 32.0);
-    LiveTime += (double) Statistics[LiveTimeB_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS - DSP_IO_BORDER];
+    LiveTime =
+        (double)
+            Statistics[LiveTimeA_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS - DSP_IO_BORDER] *
+        pow(2.0, 32.0);
+    LiveTime += (double)
+        Statistics[LiveTimeB_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS - DSP_IO_BORDER];
 
     if (Module_Information[ModNum].Module_ADCMSPS == 100)
         LiveTime *= 1.0e-6 / (double) Module_Information[ModNum].Module_ADCMSPS;
@@ -1842,13 +1859,16 @@ PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeLiveTime(unsigned int* Sta
  * @param[in] ModNum: ModNum is the module number, which starts counting at 0.
  * @return The number of events processed by the module.
  */
-PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeProcessedEvents(unsigned int* Statistics, unsigned short ModNum) {
+PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeProcessedEvents(unsigned int* Statistics,
+                                                                      unsigned short ModNum) {
     double ProcessedEvents;
 
     // The processed events start after DSP_IO_BORDER
     ProcessedEvents =
-            (double) Statistics[NumEventsA_Address[ModNum] - DATA_MEMORY_ADDRESS - DSP_IO_BORDER] * pow(2.0, 32.0);
-    ProcessedEvents += (double) Statistics[NumEventsB_Address[ModNum] - DATA_MEMORY_ADDRESS - DSP_IO_BORDER];
+        (double) Statistics[NumEventsA_Address[ModNum] - DATA_MEMORY_ADDRESS - DSP_IO_BORDER] *
+        pow(2.0, 32.0);
+    ProcessedEvents +=
+        (double) Statistics[NumEventsB_Address[ModNum] - DATA_MEMORY_ADDRESS - DSP_IO_BORDER];
 
     return (ProcessedEvents);
 }
@@ -1872,11 +1892,13 @@ PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeProcessedEvents(unsigned i
  * @param[in] ModNum: The module number, which starts counting at 0.
  * @return The number of seconds that the module spent on data acquisition.
  */
-PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeRealTime(unsigned int* Statistics, unsigned short ModNum) {
+PIXIE16APP_EXPORT double PIXIE16APP_API Pixie16ComputeRealTime(unsigned int* Statistics,
+                                                               unsigned short ModNum) {
     double RealTime;
 
     // The real time starts after DSP_IO_BORDER
-    RealTime = (double) Statistics[RunTimeA_Address[ModNum] - DATA_MEMORY_ADDRESS - DSP_IO_BORDER] * pow(2.0, 32.0);
+    RealTime = (double) Statistics[RunTimeA_Address[ModNum] - DATA_MEMORY_ADDRESS - DSP_IO_BORDER] *
+               pow(2.0, 32.0);
     RealTime += (double) Statistics[RunTimeB_Address[ModNum] - DATA_MEMORY_ADDRESS - DSP_IO_BORDER];
     RealTime *= 1.0e-6 / (double) SYSTEM_CLOCK_MHZ;
 
@@ -1979,7 +2001,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16complexFFT(double* data, unsigned in
  * @param[in] value: A 16-bit number that we'll test to see if the requested bit is true.
  * @return 0 if the bit was set, 1 otherwise.
  */
-PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_TstBit(unsigned short bit, unsigned short value) {
+PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_TstBit(unsigned short bit,
+                                                             unsigned short value) {
     if (bit > 15)
         return FALSE_;
     return (((value & (unsigned short) (pow(2.0, (double) bit))) >> bit));
@@ -1992,8 +2015,9 @@ PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_TstBit(unsigned short bit,
  * @param[in] value: A 16-bit number that will have its bit set to true.
  * @return The new integer after the bit has been toggled.
  */
-PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_SetBit(unsigned short bit, unsigned short value) {
-    if(bit > 15)
+PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_SetBit(unsigned short bit,
+                                                             unsigned short value) {
+    if (bit > 15)
         return value;
     return (value | (unsigned short) (pow(2.0, (double) bit)));
 }
@@ -2005,8 +2029,9 @@ PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_SetBit(unsigned short bit,
  * @param[in] value: A 16-bit number that will have its bit set to false.
  * @return The new integer after the bit has been toggled.
  */
-PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_ClrBit(unsigned short bit, unsigned short value) {
-    if(bit > 15)
+PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_ClrBit(unsigned short bit,
+                                                             unsigned short value) {
+    if (bit > 15)
         return value;
     value = APP16_SetBit(bit, value);
     return (value ^ (unsigned short) (pow(2.0, (double) bit)));
@@ -2020,7 +2045,7 @@ PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_ClrBit(unsigned short bit,
  * @return The new integer after the bit has been toggled.
  */
 PIXIE16APP_EXPORT unsigned int PIXIE16APP_API APP32_SetBit(unsigned short bit, unsigned int value) {
-    if(bit > 31)
+    if (bit > 31)
         return value;
     return (value | (unsigned int) (pow(2.0, (double) bit)));
 }
@@ -2047,7 +2072,7 @@ PIXIE16APP_EXPORT unsigned int PIXIE16APP_API APP32_ClrBit(unsigned short bit, u
  * @return 0 if the bit was set, 1 otherwise.
  */
 PIXIE16APP_EXPORT unsigned int PIXIE16APP_API APP32_TstBit(unsigned short bit, unsigned int value) {
-    if(bit > 31)
+    if (bit > 31)
         return FALSE_;
     return (((value & (unsigned int) (pow(2.0, (double) bit))) >> bit));
 }
@@ -2207,8 +2232,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AdjustOffsets(unsigned short ModNum)
  * @retval -2 - Failed to start the GET_BASELINES run
  * @retval -3 - GET_BASELINES run timed out
  */
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AcquireBaselines(unsigned short ModNum)
-{
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AcquireBaselines(unsigned short ModNum) {
     int retval;
     unsigned int Max_Poll, sfr;
 
@@ -2219,7 +2243,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AcquireBaselines(unsigned short ModN
     }
 
     // Get the SlowFilteRange value
-    sfr = Pixie_Devices[ModNum].DSP_Parameter_Values[SlowFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS];
+    sfr = Pixie_Devices[ModNum]
+              .DSP_Parameter_Values[SlowFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS];
 
     // Compute Max_Poll, in ms
     // Factor 2 added to avoid time out
@@ -2281,8 +2306,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanBaselines(double* Baselin
                                                                  double* TimeStamps,
                                                                  unsigned short NumBases,
                                                                  unsigned short ModNum,
-                                                                 unsigned short ChanNum)
-{
+                                                                 unsigned short ChanNum) {
     unsigned int k;
     unsigned int* buffer;
     double startbasetime;
@@ -2296,8 +2320,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanBaselines(double* Baselin
 
     // Check if NumBases is within limit
     if (NumBases > MAX_NUM_BASELINES) {
-        Pixie_Print_Error(PIXIE_FUNC,
-                          "requested number of baselines (%d) exceeded the limit (%d)",
+        Pixie_Print_Error(PIXIE_FUNC, "requested number of baselines (%d) exceeded the limit (%d)",
                           NumBases, MAX_NUM_BASELINES);
         return (-2);
     }
@@ -2333,8 +2356,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanBaselines(double* Baselin
         // Release memory
         free(buffer);
     } else {
-        Pixie_Print_Error(PIXIE_FUNC,
-                          "failed to allocate memory to store baselines for module %d",
+        Pixie_Print_Error(PIXIE_FUNC, "failed to allocate memory to store baselines for module %d",
                           ModNum);
         return (-3);
     }
@@ -2425,7 +2447,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16RampOffsetDACs(double* DCValues,
     }
 
     // Convert DC values
-    for (k = 0; k < NumDCVals; k++) { *DCValues++ = IEEEFloating2Decimal(buffer[k]); }
+    for (k = 0; k < NumDCVals; k++) {
+        *DCValues++ = IEEEFloating2Decimal(buffer[k]);
+    }
 
     return (0);  // Normal finish
 }
@@ -2451,8 +2475,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16RampOffsetDACs(double* DCValues,
  */
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ControlTaskRun(unsigned short ModNum,
                                                            unsigned short ControlTask,
-                                                           unsigned int Max_Poll)
-{
+                                                           unsigned int Max_Poll) {
     int retval;
 
     // Check if ModNum is valid
@@ -2493,8 +2516,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ControlTaskRun(unsigned short ModNum
  */
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BLcutFinder(unsigned short ModNum,
                                                         unsigned short ChanNum,
-                                                        unsigned int* BLcut)
-{
+                                                        unsigned int* BLcut) {
     unsigned int value, KeepLog, KeepBLCut, localBlCut, LC, k;
     double baseline[MAX_NUM_BASELINES], ts[MAX_NUM_BASELINES];
     double sdev, sdevCount, BLsigma, val;
@@ -2513,18 +2535,25 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BLcutFinder(unsigned short ModNum,
 	*****************************************************/
 
     // Store the DSP parameter Log2BWeight value
-    KeepLog = Pixie_Devices[ModNum].DSP_Parameter_Values[Log2Bweight_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
+    KeepLog =
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[Log2Bweight_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
     // Temporarily set Log2BWeight to 0
     value = 0;
-    Pixie_Devices[ModNum].DSP_Parameter_Values[Log2Bweight_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = value;
-    Pixie16IMbufferIO(&value, 1, (unsigned int) (Log2Bweight_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+    Pixie_Devices[ModNum]
+        .DSP_Parameter_Values[Log2Bweight_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = value;
+    Pixie16IMbufferIO(&value, 1, (unsigned int) (Log2Bweight_Address[ModNum] + ChanNum), MOD_WRITE,
+                      ModNum);
 
     // Store the DSP parameter BLCut value
-    KeepBLCut = Pixie_Devices[ModNum].DSP_Parameter_Values[BLcut_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
+    KeepBLCut = Pixie_Devices[ModNum]
+                    .DSP_Parameter_Values[BLcut_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
     // Temporarily set BLcut to 0
     value = 0;
-    Pixie_Devices[ModNum].DSP_Parameter_Values[BLcut_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = value;
-    Pixie16IMbufferIO(&value, 1, (unsigned int) (BLcut_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+    Pixie_Devices[ModNum]
+        .DSP_Parameter_Values[BLcut_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = value;
+    Pixie16IMbufferIO(&value, 1, (unsigned int) (BLcut_Address[ModNum] + ChanNum), MOD_WRITE,
+                      ModNum);
 
     /*****************************************************
 	*
@@ -2544,14 +2573,18 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BLcutFinder(unsigned short ModNum,
             Pixie_Print_Error(PIXIE_FUNC, "failed to collect baselines in module %d", ModNum);
 
             // Restore DSP parameter Log2BWeight
-            Pixie_Devices[ModNum].DSP_Parameter_Values[Log2Bweight_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                    KeepLog;
-            Pixie16IMbufferIO(&KeepLog, 1, (unsigned int) (Log2Bweight_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+            Pixie_Devices[ModNum]
+                .DSP_Parameter_Values[Log2Bweight_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+                KeepLog;
+            Pixie16IMbufferIO(&KeepLog, 1, (unsigned int) (Log2Bweight_Address[ModNum] + ChanNum),
+                              MOD_WRITE, ModNum);
 
             // Restore DSP parameter BLCut
-            Pixie_Devices[ModNum].DSP_Parameter_Values[BLcut_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                    KeepBLCut;
-            Pixie16IMbufferIO(&KeepBLCut, 1, (unsigned int) (BLcut_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+            Pixie_Devices[ModNum]
+                .DSP_Parameter_Values[BLcut_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+                KeepBLCut;
+            Pixie16IMbufferIO(&KeepBLCut, 1, (unsigned int) (BLcut_Address[ModNum] + ChanNum),
+                              MOD_WRITE, ModNum);
 
             return (-2);  // failed to collect baselines
         }
@@ -2559,8 +2592,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BLcutFinder(unsigned short ModNum,
         // Read the baselines from the data memory
         retval = Pixie16ReadSglChanBaselines(baseline, ts, MAX_NUM_BASELINES, ModNum, ChanNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC, "failed to read baselines in module %d channel %d", ModNum,
-                              ChanNum);
+            Pixie_Print_Error(PIXIE_FUNC, "failed to read baselines in module %d channel %d",
+                              ModNum, ChanNum);
 
             return (-3);  // failed to read baselines from the data memory
         }
@@ -2599,8 +2632,10 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BLcutFinder(unsigned short ModNum,
     }
 
     // Write the new BLCut value to the DSP
-    Pixie_Devices[ModNum].DSP_Parameter_Values[BLcut_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = localBlCut;
-    Pixie16IMbufferIO(&localBlCut, 1, (unsigned int) (BLcut_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+    Pixie_Devices[ModNum]
+        .DSP_Parameter_Values[BLcut_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = localBlCut;
+    Pixie16IMbufferIO(&localBlCut, 1, (unsigned int) (BLcut_Address[ModNum] + ChanNum), MOD_WRITE,
+                      ModNum);
 
 
     /*****************************************************
@@ -2621,14 +2656,18 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BLcutFinder(unsigned short ModNum,
             Pixie_Print_Error(PIXIE_FUNC, "failed to collect baselines in module %d", ModNum);
 
             // Restore DSP parameter Log2BWeight
-            Pixie_Devices[ModNum].DSP_Parameter_Values[Log2Bweight_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                    KeepLog;
-            Pixie16IMbufferIO(&KeepLog, 1, (unsigned int) (Log2Bweight_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+            Pixie_Devices[ModNum]
+                .DSP_Parameter_Values[Log2Bweight_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+                KeepLog;
+            Pixie16IMbufferIO(&KeepLog, 1, (unsigned int) (Log2Bweight_Address[ModNum] + ChanNum),
+                              MOD_WRITE, ModNum);
 
             // Restore DSP parameter BLCut
-            Pixie_Devices[ModNum].DSP_Parameter_Values[BLcut_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                    KeepBLCut;
-            Pixie16IMbufferIO(&KeepBLCut, 1, (unsigned int) (BLcut_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+            Pixie_Devices[ModNum]
+                .DSP_Parameter_Values[BLcut_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+                KeepBLCut;
+            Pixie16IMbufferIO(&KeepBLCut, 1, (unsigned int) (BLcut_Address[ModNum] + ChanNum),
+                              MOD_WRITE, ModNum);
 
             return (-2);  // failed to collect baselines
         }
@@ -2636,8 +2675,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BLcutFinder(unsigned short ModNum,
         // Read the baselines from the data memory
         retval = Pixie16ReadSglChanBaselines(baseline, ts, MAX_NUM_BASELINES, ModNum, ChanNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC, "failed to read baselines in module %d channel %d", ModNum,
-                              ChanNum);
+            Pixie_Print_Error(PIXIE_FUNC, "failed to read baselines in module %d channel %d",
+                              ModNum, ChanNum);
 
             return (-3);  // failed to read baselines from the data memory
         }
@@ -2676,8 +2715,10 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BLcutFinder(unsigned short ModNum,
     }
 
     // Write the new BLCut value to the DSP
-    Pixie_Devices[ModNum].DSP_Parameter_Values[BLcut_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = localBlCut;
-    Pixie16IMbufferIO(&localBlCut, 1, (unsigned int) (BLcut_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+    Pixie_Devices[ModNum]
+        .DSP_Parameter_Values[BLcut_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = localBlCut;
+    Pixie16IMbufferIO(&localBlCut, 1, (unsigned int) (BLcut_Address[ModNum] + ChanNum), MOD_WRITE,
+                      ModNum);
 
     /*****************************************************
 	*
@@ -2686,8 +2727,11 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BLcutFinder(unsigned short ModNum,
 	*****************************************************/
 
     // Restore DSP parameter Log2BWeight
-    Pixie_Devices[ModNum].DSP_Parameter_Values[Log2Bweight_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = KeepLog;
-    Pixie16IMbufferIO(&KeepLog, 1, (unsigned int) (Log2Bweight_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+    Pixie_Devices[ModNum]
+        .DSP_Parameter_Values[Log2Bweight_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+        KeepLog;
+    Pixie16IMbufferIO(&KeepLog, 1, (unsigned int) (Log2Bweight_Address[ModNum] + ChanNum),
+                      MOD_WRITE, ModNum);
 
     // Update BLcut return value
     *BLcut = localBlCut;
@@ -2715,8 +2759,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16BLcutFinder(unsigned short ModNum,
  * @retval -2 - failed to start TAU_FINDER run
  * @retval -3 - TAU_FINDER run timed out
  */
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16TauFinder(unsigned short ModNum, double* Tau)
-{
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16TauFinder(unsigned short ModNum, double* Tau) {
 
     unsigned int Max_Poll;
     unsigned int autotau[NUMBER_OF_CHANNELS];
@@ -2744,7 +2787,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16TauFinder(unsigned short ModNum, dou
 
     // Return found tau values to the calling function
     for (k = 0; k < NUMBER_OF_CHANNELS; k++) {
-        if (autotau[k] == 0xFFFFFFFF)  // 0xFFFFFFFF indicates unsuccessful tau finding for this channel
+        if (autotau[k] ==
+            0xFFFFFFFF)  // 0xFFFFFFFF indicates unsuccessful tau finding for this channel
         {
             *Tau++ = -1.0;
         } else {
@@ -2794,10 +2838,10 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16TauFinder(unsigned short ModNum, dou
  */
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParName,
                                                            unsigned int ModParData,
-                                                           unsigned short ModNum)
-{
+                                                           unsigned short ModNum) {
     unsigned short k;
-    unsigned int paflength, triggerdelay, tracedelay, fastfilterrange, LastFastFilterRange, baselinecut;
+    unsigned int paflength, triggerdelay, tracedelay, fastfilterrange, LastFastFilterRange,
+        baselinecut;
     unsigned int CSR, slowfilterrange;
     int retval;
     unsigned int CPLD_CSR;
@@ -2812,7 +2856,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParNam
 
     if (strcmp(ModParName, "MODULE_CSRA") == 0) {
         // Update the DSP parameter ModCSRA
-        Pixie_Devices[ModNum].DSP_Parameter_Values[ModCSRA_Address[ModNum] - DATA_MEMORY_ADDRESS] = ModParData;
+        Pixie_Devices[ModNum].DSP_Parameter_Values[ModCSRA_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            ModParData;
 
         // Download to the selected Pixie module
         Pixie16IMbufferIO(&ModParData, 1, ModCSRA_Address[ModNum], MOD_WRITE, ModNum);
@@ -2820,13 +2865,14 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParNam
         // Program FiPPI to apply ModCSRA settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC, "ProgramFippi failed after downloading ModCSRA, retval=%d",
-                              retval);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed after downloading ModCSRA, retval=%d", retval);
             return (-3);
         }
     } else if (strcmp(ModParName, "MODULE_CSRB") == 0) {
         // Update the DSP parameter ModCSRB
-        Pixie_Devices[ModNum].DSP_Parameter_Values[ModCSRB_Address[ModNum] - DATA_MEMORY_ADDRESS] = ModParData;
+        Pixie_Devices[ModNum].DSP_Parameter_Values[ModCSRB_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            ModParData;
 
         // Download to the selected Pixie module
         Pixie16IMbufferIO(&ModParData, 1, ModCSRB_Address[ModNum], MOD_WRITE, ModNum);
@@ -2834,8 +2880,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParNam
         // Program FiPPI to apply ModCSRB settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC, "ProgramFippi failed after downloading ModCSRB, retval=%d",
-                              retval);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed after downloading ModCSRB, retval=%d", retval);
             return (-3);
         }
 
@@ -2854,7 +2900,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParNam
 
         // Enable connections of PXI nearest neighbor lines (J2) onto the
         // backplane if the module is a Rev-B or C module
-        if ((Module_Information[ModNum].Module_Rev == 0xB) || (Module_Information[ModNum].Module_Rev == 0xC)) {
+        if ((Module_Information[ModNum].Module_Rev == 0xB) ||
+            (Module_Information[ModNum].Module_Rev == 0xC)) {
             CPLD_CSR = APP32_SetBit(CPLDCSR_BPCONNECT, CPLD_CSR);
         }
 
@@ -2874,19 +2921,22 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParNam
 
     } else if (strcmp(ModParName, "MODULE_FORMAT") == 0) {
         // Update the DSP parameter ModFormat
-        Pixie_Devices[ModNum].DSP_Parameter_Values[ModFormat_Address[ModNum] - DATA_MEMORY_ADDRESS] = ModParData;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[ModFormat_Address[ModNum] - DATA_MEMORY_ADDRESS] = ModParData;
 
         // Download to the selected Pixie module
         Pixie16IMbufferIO(&ModParData, 1, ModFormat_Address[ModNum], MOD_WRITE, ModNum);
     } else if (strcmp(ModParName, "MAX_EVENTS") == 0) {
         // Update the DSP parameter MaxEvents
-        Pixie_Devices[ModNum].DSP_Parameter_Values[MaxEvents_Address[ModNum] - DATA_MEMORY_ADDRESS] = ModParData;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[MaxEvents_Address[ModNum] - DATA_MEMORY_ADDRESS] = ModParData;
 
         // Download to the selected Pixie module
         Pixie16IMbufferIO(&ModParData, 1, MaxEvents_Address[ModNum], MOD_WRITE, ModNum);
     } else if (strcmp(ModParName, "SYNCH_WAIT") == 0) {
         // Update the DSP parameter SynchWait
-        Pixie_Devices[ModNum].DSP_Parameter_Values[SynchWait_Address[ModNum] - DATA_MEMORY_ADDRESS] = ModParData;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[SynchWait_Address[ModNum] - DATA_MEMORY_ADDRESS] = ModParData;
 
         // Download to the selected Pixie module
         Pixie16IMbufferIO(&ModParData, 1, SynchWait_Address[ModNum], MOD_WRITE, ModNum);
@@ -2895,7 +2945,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParNam
         Pixie_Broadcast("SYNCH_WAIT", ModNum);
     } else if (strcmp(ModParName, "IN_SYNCH") == 0) {
         // Update the DSP parameter InSynch
-        Pixie_Devices[ModNum].DSP_Parameter_Values[InSynch_Address[ModNum] - DATA_MEMORY_ADDRESS] = ModParData;
+        Pixie_Devices[ModNum].DSP_Parameter_Values[InSynch_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            ModParData;
 
         // Download to the selected Pixie module
         Pixie16IMbufferIO(&ModParData, 1, InSynch_Address[ModNum], MOD_WRITE, ModNum);
@@ -2922,8 +2973,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParNam
         }
 
         // Update the DSP parameter SlowFilterRange
-        Pixie_Devices[ModNum].DSP_Parameter_Values[SlowFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS] =
-                slowfilterrange;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[SlowFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            slowfilterrange;
 
         // Download to the selected Pixie module
         Pixie16IMbufferIO(&slowfilterrange, 1, SlowFilterRange_Address[ModNum], MOD_WRITE, ModNum);
@@ -2932,13 +2984,18 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParNam
         //	We need to recompute FIFO settings
         /*******************************************/
         fastfilterrange =
-                Pixie_Devices[ModNum].DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS];
+            Pixie_Devices[ModNum]
+                .DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS];
         for (k = 0; k < NUMBER_OF_CHANNELS; k++) {
             // Get the current TraceDelay
-            paflength = Pixie_Devices[ModNum].DSP_Parameter_Values[PAFlength_Address[ModNum] + k - DATA_MEMORY_ADDRESS];
+            paflength =
+                Pixie_Devices[ModNum]
+                    .DSP_Parameter_Values[PAFlength_Address[ModNum] + k - DATA_MEMORY_ADDRESS];
             triggerdelay =
-                    Pixie_Devices[ModNum].DSP_Parameter_Values[TriggerDelay_Address[ModNum] + k - DATA_MEMORY_ADDRESS];
-            tracedelay = paflength - (unsigned int) ((double) triggerdelay / pow(2.0, (double) fastfilterrange));
+                Pixie_Devices[ModNum]
+                    .DSP_Parameter_Values[TriggerDelay_Address[ModNum] + k - DATA_MEMORY_ADDRESS];
+            tracedelay = paflength - (unsigned int) ((double) triggerdelay /
+                                                     pow(2.0, (double) fastfilterrange));
 
             // Update FIFO settings (TriggerDelay and PAFLength)
             Pixie_ComputeFIFO(tracedelay, ModNum, k);
@@ -2959,16 +3016,18 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParNam
         for (k = 0; k < NUMBER_OF_CHANNELS; k++) {
             retval = Pixie16BLcutFinder(ModNum, k, &baselinecut);
             if (retval < 0) {
-                Pixie_Print_Error(PIXIE_FUNC,
-                                  "BLcutFinder failed in module %d after downloading SlowFilterRange, retval=%d",
-                                  k, retval);
+                Pixie_Print_Error(
+                    PIXIE_FUNC,
+                    "BLcutFinder failed in module %d after downloading SlowFilterRange, retval=%d",
+                    k, retval);
                 return (-4);
             }
         }
     } else if (strcmp(ModParName, "FAST_FILTER_RANGE") == 0) {
         // Get the last fast filter range
         LastFastFilterRange =
-                Pixie_Devices[ModNum].DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS];
+            Pixie_Devices[ModNum]
+                .DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS];
 
         // Check fast filter range limit
         fastfilterrange = ModParData;
@@ -2991,8 +3050,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParNam
 #endif
 
         // Update the new DSP parameter FastFilterRange
-        Pixie_Devices[ModNum].DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS] =
-                fastfilterrange;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            fastfilterrange;
 
         // Download to the selected Pixie module
         Pixie16IMbufferIO(&fastfilterrange, 1, FastFilterRange_Address[ModNum], MOD_WRITE, ModNum);
@@ -3002,10 +3062,14 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParNam
         /*******************************************/
         for (k = 0; k < NUMBER_OF_CHANNELS; k++) {
             // Get the current TraceDelay
-            paflength = Pixie_Devices[ModNum].DSP_Parameter_Values[PAFlength_Address[ModNum] + k - DATA_MEMORY_ADDRESS];
+            paflength =
+                Pixie_Devices[ModNum]
+                    .DSP_Parameter_Values[PAFlength_Address[ModNum] + k - DATA_MEMORY_ADDRESS];
             triggerdelay =
-                    Pixie_Devices[ModNum].DSP_Parameter_Values[TriggerDelay_Address[ModNum] + k - DATA_MEMORY_ADDRESS];
-            tracedelay = paflength - (unsigned int) ((double) triggerdelay / pow(2.0, (double) LastFastFilterRange));
+                Pixie_Devices[ModNum]
+                    .DSP_Parameter_Values[TriggerDelay_Address[ModNum] + k - DATA_MEMORY_ADDRESS];
+            tracedelay = paflength - (unsigned int) ((double) triggerdelay /
+                                                     pow(2.0, (double) LastFastFilterRange));
 
             // Update FIFO settings (TriggerDelay and PAFLength)
             Pixie_ComputeFIFO(tracedelay, ModNum, k);
@@ -3021,8 +3085,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParNam
         }
     } else if (strcmp(ModParName, "FastTrigBackplaneEna") == 0) {
         // Update the new DSP parameter FastTrigBackplaneEna
-        Pixie_Devices[ModNum].DSP_Parameter_Values[FastTrigBackplaneEna_Address[ModNum] - DATA_MEMORY_ADDRESS] =
-                ModParData;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[FastTrigBackplaneEna_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            ModParData;
 
         // Download to the selected Pixie module
         Pixie16IMbufferIO(&ModParData, 1, FastTrigBackplaneEna_Address[ModNum], MOD_WRITE, ModNum);
@@ -3030,14 +3095,15 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParNam
         // Program FiPPI to apply settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed after downloading FastTrigBackplaneEna, retval=%d",
-                              retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC, "ProgramFippi failed after downloading FastTrigBackplaneEna, retval=%d",
+                retval);
             return (-3);
         }
     } else if (strcmp(ModParName, "CrateID") == 0) {
         // Update the new DSP parameter CrateID
-        Pixie_Devices[ModNum].DSP_Parameter_Values[CrateID_Address[ModNum] - DATA_MEMORY_ADDRESS] = ModParData;
+        Pixie_Devices[ModNum].DSP_Parameter_Values[CrateID_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            ModParData;
 
         // Download to the selected Pixie module
         Pixie16IMbufferIO(&ModParData, 1, CrateID_Address[ModNum], MOD_WRITE, ModNum);
@@ -3045,13 +3111,14 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParNam
         // Program FiPPI to apply settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC, "ProgramFippi failed after downloading CrateID, retval=%d",
-                              retval);
+            Pixie_Print_Error(PIXIE_FUNC,
+                              "ProgramFippi failed after downloading CrateID, retval=%d", retval);
             return (-3);
         }
     } else if (strcmp(ModParName, "SlotID") == 0) {
         // Update the new DSP parameter SlotID
-        Pixie_Devices[ModNum].DSP_Parameter_Values[SlotID_Address[ModNum] - DATA_MEMORY_ADDRESS] = ModParData;
+        Pixie_Devices[ModNum].DSP_Parameter_Values[SlotID_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            ModParData;
 
         // Download to the selected Pixie module
         Pixie16IMbufferIO(&ModParData, 1, SlotID_Address[ModNum], MOD_WRITE, ModNum);
@@ -3065,7 +3132,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParNam
         }
     } else if (strcmp(ModParName, "ModID") == 0) {
         // Update the new DSP parameter ModID
-        Pixie_Devices[ModNum].DSP_Parameter_Values[ModID_Address[ModNum] - DATA_MEMORY_ADDRESS] = ModParData;
+        Pixie_Devices[ModNum].DSP_Parameter_Values[ModID_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            ModParData;
 
         // Download to the selected Pixie module
         Pixie16IMbufferIO(&ModParData, 1, ModID_Address[ModNum], MOD_WRITE, ModNum);
@@ -3079,7 +3147,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParNam
         }
     } else if (strcmp(ModParName, "TrigConfig0") == 0) {
         // Update the new DSP parameter TrigConfig0
-        Pixie_Devices[ModNum].DSP_Parameter_Values[TrigConfig_Address[ModNum] - DATA_MEMORY_ADDRESS] = ModParData;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[TrigConfig_Address[ModNum] - DATA_MEMORY_ADDRESS] = ModParData;
 
         // Download to the selected Pixie module
         Pixie16IMbufferIO(&ModParData, 1, TrigConfig_Address[ModNum], MOD_WRITE, ModNum);
@@ -3087,14 +3156,15 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParNam
         // Program FiPPI to apply settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed after downloading TrigConfig0, retval=%d",
-                              retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC, "ProgramFippi failed after downloading TrigConfig0, retval=%d", retval);
             return (-3);
         }
     } else if (strcmp(ModParName, "TrigConfig1") == 0) {
         // Update the new DSP parameter TrigConfig1
-        Pixie_Devices[ModNum].DSP_Parameter_Values[TrigConfig_Address[ModNum] + 1 - DATA_MEMORY_ADDRESS] = ModParData;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[TrigConfig_Address[ModNum] + 1 - DATA_MEMORY_ADDRESS] =
+            ModParData;
 
         // Download to the selected Pixie module
         Pixie16IMbufferIO(&ModParData, 1, TrigConfig_Address[ModNum] + 1, MOD_WRITE, ModNum);
@@ -3102,14 +3172,15 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParNam
         // Program FiPPI to apply settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed after downloading TrigConfig1, retval=%d",
-                              retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC, "ProgramFippi failed after downloading TrigConfig1, retval=%d", retval);
             return (-3);
         }
     } else if (strcmp(ModParName, "TrigConfig2") == 0) {
         // Update the new DSP parameter TrigConfig2
-        Pixie_Devices[ModNum].DSP_Parameter_Values[TrigConfig_Address[ModNum] + 2 - DATA_MEMORY_ADDRESS] = ModParData;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[TrigConfig_Address[ModNum] + 2 - DATA_MEMORY_ADDRESS] =
+            ModParData;
 
         // Download to the selected Pixie module
         Pixie16IMbufferIO(&ModParData, 1, TrigConfig_Address[ModNum] + 2, MOD_WRITE, ModNum);
@@ -3117,14 +3188,15 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParNam
         // Program FiPPI to apply settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed after downloading TrigConfig2, retval=%d",
-                              retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC, "ProgramFippi failed after downloading TrigConfig2, retval=%d", retval);
             return (-3);
         }
     } else if (strcmp(ModParName, "TrigConfig3") == 0) {
         // Update the new DSP parameter TrigConfig3
-        Pixie_Devices[ModNum].DSP_Parameter_Values[TrigConfig_Address[ModNum] + 3 - DATA_MEMORY_ADDRESS] = ModParData;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[TrigConfig_Address[ModNum] + 3 - DATA_MEMORY_ADDRESS] =
+            ModParData;
 
         // Download to the selected Pixie module
         Pixie16IMbufferIO(&ModParData, 1, TrigConfig_Address[ModNum] + 3, MOD_WRITE, ModNum);
@@ -3132,14 +3204,14 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParNam
         // Program FiPPI to apply settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed after downloading TrigConfig3, retval=%d",
-                              retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC, "ProgramFippi failed after downloading TrigConfig3, retval=%d", retval);
             return (-3);
         }
     } else if (strcmp(ModParName, "HOST_RT_PRESET") == 0) {
         // Update the new DSP parameter HRTP
-        Pixie_Devices[ModNum].DSP_Parameter_Values[HRTP_Address[ModNum] - DATA_MEMORY_ADDRESS] = ModParData;
+        Pixie_Devices[ModNum].DSP_Parameter_Values[HRTP_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            ModParData;
 
         // Download to the selected Pixie module
         Pixie16IMbufferIO(&ModParData, 1, HRTP_Address[ModNum], MOD_WRITE, ModNum);
@@ -3189,9 +3261,10 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglModPar(const char* ModParNam
  * @retval -1 - Invalid Pixie module number
  * @retval -2 - Invalid module parameter name
  */
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglModPar(const char* ModParName,  // the name of the module parameter
-                                                          unsigned int* ModParData,  // the module parameter value to be read from the module
-                                                          unsigned short ModNum)  // module number
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglModPar(
+    const char* ModParName,  // the name of the module parameter
+    unsigned int* ModParData,  // the module parameter value to be read from the module
+    unsigned short ModNum)  // module number
 {
 
     // Check if ModNum is valid
@@ -3207,110 +3280,133 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglModPar(const char* ModParName
         Pixie16IMbufferIO(ModParData, 1, ModNum_Address[ModNum], MOD_READ, ModNum);
 
         // Update module parameter ModNum
-        Pixie_Devices[ModNum].DSP_Parameter_Values[ModNum_Address[ModNum] - DATA_MEMORY_ADDRESS] = *ModParData;
+        Pixie_Devices[ModNum].DSP_Parameter_Values[ModNum_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            *ModParData;
     } else if (strcmp(ModParName, "MODULE_CSRA") == 0) {
         // Read from the selected Pixie module
         Pixie16IMbufferIO(ModParData, 1, ModCSRA_Address[ModNum], MOD_READ, ModNum);
 
         // Update module parameter ModCSRA
-        Pixie_Devices[ModNum].DSP_Parameter_Values[ModCSRA_Address[ModNum] - DATA_MEMORY_ADDRESS] = *ModParData;
+        Pixie_Devices[ModNum].DSP_Parameter_Values[ModCSRA_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            *ModParData;
     } else if (strcmp(ModParName, "MODULE_CSRB") == 0) {
         // Read from the selected Pixie module
         Pixie16IMbufferIO(ModParData, 1, ModCSRB_Address[ModNum], MOD_READ, ModNum);
 
         // Update module parameter ModCSRB
-        Pixie_Devices[ModNum].DSP_Parameter_Values[ModCSRB_Address[ModNum] - DATA_MEMORY_ADDRESS] = *ModParData;
+        Pixie_Devices[ModNum].DSP_Parameter_Values[ModCSRB_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            *ModParData;
     } else if (strcmp(ModParName, "MODULE_FORMAT") == 0) {
         // Read from the selected Pixie module
         Pixie16IMbufferIO(ModParData, 1, ModFormat_Address[ModNum], MOD_READ, ModNum);
 
         // Update module parameter ModFormat
-        Pixie_Devices[ModNum].DSP_Parameter_Values[ModFormat_Address[ModNum] - DATA_MEMORY_ADDRESS] = *ModParData;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[ModFormat_Address[ModNum] - DATA_MEMORY_ADDRESS] = *ModParData;
     } else if (strcmp(ModParName, "MAX_EVENTS") == 0) {
         // Read from the selected Pixie module
         Pixie16IMbufferIO(ModParData, 1, MaxEvents_Address[ModNum], MOD_READ, ModNum);
 
         // Update module parameter MaxEvents
-        Pixie_Devices[ModNum].DSP_Parameter_Values[MaxEvents_Address[ModNum] - DATA_MEMORY_ADDRESS] = *ModParData;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[MaxEvents_Address[ModNum] - DATA_MEMORY_ADDRESS] = *ModParData;
     } else if (strcmp(ModParName, "SYNCH_WAIT") == 0) {
         // Read from the selected Pixie module
         Pixie16IMbufferIO(ModParData, 1, SynchWait_Address[ModNum], MOD_READ, ModNum);
 
         // Update module parameter SynchWait
-        Pixie_Devices[ModNum].DSP_Parameter_Values[SynchWait_Address[ModNum] - DATA_MEMORY_ADDRESS] = *ModParData;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[SynchWait_Address[ModNum] - DATA_MEMORY_ADDRESS] = *ModParData;
     } else if (strcmp(ModParName, "IN_SYNCH") == 0) {
         // Read from the selected Pixie module
         Pixie16IMbufferIO(ModParData, 1, InSynch_Address[ModNum], MOD_READ, ModNum);
 
         // Update module parameter InSynch
-        Pixie_Devices[ModNum].DSP_Parameter_Values[InSynch_Address[ModNum] - DATA_MEMORY_ADDRESS] = *ModParData;
+        Pixie_Devices[ModNum].DSP_Parameter_Values[InSynch_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            *ModParData;
     } else if (strcmp(ModParName, "SLOW_FILTER_RANGE") == 0) {
         // Read from the selected Pixie module
         Pixie16IMbufferIO(ModParData, 1, SlowFilterRange_Address[ModNum], MOD_READ, ModNum);
 
         // Update module parameter SlowFilterRange
-        Pixie_Devices[ModNum].DSP_Parameter_Values[SlowFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS] = *ModParData;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[SlowFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            *ModParData;
     } else if (strcmp(ModParName, "FAST_FILTER_RANGE") == 0) {
         // Read from the selected Pixie module
         Pixie16IMbufferIO(ModParData, 1, FastFilterRange_Address[ModNum], MOD_READ, ModNum);
 
         // Update module parameter FastFilterRange
-        Pixie_Devices[ModNum].DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS] = *ModParData;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            *ModParData;
     } else if (strcmp(ModParName, "FastTrigBackplaneEna") == 0) {
         // Read from the selected Pixie module
         Pixie16IMbufferIO(ModParData, 1, FastTrigBackplaneEna_Address[ModNum], MOD_READ, ModNum);
 
         // Update module parameter FastTrigBackplaneEna
-        Pixie_Devices[ModNum].DSP_Parameter_Values[FastTrigBackplaneEna_Address[ModNum] - DATA_MEMORY_ADDRESS] =
-                *ModParData;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[FastTrigBackplaneEna_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            *ModParData;
     } else if (strcmp(ModParName, "CrateID") == 0) {
         // Read from the selected Pixie module
         Pixie16IMbufferIO(ModParData, 1, CrateID_Address[ModNum], MOD_READ, ModNum);
 
         // Update module parameter CrateID
-        Pixie_Devices[ModNum].DSP_Parameter_Values[CrateID_Address[ModNum] - DATA_MEMORY_ADDRESS] = *ModParData;
+        Pixie_Devices[ModNum].DSP_Parameter_Values[CrateID_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            *ModParData;
     } else if (strcmp(ModParName, "SlotID") == 0) {
         // Read from the selected Pixie module
         Pixie16IMbufferIO(ModParData, 1, SlotID_Address[ModNum], MOD_READ, ModNum);
 
         // Update module parameter SlotID
-        Pixie_Devices[ModNum].DSP_Parameter_Values[SlotID_Address[ModNum] - DATA_MEMORY_ADDRESS] = *ModParData;
+        Pixie_Devices[ModNum].DSP_Parameter_Values[SlotID_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            *ModParData;
     } else if (strcmp(ModParName, "ModID") == 0) {
         // Read from the selected Pixie module
         Pixie16IMbufferIO(ModParData, 1, ModID_Address[ModNum], MOD_READ, ModNum);
 
         // Update module parameter ModID
-        Pixie_Devices[ModNum].DSP_Parameter_Values[ModID_Address[ModNum] - DATA_MEMORY_ADDRESS] = *ModParData;
+        Pixie_Devices[ModNum].DSP_Parameter_Values[ModID_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            *ModParData;
     } else if (strcmp(ModParName, "TrigConfig0") == 0) {
         // Read from the selected Pixie module
         Pixie16IMbufferIO(ModParData, 1, TrigConfig_Address[ModNum], MOD_READ, ModNum);
 
         // Update module parameter TrigConfig0
-        Pixie_Devices[ModNum].DSP_Parameter_Values[TrigConfig_Address[ModNum] - DATA_MEMORY_ADDRESS] = *ModParData;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[TrigConfig_Address[ModNum] - DATA_MEMORY_ADDRESS] = *ModParData;
     } else if (strcmp(ModParName, "TrigConfig1") == 0) {
         // Read from the selected Pixie module
         Pixie16IMbufferIO(ModParData, 1, TrigConfig_Address[ModNum] + 1, MOD_READ, ModNum);
 
         // Update module parameter TrigConfig1
-        Pixie_Devices[ModNum].DSP_Parameter_Values[TrigConfig_Address[ModNum] + 1 - DATA_MEMORY_ADDRESS] = *ModParData;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[TrigConfig_Address[ModNum] + 1 - DATA_MEMORY_ADDRESS] =
+            *ModParData;
     } else if (strcmp(ModParName, "TrigConfig2") == 0) {
         // Read from the selected Pixie module
         Pixie16IMbufferIO(ModParData, 1, TrigConfig_Address[ModNum] + 2, MOD_READ, ModNum);
 
         // Update module parameter TrigConfig2
-        Pixie_Devices[ModNum].DSP_Parameter_Values[TrigConfig_Address[ModNum] + 2 - DATA_MEMORY_ADDRESS] = *ModParData;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[TrigConfig_Address[ModNum] + 2 - DATA_MEMORY_ADDRESS] =
+            *ModParData;
     } else if (strcmp(ModParName, "TrigConfig3") == 0) {
         // Read from the selected Pixie module
         Pixie16IMbufferIO(ModParData, 1, TrigConfig_Address[ModNum] + 3, MOD_READ, ModNum);
 
         // Update module parameter TrigConfig3
-        Pixie_Devices[ModNum].DSP_Parameter_Values[TrigConfig_Address[ModNum] + 3 - DATA_MEMORY_ADDRESS] = *ModParData;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[TrigConfig_Address[ModNum] + 3 - DATA_MEMORY_ADDRESS] =
+            *ModParData;
     } else if (strcmp(ModParName, "HOST_RT_PRESET") == 0) {
         // Read from the selected Pixie module
         Pixie16IMbufferIO(ModParData, 1, HRTP_Address[ModNum], MOD_READ, ModNum);
 
         // Update module parameter HostRTPreset
-        Pixie_Devices[ModNum].DSP_Parameter_Values[HRTP_Address[ModNum] - DATA_MEMORY_ADDRESS] = *ModParData;
+        Pixie_Devices[ModNum].DSP_Parameter_Values[HRTP_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            *ModParData;
     } else {
         Pixie_Print_Error(PIXIE_FUNC, "invalid module parameter name %s", ModParName);
         return (-2);
@@ -3380,8 +3476,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglModPar(const char* ModParName
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParName,
                                                             double ChanParData,
                                                             unsigned short ModNum,
-                                                            unsigned short ChanNum)
-{
+                                                            unsigned short ChanNum) {
     unsigned int FL, FG, SL, SG, FastFilterRange, SlowFilterRange, FifoLength;
     unsigned int fastthresh, peaksample, peaksep, preamptau, tracelength, tracedelay;
     unsigned int paflength, triggerdelay, offsetdac;
@@ -3389,8 +3484,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
     unsigned int baselinepercent, energylow, log2ebin, newchancsra, oldchancsra, chancsrb;
     unsigned int baselinecut, fasttrigbacklen, baselineaverage;
     int retval;
-    unsigned int cfddelay, cfdscale, qdclen, exttrigstretch, vetostretch, externdelaylen, multiplicitymaskl,
-            multiplicitymaskh, ftrigoutdelay;
+    unsigned int cfddelay, cfdscale, qdclen, exttrigstretch, vetostretch, externdelaylen,
+        multiplicitymaskl, multiplicitymaskh, ftrigoutdelay;
     unsigned int chantrigstretch, cfdthresh, integrator;
 
     // Check if ModNum is valid
@@ -3410,19 +3505,24 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
 
         // Calculate fast length
         FastFilterRange =
-                Pixie_Devices[ModNum].DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS];
+            Pixie_Devices[ModNum]
+                .DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS];
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
-            FL = (unsigned int) ROUND(ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS /
+            FL = (unsigned int) ROUND(ChanParData *
+                                      (double) Module_Information[ModNum].Module_ADCMSPS /
                                       pow(2.0, (double) FastFilterRange));
         else if (Module_Information[ModNum].Module_ADCMSPS == 250)
-            FL = (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 2) /
+            FL = (unsigned int) ROUND(ChanParData *
+                                      (double) (Module_Information[ModNum].Module_ADCMSPS / 2) /
                                       pow(2.0, (double) FastFilterRange));
         else if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            FL = (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5) /
+            FL = (unsigned int) ROUND(ChanParData *
+                                      (double) (Module_Information[ModNum].Module_ADCMSPS / 5) /
                                       pow(2.0, (double) FastFilterRange));
 
         // Check fast length limit
-        FG = Pixie_Devices[ModNum].DSP_Parameter_Values[FastGap_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
+        FG = Pixie_Devices[ModNum]
+                 .DSP_Parameter_Values[FastGap_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
         if ((FL + FG) > FASTFILTER_MAX_LEN) {
             FL = FASTFILTER_MAX_LEN - FG;
         }
@@ -3434,64 +3534,78 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Update DSP parameter FastLength
-        Pixie_Devices[ModNum].DSP_Parameter_Values[FastLength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = FL;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[FastLength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = FL;
 
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&FL, 1, (unsigned int) (FastLength_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&FL, 1, (unsigned int) (FastLength_Address[ModNum] + ChanNum), MOD_WRITE,
+                          ModNum);
 
         // Update DSP parameter FastGap
-        Pixie_Devices[ModNum].DSP_Parameter_Values[FastGap_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = FG;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[FastGap_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = FG;
 
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&FG, 1, (unsigned int) (FastGap_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&FG, 1, (unsigned int) (FastGap_Address[ModNum] + ChanNum), MOD_WRITE,
+                          ModNum);
 
         // Program FiPPI to apply FastLength settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading TriggerRiseTime, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading TriggerRiseTime, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "TRIGGER_FLATTOP") == 0) {
 
         // Calculate fast gap
         FastFilterRange =
-                Pixie_Devices[ModNum].DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS];
+            Pixie_Devices[ModNum]
+                .DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS];
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
-            FG = (unsigned int) ROUND(ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS /
+            FG = (unsigned int) ROUND(ChanParData *
+                                      (double) Module_Information[ModNum].Module_ADCMSPS /
                                       pow(2.0, (double) FastFilterRange));
         else if (Module_Information[ModNum].Module_ADCMSPS == 250)
-            FG = (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 2) /
+            FG = (unsigned int) ROUND(ChanParData *
+                                      (double) (Module_Information[ModNum].Module_ADCMSPS / 2) /
                                       pow(2.0, (double) FastFilterRange));
         else if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            FG = (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5) /
+            FG = (unsigned int) ROUND(ChanParData *
+                                      (double) (Module_Information[ModNum].Module_ADCMSPS / 5) /
                                       pow(2.0, (double) FastFilterRange));
 
         // Check fast gap limit
-        FL = Pixie_Devices[ModNum].DSP_Parameter_Values[FastLength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
+        FL = Pixie_Devices[ModNum]
+                 .DSP_Parameter_Values[FastLength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
         if ((FL + FG) > FASTFILTER_MAX_LEN) {
             FG = FASTFILTER_MAX_LEN - FL;
         }
 
         // Update DSP parameter FastGap
-        Pixie_Devices[ModNum].DSP_Parameter_Values[FastGap_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = FG;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[FastGap_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = FG;
 
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&FG, 1, (unsigned int) (FastGap_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&FG, 1, (unsigned int) (FastGap_Address[ModNum] + ChanNum), MOD_WRITE,
+                          ModNum);
 
         // Program FiPPI to apply FastGap settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading TriggerFlatTop, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading TriggerFlatTop, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "TRIGGER_THRESHOLD") == 0) {
 
         // Calculate FastThresh
-        FL = Pixie_Devices[ModNum].DSP_Parameter_Values[FastLength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
+        FL = Pixie_Devices[ModNum]
+                 .DSP_Parameter_Values[FastLength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
             fastthresh = (unsigned int) (ChanParData * (double) FL);
         else if (Module_Information[ModNum].Module_ADCMSPS == 250)
@@ -3501,54 +3615,67 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
 
         // Check FastThresh limit
         if (fastthresh >= FAST_THRESHOLD_MAX) {
-            fastthresh =
-                    (unsigned int) (((double) FAST_THRESHOLD_MAX / (double) FL - 0.5) * (double) FL);  // in ADC counts
+            fastthresh = (unsigned int) (((double) FAST_THRESHOLD_MAX / (double) FL - 0.5) *
+                                         (double) FL);  // in ADC counts
         }
 
         // Update DSP parameter FastThresh
-        Pixie_Devices[ModNum].DSP_Parameter_Values[FastThresh_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                fastthresh;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[FastThresh_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            fastthresh;
 
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&fastthresh, 1, (unsigned int) (FastThresh_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&fastthresh, 1, (unsigned int) (FastThresh_Address[ModNum] + ChanNum),
+                          MOD_WRITE, ModNum);
 
         // Program FiPPI to apply FastThresh settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading TriggerThreshold, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading TriggerThreshold, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
-    } else if ((strcmp(ChanParName, "ENERGY_RISETIME") == 0) || (strcmp(ChanParName, "ENERGY_FLATTOP") == 0)) {
+    } else if ((strcmp(ChanParName, "ENERGY_RISETIME") == 0) ||
+               (strcmp(ChanParName, "ENERGY_FLATTOP") == 0)) {
         // Get the current TraceDelay
         FastFilterRange =
-                Pixie_Devices[ModNum].DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS];
+            Pixie_Devices[ModNum]
+                .DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS];
         paflength =
-                Pixie_Devices[ModNum].DSP_Parameter_Values[PAFlength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
-        triggerdelay = Pixie_Devices[ModNum]
-                               .DSP_Parameter_Values[TriggerDelay_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
-        tracedelay = paflength - (unsigned int) ((double) triggerdelay / pow(2.0, (double) FastFilterRange));
+            Pixie_Devices[ModNum]
+                .DSP_Parameter_Values[PAFlength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
+        triggerdelay =
+            Pixie_Devices[ModNum]
+                .DSP_Parameter_Values[TriggerDelay_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
+        tracedelay =
+            paflength - (unsigned int) ((double) triggerdelay / pow(2.0, (double) FastFilterRange));
 
         // Get the current SlowFilterRange
         SlowFilterRange =
-                Pixie_Devices[ModNum].DSP_Parameter_Values[SlowFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS];
+            Pixie_Devices[ModNum]
+                .DSP_Parameter_Values[SlowFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS];
 
         if (strcmp(ChanParName, "ENERGY_RISETIME") == 0) {
 
             // Calculate slow length
             if (Module_Information[ModNum].Module_ADCMSPS == 100)
-                SL = (unsigned int) ROUND(ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS /
+                SL = (unsigned int) ROUND(ChanParData *
+                                          (double) Module_Information[ModNum].Module_ADCMSPS /
                                           pow(2.0, (double) SlowFilterRange));
             else if (Module_Information[ModNum].Module_ADCMSPS == 250)
-                SL = (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 2) /
+                SL = (unsigned int) ROUND(ChanParData *
+                                          (double) (Module_Information[ModNum].Module_ADCMSPS / 2) /
                                           pow(2.0, (double) SlowFilterRange));
             else if (Module_Information[ModNum].Module_ADCMSPS == 500)
-                SL = (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5) /
+                SL = (unsigned int) ROUND(ChanParData *
+                                          (double) (Module_Information[ModNum].Module_ADCMSPS / 5) /
                                           pow(2.0, (double) SlowFilterRange));
 
             // Check slow length limit
-            SG = Pixie_Devices[ModNum].DSP_Parameter_Values[SlowGap_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
+            SG = Pixie_Devices[ModNum]
+                     .DSP_Parameter_Values[SlowGap_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
             if ((SL + SG) > SLOWFILTER_MAX_LEN) {
                 SL = SLOWFILTER_MAX_LEN - SG;
             }
@@ -3562,17 +3689,21 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
 
             // Calculate slow gap
             if (Module_Information[ModNum].Module_ADCMSPS == 100)
-                SG = (unsigned int) ROUND(ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS /
+                SG = (unsigned int) ROUND(ChanParData *
+                                          (double) Module_Information[ModNum].Module_ADCMSPS /
                                           pow(2.0, (double) SlowFilterRange));
             else if (Module_Information[ModNum].Module_ADCMSPS == 250)
-                SG = (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 2) /
+                SG = (unsigned int) ROUND(ChanParData *
+                                          (double) (Module_Information[ModNum].Module_ADCMSPS / 2) /
                                           pow(2.0, (double) SlowFilterRange));
             else if (Module_Information[ModNum].Module_ADCMSPS == 500)
-                SG = (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5) /
+                SG = (unsigned int) ROUND(ChanParData *
+                                          (double) (Module_Information[ModNum].Module_ADCMSPS / 5) /
                                           pow(2.0, (double) SlowFilterRange));
 
             // Check slow gap limit
-            SL = Pixie_Devices[ModNum].DSP_Parameter_Values[SlowLength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
+            SL = Pixie_Devices[ModNum].DSP_Parameter_Values[SlowLength_Address[ModNum] + ChanNum -
+                                                            DATA_MEMORY_ADDRESS];
             if ((SL + SG) > SLOWFILTER_MAX_LEN) {
                 SG = SLOWFILTER_MAX_LEN - SL;
             }
@@ -3585,14 +3716,18 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Update DSP parameter SlowLength
-        Pixie_Devices[ModNum].DSP_Parameter_Values[SlowLength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = SL;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[SlowLength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = SL;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&SL, 1, (unsigned int) (SlowLength_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&SL, 1, (unsigned int) (SlowLength_Address[ModNum] + ChanNum), MOD_WRITE,
+                          ModNum);
 
         // Update DSP parameter SlowGap
-        Pixie_Devices[ModNum].DSP_Parameter_Values[SlowGap_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = SG;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[SlowGap_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = SG;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&SG, 1, (unsigned int) (SlowGap_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&SG, 1, (unsigned int) (SlowGap_Address[ModNum] + ChanNum), MOD_WRITE,
+                          ModNum);
 
         // Re-calculate PeakSample and PeakSep
         switch (SlowFilterRange) {
@@ -3622,15 +3757,20 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         peaksep = SL + SG;
 
         // Update DSP parameter PeakSample
-        Pixie_Devices[ModNum].DSP_Parameter_Values[PeakSample_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                peaksample;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[PeakSample_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            peaksample;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&peaksample, 1, (unsigned int) (PeakSample_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&peaksample, 1, (unsigned int) (PeakSample_Address[ModNum] + ChanNum),
+                          MOD_WRITE, ModNum);
 
         // Update DSP parameter PeakSep
-        Pixie_Devices[ModNum].DSP_Parameter_Values[PeakSep_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = peaksep;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[PeakSep_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            peaksep;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&peaksep, 1, (unsigned int) (PeakSep_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&peaksep, 1, (unsigned int) (PeakSep_Address[ModNum] + ChanNum),
+                          MOD_WRITE, ModNum);
 
         // Update FIFO settings (TriggerDelay and PAFLength)
         Pixie_ComputeFIFO(tracedelay, ModNum, ChanNum);
@@ -3638,18 +3778,20 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         // Program FiPPI to apply settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading EnergyRiseTime or EnergyFlatTop, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading EnergyRiseTime or EnergyFlatTop, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
 
         // Update baseline cut value
         retval = Pixie16BLcutFinder(ModNum, ChanNum, &baselinecut);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "BLcutFinder failed in module %d channel %d after downloading EnergyRiseTime or EnergyFlatTop, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "BLcutFinder failed in module %d channel %d after downloading EnergyRiseTime or EnergyFlatTop, retval=%d",
+                ModNum, ChanNum, retval);
             return (-5);
         }
     } else if (strcmp(ChanParName, "TAU") == 0) {
@@ -3658,37 +3800,43 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         preamptau = Decimal2IEEEFloating(ChanParData);
 
         // Update DSP parameter PreampTau
-        Pixie_Devices[ModNum].DSP_Parameter_Values[PreampTau_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                preamptau;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[PreampTau_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            preamptau;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&preamptau, 1, (unsigned int) (PreampTau_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&preamptau, 1, (unsigned int) (PreampTau_Address[ModNum] + ChanNum),
+                          MOD_WRITE, ModNum);
 
         // Use Program_FiPPI to recompute the coefficients
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading Tau, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading Tau, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
 
         // Update baseline cut value
         retval = Pixie16BLcutFinder(ModNum, ChanNum, &baselinecut);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "BLcutFinder failed in module %d channel %d after downloading Tau, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "BLcutFinder failed in module %d channel %d after downloading Tau, retval=%d",
+                ModNum, ChanNum, retval);
             return (-5);
         }
     } else if (strcmp(ChanParName, "TRACE_LENGTH") == 0) {
 
         // Get the current FastFilterRange
         FastFilterRange =
-                Pixie_Devices[ModNum].DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS];
+            Pixie_Devices[ModNum]
+                .DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS];
 
         // Compute the requested TraceLength
-        tracelength = (unsigned int) (ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS /
-                                      pow(2.0, (double) FastFilterRange));
+        tracelength =
+            (unsigned int) (ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS /
+                            pow(2.0, (double) FastFilterRange));
 
         if (Module_Information[ModNum].Module_ADCMSPS == 500) {
             // Ensure TraceLength is multiple of 10 to fit 10-to-5*2 packing in the FPGA
@@ -3708,40 +3856,48 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Check if TraceLength exceeds FifoLength
-        FifoLength = Pixie_Devices[ModNum].DSP_Parameter_Values[FIFOLength_Address[ModNum] - DATA_MEMORY_ADDRESS];
+        FifoLength = Pixie_Devices[ModNum]
+                         .DSP_Parameter_Values[FIFOLength_Address[ModNum] - DATA_MEMORY_ADDRESS];
         if (tracelength > FifoLength) {
             tracelength = FifoLength;
         }
 
         // Update DSP parameter TraceLength
-        Pixie_Devices[ModNum].DSP_Parameter_Values[TraceLength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                tracelength;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[TraceLength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            tracelength;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&tracelength, 1, (unsigned int) (TraceLength_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&tracelength, 1, (unsigned int) (TraceLength_Address[ModNum] + ChanNum),
+                          MOD_WRITE, ModNum);
 
         // Program FiPPI to apply TraceLength settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading TraceLength, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading TraceLength, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "TRACE_DELAY") == 0) {
 
         // Get the current FastFilterRange
         FastFilterRange =
-                Pixie_Devices[ModNum].DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS];
+            Pixie_Devices[ModNum]
+                .DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS];
 
         // Check if TraceDelay exceeds TraceLength
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
-            tracedelay = (unsigned int) (ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS /
-                                         pow(2.0, (double) FastFilterRange));
+            tracedelay =
+                (unsigned int) (ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS /
+                                pow(2.0, (double) FastFilterRange));
         else if (Module_Information[ModNum].Module_ADCMSPS == 250)
-            tracedelay = (unsigned int) (ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 2) /
+            tracedelay = (unsigned int) (ChanParData *
+                                         (double) (Module_Information[ModNum].Module_ADCMSPS / 2) /
                                          pow(2.0, (double) FastFilterRange));
         else if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            tracedelay = (unsigned int) (ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5) /
+            tracedelay = (unsigned int) (ChanParData *
+                                         (double) (Module_Information[ModNum].Module_ADCMSPS / 5) /
                                          pow(2.0, (double) FastFilterRange));
         else {
             Pixie_Print_Error(PIXIE_FUNC,
@@ -3751,7 +3907,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         tracelength =
-                Pixie_Devices[ModNum].DSP_Parameter_Values[TraceLength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
+            Pixie_Devices[ModNum]
+                .DSP_Parameter_Values[TraceLength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
         if (tracedelay > tracelength) {
             tracedelay = (unsigned int) ((double) tracelength / 2.0);
         }
@@ -3767,9 +3924,10 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         // Program FiPPI to apply settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading TraceDelay, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading TraceDelay, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "VOFFSET") == 0) {
@@ -3782,25 +3940,31 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Update DSP parameter OffsetDAC
-        Pixie_Devices[ModNum].DSP_Parameter_Values[OffsetDAC_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                offsetdac;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[OffsetDAC_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            offsetdac;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&offsetdac, 1, (unsigned int) (OffsetDAC_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&offsetdac, 1, (unsigned int) (OffsetDAC_Address[ModNum] + ChanNum),
+                          MOD_WRITE, ModNum);
 
         // Set DACs to apply the new DAC settings
         retval = Pixie16SetDACs(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "SetDACs failed in module %d channel %d after downloading OffsetDACs, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "SetDACs failed in module %d channel %d after downloading OffsetDACs, retval=%d",
+                ModNum, ChanNum, retval);
             return (-6);
         }
     } else if (strcmp(ChanParName, "XDT") == 0) {
         // Get the last Xwait
-        lastxwait = Pixie_Devices[ModNum].DSP_Parameter_Values[Xwait_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
+        lastxwait =
+            Pixie_Devices[ModNum]
+                .DSP_Parameter_Values[Xwait_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
         // Compute the new Xwait
         xwait = (unsigned int) ROUND(ChanParData * (double) DSP_CLOCK_MHZ);
-        if ((Module_Information[ModNum].Module_ADCMSPS == 100) || (Module_Information[ModNum].Module_ADCMSPS == 500)) {
+        if ((Module_Information[ModNum].Module_ADCMSPS == 100) ||
+            (Module_Information[ModNum].Module_ADCMSPS == 500)) {
             // For 100 MSPS RevB/C/D or RevF, or 500 MSPS RevF, xwait should be multiples of 6
 
             if (xwait < 6)  // xwait should be at least 6
@@ -3833,9 +3997,11 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Update DSP parameter Xwait
-        Pixie_Devices[ModNum].DSP_Parameter_Values[Xwait_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = xwait;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[Xwait_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = xwait;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&xwait, 1, (unsigned int) (Xwait_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&xwait, 1, (unsigned int) (Xwait_Address[ModNum] + ChanNum), MOD_WRITE,
+                          ModNum);
 
     } else if (strcmp(ChanParName, "BASELINE_PERCENT") == 0) {
 
@@ -3850,10 +4016,12 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Update DSP parameter BaselinePercent
-        Pixie_Devices[ModNum].DSP_Parameter_Values[BaselinePercent_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                baselinepercent;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[BaselinePercent_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            baselinepercent;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&baselinepercent, 1, (unsigned int) (BaselinePercent_Address[ModNum] + ChanNum), MOD_WRITE,
+        Pixie16IMbufferIO(&baselinepercent, 1,
+                          (unsigned int) (BaselinePercent_Address[ModNum] + ChanNum), MOD_WRITE,
                           ModNum);
 
     } else if (strcmp(ChanParName, "EMIN") == 0) {
@@ -3862,10 +4030,12 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         energylow = (unsigned int) ChanParData;
 
         // Update DSP parameter EnergyLow
-        Pixie_Devices[ModNum].DSP_Parameter_Values[EnergyLow_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                energylow;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[EnergyLow_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            energylow;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&energylow, 1, (unsigned int) (EnergyLow_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&energylow, 1, (unsigned int) (EnergyLow_Address[ModNum] + ChanNum),
+                          MOD_WRITE, ModNum);
 
     } else if (strcmp(ChanParName, "BINFACTOR") == 0) {
 
@@ -3884,9 +4054,12 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         log2ebin = (unsigned int) (pow(2.0, 32.0) - (double) log2ebin);
 
         // Update DSP parameter Log2Ebin
-        Pixie_Devices[ModNum].DSP_Parameter_Values[Log2Ebin_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = log2ebin;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[Log2Ebin_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            log2ebin;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&log2ebin, 1, (unsigned int) (Log2Ebin_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&log2ebin, 1, (unsigned int) (Log2Ebin_Address[ModNum] + ChanNum),
+                          MOD_WRITE, ModNum);
 
     } else if (strcmp(ChanParName, "BASELINE_AVERAGE") == 0) {
 
@@ -3904,10 +4077,12 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Update DSP parameter Log2Bweight
-        Pixie_Devices[ModNum].DSP_Parameter_Values[Log2Bweight_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                baselineaverage;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[Log2Bweight_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            baselineaverage;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&baselineaverage, 1, (unsigned int) (Log2Bweight_Address[ModNum] + ChanNum), MOD_WRITE,
+        Pixie16IMbufferIO(&baselineaverage, 1,
+                          (unsigned int) (Log2Bweight_Address[ModNum] + ChanNum), MOD_WRITE,
                           ModNum);
 
     } else if (strcmp(ChanParName, "CHANNEL_CSRA") == 0) {
@@ -3915,39 +4090,46 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         // Get the new ChanCSRa
         newchancsra = (unsigned int) ChanParData;
         oldchancsra =
-                Pixie_Devices[ModNum].DSP_Parameter_Values[ChanCSRa_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
+            Pixie_Devices[ModNum]
+                .DSP_Parameter_Values[ChanCSRa_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
 
         // Update DSP parameter ChanCSRa
-        Pixie_Devices[ModNum].DSP_Parameter_Values[ChanCSRa_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                newchancsra;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[ChanCSRa_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            newchancsra;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&newchancsra, 1, (unsigned int) (ChanCSRa_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&newchancsra, 1, (unsigned int) (ChanCSRa_Address[ModNum] + ChanNum),
+                          MOD_WRITE, ModNum);
 
         // Program FiPPI to apply settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading ChanCSRA, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading ChanCSRA, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
 
         // Set DACs to apply the new DAC settings
         retval = Pixie16SetDACs(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "SetDACs failed in module %d channel %d after downloading ChanCSRA, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "SetDACs failed in module %d channel %d after downloading ChanCSRA, retval=%d",
+                ModNum, ChanNum, retval);
             return (-6);
         }
 
         // Check if we need to update baseline cut value (only needed if Vgain changed)
-        if (APP32_TstBit(CCSRA_ENARELAY, newchancsra) != APP32_TstBit(CCSRA_ENARELAY, oldchancsra)) {
+        if (APP32_TstBit(CCSRA_ENARELAY, newchancsra) !=
+            APP32_TstBit(CCSRA_ENARELAY, oldchancsra)) {
             retval = Pixie16BLcutFinder(ModNum, ChanNum, &baselinecut);
             if (retval < 0) {
-                Pixie_Print_Error(PIXIE_FUNC,
-                                  "BLcutFinder failed in module %d channel %d after downloading ChanCSRA, retval=%d",
-                                  ModNum, ChanNum, retval);
+                Pixie_Print_Error(
+                    PIXIE_FUNC,
+                    "BLcutFinder failed in module %d channel %d after downloading ChanCSRA, retval=%d",
+                    ModNum, ChanNum, retval);
                 return (-5);
             }
         }
@@ -3957,9 +4139,12 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         chancsrb = (unsigned int) ChanParData;
 
         // Update DSP parameter ChanCSRb
-        Pixie_Devices[ModNum].DSP_Parameter_Values[ChanCSRb_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = chancsrb;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[ChanCSRb_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            chancsrb;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&chancsrb, 1, (unsigned int) (ChanCSRb_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&chancsrb, 1, (unsigned int) (ChanCSRb_Address[ModNum] + ChanNum),
+                          MOD_WRITE, ModNum);
 
     } else if (strcmp(ChanParName, "BLCUT") == 0) {
 
@@ -3967,9 +4152,12 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         baselinecut = (unsigned int) ChanParData;
 
         // Update DSP parameter BLcut
-        Pixie_Devices[ModNum].DSP_Parameter_Values[BLcut_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = baselinecut;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[BLcut_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            baselinecut;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&baselinecut, 1, (unsigned int) (BLcut_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&baselinecut, 1, (unsigned int) (BLcut_Address[ModNum] + ChanNum),
+                          MOD_WRITE, ModNum);
 
     } else if (strcmp(ChanParName, "INTEGRATOR") == 0) {
 
@@ -3982,33 +4170,38 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Update DSP parameter INTEGRATOR
-        Pixie_Devices[ModNum].DSP_Parameter_Values[Integrator_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                integrator;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[Integrator_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            integrator;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&integrator, 1, (unsigned int) (Integrator_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&integrator, 1, (unsigned int) (Integrator_Address[ModNum] + ChanNum),
+                          MOD_WRITE, ModNum);
 
         // Program FiPPI to apply FastTrigBackLen settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading Integrator, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading Integrator, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "FASTTRIGBACKLEN") == 0) {
 
         // Get the new FastTrigBackLen
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
-            fasttrigbacklen = (unsigned int) ROUND(ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS);
+            fasttrigbacklen = (unsigned int) ROUND(
+                ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS);
         else if (Module_Information[ModNum].Module_ADCMSPS == 250)
-            fasttrigbacklen =
-                    (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 2));
+            fasttrigbacklen = (unsigned int) ROUND(
+                ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 2));
         else if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            fasttrigbacklen =
-                    (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
+            fasttrigbacklen = (unsigned int) ROUND(
+                ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
 
         // Range check for FastTrigBackLen
-        if ((Module_Information[ModNum].Module_ADCMSPS == 100) || (Module_Information[ModNum].Module_ADCMSPS == 500)) {
+        if ((Module_Information[ModNum].Module_ADCMSPS == 100) ||
+            (Module_Information[ModNum].Module_ADCMSPS == 500)) {
             if (fasttrigbacklen < FASTTRIGBACKLEN_MIN_100MHZFIPCLK) {
                 fasttrigbacklen = FASTTRIGBACKLEN_MIN_100MHZFIPCLK;
             }
@@ -4023,28 +4216,34 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Update DSP parameter FastTrigBackLen
-        Pixie_Devices[ModNum].DSP_Parameter_Values[FastTrigBackLen_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                fasttrigbacklen;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[FastTrigBackLen_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            fasttrigbacklen;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&fasttrigbacklen, 1, (unsigned int) (FastTrigBackLen_Address[ModNum] + ChanNum), MOD_WRITE,
+        Pixie16IMbufferIO(&fasttrigbacklen, 1,
+                          (unsigned int) (FastTrigBackLen_Address[ModNum] + ChanNum), MOD_WRITE,
                           ModNum);
 
         // Program FiPPI to apply FastTrigBackLen settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading FastTrigBackLen, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading FastTrigBackLen, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "CFDDelay") == 0) {
         // Get the new CFDDelay
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
-            cfddelay = (unsigned int) ROUND(ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS);
+            cfddelay = (unsigned int) ROUND(ChanParData *
+                                            (double) Module_Information[ModNum].Module_ADCMSPS);
         else if (Module_Information[ModNum].Module_ADCMSPS == 250)
-            cfddelay = (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 2));
+            cfddelay = (unsigned int) ROUND(
+                ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 2));
         else if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            cfddelay = (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
+            cfddelay = (unsigned int) ROUND(
+                ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
 
         // Range check for CFDDelay
         if (cfddelay < CFDDELAY_MIN) {
@@ -4055,16 +4254,20 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Update DSP parameter CFDDelay
-        Pixie_Devices[ModNum].DSP_Parameter_Values[CFDDelay_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = cfddelay;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[CFDDelay_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            cfddelay;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&cfddelay, 1, (unsigned int) (CFDDelay_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&cfddelay, 1, (unsigned int) (CFDDelay_Address[ModNum] + ChanNum),
+                          MOD_WRITE, ModNum);
 
         // Program FiPPI to apply CFDDelay settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading CFDDelay, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading CFDDelay, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "CFDScale") == 0) {
@@ -4077,16 +4280,20 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Update DSP parameter CFDScale
-        Pixie_Devices[ModNum].DSP_Parameter_Values[CFDScale_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = cfdscale;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[CFDScale_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            cfdscale;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&cfdscale, 1, (unsigned int) (CFDScale_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&cfdscale, 1, (unsigned int) (CFDScale_Address[ModNum] + ChanNum),
+                          MOD_WRITE, ModNum);
 
         // Program FiPPI to apply CFDScale settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading CFDScale, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading CFDScale, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "CFDThresh") == 0) {
@@ -4096,17 +4303,20 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         // Range check for the value of CFDThresh
         if ((cfdthresh >= CFDTHRESH_MIN) && (cfdthresh <= CFDTHRESH_MAX)) {
             // Update DSP parameter CFDThresh
-            Pixie_Devices[ModNum].DSP_Parameter_Values[CFDThresh_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                    cfdthresh;
+            Pixie_Devices[ModNum]
+                .DSP_Parameter_Values[CFDThresh_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+                cfdthresh;
             // Download to the selected Pixie module
-            Pixie16IMbufferIO(&cfdthresh, 1, (unsigned int) (CFDThresh_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+            Pixie16IMbufferIO(&cfdthresh, 1, (unsigned int) (CFDThresh_Address[ModNum] + ChanNum),
+                              MOD_WRITE, ModNum);
 
             // Program FiPPI to apply CFDThresh settings to the FPGA
             retval = Pixie16ProgramFippi(ModNum);
             if (retval < 0) {
-                Pixie_Print_Error(PIXIE_FUNC,
-                                  "ProgramFippi failed in module %d channel %d after downloading CFDThresh, retval=%d",
-                                  ModNum, ChanNum, retval);
+                Pixie_Print_Error(
+                    PIXIE_FUNC,
+                    "ProgramFippi failed in module %d channel %d after downloading CFDThresh, retval=%d",
+                    ModNum, ChanNum, retval);
                 return (-4);
             }
         } else {
@@ -4116,9 +4326,11 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
     } else if (strcmp(ChanParName, "QDCLen0") == 0) {
         // Get the new QDCLen0
         if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            qdclen = (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
+            qdclen = (unsigned int) ROUND(ChanParData *
+                                          (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
         else
-            qdclen = (unsigned int) ROUND(ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS);
+            qdclen = (unsigned int) ROUND(ChanParData *
+                                          (double) Module_Information[ModNum].Module_ADCMSPS);
 
         // Range check for QDC length
         if (qdclen < QDCLEN_MIN) {
@@ -4129,24 +4341,29 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Update DSP parameter QDCLen0
-        Pixie_Devices[ModNum].DSP_Parameter_Values[QDCLen0_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[QDCLen0_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen0_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen0_Address[ModNum] + ChanNum), MOD_WRITE,
+                          ModNum);
 
         // Program FiPPI to apply QDCLen0 settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading QDCLen0, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading QDCLen0, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "QDCLen1") == 0) {
         // Get the new QDCLen1
         if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            qdclen = (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
+            qdclen = (unsigned int) ROUND(ChanParData *
+                                          (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
         else
-            qdclen = (unsigned int) ROUND(ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS);
+            qdclen = (unsigned int) ROUND(ChanParData *
+                                          (double) Module_Information[ModNum].Module_ADCMSPS);
 
         // Range check for QDC length
         if (qdclen < QDCLEN_MIN) {
@@ -4157,24 +4374,29 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Update DSP parameter QDCLen1
-        Pixie_Devices[ModNum].DSP_Parameter_Values[QDCLen1_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[QDCLen1_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen1_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen1_Address[ModNum] + ChanNum), MOD_WRITE,
+                          ModNum);
 
         // Program FiPPI to apply QDCLen1 settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading QDCLen1, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading QDCLen1, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "QDCLen2") == 0) {
         // Get the new QDCLen2
         if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            qdclen = (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
+            qdclen = (unsigned int) ROUND(ChanParData *
+                                          (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
         else
-            qdclen = (unsigned int) ROUND(ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS);
+            qdclen = (unsigned int) ROUND(ChanParData *
+                                          (double) Module_Information[ModNum].Module_ADCMSPS);
 
         // Range check for QDC length
         if (qdclen < QDCLEN_MIN) {
@@ -4185,24 +4407,29 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Update DSP parameter QDCLen2
-        Pixie_Devices[ModNum].DSP_Parameter_Values[QDCLen2_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[QDCLen2_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen2_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen2_Address[ModNum] + ChanNum), MOD_WRITE,
+                          ModNum);
 
         // Program FiPPI to apply QDCLen2 settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading QDCLen2, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading QDCLen2, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "QDCLen3") == 0) {
         // Get the new QDCLen3
         if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            qdclen = (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
+            qdclen = (unsigned int) ROUND(ChanParData *
+                                          (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
         else
-            qdclen = (unsigned int) ROUND(ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS);
+            qdclen = (unsigned int) ROUND(ChanParData *
+                                          (double) Module_Information[ModNum].Module_ADCMSPS);
 
         // Range check for QDC length
         if (qdclen < QDCLEN_MIN) {
@@ -4213,24 +4440,29 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Update DSP parameter QDCLen3
-        Pixie_Devices[ModNum].DSP_Parameter_Values[QDCLen3_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[QDCLen3_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen3_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen3_Address[ModNum] + ChanNum), MOD_WRITE,
+                          ModNum);
 
         // Program FiPPI to apply QDCLen3 settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading QDCLen3, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading QDCLen3, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "QDCLen4") == 0) {
         // Get the new QDCLen4
         if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            qdclen = (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
+            qdclen = (unsigned int) ROUND(ChanParData *
+                                          (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
         else
-            qdclen = (unsigned int) ROUND(ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS);
+            qdclen = (unsigned int) ROUND(ChanParData *
+                                          (double) Module_Information[ModNum].Module_ADCMSPS);
 
         // Range check for QDC length
         if (qdclen < QDCLEN_MIN) {
@@ -4241,24 +4473,29 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Update DSP parameter QDCLen4
-        Pixie_Devices[ModNum].DSP_Parameter_Values[QDCLen4_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[QDCLen4_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen4_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen4_Address[ModNum] + ChanNum), MOD_WRITE,
+                          ModNum);
 
         // Program FiPPI to apply QDCLen4 settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading QDCLen4, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading QDCLen4, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "QDCLen5") == 0) {
         // Get the new QDCLen5
         if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            qdclen = (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
+            qdclen = (unsigned int) ROUND(ChanParData *
+                                          (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
         else
-            qdclen = (unsigned int) ROUND(ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS);
+            qdclen = (unsigned int) ROUND(ChanParData *
+                                          (double) Module_Information[ModNum].Module_ADCMSPS);
 
         // Range check for QDC length
         if (qdclen < QDCLEN_MIN) {
@@ -4269,24 +4506,29 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Update DSP parameter QDCLen5
-        Pixie_Devices[ModNum].DSP_Parameter_Values[QDCLen5_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[QDCLen5_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen5_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen5_Address[ModNum] + ChanNum), MOD_WRITE,
+                          ModNum);
 
         // Program FiPPI to apply QDCLen5 settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading QDCLen5, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading QDCLen5, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "QDCLen6") == 0) {
         // Get the new QDCLen6
         if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            qdclen = (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
+            qdclen = (unsigned int) ROUND(ChanParData *
+                                          (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
         else
-            qdclen = (unsigned int) ROUND(ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS);
+            qdclen = (unsigned int) ROUND(ChanParData *
+                                          (double) Module_Information[ModNum].Module_ADCMSPS);
 
         // Range check for QDC length
         if (qdclen < QDCLEN_MIN) {
@@ -4297,24 +4539,29 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Update DSP parameter QDCLen6
-        Pixie_Devices[ModNum].DSP_Parameter_Values[QDCLen6_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[QDCLen6_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen6_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen6_Address[ModNum] + ChanNum), MOD_WRITE,
+                          ModNum);
 
         // Program FiPPI to apply QDCLen6 settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading QDCLen6, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading QDCLen6, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "QDCLen7") == 0) {
         // Get the new QDCLen7
         if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            qdclen = (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
+            qdclen = (unsigned int) ROUND(ChanParData *
+                                          (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
         else
-            qdclen = (unsigned int) ROUND(ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS);
+            qdclen = (unsigned int) ROUND(ChanParData *
+                                          (double) Module_Information[ModNum].Module_ADCMSPS);
 
         // Range check for QDC length
         if (qdclen < QDCLEN_MIN) {
@@ -4325,28 +4572,32 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Update DSP parameter QDCLen7
-        Pixie_Devices[ModNum].DSP_Parameter_Values[QDCLen7_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[QDCLen7_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen7_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen7_Address[ModNum] + ChanNum), MOD_WRITE,
+                          ModNum);
 
         // Program FiPPI to apply QDCLen7 settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading QDCLen7, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading QDCLen7, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "ExtTrigStretch") == 0) {
         // Get the new ExtTrigStretch
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
-            exttrigstretch = (unsigned int) ROUND(ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS);
+            exttrigstretch = (unsigned int) ROUND(
+                ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS);
         else if (Module_Information[ModNum].Module_ADCMSPS == 250)
-            exttrigstretch =
-                    (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 2));
+            exttrigstretch = (unsigned int) ROUND(
+                ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 2));
         else if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            exttrigstretch =
-                    (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
+            exttrigstretch = (unsigned int) ROUND(
+                ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
 
         // Range check for ExtTrigStretch
         if (exttrigstretch < EXTTRIGSTRETCH_MIN) {
@@ -4357,28 +4608,34 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Update DSP parameter ExtTrigStretch
-        Pixie_Devices[ModNum].DSP_Parameter_Values[ExtTrigStretch_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                exttrigstretch;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[ExtTrigStretch_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            exttrigstretch;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&exttrigstretch, 1, (unsigned int) (ExtTrigStretch_Address[ModNum] + ChanNum), MOD_WRITE,
+        Pixie16IMbufferIO(&exttrigstretch, 1,
+                          (unsigned int) (ExtTrigStretch_Address[ModNum] + ChanNum), MOD_WRITE,
                           ModNum);
 
         // Program FiPPI to apply ExtTrigStretch settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading ExtTrigStretch, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading ExtTrigStretch, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "VetoStretch") == 0) {
         // Get the new VetoStretch
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
-            vetostretch = (unsigned int) ROUND(ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS);
+            vetostretch = (unsigned int) ROUND(ChanParData *
+                                               (double) Module_Information[ModNum].Module_ADCMSPS);
         else if (Module_Information[ModNum].Module_ADCMSPS == 250)
-            vetostretch = (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 2));
+            vetostretch = (unsigned int) ROUND(
+                ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 2));
         else if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            vetostretch = (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
+            vetostretch = (unsigned int) ROUND(
+                ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
 
         // Range check for VetoStretch
         if (vetostretch < VETOSTRETCH_MIN) {
@@ -4389,17 +4646,20 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Update DSP parameter VetoStretch
-        Pixie_Devices[ModNum].DSP_Parameter_Values[VetoStretch_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                vetostretch;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[VetoStretch_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            vetostretch;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&vetostretch, 1, (unsigned int) (VetoStretch_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&vetostretch, 1, (unsigned int) (VetoStretch_Address[ModNum] + ChanNum),
+                          MOD_WRITE, ModNum);
 
         // Program FiPPI to apply VetoStretch settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading VetoStretch, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading VetoStretch, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "MultiplicityMaskL") == 0) {
@@ -4407,18 +4667,20 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         multiplicitymaskl = (unsigned int) ChanParData;
 
         // Update DSP parameter MultiplicityMaskL
-        Pixie_Devices[ModNum].DSP_Parameter_Values[MultiplicityMaskL_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                multiplicitymaskl;
+        Pixie_Devices[ModNum].DSP_Parameter_Values[MultiplicityMaskL_Address[ModNum] + ChanNum -
+                                                   DATA_MEMORY_ADDRESS] = multiplicitymaskl;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&multiplicitymaskl, 1, (unsigned int) (MultiplicityMaskL_Address[ModNum] + ChanNum),
-                          MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&multiplicitymaskl, 1,
+                          (unsigned int) (MultiplicityMaskL_Address[ModNum] + ChanNum), MOD_WRITE,
+                          ModNum);
 
         // Program FiPPI to apply MultiplicityMaskL settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading MultiplicityMaskL, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading MultiplicityMaskL, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "MultiplicityMaskH") == 0) {
@@ -4426,39 +4688,43 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         multiplicitymaskh = (unsigned int) ChanParData;
 
         // Update DSP parameter MultiplicityMaskH
-        Pixie_Devices[ModNum].DSP_Parameter_Values[MultiplicityMaskH_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                multiplicitymaskh;
+        Pixie_Devices[ModNum].DSP_Parameter_Values[MultiplicityMaskH_Address[ModNum] + ChanNum -
+                                                   DATA_MEMORY_ADDRESS] = multiplicitymaskh;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&multiplicitymaskh, 1, (unsigned int) (MultiplicityMaskH_Address[ModNum] + ChanNum),
-                          MOD_WRITE, ModNum);
+        Pixie16IMbufferIO(&multiplicitymaskh, 1,
+                          (unsigned int) (MultiplicityMaskH_Address[ModNum] + ChanNum), MOD_WRITE,
+                          ModNum);
 
         // Program FiPPI to apply MultiplicityMaskH settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading MultiplicityMaskH, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading MultiplicityMaskH, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "ExternDelayLen") == 0) {
         // Get the new ExternDelayLen
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
-            externdelaylen = (unsigned int) ROUND(ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS);
+            externdelaylen = (unsigned int) ROUND(
+                ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS);
         else if (Module_Information[ModNum].Module_ADCMSPS == 250)
-            externdelaylen =
-                    (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 2));
+            externdelaylen = (unsigned int) ROUND(
+                ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 2));
         else if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            externdelaylen =
-                    (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
+            externdelaylen = (unsigned int) ROUND(
+                ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
 
-        // Range check for ExternDelayLen
+            // Range check for ExternDelayLen
 #if EXTDELAYLEN_MIN > 0
         if (externdelaylen < EXTDELAYLEN_MIN) {
             externdelaylen = EXTDELAYLEN_MIN;
         }
 #endif
 
-        if ((Module_Information[ModNum].Module_Rev == 0xB) || (Module_Information[ModNum].Module_Rev == 0xC) ||
+        if ((Module_Information[ModNum].Module_Rev == 0xB) ||
+            (Module_Information[ModNum].Module_Rev == 0xC) ||
             (Module_Information[ModNum].Module_Rev == 0xD)) {
             if (externdelaylen > EXTDELAYLEN_MAX_REVBCD) {
                 externdelaylen = EXTDELAYLEN_MAX_REVBCD;
@@ -4471,39 +4737,44 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Update DSP parameter ExternDelayLen
-        Pixie_Devices[ModNum].DSP_Parameter_Values[ExternDelayLen_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                externdelaylen;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[ExternDelayLen_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            externdelaylen;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&externdelaylen, 1, (unsigned int) (ExternDelayLen_Address[ModNum] + ChanNum), MOD_WRITE,
+        Pixie16IMbufferIO(&externdelaylen, 1,
+                          (unsigned int) (ExternDelayLen_Address[ModNum] + ChanNum), MOD_WRITE,
                           ModNum);
 
         // Program FiPPI to apply ExternDelayLen settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading ExternDelayLen, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading ExternDelayLen, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "FtrigoutDelay") == 0) {
         // Get the new FtrigoutDelay
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
-            ftrigoutdelay = (unsigned int) ROUND(ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS);
+            ftrigoutdelay = (unsigned int) ROUND(
+                ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS);
         else if (Module_Information[ModNum].Module_ADCMSPS == 250)
-            ftrigoutdelay =
-                    (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 2));
+            ftrigoutdelay = (unsigned int) ROUND(
+                ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 2));
         else if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            ftrigoutdelay =
-                    (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
+            ftrigoutdelay = (unsigned int) ROUND(
+                ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
 
-        // Range check for FtrigoutDelay
+            // Range check for FtrigoutDelay
 #if FASTTRIGBACKDELAY_MIN > 0
         if (ftrigoutdelay < FASTTRIGBACKDELAY_MIN) {
             ftrigoutdelay = FASTTRIGBACKDELAY_MIN;
         }
 #endif
 
-        if ((Module_Information[ModNum].Module_Rev == 0xB) || (Module_Information[ModNum].Module_Rev == 0xC) ||
+        if ((Module_Information[ModNum].Module_Rev == 0xB) ||
+            (Module_Information[ModNum].Module_Rev == 0xC) ||
             (Module_Information[ModNum].Module_Rev == 0xD)) {
             if (ftrigoutdelay > FASTTRIGBACKDELAY_MAX_REVBCD) {
                 ftrigoutdelay = FASTTRIGBACKDELAY_MAX_REVBCD;
@@ -4515,30 +4786,34 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Update DSP parameter FtrigoutDelay
-        Pixie_Devices[ModNum].DSP_Parameter_Values[FtrigoutDelay_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                ftrigoutdelay;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[FtrigoutDelay_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            ftrigoutdelay;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&ftrigoutdelay, 1, (unsigned int) (FtrigoutDelay_Address[ModNum] + ChanNum), MOD_WRITE,
+        Pixie16IMbufferIO(&ftrigoutdelay, 1,
+                          (unsigned int) (FtrigoutDelay_Address[ModNum] + ChanNum), MOD_WRITE,
                           ModNum);
 
         // Program FiPPI to apply FtrigoutDelay settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading FtrigoutDelay, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading FtrigoutDelay, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
     } else if (strcmp(ChanParName, "ChanTrigStretch") == 0) {
         // Get the new ChanTrigStretch
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
-            chantrigstretch = (unsigned int) ROUND(ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS);
+            chantrigstretch = (unsigned int) ROUND(
+                ChanParData * (double) Module_Information[ModNum].Module_ADCMSPS);
         else if (Module_Information[ModNum].Module_ADCMSPS == 250)
-            chantrigstretch =
-                    (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 2));
+            chantrigstretch = (unsigned int) ROUND(
+                ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 2));
         else if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            chantrigstretch =
-                    (unsigned int) ROUND(ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
+            chantrigstretch = (unsigned int) ROUND(
+                ChanParData * (double) (Module_Information[ModNum].Module_ADCMSPS / 5));
 
         // Range check for ChanTrigStretch
         if (chantrigstretch < CHANTRIGSTRETCH_MIN) {
@@ -4549,18 +4824,21 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         }
 
         // Update DSP parameter ChanTrigStretch
-        Pixie_Devices[ModNum].DSP_Parameter_Values[ChanTrigStretch_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                chantrigstretch;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[ChanTrigStretch_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            chantrigstretch;
         // Download to the selected Pixie module
-        Pixie16IMbufferIO(&chantrigstretch, 1, (unsigned int) (ChanTrigStretch_Address[ModNum] + ChanNum), MOD_WRITE,
+        Pixie16IMbufferIO(&chantrigstretch, 1,
+                          (unsigned int) (ChanTrigStretch_Address[ModNum] + ChanNum), MOD_WRITE,
                           ModNum);
 
         // Program FiPPI to apply ChanTrigStretch settings to the FPGA
         retval = Pixie16ProgramFippi(ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "ProgramFippi failed in module %d channel %d after downloading ChanTrigStretch, retval=%d",
-                              ModNum, ChanNum, retval);
+            Pixie_Print_Error(
+                PIXIE_FUNC,
+                "ProgramFippi failed in module %d channel %d after downloading ChanTrigStretch, retval=%d",
+                ModNum, ChanNum, retval);
             return (-4);
         }
     } else {
@@ -4630,8 +4908,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanPar(const char* ChanParName,
                                                            double* ChanParData,
                                                            unsigned short ModNum,
-                                                           unsigned short ChanNum)
-{
+                                                           unsigned short ChanNum) {
 
     unsigned int FL, FG, SL, SG, FastFilterRange, SlowFilterRange;
     unsigned int fastthresh, preamptau, tracelength;
@@ -4639,8 +4916,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanPar(const char* ChanParNa
     unsigned int xwait;
     unsigned int baselinepercent, energylow, log2ebin, chancsra, chancsrb;
     unsigned int baselinecut, fasttrigbacklen, baselineaverage;
-    unsigned int cfddelay, cfdscale, qdclen, exttrigstretch, vetostretch, externdelaylen, multiplicitymaskl,
-            multiplicitymaskh, ftrigoutdelay;
+    unsigned int cfddelay, cfdscale, qdclen, exttrigstretch, vetostretch, externdelaylen,
+        multiplicitymaskl, multiplicitymaskh, ftrigoutdelay;
     unsigned int chantrigstretch, cfdthresh, integrator;
 
     // Check if ModNum is valid
@@ -4659,12 +4936,15 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanPar(const char* ChanParNa
     if (strcmp(ChanParName, "TRIGGER_RISETIME") == 0) {
 
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&FL, 1, (unsigned int) (FastLength_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[FastLength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = FL;
+        Pixie16IMbufferIO(&FL, 1, (unsigned int) (FastLength_Address[ModNum] + ChanNum), MOD_READ,
+                          ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[FastLength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = FL;
 
         Pixie16IMbufferIO(&FastFilterRange, 1, FastFilterRange_Address[ModNum], MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS] =
-                FastFilterRange;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            FastFilterRange;
 
         // Update channel parameter TriggerRiseTime
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
@@ -4680,12 +4960,15 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanPar(const char* ChanParNa
     } else if (strcmp(ChanParName, "TRIGGER_FLATTOP") == 0) {
 
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&FG, 1, (unsigned int) (FastGap_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[FastGap_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = FG;
+        Pixie16IMbufferIO(&FG, 1, (unsigned int) (FastGap_Address[ModNum] + ChanNum), MOD_READ,
+                          ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[FastGap_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = FG;
 
         Pixie16IMbufferIO(&FastFilterRange, 1, FastFilterRange_Address[ModNum], MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS] =
-                FastFilterRange;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            FastFilterRange;
 
         // Update channel parameter TriggerFlatTop
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
@@ -4701,12 +4984,16 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanPar(const char* ChanParNa
     } else if (strcmp(ChanParName, "TRIGGER_THRESHOLD") == 0) {
 
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&fastthresh, 1, (unsigned int) (FastThresh_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[FastThresh_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                fastthresh;
+        Pixie16IMbufferIO(&fastthresh, 1, (unsigned int) (FastThresh_Address[ModNum] + ChanNum),
+                          MOD_READ, ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[FastThresh_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            fastthresh;
 
-        Pixie16IMbufferIO(&FL, 1, (unsigned int) (FastLength_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[FastLength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = FL;
+        Pixie16IMbufferIO(&FL, 1, (unsigned int) (FastLength_Address[ModNum] + ChanNum), MOD_READ,
+                          ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[FastLength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = FL;
 
         // Update channel parameter TriggerThreshold
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
@@ -4719,12 +5006,15 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanPar(const char* ChanParNa
     } else if (strcmp(ChanParName, "ENERGY_RISETIME") == 0) {
 
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&SL, 1, (unsigned int) (SlowLength_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[SlowLength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = SL;
+        Pixie16IMbufferIO(&SL, 1, (unsigned int) (SlowLength_Address[ModNum] + ChanNum), MOD_READ,
+                          ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[SlowLength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = SL;
 
         Pixie16IMbufferIO(&SlowFilterRange, 1, SlowFilterRange_Address[ModNum], MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[SlowFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS] =
-                SlowFilterRange;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[SlowFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            SlowFilterRange;
 
         // Update channel parameter EnergyRiseTime
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
@@ -4740,12 +5030,15 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanPar(const char* ChanParNa
     } else if (strcmp(ChanParName, "ENERGY_FLATTOP") == 0) {
 
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&SG, 1, (unsigned int) (SlowGap_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[SlowGap_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = SG;
+        Pixie16IMbufferIO(&SG, 1, (unsigned int) (SlowGap_Address[ModNum] + ChanNum), MOD_READ,
+                          ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[SlowGap_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = SG;
 
         Pixie16IMbufferIO(&SlowFilterRange, 1, SlowFilterRange_Address[ModNum], MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[SlowFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS] =
-                SlowFilterRange;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[SlowFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            SlowFilterRange;
 
         // Update channel parameter EnergyFlatTop
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
@@ -4761,9 +5054,11 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanPar(const char* ChanParNa
     } else if (strcmp(ChanParName, "TAU") == 0) {
 
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&preamptau, 1, (unsigned int) (PreampTau_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[PreampTau_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                preamptau;
+        Pixie16IMbufferIO(&preamptau, 1, (unsigned int) (PreampTau_Address[ModNum] + ChanNum),
+                          MOD_READ, ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[PreampTau_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            preamptau;
 
         // Update channel parameter PreampTau
         *ChanParData = IEEEFloating2Decimal(preamptau);
@@ -4771,12 +5066,15 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanPar(const char* ChanParNa
     } else if (strcmp(ChanParName, "TRACE_LENGTH") == 0) {
 
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&tracelength, 1, (unsigned int) (TraceLength_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[TraceLength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                tracelength;
+        Pixie16IMbufferIO(&tracelength, 1, (unsigned int) (TraceLength_Address[ModNum] + ChanNum),
+                          MOD_READ, ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[TraceLength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            tracelength;
         Pixie16IMbufferIO(&FastFilterRange, 1, FastFilterRange_Address[ModNum], MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS] =
-                FastFilterRange;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            FastFilterRange;
 
         // Update channel parameter TraceLength
         *ChanParData = (double) tracelength / (double) Module_Information[ModNum].Module_ADCMSPS *
@@ -4785,54 +5083,71 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanPar(const char* ChanParNa
     } else if (strcmp(ChanParName, "TRACE_DELAY") == 0) {
 
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&paflength, 1, (unsigned int) (PAFlength_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[PAFlength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                paflength;
-        Pixie16IMbufferIO(&triggerdelay, 1, (unsigned int) (TriggerDelay_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[TriggerDelay_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                triggerdelay;
+        Pixie16IMbufferIO(&paflength, 1, (unsigned int) (PAFlength_Address[ModNum] + ChanNum),
+                          MOD_READ, ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[PAFlength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            paflength;
+        Pixie16IMbufferIO(&triggerdelay, 1, (unsigned int) (TriggerDelay_Address[ModNum] + ChanNum),
+                          MOD_READ, ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[TriggerDelay_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            triggerdelay;
         Pixie16IMbufferIO(&FastFilterRange, 1, FastFilterRange_Address[ModNum], MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS] =
-                FastFilterRange;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS] =
+            FastFilterRange;
 
         // Update channel parameter TraceDelay
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
             *ChanParData =
-                    (double) (paflength - (unsigned int) ((double) triggerdelay / pow(2.0, (double) FastFilterRange))) /
-                    (double) Module_Information[ModNum].Module_ADCMSPS * pow(2.0, (double) FastFilterRange);
+                (double) (paflength - (unsigned int) ((double) triggerdelay /
+                                                      pow(2.0, (double) FastFilterRange))) /
+                (double) Module_Information[ModNum].Module_ADCMSPS *
+                pow(2.0, (double) FastFilterRange);
         else if (Module_Information[ModNum].Module_ADCMSPS == 250)
             *ChanParData =
-                    (double) (paflength - (unsigned int) ((double) triggerdelay / pow(2.0, (double) FastFilterRange))) /
-                    (double) (Module_Information[ModNum].Module_ADCMSPS / 2) * pow(2.0, (double) FastFilterRange);
+                (double) (paflength - (unsigned int) ((double) triggerdelay /
+                                                      pow(2.0, (double) FastFilterRange))) /
+                (double) (Module_Information[ModNum].Module_ADCMSPS / 2) *
+                pow(2.0, (double) FastFilterRange);
         else if (Module_Information[ModNum].Module_ADCMSPS == 500)
             *ChanParData =
-                    (double) (paflength - (unsigned int) ((double) triggerdelay / pow(2.0, (double) FastFilterRange))) /
-                    (double) (Module_Information[ModNum].Module_ADCMSPS / 5) * pow(2.0, (double) FastFilterRange);
+                (double) (paflength - (unsigned int) ((double) triggerdelay /
+                                                      pow(2.0, (double) FastFilterRange))) /
+                (double) (Module_Information[ModNum].Module_ADCMSPS / 5) *
+                pow(2.0, (double) FastFilterRange);
 
     } else if (strcmp(ChanParName, "VOFFSET") == 0) {
 
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&offsetdac, 1, (unsigned int) (OffsetDAC_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[OffsetDAC_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                offsetdac;
+        Pixie16IMbufferIO(&offsetdac, 1, (unsigned int) (OffsetDAC_Address[ModNum] + ChanNum),
+                          MOD_READ, ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[OffsetDAC_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            offsetdac;
 
         // Update channel parameter DCoffset
         *ChanParData = (double) offsetdac / 65536.0 * DAC_VOLTAGE_RANGE - DAC_VOLTAGE_RANGE / 2.0;
 
     } else if (strcmp(ChanParName, "XDT") == 0) {
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&xwait, 1, (unsigned int) (Xwait_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[Xwait_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = xwait;
+        Pixie16IMbufferIO(&xwait, 1, (unsigned int) (Xwait_Address[ModNum] + ChanNum), MOD_READ,
+                          ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[Xwait_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = xwait;
 
         // Update channel parameter Xdt
         *ChanParData = (double) xwait / (double) DSP_CLOCK_MHZ;
     } else if (strcmp(ChanParName, "BASELINE_PERCENT") == 0) {
 
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&baselinepercent, 1, (unsigned int) (BaselinePercent_Address[ModNum] + ChanNum), MOD_READ,
+        Pixie16IMbufferIO(&baselinepercent, 1,
+                          (unsigned int) (BaselinePercent_Address[ModNum] + ChanNum), MOD_READ,
                           ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[BaselinePercent_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                baselinepercent;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[BaselinePercent_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            baselinepercent;
 
         // Update channel parameter BaselinePercent
         *ChanParData = (double) baselinepercent;
@@ -4840,9 +5155,11 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanPar(const char* ChanParNa
     } else if (strcmp(ChanParName, "EMIN") == 0) {
 
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&energylow, 1, (unsigned int) (EnergyLow_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[EnergyLow_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                energylow;
+        Pixie16IMbufferIO(&energylow, 1, (unsigned int) (EnergyLow_Address[ModNum] + ChanNum),
+                          MOD_READ, ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[EnergyLow_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            energylow;
 
         // Update channel parameter EnergyLow
         *ChanParData = (double) energylow;
@@ -4850,8 +5167,11 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanPar(const char* ChanParNa
     } else if (strcmp(ChanParName, "BINFACTOR") == 0) {
 
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&log2ebin, 1, (unsigned int) (Log2Ebin_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[Log2Ebin_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = log2ebin;
+        Pixie16IMbufferIO(&log2ebin, 1, (unsigned int) (Log2Ebin_Address[ModNum] + ChanNum),
+                          MOD_READ, ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[Log2Ebin_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            log2ebin;
 
         // Update channel parameter BinFactor
         *ChanParData = (double) (pow(2.0, 32.0) - log2ebin);
@@ -4859,10 +5179,11 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanPar(const char* ChanParNa
     } else if (strcmp(ChanParName, "BASELINE_AVERAGE") == 0) {
 
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&baselineaverage, 1, (unsigned int) (Log2Bweight_Address[ModNum] + ChanNum), MOD_READ,
-                          ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[Log2Bweight_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                baselineaverage;
+        Pixie16IMbufferIO(&baselineaverage, 1,
+                          (unsigned int) (Log2Bweight_Address[ModNum] + ChanNum), MOD_READ, ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[Log2Bweight_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            baselineaverage;
 
         // Update channel parameter Baseline Average
         if (baselineaverage == 0) {
@@ -4874,8 +5195,11 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanPar(const char* ChanParNa
     } else if (strcmp(ChanParName, "CHANNEL_CSRA") == 0) {
 
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&chancsra, 1, (unsigned int) (ChanCSRa_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[ChanCSRa_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = chancsra;
+        Pixie16IMbufferIO(&chancsra, 1, (unsigned int) (ChanCSRa_Address[ModNum] + ChanNum),
+                          MOD_READ, ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[ChanCSRa_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            chancsra;
 
         // Update channel parameter ChanCSRA
         *ChanParData = (double) chancsra;
@@ -4883,8 +5207,11 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanPar(const char* ChanParNa
     } else if (strcmp(ChanParName, "CHANNEL_CSRB") == 0) {
 
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&chancsrb, 1, (unsigned int) (ChanCSRb_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[ChanCSRb_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = chancsrb;
+        Pixie16IMbufferIO(&chancsrb, 1, (unsigned int) (ChanCSRb_Address[ModNum] + ChanNum),
+                          MOD_READ, ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[ChanCSRb_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            chancsrb;
 
         // Update channel parameter ChanCSRB
         *ChanParData = (double) chancsrb;
@@ -4892,8 +5219,11 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanPar(const char* ChanParNa
     } else if (strcmp(ChanParName, "BLCUT") == 0) {
 
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&baselinecut, 1, (unsigned int) (BLcut_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[BLcut_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = baselinecut;
+        Pixie16IMbufferIO(&baselinecut, 1, (unsigned int) (BLcut_Address[ModNum] + ChanNum),
+                          MOD_READ, ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[BLcut_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            baselinecut;
 
         // Update channel parameter BaselineCut
         *ChanParData = (double) baselinecut;
@@ -4901,9 +5231,11 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanPar(const char* ChanParNa
     } else if (strcmp(ChanParName, "INTEGRATOR") == 0) {
 
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&integrator, 1, (unsigned int) (Integrator_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[Integrator_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                integrator;
+        Pixie16IMbufferIO(&integrator, 1, (unsigned int) (Integrator_Address[ModNum] + ChanNum),
+                          MOD_READ, ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[Integrator_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            integrator;
 
         // Update channel parameter Integrator
         *ChanParData = (double) integrator;
@@ -4911,207 +5243,273 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanPar(const char* ChanParNa
     } else if (strcmp(ChanParName, "FASTTRIGBACKLEN") == 0) {
 
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&fasttrigbacklen, 1, (unsigned int) (FastTrigBackLen_Address[ModNum] + ChanNum), MOD_READ,
+        Pixie16IMbufferIO(&fasttrigbacklen, 1,
+                          (unsigned int) (FastTrigBackLen_Address[ModNum] + ChanNum), MOD_READ,
                           ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[FastTrigBackLen_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                fasttrigbacklen;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[FastTrigBackLen_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            fasttrigbacklen;
 
         // Update channel parameter FastTrigBackLen
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
-            *ChanParData = (double) fasttrigbacklen / (double) Module_Information[ModNum].Module_ADCMSPS;
+            *ChanParData =
+                (double) fasttrigbacklen / (double) Module_Information[ModNum].Module_ADCMSPS;
         else if (Module_Information[ModNum].Module_ADCMSPS == 250)
-            *ChanParData = (double) fasttrigbacklen / (double) (Module_Information[ModNum].Module_ADCMSPS / 2);
+            *ChanParData =
+                (double) fasttrigbacklen / (double) (Module_Information[ModNum].Module_ADCMSPS / 2);
         else if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            *ChanParData = (double) fasttrigbacklen / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
+            *ChanParData =
+                (double) fasttrigbacklen / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
 
     } else if (strcmp(ChanParName, "CFDDelay") == 0) {
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&cfddelay, 1, (unsigned int) (CFDDelay_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[CFDDelay_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = cfddelay;
+        Pixie16IMbufferIO(&cfddelay, 1, (unsigned int) (CFDDelay_Address[ModNum] + ChanNum),
+                          MOD_READ, ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[CFDDelay_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            cfddelay;
 
         // Update channel parameter CFDDelay
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
             *ChanParData = (double) cfddelay / (double) Module_Information[ModNum].Module_ADCMSPS;
         else if (Module_Information[ModNum].Module_ADCMSPS == 250)
-            *ChanParData = (double) cfddelay / (double) (Module_Information[ModNum].Module_ADCMSPS / 2);
+            *ChanParData =
+                (double) cfddelay / (double) (Module_Information[ModNum].Module_ADCMSPS / 2);
         else if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            *ChanParData = (double) cfddelay / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
+            *ChanParData =
+                (double) cfddelay / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
 
     } else if (strcmp(ChanParName, "CFDScale") == 0) {
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&cfdscale, 1, (unsigned int) (CFDScale_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[CFDScale_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = cfdscale;
+        Pixie16IMbufferIO(&cfdscale, 1, (unsigned int) (CFDScale_Address[ModNum] + ChanNum),
+                          MOD_READ, ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[CFDScale_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            cfdscale;
 
         // Update channel parameter CFDScale
         *ChanParData = (double) cfdscale;
     } else if (strcmp(ChanParName, "CFDThresh") == 0) {
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&cfdthresh, 1, (unsigned int) (CFDThresh_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[CFDThresh_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                cfdthresh;
+        Pixie16IMbufferIO(&cfdthresh, 1, (unsigned int) (CFDThresh_Address[ModNum] + ChanNum),
+                          MOD_READ, ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[CFDThresh_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            cfdthresh;
 
         // Update channel parameter CFDThresh
         *ChanParData = (double) cfdthresh;
     } else if (strcmp(ChanParName, "QDCLen0") == 0) {
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen0_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[QDCLen0_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
+        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen0_Address[ModNum] + ChanNum), MOD_READ,
+                          ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[QDCLen0_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
 
         // Update channel parameter QDCLen0
         if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            *ChanParData = (double) qdclen / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
+            *ChanParData =
+                (double) qdclen / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
         else
             *ChanParData = (double) qdclen / (double) Module_Information[ModNum].Module_ADCMSPS;
     } else if (strcmp(ChanParName, "QDCLen1") == 0) {
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen1_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[QDCLen1_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
+        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen1_Address[ModNum] + ChanNum), MOD_READ,
+                          ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[QDCLen1_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
 
         if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            *ChanParData = (double) qdclen / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
+            *ChanParData =
+                (double) qdclen / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
         else
             *ChanParData = (double) qdclen / (double) Module_Information[ModNum].Module_ADCMSPS;
     } else if (strcmp(ChanParName, "QDCLen2") == 0) {
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen2_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[QDCLen2_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
+        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen2_Address[ModNum] + ChanNum), MOD_READ,
+                          ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[QDCLen2_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
 
         if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            *ChanParData = (double) qdclen / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
+            *ChanParData =
+                (double) qdclen / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
         else
             *ChanParData = (double) qdclen / (double) Module_Information[ModNum].Module_ADCMSPS;
     } else if (strcmp(ChanParName, "QDCLen3") == 0) {
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen3_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[QDCLen3_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
+        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen3_Address[ModNum] + ChanNum), MOD_READ,
+                          ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[QDCLen3_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
 
         if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            *ChanParData = (double) qdclen / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
+            *ChanParData =
+                (double) qdclen / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
         else
             *ChanParData = (double) qdclen / (double) Module_Information[ModNum].Module_ADCMSPS;
     } else if (strcmp(ChanParName, "QDCLen4") == 0) {
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen4_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[QDCLen4_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
+        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen4_Address[ModNum] + ChanNum), MOD_READ,
+                          ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[QDCLen4_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
 
         if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            *ChanParData = (double) qdclen / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
+            *ChanParData =
+                (double) qdclen / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
         else
             *ChanParData = (double) qdclen / (double) Module_Information[ModNum].Module_ADCMSPS;
     } else if (strcmp(ChanParName, "QDCLen5") == 0) {
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen5_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[QDCLen5_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
+        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen5_Address[ModNum] + ChanNum), MOD_READ,
+                          ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[QDCLen5_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
 
         if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            *ChanParData = (double) qdclen / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
+            *ChanParData =
+                (double) qdclen / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
         else
             *ChanParData = (double) qdclen / (double) Module_Information[ModNum].Module_ADCMSPS;
     } else if (strcmp(ChanParName, "QDCLen6") == 0) {
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen6_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[QDCLen6_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
+        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen6_Address[ModNum] + ChanNum), MOD_READ,
+                          ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[QDCLen6_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
 
         if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            *ChanParData = (double) qdclen / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
+            *ChanParData =
+                (double) qdclen / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
         else
             *ChanParData = (double) qdclen / (double) Module_Information[ModNum].Module_ADCMSPS;
     } else if (strcmp(ChanParName, "QDCLen7") == 0) {
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen7_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[QDCLen7_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
+        Pixie16IMbufferIO(&qdclen, 1, (unsigned int) (QDCLen7_Address[ModNum] + ChanNum), MOD_READ,
+                          ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[QDCLen7_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = qdclen;
 
         if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            *ChanParData = (double) qdclen / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
+            *ChanParData =
+                (double) qdclen / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
         else
             *ChanParData = (double) qdclen / (double) Module_Information[ModNum].Module_ADCMSPS;
     } else if (strcmp(ChanParName, "ExtTrigStretch") == 0) {
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&exttrigstretch, 1, (unsigned int) (ExtTrigStretch_Address[ModNum] + ChanNum), MOD_READ,
+        Pixie16IMbufferIO(&exttrigstretch, 1,
+                          (unsigned int) (ExtTrigStretch_Address[ModNum] + ChanNum), MOD_READ,
                           ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[ExtTrigStretch_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                exttrigstretch;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[ExtTrigStretch_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            exttrigstretch;
 
         // Update channel parameter ExtTrigStretch
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
-            *ChanParData = (double) exttrigstretch / (double) Module_Information[ModNum].Module_ADCMSPS;
+            *ChanParData =
+                (double) exttrigstretch / (double) Module_Information[ModNum].Module_ADCMSPS;
         else if (Module_Information[ModNum].Module_ADCMSPS == 250)
-            *ChanParData = (double) exttrigstretch / (double) (Module_Information[ModNum].Module_ADCMSPS / 2);
+            *ChanParData =
+                (double) exttrigstretch / (double) (Module_Information[ModNum].Module_ADCMSPS / 2);
         else if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            *ChanParData = (double) exttrigstretch / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
+            *ChanParData =
+                (double) exttrigstretch / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
     } else if (strcmp(ChanParName, "VetoStretch") == 0) {
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&vetostretch, 1, (unsigned int) (VetoStretch_Address[ModNum] + ChanNum), MOD_READ, ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[VetoStretch_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                vetostretch;
+        Pixie16IMbufferIO(&vetostretch, 1, (unsigned int) (VetoStretch_Address[ModNum] + ChanNum),
+                          MOD_READ, ModNum);
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[VetoStretch_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            vetostretch;
 
         // Update channel parameter VetoStretch
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
-            *ChanParData = (double) vetostretch / (double) Module_Information[ModNum].Module_ADCMSPS;
+            *ChanParData =
+                (double) vetostretch / (double) Module_Information[ModNum].Module_ADCMSPS;
         else if (Module_Information[ModNum].Module_ADCMSPS == 250)
-            *ChanParData = (double) vetostretch / (double) (Module_Information[ModNum].Module_ADCMSPS / 2);
+            *ChanParData =
+                (double) vetostretch / (double) (Module_Information[ModNum].Module_ADCMSPS / 2);
         else if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            *ChanParData = (double) vetostretch / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
+            *ChanParData =
+                (double) vetostretch / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
     } else if (strcmp(ChanParName, "MultiplicityMaskL") == 0) {
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&multiplicitymaskl, 1, (unsigned int) (MultiplicityMaskL_Address[ModNum] + ChanNum), MOD_READ,
+        Pixie16IMbufferIO(&multiplicitymaskl, 1,
+                          (unsigned int) (MultiplicityMaskL_Address[ModNum] + ChanNum), MOD_READ,
                           ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[MultiplicityMaskL_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                multiplicitymaskl;
+        Pixie_Devices[ModNum].DSP_Parameter_Values[MultiplicityMaskL_Address[ModNum] + ChanNum -
+                                                   DATA_MEMORY_ADDRESS] = multiplicitymaskl;
 
         // Update channel parameter MultiplicityMaskL
         *ChanParData = (double) multiplicitymaskl;
     } else if (strcmp(ChanParName, "MultiplicityMaskH") == 0) {
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&multiplicitymaskh, 1, (unsigned int) (MultiplicityMaskH_Address[ModNum] + ChanNum), MOD_READ,
+        Pixie16IMbufferIO(&multiplicitymaskh, 1,
+                          (unsigned int) (MultiplicityMaskH_Address[ModNum] + ChanNum), MOD_READ,
                           ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[MultiplicityMaskH_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                multiplicitymaskh;
+        Pixie_Devices[ModNum].DSP_Parameter_Values[MultiplicityMaskH_Address[ModNum] + ChanNum -
+                                                   DATA_MEMORY_ADDRESS] = multiplicitymaskh;
 
         // Update channel parameter MultiplicityMaskH
         *ChanParData = (double) multiplicitymaskh;
     } else if (strcmp(ChanParName, "ExternDelayLen") == 0) {
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&externdelaylen, 1, (unsigned int) (ExternDelayLen_Address[ModNum] + ChanNum), MOD_READ,
+        Pixie16IMbufferIO(&externdelaylen, 1,
+                          (unsigned int) (ExternDelayLen_Address[ModNum] + ChanNum), MOD_READ,
                           ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[ExternDelayLen_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                externdelaylen;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[ExternDelayLen_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            externdelaylen;
 
         // Update channel parameter ExternDelayLen
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
-            *ChanParData = (double) externdelaylen / (double) Module_Information[ModNum].Module_ADCMSPS;
+            *ChanParData =
+                (double) externdelaylen / (double) Module_Information[ModNum].Module_ADCMSPS;
         else if (Module_Information[ModNum].Module_ADCMSPS == 250)
-            *ChanParData = (double) externdelaylen / (double) (Module_Information[ModNum].Module_ADCMSPS / 2);
+            *ChanParData =
+                (double) externdelaylen / (double) (Module_Information[ModNum].Module_ADCMSPS / 2);
         else if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            *ChanParData = (double) externdelaylen / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
+            *ChanParData =
+                (double) externdelaylen / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
     } else if (strcmp(ChanParName, "FtrigoutDelay") == 0) {
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&ftrigoutdelay, 1, (unsigned int) (FtrigoutDelay_Address[ModNum] + ChanNum), MOD_READ,
+        Pixie16IMbufferIO(&ftrigoutdelay, 1,
+                          (unsigned int) (FtrigoutDelay_Address[ModNum] + ChanNum), MOD_READ,
                           ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[FtrigoutDelay_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                ftrigoutdelay;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[FtrigoutDelay_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            ftrigoutdelay;
 
         // Update channel parameter FtrigoutDelay
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
-            *ChanParData = (double) ftrigoutdelay / (double) Module_Information[ModNum].Module_ADCMSPS;
+            *ChanParData =
+                (double) ftrigoutdelay / (double) Module_Information[ModNum].Module_ADCMSPS;
         else if (Module_Information[ModNum].Module_ADCMSPS == 250)
-            *ChanParData = (double) ftrigoutdelay / (double) (Module_Information[ModNum].Module_ADCMSPS / 2);
+            *ChanParData =
+                (double) ftrigoutdelay / (double) (Module_Information[ModNum].Module_ADCMSPS / 2);
         else if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            *ChanParData = (double) ftrigoutdelay / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
+            *ChanParData =
+                (double) ftrigoutdelay / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
     } else if (strcmp(ChanParName, "ChanTrigStretch") == 0) {
         // Read from the selected Pixie module
-        Pixie16IMbufferIO(&chantrigstretch, 1, (unsigned int) (ChanTrigStretch_Address[ModNum] + ChanNum), MOD_READ,
+        Pixie16IMbufferIO(&chantrigstretch, 1,
+                          (unsigned int) (ChanTrigStretch_Address[ModNum] + ChanNum), MOD_READ,
                           ModNum);
-        Pixie_Devices[ModNum].DSP_Parameter_Values[ChanTrigStretch_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-                chantrigstretch;
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[ChanTrigStretch_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+            chantrigstretch;
 
         // Update channel parameter ChanTrigStretch
         if (Module_Information[ModNum].Module_ADCMSPS == 100)
-            *ChanParData = (double) chantrigstretch / (double) Module_Information[ModNum].Module_ADCMSPS;
+            *ChanParData =
+                (double) chantrigstretch / (double) Module_Information[ModNum].Module_ADCMSPS;
         else if (Module_Information[ModNum].Module_ADCMSPS == 250)
-            *ChanParData = (double) chantrigstretch / (double) (Module_Information[ModNum].Module_ADCMSPS / 2);
+            *ChanParData =
+                (double) chantrigstretch / (double) (Module_Information[ModNum].Module_ADCMSPS / 2);
         else if (Module_Information[ModNum].Module_ADCMSPS == 500)
-            *ChanParData = (double) chantrigstretch / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
+            *ChanParData =
+                (double) chantrigstretch / (double) (Module_Information[ModNum].Module_ADCMSPS / 5);
     } else {
         Pixie_Print_Error(PIXIE_FUNC, "invalid channel parameter name %s", ChanParName);
         return (-3);
@@ -5148,8 +5546,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadSglChanPar(const char* ChanParNa
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadHistogramFromModule(unsigned int* Histogram,
                                                                     unsigned int NumWords,
                                                                     unsigned short ModNum,
-                                                                    unsigned short ChanNum)
-{
+                                                                    unsigned short ChanNum) {
     int retval;  // return values
     unsigned int Histo_Address;
 
@@ -5166,8 +5563,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadHistogramFromModule(unsigned int
     Histo_Address = MAX_HISTOGRAM_LENGTH * ChanNum + HISTOGRAM_MEMORY_ADDRESS;
     retval = Pixie_Main_Memory_IO(Histogram, Histo_Address, NumWords, MOD_READ, ModNum);
     if (retval < 0) {
-        Pixie_Print_Error(PIXIE_FUNC,
-                          "failed to get histogram data from module %d, retval=%d",
+        Pixie_Print_Error(PIXIE_FUNC, "failed to get histogram data from module %d, retval=%d",
                           ModNum, retval);
         return (-3);
     }
@@ -5194,8 +5590,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadHistogramFromModule(unsigned int
  * @retval -2 - Failed to get statistics data. If this happens, then reboot the module.
  */
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadStatisticsFromModule(unsigned int* Statistics,
-                                                                     unsigned short ModNum)
-{
+                                                                     unsigned short ModNum) {
     int retval;  // return values
     unsigned short nWords, k;  // number of words
     unsigned int DSP_address;  // Start address in DSP memory
@@ -5217,8 +5612,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadStatisticsFromModule(unsigned in
         DSP_address = DATA_MEMORY_ADDRESS + DSP_IO_BORDER;
         retval = Pixie_DSP_Memory_IO(Statistics, DSP_address, nWords, MOD_READ, ModNum);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "failed to get statistics data from module %d, retval=%d",
+            Pixie_Print_Error(PIXIE_FUNC, "failed to get statistics data from module %d, retval=%d",
                               ModNum, retval);
             return (-2);
         }
@@ -5251,8 +5645,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadStatisticsFromModule(unsigned in
  * @retval -8 - Failed to read run statistics data from module
  */
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* FileName,
-                                                                unsigned short ModNum)
-{
+                                                                unsigned short ModNum) {
     FILE* HistFile = NULL;
     unsigned int* histdata;
     unsigned int histo_addr;
@@ -5276,10 +5669,12 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* File
     HistFile = fopen(FileName, "wb");
     if (HistFile != NULL) {
         // Allocate memory
-        if ((histdata = (unsigned int*) malloc(sizeof(unsigned int) * MAX_HISTOGRAM_LENGTH)) != NULL) {
+        if ((histdata = (unsigned int*) malloc(sizeof(unsigned int) * MAX_HISTOGRAM_LENGTH)) !=
+            NULL) {
             for (k = 0; k < NUMBER_OF_CHANNELS; k++) {
                 histo_addr = MAX_HISTOGRAM_LENGTH * k + HISTOGRAM_MEMORY_ADDRESS;
-                retval = Pixie_Main_Memory_IO(histdata, histo_addr, MAX_HISTOGRAM_LENGTH, MOD_READ, ModNum);
+                retval = Pixie_Main_Memory_IO(histdata, histo_addr, MAX_HISTOGRAM_LENGTH, MOD_READ,
+                                              ModNum);
                 if (retval < 0) {
                     // Release memory
                     free(histdata);
@@ -5337,11 +5732,14 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* File
     }
 
     for (ChannelNumber = 0; ChannelNumber < NUMBER_OF_CHANNELS; ChannelNumber++) {
-        MCAData[ChannelNumber] = (unsigned int*) malloc(sizeof(unsigned int) * MAX_HISTOGRAM_LENGTH);
+        MCAData[ChannelNumber] =
+            (unsigned int*) malloc(sizeof(unsigned int) * MAX_HISTOGRAM_LENGTH);
         if (MCAData[ChannelNumber] == NULL) {
             Pixie_Print_Error(PIXIE_FUNC, "failed to allocate memory for MCA data");
 
-            for (index = 0; index < ChannelNumber; index++) { free(MCAData[index]); }
+            for (index = 0; index < ChannelNumber; index++) {
+                free(MCAData[index]);
+            }
 
             // Close histogram output file
             fclose(outfil_mca);
@@ -5352,19 +5750,22 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* File
 
     ModuleNumber = 0;
     for (ChannelNumber = 0; ChannelNumber < NUMBER_OF_CHANNELS; ChannelNumber++) {
-        retval = Pixie16ReadHistogramFromFile(FileName, MCAData[ChannelNumber], MAX_HISTOGRAM_LENGTH, ModuleNumber,
-                                              ChannelNumber);
+        retval = Pixie16ReadHistogramFromFile(FileName, MCAData[ChannelNumber],
+                                              MAX_HISTOGRAM_LENGTH, ModuleNumber, ChannelNumber);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC, "Pixie16ReadHistogramFromFile failed, retval=%d",
-                              retval);
+            Pixie_Print_Error(PIXIE_FUNC, "Pixie16ReadHistogramFromFile failed, retval=%d", retval);
             fclose(outfil_mca);
-            for (index = 0; index < NUMBER_OF_CHANNELS; index++) { free(MCAData[index]); }
+            for (index = 0; index < NUMBER_OF_CHANNELS; index++) {
+                free(MCAData[index]);
+            }
             return (-7);
         }
     }
 
     // Write MCA data
-    for (index = 0; index < NUMBER_OF_CHANNELS; index++) { fprintf(outfil_mca, "Channel#%d\t", index); }
+    for (index = 0; index < NUMBER_OF_CHANNELS; index++) {
+        fprintf(outfil_mca, "Channel#%d\t", index);
+    }
     fprintf(outfil_mca, "\n");
 
     for (index = 0; index < MAX_HISTOGRAM_LENGTH; index++) {
@@ -5375,7 +5776,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* File
         fprintf(outfil_mca, "\n");
     }
 
-    for (index = 0; index < NUMBER_OF_CHANNELS; index++) { free(MCAData[index]); }
+    for (index = 0; index < NUMBER_OF_CHANNELS; index++) {
+        free(MCAData[index]);
+    }
 
 
     // Append run statistics data to the ASCII MCA data file
@@ -5383,8 +5786,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* File
     // Read raw run statistics data from the module
     retval = Pixie16ReadStatisticsFromModule(run_statistics, ModNum);
     if (retval < 0) {
-        Pixie_Print_Error(PIXIE_FUNC, "Pixie16ReadStatisticsFromModule failed, retval=%d",
-                          retval);
+        Pixie_Print_Error(PIXIE_FUNC, "Pixie16ReadStatisticsFromModule failed, retval=%d", retval);
         fclose(outfil_mca);
         return (-8);
     }
@@ -5398,7 +5800,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* File
     // Write live time to file
     fprintf(outfil_mca, "\nLive Time [s]\n");
 
-    for (index = 0; index < NUMBER_OF_CHANNELS; index++) { fprintf(outfil_mca, "Channel#%d\t", index); }
+    for (index = 0; index < NUMBER_OF_CHANNELS; index++) {
+        fprintf(outfil_mca, "Channel#%d\t", index);
+    }
     fprintf(outfil_mca, "\n");
 
     for (index = 0; index < NUMBER_OF_CHANNELS; index++) {
@@ -5411,7 +5815,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* File
     // Write input count rate to file
     fprintf(outfil_mca, "\nInput Count Rate [cps]\n");
 
-    for (index = 0; index < NUMBER_OF_CHANNELS; index++) { fprintf(outfil_mca, "Channel#%d\t", index); }
+    for (index = 0; index < NUMBER_OF_CHANNELS; index++) {
+        fprintf(outfil_mca, "Channel#%d\t", index);
+    }
     fprintf(outfil_mca, "\n");
 
     for (index = 0; index < NUMBER_OF_CHANNELS; index++) {
@@ -5424,7 +5830,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* File
     // Write output count rate to file
     fprintf(outfil_mca, "\nOutput Count Rate [cps]\n");
 
-    for (index = 0; index < NUMBER_OF_CHANNELS; index++) { fprintf(outfil_mca, "Channel#%d\t", index); }
+    for (index = 0; index < NUMBER_OF_CHANNELS; index++) {
+        fprintf(outfil_mca, "Channel#%d\t", index);
+    }
     fprintf(outfil_mca, "\n");
 
     for (index = 0; index < NUMBER_OF_CHANNELS; index++) {
@@ -5441,13 +5849,13 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* File
 }
 
 
- /**
+/**
  * @defgroup LIST_MODE_DATA_PROCESSING List-Mode Data Processing
  * @ingroup PUBLIC_API
  * A group of functions used to process List-Mode data from the modules
  */
 
- /**
+/**
   * @ingroup LIST_MODE_DATA_PROCESSING
   * @brief Parse list-mode events from the data file to get the number of events for each module.
   *
@@ -5470,8 +5878,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveHistogramToFile(const char* File
   * @retval -6 - Failed to find next event in file.
   */
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16GetModuleEvents(const char* FileName,
-                                                            unsigned int* ModuleEvents)
-{
+                                                            unsigned int* ModuleEvents) {
 
     unsigned int eventdata, eventlength;
     unsigned int TotalWords, TotalSkippedWords;
@@ -5490,8 +5897,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16GetModuleEvents(const char* FileName
         // Get file length
         retval = fseek(ListModeFile, 0, SEEK_END);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC, "failed listmode seek, error=%d",
-                              errno);
+            Pixie_Print_Error(PIXIE_FUNC, "failed listmode seek, error=%d", errno);
             (void) fclose(ListModeFile);
             return (-3);
         }
@@ -5501,8 +5907,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16GetModuleEvents(const char* FileName
         // Point ListModeFile to the beginning of file
         retval = fseek(ListModeFile, 0, SEEK_SET);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC, "failed listmode seek, error=%d",
-                              errno);
+            Pixie_Print_Error(PIXIE_FUNC, "failed listmode seek, error=%d", errno);
             (void) fclose(ListModeFile);
             return (-4);
         }
@@ -5511,10 +5916,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16GetModuleEvents(const char* FileName
         TotalSkippedWords = 0;
 
         do {
-          retval = Pixie16_fread(&eventdata, 4, 1, ListModeFile);
+            retval = Pixie16_fread(&eventdata, 4, 1, ListModeFile);
             if (retval < 0) {
-                Pixie_Print_Error(PIXIE_FUNC, "failed listmode read, error=%d",
-                                  errno);
+                Pixie_Print_Error(PIXIE_FUNC, "failed listmode read, error=%d", errno);
                 (void) fclose(ListModeFile);
                 return (-5);
             }
@@ -5522,8 +5926,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16GetModuleEvents(const char* FileName
             TotalSkippedWords += eventlength;
             retval = fseek(ListModeFile, (eventlength - 1) * 4, SEEK_CUR);
             if (retval < 0) {
-                Pixie_Print_Error(PIXIE_FUNC, "failed listmode seek, error=%d",
-                                  errno);
+                Pixie_Print_Error(PIXIE_FUNC, "failed listmode seek, error=%d", errno);
                 (void) fclose(ListModeFile);
                 return (-6);
             }
@@ -5593,8 +5996,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16GetModuleEvents(const char* FileName
  */
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16GetEventsInfo(const char* FileName,
                                                           unsigned int* EventInformation,
-                                                          unsigned short ModuleNumber)
-{
+                                                          unsigned short ModuleNumber) {
 
     unsigned int eventdata, headerlength, eventlength;
     unsigned int TotalWords, TotalSkippedWords, NumEvents;
@@ -5741,8 +6143,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16GetEventsInfo(const char* FileName,
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadListModeTrace(const char* FileName,
                                                               unsigned short* Trace_Data,
                                                               unsigned short NumWords,
-                                                              unsigned int FileLocation)
-{
+                                                              unsigned int FileLocation) {
     FILE* ListModeFile = NULL;
 
     // Open the list-mode file
@@ -5753,8 +6154,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadListModeTrace(const char* FileNa
         // Position ListModeFile to the requested trace location
         retval = fseek(ListModeFile, FileLocation * 4, SEEK_SET);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC, "failed listmode data seek, error=%d",
-                              errno);
+            Pixie_Print_Error(PIXIE_FUNC, "failed listmode data seek, error=%d", errno);
             (void) fclose(ListModeFile);
             return (-2);
         }
@@ -5762,8 +6162,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadListModeTrace(const char* FileNa
         // Read trace
         retval = Pixie16_fread(Trace_Data, 2, NumWords, ListModeFile);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC, "failed listmode read, error=%d",
-                              errno);
+            Pixie_Print_Error(PIXIE_FUNC, "failed listmode read, error=%d", errno);
             (void) fclose(ListModeFile);
             return (-3);
         }
@@ -5815,8 +6214,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadHistogramFromFile(const char* Fi
                                                                   unsigned int* Histogram,
                                                                   unsigned int NumWords,
                                                                   unsigned short ModNum,
-                                                                  unsigned short ChanNum)
-{
+                                                                  unsigned short ChanNum) {
 
     unsigned int Histo_Address, TotalWords;
     FILE* HistogramFile = NULL;
@@ -5829,8 +6227,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadHistogramFromFile(const char* Fi
         // Get file length
         retval = fseek(HistogramFile, 0, SEEK_END);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC, "failed histogram seek, error=%d",
-                              errno);
+            Pixie_Print_Error(PIXIE_FUNC, "failed histogram seek, error=%d", errno);
             (void) fclose(HistogramFile);
             return (-3);
         }
@@ -5838,17 +6235,16 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadHistogramFromFile(const char* Fi
         // Point HistogramFile to the beginning of file
         retval = fseek(HistogramFile, 0, SEEK_SET);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC, "failed histogram seek, error=%d",
-                              errno);
+            Pixie_Print_Error(PIXIE_FUNC, "failed histogram seek, error=%d", errno);
             (void) fclose(HistogramFile);
             return (-4);
         }
 
         Histo_Address = MAX_HISTOGRAM_LENGTH * ChanNum;
         if (Histo_Address > (TotalWords - NumWords)) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "no histogram data is available in file %s for channel %d of module %d",
-                              FileName, ChanNum, ModNum);
+            Pixie_Print_Error(
+                PIXIE_FUNC, "no histogram data is available in file %s for channel %d of module %d",
+                FileName, ChanNum, ModNum);
             (void) fclose(HistogramFile);
             return (-2);
         }
@@ -5858,16 +6254,14 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadHistogramFromFile(const char* Fi
         // Point HistogramFile to the right location of the histogram data file
         retval = fseek(HistogramFile, Histo_Address * 4, SEEK_CUR);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC, "failed histogram seek, error=%d",
-                              errno);
+            Pixie_Print_Error(PIXIE_FUNC, "failed histogram seek, error=%d", errno);
             (void) fclose(HistogramFile);
             return (-5);
         }
 
         retval = Pixie16_fread(Histogram, 4, NumWords, HistogramFile);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC, "failed histogram read, error=%d",
-                              errno);
+            Pixie_Print_Error(PIXIE_FUNC, "failed histogram read, error=%d", errno);
             (void) fclose(HistogramFile);
             return (-6);
         }
@@ -5881,7 +6275,6 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadHistogramFromFile(const char* Fi
 
     return (0);
 }
-
 
 
 /**
@@ -5901,8 +6294,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadHistogramFromFile(const char* Fi
  * @retval -2 - Failed to open the DSP parameters file
  * @retval -3 - Failed to write DSP parameter values
  */
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveDSPParametersToFile(const char* FileName)
-{
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveDSPParametersToFile(const char* FileName) {
     unsigned short ModNum;
     FILE* DSPSettingsFile = NULL;
     int retval;
@@ -5912,8 +6304,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveDSPParametersToFile(const char* 
     if (DSPSettingsFile != NULL) {
         // Get the current DSP parameter values from the Pixie-16 board
         for (ModNum = 0; ModNum < Number_Modules; ModNum++) {
-            retval = Pixie16IMbufferIO(Pixie_Devices[ModNum].DSP_Parameter_Values, N_DSP_PAR, DATA_MEMORY_ADDRESS,
-                                       MOD_READ, ModNum);
+            retval = Pixie16IMbufferIO(Pixie_Devices[ModNum].DSP_Parameter_Values, N_DSP_PAR,
+                                       DATA_MEMORY_ADDRESS, MOD_READ, ModNum);
             if (retval < 0) {
                 Pixie_Print_Error(PIXIE_FUNC,
                                   "failed to read DSP parameter values from module %d, retval = %d",
@@ -5925,7 +6317,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveDSPParametersToFile(const char* 
 
         // Write DSP parameter values to the settings file
         for (ModNum = 0; ModNum < PRESET_MAX_MODULES; ModNum++) {
-          retval = (int) fwrite(Pixie_Devices[ModNum].DSP_Parameter_Values, sizeof(unsigned int), N_DSP_PAR, DSPSettingsFile);
+            retval = (int) fwrite(Pixie_Devices[ModNum].DSP_Parameter_Values, sizeof(unsigned int),
+                                  N_DSP_PAR, DSPSettingsFile);
             if (retval != N_DSP_PAR) {
                 Pixie_Print_Error(PIXIE_FUNC,
                                   "failed to write DSP parameter values from module %d, error=%d",
@@ -5966,30 +6359,27 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveDSPParametersToFile(const char* 
  * @retval -6 - Failed to seek to the beginning of the file
  * @retval -7 - Failed to read settings from the file
  */
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16LoadDSPParametersFromFile(const char* FileName)
-{
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16LoadDSPParametersFromFile(const char* FileName) {
     unsigned short k;
     unsigned int TotalWords;
     int retval;
     FILE* DSPSettingsFile = NULL;
 
     // Open DSP parameters file
-    if ((DSPSettingsFile = fopen(FileName, "rb")) != NULL)  // Make sure DSPSettingsFile is opened successfully
+    if ((DSPSettingsFile = fopen(FileName, "rb")) !=
+        NULL)  // Make sure DSPSettingsFile is opened successfully
     {
         // Check if file size is consistent with predefined length (N_DSP_PAR * PRESET_MAX_MODULES)
         retval = fseek(DSPSettingsFile, 0, SEEK_END);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "failed seek Fippi settings, error=%d",
-                              errno);
+            Pixie_Print_Error(PIXIE_FUNC, "failed seek Fippi settings, error=%d", errno);
             (void) fclose(DSPSettingsFile);
             return (-5);
         }
 
         TotalWords = (ftell(DSPSettingsFile) + 1) / 4;
         if (TotalWords != (N_DSP_PAR * PRESET_MAX_MODULES)) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "size of DSPParFile is invalid. Check DSPParFile name %s",
+            Pixie_Print_Error(PIXIE_FUNC, "size of DSPParFile is invalid. Check DSPParFile name %s",
                               FileName);
             (void) fclose(DSPSettingsFile);
             return (-1);
@@ -5998,20 +6388,18 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16LoadDSPParametersFromFile(const char
         // Point configfil to the beginning of file
         retval = fseek(DSPSettingsFile, 0, SEEK_SET);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "failed seek Fippi settings, error=%d",
-                              errno);
+            Pixie_Print_Error(PIXIE_FUNC, "failed seek Fippi settings, error=%d", errno);
             (void) fclose(DSPSettingsFile);
             return (-6);
         }
 
         // Read DSP parameters
         for (k = 0; k < PRESET_MAX_MODULES; k++) {
-            retval = Pixie16_fread(&Pixie_Devices[k].DSP_Parameter_Values[0], sizeof(unsigned int), N_DSP_PAR, DSPSettingsFile);
+            retval = Pixie16_fread(&Pixie_Devices[k].DSP_Parameter_Values[0], sizeof(unsigned int),
+                                   N_DSP_PAR, DSPSettingsFile);
             if (retval < 0) {
                 Pixie_Print_Error(PIXIE_FUNC,
-                                  "failed to read Fippi settings in module %d, error=%d",
-                                  k, errno);
+                                  "failed to read Fippi settings in module %d, error=%d", k, errno);
                 (void) fclose(DSPSettingsFile);
                 return (-7);
             }
@@ -6024,22 +6412,20 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16LoadDSPParametersFromFile(const char
         // Download to all modules
         /// TODO: Add a flag here to turn off downloading parameters to modules if we're offline.
         for (k = 0; k < Number_Modules; k++) {
-            Pixie_DSP_Memory_IO(&Pixie_Devices[k].DSP_Parameter_Values[0], DATA_MEMORY_ADDRESS, DSP_IO_BORDER,
-                                MOD_WRITE, k);
+            Pixie_DSP_Memory_IO(&Pixie_Devices[k].DSP_Parameter_Values[0], DATA_MEMORY_ADDRESS,
+                                DSP_IO_BORDER, MOD_WRITE, k);
 
             // Always re-program fippi after downloading DSP parameters
             retval = Pixie16ProgramFippi(k);
             if (retval < 0) {
-                Pixie_Print_Error(PIXIE_FUNC,
-                                  "failed to program Fippi in module %d, retval=%d",
-                                  k, retval);
+                Pixie_Print_Error(PIXIE_FUNC, "failed to program Fippi in module %d, retval=%d", k,
+                                  retval);
                 return (-2);
             }
 
             retval = Pixie16SetDACs(k);
             if (retval < 0) {
-                Pixie_Print_Error(PIXIE_FUNC,
-                                  "failed to set DACs in module %d, retval=%d", k,
+                Pixie_Print_Error(PIXIE_FUNC, "failed to set DACs in module %d, retval=%d", k,
                                   retval);
                 return (-3);
             }
@@ -6091,10 +6477,11 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16LoadDSPParametersFromFile(const char
  * @retval -1 - Failed to program Fippi in a module
  * @retval -2 - Failed to set DACs in a module
  */
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16CopyDSPParameters(unsigned short BitMask,  // copy items bit mask
-                         unsigned short SourceModule,  // source module
-                         unsigned short SourceChannel,  // source channel
-                         unsigned short* DestinationMask)  // the destination module and channel bit mask
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16CopyDSPParameters(
+    unsigned short BitMask,  // copy items bit mask
+    unsigned short SourceModule,  // source module
+    unsigned short SourceChannel,  // source channel
+    unsigned short* DestinationMask)  // the destination module and channel bit mask
 {
     unsigned short i, j, k;
     int retval;
@@ -6110,8 +6497,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16CopyDSPParameters(unsigned short Bit
 
     // Download to all modules
     for (k = 0; k < Number_Modules; k++) {
-        Pixie_DSP_Memory_IO(&Pixie_Devices[k].DSP_Parameter_Values[0], DATA_MEMORY_ADDRESS, DSP_IO_BORDER, MOD_WRITE,
-                            k);
+        Pixie_DSP_Memory_IO(&Pixie_Devices[k].DSP_Parameter_Values[0], DATA_MEMORY_ADDRESS,
+                            DSP_IO_BORDER, MOD_WRITE, k);
 
         // Always re-program fippi after downloading DSP parameters
         retval = Pixie16ProgramFippi(k);
@@ -6123,8 +6510,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16CopyDSPParameters(unsigned short Bit
 
         retval = Pixie16SetDACs(k);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC, "failed to set DACs in module %d, retval=%d", k,
-                              retval);
+            Pixie_Print_Error(PIXIE_FUNC, "failed to set DACs in module %d, retval=%d", k, retval);
             return (-2);
         }
     }
@@ -6161,11 +6547,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16CopyDSPParameters(unsigned short Bit
  * @retval -4 - Failed to read external FIFO status
  * @retval -5 - Failed to read data from external FIFO
  */
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveExternalFIFODataToFile(const char* FileName,
-                                                                       unsigned int* nFIFOWords,
-                                                                       unsigned short ModNum,
-                                                                       unsigned short EndOfRunRead)
-{
+PIXIE16APP_EXPORT int PIXIE16APP_API
+Pixie16SaveExternalFIFODataToFile(const char* FileName, unsigned int* nFIFOWords,
+                                  unsigned short ModNum, unsigned short EndOfRunRead) {
     unsigned int nWords;
     FILE* ListFile = NULL;
     unsigned int* lmdata;
@@ -6180,9 +6564,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveExternalFIFODataToFile(const cha
 
     // Allocate memory
     if ((lmdata = (unsigned int*) malloc(sizeof(unsigned int) * EXTERNAL_FIFO_LENGTH)) == NULL) {
-        Pixie_Print_Error(PIXIE_FUNC,
-                          "failed to allocate memory to store list-mode data for module %d",
-                          ModNum);
+        Pixie_Print_Error(
+            PIXIE_FUNC, "failed to allocate memory to store list-mode data for module %d", ModNum);
         *nFIFOWords = 0;
         return (-2);
     }
@@ -6203,12 +6586,13 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveExternalFIFODataToFile(const cha
 
         // Read data out from the external FIFO if the the number of words exceeds threshold
         // if EndOfRunRead == 1, check if nWords is greater than 0
-        if (((EndOfRunRead == 0) && (nWords > EXTFIFO_READ_THRESH)) || ((EndOfRunRead == 1) && (nWords > 0))) {
+        if (((EndOfRunRead == 0) && (nWords > EXTFIFO_READ_THRESH)) ||
+            ((EndOfRunRead == 1) && (nWords > 0))) {
             retval = Pixie_ExtFIFO_Read(lmdata, nWords, ModNum);
             if (retval < 0) {
-                Pixie_Print_Error(PIXIE_FUNC,
-                                  "failed to read data from external FIFO in module %d, retval = %d",
-                                  ModNum, retval);
+                Pixie_Print_Error(
+                    PIXIE_FUNC, "failed to read data from external FIFO in module %d, retval = %d",
+                    ModNum, retval);
                 fclose(ListFile);
                 free(lmdata);
                 *nFIFOWords = 0;
@@ -6246,11 +6630,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SaveExternalFIFODataToFile(const cha
  * @retval  0 - Success
  * @retval -1 - Invalid module number
  */
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16RegisterIO(unsigned short ModNum,
-                                                       unsigned int address,
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16RegisterIO(unsigned short ModNum, unsigned int address,
                                                        unsigned short direction,
-                                                       unsigned int* value)
-{
+                                                       unsigned int* value) {
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
         Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
@@ -6340,7 +6722,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteCSR(unsigned short ModNum, unsi
  * @retval  0 - Successful
  * @retval -1 - Invalid Pixie module number
  */
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16CheckExternalFIFOStatus(unsigned int* nFIFOWords, unsigned short ModNum) {
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16CheckExternalFIFOStatus(unsigned int* nFIFOWords,
+                                                                    unsigned short ModNum) {
     int retval;  // return values
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
@@ -6375,8 +6758,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16CheckExternalFIFOStatus(unsigned int
  */
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO_Data,
                                                                      unsigned int nFIFOWords,
-                                                                     unsigned short ModNum)
-{
+                                                                     unsigned short ModNum) {
     int retval;  // return values
 
     // Check if ModNum is valid
@@ -6388,8 +6770,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadDataFromExternalFIFO(unsigned in
     retval = Pixie_ExtFIFO_Read(ExtFIFO_Data, nFIFOWords, ModNum);
     if (retval < 0) {
         Pixie_Print_Error(PIXIE_FUNC,
-                          "failed to read data from external FIFO in module %d, retval=%d",
-                          ModNum, retval);
+                          "failed to read data from external FIFO in module %d, retval=%d", ModNum,
+                          retval);
         return (-2);
     }
 
@@ -6442,15 +6824,10 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadDataFromExternalFIFO(unsigned in
  * @retval -7 - Failed to seek to the trace in the file
  * @retval -8 - Failed to read the trace from the file
  */
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ComputeFastFiltersOffline(const char* FileName,
-                                                                      unsigned short ModuleNumber,
-                                                                      unsigned short ChannelNumber,
-                                                                      unsigned int FileLocation,
-                                                                      unsigned short RcdTraceLength,
-                                                                      unsigned short* RcdTrace,
-                                                                      double* fastfilter,
-                                                                      double* cfd)
-{
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ComputeFastFiltersOffline(
+    const char* FileName, unsigned short ModuleNumber, unsigned short ChannelNumber,
+    unsigned int FileLocation, unsigned short RcdTraceLength, unsigned short* RcdTrace,
+    double* fastfilter, double* cfd) {
 
     FILE* ListModeFile = NULL;
     unsigned int FastLen, FastGap, FastFilterRange, CFD_Delay, CFD_W;
@@ -6484,18 +6861,22 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ComputeFastFiltersOffline(const char
     }
 
     // Retrieve channel parameters
-    FastFilterRange = Pixie_Devices[ModuleNumber]
-                              .DSP_Parameter_Values[FastFilterRange_Address[ModuleNumber] - DATA_MEMORY_ADDRESS];
-    FastLen = Pixie_Devices[ModuleNumber]
-                      .DSP_Parameter_Values[FastLength_Address[ModuleNumber] + ChannelNumber - DATA_MEMORY_ADDRESS] *
-              (unsigned int) pow(2.0, (double) FastFilterRange);
-    FastGap = Pixie_Devices[ModuleNumber]
-                      .DSP_Parameter_Values[FastGap_Address[ModuleNumber] + ChannelNumber - DATA_MEMORY_ADDRESS] *
-              (unsigned int) pow(2.0, (double) FastFilterRange);
-    CFD_Delay = Pixie_Devices[ModuleNumber]
-                        .DSP_Parameter_Values[CFDDelay_Address[ModuleNumber] + ChannelNumber - DATA_MEMORY_ADDRESS];
-    CFD_W = Pixie_Devices[ModuleNumber]
-                    .DSP_Parameter_Values[CFDScale_Address[ModuleNumber] + ChannelNumber - DATA_MEMORY_ADDRESS];
+    FastFilterRange =
+        Pixie_Devices[ModuleNumber]
+            .DSP_Parameter_Values[FastFilterRange_Address[ModuleNumber] - DATA_MEMORY_ADDRESS];
+    FastLen =
+        Pixie_Devices[ModuleNumber].DSP_Parameter_Values[FastLength_Address[ModuleNumber] +
+                                                         ChannelNumber - DATA_MEMORY_ADDRESS] *
+        (unsigned int) pow(2.0, (double) FastFilterRange);
+    FastGap =
+        Pixie_Devices[ModuleNumber].DSP_Parameter_Values[FastGap_Address[ModuleNumber] +
+                                                         ChannelNumber - DATA_MEMORY_ADDRESS] *
+        (unsigned int) pow(2.0, (double) FastFilterRange);
+    CFD_Delay =
+        Pixie_Devices[ModuleNumber].DSP_Parameter_Values[CFDDelay_Address[ModuleNumber] +
+                                                         ChannelNumber - DATA_MEMORY_ADDRESS];
+    CFD_W = Pixie_Devices[ModuleNumber].DSP_Parameter_Values[CFDScale_Address[ModuleNumber] +
+                                                             ChannelNumber - DATA_MEMORY_ADDRESS];
 
     // Scale up fast filter and CFD parameters for 250 MHz and 500 MHz modules
     if (Module_Information[ModuleNumber].Module_ADCMSPS == 250) {
@@ -6542,16 +6923,21 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ComputeFastFiltersOffline(const char
         offset = 2 * FastLen + FastGap - 1;
         for (x = offset; x < RcdTraceLength; x++) {
             fsum0[x] = 0;
-            for (y = (x - offset); y < (x - offset + FastLen); y++) { fsum0[x] += RcdTrace[y]; }
+            for (y = (x - offset); y < (x - offset + FastLen); y++) {
+                fsum0[x] += RcdTrace[y];
+            }
             fsum1[x] = 0;
-            for (y = (x - offset + FastLen + FastGap); y < (x - offset + 2 * FastLen + FastGap); y++) {
+            for (y = (x - offset + FastLen + FastGap); y < (x - offset + 2 * FastLen + FastGap);
+                 y++) {
                 fsum1[x] += RcdTrace[y];
             }
             fastfilter[x] = ((double) fsum1[x] - (double) fsum0[x]) / (double) FastLen;
         }
 
         // Extend the value of fastfilter[offset] to all non-computed ones from index 0 to offset-1
-        for (x = 0; x < offset; x++) { fastfilter[x] = fastfilter[offset]; }
+        for (x = 0; x < offset; x++) {
+            fastfilter[x] = fastfilter[offset];
+        }
 
         // Compute CFD values - 100 MHz and 250 MHz modules use different algorithm than 500 MHz modules
 
@@ -6567,7 +6953,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ComputeFastFiltersOffline(const char
             }
 
             // Extend the value of cfd[CFD_Delay] to all non-computed ones from index 0 to CFD_Delay-1
-            for (x = 0; x < CFD_Delay; x++) { cfd[x] = cfd[CFD_Delay]; }
+            for (x = 0; x < CFD_Delay; x++) {
+                cfd[x] = cfd[CFD_Delay];
+            }
         } else if (Module_Information[ModuleNumber].Module_ADCMSPS == 500) {
             //////---500 MHz modules ---//////
             // fixed CFD parameter values: w = 1.0, B = 5. D = 5, L = 1
@@ -6575,15 +6963,20 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ComputeFastFiltersOffline(const char
             D = 5;
             for (x = (B + D); x < (unsigned int) (RcdTraceLength - 1); x++) {
                 cfd[x] = (RcdTrace[x] + RcdTrace[x + 1]) - (RcdTrace[x - B] + RcdTrace[x - B + 1]) -
-                         (RcdTrace[x - D] + RcdTrace[x - D + 1]) + (RcdTrace[x - B - D] + RcdTrace[x - B - D + 1]);
+                         (RcdTrace[x - D] + RcdTrace[x - D + 1]) +
+                         (RcdTrace[x - B - D] + RcdTrace[x - B - D + 1]);
             }
 
             // Extend the value of cfd[CFD_Delay] to all non-computed ones
-            for (x = 0; x < (unsigned int) (B + D); x++) { cfd[x] = cfd[B + D]; }
+            for (x = 0; x < (unsigned int) (B + D); x++) {
+                cfd[x] = cfd[B + D];
+            }
             cfd[RcdTraceLength - 1] = cfd[RcdTraceLength - 2];
         } else  //invalid module variant
         {
-            for (x = 0; x < RcdTraceLength; x++) { cfd[x] = 0.0; }
+            for (x = 0; x < RcdTraceLength; x++) {
+                cfd[x] = 0.0;
+            }
         }
     } else {
         Pixie_Print_Error(PIXIE_FUNC, "can't open list-mode file %s", FileName);
@@ -6636,14 +7029,10 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ComputeFastFiltersOffline(const char
  * @retval -6 - Failed to seek to the trace in the file
  * @retval -7 - Failed to read the trace from the file
  */
-PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ComputeSlowFiltersOffline(const char* FileName,
-                                                                      unsigned short ModuleNumber,
-                                                                      unsigned short ChannelNumber,
-                                                                      unsigned int FileLocation,
-                                                                      unsigned short RcdTraceLength,
-                                                                      unsigned short* RcdTrace,
-                                                                      double* slowfilter)
-{
+PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ComputeSlowFiltersOffline(
+    const char* FileName, unsigned short ModuleNumber, unsigned short ChannelNumber,
+    unsigned int FileLocation, unsigned short RcdTraceLength, unsigned short* RcdTrace,
+    double* slowfilter) {
 
     FILE* ListModeFile = NULL;
     unsigned int SlowLen, SlowGap, SlowFilterRange, PreampTau_IEEE;
@@ -6674,17 +7063,20 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ComputeSlowFiltersOffline(const char
 
     // Retrieve channel parameters
 
-    SlowFilterRange = Pixie_Devices[ModuleNumber]
-                              .DSP_Parameter_Values[SlowFilterRange_Address[ModuleNumber] - DATA_MEMORY_ADDRESS];
-    SlowLen = Pixie_Devices[ModuleNumber]
-                      .DSP_Parameter_Values[SlowLength_Address[ModuleNumber] + ChannelNumber - DATA_MEMORY_ADDRESS] *
-              (unsigned int) pow(2.0, (double) SlowFilterRange);
-    SlowGap = Pixie_Devices[ModuleNumber]
-                      .DSP_Parameter_Values[SlowGap_Address[ModuleNumber] + ChannelNumber - DATA_MEMORY_ADDRESS] *
-              (unsigned int) pow(2.0, (double) SlowFilterRange);
+    SlowFilterRange =
+        Pixie_Devices[ModuleNumber]
+            .DSP_Parameter_Values[SlowFilterRange_Address[ModuleNumber] - DATA_MEMORY_ADDRESS];
+    SlowLen =
+        Pixie_Devices[ModuleNumber].DSP_Parameter_Values[SlowLength_Address[ModuleNumber] +
+                                                         ChannelNumber - DATA_MEMORY_ADDRESS] *
+        (unsigned int) pow(2.0, (double) SlowFilterRange);
+    SlowGap =
+        Pixie_Devices[ModuleNumber].DSP_Parameter_Values[SlowGap_Address[ModuleNumber] +
+                                                         ChannelNumber - DATA_MEMORY_ADDRESS] *
+        (unsigned int) pow(2.0, (double) SlowFilterRange);
     PreampTau_IEEE =
-            Pixie_Devices[ModuleNumber]
-                    .DSP_Parameter_Values[PreampTau_Address[ModuleNumber] + ChannelNumber - DATA_MEMORY_ADDRESS];
+        Pixie_Devices[ModuleNumber].DSP_Parameter_Values[PreampTau_Address[ModuleNumber] +
+                                                         ChannelNumber - DATA_MEMORY_ADDRESS];
     preamptau = IEEEFloating2Decimal(PreampTau_IEEE);
 
     // Scale up slow filter parameters for 250 MHz and 500 MHz modules
@@ -6710,8 +7102,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ComputeSlowFiltersOffline(const char
         // Position ListModeFile to the requested trace location
         retval = fseek(ListModeFile, FileLocation * 4, SEEK_SET);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC, "failure seek listmode data, error=%d",
-                              errno);
+            Pixie_Print_Error(PIXIE_FUNC, "failure seek listmode data, error=%d", errno);
             (void) fclose(ListModeFile);
             return (-6);
         }
@@ -6719,8 +7110,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ComputeSlowFiltersOffline(const char
         // Read trace
         retval = Pixie16_fread(RcdTrace, 2, RcdTraceLength, ListModeFile);
         if (retval < 0) {
-            Pixie_Print_Error(PIXIE_FUNC, "failure read listmode data, error=%d",
-                              errno);
+            Pixie_Print_Error(PIXIE_FUNC, "failure read listmode data, error=%d", errno);
             (void) fclose(ListModeFile);
             return (-7);
         }
@@ -6743,35 +7133,50 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ComputeSlowFiltersOffline(const char
         // Compute slow filter coefficients
         deltaT = 1.0 / ((double) Module_Information[ModuleNumber].Module_ADCMSPS);
         b1 = exp(-1.0 * deltaT / preamptau);
-        c0 = -(1.0 - b1) * pow(b1, (double) SlowLen) * coef_scaling_factor / (1.0 - pow(b1, (double) SlowLen));
+        c0 = -(1.0 - b1) * pow(b1, (double) SlowLen) * coef_scaling_factor /
+             (1.0 - pow(b1, (double) SlowLen));
         c1 = (1.0 - b1) * coef_scaling_factor;
         c2 = (1.0 - b1) * coef_scaling_factor / (1.0 - pow(b1, (double) SlowLen));
 
         // Compute baseline
         bsum0 = 0;
-        for (y = 0; y < SlowLen; y++) { bsum0 += RcdTrace[y]; }
+        for (y = 0; y < SlowLen; y++) {
+            bsum0 += RcdTrace[y];
+        }
         bsum1 = 0;
-        for (y = SlowLen; y < (SlowLen + SlowGap); y++) { bsum1 += RcdTrace[y]; }
+        for (y = SlowLen; y < (SlowLen + SlowGap); y++) {
+            bsum1 += RcdTrace[y];
+        }
         bsum2 = 0;
-        for (y = (SlowLen + SlowGap); y < (2 * SlowLen + SlowGap); y++) { bsum2 += RcdTrace[y]; }
+        for (y = (SlowLen + SlowGap); y < (2 * SlowLen + SlowGap); y++) {
+            bsum2 += RcdTrace[y];
+        }
         baseline = c0 * (double) bsum0 + c1 * (double) bsum1 + c2 * (double) bsum2;
 
         // Compute slow filter response
         offset = 2 * SlowLen + SlowGap - 1;
         for (x = offset; x < RcdTraceLength; x++) {
             esum0[x] = 0;
-            for (y = (x - offset); y < (x - offset + SlowLen); y++) { esum0[x] += RcdTrace[y]; }
+            for (y = (x - offset); y < (x - offset + SlowLen); y++) {
+                esum0[x] += RcdTrace[y];
+            }
             esum1[x] = 0;
-            for (y = (x - offset + SlowLen); y < (x - offset + SlowLen + SlowGap); y++) { esum1[x] += RcdTrace[y]; }
+            for (y = (x - offset + SlowLen); y < (x - offset + SlowLen + SlowGap); y++) {
+                esum1[x] += RcdTrace[y];
+            }
             esum2[x] = 0;
-            for (y = (x - offset + SlowLen + SlowGap); y < (x - offset + 2 * SlowLen + SlowGap); y++) {
+            for (y = (x - offset + SlowLen + SlowGap); y < (x - offset + 2 * SlowLen + SlowGap);
+                 y++) {
                 esum2[x] += RcdTrace[y];
             }
-            slowfilter[x] = c0 * (double) esum0[x] + c1 * (double) esum1[x] + c2 * (double) esum2[x] - baseline;
+            slowfilter[x] =
+                c0 * (double) esum0[x] + c1 * (double) esum1[x] + c2 * (double) esum2[x] - baseline;
         }
 
         // Extend the value of slowfilter[offset] to all non-computed ones from index 0 to offset-1
-        for (x = 0; x < offset; x++) { slowfilter[x] = slowfilter[offset]; }
+        for (x = 0; x < offset; x++) {
+            slowfilter[x] = slowfilter[offset];
+        }
     } else {
         Pixie_Print_Error(PIXIE_FUNC, "can't open list-mode file %s", FileName);
         return (-5);
@@ -6806,8 +7211,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ComputeSlowFiltersOffline(const char
  * @retval -2 - module offline variant is invalid
  */
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16SetOfflineVariant(unsigned short ModuleNumber,
-                                                              unsigned short ModuleOfflineVariant)
-{
+                                                              unsigned short ModuleOfflineVariant) {
     //check if module number is valid
     if (ModuleNumber >= PRESET_MAX_MODULES) {
         Pixie_Print_Error(PIXIE_FUNC, "module number is invalid %d", ModuleNumber);

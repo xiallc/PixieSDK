@@ -21,42 +21,30 @@
  */
 
 #include <cstring>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
 #include <pixie/buffer.hpp>
 #include <pixie/error.hpp>
 #include <pixie/log.hpp>
 
-namespace xia
-{
-namespace buffer
-{
+namespace xia {
+namespace buffer {
 struct pool::releaser {
     pool& pool_;
     releaser(pool& pool_);
     void operator()(buffer* buf) const;
 };
 
-pool::releaser::releaser(pool& pool__)
-    : pool_(pool__)
-{
-}
+pool::releaser::releaser(pool& pool__) : pool_(pool__) {}
 
-void pool::releaser::operator()(buffer* buf) const
-{
+void pool::releaser::operator()(buffer* buf) const {
     pool_.release(buf);
 }
 
-pool::pool()
-    : number(0),
-      size(0),
-      count_(0)
-{
-}
+pool::pool() : number(0), size(0), count_(0) {}
 
-pool::~pool()
-{
+pool::~pool() {
     try {
         destroy();
     } catch (...) {
@@ -64,15 +52,11 @@ pool::~pool()
     }
 }
 
-void
-pool::create(const size_t number_, const size_t size_)
-{
-    log(log::info) << "pool create: num=" << number_
-                   << " size=" << size_;
+void pool::create(const size_t number_, const size_t size_) {
+    log(log::info) << "pool create: num=" << number_ << " size=" << size_;
     lock_guard guard(lock);
     if (valid()) {
-        throw error(error::code::buffer_pool_not_empty,
-                    "pool is already created");
+        throw error(error::code::buffer_pool_not_empty, "pool is already created");
     }
     number = number_;
     size = size_;
@@ -84,15 +68,12 @@ pool::create(const size_t number_, const size_t size_)
     count_ = number;
 }
 
-void
-pool::destroy()
-{
+void pool::destroy() {
     lock_guard guard(lock);
     if (number > 0) {
         log(log::info) << "pool destroy";
         if (count_.load() != number) {
-            throw error(error::code::buffer_pool_busy,
-                        "pool destroy made while busy");
+            throw error(error::code::buffer_pool_busy, "pool destroy made while busy");
         }
         while (!buffers.empty()) {
             buffer_ptr buf = buffers.front();
@@ -105,13 +86,10 @@ pool::destroy()
     }
 }
 
-handle
-pool::request()
-{
+handle pool::request() {
     lock_guard guard(lock);
     if (empty()) {
-        throw error(error::code::buffer_pool_empty,
-                    "no buffers avaliable");
+        throw error(error::code::buffer_pool_empty, "no buffers avaliable");
     }
     count_--;
     buffer_ptr buf = buffers.front();
@@ -119,32 +97,20 @@ pool::request()
     return handle(buf, releaser(*this));
 }
 
-void
-pool::release(buffer_ptr buf)
-{
+void pool::release(buffer_ptr buf) {
     buf->clear();
     lock_guard guard(lock);
     buffers.push_front(buf);
     count_++;
 }
 
-void
-pool::output(std::ostream& out)
-{
-    out << "count=" << count_.load()
-        << " num=" << number
-        << " size=" << size;
+void pool::output(std::ostream& out) {
+    out << "count=" << count_.load() << " num=" << number << " size=" << size;
 }
 
-queue::queue()
-    : size_(0),
-      count_(0)
-{
-}
+queue::queue() : size_(0), count_(0) {}
 
-void
-queue::push(handle buf)
-{
+void queue::push(handle buf) {
     if (buf->size() > 0) {
         lock_guard guard(lock);
         buffers.push_back(buf);
@@ -153,9 +119,7 @@ queue::push(handle buf)
     }
 }
 
-handle
-queue::pop()
-{
+handle queue::pop() {
     lock_guard guard(lock);
     handle buf = buffers.front();
     buffers.pop_front();
@@ -164,9 +128,7 @@ queue::pop()
     return buf;
 }
 
-void
-queue::copy(buffer& to)
-{
+void queue::copy(buffer& to) {
     lock_guard guard(lock);
     /*
      * If the `to` size is 0 copy all the available data
@@ -179,19 +141,14 @@ queue::copy(buffer& to)
     copy_unprotected(to.data(), count);
 }
 
-void
-queue::copy(buffer_value_ptr to, const size_t count)
-{
+void queue::copy(buffer_value_ptr to, const size_t count) {
     lock_guard guard(lock);
     copy_unprotected(to, count);
 }
 
-void
-queue::copy_unprotected(buffer_value_ptr to, const size_t count)
-{
+void queue::copy_unprotected(buffer_value_ptr to, const size_t count) {
     if (count > size_.load()) {
-        throw error(error::code::buffer_pool_not_enough,
-                    "not enough data in queue");
+        throw error(error::code::buffer_pool_not_enough, "not enough data in queue");
     }
     auto to_move = count;
     auto from_bi = buffers.begin();
@@ -219,9 +176,7 @@ queue::copy_unprotected(buffer_value_ptr to, const size_t count)
     }
 }
 
-void
-queue::compact()
-{
+void queue::compact() {
     lock_guard guard(lock);
 
     /*
@@ -253,8 +208,7 @@ queue::compact()
                         count_--;
                         from->clear();
                     } else {
-                        to->insert(to->end(),
-                                   from->begin(), from->begin() + to_move);
+                        to->insert(to->end(), from->begin(), from->begin() + to_move);
                         from->erase(from->begin(), from->begin() + to_move);
                         to_move = 0;
                     }
@@ -270,32 +224,23 @@ queue::compact()
     }
 }
 
-void
-queue::flush()
-{
+void queue::flush() {
     lock_guard guard(lock);
     buffers.clear();
 }
 
-void
-queue::output(std::ostream& out)
-{
-    out << "count=" << count()
-        << " size=" << size();
+void queue::output(std::ostream& out) {
+    out << "count=" << count() << " size=" << size();
 }
-}
-}
+}  // namespace buffer
+}  // namespace xia
 
-std::ostream&
-operator<<(std::ostream& out, xia::buffer::pool& pool)
-{
+std::ostream& operator<<(std::ostream& out, xia::buffer::pool& pool) {
     pool.output(out);
     return out;
 }
 
-std::ostream&
-operator<<(std::ostream& out, xia::buffer::queue& queue)
-{
+std::ostream& operator<<(std::ostream& out, xia::buffer::queue& queue) {
     queue.output(out);
     return out;
 }

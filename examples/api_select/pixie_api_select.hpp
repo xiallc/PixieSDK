@@ -29,12 +29,9 @@
 
 #include <stdint.h>
 
-namespace xia
-{
-namespace pixie
-{
-namespace api
-{
+namespace xia {
+namespace pixie {
+namespace api {
 struct calls {
     typedef std::map<const std::string, const std::string> labels;
 
@@ -48,55 +45,34 @@ struct calls {
     virtual int acquire_adc_trace(unsigned short module);
     virtual int acquire_baselines(unsigned short module);
     virtual int adjust_offsets(unsigned short module);
-    virtual int boot_module(const char* com_fpga_config,
-                            const char* sp_fpga_config,
-                            const char* trig_fpga_config,
-                            const char* dsp_code,
-                            const char* dsp_par,
-                            const char* dsp_var,
-                            unsigned short module,
+    virtual int boot_module(const char* com_fpga_config, const char* sp_fpga_config,
+                            const char* trig_fpga_config, const char* dsp_code, const char* dsp_par,
+                            const char* dsp_var, unsigned short module,
                             unsigned short boot_pattern);
     virtual int check_run_status(unsigned short module);
     virtual int end_run(unsigned short module);
     virtual int exit_system(unsigned short module);
-    virtual int init_system(unsigned short num_modules,
-                            unsigned short* pxi_slot_map,
+    virtual int init_system(unsigned short num_modules, unsigned short* pxi_slot_map,
                             unsigned short offline);
-    virtual int read_ext_fifo_status(unsigned int* words,
-                                     unsigned short module);
-    virtual int read_sgl_chan_adc_trace(unsigned short* buffer,
-                                        unsigned int length,
-                                        unsigned short module,
+    virtual int read_ext_fifo_status(unsigned int* words, unsigned short module);
+    virtual int read_sgl_chan_adc_trace(unsigned short* buffer, unsigned int length,
+                                        unsigned short module, unsigned short channel);
+    virtual int read_sgl_chan_baselines(double* baselines, double* timestamps,
+                                        unsigned short num_bases, unsigned short module,
                                         unsigned short channel);
-    virtual int read_sgl_chan_baselines(double* baselines,
-                                        double* timestamps,
-                                        unsigned short num_bases,
-                                        unsigned short module,
-                                        unsigned short channel);
-    virtual int read_sgl_chan_par(const char* name,
-                                  double* data,
-                                  unsigned short module,
+    virtual int read_sgl_chan_par(const char* name, double* data, unsigned short module,
                                   unsigned short channel);
-    virtual int read_sgl_mod_par(const char* name,
-                                 unsigned int* data,
-                                 unsigned short module);
+    virtual int read_sgl_mod_par(const char* name, unsigned int* data, unsigned short module);
     virtual int save_dsp_parameters_to_file(const char* file_name);
-    virtual int save_external_fifo_data_to_file(const char* file_name,
-                                                unsigned int* words,
+    virtual int save_external_fifo_data_to_file(const char* file_name, unsigned int* words,
                                                 unsigned short module,
                                                 unsigned short end_of_run_read);
-    virtual int save_histogram_to_file(const char* file_name,
-                                       unsigned short module);
-    virtual int start_list_mode_run(unsigned short module,
-                                    unsigned short run_type,
+    virtual int save_histogram_to_file(const char* file_name, unsigned short module);
+    virtual int start_list_mode_run(unsigned short module, unsigned short run_type,
                                     unsigned short mode);
-    virtual int write_sgl_chan_par(const char* name,
-                                   double data,
-                                   unsigned short module,
+    virtual int write_sgl_chan_par(const char* name, double data, unsigned short module,
                                    unsigned short channel);
-    virtual int write_sgl_mod_par(const char* name,
-                                  unsigned int data,
-                                  unsigned short module);
+    virtual int write_sgl_mod_par(const char* name, unsigned int data, unsigned short module);
 
     virtual const labels& get_labels() const = 0;
 };
@@ -113,8 +89,8 @@ typedef std::unique_ptr<calls> calls_handle;
  */
 calls_handle make_pixie16_api();
 calls_handle make_pixie_api();
-}
-}
-}
+}  // namespace api
+}  // namespace pixie
+}  // namespace xia
 
-#endif // PIXIE_API_SELECT_HPP
+#endif  // PIXIE_API_SELECT_HPP

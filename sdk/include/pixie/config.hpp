@@ -51,17 +51,15 @@ PIXIE_EXPORT void PIXIE_API read(const std::string& config_file_name, configurat
 /*
  * Import a JSON confuguration into a crate's internal variables.
  */
-void import_json(const std::string& filename,
-                 crate::crate& crate,
-                 module::number_slots& loaded);
+void import_json(const std::string& filename, crate::crate& crate, module::number_slots& loaded);
 
 /*
  * Export the crate's configuration to a JSON file.
  */
 void export_json(const std::string& filename, crate::crate& crate);
 
-}
-}
-}
+}  // namespace config
+}  // namespace pixie
+}  // namespace xia
 
 #endif  // PIXIE_CONFIG_HPP

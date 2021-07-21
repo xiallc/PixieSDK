@@ -31,37 +31,27 @@
 
 #include <pixie/pixie16/hw.hpp>
 
-namespace xia
-{
-namespace pixie
-{
-namespace module
-{
+namespace xia {
+namespace pixie {
+namespace module {
 class module;
 }
-namespace channel
-{
+namespace channel {
 /*
  * Module errors
  */
-struct error
-    : public pixie::error::error {
+struct error : public pixie::error::error {
     typedef pixie::error::code code;
-    explicit error(const int num, const int slot, const size_t channel,
-                   const code type,
+    explicit error(const int num, const int slot, const size_t channel, const code type,
                    const std::ostringstream& what);
-    explicit error(const int num, const int slot, const size_t channel,
-                   const code type,
+    explicit error(const int num, const int slot, const size_t channel, const code type,
                    const std::string& what);
-    explicit error(const int num, const int slot, const size_t channel,
-                   const code type,
+    explicit error(const int num, const int slot, const size_t channel, const code type,
                    const char* what);
     virtual void output(std::ostream& out);
+
 private:
-    std::string make_what(const int num,
-                          const int slot,
-                          const size_t channel,
-                          const char* what);
+    std::string make_what(const int num, const int slot, const size_t channel, const char* what);
 };
 
 struct channel;
@@ -248,8 +238,8 @@ struct channel {
  * Channels
  */
 typedef std::vector<channel> channels;
-}
-}
-}
+}  // namespace channel
+}  // namespace pixie
+}  // namespace xia
 
 #endif  // PIXIE_CHANNEL_H

@@ -24,52 +24,34 @@
 #include <pixie/pixie16/fpga_fippi.hpp>
 #include <pixie/pixie16/module.hpp>
 
-namespace xia
-{
-namespace pixie
-{
-namespace hw
-{
-namespace fpga
-{
-    fippi::fippi(module::module& module_, bool trace)
-        : module(module_),
-          ctrl_1_2(module,
-                   "fippi-1-2",
-                   control::controls(0xfffff000, 0x000000f2, 0x0a3),
-                   control::controls(0xfffff000, 0x00000052, 0x053),
-                   control::regs(hw::device::CFG_DATACS,
-                                 hw::device::CFG_CTRLCS,
-                                 hw::device::CFG_RDCS),
-                   trace),
-          ctrl_3_4(module,
-                   "fippi-3-4",
-                   control::controls(0xfffff000, 0x00000fa2, 0xaa3),
-                   control::controls(0xfffff000, 0x000005a2, 0x5a3),
-                   control::regs(hw::device::CFG_DATACS,
-                                 hw::device::CFG_CTRLCS,
-                                 hw::device::CFG_RDCS),
-                   trace)
-    {
-    }
+namespace xia {
+namespace pixie {
+namespace hw {
+namespace fpga {
+fippi::fippi(module::module& module_, bool trace)
+    : module(module_),
+      ctrl_1_2(module, "fippi-1-2", control::controls(0xfffff000, 0x000000f2, 0x0a3),
+               control::controls(0xfffff000, 0x00000052, 0x053),
+               control::regs(hw::device::CFG_DATACS, hw::device::CFG_CTRLCS, hw::device::CFG_RDCS),
+               trace),
+      ctrl_3_4(module, "fippi-3-4", control::controls(0xfffff000, 0x00000fa2, 0xaa3),
+               control::controls(0xfffff000, 0x000005a2, 0x5a3),
+               control::regs(hw::device::CFG_DATACS, hw::device::CFG_CTRLCS, hw::device::CFG_RDCS),
+               trace) {}
 
-    void
-    fippi::boot(const firmware::image& image, int retries)
-    {
-        module::module::bus_guard guard(module);
-        ctrl_1_2.load(image, retries);
-        ctrl_3_4.load(image, retries);
-        wait(10000);
-        module.write_word(hw::device::CFG_DCMRST, 0);
-    }
+void fippi::boot(const firmware::image& image, int retries) {
+    module::module::bus_guard guard(module);
+    ctrl_1_2.load(image, retries);
+    ctrl_3_4.load(image, retries);
+    wait(10000);
+    module.write_word(hw::device::CFG_DCMRST, 0);
+}
 
-    bool
-    fippi::done()
-    {
-        module::module::bus_guard guard(module);
-        return ctrl_1_2.done() && ctrl_3_4.done();
-    }
-};
-};
-};
-};
+bool fippi::done() {
+    module::module::bus_guard guard(module);
+    return ctrl_1_2.done() && ctrl_3_4.done();
+}
+};  // namespace fpga
+};  // namespace hw
+};  // namespace pixie
+};  // namespace xia

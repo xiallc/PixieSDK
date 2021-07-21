@@ -6,59 +6,59 @@ A simple command line test interface to exercise the C++ API.
 Crate
 -----
 
-The firmware for a crate is supplied on the command line using a text file
-where each line in the crate firmware file is a firmware file.
+The firmware for a crate is supplied on the command line using a text file where each line in the
+crate firmware file is a firmware file.
 
 The format of a line is:
 
- `<field>,<field>,<field>..<field>`
+`<field>,<field>,<field>..<field>`
 
 The fields in order they appear in a line is:
 
- `version` : string
+`version` : string
 
- `revision` : int
+`revision` : int
 
- `device` : string, can be `sys`, `fippi`, or `dsp`
+`device` : string, can be `sys`, `fippi`, or `dsp`
 
- `filename` : string
+`filename` : string
 
 
 Module Definition
 -----------------
 
-The module definition for crate is required to be supplied on the command line
-if the simulation (`-S`) option is provided. The definition is a text file
-where each line defines a module in the crate.
+The module definition for crate is required to be supplied on the command line if the
+simulation (`-S`) option is provided. The definition is a text file where each line defines a module
+in the crate.
 
-The fields are specified as a label/value pair and can appear in any order. It
-is recommended all fields are provide, the `var-defaults` is optional.
+The fields are specified as a label/value pair and can appear in any order. It is recommended all
+fields are provide, the `var-defaults` is optional.
 
 The format of a line is:
 
- `label=value,label=value...label=value`
+`label=value,label=value...label=value`
 
 The fields are:
 
- `device=number` : `size_t`, the device number order modules are opened
+`device=number` : `size_t`, the device number order modules are opened
 
- `slot` : `int`, the slot the module occupies
+`slot` : `int`, the slot the module occupies
 
- `revision` : `int`, the revision of the module
+`revision` : `int`, the revision of the module
 
- `eeprom-format` : `int`, set to `1`
+`eeprom-format` : `int`, set to `1`
 
- `serial-num` : `int`, serial number of the module
+`serial-num` : `int`, serial number of the module
 
- `num-channels` : number of channels
+`num-channels` : number of channels
 
- `adc-bits` : `int`, number of ADC bits
+`adc-bits` : `int`, number of ADC bits
 
- `adc-msps` : `int`, ADC mega-samples per second
+`adc-msps` : `int`, ADC mega-samples per second
 
- `adc-clk-div` : `int`, the divider of the ADC clock used to clock the FPGA
+`adc-clk-div` : `int`, the divider of the ADC clock used to clock the FPGA
 
- `var-defaults` : `string`, path to a file of default values
+`var-defaults` : `string`, path to a file of default values
 
 Commands
 --------
@@ -66,6 +66,7 @@ Commands
 The test command supports the following command:
 
 boot
+
 ~~~~
 
 `boot`
@@ -94,10 +95,10 @@ Arguments:
 
 Description:
 
-Read a parameter or all parameters. If a channel is provided channel parameters
-are read.
+Read a parameter or all parameters. If a channel is provided channel parameters are read.
 
 `par-write`
+
 ~~~~~~~~~~~
 
 `par-write <mod> [channel] <param> <value>`
@@ -152,5 +153,5 @@ Arguments:
 
 Description:
 
-Write a value with a value. If a channel is provided a channel variable is
-written too. The variable needs to be enabled and writable.
+Write a value with a value. If a channel is provided a channel variable is written too. The variable
+needs to be enabled and writable.

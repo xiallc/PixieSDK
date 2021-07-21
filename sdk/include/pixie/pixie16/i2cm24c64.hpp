@@ -27,41 +27,31 @@
 
 #include <pixie/pixie16/i2c_bitbash.hpp>
 
-namespace xia
-{
-namespace pixie
-{
-namespace hw
-{
-namespace i2c
-{
-    struct i2cm24c64
-        : public bitbash
-    {
-        /*
-         * Size of the device in bytes,
-         */
-        static const size_t size = 64 * 1024 / 8;
+namespace xia {
+namespace pixie {
+namespace hw {
+namespace i2c {
+struct i2cm24c64 : public bitbash {
+    /*
+     * Size of the device in bytes,
+     */
+    static const size_t size = 64 * 1024 / 8;
 
-        i2cm24c64(module::module& module,
-                  int reg,
-                  uint32_t SDA,
-                  uint32_t SCL,
-                  uint32_t CTRL);
+    i2cm24c64(module::module& module, int reg, uint32_t SDA, uint32_t SCL, uint32_t CTRL);
 
-        /*
-         * Read the EEPROM.
-         */
-        void read(int address, size_t length, eeprom::contents& data);
+    /*
+     * Read the EEPROM.
+     */
+    void read(int address, size_t length, eeprom::contents& data);
 
-        /*
-         * Read the entire EEPROM
-         */
-        void read(eeprom::contents& data);
-    };
-}
-}
-}
-}
+    /*
+     * Read the entire EEPROM
+     */
+    void read(eeprom::contents& data);
+};
+}  // namespace i2c
+}  // namespace hw
+}  // namespace pixie
+}  // namespace xia
 
 #endif  // PIXIE_HW_I2CM24C64_H

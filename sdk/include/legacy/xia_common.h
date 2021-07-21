@@ -47,8 +47,9 @@ typedef unsigned short flag_t;
 #define BYTE_TO_WORD(lo, hi) (unsigned short) (((unsigned short) (hi) << 8) | (lo))
 #define LO_BYTE(word) ((word) &0xFF)
 #define HI_BYTE(word) (((word) >> 8) & 0xFF)
-#define MAKE_LOWER_CASE(s, i)                                                                                          \
-    for ((i) = 0; (i) < strlen((s)); (i)++) (s)[i] = (char) tolower((s)[i])
+#define MAKE_LOWER_CASE(s, i)                                                                      \
+    for ((i) = 0; (i) < strlen((s)); (i)++)                                                        \
+    (s)[i] = (char) tolower((s)[i])
 #define N_ELEMS(x) (sizeof(x) / sizeof((x)[0]))
 
 

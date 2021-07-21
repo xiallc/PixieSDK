@@ -26,8 +26,8 @@
 
 #include <pixie16app_common.h>
 #include <pixie16app_export.h>
-#include <pixie16sys_export.h>
 #include <pixie16app_globals.h>
+#include <pixie16sys_export.h>
 #include <xia_common.h>
 
 #if PIXIE16_APPAPI_VER == PIXIE16_WINDOWS_APPAPI
@@ -57,8 +57,8 @@ int Pixie_Start_Run(unsigned short mode,  // mode = NEW_RUN or RESUME_RUN
     unsigned short k;
     int retval;
 
-    Pixie_Print_Info(PIXIE_FUNC, "start: mod_num=%d mode=%d run_task=%d contro_task=%d",
-                     ModNum, mode, run_task, control_task);
+    Pixie_Print_Info(PIXIE_FUNC, "start: mod_num=%d mode=%d run_task=%d contro_task=%d", ModNum,
+                     mode, run_task, control_task);
 
     if (ModNum == Number_Modules)  // Start run in all modules
     {
@@ -70,8 +70,8 @@ int Pixie_Start_Run(unsigned short mode,  // mode = NEW_RUN or RESUME_RUN
                 retval = Pixie_End_Run(k);
                 // Check if Pixie_End_Run returned without errors
                 if (retval < 0) {
-                  Pixie_Print_Error(PIXIE_FUNC, "Pixie_End_Run failed in module %d; retval=%d", k,
-                                    retval);
+                    Pixie_Print_Error(PIXIE_FUNC, "Pixie_End_Run failed in module %d; retval=%d", k,
+                                      retval);
                     return (-1);
                 }
             }
@@ -79,10 +79,14 @@ int Pixie_Start_Run(unsigned short mode,  // mode = NEW_RUN or RESUME_RUN
             // Clear external memory first before starting a new data acquisition run
             if ((mode == NEW_RUN) && (run_task != 0) && (control_task == 0)) {
                 // Clear histogram memory; channel by channel
-                Pixie_Main_Memory_IO(buffer, MAX_HISTOGRAM_LENGTH * 0, MAX_HISTOGRAM_LENGTH * 4, MOD_WRITE, k);
-                Pixie_Main_Memory_IO(buffer, MAX_HISTOGRAM_LENGTH * 4, MAX_HISTOGRAM_LENGTH * 4, MOD_WRITE, k);
-                Pixie_Main_Memory_IO(buffer, MAX_HISTOGRAM_LENGTH * 8, MAX_HISTOGRAM_LENGTH * 4, MOD_WRITE, k);
-                Pixie_Main_Memory_IO(buffer, MAX_HISTOGRAM_LENGTH * 12, MAX_HISTOGRAM_LENGTH * 4, MOD_WRITE, k);
+                Pixie_Main_Memory_IO(buffer, MAX_HISTOGRAM_LENGTH * 0, MAX_HISTOGRAM_LENGTH * 4,
+                                     MOD_WRITE, k);
+                Pixie_Main_Memory_IO(buffer, MAX_HISTOGRAM_LENGTH * 4, MAX_HISTOGRAM_LENGTH * 4,
+                                     MOD_WRITE, k);
+                Pixie_Main_Memory_IO(buffer, MAX_HISTOGRAM_LENGTH * 8, MAX_HISTOGRAM_LENGTH * 4,
+                                     MOD_WRITE, k);
+                Pixie_Main_Memory_IO(buffer, MAX_HISTOGRAM_LENGTH * 12, MAX_HISTOGRAM_LENGTH * 4,
+                                     MOD_WRITE, k);
             }
 
             // Set RunTask
@@ -114,8 +118,8 @@ int Pixie_Start_Run(unsigned short mode,  // mode = NEW_RUN or RESUME_RUN
             retval = Pixie_End_Run(ModNum);
             // Check if Pixie_End_Run returned without errors
             if (retval < 0) {
-                Pixie_Print_Error(PIXIE_FUNC, "Pixie_End_Run failed in module %d; retval=%d", ModNum,
-                                  retval);
+                Pixie_Print_Error(PIXIE_FUNC, "Pixie_End_Run failed in module %d; retval=%d",
+                                  ModNum, retval);
                 return (-1);
             }
         }
@@ -124,10 +128,14 @@ int Pixie_Start_Run(unsigned short mode,  // mode = NEW_RUN or RESUME_RUN
         if ((mode == NEW_RUN) && (run_task != 0) && (control_task == 0)) {
             Pixie_Print_Info(PIXIE_FUNC, "start: clearing MCA memory");
             // Clear histogram memory; channel by channel
-            Pixie_Main_Memory_IO(buffer, MAX_HISTOGRAM_LENGTH * 0, MAX_HISTOGRAM_LENGTH * 4, MOD_WRITE, ModNum);
-            Pixie_Main_Memory_IO(buffer, MAX_HISTOGRAM_LENGTH * 4, MAX_HISTOGRAM_LENGTH * 4, MOD_WRITE, ModNum);
-            Pixie_Main_Memory_IO(buffer, MAX_HISTOGRAM_LENGTH * 8, MAX_HISTOGRAM_LENGTH * 4, MOD_WRITE, ModNum);
-            Pixie_Main_Memory_IO(buffer, MAX_HISTOGRAM_LENGTH * 12, MAX_HISTOGRAM_LENGTH * 4, MOD_WRITE, ModNum);
+            Pixie_Main_Memory_IO(buffer, MAX_HISTOGRAM_LENGTH * 0, MAX_HISTOGRAM_LENGTH * 4,
+                                 MOD_WRITE, ModNum);
+            Pixie_Main_Memory_IO(buffer, MAX_HISTOGRAM_LENGTH * 4, MAX_HISTOGRAM_LENGTH * 4,
+                                 MOD_WRITE, ModNum);
+            Pixie_Main_Memory_IO(buffer, MAX_HISTOGRAM_LENGTH * 8, MAX_HISTOGRAM_LENGTH * 4,
+                                 MOD_WRITE, ModNum);
+            Pixie_Main_Memory_IO(buffer, MAX_HISTOGRAM_LENGTH * 12, MAX_HISTOGRAM_LENGTH * 4,
+                                 MOD_WRITE, ModNum);
         }
 
         // Set RunTask
@@ -284,9 +292,10 @@ int Pixie_Check_Run_Status(unsigned short ModNum) {
 *
 ****************************************************************/
 
-int Pixie_Control_Task_Run(unsigned short ModNum,  // Pixie module number
-                           unsigned short ControlTask,  // Control task number
-                           unsigned int Max_Poll)  // Timeout control in unit of ms for control task run
+int Pixie_Control_Task_Run(
+    unsigned short ModNum,  // Pixie module number
+    unsigned short ControlTask,  // Control task number
+    unsigned int Max_Poll)  // Timeout control in unit of ms for control task run
 {
     unsigned int tcount;
     unsigned short k, sumActive, Active[PRESET_MAX_MODULES];
@@ -423,18 +432,21 @@ int Pixie_Broadcast(const char* str,  // variable name whose value is to be broa
 
     if (strcmp(str, "SYNCH_WAIT") == 0) {
         // Get SynchWait
-        value = Pixie_Devices[SourceModule].DSP_Parameter_Values[SynchWait_Address[SourceModule] - DATA_MEMORY_ADDRESS];
+        value = Pixie_Devices[SourceModule]
+                    .DSP_Parameter_Values[SynchWait_Address[SourceModule] - DATA_MEMORY_ADDRESS];
 
         // Update SynchWait in all modules
         for (i = 0; i < Number_Modules; i++) {
-            Pixie_Devices[i].DSP_Parameter_Values[SynchWait_Address[i] - DATA_MEMORY_ADDRESS] = value;
+            Pixie_Devices[i].DSP_Parameter_Values[SynchWait_Address[i] - DATA_MEMORY_ADDRESS] =
+                value;
 
             // Download it to the module
             Pixie16IMbufferIO(&value, 1, SynchWait_Address[i], MOD_WRITE, i);
         }
     } else if (strcmp(str, "IN_SYNCH") == 0) {
         // Get InSynch
-        value = Pixie_Devices[SourceModule].DSP_Parameter_Values[InSynch_Address[SourceModule] - DATA_MEMORY_ADDRESS];
+        value = Pixie_Devices[SourceModule]
+                    .DSP_Parameter_Values[InSynch_Address[SourceModule] - DATA_MEMORY_ADDRESS];
 
         // Update InSynch in all modules
         for (i = 0; i < Number_Modules; i++) {
@@ -445,7 +457,8 @@ int Pixie_Broadcast(const char* str,  // variable name whose value is to be broa
         }
     } else if (strcmp(str, "HOST_RT_PRESET") == 0) {
         // Get HostRunTimePreset
-        value = Pixie_Devices[SourceModule].DSP_Parameter_Values[HRTP_Address[SourceModule] - DATA_MEMORY_ADDRESS];
+        value = Pixie_Devices[SourceModule]
+                    .DSP_Parameter_Values[HRTP_Address[SourceModule] - DATA_MEMORY_ADDRESS];
 
         // Update InSynch in all modules
         for (i = 0; i < Number_Modules; i++) {
@@ -483,20 +496,27 @@ int Pixie_ComputeFIFO(unsigned int TraceDelay,  // current trace dealy value
     unsigned int SlowFilterRange, FastFilterRange, PeakSep;
 
     // Get the DSP parameter SlowFilterRange
-    SlowFilterRange = Pixie_Devices[ModNum].DSP_Parameter_Values[SlowFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS];
-    FastFilterRange = Pixie_Devices[ModNum].DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS];
+    SlowFilterRange =
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[SlowFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS];
+    FastFilterRange =
+        Pixie_Devices[ModNum]
+            .DSP_Parameter_Values[FastFilterRange_Address[ModNum] - DATA_MEMORY_ADDRESS];
 
     // Get the DSP parameter PeakSep
-    PeakSep = Pixie_Devices[ModNum].DSP_Parameter_Values[PeakSep_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
+    PeakSep = Pixie_Devices[ModNum]
+                  .DSP_Parameter_Values[PeakSep_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS];
 
     // Re-calculate TriggerDelay
     TriggerDelay = (unsigned int) (((double) PeakSep - 1.0) * pow(2.0, (double) SlowFilterRange));
 
     // Re-calculate PAFLength
-    PAFLength = (unsigned int) ((double) TriggerDelay / pow(2.0, (double) FastFilterRange)) + TraceDelay;
+    PAFLength =
+        (unsigned int) ((double) TriggerDelay / pow(2.0, (double) FastFilterRange)) + TraceDelay;
 
     // Get the current FIFO Length
-    FifoLength = Pixie_Devices[ModNum].DSP_Parameter_Values[FIFOLength_Address[ModNum] - DATA_MEMORY_ADDRESS];
+    FifoLength = Pixie_Devices[ModNum]
+                     .DSP_Parameter_Values[FIFOLength_Address[ModNum] - DATA_MEMORY_ADDRESS];
 
     if (PAFLength > FifoLength)  // PAFLength must be not larger than FifoLength
     {
@@ -505,15 +525,20 @@ int Pixie_ComputeFIFO(unsigned int TraceDelay,  // current trace dealy value
     }
 
     // Update the DSP parameter TriggerDelay
-    Pixie_Devices[ModNum].DSP_Parameter_Values[TriggerDelay_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
-            TriggerDelay;
+    Pixie_Devices[ModNum]
+        .DSP_Parameter_Values[TriggerDelay_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+        TriggerDelay;
     // Download to the selected Pixie module
-    Pixie16IMbufferIO(&TriggerDelay, 1, (unsigned int) (TriggerDelay_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+    Pixie16IMbufferIO(&TriggerDelay, 1, (unsigned int) (TriggerDelay_Address[ModNum] + ChanNum),
+                      MOD_WRITE, ModNum);
 
     // Update the DSP parameter PAFLength
-    Pixie_Devices[ModNum].DSP_Parameter_Values[PAFlength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] = PAFLength;
+    Pixie_Devices[ModNum]
+        .DSP_Parameter_Values[PAFlength_Address[ModNum] + ChanNum - DATA_MEMORY_ADDRESS] =
+        PAFLength;
     // Download to the selected Pixie module
-    Pixie16IMbufferIO(&PAFLength, 1, (unsigned int) (PAFlength_Address[ModNum] + ChanNum), MOD_WRITE, ModNum);
+    Pixie16IMbufferIO(&PAFLength, 1, (unsigned int) (PAFlength_Address[ModNum] + ChanNum),
+                      MOD_WRITE, ModNum);
 
     return (0);
 }
@@ -685,7 +710,9 @@ int Pixie_Init_DSPVarAddress(const char* DSPVarFile, unsigned short ModNum) {
     namesFile = fopen(DSPVarFile, "r");
     if (namesFile != NULL) {
         // Clear all names
-        for (k = 0; k < N_DSP_PAR; k++) { strcpy(DSP_Parameter_Names[k], ""); }
+        for (k = 0; k < N_DSP_PAR; k++) {
+            strcpy(DSP_Parameter_Names[k], "");
+        }
 
         // DSP_Parameter_AddrStr is 11 characters long: 0x + 8 hex characters + NULL terminator
         DSP_Parameter_AddrStr = (char*) malloc(sizeof(char) * 10 + 1);
@@ -1173,8 +1200,7 @@ int Pixie_Init_DSPVarAddress(const char* DSPVarFile, unsigned short ModNum) {
             return (-2);
         }
         if (U00_Address[ModNum] == 0) {
-            Pixie_Print_Error(PIXIE_FUNC, "U00 was not found in the DSP .var file %s",
-                              DSPVarFile);
+            Pixie_Print_Error(PIXIE_FUNC, "U00 was not found in the DSP .var file %s", DSPVarFile);
             return (-2);
         }
         if (FastTrigBackplaneEna_Address[ModNum] == 0) {
@@ -1204,8 +1230,7 @@ int Pixie_Init_DSPVarAddress(const char* DSPVarFile, unsigned short ModNum) {
             return (-2);
         }
         if (HRTP_Address[ModNum] == 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "HostRunTimePreset was not found in the DSP .var file %s",
+            Pixie_Print_Error(PIXIE_FUNC, "HostRunTimePreset was not found in the DSP .var file %s",
                               DSPVarFile);
             return (-2);
         }
@@ -1335,8 +1360,7 @@ int Pixie_Init_DSPVarAddress(const char* DSPVarFile, unsigned short ModNum) {
             return (-2);
         }
         if (MultiplicityMaskL_Address[ModNum] == 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "MultiplicityMaskL was not found in the DSP .var file %s",
+            Pixie_Print_Error(PIXIE_FUNC, "MultiplicityMaskL was not found in the DSP .var file %s",
                               DSPVarFile);
             return (-2);
         }
@@ -1386,8 +1410,7 @@ int Pixie_Init_DSPVarAddress(const char* DSPVarFile, unsigned short ModNum) {
             return (-2);
         }
         if (MultiplicityMaskH_Address[ModNum] == 0) {
-            Pixie_Print_Error(PIXIE_FUNC,
-                              "MultiplicityMaskH was not found in the DSP .var file %s",
+            Pixie_Print_Error(PIXIE_FUNC, "MultiplicityMaskH was not found in the DSP .var file %s",
                               DSPVarFile);
             return (-2);
         }
@@ -1397,8 +1420,7 @@ int Pixie_Init_DSPVarAddress(const char* DSPVarFile, unsigned short ModNum) {
             return (-2);
         }
         if (Xwait_Address[ModNum] == 0) {
-            Pixie_Print_Error(PIXIE_FUNC, "Xait was not found in the DSP .var file %s",
-                              DSPVarFile);
+            Pixie_Print_Error(PIXIE_FUNC, "Xait was not found in the DSP .var file %s", DSPVarFile);
             return (-2);
         }
         if (CFDDelay_Address[ModNum] == 0) {
@@ -1613,8 +1635,7 @@ int Pixie_Init_DSPVarAddress(const char* DSPVarFile, unsigned short ModNum) {
             return (-2);
         }
         if (U20_Address[ModNum] == 0) {
-            Pixie_Print_Error(PIXIE_FUNC, "U20 was not found in the DSP .var file %s",
-                              DSPVarFile);
+            Pixie_Print_Error(PIXIE_FUNC, "U20 was not found in the DSP .var file %s", DSPVarFile);
             return (-2);
         }
         if (LiveTimeA_Address[ModNum] == 0) {
@@ -1683,8 +1704,7 @@ int Pixie_Init_DSPVarAddress(const char* DSPVarFile, unsigned short ModNum) {
             return (-2);
         }
         if (U30_Address[ModNum] == 0) {
-            Pixie_Print_Error(PIXIE_FUNC, "U30 was not found in the DSP .var file %s",
-                              DSPVarFile);
+            Pixie_Print_Error(PIXIE_FUNC, "U30 was not found in the DSP .var file %s", DSPVarFile);
             return (-2);
         }
     } else {
@@ -1914,7 +1934,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadMSGFile(char* ReturnMsgStr) {
             // Read all bytes
             if ((n = (int) fread(data, 1, len, msgfil)) < len) {
                 fclose(msgfil);
-                Pixie_Print_Error(PIXIE_FUNC, "expected %d, got %d bytes from Pixie16msg.txt", len, n);
+                Pixie_Print_Error(PIXIE_FUNC, "expected %d, got %d bytes from Pixie16msg.txt", len,
+                                  n);
                 return (-4);
             }
 
@@ -1938,11 +1959,11 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadMSGFile(char* ReturnMsgStr) {
 
                 // Write out the line, including the EOL character(s)
                 if (firstline == 0) {
-                  totalchars += (int)(e - b + 1);
+                    totalchars += (int) (e - b + 1);
                     strncpy(ReturnMsgStr, b, e - b + 1);
                     firstline = 1;
                 } else {
-                  totalchars += (int)(e - b);
+                    totalchars += (int) (e - b);
                     if (totalchars < 65535) {
                         strncat(ReturnMsgStr, b, e - b);
                     }
@@ -1997,85 +2018,100 @@ int Pixie_CopyDSPParameters(unsigned short BitMask,  // copy/extract bit mask pa
         //****************************//
 
         // Copy rise time
-        Pixie_Devices[DestinationModule].DSP_Parameter_Values[SlowLength_Address[DestinationModule] +
-                                                              DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[SlowLength_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+        Pixie_Devices[DestinationModule]
+            .DSP_Parameter_Values[SlowLength_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[SlowLength_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
         // Copy flat top
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[SlowGap_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[SlowGap_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[SlowGap_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[SlowGap_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
         // Copy peaksep
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[PeakSep_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[PeakSep_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[PeakSep_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[PeakSep_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
         // Copy peaksample
-        Pixie_Devices[DestinationModule].DSP_Parameter_Values[PeakSample_Address[DestinationModule] +
-                                                              DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[PeakSample_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+        Pixie_Devices[DestinationModule]
+            .DSP_Parameter_Values[PeakSample_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[PeakSample_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
         // Copy trigger delay
-        Pixie_Devices[DestinationModule].DSP_Parameter_Values[TriggerDelay_Address[DestinationModule] +
-                                                              DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[TriggerDelay_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+        Pixie_Devices[DestinationModule]
+            .DSP_Parameter_Values[TriggerDelay_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[TriggerDelay_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
         // Copy paflength
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[PAFlength_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[PAFlength_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[PAFlength_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[PAFlength_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
         // Copy blcut
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[BLcut_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[BLcut_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[BLcut_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[BLcut_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
         // Copy CoincWait
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[CoincWait_Address[DestinationModule] - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule].DSP_Parameter_Values[CoincWait_Address[SourceModule] - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[CoincWait_Address[DestinationModule] - DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule]
+                .DSP_Parameter_Values[CoincWait_Address[SourceModule] - DATA_MEMORY_ADDRESS];
 
         // Copy SlowFilterRange
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[SlowFilterRange_Address[DestinationModule] - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[SlowFilterRange_Address[SourceModule] - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[SlowFilterRange_Address[DestinationModule] -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule]
+                .DSP_Parameter_Values[SlowFilterRange_Address[SourceModule] - DATA_MEMORY_ADDRESS];
 
         //****************************//
         // Trigger filter
         //****************************//
 
         // Copy rise time
-        Pixie_Devices[DestinationModule].DSP_Parameter_Values[FastLength_Address[DestinationModule] +
-                                                              DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[FastLength_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+        Pixie_Devices[DestinationModule]
+            .DSP_Parameter_Values[FastLength_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[FastLength_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
         // Copy flat top
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[FastGap_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[FastGap_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[FastGap_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[FastGap_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
         // Copy threshold
-        Pixie_Devices[DestinationModule].DSP_Parameter_Values[FastThresh_Address[DestinationModule] +
-                                                              DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[FastThresh_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+        Pixie_Devices[DestinationModule]
+            .DSP_Parameter_Values[FastThresh_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[FastThresh_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
 
         // Copy FastFilterRange
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[FastFilterRange_Address[DestinationModule] - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[FastFilterRange_Address[SourceModule] - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[FastFilterRange_Address[DestinationModule] -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule]
+                .DSP_Parameter_Values[FastFilterRange_Address[SourceModule] - DATA_MEMORY_ADDRESS];
     }
 
     // Analog signal conditioning
     if (APP16_TstBit(1, BitMask)) {
         // Copy gain (attenuation) and polarity
-        valA = Pixie_Devices[SourceModule]
-                       .DSP_Parameter_Values[ChanCSRa_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
-        valB = Pixie_Devices[DestinationModule].DSP_Parameter_Values[ChanCSRa_Address[DestinationModule] +
-                                                                     DestinationChannel - DATA_MEMORY_ADDRESS];
+        valA =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[ChanCSRa_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
+        valB = Pixie_Devices[DestinationModule]
+                   .DSP_Parameter_Values[ChanCSRa_Address[DestinationModule] + DestinationChannel -
+                                         DATA_MEMORY_ADDRESS];
         if (APP32_TstBit(CCSRA_ENARELAY, valA)) {
             valB = APP32_SetBit(CCSRA_ENARELAY, valB);
         } else {
@@ -2089,213 +2125,245 @@ int Pixie_CopyDSPParameters(unsigned short BitMask,  // copy/extract bit mask pa
         }
 
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[ChanCSRa_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                valB;
+            .DSP_Parameter_Values[ChanCSRa_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] = valB;
 
         // Copy offset DAC
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[OffsetDAC_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[OffsetDAC_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[OffsetDAC_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[OffsetDAC_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
     }
 
     // Histogram control
     if (APP16_TstBit(2, BitMask)) {
         // Copy energylow
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[EnergyLow_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[EnergyLow_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[EnergyLow_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[EnergyLow_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
         // Copy log2ebin
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[Log2Ebin_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[Log2Ebin_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[Log2Ebin_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[Log2Ebin_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
     }
 
     // Decay time
     if (APP16_TstBit(3, BitMask)) {
         // Copy preamp tau
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[PreampTau_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[PreampTau_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[PreampTau_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[PreampTau_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
     }
 
     // Pulse shape analysis
     if (APP16_TstBit(4, BitMask)) {
         // Copy trace length
-        Pixie_Devices[DestinationModule].DSP_Parameter_Values[TraceLength_Address[DestinationModule] +
-                                                              DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[TraceLength_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+        Pixie_Devices[DestinationModule]
+            .DSP_Parameter_Values[TraceLength_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[TraceLength_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
         // Copy trigger delay
-        Pixie_Devices[DestinationModule].DSP_Parameter_Values[TriggerDelay_Address[DestinationModule] +
-                                                              DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[TriggerDelay_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+        Pixie_Devices[DestinationModule]
+            .DSP_Parameter_Values[TriggerDelay_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[TriggerDelay_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
         // Copy paflength
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[PAFlength_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[PAFlength_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[PAFlength_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[PAFlength_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
     }
 
     // Baseline control
     if (APP16_TstBit(5, BitMask)) {
         // Copy blcut
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[BLcut_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[BLcut_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[BLcut_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[BLcut_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
         // Copy baseline percent
-        Pixie_Devices[DestinationModule].DSP_Parameter_Values[BaselinePercent_Address[DestinationModule] +
-                                                              DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule].DSP_Parameter_Values[BaselinePercent_Address[SourceModule] + SourceChannel -
-                                                                 DATA_MEMORY_ADDRESS];
+        Pixie_Devices[DestinationModule]
+            .DSP_Parameter_Values[BaselinePercent_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[BaselinePercent_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
         // Copy baseline average
-        Pixie_Devices[DestinationModule].DSP_Parameter_Values[Log2Bweight_Address[DestinationModule] +
-                                                              DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[Log2Bweight_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+        Pixie_Devices[DestinationModule]
+            .DSP_Parameter_Values[Log2Bweight_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[Log2Bweight_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
     }
 
     // Channel CSRA register
     if (APP16_TstBit(7, BitMask)) {
         // Copy CHANCSRA
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[ChanCSRa_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[ChanCSRa_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[ChanCSRa_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[ChanCSRa_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
     }
 
     // CFD Trigger
     if (APP16_TstBit(8, BitMask)) {
         // Copy CFDDelay
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[CFDDelay_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[CFDDelay_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[CFDDelay_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[CFDDelay_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
 
         // Copy CFDScale
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[CFDScale_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[CFDScale_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[CFDScale_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[CFDScale_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
 
         // Copy CFDThresh
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[CFDThresh_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[CFDThresh_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[CFDThresh_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[CFDThresh_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
     }
 
     // Trigger Stretch Lengths
     if (APP16_TstBit(9, BitMask)) {
         // Copy External Trigger Stretch
-        Pixie_Devices[DestinationModule].DSP_Parameter_Values[ExtTrigStretch_Address[DestinationModule] +
-                                                              DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule].DSP_Parameter_Values[ExtTrigStretch_Address[SourceModule] + SourceChannel -
-                                                                 DATA_MEMORY_ADDRESS];
+        Pixie_Devices[DestinationModule]
+            .DSP_Parameter_Values[ExtTrigStretch_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[ExtTrigStretch_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
 
         // Copy Channel Trigger Stretch
-        Pixie_Devices[DestinationModule].DSP_Parameter_Values[ChanTrigStretch_Address[DestinationModule] +
-                                                              DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule].DSP_Parameter_Values[ChanTrigStretch_Address[SourceModule] + SourceChannel -
-                                                                 DATA_MEMORY_ADDRESS];
+        Pixie_Devices[DestinationModule]
+            .DSP_Parameter_Values[ChanTrigStretch_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[ChanTrigStretch_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
 
         // Copy Veto Stretch
-        Pixie_Devices[DestinationModule].DSP_Parameter_Values[VetoStretch_Address[DestinationModule] +
-                                                              DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[VetoStretch_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+        Pixie_Devices[DestinationModule]
+            .DSP_Parameter_Values[VetoStretch_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[VetoStretch_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
 
         // Copy Fast Trigger Backplane Length
-        Pixie_Devices[DestinationModule].DSP_Parameter_Values[FastTrigBackLen_Address[DestinationModule] +
-                                                              DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule].DSP_Parameter_Values[FastTrigBackLen_Address[SourceModule] + SourceChannel -
-                                                                 DATA_MEMORY_ADDRESS];
+        Pixie_Devices[DestinationModule]
+            .DSP_Parameter_Values[FastTrigBackLen_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[FastTrigBackLen_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
     }
 
     // FIFO Delays
     if (APP16_TstBit(10, BitMask)) {
         // Copy External Delay Length
-        Pixie_Devices[DestinationModule].DSP_Parameter_Values[ExternDelayLen_Address[DestinationModule] +
-                                                              DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule].DSP_Parameter_Values[ExternDelayLen_Address[SourceModule] + SourceChannel -
-                                                                 DATA_MEMORY_ADDRESS];
+        Pixie_Devices[DestinationModule]
+            .DSP_Parameter_Values[ExternDelayLen_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[ExternDelayLen_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
 
         // Copy Fast Trigger Backplane Delay
-        Pixie_Devices[DestinationModule].DSP_Parameter_Values[FtrigoutDelay_Address[DestinationModule] +
-                                                              DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule].DSP_Parameter_Values[FtrigoutDelay_Address[SourceModule] + SourceChannel -
-                                                                 DATA_MEMORY_ADDRESS];
+        Pixie_Devices[DestinationModule]
+            .DSP_Parameter_Values[FtrigoutDelay_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[FtrigoutDelay_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
     }
 
     // Multiplicity
     if (APP16_TstBit(11, BitMask)) {
         // Copy Multiplicity Mask Low
-        Pixie_Devices[DestinationModule].DSP_Parameter_Values[MultiplicityMaskL_Address[DestinationModule] +
-                                                              DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule].DSP_Parameter_Values[MultiplicityMaskL_Address[SourceModule] +
-                                                                 SourceChannel - DATA_MEMORY_ADDRESS];
+        Pixie_Devices[DestinationModule]
+            .DSP_Parameter_Values[MultiplicityMaskL_Address[DestinationModule] +
+                                  DestinationChannel - DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule]
+                .DSP_Parameter_Values[MultiplicityMaskL_Address[SourceModule] + SourceChannel -
+                                      DATA_MEMORY_ADDRESS];
 
         // Copy Multiplicity Mask High
-        Pixie_Devices[DestinationModule].DSP_Parameter_Values[MultiplicityMaskH_Address[DestinationModule] +
-                                                              DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule].DSP_Parameter_Values[MultiplicityMaskH_Address[SourceModule] +
-                                                                 SourceChannel - DATA_MEMORY_ADDRESS];
+        Pixie_Devices[DestinationModule]
+            .DSP_Parameter_Values[MultiplicityMaskH_Address[DestinationModule] +
+                                  DestinationChannel - DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule]
+                .DSP_Parameter_Values[MultiplicityMaskH_Address[SourceModule] + SourceChannel -
+                                      DATA_MEMORY_ADDRESS];
     }
 
     // QDC
     if (APP16_TstBit(12, BitMask)) {
         // Copy QDCLen0
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[QDCLen0_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[QDCLen0_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[QDCLen0_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[QDCLen0_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
 
         // Copy QDCLen1
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[QDCLen1_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[QDCLen1_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[QDCLen1_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[QDCLen1_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
 
         // Copy QDCLen2
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[QDCLen2_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[QDCLen2_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[QDCLen2_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[QDCLen2_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
 
         // Copy QDCLen3
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[QDCLen3_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[QDCLen3_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[QDCLen3_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[QDCLen3_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
 
         // Copy QDCLen4
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[QDCLen4_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[QDCLen4_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[QDCLen4_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[QDCLen4_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
 
         // Copy QDCLen5
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[QDCLen5_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[QDCLen5_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[QDCLen5_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[QDCLen5_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
 
         // Copy QDCLen6
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[QDCLen6_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[QDCLen6_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[QDCLen6_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[QDCLen6_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
 
         // Copy QDCLen7
         Pixie_Devices[DestinationModule]
-                .DSP_Parameter_Values[QDCLen7_Address[DestinationModule] + DestinationChannel - DATA_MEMORY_ADDRESS] =
-                Pixie_Devices[SourceModule]
-                        .DSP_Parameter_Values[QDCLen7_Address[SourceModule] + SourceChannel - DATA_MEMORY_ADDRESS];
+            .DSP_Parameter_Values[QDCLen7_Address[DestinationModule] + DestinationChannel -
+                                  DATA_MEMORY_ADDRESS] =
+            Pixie_Devices[SourceModule].DSP_Parameter_Values[QDCLen7_Address[SourceModule] +
+                                                             SourceChannel - DATA_MEMORY_ADDRESS];
     }
 
     return (0);
