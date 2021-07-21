@@ -1,9 +1,35 @@
+#!/usr/bin/env python3
+""" SPDX-License-Identifier: Apache-2.0 """
+
 """
-file: set_file_decoder.py
-brief: Decodes legacy settings files and converts them into JSON format.
-author: S. V. Paulauskas
-date: May 04, 2021
+Copyright 2021 XIA LLC, All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 """
+
+""" set_file_decoder.py provides users a way to translate binary settings files to json.
+
+Users need to provide both a VAR file, which is located with their firmware distribution,
+and a settings file. This allows variable decoding via their addresses.
+
+We needed to carry some static information here to differentiate between
+  * channel and module variables,
+  * input and output variables,
+  * and the number of entries per module.
+
+This decoder will only work for settings files used with Revision F modules or lower.
+"""
+
 import argparse
 import io
 import os.path
