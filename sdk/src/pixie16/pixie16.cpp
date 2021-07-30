@@ -26,6 +26,7 @@
 #include <pixie/log.hpp>
 #include <pixie/os_compat.hpp>
 #include <pixie/stats.hpp>
+#include <pixie/util.hpp>
 
 #include <pixie/pixie16/crate.hpp>
 
@@ -95,6 +96,14 @@ void stats_legacy::validate() const {
 static int not_supported() {
     int error = xia::pixie::error::api_result_not_supported();
     return xia::pixie::error::return_code(error);
+}
+
+PIXIE_EXPORT double PIXIE_API IEEEFloating2Decimal(unsigned int IEEEFloatingNumber) {
+    return static_cast<double>(xia::util::ieee_float(IEEEFloatingNumber));
+}
+
+PIXIE_EXPORT unsigned int PIXIE_API Decimal2IEEEFloating(double DecimalNumber) {
+    return static_cast<unsigned int>(xia::util::ieee_float(DecimalNumber));
 }
 
 PIXIE_EXPORT unsigned int PIXIE_API Pixie16GetStatisticsSize(void) {
