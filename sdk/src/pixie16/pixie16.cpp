@@ -570,10 +570,10 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned
          */
         if (NumModules > 0 && PXISlotMap != nullptr) {
             /*
-             * If the number of modules does not match the slot map it is an
-             * error. A module may or may not have been found.
+             * If the number of modules requested is greater than then number
+             * of modules in the crate, then it is an error.
              */
-            if (NumModules != crate.num_modules) {
+            if (NumModules > crate.num_modules) {
                 throw xia_error(xia_error::code::module_total_invalid,
                                 "module count does not match user supplied "
                                 "number of modules");
@@ -582,7 +582,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned
             for (int i = 0; i < static_cast<int>(NumModules); ++i) {
                 typedef xia::pixie::module::number_slot number_slot;
                 xia_log(xia_log::info)
-                    << "Pixie16InitSystem: slot map: " << PXISlotMap[i] << " => " << i + 1;
+                    << "Pixie16InitSystem: slot map: " << PXISlotMap[i] << " => " << i;
                 numbers.push_back(number_slot(i, PXISlotMap[i]));
             }
             crate.assign(numbers);
