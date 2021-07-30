@@ -40,7 +40,7 @@ typedef xia::pixie::error::error xia_error;
 /*
  * Boot patterns
  */
-#define BOOTPATTERN_COMFPGA_BIT 0
+#define BOOTPATTERN_COMFPGA_BIT 1
 #define BOOTPATTERN_SPFPGA_BIT 2
 #define BOOTPATTERN_DSPCODE_BIT 3
 #define BOOTPATTERN_DSPPAR_BIT 4
@@ -221,14 +221,14 @@ static void PixieBootModule(xia::pixie::module::module& module, const char* ComF
 
     (void) DSPParFile;
 
-    firmware comm_fw("n/a", module.revision, module.channels[0].config.adc_msps,
-                     module.channels[0].config.adc_bits, "sys");
-    firmware fippi_fw("n/a", module.revision, module.channels[0].config.adc_msps,
-                      module.channels[0].config.adc_bits, "fippi");
-    firmware dsp_fw("n/a", module.revision, module.channels[0].config.adc_msps,
-                    module.channels[0].config.adc_bits, "dsp");
-    firmware dsp_var("n/a", module.revision, module.channels[0].config.adc_msps,
-                     module.channels[0].config.adc_bits, "var");
+    firmware comm_fw("n/a", module.revision, module.configs[0].adc_msps, module.configs[0].adc_bits,
+                     "sys");
+    firmware fippi_fw("n/a", module.revision, module.configs[0].adc_msps,
+                      module.configs[0].adc_bits, "fippi");
+    firmware dsp_fw("n/a", module.revision, module.configs[0].adc_msps, module.configs[0].adc_bits,
+                    "dsp");
+    firmware dsp_var("n/a", module.revision, module.configs[0].adc_msps, module.configs[0].adc_bits,
+                     "var");
 
     comm_fw.filename = ComFPGAConfigFile;
     comm_fw.slot.push_back(module.slot);
@@ -247,6 +247,7 @@ static void PixieBootModule(xia::pixie::module::module& module, const char* ComF
     xia::pixie::firmware::add(crate.firmware, dsp_var);
 
     crate.set_firmware();
+    xia::pixie::firmware::load(crate.firmware);
 
     bool boot_comm = (BootPattern & BOOTPATTERN_COMFPGA_BIT) != 0;
     bool boot_fippi = (BootPattern & BOOTPATTERN_SPFPGA_BIT) != 0;
@@ -277,10 +278,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
         if (ModNum == crate.num_modules) {
             xia::pixie::crate::crate::user user(crate);
             for (auto& module : crate.modules) {
-                if (module->online()) {
-                    PixieBootModule(*module, ComFPGAConfigFile, SPFPGAConfigFile, DSPCodeFile,
-                                    DSPParFile, DSPVarFile, BootPattern);
-                }
+                PixieBootModule(*module, ComFPGAConfigFile, SPFPGAConfigFile, DSPCodeFile,
+                                DSPParFile, DSPVarFile, BootPattern);
             }
         } else {
             xia::pixie::crate::module_handle module(crate, ModNum);
@@ -562,7 +561,12 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned
     }
 
     try {
-        crate.initialize(static_cast<size_t>(NumModules));
+        crate.initialize();
+
+        if (crate.modules.size() == 0) {
+            throw xia_error(xia::pixie::error::code::module_total_invalid,
+                            "Crate did not initialize with any modules.");
+        }
 
         /*
          * Only handle the index to slot assignment if the user supplied the
