@@ -1444,10 +1444,6 @@ void module::read_histogram(size_t channel, hw::words& values) {
                    << " length=" << values.size();
     online_check();
     lock_guard guard(lock_);
-    if (run_task != hw::run::run_task::histogram) {
-        throw error(number, slot, error::code::module_invalid_operation,
-                    "run task not `histogram`");
-    }
     channels[channel].read_histogram(values);
 }
 
@@ -1456,10 +1452,6 @@ void module::read_histogram(size_t channel, hw::word_ptr values, const size_t si
                    << " length=" << size;
     online_check();
     lock_guard guard(lock_);
-    if (run_task != hw::run::run_task::histogram) {
-        throw error(number, slot, error::code::module_invalid_operation,
-                    "run task not `histogram`");
-    }
     channels[channel].read_histogram(values, size);
 }
 
