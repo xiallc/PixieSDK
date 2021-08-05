@@ -37,6 +37,7 @@ extern "C" {
 #define NUMBER_OF_CHANNELS 16
 #define MAX_ADC_TRACE_LEN 8192
 #define MAX_HISTOGRAM_LENGTH 32768
+#define MAX_NUM_BASELINES 3640
 #define RESUME_RUN 0
 #define NEW_RUN 1
 
