@@ -583,7 +583,7 @@ static void bl_save(xia::pixie::crate::crate& crate, options& cmd) {
             channels.resize(crate[mod_num].num_channels);
             xia::pixie::channel::range_set(channels);
         }
-        xia::pixie::channel::baseline::channels_values baselines(channels.size());
+        xia::pixie::channel::baseline::channels_values baselines(crate[mod_num].num_channels);
         crate[mod_num].bl_get(channels, baselines, false);
 
         std::ostringstream name;

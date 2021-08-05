@@ -187,6 +187,7 @@ void baseline::get(baseline::channels_values& chan_values, bool run) {
     double starttime = time(buffer[0], buffer[1]);
     size_t offset = 2;
 
+    ///TODO: P16-331: Fix this so that it works for a chan range w/o defining chan_values to max number of channels.
     for (size_t bl = 0; bl < max_num; ++bl, offset += bl_block_len) {
         double timestamp = time(buffer[offset], buffer[offset + 1]) - starttime;
         for (auto chan : channels) {
