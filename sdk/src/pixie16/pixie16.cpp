@@ -164,8 +164,14 @@ PIXIE_EXPORT int PIXIE_API Pixie16AdjustOffsets(unsigned short ModNum) {
 
     try {
         crate.ready();
-        xia::pixie::crate::module_handle module(crate, ModNum);
-        module->adjust_offsets();
+        if (ModNum == crate.num_modules) {
+            for (auto &module : crate.modules) {
+                module-> adjust_offsets();
+            }
+        } else {
+            xia::pixie::crate::module_handle module(crate, ModNum);
+            module->adjust_offsets();
+        }
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
