@@ -254,22 +254,28 @@ static void PixieBootModule(xia::pixie::module::module& module, const char* ComF
 
     module.boot(boot_comm, boot_fippi, boot_dsp);
 
+    bool json_config = false;
+    xia::pixie::legacy::settings settings(module);
     try {
-        xia::pixie::legacy::settings settings(module);
         settings.load(DSPParFile);
-        settings.import(module);
     } catch (xia::pixie::error::error &err) {
         if (err.type == xia::pixie::error::code::module_total_invalid) {
+            json_config = true;
             xia::pixie::module::number_slots modules;
-            xia::pixie::config::import_json(DSPParFile, crate, modules);
+            ///TODO: Not super efficient if we're calling module-by-module.
+            crate.import_config(DSPParFile, modules);
         } else {
             throw;
         }
     }
 
-    module.sync_vars();
-    if ((BootPattern & BOOTPATTERN_DSPPAR_BIT) != 0) {
-        module.sync_hw();
+    if (!json_config) {
+        settings.import(module);
+        settings.write(module);
+        module.sync_vars();
+        if ((BootPattern & BOOTPATTERN_DSPPAR_BIT) != 0) {
+            module.sync_hw();
+        }
     }
 }
 
