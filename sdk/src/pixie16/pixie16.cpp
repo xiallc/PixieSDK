@@ -22,6 +22,7 @@
 
 #include <pixie16/pixie16.h>
 
+#include <pixie/config.hpp>
 #include <pixie/error.hpp>
 #include <pixie/log.hpp>
 #include <pixie/os_compat.hpp>
@@ -29,7 +30,7 @@
 #include <pixie/util.hpp>
 
 #include <pixie/pixie16/crate.hpp>
-
+#include <pixie/pixie16/legacy.hpp>
 
 /*
  * Local types for convenience.
@@ -219,8 +220,6 @@ static void PixieBootModule(xia::pixie::module::module& module, const char* ComF
                             unsigned short BootPattern) {
     typedef xia::pixie::firmware::firmware firmware;
 
-    (void) DSPParFile;
-
     firmware comm_fw("n/a", module.revision, module.configs[0].adc_msps, module.configs[0].adc_bits,
                      "sys");
     firmware fippi_fw("n/a", module.revision, module.configs[0].adc_msps,
@@ -254,6 +253,24 @@ static void PixieBootModule(xia::pixie::module::module& module, const char* ComF
     bool boot_dsp = (BootPattern & BOOTPATTERN_DSPCODE_BIT) != 0;
 
     module.boot(boot_comm, boot_fippi, boot_dsp);
+
+    try {
+        xia::pixie::legacy::settings settings(module);
+        settings.load(DSPParFile);
+        settings.import(module);
+    } catch (xia::pixie::error::error &err) {
+        if (err.type == xia::pixie::error::code::module_total_invalid) {
+            xia::pixie::module::number_slots modules;
+            xia::pixie::config::import_json(DSPParFile, crate, modules);
+        } else {
+            throw;
+        }
+    }
+
+    module.sync_vars();
+    if ((BootPattern & BOOTPATTERN_DSPPAR_BIT) != 0) {
+        module.sync_hw();
+    }
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
@@ -811,9 +828,22 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadStatisticsFromModule(unsigned int* Statist
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16SaveDSPParametersToFile(const char* FileName) {
-    xia_log(xia_log::info) << "Pixie16ReadStatisticsFromModule: FileName=" << FileName;
+    xia_log(xia_log::info) << "Pixie16SaveDSPParametersToFile: FileName=" << FileName;
 
-    return not_supported();
+    try {
+        xia::pixie::config::export_json(FileName, crate);
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+    } catch (...) {
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+    }
+
+    return 0;
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16SaveHistogramToFile(const char* FileName, unsigned short ModNum) {

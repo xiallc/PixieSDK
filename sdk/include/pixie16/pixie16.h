@@ -30,6 +30,17 @@ extern "C" {
 #endif
 
 /**
+ * We have some preprocessor constants defined here for use by customers in their
+ * code. Since this glue is to support legacy C applications, we assume that
+ * users will only be dealing with Rev F or older.
+ */
+#define NUMBER_OF_CHANNELS 16
+#define MAX_ADC_TRACE_LEN 8192
+#define MAX_HISTOGRAM_LENGTH 32768
+#define RESUME_RUN 0
+#define NEW_RUN 1
+
+/**
  * @defgroup PUBLIC_API Public API
  * Functions for use in end-user software.
  */
