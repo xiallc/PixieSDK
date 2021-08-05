@@ -522,8 +522,14 @@ PIXIE_EXPORT int PIXIE_API Pixie16EndRun(unsigned short ModNum) {
 
     try {
         crate.ready();
-        xia::pixie::crate::module_handle module(crate, ModNum);
-        module->run_end();
+        if (ModNum == crate.num_modules) {
+            for(auto & module : crate.modules){
+                module->run_end();
+            }
+        } else {
+            xia::pixie::crate::module_handle module(crate, ModNum);
+            module->run_end();
+        }
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
