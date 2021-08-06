@@ -61,7 +61,7 @@ struct stats_legacy {
     xia::pixie::stats::channel channels[xia::pixie::hw::max_channels];
     unsigned int marker_2;
 
-    stats_legacy(const xia::pixie::hw::configs& configs);
+    explicit stats_legacy(const xia::pixie::hw::configs& configs);
 
     void validate() const;
 };
@@ -500,8 +500,27 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeRealTime(unsigned int* Statistics,
                                                      unsigned short ModNum) {
     xia_log(xia_log::info) << "Pixie16ComputeRealTime: ModNum=" << ModNum;
 
-    (void) Statistics;
-    return not_supported();
+    double result = 0;
+
+    try {
+        if (Statistics == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "statistics pointer is NULL");
+        }
+        auto stats = reinterpret_cast<stats_legacy_ptr>(Statistics);
+        stats->validate();
+        result = double(stats->module.real_time());
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+    } catch (...) {
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+    }
+
+    return result;
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16EndRun(unsigned short ModNum) {
