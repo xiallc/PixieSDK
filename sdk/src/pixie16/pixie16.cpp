@@ -141,8 +141,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16AcquireBaselines(unsigned short ModNum) {
     try {
         crate.ready();
         if (ModNum == crate.num_modules) {
-            for (auto& module: crate.modules) {
-                module-> acquire_baselines();
+            for (auto& module : crate.modules) {
+                module->acquire_baselines();
             }
         } else {
             xia::pixie::crate::module_handle module(crate, ModNum);
@@ -171,8 +171,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16AdjustOffsets(unsigned short ModNum) {
     try {
         crate.ready();
         if (ModNum == crate.num_modules) {
-            for (auto &module : crate.modules) {
-                module-> adjust_offsets();
+            for (auto& module : crate.modules) {
+                module->adjust_offsets();
             }
         } else {
             xia::pixie::crate::module_handle module(crate, ModNum);
@@ -270,7 +270,7 @@ static void PixieBootModule(xia::pixie::module::module& module, const char* ComF
     xia::pixie::legacy::settings settings(module);
     try {
         settings.load(DSPParFile);
-    } catch (xia::pixie::error::error &err) {
+    } catch (xia::pixie::error::error& err) {
         if (err.type == xia::pixie::error::code::module_total_invalid) {
             json_config = true;
             xia::pixie::module::number_slots modules;
@@ -436,7 +436,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeLiveTime(unsigned int* Statistics,
         if (Statistics == nullptr) {
             throw xia_error(xia_error::code::invalid_value, "statistics pointer is NULL");
         }
-        stats_legacy_ptr stats = reinterpret_cast<stats_legacy_ptr>(Statistics);
+        auto stats = reinterpret_cast<stats_legacy_ptr>(Statistics);
         stats->validate();
         if (ChanNum >= stats->num_channels) {
             throw xia_error(xia_error::code::channel_number_invalid, "invalid channel number");
@@ -529,7 +529,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16EndRun(unsigned short ModNum) {
     try {
         crate.ready();
         if (ModNum == crate.num_modules) {
-            for(auto & module : crate.modules){
+            for (auto& module : crate.modules) {
                 module->run_end();
             }
         } else {
@@ -957,11 +957,10 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsign
     xia_log(xia_log::info) << "Pixie16StartListModeRun: ModNum=" << ModNum << " RunType=" << RunType
                            << " mode=" << mode;
 
-
     try {
         if (RunType != 0x101) {
             throw xia_error(xia_error::code::invalid_value,
-                            "invalid listmode start run type (must be 0x101)");
+                            "invalid list-mode start run type (must be 0x100)");
         }
         xia::pixie::hw::run::run_mode run_mode;
         switch (mode) {
@@ -972,7 +971,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsign
                 run_mode = xia::pixie::hw::run::run_mode::new_run;
                 break;
             default:
-                throw xia_error(xia_error::code::invalid_value, "invalid listmode start run mode");
+                throw xia_error(xia_error::code::invalid_value, "invalid list-mode start run mode");
         }
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
