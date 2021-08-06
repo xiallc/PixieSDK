@@ -34,12 +34,15 @@ extern "C" {
  * code. Since this glue is to support legacy C applications, we assume that
  * users will only be dealing with Rev F or older.
  */
-#define NUMBER_OF_CHANNELS 16
+#define EXTERNAL_FIFO_LENGTH 131072
+#define LIST_MODE_RUN 0x100
 #define MAX_ADC_TRACE_LEN 8192
 #define MAX_HISTOGRAM_LENGTH 32768
 #define MAX_NUM_BASELINES 3640
-#define RESUME_RUN 0
 #define NEW_RUN 1
+#define NUMBER_OF_CHANNELS 16
+#define RESUME_RUN 0
+#define SYS_MAX_NUM_MODULES 32
 
 /**
  * @defgroup PUBLIC_API Public API

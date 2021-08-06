@@ -958,7 +958,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsign
                            << " mode=" << mode;
 
     try {
-        if (RunType != 0x101) {
+        if (RunType != static_cast<unsigned short>(xia::pixie::hw::run::run_task::list_mode)) {
             throw xia_error(xia_error::code::invalid_value,
                             "invalid list-mode start run type (must be 0x100)");
         }
@@ -974,8 +974,14 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsign
                 throw xia_error(xia_error::code::invalid_value, "invalid list-mode start run mode");
         }
         crate.ready();
-        xia::pixie::crate::module_handle module(crate, ModNum);
-        module->start_listmode(run_mode);
+        if (ModNum == crate.num_modules) {
+            for (auto& module : crate.modules) {
+                module->start_listmode(run_mode);
+            }
+        } else {
+            xia::pixie::crate::module_handle module(crate, ModNum);
+            module->start_listmode(run_mode);
+        }
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
