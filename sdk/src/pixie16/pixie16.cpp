@@ -699,7 +699,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
 
     try {
         crate.ready();
-        crate[ModNum].read_histogram(ChanNum, Histogram, NumWords);
+        xia::pixie::crate::module_handle module(crate, ModNum);
+        module->read_histogram(ChanNum, Histogram, NumWords);
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
@@ -920,8 +921,14 @@ PIXIE_EXPORT int PIXIE_API Pixie16SetDACs(unsigned short ModNum) {
 
     try {
         crate.ready();
-        xia::pixie::crate::module_handle module(crate, ModNum);
-        module->set_dacs();
+        if (ModNum == crate.num_modules) {
+            for (auto& module : crate.modules) {
+                module->set_dacs();
+            }
+        } else {
+            xia::pixie::crate::module_handle module(crate, ModNum);
+            module->set_dacs();
+        }
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
