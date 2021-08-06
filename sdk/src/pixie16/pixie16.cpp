@@ -491,28 +491,9 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeOutputCountRate(unsigned int* Statis
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeProcessedEvents(unsigned int* Statistics,
                                                             unsigned short ModNum) {
     xia_log(xia_log::info) << "Pixie16ComputeProcessedEvents: ModNum=" << ModNum;
-
-    double result = 0;
-
-    try {
-        if (Statistics == nullptr) {
-            throw xia_error(xia_error::code::invalid_value, "statistics pointer is NULL");
-        }
-        stats_legacy_ptr stats = reinterpret_cast<stats_legacy_ptr>(Statistics);
-        stats->validate();
-        result = double(stats->module.processed_events());
-    } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
-    } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
-        return xia::pixie::error::api_result_bad_alloc_error();
-    } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
-    } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
-    }
-
-    return result;
+    (void) Statistics;
+    (void) ModNum;
+    return not_supported();
 }
 
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeRealTime(unsigned int* Statistics,
