@@ -664,8 +664,30 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO
     xia_log(xia_log::info) << "Pixie16ReadDataFromExternalFIFO: ModNum=" << ModNum
                            << " nFIFOWords=" << nFIFOWords;
 
-    (void) ExtFIFO_Data;
-    return not_supported();
+    try {
+        crate.ready();
+        xia::pixie::crate::module_handle module(crate, ModNum);
+
+        xia::pixie::hw::words data(nFIFOWords);
+        module->read_list_mode(data);
+        for (size_t i = 0; i < nFIFOWords; i++) {
+            ExtFIFO_Data[i] = data[i];
+        }
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::api_result_unknown_error();
+    } catch (...) {
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::api_result_unknown_error();
+    }
+
+    return 0;
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogram,
