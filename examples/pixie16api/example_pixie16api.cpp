@@ -17,23 +17,36 @@
  */
 
 /** @file example_pixie16api.cpp
- * @brief Example program that allows users to test their system.
+ * @brief Demonstrates how to use the Pixie16Api functions to communicate with Pixie-16 modules.
+ *
+ * We demonstrate both the PixieSDK implementation using `Pixie16Api.so` as well as the Legacy C
+ * implementation using `Pixie16App.so`. The only difference between using one library over the
+ * other is in the header definitions.
+ *
+ * The `Pixie16Api.so` includes all of the goodness that comes with using the C++ implementation
+ * just with a convenient C wrapper. Users don't have as much control over the nitty gritty details
+ * of the PixieSDK. We've intentionally limited this to prevent this backward compatible API from
+ * growing out of hand. We **really** recommend that you link your code directly with `PixieSDK.a`.
  */
 
 #include <chrono>
+#include <cmath>
 #include <cstring>
 #include <iostream>
 #include <thread>
 #include <vector>
 
-#include <pixie16/pixie16.h>
-
-#include <pixie/config.hpp>
-
-#include <legacy/pixie16app_defs.h>
-
 #include <args/args.hxx>
 #include <easylogging/easylogging++.h>
+
+#ifndef LEGACY_EXAMPLE
+#include <pixie16/pixie16.h>
+#else
+#include <pixie16app_defs.h>
+#include <pixie16app_export.h>
+#include <pixie16sys_defs.h>
+#include <pixie16sys_export.h>
+#endif
 
 #if defined(_WIN64) || defined(_WIN32)
 #include <windows.h>
@@ -43,7 +56,70 @@
 
 INITIALIZE_EASYLOGGINGPP
 
-using namespace std::chrono;
+struct configuration {
+    int num_modules;
+    std::vector<unsigned short> slot_map;
+    std::string com_fpga_config;
+    std::string sp_fpga_config;
+    std::string dsp_code;
+    std::string dsp_param;
+    std::string dsp_var;
+};
+
+void read_config(const std::string& config_file_name, configuration& cfg) {
+    std::ifstream input(config_file_name, std::ios::in);
+    if (input.fail()) {
+        throw std::ios_base::failure("open: " + config_file_name + ": " + std::strerror(errno));
+    }
+
+    input >> cfg.num_modules;
+    if (cfg.num_modules == 0 || cfg.num_modules > SYS_MAX_NUM_MODULES) {
+        throw std::invalid_argument("invalid number of modules");
+    }
+
+    cfg.slot_map.clear();
+    for (int num = 0; num < cfg.num_modules; num++) {
+        int slot;
+        if (input >> slot) {
+            cfg.slot_map.push_back(slot);
+        } else {
+            throw std::invalid_argument("invalid slot");
+        }
+    }
+
+    input >> cfg.com_fpga_config;
+    if (!input) {
+        throw std::invalid_argument("invalid COM FPGA file name");
+    }
+
+    input >> cfg.sp_fpga_config;
+    if (!input) {
+        throw std::invalid_argument("invalid FP FPGA file name");
+    }
+
+    std::string trig_holder;
+    input >> trig_holder;
+    if (!input) {
+        throw std::invalid_argument("invalid Trigg file name");
+    }
+
+    input >> cfg.dsp_code;
+    if (!input) {
+        throw std::invalid_argument("invalid DSP code file name");
+    }
+
+    input >> cfg.dsp_param;
+    if (!input) {
+        throw std::invalid_argument("invalid DSP parameters file name");
+    }
+
+    input >> cfg.dsp_var;
+    if (!input) {
+        throw std::invalid_argument("invalid DSP variables file name");
+    }
+
+    input.close();
+}
 
 bool verify_api_return_value(const int& val, const std::string& func_name,
                              const bool& print_success = true) {
@@ -79,7 +155,7 @@ bool execute_adjust_offsets(const unsigned int& numModules, const std::string& s
 }
 
 bool execute_baseline_capture(const unsigned int& module) {
-    LOG(INFO) << "Starting baseline capture for Modules";
+    LOG(INFO) << "Starting baseline capture.";
     if (!verify_api_return_value(Pixie16AcquireBaselines(module), "Pixie16AcquireBaselines"))
         return false;
 
@@ -93,8 +169,8 @@ bool execute_baseline_capture(const unsigned int& module) {
             return false;
     }
 
-    std::ofstream ofstream1("baselines-module" + std::to_string(module) + ".csv");
-    ofstream1 << "sample, timestamp,";
+    std::ofstream ofstream1("pixie16api-module" + std::to_string(module) + "-baselines.csv");
+    ofstream1 << "bin, timestamp,";
     for (unsigned int i = 0; i < NUMBER_OF_CHANNELS; i++)
         ofstream1 << "Chan" << i << ",";
     ofstream1 << std::endl;
@@ -112,21 +188,20 @@ bool execute_baseline_capture(const unsigned int& module) {
     return true;
 }
 
-bool execute_list_mode_run(const xia::pixie::config::configuration& cfg,
-                           const double& runtime_in_seconds) {
+bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_seconds) {
     LOG(INFO) << "Starting list mode data run for " << runtime_in_seconds << " s.";
 
     LOG(INFO) << "Calling "
               << "Pixie16WriteSglModPar"
               << " to write SYNCH_WAIT = 1 in Module 0.";
-    if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", 1, 0),
+    if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", 0, 0),
                                  "Pixie16WriteSglModPar - SYNC_WAIT"))
         return false;
 
     LOG(INFO) << "Calling "
               << "Pixie16WriteSglModPar"
               << " to write IN_SYNCH  = 0 in Module 0.";
-    if (!verify_api_return_value(Pixie16WriteSglModPar("IN_SYNCH", 0, 0),
+    if (!verify_api_return_value(Pixie16WriteSglModPar("IN_SYNCH", 1, 0),
                                  "Pixie16WriteSglModPar - IN_SYNC"))
         return false;
 
@@ -137,100 +212,183 @@ bool execute_list_mode_run(const xia::pixie::config::configuration& cfg,
                                  "Pixie16StartListModeRun"))
         return false;
 
-    LOG(INFO) << "Waiting 1 second for DSP to boot.";
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    LOG(INFO) << "DSP boot wait is over!";
-
-    unsigned int* lmdata;
-    if ((lmdata = (unsigned int*) malloc(sizeof(unsigned int) * 131072)) == nullptr) {
-        LOG(ERROR) << "Failed to allocate memory block (lmdata) for list mode data!";
-        return false;
+    std::vector<std::ofstream> output_streams(cfg.num_modules);
+    for (int i = 0; i < cfg.num_modules; i++) {
+        output_streams[i] =
+            std::ofstream("module" + std::to_string(i) + ".lmd", std::ios::out | std::ios::binary);
     }
 
-    unsigned int mod_numwordsread = 0;
-
-    std::vector<std::string> output_file_names;
-    output_file_names.reserve(cfg.num_modules);
-    for (auto i = 0; i < cfg.num_modules; i++)
-        output_file_names.push_back("module" + std::to_string(i) + ".lmd");
+    std::vector<uint32_t> data(EXTERNAL_FIFO_LENGTH, 0);
+    unsigned int num_fifo_words = 0;
 
     LOG(INFO) << "Collecting data for " << runtime_in_seconds << " s.";
-    steady_clock::time_point run_start_time = steady_clock::now();
-    while (duration_cast<duration<double>>(steady_clock::now() - run_start_time).count() <
-           runtime_in_seconds) {
-        for (int k = 0; k < cfg.num_modules; k++) {
-            /*
-             * Error check this call?
-             */
-            Pixie16CheckExternalFIFOStatus(&mod_numwordsread, k);
-            ///TODO: Need to write the data out to disk at this point.
-            //            if (!verify_api_return_value(
-            //                    Pixie16ReadDataFromExternalFIFO(output_file_names[k].c_str(),
-            //                                                           &mod_numwordsread, k, 0),
-            //                    "Pixie16ReadDataFromExternalFIFO for Module " + std::to_string(k), false)) {
-            //                free(lmdata);
-            //                break;
-            //            }
+    std::chrono::steady_clock::time_point run_start_time = std::chrono::steady_clock::now();
+    while (std::chrono::duration_cast<std::chrono::duration<double>>(
+               std::chrono::steady_clock::now() - run_start_time)
+               .count() < runtime_in_seconds) {
+        for (int mod_num = 0; mod_num < cfg.num_modules; mod_num++) {
+            if (Pixie16CheckRunStatus(mod_num) == 1) {
+                if (!verify_api_return_value(
+                        Pixie16CheckExternalFIFOStatus(&num_fifo_words, mod_num),
+                        "Pixie16CheckExternalFIFOStatus", false))
+                    return false;
+
+                if (double(num_fifo_words) / EXTERNAL_FIFO_LENGTH > 0.2) {
+                    LOG(INFO) << "External FIFO has " << num_fifo_words << " words.";
+                    if (!verify_api_return_value(
+                            Pixie16ReadDataFromExternalFIFO(data.data(), num_fifo_words, mod_num),
+                            "Pixie16ReadDataFromExternalFIFO", false))
+                        return false;
+                    output_streams[mod_num].write(reinterpret_cast<char*>(data.data()),
+                                                  num_fifo_words * sizeof(uint32_t));
+                } else {
+                    continue;
+                }
+            } else {
+                LOG(INFO) << "Module " << mod_num << " has no active run!";
+            }
         }
 
-        // Check the run status of the Director module (module #0) to see if the run has been stopped.
-        // This is possible in a multi-chassis system where modules in one chassis can stop the run
-        // in all chassis.
+        /*
+         Check the run status of the Director module (module #0) to see if the run has been stopped.
+         This is possible in a multi-chassis system where modules in one chassis can stop the run
+         in all chassis.
+         */
         if (Pixie16CheckRunStatus(0) == 0) {
-            LOG(INFO) << "Run was stopped but number of events are not reached yet";
+            LOG(INFO) << "Run was stopped by the director module. Stopping data collection.";
             break;
         }
     }
 
-    // Stop run in the Director module (module #0) - a SYNC interrupt should be generated
-    // to stop run in all modules simultaneously
+    /*
+     Stop run in the Director module (module #0) - a SYNC interrupt should be generated
+     to stop run in all modules simultaneously
+     */
     LOG(INFO) << "Stopping List Mode Run.";
     if (!verify_api_return_value(Pixie16EndRun(0), "Pixie16EndRun"))
         return false;
 
-    // Make sure all modules indeed finish their run successfully.
-    const unsigned int number_of_finalize_attempts = 10;
-    for (int k = 0; k < cfg.num_modules; k++) {
-        size_t finalize_attempt_number = 0;
-        while (finalize_attempt_number < number_of_finalize_attempts) {
-            if (Pixie16CheckRunStatus(k) == 0) {
-                Pixie16CheckExternalFIFOStatus(&mod_numwordsread, k);
-                ///TODO: Need to write the data to disk here.
-                //                if (!verify_api_return_value(
-                //                        pixie->save_external_fifo_data_to_file(output_file_names[k].c_str(),
-                //                                                               &mod_numwordsread, k, 1),
-                //                        pixie->label("save_external_fifo_data_to_file") +
-                //                        " for Module " + std::to_string(k), false)) {
-                //                    free(lmdata);
-                //                    return false;
-                //                }
-            } else
-                break;
-
-            finalize_attempt_number++;
+    LOG(INFO) << "Checking that the run is finalized in all the modules.";
+    bool all_modules_finished = false;
+    const unsigned int max_finalize_attempts = 50;
+    for (unsigned int counter = 0; counter < max_finalize_attempts; counter++) {
+        for (int k = 0; k < cfg.num_modules; k++) {
+            if (Pixie16CheckRunStatus(k) == 1) {
+                all_modules_finished = false;
+            } else {
+                all_modules_finished = true;
+            }
         }
-        if (finalize_attempt_number == number_of_finalize_attempts)
-            LOG(ERROR) << "End run in module " << k << " failed";
+        if (all_modules_finished) {
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
-    LOG(INFO) << "Finished collecting data in "
-              << duration_cast<duration<double>>(steady_clock::now() - run_start_time).count()
+    if (!all_modules_finished) {
+        LOG(ERROR) << "All modules did not stop their runs properly!";
+        return false;
+    }
+
+    LOG(INFO) << "List-mode run finished in "
+              << std::chrono::duration_cast<std::chrono::duration<double>>(
+                     std::chrono::steady_clock::now() - run_start_time)
+                     .count()
               << " s";
 
-    // All modules have their run stopped successfully.Now read out the possible last words from the external FIFO
-    for (int k = 0; k < cfg.num_modules; k++) {
-        Pixie16CheckExternalFIFOStatus(&mod_numwordsread, k);
-        ///TODO: Need to write data to disk here.
-        //        if (!verify_api_return_value(
-        //                pixie->save_external_fifo_data_to_file(output_file_names[k].c_str(), &mod_numwordsread,
-        //                                                       k, 1),
-        //                pixie->label("save_external_fifo_data_to_file") +
-        //                " for Module " + std::to_string(k), false)) {
-        //            free(lmdata);
-        //            return false;
-        //        }
+    LOG(INFO) << "Reading the final words from the External FIFO and the run statistics.";
+    for (int mod_num = 0; mod_num < cfg.num_modules; mod_num++) {
+        if (!verify_api_return_value(Pixie16CheckExternalFIFOStatus(&num_fifo_words, mod_num),
+                                     "Pixie16CheckExternalFIFOStatus", false))
+            return false;
+
+        if (num_fifo_words > 0) {
+            LOG(INFO) << "External FIFO has " << num_fifo_words << " words.";
+            if (!verify_api_return_value(
+                    Pixie16ReadDataFromExternalFIFO(data.data(), num_fifo_words, mod_num),
+                    "Pixie16ReadDataFromExternalFIFO", false))
+                return false;
+            output_streams[mod_num].write(reinterpret_cast<char*>(data.data()),
+                                          num_fifo_words * sizeof(uint32_t));
+        }
+
+        LOG(INFO) << "Begin Statistics for Module " << mod_num;
+        std::vector<unsigned int> stats(448, 0);
+        if (!verify_api_return_value(Pixie16ReadStatisticsFromModule(stats.data(), mod_num),
+                                     "Pixie16ReadStatisticsFromModule", false))
+            return false;
+
+        LOG(INFO) << "Real Time: " << Pixie16ComputeRealTime(stats.data(), mod_num);
+        for (unsigned int chan = 0; chan < NUMBER_OF_CHANNELS; chan++) {
+            LOG(INFO) << "Channel " << chan
+                      << " LiveTime: " << Pixie16ComputeLiveTime(stats.data(), mod_num, chan);
+            LOG(INFO) << "Channel " << chan << " Input Count Rate: "
+                      << Pixie16ComputeInputCountRate(stats.data(), mod_num, chan);
+            LOG(INFO) << "Channel " << chan << " Output Count Rate: "
+                      << Pixie16ComputeOutputCountRate(stats.data(), mod_num, chan);
+        }
+        LOG(INFO) << "End Statistics for Module " << mod_num;
     }
-    free(lmdata);
+
+    return true;
+}
+
+bool execute_mca_run(const unsigned int& mod, const double& runtime_in_seconds) {
+    LOG(INFO) << "Calling Pixie16WriteSglModPar to write HOST_RT_PRESET to " << runtime_in_seconds;
+    if (!verify_api_return_value(
+            Pixie16WriteSglModPar("HOST_RT_PRESET", Decimal2IEEEFloating(runtime_in_seconds), mod),
+            "Pixie16WriteSglModPar - HOST_RT_PRESET"))
+        return false;
+
+    LOG(INFO) << "Calling Pixie16WriteSglModPar to write SYNCH_WAIT = 0 in Module 0.";
+    if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", 0, mod),
+                                 "Pixie16WriteSglModPar - SYNC_WAIT"))
+        return false;
+
+    LOG(INFO) << "Calling Pixie16WriteSglModPar to write IN_SYNCH  = 1 in Module 0.";
+    if (!verify_api_return_value(Pixie16WriteSglModPar("IN_SYNCH", 1, mod),
+                                 "Pixie16WriteSglModPar - IN_SYNC"))
+        return false;
+
+    LOG(INFO) << "Starting MCA data run for " << runtime_in_seconds << " s.";
+    if (!verify_api_return_value(Pixie16StartHistogramRun(mod, NEW_RUN),
+                                 "Pixie16StartHistogramRun"))
+        return false;
+
+    std::chrono::steady_clock::time_point run_start_time = std::chrono::steady_clock::now();
+    while (std::chrono::duration_cast<std::chrono::duration<double>>(
+               std::chrono::steady_clock::now() - run_start_time)
+               .count() < runtime_in_seconds) {
+        //do nothing
+    }
+    LOG(INFO) << "Stopping MCA data run after "
+              << std::chrono::duration_cast<std::chrono::duration<double>>(
+                     std::chrono::steady_clock::now() - run_start_time)
+                     .count()
+              << " s.";
+    if (!verify_api_return_value(Pixie16EndRun(mod), "Pixie16EndRun"))
+        return false;
+
+    std::string name = "pixie16api-module" + std::to_string(mod) + "-mca.csv";
+    std::ofstream out(name);
+    out << "bin,";
+
+    std::vector<std::vector<uint32_t>> hists;
+    for (unsigned int i = 0; i < NUMBER_OF_CHANNELS; i++) {
+        std::vector<uint32_t> hist(MAX_HISTOGRAM_LENGTH, 0);
+        Pixie16ReadHistogramFromModule(hist.data(), MAX_HISTOGRAM_LENGTH, mod, i);
+        hists.push_back(hist);
+        out << "Chan" << i << ",";
+    }
+    out << std::endl;
+
+    for (unsigned int bin = 0; bin < MAX_HISTOGRAM_LENGTH; bin++) {
+        out << bin << ",";
+        for (auto hist : hists) {
+            out << hist[bin] << ",";
+        }
+        out << std::endl;
+    }
     return true;
 }
 
@@ -299,6 +457,7 @@ bool execute_trace_capture(args::ValueFlag<unsigned int>& module) {
     if (!verify_api_return_value(Pixie16AcquireADCTrace(module.Get()), "Pixie16AcquireADCTrace"))
         return false;
 
+
     unsigned short trace[NUMBER_OF_CHANNELS][MAX_ADC_TRACE_LEN];
     for (unsigned int i = 0; i < NUMBER_OF_CHANNELS; i++) {
         if (!verify_api_return_value(
@@ -307,7 +466,7 @@ bool execute_trace_capture(args::ValueFlag<unsigned int>& module) {
             return false;
     }
 
-    std::ofstream ofstream1("traces-module" + std::to_string(module.Get()) + ".csv");
+    std::ofstream ofstream1("pixie16api-module" + std::to_string(module.Get()) + "-adc.csv");
     ofstream1 << "bin,";
     for (unsigned int i = 0; i < NUMBER_OF_CHANNELS; i++)
         ofstream1 << "Chan" << i << ",";
@@ -323,6 +482,30 @@ bool execute_trace_capture(args::ValueFlag<unsigned int>& module) {
         ofstream1 << std::endl;
     }
 
+    return true;
+}
+
+bool execute_blcut(args::ValueFlag<unsigned int>& module, args::ValueFlag<unsigned int>& channel) {
+    if (!module)
+        return false;
+
+    LOG(INFO) << "Executing Pixie16BLcutFinder for Module" << module.Get() << ".";
+    unsigned int blcut = 0;
+    if (!verify_api_return_value(Pixie16BLcutFinder(module.Get(), channel.Get(), &blcut),
+                                 "Pixie16BLcutFinder", false))
+        return false;
+    LOG(INFO) << "BLCut for Module " << module.Get() << " "
+              << "Channel " << channel.Get() << " is " << blcut;
+    return true;
+}
+
+bool execute_set_dacs(args::ValueFlag<unsigned int>& module) {
+    if (!module)
+        return false;
+
+    LOG(INFO) << "Executing Pixie16SetDACs for Module" << module.Get() << ".";
+    if (!verify_api_return_value(Pixie16SetDACs(module.Get()), "Pixie16SetDACs", false))
+        return false;
     return true;
 }
 
@@ -344,7 +527,7 @@ void configure_logging(int argc, char** argv) {
     START_EASYLOGGINGPP(argc, argv);
     el::Configurations defaultConf;
     defaultConf.setToDefault();
-    defaultConf.setGlobally(el::ConfigurationType::Filename, "pixie-example.log");
+    defaultConf.setGlobally(el::ConfigurationType::Filename, "example_pixie16app.log");
     defaultConf.setGlobally(el::ConfigurationType::Format,
                             "%datetime{%Y-%M-%dT%H:%m:%s.%g} - %level - %msg");
     el::Loggers::reconfigureLogger("default", defaultConf);
@@ -372,14 +555,17 @@ int main(int argc, char** argv) {
     args::Command adjust_offsets(commands, "adjust_offsets",
                                  "Adjusts the DC offsets for all modules in the config file.");
     args::Command baseline(commands, "baseline", "Acquire and print baselines from the module");
-    //args::Command mca(commands, "mca", "Starts an MCA data run.");
+    args::Command mca(commands, "mca", "Starts an MCA data run.");
+    args::Command blcut(commands, "blcut",
+                        "Starts a control task to find the BLCut for a channel.");
+    args::Command dacs(commands, "dacs", "Starts a control task to set the module's DACs");
 
     args::Group arguments(parser, "arguments", args::Group::Validators::AtLeastOne,
                           args::Options::Global);
     args::Flag api_pixie(arguments, "api", "Select the Pixie API (default: pixie16)", {'P', "api"});
 
-    args::ValueFlag<std::string> configuration(arguments, "cfg", "The configuration file to load.",
-                                               {'c', "config"}, args::Options::Required);
+    args::ValueFlag<std::string> conf_flag(arguments, "cfg", "The configuration file to load.",
+                                           {'c', "config"}, args::Options::Required);
     args::HelpFlag help_flag(arguments, "help", "Displays this message", {'h', "help"});
     args::Flag is_fast_boot(boot, "fast-boot", "Performs a partial boot of the system.",
                             {'f', "fast-boot"});
@@ -398,18 +584,27 @@ int main(int argc, char** argv) {
     args::ValueFlag<unsigned int> channel(read, "channel", "The channel", {"chan"});
     args::ValueFlag<double> parameter_value(
         write, "parameter_value", "The value of the parameter we want to write.", {'v', "value"});
-    adjust_offsets.Add(configuration);
+    adjust_offsets.Add(conf_flag);
+    adjust_offsets.Add(boot_pattern_flag);
     baseline.Add(is_fast_boot);
-    boot.Add(configuration);
-    read.Add(configuration);
-    trace.Add(configuration);
+    baseline.Add(boot_pattern_flag);
+    baseline.Add(module);
+    blcut.Add(module);
+    blcut.Add(channel);
+    boot.Add(conf_flag);
+    boot.Add(boot_pattern_flag);
+    dacs.Add(module);
+    mca.Add(module);
+    mca.Add(boot_pattern_flag);
+    read.Add(conf_flag);
+    trace.Add(conf_flag);
     trace.Add(module);
-    write.Add(configuration);
+    trace.Add(boot_pattern_flag);
+    write.Add(conf_flag);
     write.Add(parameter);
     write.Add(crate);
     write.Add(module);
     write.Add(channel);
-    baseline.Add(module);
 
     try {
         parser.ParseCLI(argc, argv);
@@ -423,10 +618,10 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    xia::pixie::config::configuration cfg;
+    configuration cfg;
     try {
-        xia::pixie::config::read(configuration.Get(), cfg);
-    } catch (xia::pixie::error::error& e) {
+        read_config(conf_flag.Get(), cfg);
+    } catch (std::exception& e) {
         LOG(ERROR) << e.what();
         return EXIT_FAILURE;
     }
@@ -441,16 +636,14 @@ int main(int argc, char** argv) {
     start = std::chrono::system_clock::now();
     LOG(INFO) << "Calling "
               << "Pixie16InitSystem.";
-    std::shared_ptr<unsigned short> slot_map =
-        std::make_shared<unsigned short>(cfg.num_modules + 1);
-    for (int s = 0; s < cfg.num_modules; ++s) {
-        slot_map.get()[s] = std::get<1>(cfg.slot_map[s]);
-    }
-    if (!verify_api_return_value(Pixie16InitSystem(cfg.num_modules, slot_map.get(), offline_mode),
-                                 "Pixie16InitSystem", false))
+    if (!verify_api_return_value(
+            Pixie16InitSystem(cfg.num_modules, cfg.slot_map.data(), offline_mode),
+            "Pixie16InitSystem", false))
         return EXIT_FAILURE;
+
     LOG(INFO) << "Finished Pixie16InitSystem in "
               << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s.";
+
     if (init)
         return EXIT_SUCCESS;
 
@@ -459,25 +652,20 @@ int main(int argc, char** argv) {
     if (is_fast_boot)
         boot_pattern = 0x70;
 
-    if (boot_pattern == 0) {
-        LOG(INFO) << "Will not boot the module!";
-    } else {
-        LOG(INFO) << "Calling Pixie16BootModule with boot pattern: " << std::showbase << std::hex
-                  << boot_pattern << std::dec;
+    LOG(INFO) << "Calling Pixie16BootModule with boot pattern: " << std::showbase << std::hex
+              << boot_pattern << std::dec;
 
-        if (!verify_api_return_value(
-                Pixie16BootModule(cfg.com_fpga_config.c_str(), cfg.sp_fpga_config.c_str(), NULL,
-                                  cfg.dsp_code.c_str(), cfg.dsp_param.c_str(), cfg.dsp_var.c_str(),
-                                  cfg.num_modules, boot_pattern),
-                "Pixie16BootModule", "Finished booting!"))
-            return EXIT_FAILURE;
-        LOG(INFO) << "Finished Pixie16BootModule in "
-                  << calculate_duration_in_seconds(start, std::chrono::system_clock::now())
-                  << " s.";
-        if (boot) {
-            execute_close_module_connection(cfg.num_modules);
-            return EXIT_SUCCESS;
-        }
+    if (!verify_api_return_value(
+            Pixie16BootModule(cfg.com_fpga_config.c_str(), cfg.sp_fpga_config.c_str(), nullptr,
+                              cfg.dsp_code.c_str(), cfg.dsp_param.c_str(), cfg.dsp_var.c_str(),
+                              cfg.num_modules, boot_pattern),
+            "Pixie16BootModule", "Finished booting!"))
+        return EXIT_FAILURE;
+    LOG(INFO) << "Finished Pixie16BootModule in "
+              << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s.";
+    if (boot) {
+        execute_close_module_connection(cfg.num_modules);
+        return EXIT_SUCCESS;
     }
 
     if (read) {
@@ -529,11 +717,25 @@ int main(int argc, char** argv) {
         return EXIT_SUCCESS;
     }
 
-    if (histogram) {
-        LOG(INFO) << "Starting to write histograms from the module.";
-        for (int i = 0; i < cfg.num_modules; i++)
-            Pixie16SaveHistogramToFile(("module" + std::to_string(i) + ".his").c_str(), i);
-        LOG(INFO) << "Finished writing histograms from the module.";
+    if (mca) {
+        if (!execute_mca_run(args::get(module), run_time.Get()))
+            return EXIT_FAILURE;
+        execute_close_module_connection(cfg.num_modules);
+        return EXIT_SUCCESS;
+    }
+
+    if (blcut) {
+        if (!execute_blcut(module, channel))
+            return EXIT_FAILURE;
+        execute_close_module_connection(cfg.num_modules);
+        return EXIT_SUCCESS;
+    }
+
+    if (dacs) {
+        if (!execute_set_dacs(module))
+            return EXIT_FAILURE;
+        execute_close_module_connection(cfg.num_modules);
+        return EXIT_SUCCESS;
     }
 
     execute_close_module_connection(cfg.num_modules);
