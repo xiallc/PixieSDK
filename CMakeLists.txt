@@ -27,19 +27,43 @@ endif ()
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/Cmake/modules/;${PROJECT_SOURCE_DIR}/Cmake/functions")
 include(xia_configure_target)
+include(CMakeDependentOption)
 
-find_package(BroadcomAPI REQUIRED)
-IF (${CMAKE_VERSION} VERSION_LESS "3.13")
-    link_directories(${PLX_LIBRARY_DIR})
-ENDIF (${CMAKE_VERSION} VERSION_LESS "3.13")
+option(BUILD_DOCO "Tells CMake to build documentation" OFF)
+option(BUILD_EXAMPLES "Builds the example programs" ON)
+option(BUILD_LEGACY "Builds the legacy C API Pixie16App.a" ON)
+option(BUILD_SDK "Builds PixieSdk.a" ON)
+option(BUILD_TESTS "Builds the test suites" ON)
 
-add_subdirectory(sdk)
-add_subdirectory(tests)
-add_subdirectory(examples)
-add_subdirectory(externals)
+cmake_dependent_option(BUILD_INTEGRATION_TESTS "Builds integration tests" ON "BUILD_TESTS;BUILD_SDK" OFF)
+cmake_dependent_option(BUILD_LEGACY_UNIT_TESTS "Builds unit tests" ON "BUILD_TESTS;BUILD_LEGACY" OFF)
+cmake_dependent_option(BUILD_PIXIE16_API "Builds backward compatible Pixie16 SDK API Library" ON "BUILD_SDK" OFF)
+cmake_dependent_option(BUILD_SYSTEM_TESTS "Enables build of system tests" ON "BUILD_TESTS;BUILD_SDK" OFF)
+cmake_dependent_option(BUILD_SDK_UNIT_TESTS "Builds unit tests" ON "BUILD_TESTS;BUILD_SDK" OFF)
+
 add_subdirectory(bin)
+add_subdirectory(cmake)
 
-option(PIXIESDK_DOCO "Tells CMake to build documentation" OFF)
-if (PIXIESDK_DOCO)
+if (BUILD_LEGACY)
+    message(WARNING "The Legacy C API will be deprecated July 31, 2023. We recommend using Pixie16Api.so instead.")
+endif ()
+
+if (BUILD_SDK OR BUILD_LEGACY)
+    find_package(BroadcomAPI REQUIRED)
+    IF (${CMAKE_VERSION} VERSION_LESS "3.13")
+        link_directories(${PLX_LIBRARY_DIR})
+    ENDIF (${CMAKE_VERSION} VERSION_LESS "3.13")
+
+    add_subdirectory(sdk)
+
+    if (BUILD_TESTS)
+        add_subdirectory(tests)
+    endif ()
+
+    add_subdirectory(examples)
+    add_subdirectory(externals)
+endif ()
+
+if (BUILD_DOCO)
     add_subdirectory(doc)
 endif ()
