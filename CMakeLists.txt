@@ -25,7 +25,7 @@ if (${CMAKE_BUILD_TYPE} MATCHES Release)
     string(REGEX REPLACE "-O3" "-O2" CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
 endif ()
 
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/Cmake/modules/;${PROJECT_SOURCE_DIR}/Cmake/functions")
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules/;${PROJECT_SOURCE_DIR}/cmake/functions")
 include(xia_configure_target)
 include(CMakeDependentOption)
 
