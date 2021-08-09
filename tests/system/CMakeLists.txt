@@ -9,7 +9,7 @@ if (BUILD_LEGACY)
             include
             ${PROJECT_SOURCE_DIR}/sdk/include/legacy
             ${PROJECT_SOURCE_DIR}/externals/)
-    xia_configure_target(TARGET test_direct_communication USE_PLX)
+    xia_configure_target(TARGET test_direct_communication USE_PLX PLX_STATIC)
 endif ()
 
 if (BUILD_SDK)

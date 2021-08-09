@@ -16,7 +16,7 @@ if (BUILD_LEGACY)
     target_include_directories(example_pixie16_legacy PUBLIC
             ${PROJECT_SOURCE_DIR}/api/legacy/include/
             ${PROJECT_SOURCE_DIR}/externals/)
-    xia_configure_target(TARGET example_pixie16_legacy USE_PLX LIBS Pixie16App
+    xia_configure_target(TARGET example_pixie16_legacy USE_PLX PLX_STATIC LIBS Pixie16App
             LINUX_LIBS -Wl,--no-as-needed
             COMPILE_DEFS LEGACY_EXAMPLE)
     install(TARGETS example_pixie16_legacy RUNTIME DESTINATION bin)
