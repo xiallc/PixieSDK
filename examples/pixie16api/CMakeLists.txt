@@ -1,4 +1,4 @@
-if (BUILD_SDK)
+if (BUILD_PIXIE16_API)
     add_executable(example_pixie16_sdk
             example_pixie16api.cpp
             $<TARGET_OBJECTS:EasyLoggingObjLib>)

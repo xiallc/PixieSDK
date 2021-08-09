@@ -6,6 +6,6 @@ if (BUILD_SDK)
     install(DIRECTORY pixie/ DESTINATION include)
 endif ()
 
-if (BUILD_PIXIE16_SUPPORT)
+if (BUILD_PIXIE16_API)
     install(DIRECTORY pixie16/ DESTINATION include)
 endif ()
