@@ -9,7 +9,7 @@ if (BUILD_INTEGRATION_TESTS)
     add_subdirectory(integration)
 endif ()
 
-if (BUILD_UNIT_TESTS)
+if (BUILD_SDK_UNIT_TESTS OR BUILD_LEGACY_UNIT_TESTS)
     add_subdirectory(unit)
 endif ()
 
