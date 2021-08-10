@@ -576,8 +576,7 @@ static void bl_save(xia::pixie::crate::crate& crate, options& cmd) {
     for (auto mod_num : mod_nums) {
         xia::pixie::channel::range channels;
         if (cmd.size() == 3) {
-            channels.resize(1);
-            channels[0] = get_value<size_t>(cmd[2]);
+            channels = get_values<size_t>(cmd[2], crate[mod_num].num_channels);
         }
         if (channels.empty()) {
             channels.resize(crate[mod_num].num_channels);
