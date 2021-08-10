@@ -66,6 +66,16 @@ struct configuration {
     std::string dsp_var;
 };
 
+std::string generate_filename(const unsigned int& module_number, const std::string& type,
+                              const std::string& ext) {
+#ifndef LEGACY_EXAMPLE
+    static const std::string file_prefix = "pixie16api-module";
+#else
+    static const std::string file_prefix = "pixie16app-module";
+#endif
+    return file_prefix + std::to_string(module_number) + "-" + type + "." + ext;
+}
+
 void read_config(const std::string& config_file_name, configuration& cfg) {
     std::ifstream input(config_file_name, std::ios::in);
     if (input.fail()) {
@@ -169,8 +179,8 @@ bool execute_baseline_capture(const unsigned int& module) {
             return false;
     }
 
-    std::ofstream ofstream1("pixie16api-module" + std::to_string(module) + "-baselines.csv");
-    ofstream1 << "bin, timestamp,";
+    std::ofstream ofstream1(generate_filename(module, "baselines", "csv"));
+    ofstream1 << "bin,timestamp,";
     for (unsigned int i = 0; i < NUMBER_OF_CHANNELS; i++)
         ofstream1 << "Chan" << i << ",";
     ofstream1 << std::endl;
@@ -214,8 +224,8 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
 
     std::vector<std::ofstream> output_streams(cfg.num_modules);
     for (int i = 0; i < cfg.num_modules; i++) {
-        output_streams[i] =
-            std::ofstream("module" + std::to_string(i) + ".lmd", std::ios::out | std::ios::binary);
+        output_streams[i] = std::ofstream(generate_filename(i, "list-mode", "bin"),
+                                          std::ios::out | std::ios::binary);
     }
 
     std::vector<uint32_t> data(EXTERNAL_FIFO_LENGTH, 0);
@@ -369,7 +379,7 @@ bool execute_mca_run(const unsigned int& mod, const double& runtime_in_seconds) 
     if (!verify_api_return_value(Pixie16EndRun(mod), "Pixie16EndRun"))
         return false;
 
-    std::string name = "pixie16api-module" + std::to_string(mod) + "-mca.csv";
+    std::string name = generate_filename(mod, "mca", "csv");
     std::ofstream out(name);
     out << "bin,";
 
@@ -466,7 +476,7 @@ bool execute_trace_capture(args::ValueFlag<unsigned int>& module) {
             return false;
     }
 
-    std::ofstream ofstream1("pixie16api-module" + std::to_string(module.Get()) + "-adc.csv");
+    std::ofstream ofstream1(generate_filename(module.Get(), "adc", "csv"));
     ofstream1 << "bin,";
     for (unsigned int i = 0; i < NUMBER_OF_CHANNELS; i++)
         ofstream1 << "Chan" << i << ",";
