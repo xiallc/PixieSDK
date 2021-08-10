@@ -201,23 +201,17 @@ bool execute_baseline_capture(const unsigned int& module) {
 bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_seconds) {
     LOG(INFO) << "Starting list mode data run for " << runtime_in_seconds << " s.";
 
-    LOG(INFO) << "Calling "
-              << "Pixie16WriteSglModPar"
-              << " to write SYNCH_WAIT = 1 in Module 0.";
+    LOG(INFO) << "Calling Pixie16WriteSglModPar to write SYNCH_WAIT = 1 in Module 0.";
     if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", 0, 0),
                                  "Pixie16WriteSglModPar - SYNC_WAIT"))
         return false;
 
-    LOG(INFO) << "Calling "
-              << "Pixie16WriteSglModPar"
-              << " to write IN_SYNCH  = 0 in Module 0.";
+    LOG(INFO) << "Calling Pixie16WriteSglModPar to write IN_SYNCH  = 0 in Module 0.";
     if (!verify_api_return_value(Pixie16WriteSglModPar("IN_SYNCH", 1, 0),
                                  "Pixie16WriteSglModPar - IN_SYNC"))
         return false;
 
-    LOG(INFO) << "Calling "
-              << "Pixie16StartListModeRun"
-              << ".";
+    LOG(INFO) << "Calling Pixie16StartListModeRun.";
     if (!verify_api_return_value(Pixie16StartListModeRun(cfg.num_modules, LIST_MODE_RUN, NEW_RUN),
                                  "Pixie16StartListModeRun"))
         return false;
@@ -418,9 +412,8 @@ bool execute_parameter_read(args::ValueFlag<std::string>& parameter,
         LOG(INFO) << result;
     } else {
         unsigned int result;
-        LOG(INFO) << "Pixie16ReadSglModPar"
-                  << " reading " << parameter.Get() << " from Crate " << crate.Get() << " Module "
-                  << module.Get() << ".";
+        LOG(INFO) << "Pixie16ReadSglModPar reading " << parameter.Get() << " from Crate "
+                  << crate.Get() << " Module " << module.Get() << ".";
         if (!verify_api_return_value(
                 Pixie16ReadSglModPar(parameter.Get().c_str(), &result, module.Get()),
                 "Pixie16ReadSglModPar", false))
@@ -435,10 +428,9 @@ bool execute_parameter_write(args::ValueFlag<std::string>& parameter,
                              args::ValueFlag<unsigned int>& module,
                              args::ValueFlag<unsigned int>& channel, const std::string& setfile) {
     if (channel) {
-        LOG(INFO) << "Pixie16WriteSglChanPar"
-                  << " setting " << parameter.Get() << " to " << value.Get() << " for Crate "
-                  << crate.Get() << " Module " << module.Get() << " Channel " << channel.Get()
-                  << ".";
+        LOG(INFO) << "Pixie16WriteSglChanPar setting " << parameter.Get() << " to " << value.Get()
+                  << " for Crate " << crate.Get() << " Module " << module.Get() << " Channel "
+                  << channel.Get() << ".";
         if (!verify_api_return_value(Pixie16WriteSglChanPar(parameter.Get().c_str(), value.Get(),
                                                             module.Get(), channel.Get()),
                                      "Pixie16WriteSglChanPar"))
@@ -462,8 +454,7 @@ bool execute_trace_capture(args::ValueFlag<unsigned int>& module) {
     if (!module)
         return false;
 
-    LOG(INFO) << "Pixie16AcquireADCTrace"
-              << " acquiring traces for Module" << module.Get() << ".";
+    LOG(INFO) << "Pixie16AcquireADCTrace acquiring traces for Module" << module.Get() << ".";
     if (!verify_api_return_value(Pixie16AcquireADCTrace(module.Get()), "Pixie16AcquireADCTrace"))
         return false;
 
@@ -504,8 +495,8 @@ bool execute_blcut(args::ValueFlag<unsigned int>& module, args::ValueFlag<unsign
     if (!verify_api_return_value(Pixie16BLcutFinder(module.Get(), channel.Get(), &blcut),
                                  "Pixie16BLcutFinder", false))
         return false;
-    LOG(INFO) << "BLCut for Module " << module.Get() << " "
-              << "Channel " << channel.Get() << " is " << blcut;
+    LOG(INFO) << "BLCut for Module " << module.Get() << " Channel " << channel.Get() << " is "
+              << blcut;
     return true;
 }
 
