@@ -40,6 +40,7 @@ cmake_dependent_option(BUILD_LEGACY_UNIT_TESTS "Builds unit tests" ON "BUILD_TES
 cmake_dependent_option(BUILD_PIXIE16_API "Builds backward compatible Pixie16 SDK API Library" ON "BUILD_SDK" OFF)
 cmake_dependent_option(BUILD_SYSTEM_TESTS "Enables build of system tests" ON "BUILD_TESTS;BUILD_SDK" OFF)
 cmake_dependent_option(BUILD_SDK_UNIT_TESTS "Builds unit tests" ON "BUILD_TESTS;BUILD_SDK" OFF)
+cmake_dependent_option(USE_USLEEP "Adds the USE_USLEEP flag to Legacy builds" "OFF" "BUILD_LEGACY" OFF)
 
 add_subdirectory(bin)
 add_subdirectory(cmake)
