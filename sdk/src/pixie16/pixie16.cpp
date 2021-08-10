@@ -776,9 +776,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanBaselines(double* Baselines, double
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
         xia::pixie::channel::range channels = {size_t(ChanNum)};
-        xia::pixie::channel::baseline::channels_values values(module->num_channels);
+        xia::pixie::channel::baseline::channels_values values(1);
         module->bl_get(channels, values, false);
-        xia::pixie::channel::baseline::values& cv = values[ChanNum];
+        xia::pixie::channel::baseline::values& cv = values[0];
         for (size_t v = 0; v < size_t(NumBases); ++v) {
             TimeStamps[v] = std::get<0>(cv[v]);
             Baselines[v] = std::get<1>(cv[v]);
