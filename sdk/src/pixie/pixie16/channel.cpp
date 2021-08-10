@@ -168,12 +168,7 @@ void baseline::get(baseline::channels_values& chan_values, bool run) {
                             "no channels in the channel range");
     }
 
-    if (channels.size() > chan_values.size()) {
-        throw module::error(module.number, module.slot, error::code::invalid_value,
-                            "more channels in range than value slots");
-    }
-
-    if (chan_values[channels[0]].size() > (buffer.size() / bl_block_len)) {
+    if (chan_values[0].size() > (buffer.size() / bl_block_len)) {
         throw module::error(module.number, module.slot, error::code::invalid_value,
                             "channels values more than avaliable baselines");
     }
@@ -187,11 +182,13 @@ void baseline::get(baseline::channels_values& chan_values, bool run) {
     double starttime = time(buffer[0], buffer[1]);
     size_t offset = 2;
 
-    ///TODO: P16-331: Fix this so that it works for a chan range w/o defining chan_values to max number of channels.
     for (size_t bl = 0; bl < max_num; ++bl, offset += bl_block_len) {
         double timestamp = time(buffer[offset], buffer[offset + 1]) - starttime;
-        for (auto chan : channels) {
-            values& chan_vals = chan_values[chan];
+        for (size_t c = 0;
+             c < channels.size() && c < chan_values.size();
+             ++c) {
+            auto chan = channels[c];
+            values& chan_vals = chan_values[c];
             if (bl < chan_vals.size()) {
                 double baseline = util::ieee_float(buffer[offset + 2 + chan]);
                 chan_vals[bl] = value(timestamp, baseline);

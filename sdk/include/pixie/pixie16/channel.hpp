@@ -85,11 +85,33 @@ struct baseline {
      */
     param::values cuts;
 
+    /*
+     * The channels range is a seleciton channels in any order.
+     */
     baseline(module::module& module, range& channels);
 
     void find_cut(size_t num = max_num);
     void compute_cut(size_t num);
+
+    /*
+     * Get the channel values for the range. The indexes of the value's track
+     * the channels at the same index in the channel range. For example:
+     *
+     *   Index Channels Values
+     *     0      7       7 * chan_block_size + timebase
+     *     1      2       2 * chan_block_size + timebase
+     *     2      5       5 * chan_block_size + timebase
+     *     3      7       7 * chan_block_size + timebase
+     *
+     * Notes:
+     *  - the Index column is the index for the channel range and channel
+     *    values
+     *  - the Values column is calculation used to find the channel's
+     *    values in the baseline data read from the DSP
+     *  - `chan_block_size` is the number of words of baseline per channel
+     */
     void get(channels_values& chan_values, bool run = true);
+
     double time(hw::word time_word0, hw::word time_word1);
 };
 
