@@ -345,13 +345,15 @@ void export_json(const std::string& filename, crate::crate& crate) {
 
         json channel;
         for (auto& desc : mod.channel_var_descriptors) {
-            json values;
-            for (auto& chan : mod.channels) {
-                for (auto& v : chan.vars[int(desc.par)].value) {
-                    values.push_back(v.value);
+            if (desc.mode != param::ro) {
+                json values;
+                for (auto& chan : mod.channels) {
+                    for (auto& v : chan.vars[int(desc.par)].value) {
+                        values.push_back(v.value);
+                    }
                 }
+                channel[desc.name] = values;
             }
-            channel[desc.name] = values;
         }
 
         json mod_config;
