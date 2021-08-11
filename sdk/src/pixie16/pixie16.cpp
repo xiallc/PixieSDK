@@ -264,6 +264,7 @@ static void PixieBootModule(xia::pixie::module::module& module, const char* ComF
     bool boot_fippi = (BootPattern & BOOTPATTERN_SPFPGA_BIT) != 0;
     bool boot_dsp = (BootPattern & BOOTPATTERN_DSPCODE_BIT) != 0;
 
+    module.probe();
     module.boot(boot_comm, boot_fippi, boot_dsp);
 
     bool json_config = false;
