@@ -38,6 +38,7 @@
 
 #include <args/args.hxx>
 #include <easylogging/easylogging++.h>
+#include <nolhmann/json.hpp>
 
 #ifndef LEGACY_EXAMPLE
 #include <pixie16/pixie16.h>
@@ -56,14 +57,24 @@
 
 INITIALIZE_EASYLOGGINGPP
 
-struct configuration {
-    int num_modules;
-    std::vector<unsigned short> slot_map;
+struct module_config {
+    unsigned short slot;
+    unsigned short number;
     std::string com_fpga_config;
     std::string sp_fpga_config;
     std::string dsp_code;
-    std::string dsp_param;
+    std::string dsp_par;
     std::string dsp_var;
+};
+
+typedef std::vector<module_config> module_configs;
+
+struct configuration {
+    module_configs modules;
+    std::vector<unsigned short> slot_def;
+    unsigned short num_modules() const {
+        return static_cast<unsigned short>(modules.size());
+    }
 };
 
 std::string generate_filename(const unsigned int& module_number, const std::string& type,
@@ -76,59 +87,58 @@ std::string generate_filename(const unsigned int& module_number, const std::stri
     return file_prefix + std::to_string(module_number) + "-" + type + "." + ext;
 }
 
+void verify_json_module(const nlohmann::json& mod) {
+    if (!mod.contains("slot")) {
+        throw std::invalid_argument("Missing slot definition in configuration element.");
+    }
+
+    if (!mod.contains("dsp")) {
+        throw std::invalid_argument("Missing dsp object in configuration element.");
+    }
+
+    if (!mod["dsp"].contains("ldr") || !mod["dsp"].contains("var") || !mod["dsp"].contains("par")) {
+        throw std::invalid_argument(
+            "Missing dsp object in configuration element: ldr, dsp, or par.");
+    }
+
+    if (!mod.contains("fpga")) {
+        throw std::invalid_argument("Missing fpga object in configuration element.");
+    }
+
+    if (!mod["fpga"].contains("fippi") || !mod["fpga"].contains("sys")) {
+        throw std::invalid_argument("Missing fpga firmware definition (fippi or sys).");
+    }
+}
+
 void read_config(const std::string& config_file_name, configuration& cfg) {
     std::ifstream input(config_file_name, std::ios::in);
     if (input.fail()) {
         throw std::ios_base::failure("open: " + config_file_name + ": " + std::strerror(errno));
     }
 
-    input >> cfg.num_modules;
-    if (cfg.num_modules == 0 || cfg.num_modules > SYS_MAX_NUM_MODULES) {
+    nlohmann::json jf = nlohmann::json::parse(input);
+    input.close();
+
+    if (jf.empty() || jf.size() > SYS_MAX_NUM_MODULES) {
         throw std::invalid_argument("invalid number of modules");
     }
 
-    cfg.slot_map.clear();
-    for (int num = 0; num < cfg.num_modules; num++) {
-        int slot;
-        if (input >> slot) {
-            cfg.slot_map.push_back(slot);
-        } else {
-            throw std::invalid_argument("invalid slot");
-        }
-    }
+    cfg.slot_def.clear();
+    for (const auto& module : jf) {
+        verify_json_module(module);
 
-    input >> cfg.com_fpga_config;
-    if (!input) {
-        throw std::invalid_argument("invalid COM FPGA file name");
-    }
+        cfg.slot_def.push_back(module["slot"]);
 
-    input >> cfg.sp_fpga_config;
-    if (!input) {
-        throw std::invalid_argument("invalid FP FPGA file name");
+        module_config mod_cfg;
+        mod_cfg.slot = module["slot"];
+        mod_cfg.number = static_cast<unsigned short>(cfg.slot_def.size() - 1);
+        mod_cfg.com_fpga_config = module["fpga"]["sys"];
+        mod_cfg.sp_fpga_config = module["fpga"]["fippi"];
+        mod_cfg.dsp_code = module["dsp"]["ldr"];
+        mod_cfg.dsp_par = module["dsp"]["par"];
+        mod_cfg.dsp_var = module["dsp"]["var"];
+        cfg.modules.push_back(mod_cfg);
     }
-
-    std::string trig_holder;
-    input >> trig_holder;
-    if (!input) {
-        throw std::invalid_argument("invalid Trigg file name");
-    }
-
-    input >> cfg.dsp_code;
-    if (!input) {
-        throw std::invalid_argument("invalid DSP code file name");
-    }
-
-    input >> cfg.dsp_param;
-    if (!input) {
-        throw std::invalid_argument("invalid DSP parameters file name");
-    }
-
-    input >> cfg.dsp_var;
-    if (!input) {
-        throw std::invalid_argument("invalid DSP variables file name");
-    }
-
-    input.close();
 }
 
 bool verify_api_return_value(const int& val, const std::string& func_name,
@@ -150,17 +160,16 @@ bool save_dsp_pars(const std::string& filename) {
     return true;
 }
 
-bool execute_adjust_offsets(const unsigned int& numModules, const std::string& setfile) {
-    for (unsigned int k = 0; k < numModules; k++) {
-        LOG(INFO) << "Adjusting baseline offset for Module " << k << ".";
-        if (!verify_api_return_value(Pixie16AdjustOffsets(k),
-                                     "Pixie16AdjustOffsets for Module" + std::to_string(k)))
+bool execute_adjust_offsets(const module_configs& mods) {
+    for (const auto& mod : mods) {
+        LOG(INFO) << "Adjusting baseline offset for Module " << mod.number << ".";
+        if (!verify_api_return_value(Pixie16AdjustOffsets(mod.number),
+                                     "Pixie16AdjustOffsets for Module " +
+                                         std::to_string(mod.number)))
+            return false;
+        if (!save_dsp_pars(mod.dsp_par))
             return false;
     }
-
-    if (!save_dsp_pars(setfile))
-        return false;
-
     return true;
 }
 
@@ -212,12 +221,12 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
         return false;
 
     LOG(INFO) << "Calling Pixie16StartListModeRun.";
-    if (!verify_api_return_value(Pixie16StartListModeRun(cfg.num_modules, LIST_MODE_RUN, NEW_RUN),
+    if (!verify_api_return_value(Pixie16StartListModeRun(cfg.num_modules(), LIST_MODE_RUN, NEW_RUN),
                                  "Pixie16StartListModeRun"))
         return false;
 
-    std::vector<std::ofstream> output_streams(cfg.num_modules);
-    for (int i = 0; i < cfg.num_modules; i++) {
+    std::vector<std::ofstream> output_streams(cfg.num_modules());
+    for (unsigned short i = 0; i < cfg.num_modules(); i++) {
         output_streams[i] = std::ofstream(generate_filename(i, "list-mode", "bin"),
                                           std::ios::out | std::ios::binary);
     }
@@ -230,7 +239,7 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
     while (std::chrono::duration_cast<std::chrono::duration<double>>(
                std::chrono::steady_clock::now() - run_start_time)
                .count() < runtime_in_seconds) {
-        for (int mod_num = 0; mod_num < cfg.num_modules; mod_num++) {
+        for (unsigned short mod_num = 0; mod_num < cfg.num_modules(); mod_num++) {
             if (Pixie16CheckRunStatus(mod_num) == 1) {
                 if (!verify_api_return_value(
                         Pixie16CheckExternalFIFOStatus(&num_fifo_words, mod_num),
@@ -276,7 +285,7 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
     bool all_modules_finished = false;
     const unsigned int max_finalize_attempts = 50;
     for (unsigned int counter = 0; counter < max_finalize_attempts; counter++) {
-        for (int k = 0; k < cfg.num_modules; k++) {
+        for (unsigned short k = 0; k < cfg.num_modules(); k++) {
             if (Pixie16CheckRunStatus(k) == 1) {
                 all_modules_finished = false;
             } else {
@@ -301,7 +310,7 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
               << " s";
 
     LOG(INFO) << "Reading the final words from the External FIFO and the run statistics.";
-    for (int mod_num = 0; mod_num < cfg.num_modules; mod_num++) {
+    for (unsigned short mod_num = 0; mod_num < cfg.num_modules(); mod_num++) {
         if (!verify_api_return_value(Pixie16CheckExternalFIFOStatus(&num_fifo_words, mod_num),
                                      "Pixie16CheckExternalFIFOStatus", false))
             return false;
@@ -425,27 +434,26 @@ bool execute_parameter_read(args::ValueFlag<std::string>& parameter,
 
 bool execute_parameter_write(args::ValueFlag<std::string>& parameter,
                              args::ValueFlag<double>& value, args::ValueFlag<unsigned int>& crate,
-                             args::ValueFlag<unsigned int>& module,
-                             args::ValueFlag<unsigned int>& channel, const std::string& setfile) {
+                             const module_config& module, args::ValueFlag<unsigned int>& channel) {
     if (channel) {
         LOG(INFO) << "Pixie16WriteSglChanPar setting " << parameter.Get() << " to " << value.Get()
-                  << " for Crate " << crate.Get() << " Module " << module.Get() << " Channel "
+                  << " for Crate " << crate.Get() << " Module " << module.number << " Channel "
                   << channel.Get() << ".";
         if (!verify_api_return_value(Pixie16WriteSglChanPar(parameter.Get().c_str(), value.Get(),
-                                                            module.Get(), channel.Get()),
+                                                            module.number, channel.Get()),
                                      "Pixie16WriteSglChanPar"))
             return false;
     } else {
         LOG(INFO) << "Pixie16WriteSglModPar"
                   << " setting " << parameter.Get() << " to " << value.Get() << " for  Crate "
-                  << crate.Get() << " Module " << module.Get() << ".";
+                  << crate.Get() << " Module " << module.number << ".";
         if (!verify_api_return_value(
-                Pixie16WriteSglModPar(parameter.Get().c_str(), value, module.Get()),
+                Pixie16WriteSglModPar(parameter.Get().c_str(), value, module.number),
                 "Pixie16WriteSglModPar"))
             return false;
     }
 
-    if (!save_dsp_pars(setfile))
+    if (!save_dsp_pars(module.dsp_par))
         return false;
     return true;
 }
@@ -454,7 +462,7 @@ bool execute_trace_capture(args::ValueFlag<unsigned int>& module) {
     if (!module)
         return false;
 
-    LOG(INFO) << "Pixie16AcquireADCTrace acquiring traces for Module" << module.Get() << ".";
+    LOG(INFO) << "Pixie16AcquireADCTrace acquiring traces for Module " << module.Get() << ".";
     if (!verify_api_return_value(Pixie16AcquireADCTrace(module.Get()), "Pixie16AcquireADCTrace"))
         return false;
 
@@ -514,7 +522,7 @@ bool execute_close_module_connection(const int& numModules) {
     for (int i = 0; i < numModules; i++) {
         LOG(INFO) << "Closing out connection to Module " << i << ".";
         verify_api_return_value(Pixie16ExitSystem(i),
-                                "Pixie16ExitSystem for Module" + std::to_string(i));
+                                "Pixie16ExitSystem for Module " + std::to_string(i));
     }
     return true;
 }
@@ -644,106 +652,95 @@ int main(int argc, char** argv) {
     LOG(INFO) << "Calling "
               << "Pixie16InitSystem.";
     if (!verify_api_return_value(
-            Pixie16InitSystem(cfg.num_modules, cfg.slot_map.data(), offline_mode),
+            Pixie16InitSystem(cfg.num_modules(), cfg.slot_def.data(), offline_mode),
             "Pixie16InitSystem", false))
         return EXIT_FAILURE;
 
     LOG(INFO) << "Finished Pixie16InitSystem in "
               << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s.";
 
-    if (init)
+    if (init) {
+        execute_close_module_connection(cfg.num_modules());
         return EXIT_SUCCESS;
+    }
 
-    start = std::chrono::system_clock::now();
     unsigned int boot_pattern = stoul(args::get(boot_pattern_flag), nullptr, 0);
     if (is_fast_boot)
         boot_pattern = 0x70;
 
-    LOG(INFO) << "Calling Pixie16BootModule with boot pattern: " << std::showbase << std::hex
-              << boot_pattern << std::dec;
+    for (const auto& mod : cfg.modules) {
+        start = std::chrono::system_clock::now();
+        LOG(INFO) << "Calling Pixie16BootModule for Module " << mod.number
+                  << " with boot pattern: " << std::showbase << std::hex << boot_pattern
+                  << std::dec;
 
-    if (!verify_api_return_value(
-            Pixie16BootModule(cfg.com_fpga_config.c_str(), cfg.sp_fpga_config.c_str(), nullptr,
-                              cfg.dsp_code.c_str(), cfg.dsp_param.c_str(), cfg.dsp_var.c_str(),
-                              cfg.num_modules, boot_pattern),
-            "Pixie16BootModule", "Finished booting!"))
-        return EXIT_FAILURE;
-    LOG(INFO) << "Finished Pixie16BootModule in "
-              << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s.";
+        if (!verify_api_return_value(
+                Pixie16BootModule(mod.com_fpga_config.c_str(), mod.sp_fpga_config.c_str(), nullptr,
+                                  mod.dsp_code.c_str(), mod.dsp_par.c_str(), mod.dsp_var.c_str(),
+                                  mod.number, boot_pattern),
+                "Pixie16BootModule", "Finished booting!"))
+            return EXIT_FAILURE;
+        LOG(INFO) << "Finished Pixie16BootModule for Module " << mod.number << " in "
+                  << calculate_duration_in_seconds(start, std::chrono::system_clock::now())
+                  << " s.";
+    }
+
     if (boot) {
-        execute_close_module_connection(cfg.num_modules);
+        execute_close_module_connection(cfg.num_modules());
         return EXIT_SUCCESS;
     }
 
     if (read) {
         if (!execute_parameter_read(parameter, crate, module, channel))
             return EXIT_FAILURE;
-        execute_close_module_connection(cfg.num_modules);
-        return EXIT_SUCCESS;
     }
 
     if (write) {
-        if (!execute_parameter_write(parameter, parameter_value, crate, module, channel,
-                                     cfg.dsp_param))
+        if (!execute_parameter_write(parameter, parameter_value, crate, cfg.modules[module.Get()],
+                                     channel))
             return EXIT_FAILURE;
-        execute_close_module_connection(cfg.num_modules);
-        return EXIT_SUCCESS;
     }
 
     if (adjust_offsets) {
-        if (!execute_adjust_offsets(cfg.num_modules, cfg.dsp_param))
+        if (!execute_adjust_offsets(cfg.modules))
             return EXIT_FAILURE;
-        execute_close_module_connection(cfg.num_modules);
-        return EXIT_SUCCESS;
     }
 
     if (trace) {
         if (!execute_trace_capture(module))
             return EXIT_FAILURE;
-        execute_close_module_connection(cfg.num_modules);
-        return EXIT_SUCCESS;
     }
 
     if (list_mode) {
         if (!execute_list_mode_run(cfg, run_time.Get()))
             return EXIT_FAILURE;
-        execute_close_module_connection(cfg.num_modules);
-        return EXIT_SUCCESS;
     }
 
     if (export_settings) {
-        if (!save_dsp_pars(cfg.dsp_param))
+        if (!save_dsp_pars(cfg.modules.front().dsp_par))
             return EXIT_FAILURE;
-        return EXIT_SUCCESS;
     }
 
     if (baseline) {
         if (!execute_baseline_capture(args::get(module)))
             return EXIT_FAILURE;
-        execute_close_module_connection(cfg.num_modules);
-        return EXIT_SUCCESS;
     }
 
     if (mca) {
         if (!execute_mca_run(args::get(module), run_time.Get()))
             return EXIT_FAILURE;
-        execute_close_module_connection(cfg.num_modules);
-        return EXIT_SUCCESS;
     }
 
     if (blcut) {
         if (!execute_blcut(module, channel))
             return EXIT_FAILURE;
-        execute_close_module_connection(cfg.num_modules);
-        return EXIT_SUCCESS;
     }
 
     if (dacs) {
         if (!execute_set_dacs(module))
             return EXIT_FAILURE;
-        execute_close_module_connection(cfg.num_modules);
-        return EXIT_SUCCESS;
     }
 
-    execute_close_module_connection(cfg.num_modules);
+    execute_close_module_connection(cfg.num_modules());
+    return EXIT_SUCCESS;
 }

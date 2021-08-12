@@ -2,22 +2,73 @@
 
 We provide some basic programs that you can use to test the functionality of the API. These programs
 do not encompass the full functionality of the API. They are **not recommended for production use**.
-Users may use these codes as a basis for developing their own applications.
 
-## pixie_sdk_example.cpp
+All of these codes are LICENSED under
+the [Apache 2.0 license](https://www.apache.org/licenses/LICENSE-2.0.html).
 
-This sample C++ base code can be used to test basic functionality to Pixie modules. At the moment
-users can boot modules and take list mode data. We'll walk you through the basics of using this
-program below. If you need help with a particular command, then you can use `pixie_sdk_example -h`
-or `pixie_sdk_example COMMAND -h` to get more information about how to use the commands.
+## example_pixie16api
 
-These instructions assumes
+This sample C++ code can be used to test basic functionality to Pixie modules. This single code
+creates both
 
-1. that you've built and installed PixieSDK into the default location
-2. and that you're on a linux environment.
+* example_pixie16_sdk and
+* example_pixie16_legacy.
 
-Windows will work similarly except that you'll need to add the library path to your `PATH` variable.
+`example_pixie16_legacy` compiles and links against the Legacy C implementation. Most users will be
+familiar with this implementation. `example_pixie16_sdk` compiles and links against the new library 
+`Pixie16Api.so`. This library provides users a legacy compatible C wrapper to the `PixieSDK`. 
 
+Users will note that the difference between using the Legacy library and the Pixie16Api is simply the 
+linked library and a change to the included header file. This strikes a balance between maintaining
+backward compatibility, while also allowing users access to enhanced functionality.
+
+### Configuration file format
+The configuration file format is a JSON file. The file contains a single array element, where each 
+element represents a module in the configuration. The software will automatically determine the 
+number of modules in the system according to the number of objects in the file. The order of the 
+objects defines the slot to module number mapping. In the example below, Slot 2 will map to Module 0.
+```
+[
+  {
+    "slot": <slot number>,
+    "dsp": {
+      "ldr": "<absolute or relative path to DSP LDR file>",
+      "par": "<absolute or relative path to binary settings file>",
+      "var": "<absolute or relative path to DSP VAR file>"
+    },
+    "fpga": {
+      "fippi": "<absolute or relative path to FPGA FIPPI settings file>",
+      "sys": "<absolute or relative path to FPGA SYS settings file>",
+    }
+  },
+  <repeat above object with next module configruation>
+]
+```
+
+#### Example config
+
+```
+[
+  {
+    "slot": 2,
+    "dsp": {
+      "ldr": "/usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/dsp/Pixie16DSP_revfgeneral_16b250m_r35921.ldr",
+      "par": "pixie.set",
+      "var": "/usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/dsp/Pixie16DSP_revfgeneral_16b250m_r35921.var"
+    },
+    "fpga": {
+      "fippi": "/usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/firmware/fippixie16_revfgeneral_16b250m_r36563.bin",
+      "sys": "/usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin",
+    }
+  }
+]
+```
+
+### Usage Instructions
+
+These instructions assume that you've built and installed PixieSDK into the default location.
+
+#### Linux
 1. Prepare the execution directory
     1. Create the directory
        ```shell script
@@ -26,71 +77,13 @@ Windows will work similarly except that you'll need to add the library path to y
        ```
     1. Copy the sample configuration file from the repo
         ```shell script
-        cp /usr/local/xia/PixieSdk/share/config/cfgPixie16.txt .
+        cp /usr/local/xia/PixieSdk/share/config/example_config.json .
         ```
     2. Update the configuration file (see below). You can name it whatever you want.
-1. Execute the program to boot the modules
+2. Execute the program to boot the modules
    ```shell script
    LD_LIBRARY_PATH=/usr/local/xia/PixieSDK/lib/ /usr/local/xia/PixieSDK/bin/pixie_sdk_example boot <name of config file>
    ```
 
-### Configuration file format
-
-```
-<Number of Modules you want to boot>
-<The Crate slot for the first module>
-<The Crate slot for the second module>
-...
-<The Crate slot for the last module>
-/absolute/path/to/ComFPGAConfigFile
-/relative/path/to/SPFPGAConfigFile
-/relative/path/to/TrigFPGAConfigFile
-/relative/path/to/DSPCodeFile
-/relative/path/to/DSPParFile
-/relative/path/to/DSPVarFile
-```
-
-#### Example config
-
-```
-1
-5
-/home/xiauser/firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin
-/home/xiauser/firmware/fippixie16_revfgeneral_16b250m_r36563.bin
-FPGATrig
-/home/xiauser/dsp/Pixie16DSP_revfgeneral_16b250m_r35921.ldr
-/home/xiauser/configuration/test_ena_cfd_trace_qdc_esums.set
-/home/xiauser/dsp/Pixie16DSP_revfgeneral_16b250m_r35921.var
-```
-
-## utilities/pixie_sdk_example.py
-
-This is a quick POC for interfacing with PixieSDK via python. This is the sole reason that we'll
-likely keep around a C interface to the SDK. It's easier to interface using ctypes as opposed to
-something like SWIG.
-
-## Copyright
-
-Copyright (c) 2005 - 2021, XIA LLC All rights reserved.
-
-## License
-
-Redistribution and use in source and binary forms, with or without modification, are permitted
-provided that the following conditions are met:
-
-* Redistributions of source code must retain the above copyright notice, this list of conditions and
-  the following disclaimer.
-* Redistributions in binary form must reproduce the above copyright notice, this list of conditions
-  and the following disclaimer in the documentation and/or other materials provided with the
-  distribution.
-* Neither the name of XIA LLC nor the names of its contributors may be used to endorse or promote
-  products derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
-IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
-FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
-IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
-THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#### Windows
+Windows will work similarly to Linux. You'll need to add the PixieSDK library and bin paths to your `Path` variable.
