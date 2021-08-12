@@ -525,10 +525,16 @@ double calculate_duration_in_seconds(const std::chrono::system_clock::time_point
 }
 
 void configure_logging(int argc, char** argv) {
+#ifndef LEGACY_EXAMPLE
+    static const std::string log_file = "example_pixie16api.log";
+#else
+    static const std::string log_file = "example_pixie16app.log";
+#endif
+
     START_EASYLOGGINGPP(argc, argv);
     el::Configurations defaultConf;
     defaultConf.setToDefault();
-    defaultConf.setGlobally(el::ConfigurationType::Filename, "example_pixie16app.log");
+    defaultConf.setGlobally(el::ConfigurationType::Filename, log_file);
     defaultConf.setGlobally(el::ConfigurationType::Format,
                             "%datetime{%Y-%M-%dT%H:%m:%s.%g} - %level - %msg");
     el::Loggers::reconfigureLogger("default", defaultConf);
