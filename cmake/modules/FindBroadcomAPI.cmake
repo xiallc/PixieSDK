@@ -16,38 +16,46 @@
 
 # @file FindBroadcomAPI.cmake
 # @brief Find the Broadcom PCI/PCIe library
-
 #
+# This module defines the following variables:
 # PLX_LIBRARY_DIR - Location of the PlxApi* files.
 # PLX_INCLUDE_DIR - Location of the Plx header files.
-# PLX_STATIC_LIB - List of the static library.
-# PLX_SHARED_LIB - List of the shared library.
-# PLX_FOUND - true if at least one of the libraries and the includes was found.
+# PLX_STATIC_LIBRARY_PATH - Full path to the PLX static library.
+# PLX_STATIC_LIB - Library list necessary for compiling against the static library.
+# PLX_FOUND - TRUE if we found PLX_LIBRARY_DIR, PLX_INCLUDE_DIR, PLX_STATIC_LIBRARY_PATH
+#
+# TODO: We will need to update this so that we find the proper libraries based on architecture.
 #
 
 find_path(PLX_LIBRARY_DIR
-        NAMES PlxApi.a PlxApi.so PlxApi.lib
+        NAMES PlxApi.a PlxApi.lib
         HINTS $ENV{PLX_SDK_DIR}
         PATHS /usr/local/broadcom/current /usr/src/PlxSdk C:/PlxApi
         PATH_SUFFIXES PlxApi/Library Linux/PlxApi/Library PlxApi/Release)
+
+find_library(PLX_STATIC_LIBRARY_PATH
+        NAMES PlxApi.a PlxApi.lib
+        HINTS ${PLX_LIBRARY_DIR}
+        PATHS /usr/local/broadcom/current /usr/src/PlxSdk C:/PlxApi
+        PATH_SUFFIXES PlxApi/Library Linux/PlxApi/Library PlxApi/Release
+        )
 
 find_path(PLX_INCLUDE_DIR
         NAMES Plx.h PlxTypes.h PlxApi.h
         HINTS $ENV{PLX_SDK_DIR}
         PATHS /usr/local/broadcom/current /usr/src/PlxSdk
-        PATH_SUFFIXES Include)
+        PATH_SUFFIXES Include
+        )
 
 include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(BroadcomAPI DEFAULT_MSG PLX_LIBRARY_DIR PLX_INCLUDE_DIR)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(BroadcomAPI DEFAULT_MSG
+        PLX_LIBRARY_DIR PLX_INCLUDE_DIR PLX_STATIC_LIBRARY_PATH)
 
 if (BroadcomAPI_FOUND)
+    mark_as_advanced(PLX_STATIC_LIBRARY_PATH PLX_LIBRARY_DIR PLX_INCLUDE_DIR)
     if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-        set(PLX_SHARED_LIB -l:PlxApi.so)
-        set(PLX_STATIC_LIB -l:PlxApi.a)
+        set(PLX_STATIC_LIB -l:PlxApi.a dl m)
     elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-        set(PLX_SHARED_LIB PlxApi.dll)
         set(PLX_STATIC_LIB PlxApi.lib)
     endif ()
 endif (BroadcomAPI_FOUND)
-
-mark_as_advanced(PLX_SHARED_LIB PLX_STATIC_LIB PLX_LIBRARY_DIR PLX_INCLUDE_DIR)
