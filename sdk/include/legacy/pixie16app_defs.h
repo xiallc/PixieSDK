@@ -28,32 +28,15 @@
 extern "C" {
 #endif
 
-/*------------------------------------- 
-    At which platform to compile this code -
-	Windows or Linux?
-  -------------------------------------*/
-#define PIXIE16_WINDOWS_APPAPI 0
-#define PIXIE16_LINUX_APPAPI 1
-
-#ifdef PLX_LINUX
-#define PIXIE16_APPAPI_VER PIXIE16_LINUX_APPAPI
-#else
-#define PIXIE16_APPAPI_VER PIXIE16_WINDOWS_APPAPI
-#endif
-
-/*------------------------------------- 
-    Define EXPORT macro
-  -------------------------------------*/
-#if PIXIE16_APPAPI_VER == PIXIE16_WINDOWS_APPAPI
+#if defined(_WIN64) || defined(_WIN32)
 #define PIXIE16APP_EXPORT __declspec(dllexport)
 #define PIXIE16APP_API _stdcall
-#elif PIXIE16_APPAPI_VER == PIXIE16_LINUX_APPAPI
+#else
 #define PIXIE16APP_EXPORT
 #define PIXIE16APP_API
 #endif
 
-
-/*------------------------------------- 
+/*-------------------------------------
     Define math constants
   -------------------------------------*/
 

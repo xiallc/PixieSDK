@@ -30,9 +30,11 @@
 #include <pixie16sys_export.h>
 #include <xia_common.h>
 
-#if PIXIE16_APPAPI_VER == PIXIE16_WINDOWS_APPAPI
+#if defined(_WIN64) || defined(_WIN32)
 #include <windows.h>
-#elif PIXIE16_APPAPI_VER == PIXIE16_LINUX_APPAPI
+#else
+#include <stdint.h>
+#include <sys/time.h>
 #include <unistd.h>
 #endif
 
@@ -206,9 +208,9 @@ int Pixie_End_Run(unsigned short ModNum) {
                 break;  // Run in all modules is done
             }
 
-#if PIXIE16_APPAPI_VER == PIXIE16_WINDOWS_APPAPI
+#if defined(_WIN64) || defined(_WIN32)
             Sleep(1);
-#elif PIXIE16_APPAPI_VER == PIXIE16_LINUX_APPAPI
+#else
             usleep(1000);
 #endif
 
@@ -243,9 +245,9 @@ int Pixie_End_Run(unsigned short ModNum) {
                 break;
             }
 
-#if PIXIE16_APPAPI_VER == PIXIE16_WINDOWS_APPAPI
+#if defined(_WIN64) || defined(_WIN32)
             Sleep(1);
-#elif PIXIE16_APPAPI_VER == PIXIE16_LINUX_APPAPI
+#else
             usleep(1000);
 #endif
             tcount++;
@@ -318,9 +320,9 @@ int Pixie_Control_Task_Run(
         }
 
         // A short wait before polling the run status
-#if PIXIE16_APPAPI_VER == PIXIE16_WINDOWS_APPAPI
+#if defined(_WIN64) || defined(_WIN32)
         Sleep(1);
-#elif PIXIE16_APPAPI_VER == PIXIE16_LINUX_APPAPI
+#else
         usleep(1000);
 #endif
 
@@ -347,9 +349,9 @@ int Pixie_Control_Task_Run(
                 break;  // Run in all modules is done
             }
 
-#if PIXIE16_APPAPI_VER == PIXIE16_WINDOWS_APPAPI
+#if defined(_WIN64) || defined(_WIN32)
             Sleep(1);
-#elif PIXIE16_APPAPI_VER == PIXIE16_LINUX_APPAPI
+#else
             usleep(1000);
 #endif
             tcount++;
@@ -380,9 +382,9 @@ int Pixie_Control_Task_Run(
         }
 
         // A short wait before polling the run status
-#if PIXIE16_APPAPI_VER == PIXIE16_WINDOWS_APPAPI
+#if defined(_WIN64) || defined(_WIN32)
         Sleep(1);
-#elif PIXIE16_APPAPI_VER == PIXIE16_LINUX_APPAPI
+#else
         usleep(1000);
 #endif
 
@@ -390,9 +392,9 @@ int Pixie_Control_Task_Run(
         tcount = 0;
 
         do {
-#if PIXIE16_APPAPI_VER == PIXIE16_WINDOWS_APPAPI
+#if defined(_WIN64) || defined(_WIN32)
             Sleep(1);
-#elif PIXIE16_APPAPI_VER == PIXIE16_LINUX_APPAPI
+#else
             usleep(1000);
 #endif
             retval = Pixie_Check_Run_Status(ModNum);

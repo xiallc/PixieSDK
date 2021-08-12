@@ -33,17 +33,15 @@
 #include <pixie16sys_export.h>
 #include <xia_common.h>
 
-#if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
+#if defined(_WIN64) || defined(_WIN32)
 #include <windows.h>
-#elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI
+#else
 #include <stdint.h>
 #include <sys/time.h>
 #include <unistd.h>
 #define SECOND 1000 * 1000 * 1000 /* nanoseconds/second */
-#endif
 
-
-#if PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI && defined(USE_USLEEP)
+#if defined(USE_USLEEP)
 /****************************************************************
 *	USleep:
 *		Block for the specified number of nanoseconds.
@@ -70,6 +68,7 @@ static void USleep(double nanoseconds) {
     }
 }
 #endif
+#endif
 
 
 /****************************************************************
@@ -88,20 +87,22 @@ static void USleep(double nanoseconds) {
 ****************************************************************/
 
 PIXIE16SYS_EXPORT int PIXIE16SYS_API get_ns_per_cycle(double* ns_per_cycle) {
-#if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
+#if defined(_WIN64) || defined(_WIN32)
     TIMECAPS resolution;
     DWORD start, finish, duration;
     char ErrMSG[MAX_ERRMSG_LENGTH];
     unsigned int NumCycles;
     int count;
-#elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI && (!defined(USE_USLEEP))
+#else
+#ifndef USE_USLEEP
     struct timeval start_time, end_time;
     double start_count, end_count, duration;
     unsigned int NumCycles;
     int count;
 #endif
+#endif
 
-#if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
+#if defined(_WIN64) || defined(_WIN32)
     if (timeGetDevCaps(&resolution, sizeof(TIMECAPS)) != TIMERR_NOERROR) {
         sprintf(ErrMSG, "*ERROR* (get_ns_per_cycle): failed to obtain timer resolution");
         Pixie_Print_MSG(ErrMSG);
@@ -138,7 +139,7 @@ PIXIE16SYS_EXPORT int PIXIE16SYS_API get_ns_per_cycle(double* ns_per_cycle) {
         Pixie_Print_MSG(ErrMSG);
         return (-3);
     }
-#elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI
+#else
 
     // There are two options in Linux for returning the ns_per_cycle:
     //   (1) Use gettimeofday function to directly compute it and then wait
@@ -192,13 +193,13 @@ PIXIE16SYS_EXPORT int PIXIE16SYS_API get_ns_per_cycle(double* ns_per_cycle) {
 
 PIXIE16SYS_EXPORT void PIXIE16SYS_API wait_for_a_short_time(int cycles) {
 
-#if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
+#if defined(_WIN64) || defined(_WIN32)
 
     do {
         cycles--;
     } while (cycles >= 0);
 
-#elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI
+#else
 
 
     // There are two options for this wait_for_a_short_time in Linux:

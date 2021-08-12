@@ -30,9 +30,9 @@
 #include <pixie16sys_export.h>
 #include <xia_common.h>
 
-#if PIXIE16_APPAPI_VER == PIXIE16_WINDOWS_APPAPI
+#if defined(_WIN64) || defined(_WIN32)
 #include <windows.h>
-#elif PIXIE16_APPAPI_VER == PIXIE16_LINUX_APPAPI
+#else
 #include <stdlib.h>
 #include <unistd.h>
 #endif
@@ -1178,9 +1178,9 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16AcquireADCTrace(unsigned short ModNu
 
     count = 0;
     do {
-#if PIXIE16_APPAPI_VER == PIXIE16_WINDOWS_APPAPI
+#if defined(_WIN64) || defined(_WIN32)
         Sleep(1);
-#elif PIXIE16_APPAPI_VER == PIXIE16_LINUX_APPAPI
+#else
         usleep(1000);
 #endif
 

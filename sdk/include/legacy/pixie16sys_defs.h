@@ -27,33 +27,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-/*-------------------------------------
-	At which platform to compile this code -
-	Windows or Linux?
-  -------------------------------------*/
-#define PIXIE16_WINDOWS_SYSAPI 0
-#define PIXIE16_LINUX_SYSAPI 1
 
-// Changing PIXIE16_SYSAPI_VER here affects the code globally
-#ifdef PLX_LINUX
-#define PIXIE16_SYSAPI_VER PIXIE16_LINUX_SYSAPI
-#else
-#define PIXIE16_SYSAPI_VER PIXIE16_WINDOWS_SYSAPI
-#endif
-
-
-/*------------------------------------- 
-	Define EXPORT macro
-  -------------------------------------*/
-
-#if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
+#if defined(_WIN64) || defined(_WIN32)
 #define PIXIE16SYS_EXPORT __declspec(dllexport)
 #define PIXIE16SYS_API _stdcall
-#elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI
+#else
 #define PIXIE16SYS_EXPORT
 #define PIXIE16SYS_API
 #endif
-
 
 #ifndef PCI_CODE
 #define PCI_CODE
@@ -63,10 +44,11 @@ extern "C" {
 #define LITTLE_ENDIAN  // BIG_ENDIAN:    most significant byte stored first
 #endif
 
+// Preset maximum number of modules for defining data structures
+#define SYS_MAX_NUM_MODULES 32
 
-#define SYS_MAX_NUM_MODULES 32  // Preset maximum number of modules for defining data structures
-#define SYS_MAX_PXI_SLOTS                                                                          \
-    14  // Maximum number of PXI slots for one PXI chassis (currently 14-slot is the biggest chassis)
+// Maximum number of PXI slots for one PXI chassis (currently 14-slot is the biggest chassis)
+#define SYS_MAX_PXI_SLOTS 14
 
 /*
  * ADSP-21160 registers defined from

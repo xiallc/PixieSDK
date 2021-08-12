@@ -28,10 +28,7 @@
 extern "C" {
 #endif
 
-#ifndef __PIXIE16APP_DEFS_H
 #include "pixie16app_defs.h"
-#endif
-
 
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16InitSystem(
     unsigned short NumModules,  // total number of Pixie16 modules in the system

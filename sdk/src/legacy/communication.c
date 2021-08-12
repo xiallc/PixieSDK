@@ -30,9 +30,9 @@
 #include <pixie16sys_export.h>
 #include <pixie16sys_globals.h>
 
-#if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
+#if defined(_WIN64) || defined(_WIN32)
 #include <windows.h>
-#elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI
+#else
 #include <ctype.h>
 #include <unistd.h>
 #endif
@@ -719,9 +719,9 @@ int Pixie_Clear_Main_Memory(unsigned int memory_address,  // Main memory address
     // Wait until the clearing is done
     count = 0;
     do {
-#if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
+#if defined(_WIN64) || defined(_WIN32)
         Sleep(1);
-#elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI
+#else
         usleep(100);
 #endif
 

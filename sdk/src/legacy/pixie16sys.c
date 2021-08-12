@@ -30,10 +30,9 @@
 #include <pixie16sys_export.h>
 #include <pixie16sys_globals.h>
 
-
-#if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
+#if defined(_WIN64) || defined(_WIN32)
 #include <windows.h>
-#elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI
+#else
 #include <ctype.h>
 #include <unistd.h>
 #endif
@@ -726,9 +725,9 @@ ReadINITf34:
         Pixie_Print_Info(PIXIE_FUNC, "Downloaded SP FPGAs 3&4 successfully in module %d", ModNum);
     }
 
-#if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
+#if defined(_WIN64) || defined(_WIN32)
     Sleep(10);
-#elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI
+#else
     usleep(10000);
 #endif
 
@@ -756,7 +755,7 @@ int Pixie_Boot_DSP(unsigned short ModNum, unsigned int* DSP_code, unsigned int N
     unsigned int buffer[0x5];  // Temporary buffer
     unsigned int i, count;  // Index and counters
     unsigned int tagnum, trytimes, wordcount, CSR;
-#if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
+#if defined(_WIN64) || defined(_WIN32)
     DWORD start;
 #endif
     unsigned short bootsuccess, looptimes;
@@ -766,7 +765,7 @@ int Pixie_Boot_DSP(unsigned short ModNum, unsigned int* DSP_code, unsigned int N
         return (0);
     }
 
-#if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
+#if defined(_WIN64) || defined(_WIN32)
     // Set timer resolution to 1 ms
     if (timeBeginPeriod(1) != TIMERR_NOERROR) {
         Pixie_Print_Error(PIXIE_FUNC, "Can not set timer resolution to 1 ms");
@@ -794,22 +793,22 @@ int Pixie_Boot_DSP(unsigned short ModNum, unsigned int* DSP_code, unsigned int N
         Pixie_WrtCSR(ModNum, CSR);
 
         // Wait for 1 ms
-#if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
+#if defined(_WIN64) || defined(_WIN32)
         start = timeGetTime();
         while (timeGetTime() < (start + 1))
             ;
-#elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI
+#else
         usleep(1000);
 #endif
 
         Pixie_Register_IO(ModNum, HBR_DONE, SYS_MOD_WRITE, buffer);  // HBR done for reset
 
         // Wait for 1 ms
-#if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
+#if defined(_WIN64) || defined(_WIN32)
         start = timeGetTime();
         while (timeGetTime() < (start + 1))
             ;
-#elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI
+#else
         usleep(1000);
 #endif
 
@@ -922,11 +921,11 @@ RetryD:
                             count += 3;
 
                             // Wait for 2 ms
-#if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
+#if defined(_WIN64) || defined(_WIN32)
                             start = timeGetTime();
                             while (timeGetTime() < (start + 2))
                                 ;
-#elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI
+#else
                             usleep(2000);
 #endif
 
@@ -1100,9 +1099,9 @@ RetryD:
                 bootsuccess = 1;
                 break;
             }
-#if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
+#if defined(_WIN64) || defined(_WIN32)
             Sleep(1);
-#elif PIXIE16_SYSAPI_VER == PIXIE16_LINUX_SYSAPI
+#else
             usleep(1000);
 #endif
             trytimes++;
@@ -1117,7 +1116,7 @@ RetryD:
         looptimes++;
     } while ((bootsuccess == 0) && (looptimes < 10));
 
-#if PIXIE16_SYSAPI_VER == PIXIE16_WINDOWS_SYSAPI
+#if defined(_WIN64) || defined(_WIN32)
     timeEndPeriod(1);
 #endif
 
