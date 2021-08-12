@@ -318,8 +318,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
                                 DSPParFile, DSPVarFile, BootPattern);
             }
         } else {
-            xia::pixie::crate::module_handle module(crate, ModNum);
-            PixieBootModule(*module, ComFPGAConfigFile, SPFPGAConfigFile, DSPCodeFile, DSPParFile,
+            PixieBootModule(*crate.modules[ModNum], ComFPGAConfigFile, SPFPGAConfigFile, DSPCodeFile, DSPParFile,
                             DSPVarFile, BootPattern);
         }
     } catch (xia_error& e) {
