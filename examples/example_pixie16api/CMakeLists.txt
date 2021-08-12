@@ -1,12 +1,12 @@
 if (BUILD_PIXIE16_API)
-    add_executable(example_pixie16_sdk
+    add_executable(example_pixie16_api
             example_pixie16api.cpp
             $<TARGET_OBJECTS:EasyLoggingObjLib>)
-    target_include_directories(example_pixie16_sdk PUBLIC
+    target_include_directories(example_pixie16_api PUBLIC
             ${PROJECT_SOURCE_DIR}/sdk/include/
             ${PROJECT_SOURCE_DIR}/externals/)
-    xia_configure_target(TARGET example_pixie16_sdk USE_PLX LIBS Pixie16Api LINUX_LIBS -Wl,--no-as-needed)
-    install(TARGETS example_pixie16_sdk RUNTIME DESTINATION bin)
+    xia_configure_target(TARGET example_pixie16_api USE_PLX LIBS Pixie16Api LINUX_LIBS -Wl,--no-as-needed)
+    install(TARGETS example_pixie16_api RUNTIME DESTINATION bin)
 endif ()
 
 if (BUILD_LEGACY)
