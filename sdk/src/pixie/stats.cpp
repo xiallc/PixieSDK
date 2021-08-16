@@ -50,7 +50,7 @@ double channel::input_count_rate() const {
     if (live_time == 0.0) {
         return 0.0;
     }
-    return fast_peaks / (live_time * (1.0e-6 / config.adc_msps));
+    return fast_peaks / (live_time * config.adc_clk_div * (1.0e-6 / config.adc_msps));
 }
 
 double channel::output_count_rate() const {
