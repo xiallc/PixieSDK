@@ -696,8 +696,7 @@ int main(int argc, char** argv) {
         offline_mode = 1;
 
     start = std::chrono::system_clock::now();
-    LOG(INFO) << "Calling "
-              << "Pixie16InitSystem.";
+    LOG(INFO) << "Calling Pixie16InitSystem.";
     if (!verify_api_return_value(
             Pixie16InitSystem(cfg.num_modules(), cfg.slot_def.data(), offline_mode),
             "Pixie16InitSystem", false))
