@@ -106,7 +106,7 @@ def plot_csv(plot_type, data, args):
         xlabel = "Bin"
         ylabel = "Energy (arb) / Bin"
         title = "MCA Spectrum"
-    if plot_type == 'trc':
+    if plot_type == 'adc':
         title = "ADC Traces"
     if plot_type == 'baseline':
         title = "Baselines"
@@ -152,7 +152,7 @@ if __name__ == '__main__':
                         help="The firmware used to collect list-mode data. Ex. 30474")
     PARSER.add_argument('-s', '--stats', action='store_true',
                         help="Processes a module's CSV statistics file.")
-    PARSER.add_argument('-t', '--trace', action='store_true', help='Plots traces')
+    PARSER.add_argument('-a', '--adc', action='store_true', help='Plots traces')
     ARGS = PARSER.parse_args()
 
     if ARGS.xlim:
@@ -174,8 +174,8 @@ if __name__ == '__main__':
             df = pd.read_csv(ARGS.file, keep_default_na=False)
 
     logging.info("Sending data for plotting.")
-    if ARGS.trace:
-        plot_csv('trc', df, ARGS)
+    if ARGS.adc:
+        plot_csv('adc', df, ARGS)
     if ARGS.mca:
         plot_csv('mca', df, ARGS)
     if ARGS.baseline:
