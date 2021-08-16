@@ -26,6 +26,7 @@ from io import BytesIO
 import logging
 import math
 import multiprocessing as mp
+import os
 import sys
 
 import dolosse.constants.data
@@ -66,6 +67,36 @@ def process_list_mode_data_file(args):
     return pd.DataFrame(results)
 
 
+def plot_lmd(df, args):
+    channels = df.channel.unique()
+    channels.sort()
+
+    if len(channels) < 4:
+        fig, axes = plt.subplots(nrows=len(channels), ncols=1, sharex='all',
+                                 sharey='all')
+    else:
+        subplot_dim = int(math.sqrt(math.pow(math.ceil(math.sqrt(len(channels))), 2)))
+        channels = np.pad(channels, (0, subplot_dim ** 2 - len(channels)), mode='constant',
+                          constant_values=None)
+        fig, axes = plt.subplots(nrows=subplot_dim, ncols=subplot_dim, sharex='col',
+                                 sharey='row')
+
+    for channel, ax in np.column_stack((channels, fig.axes)):
+        if numpy.isnan(channel):
+            continue
+        df[df['channel'] == channel].hist(column='energy', ax=ax, grid=False)
+        ax.title.set_text(f'Chan {int(channel)}')
+
+    fig.supxlabel("Energy(arb)")
+    fig.supylabel("Energy(arb) / bin")
+    plt.xlim(args.xlim)
+    plt.suptitle("List-Mode Energy Histograms")
+    plt.tight_layout()
+
+    plt.savefig(f"{os.path.splitext(args.file)[0]}.png", format='png')
+    plt.show()
+
+
 def plot_csv(plot_type, data, args):
     title = "Untitled"
     xlabel = "Sample"
@@ -80,19 +111,25 @@ def plot_csv(plot_type, data, args):
     if plot_type == 'baseline':
         title = "Baselines"
 
-    if args.chan is not None:
-        data[f'Chan{args.chan}'].plot(title=title, xlabel=xlabel, ylabel=ylabel)
-        plt.legend()
+    if plot_type == 'stats':
+        data.plot.bar(x="channel", y=["input_count_rate", "output_count_rate"],
+                      title="Rate Statistics", xlabel="Channel", ylabel="Counts / second",
+                      label=['Input', "Output"])
     else:
-
-        data.plot(subplots=True, layout=(4, 4), title=title, xlabel=xlabel, ylabel=ylabel,
-                  figsize=(11, 8.5), sharey=True)
-        plt.tight_layout()
+        if args.chan is not None:
+            data[f'Chan{args.chan}'].plot(title=title, xlabel=xlabel, ylabel=ylabel)
+            plt.legend()
+        else:
+            data.plot(subplots=True, layout=(4, 4), title=title, xlabel=xlabel, ylabel=ylabel,
+                      figsize=(11, 8.5), sharey=True)
+            plt.tight_layout()
 
     if args.xlim:
         plt.xlim(args.xlim)
         if any(val > 1000 for val in args.xlim):
             plt.subplots_adjust(wspace=0.2)
+
+    plt.savefig(f"{os.path.splitext(args.file)[0]}.png", format='png')
     plt.show()
 
 
@@ -113,6 +150,8 @@ if __name__ == '__main__':
                         help="Comma separated range for X-axis limits. Ex. 10,400")
     PARSER.add_argument('--rev', type=int, dest='rev',
                         help="The firmware used to collect list-mode data. Ex. 30474")
+    PARSER.add_argument('-s', '--stats', action='store_true',
+                        help="Processes a module's CSV statistics file.")
     PARSER.add_argument('-t', '--trace', action='store_true', help='Plots traces')
     ARGS = PARSER.parse_args()
 
@@ -122,40 +161,19 @@ if __name__ == '__main__':
         if ARGS.xlim[1] < ARGS.xlim[0]:
             ARGS.xlim.sort()
 
+    logging.info("Processing data file.")
     if ARGS.lmd:
         if not ARGS.freq or not ARGS.rev:
             PARSER.error("When requesting list-mode data you must provide us with the "
                          "hardware's sampling frequency and firmware revision.")
-
         df = process_list_mode_data_file(ARGS)
-        channels = df.channel.unique()
-        channels.sort()
-
-        if len(channels) < 4:
-            fig, axes = plt.subplots(nrows=len(channels), ncols=1, sharex='all',
-                                     sharey='all')
-        else:
-            subplot_dim = int(math.sqrt(math.pow(math.ceil(math.sqrt(len(channels))), 2)))
-            channels = np.pad(channels, (0, subplot_dim ** 2 - len(channels)), mode='constant',
-                              constant_values=None)
-            fig, axes = plt.subplots(nrows=subplot_dim, ncols=subplot_dim, sharex='col',
-                                     sharey='row')
-
-        for channel, ax in np.column_stack((channels, fig.axes)):
-            if numpy.isnan(channel):
-                continue
-            df[df['channel'] == channel].hist(column='energy', ax=ax, grid=False)
-            ax.title.set_text(f'Chan {int(channel)}')
-
-        fig.supxlabel("Energy(arb)")
-        fig.supylabel("Energy(arb) / bin")
-        plt.xlim(ARGS.xlim)
-        plt.suptitle("List-Mode Energy Histograms")
-        plt.tight_layout()
-        plt.show()
     else:
-        df = pd.read_csv(ARGS.file, index_col='bin', keep_default_na=False)
+        if not ARGS.stats:
+            df = pd.read_csv(ARGS.file, index_col='bin', keep_default_na=False)
+        else:
+            df = pd.read_csv(ARGS.file, keep_default_na=False)
 
+    logging.info("Sending data for plotting.")
     if ARGS.trace:
         plot_csv('trc', df, ARGS)
     if ARGS.mca:
@@ -163,3 +181,7 @@ if __name__ == '__main__':
     if ARGS.baseline:
         df.pop("timestamp")
         plot_csv('baseline', df, ARGS)
+    if ARGS.stats:
+        plot_csv('stats', df, ARGS)
+    if ARGS.lmd:
+        plot_lmd(df, ARGS)

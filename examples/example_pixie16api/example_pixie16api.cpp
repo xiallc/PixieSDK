@@ -152,6 +152,42 @@ bool verify_api_return_value(const int& val, const std::string& func_name,
     return true;
 }
 
+bool output_statistics_data(const unsigned short& mod_num, const std::string& type) {
+    std::vector<unsigned int> stats(448, 0);
+    if (!verify_api_return_value(Pixie16ReadStatisticsFromModule(stats.data(), mod_num),
+                                 "Pixie16ReadStatisticsFromModule", false))
+        return false;
+
+    std::ofstream bin_output(generate_filename(mod_num, type, "bin"),
+                             std::ios::binary | std::ios::out);
+    bin_output.write(reinterpret_cast<char*>(stats.data()), sizeof(unsigned int) * stats.size());
+    bin_output.close();
+
+    std::ofstream csv_output(generate_filename(mod_num, type, "csv"), std::ios::out);
+    csv_output << "channel,real_time,live_time,input_count_rate,output_count_rate" << std::endl;
+
+    auto real_time = Pixie16ComputeRealTime(stats.data(), mod_num);
+
+    LOG(INFO) << "Begin Statistics for Module " << mod_num;
+    LOG(INFO) << "Real Time: " << real_time;
+    for (unsigned int chan = 0; chan < NUMBER_OF_CHANNELS; chan++) {
+        auto live_time = Pixie16ComputeLiveTime(stats.data(), mod_num, chan);
+        auto icr = Pixie16ComputeInputCountRate(stats.data(), mod_num, chan);
+        auto ocr = Pixie16ComputeOutputCountRate(stats.data(), mod_num, chan);
+
+        LOG(INFO) << "Channel " << chan << " LiveTime: " << live_time;
+        LOG(INFO) << "Channel " << chan << " Input Count Rate: " << icr;
+        LOG(INFO) << "Channel " << chan << " Output Count Rate: " << ocr;
+
+        csv_output << chan << "," << real_time << "," << live_time << "," << icr << "," << ocr
+                   << std::endl;
+    }
+    LOG(INFO) << "End Statistics for Module " << mod_num;
+    csv_output.close();
+    return true;
+}
+
+
 bool save_dsp_pars(const std::string& filename) {
     LOG(INFO) << "Saving DSP Parameters to " << filename << ".";
     if (!verify_api_return_value(Pixie16SaveDSPParametersToFile(filename.c_str()),
@@ -324,23 +360,9 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
             output_streams[mod_num].write(reinterpret_cast<char*>(data.data()),
                                           num_fifo_words * sizeof(uint32_t));
         }
-
-        LOG(INFO) << "Begin Statistics for Module " << mod_num;
-        std::vector<unsigned int> stats(448, 0);
-        if (!verify_api_return_value(Pixie16ReadStatisticsFromModule(stats.data(), mod_num),
-                                     "Pixie16ReadStatisticsFromModule", false))
+        if (!output_statistics_data(mod_num, "list-mode-stats")) {
             return false;
-
-        LOG(INFO) << "Real Time: " << Pixie16ComputeRealTime(stats.data(), mod_num);
-        for (unsigned int chan = 0; chan < NUMBER_OF_CHANNELS; chan++) {
-            LOG(INFO) << "Channel " << chan
-                      << " LiveTime: " << Pixie16ComputeLiveTime(stats.data(), mod_num, chan);
-            LOG(INFO) << "Channel " << chan << " Input Count Rate: "
-                      << Pixie16ComputeInputCountRate(stats.data(), mod_num, chan);
-            LOG(INFO) << "Channel " << chan << " Output Count Rate: "
-                      << Pixie16ComputeOutputCountRate(stats.data(), mod_num, chan);
         }
-        LOG(INFO) << "End Statistics for Module " << mod_num;
     }
 
     return true;
@@ -402,6 +424,11 @@ bool execute_mca_run(const unsigned int& mod, const double& runtime_in_seconds) 
         }
         out << std::endl;
     }
+
+    if (!output_statistics_data(mod, "mca-stats")) {
+        return false;
+    }
+
     return true;
 }
 
