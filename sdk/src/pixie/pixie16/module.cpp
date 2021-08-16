@@ -1493,7 +1493,7 @@ void module::read_list_mode(hw::word_ptr values, const size_t size) {
 }
 
 void module::read_stats(stats::stats& stats) {
-    log(log::info) << module_label(*this) << "bl-find-count: channels=" << channels.size();
+    log(log::info) << module_label(*this) << "read-stats: channels=" << channels.size();
     online_check();
     lock_guard guard(lock_);
     stats::read(*this, stats);

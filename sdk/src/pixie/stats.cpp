@@ -110,18 +110,19 @@ void read(pixie::module::module& module_, stats& stats_) {
     stats_.mod.runtime_b = vars[addr - base];
 
     for (auto& channel : stats_.chans) {
+        const auto index = channel.config.index;
         addr = param::get_descriptor(chan_descs, param::channel_var::FastPeaksA).address;
-        channel.fast_peaks_a = vars[addr - base];
+        channel.fast_peaks_a = vars[addr - base + index];
         addr = param::get_descriptor(chan_descs, param::channel_var::FastPeaksB).address;
-        channel.fast_peaks_b = vars[addr - base];
+        channel.fast_peaks_b = vars[addr - base + index];
         addr = param::get_descriptor(chan_descs, param::channel_var::LiveTimeA).address;
-        channel.live_time_a = vars[addr - base];
+        channel.live_time_a = vars[addr - base + index];
         addr = param::get_descriptor(chan_descs, param::channel_var::LiveTimeB).address;
-        channel.live_time_b = vars[addr - base];
+        channel.live_time_b = vars[addr - base + index];
         addr = param::get_descriptor(chan_descs, param::channel_var::ChanEventsA).address;
-        channel.chan_events_a = vars[addr - base];
+        channel.chan_events_a = vars[addr - base + index];
         addr = param::get_descriptor(chan_descs, param::channel_var::ChanEventsB).address;
-        channel.chan_events_b = vars[addr - base];
+        channel.chan_events_b = vars[addr - base + index];
         channel.runtime_a = stats_.mod.runtime_a;
         channel.runtime_b = stats_.mod.runtime_b;
     }
