@@ -724,11 +724,20 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned
                                                  unsigned short* ModADCMSPS) {
     xia_log(xia_log::info) << "Pixie16ReadModuleInfo: ModNum=" << ModNum;
 
-    (void) ModRev;
-    (void) ModSerNum;
-    (void) ModADCBits;
-    (void) ModADCMSPS;
-    return not_supported();
+    try {
+        *ModRev = crate.modules[ModNum]->revision;
+        *ModSerNum = crate.modules[ModNum]->serial_num;
+        *ModADCBits = crate.modules[ModNum]->configs[0].adc_bits;
+        *ModADCMSPS = crate.modules[ModNum]->configs[0].adc_msps;
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
+    } catch (...) {
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::api_result_unknown_error();
+    }
+
+    return 0;
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buffer,

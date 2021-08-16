@@ -559,6 +559,26 @@ double calculate_duration_in_seconds(const std::chrono::system_clock::time_point
     return std::chrono::duration<double>(end - start).count();
 }
 
+void output_module_info(const configuration& cfg) {
+    unsigned short rev;
+    unsigned int serial_number;
+    unsigned short adc_bits;
+    unsigned short adc_msps;
+    for (const auto& mod : cfg.modules) {
+        if (!verify_api_return_value(
+            Pixie16ReadModuleInfo(mod.number, &rev, &serial_number, &adc_bits, &adc_msps),
+            "Pixie16ReadModuleInfo", false))
+            throw std::runtime_error("Could not get module information for Module " +
+                                     std::to_string(mod.number));
+        LOG(INFO) << "Begin module information for Module " << mod.number;
+        LOG(INFO) << "Serial Number: " << serial_number;
+        LOG(INFO) << "Revision: " << rev;
+        LOG(INFO) << "ADC Bits: " << adc_bits;
+        LOG(INFO) << "ADC MSPS: " << adc_msps;
+        LOG(INFO) << "End module information for Module " << mod.number;
+    }
+}
+
 void configure_logging(int argc, char** argv) {
 #ifndef LEGACY_EXAMPLE
     static const std::string log_file = "example_pixie16api.log";
@@ -685,6 +705,13 @@ int main(int argc, char** argv) {
 
     LOG(INFO) << "Finished Pixie16InitSystem in "
               << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s.";
+
+    try {
+        output_module_info(cfg);
+    } catch (std::runtime_error& error) {
+        LOG(ERROR) << error.what();
+        return EXIT_FAILURE;
+    }
 
     if (init) {
         execute_close_module_connection(cfg.num_modules());
