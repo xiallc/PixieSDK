@@ -564,8 +564,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ExitSystem(unsigned short ModNum) {
                 module->close();
             }
         } else {
-            xia::pixie::crate::module_handle module(crate, ModNum);
-            module->close();
+            crate.modules[ModNum]->close();
         }
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
