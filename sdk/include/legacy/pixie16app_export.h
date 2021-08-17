@@ -1399,7 +1399,7 @@ PIXIE16APP_EXPORT unsigned int PIXIE16APP_API Decimal2IEEEFloating(double Decima
  * @ingroup PUBLIC_UTILITIES
  * @brief Converts a IEEE 754 standard format number to a double.
  * @see https://en.wikipedia.org/wiki/IEEE_754
- * @param[in] DecimalNumber: The IEEE 754 standard format number to convert
+ * @param[in] IEEEFloatingNumber: The IEEE 754 standard format number to convert
  * @returns The input value in double format.
  */
 PIXIE16APP_EXPORT double PIXIE16APP_API IEEEFloating2Decimal(unsigned int IEEEFloatingNumber);
