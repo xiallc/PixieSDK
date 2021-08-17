@@ -28,9 +28,7 @@
 extern "C" {
 #endif
 
-#ifndef __PIXIE16APP_DEFS_H
 #include "pixie16sys_defs.h"
-#endif
 
 PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_SetBit(unsigned short bit,
                                                              unsigned short value);

@@ -26,21 +26,8 @@
 #include <pixie16sys_export.h>
 #include <pixie16sys_globals.h>
 
-/****************************************************************
- *	PCF8574_Read_One_Byte:
- *		Bus master reads one byte from PCF8574.
- *
- *		Return Value:
- *			 0 - Successful
- *			-1 - Invalid Pixie module number
- *			-2 - Failed to get Acknowledge after sending DevSel byte
- *			-3 - Failed to get Acknowledge after sending DevSel byte
- *
- ****************************************************************/
 
-int PCF8574_Read_One_Byte(unsigned short ModNum,  // Pixie module number
-                          char* ByteValue)  // The byte value
-{
+int PCF8574_Read_One_Byte(unsigned short ModNum, char* ByteValue) {
     char IOByte;
     char ackvalue;
 
@@ -78,11 +65,14 @@ int PCF8574_Read_One_Byte(unsigned short ModNum,  // Pixie module number
     return (0);
 }
 
-/* ----------------------------------------------------- */
-// PCF8574_start:
-//   Bus master sends "START" to PCF8574
-/* ----------------------------------------------------- */
 
+/**
+ * @ingroup PCF8574
+ * @brief Bus master sends "START" to PCF8574
+ * @param[in] ModNum The module that we want to communicate with.
+ * @returns A status code indicating the result of the operation
+ * @retval 0 - Success
+ */
 int PCF8574_start(unsigned short ModNum) {
     unsigned int buffer[4];
 
@@ -110,11 +100,13 @@ int PCF8574_start(unsigned short ModNum) {
 }
 
 
-/* ----------------------------------------------------- */
-// PCF8574_stop:
-//   Bus master sends "STOP" to PCF8574
-/* ----------------------------------------------------- */
-
+/**
+ * @ingroup PCF8574
+ * @brief Bus master sends "STOP" to PCF8574
+ * @param[in] ModNum The module that we want to communicate with.
+ * @returns A status code indicating the result of the operation
+ * @retval 0 - Success
+ */
 int PCF8574_stop(unsigned short ModNum) {
     unsigned int buffer[4];
 
@@ -142,11 +134,14 @@ int PCF8574_stop(unsigned short ModNum) {
 }
 
 
-/* ----------------------------------------------------- */
-// PCF8574_byte_write:
-//   Bus master sends a byte to PCF8574
-/* ----------------------------------------------------- */
-
+/**
+ * @ingroup PCF8574
+ * @brief Bus master sends a byte to PCF8574
+ * @param[in] ModNum: The module that we want to communicate with.
+ * @param[in] ByteToSend: The value to write to the chip.
+ * @returns A status code indicating the result of the operation
+ * @retval 0 - Success
+ */
 int PCF8574_byte_write(unsigned short ModNum, char ByteToSend) {
     short i;
     unsigned int buffer[4];
@@ -204,11 +199,14 @@ int PCF8574_byte_write(unsigned short ModNum, char ByteToSend) {
 }
 
 
-/* ----------------------------------------------------- */
-// PCF8574_byte_read:
-//   Bus master receives a byte from PCF8574
-/* ----------------------------------------------------- */
-
+/**
+ * @ingroup PCF8574
+ * @brief Bus master receives a byte from PCF8574
+ * @param[in] ModNum: The module that we want to communicate with.
+ * @param[out] ByteToReceive: The value read from the chip.
+ * @returns A status code indicating the result of the operation
+ * @retval 0 - Success
+ */
 int PCF8574_byte_read(unsigned short ModNum, char* ByteToReceive) {
     short i;
     unsigned int buffer[4];
@@ -257,12 +255,14 @@ int PCF8574_byte_read(unsigned short ModNum, char* ByteToReceive) {
 }
 
 
-/* ----------------------------------------------------- */
-// PCF8574_getACK:
-//   Bus master receives ACKNOWLEDGE from PCF8574
-//   keep CTRL = 0 to leave bus to memory for reading
-/* ----------------------------------------------------- */
-
+/**
+ * @ingroup PCF8574
+ * @brief Bus master receives ACKNOWLEDGE from PCF8574
+ * @note keep CTRL = 0 to leave bus to memory for reading
+ * @param[in] ModNum: The module that we want to communicate with.
+ * @returns A status code indicating the result of the operation
+ * @retval 0 - Success
+ */
 char PCF8574_getACK(unsigned short ModNum) {
     unsigned int buffer[4], rbuf[4];
     char retval;
@@ -297,11 +297,13 @@ char PCF8574_getACK(unsigned short ModNum) {
 }
 
 
-/* ----------------------------------------------------- */
-// PCF8574_sendACK:
-//   Bus master sends ACKNOWLEDGE to PCF8574
-/* ----------------------------------------------------- */
-
+/**
+ * @ingroup PCF8574
+ * @brief Bus master sends ACKNOWLEDGE to PCF8574
+ * @param[in] ModNum: The module that we want to communicate with.
+ * @returns A status code indicating the result of the operation
+ * @retval 0 - Success
+ */
 char PCF8574_sendACK(unsigned short ModNum) {
     unsigned int buffer[4];
 

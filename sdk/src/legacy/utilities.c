@@ -38,28 +38,26 @@
 #include <unistd.h>
 #endif
 
-
-/****************************************************************
-*	Pixie_Start_Run:
-*		Start a new run or resume a run in a Pixie module or multiple
-*		modules.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Failed to stop the run that is already in progress
-*
-****************************************************************/
-
-int Pixie_Start_Run(unsigned short mode,  // mode = NEW_RUN or RESUME_RUN
-                    unsigned short run_task,  // run task number
-                    unsigned short control_task,  // control task number
+/**
+ * @ingroup PRIVATE_UTILITIES
+ * @brief Start a new run or resume a run in a Pixie module or multiple modules.
+ * @param[in] mode: One of NEW_RUN or RESUME_RUN
+ * @param[in] run_task: run task number
+ * @param[in] control_task: Control task number
+ * @param[in] ModNum: Module that we'll execute against. If ModNum equals number of modules in the
+ *                      system, then this will execute for all modules.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Failed to stop the run that is already in progress
+ */
+int Pixie_Start_Run(unsigned short mode, unsigned short run_task, unsigned short control_task,
                     unsigned short ModNum) {
     unsigned int value, CSR;
     unsigned int buffer[MAX_HISTOGRAM_LENGTH * 4] = {0};
     unsigned short k;
     int retval;
 
-    Pixie_Print_Info(PIXIE_FUNC, "start: mod_num=%d mode=%d run_task=%d contro_task=%d", ModNum,
+    Pixie_Print_Info(PIXIE_FUNC, "start: mod_num=%d mode=%d run_task=%d control_task=%d", ModNum,
                      mode, run_task, control_task);
 
     if (ModNum == Number_Modules)  // Start run in all modules
@@ -162,16 +160,15 @@ int Pixie_Start_Run(unsigned short mode,  // mode = NEW_RUN or RESUME_RUN
 }
 
 
-/****************************************************************
-*	Pixie_End_Run:
-*		End run in a single Pixie module or multiple modules.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Failed to stop the run
-*
-****************************************************************/
-
+/**
+ * @ingroup PRIVATE_UTILITIES
+ * @brief End run in a single Pixie module or multiple modules.
+ * @param[in] ModNum: Module that we'll execute against. If ModNum equals number of modules in the
+ *                      system, then this will execute for all modules.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Failed to stop the run
+ */
 int Pixie_End_Run(unsigned short ModNum) {
     unsigned int CSR, tcount;
     unsigned short k, sumActive, Active[PRESET_MAX_MODULES];
@@ -266,16 +263,14 @@ int Pixie_End_Run(unsigned short ModNum) {
 }
 
 
-/****************************************************************
-*	Pixie_Check_Run_Status:
-*		Check if a run is in progress.
-*
-*		Return Value:
-*			0:	no run in progress
-*			1:	a run in progress
-*
-****************************************************************/
-
+/**
+ * @ingroup PRIVATE_UTILITIES
+ * @brief Check if a run is in progress.
+ * @param[in] ModNum: The module that we'll check the run status for.
+ * @return An integer indicating if a run is in progress.
+ * @retval 0 - no run in progress
+ * @retval 1 - a run in progress
+ */
 int Pixie_Check_Run_Status(unsigned short ModNum) {
     unsigned int CSR;
     Pixie_ReadCSR(ModNum, &CSR);
@@ -283,22 +278,20 @@ int Pixie_Check_Run_Status(unsigned short ModNum) {
 }
 
 
-/****************************************************************
-*	Pixie_Control_Task_Run:
-*		Perform a control task run.
-*
-*		Return Value:
-*			 0 - successful
-*			-1 - failed to start the control task run
-*			-2 - control task run timed out
-*
-****************************************************************/
-
-int Pixie_Control_Task_Run(
-    unsigned short ModNum,  // Pixie module number
-    unsigned short ControlTask,  // Control task number
-    unsigned int Max_Poll)  // Timeout control in unit of ms for control task run
-{
+/**
+ * @ingroup PRIVATE_UTILITIES
+ * @brief Perform a control task run.
+ * @param[in] ModNum: Module that we'll execute against. If ModNum equals number of modules in the
+ *                      system, then this will execute for all modules.
+ * @param[in] ControlTask: Control task number
+ * @param[in] Max_Poll: Timeout control in unit of ms for control task run
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - successful
+ * @retval -1 - failed to start the control task run
+ * @retval -2 - control task run timed out
+ */
+int Pixie_Control_Task_Run(unsigned short ModNum, unsigned short ControlTask,
+                           unsigned int Max_Poll) {
     unsigned int tcount;
     unsigned short k, sumActive, Active[PRESET_MAX_MODULES];
     int retval;
@@ -416,19 +409,16 @@ int Pixie_Control_Task_Run(
 }
 
 
-/****************************************************************
-*	Pixie_Broadcast:
-*		Broadcast certain global parameters to all Pixie modules.
-*
-*		Return Value:
-*			 0 - success
-*			-1 - invalid parameter to be broadcasted
-*
-****************************************************************/
-
-int Pixie_Broadcast(const char* str,  // variable name whose value is to be broadcasted
-                    unsigned short SourceModule)  // the source module number
-{
+/**
+ * @ingroup PRIVATE_UTILITIES
+ * @brief Broadcast certain global parameters to all Pixie modules.
+ * @param[in] str: variable name whose value will be broadcast
+ * @param[in] SourceModule: the source module number
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - success
+ * @retval -1 - invalid parameter to be broadcast
+ */
+int Pixie_Broadcast(const char* str, unsigned short SourceModule) {
     unsigned int value;
     unsigned short i;
 
@@ -478,21 +468,16 @@ int Pixie_Broadcast(const char* str,  // variable name whose value is to be broa
 }
 
 
-/****************************************************************
-*	Pixie_ComputeFIFO:
-*		Update FIFO settings (TriggerDelay and PAFLength) when the
-*		following DSP parameters are changed:
-*			SlowLength, SlowGap, SlowFilterRange
-*
-*		Return Value:
-*			0 - success
-*
-****************************************************************/
-
-int Pixie_ComputeFIFO(unsigned int TraceDelay,  // current trace dealy value
-                      unsigned short ModNum,  // Pixie module number
-                      unsigned short ChanNum)  // Pixie channel number
-{
+/**
+ * @ingroup PRIVATE_UTILITIES
+ * @brief Update FIFO settings (TriggerDelay and PAFLength) when SlowLength, SlowGap, SlowFilterRange change.
+ * @param[in] TraceDelay: current trace delay value
+ * @param[in] ModNum: Pixie module number
+ * @param[in] ChanNum: Pixie channel number
+ * @returns A status code indicating the result of the operation
+ * @retval 0 - success
+ */
+int Pixie_ComputeFIFO(unsigned int TraceDelay, unsigned short ModNum, unsigned short ChanNum) {
 
     unsigned int PAFLength, TriggerDelay, FifoLength;
     unsigned int SlowFilterRange, FastFilterRange, PeakSep;
@@ -545,17 +530,6 @@ int Pixie_ComputeFIFO(unsigned int TraceDelay,  // current trace dealy value
     return (0);
 }
 
-
-/****************************************************************
-*	Decimal2IEEEFloating:
-*		Convert a decimal fractional number to a IEEE 754 standrad
-*		floating point number (1-bit sign, 8-bit exponent, and 23-bit
-*		mantissa).
-*
-*		Return Value:
-*			the converted IEEE floating point number
-*
-****************************************************************/
 
 PIXIE16APP_EXPORT unsigned int PIXIE16APP_API Decimal2IEEEFloating(double DecimalNumber) {
     unsigned int IEEEFloatingNum, IntPart, IntPartHex, FractPartHex;
@@ -660,17 +634,6 @@ PIXIE16APP_EXPORT unsigned int PIXIE16APP_API Decimal2IEEEFloating(double Decima
 }
 
 
-/****************************************************************
-*	IEEEFloating2Decimal:
-*		Convert a IEEE 754 standrad floating point number (1-bit
-*		sign, 8-bit exponent, and 23-bit mantissa) to a decimal
-*		fractional number.
-*
-*		Return Value:
-*			the converted decimal fractional number
-*
-****************************************************************/
-
 PIXIE16APP_EXPORT double PIXIE16APP_API IEEEFloating2Decimal(unsigned int IEEEFloatingNumber) {
     short signbit, exponent;
     double mantissa, DecimalNumber;
@@ -688,18 +651,17 @@ PIXIE16APP_EXPORT double PIXIE16APP_API IEEEFloating2Decimal(unsigned int IEEEFl
 }
 
 
-/****************************************************************
-*	Pixie_Init_DSPVarAddress:
-*		Receive DSP I/O parameter name addressee from the DSP .var file.
-*
-*		Return Value:
-*			 0 - load successful
-*			-1 - premature EOF encountered
-*			-2 - DSP variable name not found
-*			-3 - DSP .var file not found
-*
-****************************************************************/
-
+/**
+ * @ingroup PRIVATE_UTILITIES
+ * @brief Receive DSP I/O parameter name addressee from the DSP .var file.
+ * @param[in] DSPVarFile: Absolute path to the DSP VAR file.
+ * @param[in] ModNum: The module that we'll be using with the VAR file.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - success
+ * @retval -1 - premature EOF encountered
+ * @retval -2 - DSP variable name not found
+ * @retval -3 - DSP .var file not found
+ */
 int Pixie_Init_DSPVarAddress(const char* DSPVarFile, unsigned short ModNum) {
     char DSP_Parameter_Names[N_DSP_PAR][MAX_PAR_NAME_LENGTH];
     char* DSP_Parameter_AddrStr;
@@ -1718,17 +1680,16 @@ int Pixie_Init_DSPVarAddress(const char* DSPVarFile, unsigned short ModNum) {
 }
 
 
-/****************************************************************
-*	Pixie_Copy_DSPVarAddress:
-*		Copy DSP variable address between modules.
-*
-*		Return Value:
-*			 0 - success
-*			-1 - Invalid source module number
-*			-2 - Invalid destination module number
-*
-****************************************************************/
-
+/**
+ * @ingroup PRIVATE_UTILITIES
+ * @brief Copy DSP variable address between modules.
+ * @param[in] SourceModNum: The module number that will act as the source.
+ * @param[in] DestinationModNum: The module number that we'll copy into.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - success
+ * @retval -1 - Invalid source module number
+ * @retval -2 - Invalid destination module number
+ */
 int Pixie_Copy_DSPVarAddress(unsigned short SourceModNum, unsigned short DestinationModNum) {
     // Check if SourceModNum is valid
     if (SourceModNum >= Number_Modules) {
@@ -1883,22 +1844,6 @@ int Pixie_Copy_DSPVarAddress(unsigned short SourceModNum, unsigned short Destina
 }
 
 
-/****************************************************************
-*	Pixie16ReadMSGFile (exclusively for VB GUI):
-*		Read Pixie-16 message file, but in reverse line-order,
-*		and the maximum number of characters to read is 65535.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Null pointer *ReturnMsgStr
-*			-2 - Pixie-16 message file Pixie16msg.txt is empty
-*			-3 - Failed to allocate memory
-*			-4 - Inconsistent bytes read from the message file
-*			-5 - Could not seek to end of Pixie16msg.txt
-*			-6 - Could not open Pixie16msg.txt
-*
-****************************************************************/
-
 PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadMSGFile(char* ReturnMsgStr) {
     int n, len, firstline, totalchars;
     FILE* msgfil;
@@ -1995,22 +1940,20 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ReadMSGFile(char* ReturnMsgStr) {
 }
 
 
-/****************************************************************
-*	Pixie_CopyDSPParameters:
-*		Copy DSP parameters to the specific modules and
-*		channels.
-*
-*		Return Value:
-*			 0 - Success
-*
-****************************************************************/
-
-int Pixie_CopyDSPParameters(unsigned short BitMask,  // copy/extract bit mask pattern
-                            unsigned short SourceModule,  // source module number
-                            unsigned short SourceChannel,  // source Pixie channel
-                            unsigned short DestinationModule,  // destination module number
-                            unsigned short DestinationChannel)  // destination channel number
-{
+/**
+ * @ingroup PRIVATE_UTILITIES
+ * @brief Copy DSP parameters between channels.
+ * @param[in] BitMask: copy/extract bit mask pattern
+ * @param[in] SourceModule: source module number
+ * @param[in] SourceChannel: source Pixie channel
+ * @param[in] DestinationModule: destination module number
+ * @param[in] DestinationChannel: destination channel number
+ * @returns A status code indicating the result of the operation
+ * @retval 0 - Success
+ */
+int Pixie_CopyDSPParameters(unsigned short BitMask, unsigned short SourceModule,
+                            unsigned short SourceChannel, unsigned short DestinationModule,
+                            unsigned short DestinationChannel) {
     unsigned int valA, valB;
 
     // Filter (energy and trigger)

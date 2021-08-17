@@ -42,29 +42,7 @@
  */
 int Pixie_Register_IO_Trace;
 
-/**
- * @defgroup COMMUNICATION Communication
- * @ingroup PRIVATE
- * A series of functions that provide direct access to modules.
- */
 
-/**
- * @ingroup COMMUNICATION
- * @brief Write/read data to/from the DSP memory.
- *
- * The function will always write one 32-bit word at a time. Reads depend on nWords. If nWords is
- * greater than 1 then the entire block will be read at once using a burst read.
- *
- * @param[in,out] dsp_data: The data that we'll be writing to or reading from the DSP
- * @param[in] dsp_address: The DSP memory address to perform the operation on
- * @param[in] nWords: The data size that we'll read/write
- * @param[in] direction: Whether this operation is a read or write. Uses MOD_READ or MOD_WRITE
- * @param[in] ModNum: The module number that we'll be performing the operation against.
- * @returns A status code indicating the result of the operation
- * @retval 0 if successful
- * @retval -1 if reading the DSP memory blocks failed
- * @retval -2 if reading DSP memory remaining words failed
-*/
 int Pixie_DSP_Memory_IO(unsigned int* dsp_data, unsigned int dsp_address, unsigned int nWords,
                         unsigned short direction, unsigned short ModNum) {
     unsigned int numBlocks, remainWords;
@@ -72,13 +50,12 @@ int Pixie_DSP_Memory_IO(unsigned int* dsp_data, unsigned int dsp_address, unsign
     unsigned int buffer[128], CSR, k;
     unsigned int blockSize = 8192;
 
-    if (SYS_Offline == 1)  // Returns immediately for offline analysis
-    {
+    if (SYS_Offline == 1) {
         return (0);
     }
 
-    if (direction == SYS_MOD_WRITE)  // Always use single word write
-    {
+    // Always use single word write
+    if (direction == SYS_MOD_WRITE) {
         Pixie_Register_IO(ModNum, REQUEST_HBR, SYS_MOD_WRITE, buffer);  // HBR request
 
         Pixie_ReadCSR(ModNum, &CSR);
@@ -107,8 +84,8 @@ int Pixie_DSP_Memory_IO(unsigned int* dsp_data, unsigned int dsp_address, unsign
             Pixie_Register_IO(ModNum, WRT_DSP_MMA, SYS_MOD_READ, dsp_data);
 
             Pixie_Register_IO(ModNum, HBR_DONE, SYS_MOD_WRITE, buffer);  // HBR done
-        } else  // multiple reads; use DMA burst reading
-        {
+        } else {
+            // multiple reads; use DMA burst reading
             //***********************************************
             //	DMA burst reading using fixed-size blocks
             //***********************************************
@@ -384,19 +361,9 @@ int Pixie_DSP_Memory_Burst_Read(unsigned int* dsp_data, unsigned int dsp_address
 }
 
 
-/**
- * @ingroup COMMUNICATION
- * @brief Check the external FIFO status and return the number of words that exist in the FIFO.
- * @param nFIFOWords : A pointer to a 32-bit unsigned integer whose value will be the number of
- *     32-bit words in the External FIFO.
- * @param ModNum The Pixie module being addressed
- * @return A status code indicating the result of the operation
- * @retval  0 - I/O successful
- */
 int Pixie_Read_ExtFIFOStatus(unsigned int* nFIFOWords, unsigned short ModNum) {
 
-    if (SYS_Offline == 1)  // Returns immediately for offline analysis
-    {
+    if (SYS_Offline == 1) {
         return (0);
     }
 
@@ -406,21 +373,6 @@ int Pixie_Read_ExtFIFOStatus(unsigned int* nFIFOWords, unsigned short ModNum) {
 }
 
 
-/**
- * @ingroup COMMUNICATION
- * @brief Read data from the external FIFO using PCI burst mode.
- * @note This function depends on the PLX major version number!
- * @param extfifo_data : Pointer to a memory block large enough to hold all of the external
- *     FIFO data.
- * @param nWords : The number of external FIFO words to be read.
- * @param ModNum : The module number to read the external FIFO data from.
- * @return A status code indicating the result of the operation
- * @retval  0 - I/O successful
- * @retval -1 - Failed to open PLX DMA channel
- * @retval -2 - Failed to read FIFO watermark in System FPGA
- * @retval -3 - PlxPci_DmaTransferUserBuffer failed while reading from external FIFO
- * @retval -4 - PlxPci_DmaChannelClose failed after reading from DSP memory
- */
 int Pixie_ExtFIFO_Read(unsigned int* extfifo_data, unsigned int nWords, unsigned short ModNum) {
     unsigned int count, wml;
 
@@ -534,27 +486,8 @@ int Pixie_ExtFIFO_Read(unsigned int* extfifo_data, unsigned int nWords, unsigned
 }
 
 
-/**
- * @ingoup COMMUNICATION
- * @brief Pixie external memory I/O communication (burst Read/Write)
- * @note This function depends on the PLX major revision number.
- * @param memory_data : Pointer to a data block that will contain the data.
- * @param memory_address : The main memory address that we'd like to put or receive data.
- * @param nWords : The number of 32-bit unsigned integers to transfer
- * @param direction : The direction of data flow. Either SYS_MOD_WRITE or SYS_MOD_READ).
- * @param ModNum : The module index that we'll be working with. Counting from 0.
- * @return A status code indicating the result of the operation
- * @returns  0 - Success
- * @returns -1 - Failed to open PLX DMA channel
- * @returns -2 - PlxPci_DmaTransferUserBuffer failed while reading from external memory
- * @returns -3 - PlxPci_DmaChannelClose failed after reading from external memory
- */
-int Pixie_Main_Memory_IO(unsigned int* memory_data,  // Memory data for the I/O
-                         unsigned int memory_address,  // Main memory address
-                         unsigned int nWords,  // Number of data words for the I/O
-                         unsigned short direction,  // I/O direction
-                         unsigned short ModNum)  // The Pixie module for the I/O
-{
+int Pixie_Main_Memory_IO(unsigned int* memory_data, unsigned int memory_address,
+                         unsigned int nWords, unsigned short direction, unsigned short ModNum) {
     unsigned int k, dummy[16], CSR;
     PLX_STATUS rc;
     PLX_DMA_PROP DmaProp;
@@ -675,31 +608,11 @@ int Pixie_Main_Memory_IO(unsigned int* memory_data,  // Memory data for the I/O
 }
 
 
-/********************************************************************************
-*	Pixie_Clear_Main_Memory:
-*		Clear Pixie external memory by the System FPGA (However, this feature is not
-*       available in Rev-A modules, which still uses single writes to clear external
-*       memory). This method of clearing  external memory is ~20 times faster than
-*		the clearing by host PCI through single writes to the external memory.
-*
-*		memory_address: external memory address
-*		nWords:         Number of external memory words to be cleared, starting
-*						from memory_address.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Clearing external memory by System FPGA timedout
-*
-********************************************************************************/
-
-int Pixie_Clear_Main_Memory(unsigned int memory_address,  // Main memory address
-                            unsigned int nWords,  // Number of data words for the I/O
-                            unsigned short ModNum)  // The Pixie module for the I/O
-{
+int Pixie_Clear_Main_Memory(unsigned int memory_address, unsigned int nWords,
+                            unsigned short ModNum) {
     unsigned int CSR, count;
 
-    if (SYS_Offline == 1)  // Returns immediately for offline analysis
-    {
+    if (SYS_Offline == 1) {
         return (0);
     }
 
@@ -754,20 +667,9 @@ int Pixie_Clear_Main_Memory(unsigned int memory_address,  // Main memory address
 }
 
 
-/****************************************************************
-*	Pixie_Register_IO function:
-*		Used for single-word I/O communications between Host
-*		and Pixie registers.
-*
-****************************************************************/
-
-int Pixie_Register_IO(unsigned short ModNum,  // the Pixie module to communicate to
-                      unsigned int address,  // register address
-                      unsigned short direction,  // either SYS_MOD_READ or SYS_MOD_WRITE
-                      unsigned int* value)  // holds or receives the data
-{
-    if (SYS_Offline == 1)  // Returns immediately for offline analysis
-    {
+int Pixie_Register_IO(unsigned short ModNum, unsigned int address, unsigned short direction,
+                      unsigned int* value) {
+    if (SYS_Offline == 1) {
         return (0);
     }
 
@@ -790,15 +692,8 @@ int Pixie_Register_IO(unsigned short ModNum,  // the Pixie module to communicate
 }
 
 
-/****************************************************************
-*	Pixie_ReadCSR:
-*		Read Control Status Register (CSR).
-*
-****************************************************************/
-
 void Pixie_ReadCSR(unsigned short ModNum, unsigned int* CSR) {
-    if (SYS_Offline == 1)  // Returns immediately for offline analysis
-    {
+    if (SYS_Offline == 1) {
         return;
     }
 
@@ -810,12 +705,6 @@ void Pixie_ReadCSR(unsigned short ModNum, unsigned int* CSR) {
     }
 }
 
-
-/****************************************************************
-*	Pixie_WrtCSR:
-*		Write Control Status Register (CSR).
-*
-****************************************************************/
 
 void Pixie_WrtCSR(unsigned short ModNum, unsigned int CSR) {
     if (SYS_Offline == 1)  // Returns immediately for offline analysis

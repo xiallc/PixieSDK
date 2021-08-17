@@ -29,24 +29,7 @@
 #include <pixie16sys_globals.h>
 
 
-/****************************************************************
- *	I2CM24C64_Write_One_Byte:
- *		Bus master writes one byte to I2C serial EEPROM M24C64.
- *
- *		Return Value:
- *			 0 - Successful
- *			-1 - Invalid Pixie module number
- *			-2 - Failed to get Acknowledge after sending DevSel byte
- *			-3 - Failed to get Acknowledge after sending address byte (MSB)
- *			-4 - Failed to get Acknowledge after sending address byte (LSB)
- *			-5 - Failed to get Acknowledge after sending byte value
- *
- ****************************************************************/
-
-int I2CM24C64_Write_One_Byte(unsigned short ModNum,  // Pixie module module
-                             unsigned short Address,  // The address to write this byte
-                             char* ByteValue)  // The byte value
-{
+int I2CM24C64_Write_One_Byte(unsigned short ModNum, unsigned short Address, char* ByteValue) {
     char IOByte;
     char ackvalue, byteaddrMSB, byteaddrLSB;
 
@@ -111,24 +94,7 @@ int I2CM24C64_Write_One_Byte(unsigned short ModNum,  // Pixie module module
 }
 
 
-/****************************************************************
- *	I2CM24C64_Read_One_Byte:
- *		Bus master reads one byte from I2C serial EEPROM M24C64.
- *
- *		Return Value:
- *			 0 - Successful
- *			-1 - Invalid Pixie module number
- *			-2 - Failed to get Acknowledge after sending DevSel byte
- *			-3 - Failed to get Acknowledge after sending address byte (MSB)
- *			-4 - Failed to get Acknowledge after sending address byte (LSB)
- *			-5 - Failed to get Acknowledge after sending DevSel byte
- *
- ****************************************************************/
-
-int I2CM24C64_Read_One_Byte(unsigned short ModNum,  // Pixie module number
-                            unsigned short Address,  // The address to read this byte
-                            char* ByteValue)  // The byte value
-{
+int I2CM24C64_Read_One_Byte(unsigned short ModNum, unsigned short Address, char* ByteValue) {
     char IOByte;
     char ackvalue, byteaddrMSB, byteaddrLSB;
 
@@ -199,26 +165,8 @@ int I2CM24C64_Read_One_Byte(unsigned short ModNum,  // Pixie module number
 }
 
 
-/****************************************************************
- *	I2CM24C64_Page_Write:
- *		Bus master writes one page to I2C serial EEPROM M24C64.
- *
- *		Return Value:
- *			 0 - Successful
- *			-1 - Invalid Pixie module number
- *			-2 - Failed to get Acknowledge after sending DevSel byte
- *			-3 - Failed to get Acknowledge after sending address byte (MSB)
- *			-4 - Failed to get Acknowledge after sending address byte (LSB)
- *			-5 - Failed to get Acknowledge after writing a byte
- *
- ****************************************************************/
-
-int I2CM24C64_Page_Write(
-    unsigned short ModNum,  // Pixie module module
-    unsigned short Address,  // The starting address to write this page
-    unsigned short NumBytesToWrite,  // The number of bytes for this page to write
-    char* ByteValue)  // The byte values
-{
+int I2CM24C64_Page_Write(unsigned short ModNum, unsigned short Address,
+                         unsigned short NumBytesToWrite, char* ByteValue) {
     char IOByte;
     char ackvalue, byteaddrMSB, byteaddrLSB;
     unsigned short k;
@@ -287,26 +235,8 @@ int I2CM24C64_Page_Write(
 }
 
 
-/****************************************************************
- *	I2CM24C64_Sequential_Read:
- *		Bus master reads multiple bytes from I2C serial EEPROM M24C64.
- *
- *		Return Value:
- *			 0 - Successful
- *			-1 - Invalid Pixie module number
- *			-2 - Failed to get Acknowledge after sending DevSel byte
- *			-3 - Failed to get Acknowledge after sending address byte (MSB)
- *			-4 - Failed to get Acknowledge after sending address byte (LSB)
- *			-5 - Failed to get Acknowledge after writing a byte
- *
- ****************************************************************/
-
-int I2CM24C64_Sequential_Read(
-    unsigned short ModNum,  // Pixie module number
-    unsigned short Address,  // The starting address to read
-    unsigned short NumBytesToRead,  // Number of bytes to read (maximum 32 bytes)
-    char* ByteValue)  // The byte values
-{
+int I2CM24C64_Sequential_Read(unsigned short ModNum, unsigned short Address,
+                              unsigned short NumBytesToRead, char* ByteValue) {
     char IOByte;
     char ackvalue, byteaddrMSB, byteaddrLSB;
     unsigned short k;
@@ -388,11 +318,13 @@ int I2CM24C64_Sequential_Read(
 }
 
 
-/* ----------------------------------------------------- */
-// I2CM24C64_start:
-//   Bus master sends "START" to M24C64
-/* ----------------------------------------------------- */
-
+/**
+ * @ingroup I2CM24C64
+ * @brief Bus master sends "START" to M24C64
+ * @param[in] ModNum The module that we want to communicate with.
+ * @returns A status code indicating the result of the operation
+ * @retval 0 - Success
+ */
 int I2CM24C64_start(unsigned short ModNum) {
     unsigned int buffer[4];
 
@@ -420,11 +352,13 @@ int I2CM24C64_start(unsigned short ModNum) {
 }
 
 
-/* ----------------------------------------------------- */
-// I2CM24C64_stop:
-//   Bus master sends "STOP" to M24C64
-/* ----------------------------------------------------- */
-
+/**
+ * @ingroup I2CM24C64
+ * @brief Bus master sends "STOP" to M24C64
+ * @param[in] ModNum The module that we want to communicate with.
+ * @returns A status code indicating the result of the operation
+ * @retval 0 - Success
+ */
 int I2CM24C64_stop(unsigned short ModNum) {
     unsigned int buffer[4];
 
@@ -452,11 +386,14 @@ int I2CM24C64_stop(unsigned short ModNum) {
 }
 
 
-/* ----------------------------------------------------- */
-// I2CM24C64_byte_write:
-//   Bus master sends a byte to M24C64
-/* ----------------------------------------------------- */
-
+/**
+ * @ingroup I2CM24C64
+ * @brief Bus master sends a byte to M24C64
+ * @param[in] ModNum The module that we want to communicate with.
+ * @param[in] ByteToSend: The byte that we want to write to the chip.
+ * @returns A status code indicating the result of the operation
+ * @retval 0 - Success
+ */
 int I2CM24C64_byte_write(unsigned short ModNum, char ByteToSend) {
     short i;
     unsigned int buffer[4];
@@ -514,11 +451,14 @@ int I2CM24C64_byte_write(unsigned short ModNum, char ByteToSend) {
 }
 
 
-/* ----------------------------------------------------- */
-// I2CM24C64_byte_read:
-//   Bus master receives a byte from M24C64
-/* ----------------------------------------------------- */
-
+/**
+ * @ingroup I2CM24C64
+ * @brief Bus master reads a byte to M24C64
+ * @param[in] ModNum The module that we want to communicate with.
+ * @param[out]: ByteToReceive: Pointer to variable to hold the return value.
+ * @returns A status code indicating the result of the operation
+ * @retval 0 - Success
+ */
 int I2CM24C64_byte_read(unsigned short ModNum, char* ByteToReceive) {
     short i;
     unsigned int buffer[4];
@@ -567,12 +507,14 @@ int I2CM24C64_byte_read(unsigned short ModNum, char* ByteToReceive) {
 }
 
 
-/* ----------------------------------------------------- */
-// I2CM24C64_getACK:
-//   Bus master receives ACKNOWLEDGE from M24C64
-//   keep CTRL = 0 to leave bus to memory for reading
-/* ----------------------------------------------------- */
-
+/**
+ * @ingroup I2CM24C64
+ * @brief Bus master receives ACKNOWLEDGE from M24C64
+ * @note keep CTRL = 0 to leave bus to memory for reading
+ * @param[in] ModNum The module that we want to communicate with.
+ * @returns A status code indicating the result of the operation
+ * @retval 0 - Success
+ */
 char I2CM24C64_getACK(unsigned short ModNum) {
     unsigned int buffer[4], rbuf[4];
     char retval;
@@ -607,11 +549,13 @@ char I2CM24C64_getACK(unsigned short ModNum) {
 }
 
 
-/* ----------------------------------------------------- */
-// I2CM24C64_sendACK:
-//   Bus master sends ACKNOWLEDGE to M24C64
-/* ----------------------------------------------------- */
-
+/**
+ * @ingroup I2CM24C64
+ * @brief Bus master sends ACKNOWLEDGE to M24C64
+ * @param[in] ModNum The module that we want to communicate with.
+ * @returns A status code indicating the result of the operation
+ * @retval 0 - Success
+ */
 char I2CM24C64_sendACK(unsigned short ModNum) {
     unsigned int buffer[4];
 

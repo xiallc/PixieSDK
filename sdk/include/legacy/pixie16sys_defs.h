@@ -28,6 +28,36 @@
 extern "C" {
 #endif
 
+/**
+ * @defgroup LEGACY Legacy
+ * Functions and definitions that are part of the Legacy C implementation
+ *
+ * @defgroup PRIVATE Private
+ * @ingroup LEGACY
+ * A series of functions that provide direct access to modules. These shouldn't be used in end-user
+ *   code.
+ *
+ * @defgroup SYS System
+ * @ingroup PRIVATE
+ * Functions related to system procedures like initialization, booting, etc.
+ *
+ * @defgroup COMMUNICATION Communication
+ * @ingroup PRIVATE
+ * Functions related to communicating with the modules in some way.
+ *
+ * @defgroup TOOLS Tools
+ * @ingroup PRIVATE
+ * Functions that help us perform tasks within the code. Ex. Writing messages to the log file.
+ *
+ * @defgroup I2CM24C64 I2CM24C64
+ * @ingroup PRIVATE
+ * Functions related to communication with the I2CM24C64 chip on the module.
+ *
+ * @defgroup PCF8574 PCF8574
+ * @ingroup PRIVATE
+ * Functions related to communicating with the PCF8574 chip on the module.
+ */
+
 #if defined(_WIN64) || defined(_WIN32)
 #define PIXIE16SYS_EXPORT __declspec(dllexport)
 #define PIXIE16SYS_API _stdcall
@@ -44,33 +74,55 @@ extern "C" {
 #define LITTLE_ENDIAN  // BIG_ENDIAN:    most significant byte stored first
 #endif
 
-// Preset maximum number of modules for defining data structures
+/**
+ * @ingroup SYS
+ * Preset maximum number of modules for defining data structures
+*/
 #define SYS_MAX_NUM_MODULES 32
 
-// Maximum number of PXI slots for one PXI chassis (currently 14-slot is the biggest chassis)
+/**
+ * @ingroup SYS
+ * Maximum number of PXI slots for one PXI chassis (currently 14-slot is the biggest chassis)
+*/
 #define SYS_MAX_PXI_SLOTS 14
 
 /*
  * ADSP-21160 registers defined from
- * https://www.analog.com/media/en/dsp-documentation/processor-manuals/ADSP-21160_hwr_rev4.1.pdf
+ * @link https://www.analog.com/media/en/dsp-documentation/processor-manuals/ADSP-21160_hwr_rev4.1.pdf
  * last accessed on 2021-06-24
  */
-#define SYSCON 0x00 /* System configuration register                   	*/
-#define EPB0 0x04 /* External port DMA buffer 0                      	*/
-#define DMAC10 0x1c /* EP DMA10 control register			      		*/
-#define DMASTAT 0x37 /* DMA channel status register		      			*/
+/**
+ * @ingroup SYS
+ * System configuration register
+ */
+#define SYSCON 0x00
+/**
+ * @ingroup SYS
+ * External port DMA buffer 0
+ */
+#define EPB0 0x04
+/**
+ * @ingroup SYS
+ * EP DMA10 control register
+ */
+#define DMAC10 0x1c
+/**
+ * @ingroup SYS
+ * DMA channel status register
+ */
+#define DMASTAT 0x37
 
-/*-------------------------------------
-	Multiplication factor for the ns_per_cycle
-  -------------------------------------*/
+/**
+ * @ingroup SYS
+ * Multiplication factor for the ns_per_cycle
+ */
 #define NSMULTIPLIER 1.0
 
-
-/*-------------------------------------
-	Option for printing out debugging messages 
-  -------------------------------------*/
+/**
+ * @ingroup SYS
+ * Option for printing out debugging messages
+ */
 #define PRINT_DEBUG_MSG 1
-
 
 /*------------------------------------- 
 	DSP code tag types
@@ -97,33 +149,76 @@ extern "C" {
 #define INIT_PM64 0X0012
 
 
-/*------------------------------------- 
+/*-------------------------------------
 	I/O Mode
   -------------------------------------*/
 
-#define SYS_MOD_READ 1  // Host read from modules
-#define SYS_MOD_WRITE 0  // Host write to modules
+/**
+ * @ingroup SYS
+ * Host read from modules
+*/
+#define SYS_MOD_READ 1
+/**
+ * @ingroup SYS
+ * Host write to modules
+*/
+#define SYS_MOD_WRITE 0
 
-#define MAX_ERRMSG_LENGTH 1024  // Maximum length of error message
+/**
+ * @ingroup SYS
+ * Maximum length of error message
+*/
+#define MAX_ERRMSG_LENGTH 1024
 
 
 /*-------------------------------------
 	Host PCI CSR bits definitions
  --------------------------------------*/
-#define RUNENA 0  // Enable run
-#define DSPDOWNLOAD 1  // Enable DSP code download
-#define PCIACTIVE 2  // Indicate PCI I/O is active
-#define PULLUP_CTRL 3  // Control pull-up for the SYNC lines
-#define DSPRESET 4  // Reset DSP
-#define EXTFIFO_WML 6  // External FIFO watermark level indicator
-#define RUNACTIVE 13  // Run active indicator
-#define CLREXTMEM_ACTIVE 15  // Clearing external memory active indicator
+/**
+ * @ingroup SYS
+ * Enable run
+ */
+#define RUNENA 0
+/**
+ * @ingroup SYS
+ * Enable DSP code download
+ */
+#define DSPDOWNLOAD 1
+/**
+ * @ingroup SYS
+ * Indicate PCI I/O is active
+ */
+#define PCIACTIVE 2
+/**
+ * @ingroup SYS
+ * Control pull-up for the SYNC lines
+ */
+#define PULLUP_CTRL 3
+/**
+ * @ingroup SYS
+ * Reset DSP
+ */
+#define DSPRESET 4
+/**
+ * @ingroup SYS
+ * External FIFO watermark level indicator
+*/
+#define EXTFIFO_WML 6
+/**
+ * @ingroup SYS
+ * Run active indicator
+*/
+#define RUNACTIVE 13
+/**
+ * @ingroup SYS
+ * Clearing external memory active indicator
+*/
+#define CLREXTMEM_ACTIVE 15
 
 
 /*-------------------------------------
 	PCI address decoding and control registers
 -------------------------------------*/
-
 #define CFG_DATACS 0x00
 #define CFG_CTRLCS 0x04
 #define CFG_RDCS 0x08
@@ -149,20 +244,22 @@ extern "C" {
 #define SET_INT_FIFO 0xF0
 #define WRT_RESET_RFCNT 0xF4
 
-/*------------------------------------- 
-	Special DSP varaible address
--------------------------------------*/
-#define POWERUPINITDONE_ADDRESS 0x4A03F  // Address for DSP variable PowerUpInitDone
+/**
+ * @ingroup SYS
+ * Address for DSP variable PowerUpInitDone
+*/
+#define POWERUPINITDONE_ADDRESS 0x4A03F
 
-/*------------------------------------- 
-	PLX DMA transfer timeout setting
--------------------------------------*/
-#define DMATRANSFER_TIMEOUT 5 * 1000  // PLX DMA transfer timeout limit, in ms
+/**
+ * @ingroup SYS
+ * PLX DMA transfer timeout limit, in ms
+*/
+#define DMATRANSFER_TIMEOUT (5 * 1000)
 
 /*-------------------------------------
 	I2C control bits as OR-able hex patterns
 -------------------------------------*/
-#define SDA 0x9  // bit 3 is used in PXlarge instead of bit 0
+#define SDA 0x9
 #define SCL 0x2
 #define CTRL 0x4
 

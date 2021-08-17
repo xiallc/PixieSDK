@@ -24,7 +24,6 @@
 #include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
@@ -70,22 +69,20 @@ static void USleep(double nanoseconds) {
 #endif
 #endif
 
-
-/****************************************************************
-*	get_ns_per_cycle:
-*		Measure the approximate speed of the host computer. It reports
-*		how many nanoseconds are needed for executing one line of code.
-*		This number is required for controlling the Firmware and DSP code
-*		downloading.
-*
-*		Return Value:
-*			 0 - Success
-*			-1 - Failed to obtain timer resolution
-*			-2 - Failed to set timer resolution to 1 ms
-*			-3 - Minimum timer resolution is greater than 1 ms
-*
-****************************************************************/
-
+/**
+ * @ingroup TOOLS
+ * @brief Measure the approximate speed of the host computer.
+ *
+ * It reports how many nanoseconds are needed for executing one line of code. This number is
+ * required for controlling the Firmware and DSP code downloading.
+ *
+ * @param[out] ns_per_cycle: The result of the calcultation for nanoseconds per cycle.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Failed to obtain timer resolution
+ * @retval -2 - Failed to set timer resolution to 1 ms
+ * @retval -3 - Minimum timer resolution is greater than 1 ms
+ */
 PIXIE16SYS_EXPORT int PIXIE16SYS_API get_ns_per_cycle(double* ns_per_cycle) {
 #if defined(_WIN64) || defined(_WIN32)
     TIMECAPS resolution;
@@ -185,12 +182,16 @@ PIXIE16SYS_EXPORT int PIXIE16SYS_API get_ns_per_cycle(double* ns_per_cycle) {
 }
 
 
-/****************************************************************
-*	wait_for_a_short_time:
-*		A shot wait (the time for each cycle = ns_per_cycle).
-*
-****************************************************************/
-
+/**
+ * @ingroup TOOLS
+ * @brief A short wait (the time for each cycle = ns_per_cycle).
+ *
+ * This function will often get optimized out by compilers. This is due to empty waits within the
+ *   code. If the user defines the USE_USLEEP flag when compiling, we'll use cycles to mean the
+ *   number of microseconds to wait using USLEEP.
+ *
+ * @param[in] cycles: The number of cycles that we're going to wait.
+ */
 PIXIE16SYS_EXPORT void PIXIE16SYS_API wait_for_a_short_time(int cycles) {
 
 #if defined(_WIN64) || defined(_WIN32)
@@ -222,12 +223,13 @@ PIXIE16SYS_EXPORT void PIXIE16SYS_API wait_for_a_short_time(int cycles) {
 }
 
 
-/****************************************************************
-*	SYS16_SetBit:
-*		Set a bit in a 16-bit unsigned integer.
-*
-****************************************************************/
-
+/**
+ * @ingroup TOOLS
+ * @brief Set a bit in a 16-bit unsigned integer.
+ * @param[in] bit: The bit position to test, which starts counting at 0.
+ * @param[in] value: A 16-bit number that will have its bit set to true.
+ * @return The new integer after the bit has been toggled.
+ */
 PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_SetBit(unsigned short bit,
                                                              unsigned short value) {
     if (bit > 15)
@@ -236,12 +238,13 @@ PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_SetBit(unsigned short bit,
 }
 
 
-/****************************************************************
-*	SYS16_ClrBit:
-*		Clear a bit in a 16-bit unsigned integer.
-*
-****************************************************************/
-
+/**
+ * @ingroup TOOLS
+ * @brief Clear a bit in a 16-bit unsigned integer.
+ * @param[in] bit: The bit position to test, which starts counting at 0.
+ * @param[in] value: A 16-bit number that will have its bit set to false.
+ * @return The new integer after the bit has been toggled.
+ */
 PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_ClrBit(unsigned short bit,
                                                              unsigned short value) {
     if (bit > 15)
@@ -251,12 +254,13 @@ PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_ClrBit(unsigned short bit,
 }
 
 
-/****************************************************************
-*	SYS16_TstBit:
-*		Test a bit in a 16-bit unsigned integer.
-*
-****************************************************************/
-
+/**
+ * @ingroup TOOLS
+ * @brief Test a bit in a 16-bit unsigned integer.
+ * @param[in] bit: The bit position to test, which starts counting at 0.
+ * @param[in] value: A 16-bit number that we'll test to see if the requested bit is true.
+ * @return 0 if the bit was set, 1 otherwise.
+ */
 PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_TstBit(unsigned short bit,
                                                              unsigned short value) {
     if (bit > 15)
@@ -265,12 +269,13 @@ PIXIE16SYS_EXPORT unsigned short PIXIE16SYS_API SYS16_TstBit(unsigned short bit,
 }
 
 
-/****************************************************************
-*	SYS32_SetBit:
-*		Set a bit in a 32-bit unsigned integer.
-*
-****************************************************************/
-
+/**
+ * @ingroup TOOLS
+ * @brief Set a bit in a 32-bit unsigned integer.
+ * @param[in] bit: The bit position to test, which starts counting at 0.
+ * @param[in] value: A 32-bit number that will have its bit set to true.
+ * @return The new integer after the bit has been toggled.
+ */
 PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_SetBit(unsigned short bit, unsigned int value) {
     if (bit > 31)
         return value;
@@ -278,12 +283,13 @@ PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_SetBit(unsigned short bit, u
 }
 
 
-/****************************************************************
-*	SYS32_ClrBit:
-*		Clear a bit in a 32-bit unsigned integer.
-*
-****************************************************************/
-
+/**
+ * @ingroup TOOLS
+ * @brief Clear a bit in a 32-bit unsigned integer.
+ * @param[in] bit: The bit position to test, which starts counting at 0.
+ * @param[in] value: A 32-bit number that will have its bit set to false.
+ * @return The new integer after the bit has been toggled.
+ */
 PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_ClrBit(unsigned short bit, unsigned int value) {
     if (bit > 31)
         return value;
@@ -292,28 +298,28 @@ PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_ClrBit(unsigned short bit, u
 }
 
 
-/****************************************************************
-*	SYS32_TstBit:
-*		Test a bit in a 32-bit unsigned integer.
-*
-****************************************************************/
-
+/**
+ * @ingroup TOOLS
+ * @brief Test a bit in a 32-bit unsigned integer.
+ * @param[in] bit: The bit position to test, which starts counting at 0.
+ * @param[in] value: A 32-bit number that we'll test to see if the requested bit is true.
+ * @return 0 if the bit was set, 1 otherwise.
+ */
 PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_TstBit(unsigned short bit, unsigned int value) {
     if (bit > 31)
         return FALSE_;
     return (((value & (unsigned int) (pow(2.0, (double) bit))) >> bit));
 }
 
-/****************************************************************
-*	Pixie_Print_MSG:
-*		Print messages to a text file called "Pixie16msg.txt".
-*
-*		Return Value:
-*			 0 - Successful
-*			-1 - Can't open the message file
-*
-****************************************************************/
 
+/**
+ * @ingroup TOOLS
+ * @brief Prints a message buffer to the log file Pixie16msg.txt
+ * @param[in] message: The message that we want to print.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Can't open the message file for appending.
+ */
 static int Pixie_Print_Buffer(char* message) {
     time_t rawtime;
     struct tm* timeinfo;
@@ -340,6 +346,12 @@ static int Pixie_Print_Buffer(char* message) {
     return (0);
 }
 
+/**
+ * @ingroup TOOLS
+ * @brief Handles the `...` arguments from the message functions.
+ * @param[in] format: The formatting used for the message buffer.
+ * @param[in] args: The argument list to handle.
+ */
 static void Pixie_Print_VMSG(const char* format, va_list args) {
     char formatBuffer[MAX_ERRMSG_LENGTH];
     vsnprintf(formatBuffer, sizeof(formatBuffer), format, args);

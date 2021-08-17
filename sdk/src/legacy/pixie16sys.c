@@ -37,30 +37,6 @@
 #include <unistd.h>
 #endif
 
-/****************************************************************
-*	Pixie_InitSystem:
-*		Initialize Pixie16 system by mapping PXI slots to Pixie16
-*		modules and assigning virtual addresses to the PLX9054 chips
-*		of those modules.
-*
-*		Return Value:
-*			 0 - Successful
-*			-1 - Failed to measure host computer speed (ns per cycle)
-*			-2 - Can't find any PLX device in the system
-*           -3 - Can't find all Pixie-16 modules that were specified
-*           -4 - Could not open a PCI Device when trying find all devices
-*           -5 - Unable to map a PCI BAR into user virtual space
-*           -6 - Could not read chassis slot number in which a module is installed
-*           -7 - Failed to find PCI device when trying to read its chassis slot number
-*			-8 - Unable to unmap the PCI BAR while closing those all opened PCI devices
-*			-9 - Unable to close the PLX9054 device while closing those all opened PCI devices
-*			-10- Can't match a module with one found by the PLX driver
-*			-11- Could not open PCI Device after finishing mapping modules
-*           -12- Could not close PCI device for all opened modules
-*           -13- Could not find PCI device after finishing mapping modules
-*           -20- Found an unsupported revision during initialization
-*
-****************************************************************/
 
 int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
                      unsigned short OfflineMode) {
@@ -425,28 +401,16 @@ int Pixie_InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
 }
 
 
-/****************************************************************
-*	Pixie_ClosePCIDevices:
-*		Unmap PCI BAR and close PLX PCI devices.
-*
-*		Return Value:
-*			 0 - successful
-*			-1 - Unable to unmap the PCI BAR
-*			-2 - Unable to close the PCI device
-*
-****************************************************************/
-
 int Pixie_ClosePCIDevices(unsigned short ModNum) {
     PLX_STATUS rc;
     unsigned short k;
 
-    if (SYS_Offline == 1)  // Returns immediately for offline analysis
-    {
+    if (SYS_Offline == 1) {
         return (0);
     }
 
-    if (ModNum == SYS_Number_Modules)  // Close PCI devices in all modules
-    {
+    // Close PCI devices in all modules
+    if (ModNum == SYS_Number_Modules) {
         for (k = 0; k < SYS_Number_Modules; k += 1) {
             // Unmaps a previously mapped PCI BAR from user virtual space
             rc = PlxPci_PciBarUnmap(&SYS_hDevice[k], (VOID**) &VAddr[k]);
@@ -464,8 +428,8 @@ int Pixie_ClosePCIDevices(unsigned short ModNum) {
                 return (-2);
             }
         }
-    } else if (ModNum < SYS_Number_Modules)  // Close PCI devices in only one module
-    {
+    } else if (ModNum < SYS_Number_Modules) {
+        // Close PCI devices in only one module
         // Unmaps a previously mapped PCI BAR from user virtual space
         rc = PlxPci_PciBarUnmap(&SYS_hDevice[ModNum], (VOID**) &VAddr[ModNum]);
         if (rc != ApiSuccess) {
@@ -487,28 +451,15 @@ int Pixie_ClosePCIDevices(unsigned short ModNum) {
 }
 
 
-/****************************************************************
-*	Pixie_Boot_CompFPGA:
-*		Download system chip FPGA configuration.
-*
-*		Return Value:
-*			 0 - boot successful
-*			-2 - Clearing system FPGA MM timed out
-*			-3 - Downloading system FPGA timed out
-*
-****************************************************************/
-
 int Pixie_Boot_CompFPGA(unsigned short ModNum, unsigned int* Com_FPGA_conf,
                         unsigned int NumComFPGAconf) {
     unsigned int buffer[8];
     unsigned int k, counter0, counter1;
 
-    if (SYS_Offline == 1)  // Returns immediately for offline analysis
-    {
+    if (SYS_Offline == 1) {
         return (0);
     }
 
-    // Initialize counter0 to 0
     counter0 = 0;
 
     // Set communication FPGA Program*=0 to clear it
@@ -555,8 +506,8 @@ ReadINIT:
     }
 
     Pixie_Register_IO(ModNum, CFG_RDCS, SYS_MOD_READ, buffer);
-    if ((buffer[0] & 0x03) != 0x03)  // if yes, download communication FPGA successful
-    {
+    // if yes, download communication FPGA successful
+    if ((buffer[0] & 0x03) != 0x03) {
         counter0++;
         if (counter0 < 10) {
             goto StartSys;
@@ -573,17 +524,6 @@ ReadINIT:
     return (0);
 }
 
-
-/****************************************************************
-*	Pixie_Boot_FIPPI function:
-*		Download RTPU FPGA (FIPPI).
-*
-*		Return Value:
-*			0  - boot successful
-*			-2 - Clearing FIPPI configuration timed out
-*			-3 - Downloading FIP0&1 FPGA timed out
-*
-****************************************************************/
 
 int Pixie_Boot_FIPPI(unsigned short ModNum, unsigned int* SP_FPGA_conf,
                      unsigned int NumSPFPGAconf) {
@@ -736,20 +676,6 @@ ReadINITf34:
     return (0);
 }
 
-
-/****************************************************************
-*	Pixie_Boot_DSP:
-*		Download DSP code.
-*
-*		Return Value:
-*			 0 - boot DSP successful
-*			-1 - Can not set timer resolution to 1 ms
-*			-2 - Set DSP SYSCON in module failed
-*			-3 - Set DSP DMAC10 in module failed
-*			-4 - tagnum is invalid
-*			-5 - DSP can't finish initialization on reset
-*
-****************************************************************/
 
 int Pixie_Boot_DSP(unsigned short ModNum, unsigned int* DSP_code, unsigned int NumDSPCodeWords) {
     unsigned int buffer[0x5];  // Temporary buffer
