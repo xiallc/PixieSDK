@@ -22,14 +22,8 @@
 #include <algorithm>
 #include <exception>
 #include <fstream>
-#include <iostream>
-#include <sstream>
 
 #include <pixie/config.hpp>
-#include <pixie/param.hpp>
-#include <pixie/util.hpp>
-
-#include <pixie/pixie16/hw.hpp>
 
 #include <nolhmann/json.hpp>
 
@@ -37,62 +31,6 @@ namespace xia {
 namespace pixie {
 namespace config {
 using json = nlohmann::json;
-
-PIXIE_EXPORT void PIXIE_API read(const std::string& config_file_name, configuration& cfg) {
-    std::ifstream input(config_file_name, std::ios::in);
-    if (input.fail()) {
-        throw error(error::code::file_open_failure,
-                    "open: " + config_file_name + ": " + std::strerror(errno));
-    }
-
-    input >> cfg.num_modules;
-    if (cfg.num_modules == 0 || cfg.num_modules > hw::max_slots) {
-        throw error(error::code::config_invalid_param, "invalid number of modules");
-    }
-
-    cfg.slot_map.clear();
-    for (int num = 0; num < cfg.num_modules; num++) {
-        int slot;
-        if (input >> slot) {
-            cfg.slot_map.push_back(module::number_slot(num, slot));
-        } else {
-            throw error(error::code::config_invalid_param, "invalid slot");
-        }
-    }
-
-    input >> cfg.com_fpga_config;
-    if (!input) {
-        throw error(error::code::config_invalid_param, "invalid COM FPGA file name");
-    }
-
-    input >> cfg.sp_fpga_config;
-    if (!input) {
-        throw error(error::code::config_invalid_param, "invalid FP FPGA file name");
-    }
-
-    std::string trig_holder;
-    input >> trig_holder;
-    if (!input) {
-        throw error(error::code::config_invalid_param, "invalid Trigg file name");
-    }
-
-    input >> cfg.dsp_code;
-    if (!input) {
-        throw error(error::code::config_invalid_param, "invalid DSP code file name");
-    }
-
-    input >> cfg.dsp_param;
-    if (!input) {
-        throw error(error::code::config_invalid_param, "invalid DSP parameters file name");
-    }
-
-    input >> cfg.dsp_var;
-    if (!input) {
-        throw error(error::code::config_invalid_param, "invalid DSP variables file name");
-    }
-
-    input.close();
-}
 
 static void throw_json_error(json::exception& e, const std::string& what) {
     throw error(error::code::config_json_error, what + ": " + e.what());

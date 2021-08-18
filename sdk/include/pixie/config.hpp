@@ -36,18 +36,6 @@ namespace config {
 
 typedef pixie::error::error error;
 
-struct configuration {
-    int num_modules;
-    module::number_slots slot_map;
-    std::string com_fpga_config;
-    std::string sp_fpga_config;
-    std::string dsp_code;
-    std::string dsp_param;
-    std::string dsp_var;
-};
-
-PIXIE_EXPORT void PIXIE_API read(const std::string& config_file_name, configuration& cfg);
-
 /*
  * Import a JSON confuguration into a crate's internal variables.
  */
