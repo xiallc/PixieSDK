@@ -179,7 +179,7 @@ PIXIE16SYS_EXPORT int Pixie_ExtFIFO_Read(unsigned int* extfifo_data, unsigned in
                                          unsigned short ModNum);
 
 /**
- * @ingoup COMMUNICATION
+ * @ingroup COMMUNICATION
  * @brief Pixie external memory I/O communication (burst Read/Write)
  * @note This function depends on the PLX major revision number.
  * @param[in,out] memory_data : Pointer to a data block that will contain the data.
@@ -198,7 +198,7 @@ PIXIE16SYS_EXPORT int Pixie_Main_Memory_IO(unsigned int* memory_data, unsigned i
                                            unsigned short ModNum);
 
 /**
- * @ingoup COMMUNICATION
+ * @ingroup COMMUNICATION
  * @brief Clears the histogram data from the module's external memory.
  *
  * Clear Pixie external memory by the System FPGA (However, this feature is not
@@ -217,7 +217,7 @@ PIXIE16SYS_EXPORT int Pixie_Clear_Main_Memory(unsigned int memory_address, unsig
                                               unsigned short ModNum);
 
 /**
- * @ingoup COMMUNICATION
+ * @ingroup COMMUNICATION
  * @brief Used for single-word I/O communications between Host and Pixie registers.
  * @param[in] ModNum: the Pixie module to communicate to
  * @param[in] address: register address
@@ -230,7 +230,7 @@ PIXIE16SYS_EXPORT int Pixie_Register_IO(unsigned short ModNum, unsigned int addr
                                         unsigned short direction, unsigned int* value);
 
 /**
- * @ingoup COMMUNICATION
+ * @ingroup COMMUNICATION
  * @brief Read the module's control status register (CSR).
  * @param[in] ModNum: The module to read from
  * @param[out] CSR: The value of the CSR.
@@ -238,7 +238,7 @@ PIXIE16SYS_EXPORT int Pixie_Register_IO(unsigned short ModNum, unsigned int addr
 PIXIE16SYS_EXPORT void Pixie_ReadCSR(unsigned short ModNum, unsigned int* CSR);
 
 /**
- * @ingoup COMMUNICATION
+ * @ingroup COMMUNICATION
  * @brief Write to the module's control status register (CSR).
  * @param[in] ModNum: The module to write to
  * @param[in] CSR: The value to write
@@ -253,7 +253,7 @@ PIXIE16SYS_EXPORT void Pixie_WrtCSR(unsigned short ModNum, unsigned int CSR);
 #define PIXIE_FUNC __func__
 
 /**
- * @ingoup TOOLS
+ * @ingroup TOOLS
  * @brief Prints a message to the log file.
  * @param[in] format: The message formatting.
  * @param[in] ...: The message arguments.
@@ -261,7 +261,7 @@ PIXIE16SYS_EXPORT void Pixie_WrtCSR(unsigned short ModNum, unsigned int CSR);
 PIXIE16SYS_EXPORT void Pixie_Print_MSG(const char* format, ...) PIXIE16_PRINTF(1, 2);
 
 /**
- * @ingoup TOOLS
+ * @ingroup TOOLS
  * @brief Prints an error message to the log file.
  * @param[in] func: The function doing the printing.
  * @param[in] format: The message formatting.
@@ -270,7 +270,7 @@ PIXIE16SYS_EXPORT void Pixie_Print_MSG(const char* format, ...) PIXIE16_PRINTF(1
 PIXIE16SYS_EXPORT void Pixie_Print_Error(const char* func, char* format, ...) PIXIE16_PRINTF(2, 3);
 
 /**
- * @ingoup TOOLS
+ * @ingroup TOOLS
  * @brief Prints a warning message to the log file.
  * @param[in] func: The function doing the printing.
  * @param[in] format: The message formatting.
@@ -280,7 +280,7 @@ PIXIE16SYS_EXPORT void Pixie_Print_Warning(const char* func, char* format, ...)
     PIXIE16_PRINTF(2, 3);
 
 /**
- * @ingoup TOOLS
+ * @ingroup TOOLS
  * @brief Prints an informational message to the log file.
  * @param[in] func: The function doing the printing.
  * @param[in] format: The message formatting.
@@ -289,7 +289,7 @@ PIXIE16SYS_EXPORT void Pixie_Print_Warning(const char* func, char* format, ...)
 PIXIE16SYS_EXPORT void Pixie_Print_Info(const char* func, char* format, ...) PIXIE16_PRINTF(2, 3);
 
 /**
- * @ingoup TOOLS
+ * @ingroup TOOLS
  * @brief Prints a debugging message to the log file.
  *
  * Depends on the preprocessor definition PRINT_DEBUG_MSG.
@@ -301,7 +301,7 @@ PIXIE16SYS_EXPORT void Pixie_Print_Info(const char* func, char* format, ...) PIX
 PIXIE16SYS_EXPORT void Pixie_Print_Debug(const char* func, char* format, ...) PIXIE16_PRINTF(2, 3);
 
 /**
- * @ingoup I2CM24C64
+ * @ingroup I2CM24C64
  * @brief Bus master writes one byte to I2C serial EEPROM M24C64.
  * @param[in] ModNum: Pixie module module
  * @param[in] Address: The address to write this byte
@@ -318,7 +318,7 @@ PIXIE16SYS_EXPORT int I2CM24C64_Write_One_Byte(unsigned short ModNum, unsigned s
                                                char* ByteValue);
 
 /**
- * @ingoup I2CM24C64
+ * @ingroup I2CM24C64
  * @brief Bus master reads one byte from I2C serial EEPROM M24C64.
  * @param[in] ModNum: Pixie module number
  * @param[in] Address: The address to read this byte
@@ -335,7 +335,7 @@ PIXIE16SYS_EXPORT int I2CM24C64_Read_One_Byte(unsigned short ModNum, unsigned sh
                                               char* ByteValue);
 
 /**
- * @ingoup I2CM24C64
+ * @ingroup I2CM24C64
  * @brief Bus master writes one page to I2C serial EEPROM M24C64.
  * @param[in] ModNum: Pixie module module
  * @param[in] Address: The starting address to write this page
@@ -353,7 +353,7 @@ PIXIE16SYS_EXPORT int I2CM24C64_Page_Write(unsigned short ModNum, unsigned short
                                            unsigned short NumBytesToWrite, char* ByteValue);
 
 /**
- * @ingoup I2CM24C64
+ * @ingroup I2CM24C64
  * @brief Bus master reads multiple bytes from I2C serial EEPROM M24C64.
  * @param[in] ModNum: Pixie module number
  * @param[in] Address: The starting address to read
@@ -371,7 +371,7 @@ PIXIE16SYS_EXPORT int I2CM24C64_Sequential_Read(unsigned short ModNum, unsigned 
                                                 unsigned short NumBytesToRead, char* ByteValue);
 
 /**
- * @ingoup PCF8574
+ * @ingroup PCF8574
  * @brief Bus master reads one byte from PCF8574.
  * @param[in] ModNum: The module to read the byte from
  * @param[out] ByteValue: A variable to store the read byte value.

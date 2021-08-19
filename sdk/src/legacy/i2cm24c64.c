@@ -454,8 +454,8 @@ int I2CM24C64_byte_write(unsigned short ModNum, char ByteToSend) {
 /**
  * @ingroup I2CM24C64
  * @brief Bus master reads a byte to M24C64
- * @param[in] ModNum The module that we want to communicate with.
- * @param[out]: ByteToReceive: Pointer to variable to hold the return value.
+ * @param[in] ModNum: The module that we want to communicate with.
+ * @param[out] ByteToReceive: Pointer to variable to hold the return value.
  * @returns A status code indicating the result of the operation
  * @retval 0 - Success
  */

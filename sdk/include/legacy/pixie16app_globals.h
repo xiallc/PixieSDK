@@ -41,9 +41,10 @@ unsigned short Offline;  // Offline = 1: offline analysis; Offline = 0: online a
 /*-----------------------------------------------------------------
     Pixie global data structure
   -----------------------------------------------------------------*/
-
+/**
+ * @brief LEGACY - Defines a configuration for a single module.
+ */
 struct Pixie_Configuration {
-
     // DSP I/O parameter values
     unsigned int DSP_Parameter_Values[N_DSP_PAR];
 };
@@ -51,7 +52,9 @@ struct Pixie_Configuration {
 // Define PRESET_MAX_MODULES Pixie devices
 struct Pixie_Configuration Pixie_Devices[PRESET_MAX_MODULES];
 
-
+/**
+ * @brief LEGACY - Defines hardware information from the module's EEPROM.
+ */
 struct Module_Info {
     // Module information
     unsigned short Module_Rev;

@@ -1645,7 +1645,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ComputeSlowFiltersOffline(
  * be called before Pixie16InitSystem to ensure that the correct variant is set.
  *
  * @param[in] ModuleNumber: The module number that we want to set
- * @param[in] ModuleOfflineVariant: The variant of the module that we'd like to use for offline
+ * @param[in] variant: The variant of the module that we'd like to use for offline
  *     analysis.
  *     | Variant ID | Rev | SN | ADC Bits | ADC Sampling |
  *     |-|-|-|-|-|
