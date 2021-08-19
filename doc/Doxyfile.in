@@ -29,7 +29,7 @@ LAYOUT_FILE            =
 #---------------------------------------------------------------------------
 # Configuration options related to the input files
 #---------------------------------------------------------------------------
-INPUT                  = "@PROJECT_SOURCE_DIR@/sdk/"
+INPUT                  = "@PROJECT_SOURCE_DIR@/sdk/include/"
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          =
 RECURSIVE              = YES
