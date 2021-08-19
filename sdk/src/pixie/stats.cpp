@@ -20,6 +20,8 @@
  * @brief Implements functions and data structures related to hardware statistics.
  */
 
+#include <algorithm>
+
 #include <pixie/stats.hpp>
 
 #include <pixie/pixie16/memory.hpp>
@@ -85,44 +87,46 @@ stats::stats(const hw::configs& configs) {
 }
 
 void read(pixie::module::module& module_, stats& stats_) {
-    const hw::address base = module_.param_addresses.module_out.start;
-    const size_t words =
-        module_.param_addresses.module_out.size + module_.param_addresses.channels_out.size;
+    const param::module_var_descs& mod_descs = module_.module_var_descriptors;
+    const param::channel_var_descs& chan_descs = module_.channel_var_descriptors;
+
+    std::vector<hw::address> addrs = {
+        param::get_descriptor(mod_descs, param::module_var::NumEventsA).address,
+        param::get_descriptor(mod_descs, param::module_var::NumEventsB).address,
+        param::get_descriptor(mod_descs, param::module_var::RunTimeA).address,
+        param::get_descriptor(mod_descs, param::module_var::RunTimeB).address,
+        param::get_descriptor(chan_descs, param::channel_var::FastPeaksA).address,
+        param::get_descriptor(chan_descs, param::channel_var::FastPeaksB).address,
+        param::get_descriptor(chan_descs, param::channel_var::LiveTimeA).address,
+        param::get_descriptor(chan_descs, param::channel_var::LiveTimeB).address,
+        param::get_descriptor(chan_descs, param::channel_var::ChanEventsA).address,
+        param::get_descriptor(chan_descs, param::channel_var::ChanEventsB).address,
+    };
+
+    const hw::address addr_low = *std::min_element(addrs.begin(), addrs.end(),
+                                                   [](auto& a, auto& b) { return a < b; });
+    const hw::address addr_high = *std::max_element(addrs.begin(), addrs.end(),
+                                                    [](auto& a, auto& b) { return a < b; });
+    const size_t words = addr_high - addr_low + module_.num_channels + 1;
 
     hw::memory::dsp dsp(module_);
     hw::words vars(words);
 
-    dsp.read(base, vars);
+    dsp.read(addr_low, vars);
 
-    const param::module_var_descs& mod_descs = module_.module_var_descriptors;
-    const param::channel_var_descs& chan_descs = module_.channel_var_descriptors;
-
-    hw::address addr;
-
-    addr = param::get_descriptor(mod_descs, param::module_var::NumEventsA).address;
-    stats_.mod.num_events_a = vars[addr - base];
-    addr = param::get_descriptor(mod_descs, param::module_var::NumEventsB).address;
-    stats_.mod.num_events_b = vars[addr - base];
-
-    addr = param::get_descriptor(mod_descs, param::module_var::RunTimeA).address;
-    stats_.mod.runtime_a = vars[addr - base];
-    addr = param::get_descriptor(mod_descs, param::module_var::RunTimeB).address;
-    stats_.mod.runtime_b = vars[addr - base];
+    stats_.mod.num_events_a = vars[addrs[0] - addr_low];
+    stats_.mod.num_events_b = vars[addrs[1] - addr_low];
+    stats_.mod.runtime_a = vars[addrs[2] - addr_low];
+    stats_.mod.runtime_b = vars[addrs[3] - addr_low];
 
     for (auto& channel : stats_.chans) {
         const auto index = channel.config.index;
-        addr = param::get_descriptor(chan_descs, param::channel_var::FastPeaksA).address;
-        channel.fast_peaks_a = vars[addr - base + index];
-        addr = param::get_descriptor(chan_descs, param::channel_var::FastPeaksB).address;
-        channel.fast_peaks_b = vars[addr - base + index];
-        addr = param::get_descriptor(chan_descs, param::channel_var::LiveTimeA).address;
-        channel.live_time_a = vars[addr - base + index];
-        addr = param::get_descriptor(chan_descs, param::channel_var::LiveTimeB).address;
-        channel.live_time_b = vars[addr - base + index];
-        addr = param::get_descriptor(chan_descs, param::channel_var::ChanEventsA).address;
-        channel.chan_events_a = vars[addr - base + index];
-        addr = param::get_descriptor(chan_descs, param::channel_var::ChanEventsB).address;
-        channel.chan_events_b = vars[addr - base + index];
+        channel.fast_peaks_a = vars[addrs[4] + index - addr_low];
+        channel.fast_peaks_b = vars[addrs[5] + index - addr_low];
+        channel.live_time_a = vars[addrs[6] + index - addr_low];
+        channel.live_time_b = vars[addrs[7] + index - addr_low];
+        channel.chan_events_a = vars[addrs[8] + index - addr_low];
+        channel.chan_events_b = vars[addrs[9] + index - addr_low];
         channel.runtime_a = stats_.mod.runtime_a;
         channel.runtime_b = stats_.mod.runtime_b;
     }
