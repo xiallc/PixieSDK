@@ -29,7 +29,11 @@ LAYOUT_FILE            =
 #---------------------------------------------------------------------------
 # Configuration options related to the input files
 #---------------------------------------------------------------------------
-INPUT                  = "@PROJECT_SOURCE_DIR@/sdk/include/"
+INPUT                  = "@PROJECT_SOURCE_DIR@/sdk/include/" \
+                         "@PROJECT_SOURCE_DIR@/README.md" \
+                         "@PROJECT_SOURCE_DIR@/doc/pages" \
+                         "@PROJECT_SOURCE_DIR@/examples/example_pixie16api/README.md" \
+                         "@PROJECT_SOURCE_DIR@/examples/data_visualizer/README.md"
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          =
 RECURSIVE              = YES
@@ -39,7 +43,7 @@ EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       = *
 EXAMPLE_RECURSIVE      = NO
 IMAGE_PATH             =
-#USE_MDFILE_AS_MAINPAGE = "@PROJECT_SOURCE_DIR@/README.md"
+USE_MDFILE_AS_MAINPAGE = "@PROJECT_SOURCE_DIR@/README.md"
 #---------------------------------------------------------------------------
 # Configuration options related to source browsing
 #---------------------------------------------------------------------------
@@ -52,7 +56,7 @@ HTML_OUTPUT            = html
 HTML_FILE_EXTENSION    = .html
 HTML_HEADER            =
 HTML_FOOTER            =
-HTML_EXTRA_STYLESHEET  =
+HTML_EXTRA_STYLESHEET  = "@PROJECT_SOURCE_DIR@/doc/css/doxygen-awesome.css"
 HTML_EXTRA_FILES       =
 HTML_COLORSTYLE_HUE    = 208
 HTML_COLORSTYLE_SAT    = 100
