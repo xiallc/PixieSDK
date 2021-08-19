@@ -99,7 +99,7 @@ void dsp::read(const address addr, word_ptr buffer, const size_t length) {
     size_t size = length;
     size_t offset = 0;
     /*
-     * The 48 is taken from the legacy code. The signficance of this value
+     * The 48 is taken from the legacy code. The significance of this value
      * is unknown.
      */
     while (size > 48) {
@@ -201,7 +201,7 @@ void mca::read(const address addr, word_ptr values, size_t size) {
     module::module::bus_guard guard(module);
 
     /*
-     * Guard the PCI active bit so it is cleared when we exit.
+     * Guard the PCI active bit, so it is cleared when we exit.
      */
     csr::set_clear csr(module, 1 << hw::bit::PCIACTIVE);
 
@@ -232,7 +232,7 @@ void mca::write(const address addr, const words& values) {
     module::module::bus_guard guard(module);
 
     /*
-     * Guard the PCI active  bit so it is cleared when we exit.
+     * Guard the PCI active  bit, so it is cleared when we exit.
      */
     csr::set_clear csr(module, 1 << hw::bit::PCIACTIVE);
 

@@ -29,6 +29,11 @@ namespace xia {
 namespace pixie {
 namespace hw {
 namespace fpga {
+/**
+ * @brief Data structure used to communicate with the module's System FPGA
+ *
+ * This FPGA is also called the communications FPGA.
+ */
 struct comms {
     control ctrl;
 

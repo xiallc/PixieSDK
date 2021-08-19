@@ -33,25 +33,28 @@
 
 namespace xia {
 namespace pixie {
+/**
+ * @brief Used to provide some basic legacy functionality.
+ */
 namespace legacy {
 
 typedef pixie::error::error error;
 
-/*
- * Legacy Settings configuration data.
+/**
+ * @brief Defines a data structure related to binary settings files.
  */
 struct settings {
-    /*
+    /**
      * Hardcoded constant from the legacy code.
      */
     static const size_t N_DSP_PAR = 1280;
 
-    /*
+    /**
      * Legacy settings files are limited to 16 channels only
      */
     static const size_t MAX_CHANNELS = 16;
 
-    /*
+    /**
      * The number of DSP words written when pushing the variables as a block.
      */
     static const size_t DSP_IO_BORDER = 832;
@@ -70,18 +73,21 @@ struct settings {
 
     int num_modules() const;
 
-    /*
-     * Load the settings file into the DSP memory buffer
+    /**
+     * @brief Load the settings file into the DSP memory buffer
+     * @param parfile The path to the binary settings file to load.
      */
     void load(const std::string& parfile);
 
-    /*
-     * Import the DSP memory contents into the module
+    /**
+     * @brief Import the DSP memory contents into the module
+     * @param module The module that we'd like to associate with the settings.
      */
     void import(module::module& module);
 
-    /*
-     * Write the DSP memory contents to the DSP hardware
+    /**
+     * @brief Actually write the DSP memory contents to the DSP hardware
+     * @param module The module that we'd like to write to.
      */
     void write(module::module& module);
 
@@ -111,8 +117,8 @@ struct settings {
 }  // namespace pixie
 }  // namespace xia
 
-/*
- * Output stream operator.
+/**
+ * @brief Output stream operator for a legacy settings object
  */
 std::ostream& operator<<(std::ostream& out, const xia::pixie::legacy::settings& settings);
 

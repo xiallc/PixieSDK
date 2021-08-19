@@ -79,14 +79,8 @@ void start(module::module& module, run_mode mode, run_task run_tsk, control_task
                     << " run-tsk=" << std::hex << int(run_tsk) << std::dec
                     << " control-tsk=" << int(control_tsk);
 
-    /*
-     * End a run if one is running.
-     */
     end(module);
 
-    /*
-     * If this is a new run and it is an acquisition task clear the MCA memory.
-     */
     if (mode == run_mode::new_run && run_tsk != run_task::nop) {
         static const size_t block_size = max_histogram_length * 4;
         static const size_t mca_end = max_histogram_length * module.num_channels;

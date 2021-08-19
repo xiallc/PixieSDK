@@ -45,60 +45,42 @@ extern "C" {
 #define SYS_MAX_NUM_MODULES 32
 
 /**
- * @defgroup PUBLIC_API Public API
- * Functions for use in end-user software.
+ * @defgroup PIXIE_SDK PixieSDK
+ * Documentation group for the PixieSDK functions/classes/macros.
+ *
+ * @defgroup PIXIE16_API Pixie16 API
+ * @ingroup PIXIE_SDK
+ * C wrappers to the PixieSDK that provide backward compatibility with the Legacy C implementation.
  */
 
 /**
- * @defgroup CONTROL_TASK_RUN Control Task functions
- * @ingroup PUBLIC_API
- * A group of functions used to execute specific tasks on the module.
+ * @ingroup PIXIE16_API
+ * @brief Converts a IEEE 754 standard format number to a double.
+ * @see https://en.wikipedia.org/wiki/IEEE_754
+ * @param[in] IEEEFloatingNumber: The IEEE 754 standard format number to convert
+ * @returns The input value in double format.
  */
-
-/**
- * @defgroup RUN_STATISTICS Run Statistics
- * @ingroup PUBLIC_API
- * A group of functions used calculate run statistics from the return of
- * Pixie16ReadStatisticsFromModule.
- * @see Pixie16ReadStatisticsFromModule
- */
-
-/**
-* @defgroup CONFIGURATION Configuration Management
-* @ingroup PUBLIC_API
-* A group of functions used to setup and configure the modules
-*/
-
-/**
- * @defgroup DATA_PROCESSING Data Processing
- * @ingroup PUBLIC_API
- * A group of functions used to process data received from the Pixie modules.
- */
-
-/**
-* @defgroup LIST_MODE_DATA_PROCESSING List-Mode Data Processing
-* @ingroup PUBLIC_API
-* A group of functions used to process List-Mode data from the modules
-*/
-
 PIXIE_EXPORT double PIXIE_API IEEEFloating2Decimal(unsigned int IEEEFloatingNumber);
 
+/**
+ * @ingroup PIXIE16_API
+ * @brief Converts a decimal number to the IEEE 754 standard
+ * @see https://en.wikipedia.org/wiki/IEEE_754
+ * @param[in] DecimalNumber: The decimal number to convert
+ * @returns The input value in IEEE 754 standard format.
+ */
 PIXIE_EXPORT unsigned int PIXIE_API Decimal2IEEEFloating(double DecimalNumber);
 
 /**
- * @ingroup PUBLIC_API
- * @brief Get the size of the statistics buffer.
- *
- * Use this function to get the size in bytes for the statistics buffer.
- *
+ * @ingroup PIXIE16_API
+ * @brief Get the size in bytes of the statistics buffer.
  * @see Pixie16ReadStatisticsFromModule
- *
- * @retval size in bytes
+ * @returns size in bytes
  */
 PIXIE_EXPORT unsigned int PIXIE_API Pixie16GetStatisticsSize(void);
 
 /**
- * @ingroup PUBLIC_API
+ * @ingroup PIXIE16_API
  * @brief Acquire ADC traces from a Pixie module.
  *
  * Use this function to acquire ADC traces from Pixie-16 modules. Specify the module using ModNum
@@ -116,15 +98,11 @@ PIXIE_EXPORT unsigned int PIXIE_API Pixie16GetStatisticsSize(void);
  *
  * @param[in] ModNum: The module number that we'll be working with
  * @returns A status code indicating the result of the operation
- * @retval  0 - Success
- * @retval -1 - Invalid Pixie module number
- * @retval -2 - Failed to start run
- * @retval -3 - Acquiring ADC traces timed out
  */
-PIXIE_EXPORT int PIXIE_API Pixie16AcquireADCTrace(unsigned short ModNum);  // module number
+PIXIE_EXPORT int PIXIE_API Pixie16AcquireADCTrace(unsigned short ModNum);
 
 /**
- * @ingroup CONTROL_TASK_RUN
+ * @ingroup PIXIE16_API
  * @brief Acquire baselines
  *
  * Use this function to acquire baselines from Pixie-16 modules. Specify the module using ModNum
@@ -141,15 +119,11 @@ PIXIE_EXPORT int PIXIE_API Pixie16AcquireADCTrace(unsigned short ModNum);  // mo
  *
  * @param[in] ModNum: The module number to get baselines from
  * @returns A status code indicating the result of the operation
- * @retval  0 - Success
- * @retval -1 - Invalid Pixie module number
- * @retval -2 - Failed to start the GET_BASELINES run
- * @retval -3 - GET_BASELINES run timed out
  */
-PIXIE_EXPORT int PIXIE_API Pixie16AcquireBaselines(unsigned short ModNum);  // module number
+PIXIE_EXPORT int PIXIE_API Pixie16AcquireBaselines(unsigned short ModNum);
 
 /**
- * @ingroup CONTROL_TASK_RUN
+ * @ingroup PIXIE16_API
  * @brief Adjust DC-Offsets
  *
  * Use this function to adjust the DC-offsets of Pixie-16 modules. Specify the module using ModNum
@@ -169,15 +143,11 @@ PIXIE_EXPORT int PIXIE_API Pixie16AcquireBaselines(unsigned short ModNum);  // m
  * @param[in] ModNum: The module number to adjust baselines for
  *
  * @returns A status code indicating the result of the operation
- * @retval  0 - Success
- * @retval -1 - Invalid Pixie module number
- * @retval -2 - Failed to start the ADJUST_OFFSETS run
- * @retval -3 - ADJUST_OFFSETS run timed out after 10 seconds of attempts
  */
 PIXIE_EXPORT int PIXIE_API Pixie16AdjustOffsets(unsigned short ModNum);
 
 /**
- * @ingroup CONFIGURATION
+ * @ingroup PIXIE16_API
  * @brief Find the BLcut value for the selected channel and return it using pointer *BLcut.
  *
  * Use this function to find the Baseline Cut value for one channel of a Pixie-16 module. The
@@ -191,16 +161,12 @@ PIXIE_EXPORT int PIXIE_API Pixie16AdjustOffsets(unsigned short ModNum);
  * @param[in] ChanNum: The channel number to work with, starts counting at 0.
  * @param[out] BLcut: The Baseline cut as determined by the calculation.
  * @returns A status code indicating the result of the operation
- * @retval  0 - successful
- * @retval -1 - Invalid Pixie module number
- * @retval -2 - failed to collect baselines
- * @retval -3 - failed to read baselines from the data memory
  */
 PIXIE_EXPORT int PIXIE_API Pixie16BLcutFinder(unsigned short ModNum, unsigned short ChanNum,
                                               unsigned int* BLcut);
 
 /**
- * @ingroup PUBLIC_API
+ * @ingroup PIXIE16_API
  *
  * @brief Boot one or more modules in the system.
  *
@@ -243,31 +209,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16BLcutFinder(unsigned short ModNum, unsigned sh
  * @param[in] ModNum: The module number. If set to Number_Modules we'll boot all modules.
  * @param[in] BootPattern: boot pattern bit mask
  * @returns A status code indicating the result of the operation
- * @retval  0 - Success
- * @retval -1 - Invalid module number
- * @retval -2 - Size of ComFPGAConfigFile is invalid
- * @retval -3 - Could not read the ComFPGAConfig file
- * @retval -4 - Failed to allocate memory to store ComFPGAConfig
- * @retval -5 - Failed to open ComFPGAConfigFile
- * @retval -10 - Size of SPFPGAConfigFile is invalid
- * @retval -11 - Failed to read SPFPGAConfigFile
- * @retval -12 - Failed to allocate memory to store SPFPGAConfigFile
- * @retval -13 - Failed to open SPFPGAConfigFile
- * @retval -14 - Failed to read DSPCodeFile
- * @retval -15 - Failed to allocate memory to store DSP executable code
- * @retval -16 - Failed to open DSPCodeFile
- * @retval -17 - Size of DSPParFile is invalid
- * @retval -18 - Failed to open DSPParFile
- * @retval -19 - Can't initialize DSP variable indices
- * @retval -20 - Can't copy DSP variable indices
- * @retval -21 - Failed to program Fippi in a module
- * @retval -22 - Failed to set DACs in a module
- * @retval -23 - Failed to start RESET_ADC run in a module
- * @retval -24 - RESET_ADC run timed out in a module
- * @retval -25 - Failed to boot the Communication FPGA
- * @retval -26 - Failed to boot signal processing FPGA
- * @retval -27 - Failed to boot DSP
- * @retval -28 - Failed to read DSPParFile
  */
 PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
                                              const char* SPFPGAConfigFile,
@@ -277,7 +218,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
                                              unsigned short BootPattern);
 
 /**
- * @ingroup LIST_MODE_DATA_PROCESSING
+ * @ingroup PIXIE16_API
  * @brief Read the number of 32-bit words that the external FIFO currently has.
  *
  * Use this function to check the status of the external FIFO of a Pixie-16 module while a
@@ -295,14 +236,12 @@ PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
  *     External FIFO
  * @param[in] ModNum: The module number to read from. Numbering starts counting at 0.
  * @returns A status code indicating the result of the operation
- * @retval  0 - Successful
- * @retval -1 - Invalid Pixie module number
  */
 PIXIE_EXPORT int PIXIE_API Pixie16CheckExternalFIFOStatus(unsigned int* nFIFOWords,
                                                           unsigned short ModNum);
 
 /**
- * @ingroup PUBLIC_API
+ * @ingroup PIXIE16_API
  * @brief Poll the run status of a Pixie module.
  *
  * Use this function to check the run status of a Pixie-16 module while a list-mode data
@@ -324,7 +263,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckExternalFIFOStatus(unsigned int* nFIFOWor
 PIXIE_EXPORT int PIXIE_API Pixie16CheckRunStatus(unsigned short ModNum);
 
 /**
- * @ingroup RUN_STATISTICS
+ * @ingroup PIXIE16_API
  * @brief Compute input count rate of a channel
  *
  * Use this function to calculate the input count rate on one channel of a Pixie-16 module. This
@@ -351,7 +290,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeInputCountRate(unsigned int* Statist
                                                            unsigned short ChanNum);
 
 /**
- * @ingroup RUN_STATISTICS
+ * @ingroup PIXIE16_API
  * @brief Compute live time that a channel accumulated in a run
  *
  * Use this function to calculate the live time that one channel of a Pixie-16 module has spent on
@@ -374,7 +313,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeLiveTime(unsigned int* Statistics,
                                                      unsigned short ModNum, unsigned short ChanNum);
 
 /**
- * @ingroup RUN_STATISTICS
+ * @ingroup PIXIE16_API
  * @brief Compute output count rate of a channel
  *
  * Use this function to calculate the output count rate on one channel of a Pixie-16 module. This
@@ -401,7 +340,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeOutputCountRate(unsigned int* Statis
                                                             unsigned short ChanNum);
 
 /**
- * @ingroup RUN_STATISTICS
+ * @ingroup PIXIE16_API
  * @brief Compute number of events processed by a module
  *
  * @note This function is only used by Rev-A modules.
@@ -425,7 +364,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeProcessedEvents(unsigned int* Statis
                                                             unsigned short ModNum);
 
 /**
- * @ingroup RUN_STATISTICS
+ * @ingroup PIXIE16_API
  * @brief Compute real time that a module accumulated in a run
  *
  * Use this function to calculate the real time that a Pixie-16 module has spent on data
@@ -447,7 +386,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeRealTime(unsigned int* Statistics,
                                                      unsigned short ModNum);
 
 /**
- * @ingroup PUBLIC_API
+ * @ingroup PIXIE16_API
  * @brief Stop the run in a Pixie module.
  *
  * Use this function to end a histogram run, or to force the end of a list-mode run. In a
@@ -459,28 +398,22 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeRealTime(unsigned int* Statistics,
  * If SynchWait is set to 0, then CSR bit 0 is cleared to stop the run.
  *
  * @param[in] ModNum: The module number to interrogate and counting starts at 0.
- * @returns A status code indicating the result of the operation
- * @retval  0 - No run is in progress
- * @retval -1 - Invalid Pixie module number
  */
 PIXIE_EXPORT int PIXIE_API Pixie16EndRun(unsigned short ModNum);
 
 /**
- * @ingroup PUBLIC_API
+ * @ingroup PIXIE16_API
  *
  * @brief Close the modules and release resources used by PCI devices before
  * exiting the application.
  *
  * @param[in] ModNum: The module number that we'll be closing.
  * @returns A status code indicating the result of the operation
- * @retval:  0 - Success
- * @retval: -1 - Invalid Pixie module number
- * @retval: -2 - Failed to close Pixie module
  */
 PIXIE_EXPORT int PIXIE_API Pixie16ExitSystem(unsigned short ModNum);
 
 /**
- * @ingroup PUBLIC_API
+ * @ingroup PIXIE16_API
  *
  * @brief Initializes the system by mapping PXI slots to modules
  *
@@ -508,17 +441,12 @@ PIXIE_EXPORT int PIXIE_API Pixie16ExitSystem(unsigned short ModNum);
  *     indicates which module number the slot number takes. The first slot number is Module 0.
  * @param[in] OfflineMode: Used to tell the API that there are no modules connected to the system.
  * @returns A status code indicating the result of the operation
- * @retval  0 - Success
- * @retval -1 - Invalid total number of Pixie modules
- * @retval -2 - Null pointer *PXISlotMap.
- * @retval -3 - Failed to initialize system
- * @retval -4 - Failed to read the module's information
  */
 PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
                                              unsigned short OfflineMode);
 
 /**
- * @ingroup LIST_MODE_DATA_PROCESSING
+ * @ingroup PIXIE16_API
  * @brief Read data from the external FIFO.
  *
  * This function reads list mode data from the external FIFO of a Pixie-16 module. The data are
@@ -533,16 +461,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned
  * @param[in] nFIFOWords: The number of words that we're going to be reading.
  * @param[in] ModNum: The module number that we'll read from. Numbering starts at 0.
  * @returns A status code indicating the result of the operation
- * @retval  0 - Successful
- * @retval -1 - Invalid Pixie module number
- * @retval -2 - Failed to read data from external FIFO
  */
 PIXIE_EXPORT int PIXIE_API Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO_Data,
                                                            unsigned int nFIFOWords,
                                                            unsigned short ModNum);
 
 /**
- * @ingroup DATA_PROCESSING
+ * @ingroup PIXIE16_API
  * @brief Retrieve a channel's histogram data from a Pixie module.
  *
  * Use this function to read out the histogram data from a Pixie-16 module’s histogram memory.
@@ -555,10 +480,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO
  * @param[in] ModNum: The module number that we want the histogram from
  * @param[in] ChanNum: The channel number that we'd like to read from
  * @returns A status code indicating the result of the operation
- * @retval  0 - Success
- * @retval -1 - Invalid Pixie module number
- * @retval -2 - Invalid Pixie channel number
- * @retval -3 - Failed to get the histogram data. If this happens reboot the module.
  */
 PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogram,
                                                           unsigned int NumWords,
@@ -566,7 +487,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
                                                           unsigned short ChanNum);
 
 /**
- * @ingroup PUBLIC_API
+ * @ingroup PIXIE16_API
  * @brief Read information stored on each module, including its revision, serial number, and ADC.
  *
  * Use this function to read information stored on each module, including its revision, serial
@@ -580,10 +501,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
  * @param[out] ModADCBits: The ADC bit resolution read from the on-board EEPROM
  * @param[out] ModADCMSPS: The ADC sampling frequency read from the on-board EEPROM
  * @returns A status code indicating the result of the operation
- * @retval:  0 - Success
- * @retval: -1 - Invalid Pixie module number
- * @retval: -2 - Failed to read the serial number from I2C serial EEPROM
- * @retval: -3 - Failed to read the ADC information from I2C serial EEPROM
  */
 PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned short* ModRev,
                                                  unsigned int* ModSerNum,
@@ -591,7 +508,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned
                                                  unsigned short* ModADCMSPS);
 
 /**
- * @ingroup PUBLIC_API
+ * @ingroup PIXIE16_API
  * @brief Acquire ADC traces from a Pixie module.
  *
  * Use this function to read ADC trace data from a Pixie-16 module. Before calling this function,
@@ -613,12 +530,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned
  * @param[in] ModNum: The module that we want to read
  * @param[in] ChanNum: The channel that we want to read
  * @returns A status code indicating the result of the operation
- * @retval  0 - Success
- * @retval -1 - Invalid Pixie module number
- * @retval -2 - Invalid Pixie channel number
- * @retval -3 - Invalid trace length
- * @retval -4 - Failed to allocate memory to store ADC traces
- * @retval -5 - Failed to read ADC traces
  */
 PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buffer,
                                                       unsigned int Trace_Length,
@@ -626,7 +537,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buff
                                                       unsigned short ChanNum);
 
 /**
- * @ingroup CONFIGURATION
+ * @ingroup PIXIE16_API
  * @brief Read baselines from a channel in a module
  *
  * Use this function to read baseline data from a Pixie-16 module. Before calling this function,
@@ -646,11 +557,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buff
  * @param[in] ChanNum: The channel number to read the baselines from, counting from 0.
  *
  * @returns A status code indicating the result of the operation
- * @retval  0 - Success
- * @retval -1 - Invalid Pixie module number
- * @retval -2 - Requested number of baselines exceeded the limit
- * @retval -3 - Failed to allocate memory to store baselines
- * @retval -4 - Failed to read baselines
  */
 PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanBaselines(double* Baselines, double* TimeStamps,
                                                        unsigned short NumBases,
@@ -658,7 +564,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanBaselines(double* Baselines, double
                                                        unsigned short ChanNum);
 
 /**
- * @ingroup CONFIGURATION
+ * @ingroup PIXIE16_API
  * @brief Read a channel parameter from a module.
  *
  * #### List of Channel Parameters
@@ -707,16 +613,12 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanBaselines(double* Baselines, double
  * @param[in] ModNum: The module number we'll read from. Counting starts at 0.
  * @param[in] ChanNum: The channel number we'll read from. Counting starts at 0.
  * @returns A status code indicating the result of the operation
- * @retval  0 - Success
- * @retval -1 - Invalid Pixie module number
- * @retval -2 - Invalid Pixie channel number
- * @retval -3 - Invalid channel parameter name
  */
 PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanPar(const char* ChanParName, double* ChanParData,
                                                  unsigned short ModNum, unsigned short ChanNum);
 
 /**
- * @ingroup CONFIGURATION
+ * @ingroup PIXIE16_API
  * @brief Read a module parameter from a Pixie module
  *
  * #### List of module parameters
@@ -745,15 +647,12 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanPar(const char* ChanParName, double
  * @param[in] ModNum: The module number we'll write to. Numbering starts counting at 0.
  *
  * @returns A status code indicating the result of the operation
- * @retval  0 - Success
- * @retval -1 - Invalid Pixie module number
- * @retval -2 - Invalid module parameter name
  */
 PIXIE_EXPORT int PIXIE_API Pixie16ReadSglModPar(const char* ModParName, unsigned int* ModParData,
                                                 unsigned short ModNum);
 
 /**
- * @ingroup DATA_PROCESSING
+ * @ingroup PIXIE16_API
  * @brief Retrieve statistics data from a module.
  *
  * Use this function to read out statistics data from a Pixie-16 module. Before calling this
@@ -765,15 +664,12 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglModPar(const char* ModParName, unsigned
  *    the data read from the module.
  * @param[in] ModNum: The module number that we want statistics data from.
  * @returns A status code indicating the result of the operation
- * @retval  0 - Success
- * @retval -1 - Invalid Pixie module number
- * @retval -2 - Failed to get statistics data. If this happens, then reboot the module.
  */
 PIXIE_EXPORT int PIXIE_API Pixie16ReadStatisticsFromModule(unsigned int* Statistics,
                                                            unsigned short ModNum);
 
 /**
- * @ingroup CONFIGURATION
+ * @ingroup PIXIE16_API
  * @brief Save DSP parameters to a settings file
  *
  * Use this function to save DSP parameters to a settings file. It will first read the values of
@@ -784,15 +680,11 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadStatisticsFromModule(unsigned int* Statist
  *
  * @param[in] FileName: Absolute path to where we will write the DSP parameter file.
  * @returns A status code indicating the result of the operation
- * @retval  0 - Success
- * @retval -1 - Failed to read DSP parameter values from the Pixie-16 modules
- * @retval -2 - Failed to open the DSP parameters file
- * @retval -3 - Failed to write DSP parameter values
  */
 PIXIE_EXPORT int PIXIE_API Pixie16SaveDSPParametersToFile(const char* FileName);
 
 /**
- * @ingroup DATA_PROCESSING
+ * @ingroup PIXIE16_API
  * @brief Retrieve histogram data from a Pixie module and then save the data to a file.
  *
  * Use this function to read histogram data from a Pixie-16 module and save the histogram data to
@@ -803,20 +695,11 @@ PIXIE_EXPORT int PIXIE_API Pixie16SaveDSPParametersToFile(const char* FileName);
  * @param[in] FileName: The file name for the file containing the histogram data
  * @param[in] ModNum: The module number we'll read histogram data from. Counting from 0.
  * @returns A status code indicating the result of the operation
- * @retval  0 - Success
- * @retval -1 - Invalid Pixie module number
- * @retval -2 - Failed to get histogram data from module
- * @retval -3 - Failed to allocate memory to store histogram data for binary file
- * @retval -4 - Failed to open histogram data file
- * @retval -5 - Failed to open mca ascii output file
- * @retval -6 - Failed to allocate memory to store histogram data for ascii text file
- * @retval -7 - Failed to read histogram data from file
- * @retval -8 - Failed to read run statistics data from module
  */
 PIXIE_EXPORT int PIXIE_API Pixie16SaveHistogramToFile(const char* FileName, unsigned short ModNum);
 
 /**
- * @ingroup CONTROL_TASK_RUN
+ * @ingroup PIXIE16_API
  * @brief Set all DACs.
  *
  * Use this function to reprogram the on-board digital to analog converters (DAC) of the Pixie-16
@@ -825,15 +708,11 @@ PIXIE_EXPORT int PIXIE_API Pixie16SaveHistogramToFile(const char* FileName, unsi
  *
  * @param[in] ModNum: The module number, which starts counting at 0.
  * @returns A status code indicating the result of the operation
- * @retval  0 - Success
- * @retval -1 - Invalid Pixie module number
- * @retval -2 - Failed to start the SET_DACs run
- * @retval -3 - SET_DACs run timed out after 10 seconds of trying.
  */
 PIXIE_EXPORT int PIXIE_API Pixie16SetDACs(unsigned short ModNum);
 
 /**
- * @ingroup PUBLIC_API
+ * @ingroup PIXIE16_API
  * @brief Start or resume a histogram run.
  *
  * Use this function to begin a data acquisition run that accumulates energy histograms, one for
@@ -857,15 +736,11 @@ PIXIE_EXPORT int PIXIE_API Pixie16SetDACs(unsigned short ModNum);
  *     to erase histograms and statistics information before launching the new
  *     run. Use mode=RESUME_RUN (=0) to resume an earlier run.
  * @returns A status code indicating the result of the operation
- * @retval  0 - Success
- * @retval -1 - Invalid Pixie module number
- * @retval -2 - Invalid mode
- * @retval -3 - Failed to start histogram run
  */
 PIXIE_EXPORT int PIXIE_API Pixie16StartHistogramRun(unsigned short ModNum, unsigned short mode);
 
 /**
- * @ingroup PUBLIC_API
+ * @ingroup PIXIE16_API
  * @brief Start or resume a list-mode run.
  *
  * Use this function to start a list-mode data acquisition run in Pixie-16 modules. list-mode runs
@@ -893,17 +768,12 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartHistogramRun(unsigned short ModNum, unsig
  *     Use mode=RESUME_RUN (=0) to resume an earlier run. This mode has a startup delay of only a
  *     few microseconds.
  * @returns A status code indicating the result of the operation
- * @retval  0 - Success
- * @retval -1 - Invalid Pixie module number
- * @retval -2 - Invalid mode
- * @retval -3 - Failed to start list-mode run
- * @retval -4 - Invalid run type
  */
 PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsigned short RunType,
                                                    unsigned short mode);
 
 /**
- * @ingroup CONFIGURATION
+ * @ingroup PIXIE16_API
  * @brief Write a channel parameter to a Pixie module.
  *
  * #### List of Channel Parameters
@@ -952,19 +822,12 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsign
  * @param[in] ModNum: The module number we'll write to. Counting starts at 0.
  * @param[in] ChanNum: The channel number we'll write to. Counting starts at 0.
  * @returns A status code indicating the result of the operation
- * @retval  0 - Success
- * @retval -1 - Invalid Pixie module number
- * @retval -2 - Invalid Pixie channel number
- * @retval -3 - Invalid channel parameter name
- * @retval -4 - Programing Fippi failed downloading channel parameter
- * @retval -5 - BLcutFinder failed downloading channel parameter
- * @retval -6 - SetDACs failed downloading channel parameter
  */
 PIXIE_EXPORT int PIXIE_API Pixie16WriteSglChanPar(const char* ChanParName, double ChanParData,
                                                   unsigned short ModNum, unsigned short ChanNum);
 
 /**
- * @ingroup CONFIGURATION
+ * @ingroup PIXIE16_API
  * @brief Write a module parameter to a Pixie module
  *
  * #### List of module parameters
@@ -993,11 +856,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglChanPar(const char* ChanParName, doubl
  * @param[in] ModNum: The module number we'll write to. Numbering starts counting at 0.
  *
  * @returns A status code indicating the result of the operation
- * @retval  0 - Success
- * @retval -1 - Invalid Pixie module number
- * @retval -2 - Invalid module parameter name
- * @retval -3 - Failed to program Fippi after downloading module parameter
- * @retval -4 - Failed to find BLcut after downloading module parameter
  */
 PIXIE_EXPORT int PIXIE_API Pixie16WriteSglModPar(const char* ModParName, unsigned int ModParData,
                                                  unsigned short ModNum);

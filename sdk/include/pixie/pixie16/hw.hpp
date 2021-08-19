@@ -33,9 +33,12 @@
 
 namespace xia {
 namespace pixie {
+/**
+ * @brief Collects Pixie-16 specific hardware information.
+ */
 namespace hw {
-/*
- * Revision tags
+/**
+ * @brief Revision tags for the Pixie-16 hardware
  */
 enum rev_tag {
     rev_A = 10,
@@ -52,113 +55,116 @@ enum rev_tag {
     rev_L
 };
 
-/*
+/**
  * Maximum number of slots in a crate.
  */
 static const int max_slots = 13;
 
-/*
+/**
  * Maximum number of channels a module can have.
  */
 static const int max_channels = 32;
 
-/*
+/**
  * Maximum ADC trace size.
  */
 static const size_t max_adc_trace_length = 8192;
 
-/*
+/**
  * Maximum histogram size.
  */
 static const size_t max_histogram_length = 32768;
 
-/*
+/**
  * IO buffer length
  */
 static const size_t io_buffer_length = 65536;
 
-/*
+/**
  * System FPGA clock frequency in MHz
  */
 static const size_t system_clock_mhz = 100;
 
-/*
+/**
  * FIFO size in words
  */
 static const size_t fifo_size_words = 131072;
 
-/*
+/**
  * DMA block size.
  */
 static const size_t max_dma_block_size = 8192;
 
-/*
+/**
  * EEPROM block size
  */
 static const size_t eeprom_block_size = 128;
 
-/*
+/**
  * Baselines block length
  *
  * Length of each baseline (default: 2 timestamp words + 16 baselines)
  */
 static const size_t baselines_block_len = 18;
 
-/*
+/**
  * PCI Bus maximum data transfer rate in MBytes.
  */
 static const size_t pci_bus_datarate = 100;
 
-/*
- * Address.
+/**
+ * @brief Defines a type for memory register addresses.
  */
 typedef uint32_t address;
 
-/*
- * The read/write word.
+/**
+ * @brief Defines a type for the basic unit of read/write communication
  */
 typedef uint32_t word;
 
-/*
- * Word pointer.
+/**
+ * @brief defines a type for a pointer to a word
  */
 typedef word* word_ptr;
 
-/*
- * Words
+/**
+ * @brief Defines a type for a vector of words. Used to handle blocks of memory.
  */
 typedef std::vector<word> words;
 
-/*
- * ADC trace word
+/**
+ * @brief Defines a type for ADC trace words.
  */
 typedef uint16_t adc_word;
 
-/*
- * IO buffer
+/**
+ * @brief Defines a type used to handle IO data from the hardware.
  */
 typedef std::array<word, io_buffer_length> io_buffer;
 
-/*
- * ADC trace buffer, as read from the channel
+/**
+ * @brief Defines a type for an ADC trace buffer, as read from the channel
  */
 typedef std::array<word, max_adc_trace_length> adc_trace_buffer;
 
-/*
- * ADC trace
+/**
+ * @brief defines a type for ADC traces
  */
 typedef std::vector<adc_word> adc_trace;
 
-/*
- * Hardware errors
+/**
+ * @brief Defines a type for Hardware errors
  */
 typedef error::error error;
 
-/*
- * Configuration
+/**
+ * @brief The object representing the physical hardware configuration
+ *
+ * This includes information about the number of channels, and their
+ * analog front-end hardware.
  */
 struct config {
-    /*
+    /**
      * Channel index in variable array.
      */
     int index;
@@ -182,7 +188,7 @@ struct config {
 
 typedef std::vector<config> configs;
 
-/*
+/**
  * Convertor. Use with caution as this steps around the type system.
  */
 template<typename I, typename O>
@@ -190,12 +196,14 @@ inline void convert(I vin, O& vout) {
     vout = static_cast<O>(vin);
 }
 
-/*
- * Wait in microseconds. We need to check how well this works.
+/**
+ * @brief Wait in microseconds.
+ * @todo We need to check how well this works.
+ * @param microseconds The number of microseconds we should wait.
  */
 void wait(size_t microseconds);
 
-/*
+/**
  * Bus interface calls.
  */
 static inline word read_word(void* addr, const int offset) {

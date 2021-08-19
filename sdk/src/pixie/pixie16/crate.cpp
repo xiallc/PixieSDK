@@ -236,17 +236,17 @@ void crate::import_config(const std::string json_file, module::number_slots& loa
 }
 
 void crate::export_config(const std::string json_file) {
-    log(log::info) << "crate: export configration";
+    log(log::info) << "crate: export configuration";
     lock_guard guard(lock_);
     config::export_json(json_file, *this);
 }
 
 void crate::move_offlines() {
     /*
-         * Move any modules in the online list that are offline to the offline
-         * list.
-         */
-    log(log::info) << "crate: move offlines";
+     * Move any modules in the online list that are offline to the offline
+     * list.
+     */
+    log(log::info) << "crate: move offline modules";
     lock_guard guard(lock_);
     bool have_moved = true;
     while (have_moved) {
@@ -292,14 +292,14 @@ void crate::assign(const module::number_slots& numbers, bool force_offline) {
     ready();
     lock_guard guard(lock_);
     /*
-         * Any errors result in the crate being an unknown state.
-         */
+     * Any errors result in the crate being an unknown state.
+     */
     try {
         module::assign(modules, numbers);
         /*
-           * Force offline any module not in the map. The loop resets the
-           * interator after any changes to modules.
-           */
+         * Force offline any module not in the map. The loop resets the
+         * iterator after any changes to modules.
+         */
         while (force_offline) {
             force_offline = false;
             for (auto mod : modules) {

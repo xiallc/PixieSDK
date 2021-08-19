@@ -33,9 +33,13 @@ namespace module {
 class module;
 }
 namespace hw {
+/**
+ * @brief Aggregates tools for working with Pixie-16 CSRs
+ */
 namespace csr {
-/*
- * Reset the CSR to a default state.
+/**
+ * @brief Reset the CSR to a default state.
+ * @param[in] module The module whose CSR we'll reset.
  */
 void reset(module::module& module);
 
@@ -47,9 +51,9 @@ void write(module::module& module, word value);
 void set(module::module& module, word mask);
 void clear(module::module& module, word mask);
 
-/*
- * Set the bit mask into the CSR when constructed and clear
- * in the destructor.
+/**
+ * @brief Set the bit mask into the CSR when constructed and clear
+ *          in the destructor.
  */
 struct set_clear {
     module::module& module;
@@ -58,8 +62,10 @@ struct set_clear {
     ~set_clear();
 };
 
-/*
- * Wait for external FIFO
+/**
+ * @brief Wait for external FIFO to get ready
+ * @param module The module that we'll wait for.
+ * @param polls The number of time's we'll check for a ready FIFO.
  */
 void fifo_ready_wait(module::module& module, const size_t polls = 1000);
 }  // namespace csr

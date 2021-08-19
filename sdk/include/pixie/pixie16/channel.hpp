@@ -36,9 +36,12 @@ namespace pixie {
 namespace module {
 class module;
 }
+/**
+ * @brief Contains channel related functions and classes.
+ */
 namespace channel {
-/*
- * Module errors
+/**
+ * @brief Defines Channel errors to throw.
  */
 struct error : public pixie::error::error {
     typedef pixie::error::code code;
@@ -56,18 +59,18 @@ private:
 
 struct channel;
 
-/*
- * Range, a list of channels for an operation.
+/**
+ * @brief Defines a range as a list of channels for an operation.
  */
 typedef std::vector<size_t> range;
 
-/*
- * Set the range of all channels to [first, first + size).
+/**
+ * @brief Sets the range of all channels to [first, first + size).
  */
 void range_set(range& range_, size_t first = 0);
 
-/*
- * Baselines
+/**
+ * @brief A data structure holding the baselines obtained from the module.
  */
 struct baseline {
     static const size_t max_num = 3640;
@@ -85,23 +88,28 @@ struct baseline {
      */
     param::values cuts;
 
-    /*
-     * The channels range is a seleciton channels in any order.
+    /**
+     * @brief Default constructor
+     * @param module The module object to obtain baselines from.
+     * @param channels The channels range is a selection channels in any order.
      */
     baseline(module::module& module, range& channels);
 
     void find_cut(size_t num = max_num);
     void compute_cut(size_t num);
 
-    /*
-     * Get the channel values for the range. The indexes of the value's track
-     * the channels at the same index in the channel range. For example:
+    /**
+     * @brief Get the channel values for the range.
      *
-     *   Index Channels Values
-     *     0      7       7 * chan_block_size + timebase
-     *     1      2       2 * chan_block_size + timebase
-     *     2      5       5 * chan_block_size + timebase
-     *     3      7       7 * chan_block_size + timebase
+     * The indexes of the value's track the channels at the same index in the
+     * channel range. For example:
+     *
+     * | Index | Channels | Values |
+     * |---|---|---|
+     * | 0 | 7 | `7 * chan_block_size + timebase` |
+     * | 1 | 2 | `2 * chan_block_size + timebase` |
+     * | 2 | 5 | `5 * chan_block_size + timebase` |
+     * | 3 | 7 | `7 * chan_block_size + timebase` |
      *
      * Notes:
      *  - the Index column is the index for the channel range and channel
@@ -115,58 +123,65 @@ struct baseline {
     double time(hw::word time_word0, hw::word time_word1);
 };
 
-/*
- * Channel
+/**
+ * @brief A Channel corresponds to a single input on the module's front panel.
  */
 struct channel {
 
-    /*
+    /**
      * Number of this channel.
      */
     size_t number;
 
-    /*
-     * Configuration
+    /**
+     * The hardware configuration for the channel.
      */
     hw::config config;
 
-    /*
+    /**
      * The module this channel is part of.
      */
     std::reference_wrapper<module::module> module;
 
-    /*
+    /**
      * Channel variables.
      */
     param::channel_variables vars;
 
-    /*
-     * A channel nust be part of a module.
+    /**
+     * @brief Default constructor
+     * @param[in] module A channel must be part of a module.
      */
     channel(module::module& module);
     ~channel() = default;
 
     channel& operator=(const channel& c);
 
-    /*
-     * ADC trace
+    /**
+     * @brief Reads an ADC trace from the channel.
+     * @param[out] buffer A data buffer with a length given by size.
+     * @param[in] size The length of the data buffer for holding the trace.
      */
     void read_adc(hw::adc_word* buffer, size_t size);
 
-    /*
-     * Histogram
+    /**
+     * @brief Reads a histogram from the channel.
+     * @param[out] values Pointer to a data block to store the data.
+     * @param[in] size The number of histogram values to read.
      */
     void read_histogram(hw::word_ptr values, const size_t size);
+    /**
+     * @brief Overloaded function used to pass in a word vector instead of a pointer.
+     * @param[in,out] values A word vector whose length determines the number of histogram words.
+     */
     void read_histogram(hw::words& values);
 
-    /*
-     * Update fifo settings.
+    /**
+     * @brief Updated fifo settings based on the trace delay.
+     * @param trace_delay The trace delay in units of samples.
      */
     void update_fifo(param::value_type trace_delay);
 
-    /*
-     * Channel parameter handlers.
-     */
     double trigger_risetime();
     void trigger_risetime(double value);
 
@@ -256,8 +271,8 @@ struct channel {
     void chan_trig_stretch(double value);
 };
 
-/*
- * Channels
+/**
+ * @brief Defines a type for a vector of channel objects
  */
 typedef std::vector<channel> channels;
 }  // namespace channel

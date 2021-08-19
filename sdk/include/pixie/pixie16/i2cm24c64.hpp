@@ -31,21 +31,31 @@ namespace xia {
 namespace pixie {
 namespace hw {
 namespace i2c {
+/**
+ * @brief Defines the specifics of working with the I2CM24C64 chip.
+ *
+ * We use this chip to hold information about the module. For example, its
+ * serial number and ADC configuration.
+ */
 struct i2cm24c64 : public bitbash {
-    /*
+    /**
      * Size of the device in bytes,
      */
     static const size_t size = 64 * 1024 / 8;
 
     i2cm24c64(module::module& module, int reg, uint32_t SDA, uint32_t SCL, uint32_t CTRL);
 
-    /*
-     * Read the EEPROM.
+    /**
+     * @brief Read the EEPROM.
+     * @param[in] address The starting address that you'd like to read.
+     * @param[in] length How much data to read
+     * @param[out] data A data structure to hold the contents of the read
      */
     void read(int address, size_t length, eeprom::contents& data);
 
-    /*
-     * Read the entire EEPROM
+    /**
+     * @brief Reads the entire EEPROM
+     * @param[out] data  A data structure to hold the contents of the read
      */
     void read(eeprom::contents& data);
 };

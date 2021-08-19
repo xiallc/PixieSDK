@@ -35,10 +35,19 @@ namespace module {
 class module;
 }
 namespace hw {
+/**
+ * @brief General namespace for working with Pixie-16 FPGAs
+ */
 namespace fpga {
+/**
+ * @brief Defines an object for working with the on-board FPGAs.
+ *
+ * This class contains most of the common control tasks that we use
+ * to read and write data to the FPGAs.
+ */
 struct control {
-    /*
-     * Controls.
+    /**
+     * @brief The actual control commands.
      */
     struct controls {
         const uint32_t clear;
@@ -48,8 +57,8 @@ struct control {
         controls(const uint32_t clear, const uint32_t set, const uint32_t done);
     };
 
-    /*
-     * Registers.
+    /**
+     * @brief The memory registers that we'll be interacting with.
      */
     struct regs {
         const int DATACS;
@@ -65,28 +74,38 @@ struct control {
     const controls clear_ctrl;
     const regs reg;
 
-    /*
-     * Trace the load operation
+    /**
+     * Diagnostic Trace of the load operation
      */
     const bool trace;
 
     control(module::module& module, const std::string name, const controls& load_ctrl,
             const controls& clear_ctrl, const regs& reg, bool trace = false);
 
-    /*
-     * Load
+    /**
+     * @brief Loads the firmware image onto the FPGA chip.
+     * @param image The image data that we'd like to load to the hardware.
+     * @param retries The number of times to retry if we encounter an issue.
      */
     void load(const firmware::image& image, int retries = 10);
 
-    /*
-     * Has the programming completed?
+    /**
+     * @brief Checks if the FPGA has firmware and is ready for operation.
+     * @return True if the FPGA reports that it's ready.
      */
     bool done();
 
-    /*
-     * Low level access.
+    /**
+     * @brief Provides low-level register write access to the FPGA
+     * @param[in] reg The register that you'd like to access
+     * @param[in] data The data that you'd like to write to the register
      */
     void bus_write(int reg, uint32_t data);
+    /**
+     * @brief Provides low-level register read access to the FPGA
+     * @param reg The register that you'd like to access on the FPGA.
+     * @return The value that was contained within the requested register.
+     */
     uint32_t bus_read(int reg);
 
 private:

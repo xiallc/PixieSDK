@@ -33,14 +33,30 @@ namespace module {
 class module;
 }
 namespace hw {
-namespace run {
-/*
- * Run and control settings
+/**
+ * @brief Everything you need to handle run control on a Pixie-16 module.
  */
-enum struct run_mode { new_run = 1, resume = 0 };
+namespace run {
+/**
+ * @brief Run modes used to start data runs.
+ */
+enum struct run_mode {
+    new_run = 1, /*!< Starts a new data run, which clears hw memory. */
+    resume = 0 /*!< Resumes a stopped data run leaving hw memory untouched. */
+};
 
-enum struct run_task { nop = 0, list_mode = 0x100, histogram = 0x301 };
+/**
+ * @brief Run tasks used to collect data from the hardware.
+ */
+enum struct run_task {
+    nop = 0, /*!< An invalid run-task, used to indicate no run type. */
+    list_mode = 0x100, /*!< List-mode data write to the External FIFO */
+    histogram = 0x301  /*!< Histogram data write to the internal memory. */
+};
 
+/**
+ * @brief The control tasks that we can request from the DSP.
+ */
 enum struct control_task {
     set_dacs = 0,
     enable_input = 1,
@@ -62,13 +78,20 @@ void start(module::module& module, run_mode mode, run_task run_tsk, control_task
 void end(module::module& module);
 bool active(module::module& module);
 
-/*
- * Control task
+/**
+ * @brief Execute a control task in a specific module
+ * @param module The module to work with
+ * @param control_tsk The control task that we'll execute.
+ * @param wait_msecs how long we'll wait for the task to finish. This is generally empirically
+ *                    determined
  */
 void control(module::module& module, control_task control_tsk, int wait_msecs = 10000);
 
-/*
- * Run task
+/**
+ * @brief Executes a run task on the requested module
+ * @param module The module that we'll execute against.
+ * @param mode Whether we're starting a new run or resuming one.
+ * @param run_tsk The run task that we'd like to execute.
  */
 void run(module::module& module, run_mode mode, run_task run_tsk);
 }  // namespace run

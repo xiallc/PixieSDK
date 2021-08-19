@@ -39,9 +39,12 @@ namespace firmware {
 struct firmware;
 typedef std::shared_ptr<firmware> firmware_ref;
 }  // namespace firmware
+/**
+ * @brief Tools for working with parameters and variables in the SDK.
+ */
 namespace param {
-/*
- * System parameters
+/**
+ * @brief Defines System parameters that we use in various locations.
  *
  * Do not force any values onto the enum.
  */
@@ -55,8 +58,8 @@ enum struct system_param {
     END
 };
 
-/*
- * Module parameters
+/**
+ * @brief Defines user facing module parameters.
  *
  * Do not force any values onto the enum.
  */
@@ -85,8 +88,8 @@ enum struct module_param {
     END
 };
 
-/*
- * Channel parameters
+/**
+ * @brief Define user-facing Channel parameters.
  *
  * Do not force any values onto the enum.
  */
@@ -134,8 +137,8 @@ enum struct channel_param {
     END
 };
 
-/*
- * Module variables.
+/**
+ * @brief Module variables that are defined within the DSP VAR file
  *
  * Do not force any values onto the enum.
  */
@@ -203,8 +206,8 @@ enum struct module_var {
     END
 };
 
-/*
- * Channel variables.
+/**
+ * @brief Defines Channel variables that are defined within the DSP VAR file.
  *
  * Do not force any values onto the enum.
  */
@@ -283,18 +286,18 @@ enum struct channel_var {
     END
 };
 
-/*
- * Variable input/output mode.
+/**
+ * @brief defines the Variable's input/output mode.
  */
 enum rwrowr { rw, ro, wr };
 
-/*
- * Variable enabled or disabled
+/**
+ * @brief Variable enabled or disabled
  */
 enum enabledisable { enable, disable };
 
-/*
- * Variable addressing.
+/**
+ * @brief Variable addressing defines what chip this variable is associated with.
  */
 enum addressing { dsp_reg, fpga_reg, composite };
 
@@ -308,16 +311,16 @@ typedef uint32_t value_type;
  */
 typedef std::vector<value_type> values;
 
-/*
- * Parameter descriptor.
+/**
+ * @brief A data structure describing information about Parameters.
  */
 template<typename P>
 struct parameter_desc {
-    const P par; /* Parameter (index) */
-    const rwrowr mode; /* In/out of the variable */
-    const size_t size; /* Number of DSP words it covers */
-    enabledisable state; /* Variable's state */
-    const std::string name; /* Name of the variable */
+    const P par; /*!< Parameter (index) */
+    const rwrowr mode; /*!< In/out of the variable */
+    const size_t size; /*!< Number of DSP words it covers */
+    enabledisable state; /*!< Variable's state */
+    const std::string name; /*!< Name of the variable */
     parameter_desc(const P par_, enabledisable state_, const rwrowr mode_, const size_t size_,
                    const std::string name_)
         : par(par_), mode(mode_), size(size_), state(state_), name(name_) {}
@@ -326,12 +329,12 @@ struct parameter_desc {
     }
 };
 
-/*
- * Variable descriptor.
+/**
+ * @brief A data structure describing information about a Variable.
  */
 template<typename V>
 struct variable_desc : public parameter_desc<V> {
-    hw::address address; /* DSP memory address */
+    hw::address address; /*!< DSP memory address */
     variable_desc(const V var_, enabledisable state_, const rwrowr mode_, const size_t size_,
                   const std::string name_)
         : parameter_desc<V>(var_, state_, mode_, size_, name_), address(0) {}
@@ -355,18 +358,21 @@ typedef std::vector<module_var_desc> module_var_descs;
 typedef variable_desc<channel_var> channel_var_desc;
 typedef std::vector<channel_var_desc> channel_var_descs;
 
-/*
- * A variable.
+/**
+ * @brief A variable is an object that combines descriptors with values.
  */
 template<typename Vdesc>
 struct variable {
+    /**
+     * @brief Structure to describe the data associated with a descriptor.
+     */
     struct data {
-        bool dirty; /* Written to hardware? */
+        bool dirty; /*!< Written to hardware? */
         value_type value;
         data() : dirty(false), value(0) {}
     };
-    const Vdesc& var; /* The variable descriptor */
-    std::vector<data> value; /* The value(s) */
+    const Vdesc& var; /*!< The variable descriptor */
+    std::vector<data> value; /*!< The value(s) */
 
     variable(const Vdesc& var_) : var(var_) {
         value.resize(var.size);
@@ -386,8 +392,8 @@ typedef variable<channel_var_desc> channel_variable;
 typedef std::vector<channel_variable> channel_variables;
 typedef std::vector<channel_variables> channels_variables;
 
-/*
- * Copy filters. Only used on channels.
+/**
+ * @brief Copies filter variables from one channel to another. Only used with channel objects.
  */
 template<typename V>
 struct copy_filter_var {
@@ -418,7 +424,7 @@ const unsigned int qdc_mask = 1 << 12;
 const unsigned int all_mask = (1 << 12) - 1;
 
 /*
- * Look up maps. A fast way to map a name to a parameter or vatiable.
+ * Look up maps. A fast way to map a name to a parameter or variable.
  */
 typedef std::map<std::string, system_param> system_param_map;
 typedef std::map<std::string, module_param> module_param_map;
@@ -426,12 +432,17 @@ typedef std::map<std::string, channel_param> channel_param_map;
 typedef std::map<std::string, module_var> module_var_map;
 typedef std::map<std::string, channel_var> channel_var_map;
 
-/*
- * Address map
+/**
+ * @brief Defines an Address map that can be used to parse binary data blobs.
+ *
+ * This structure is typically used to parse Statistics or configuration data from the DSP.
  */
 struct address_map {
     typedef std::pair<size_t, hw::address> desc_address;
     typedef std::vector<desc_address> desc_addresses;
+    /**
+     * @brief Data structure for working with address ranges
+     */
     struct range {
         hw::address start;
         hw::address end;
@@ -474,8 +485,8 @@ private:
     hw::address max(const desc_addresses& addresses);
 };
 
-/*
- * Get a descriptor from the descriptors.
+/**
+ * @brief Get a descriptor from the descriptors by its variable name.
  */
 template<typename D, typename V>
 const typename D::value_type& get_descriptor(const D& descs, const V var) {
@@ -513,8 +524,8 @@ channel_param lookup_channel_param(const std::string& label);
 module_var lookup_module_var(const std::string& label);
 channel_var lookup_channel_var(const std::string& label);
 
-/*
- * Module parammeter to module variable map.
+/**
+ * @brief Maps a Module parameter to module variable.
  */
 module_var map_module_param(module_param par);
 
@@ -529,14 +540,14 @@ void load(firmware::firmware_ref& dspvarfw, module_var_descs& module_var_descrip
 void load(std::istream& input, module_var_descs& module_var_descriptors,
           channel_var_descs& channel_var_descriptors);
 
-/*
- * Copy the variables based on the filter.
+/**
+ * @brief Copy the variables based on the filter.
  */
 void copy_parameters(const copy_filter& filter, const channel_variables& source,
                      channel_variables& dest);
 
-/*
- * Copy the variables based on the filter mask.
+/**
+ * @brief Copy the variables based on the filter mask.
  */
 void copy_parameters(const unsigned int filter_mask, const channel_variables& source,
                      channel_variables& dest);

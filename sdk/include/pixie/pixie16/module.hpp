@@ -45,9 +45,12 @@
 
 namespace xia {
 namespace pixie {
+/**
+ * @brief Contains everything needed to work with a composite Pixie-16 module.
+ */
 namespace module {
-/*
- * Module errors
+/**
+ * @brief Defines an error structure for module specific errors.
  */
 struct error : public pixie::error::error {
     typedef pixie::error::code code;
@@ -60,17 +63,20 @@ private:
     std::string make_what(const int num, const int slot, const char* what);
 };
 
-/*
+/**
  * PCI bus handle is opaque. No direct access as it is
  * specific to the PCI drivers.
  */
 struct pci_bus_handle;
+/**
+ * @brief Defines a vector of unique pci_bus_handles to ensure thread safety.
+ */
 typedef std::unique_ptr<pci_bus_handle> bus_handle;
 
-/*
- * Module
+/**
+ * @brief Defines a Pixie-16 Module
  *
- * A module can only be a single specific instance and it is designed to
+ * A module can only be a single specific instance, and it is designed to
  * live in a container of modules in a crate. There are limitations on
  * the type of things you can do with a module object. It contains a
  * unique pointer to the opaque bus handle and there can only ever be
@@ -93,8 +99,8 @@ class module {
     typedef std::lock_guard<bus_lock_type> bus_lock_guard;
 
 public:
-    /*
-     * Module lock guard
+    /**
+     * @brief Provides a guard to prevent concurrent module access.
      */
     class guard {
         lock_type& lock_;
@@ -107,8 +113,8 @@ public:
         void unlock();
     };
 
-    /*
-     * Bus lock guard
+    /**
+     * @brief Bus lock guard to prevent concurrent requests to the bus.
      */
     class bus_guard {
         bus_lock_type& lock_;
@@ -121,8 +127,8 @@ public:
         void unlock();
     };
 
-    /*
-     * Test mode
+    /**
+     * @brief Test mode
      */
     enum struct test { off = 0, lm_fifo };
 
@@ -134,48 +140,47 @@ public:
     static const size_t default_fifo_idle_wait_usec = 150000;
     static const size_t default_fifo_hold_usec = 100000;
 
-    /*
+    /**
      * Slot in the crate.
      */
     int slot;
 
-    /*
-     * Logical module mapping for this instance of the
-     * SDK.
+    /**
+     * Logical module mapping for this instance of the SDK.
      */
     int number;
 
-    /*
+    /**
      * Serial number.
      */
     int serial_num;
 
-    /*
+    /**
      * Revision of the board
      */
     int revision;
 
-    /*
+    /**
      * Number of channels
      */
     size_t num_channels;
 
-    /*
+    /**
      * Maximum umber of channels
      */
     size_t max_channels;
 
-    /*
+    /**
      * Module's register VM address.
      */
     void* vmaddr;
 
-    /*
+    /**
      * Channel configs
      */
     hw::configs configs;
 
-    /*
+    /**
      * EEPROM
      */
     eeprom::eeprom eeprom;
@@ -193,12 +198,12 @@ public:
     param::channel_var_descs channel_var_descriptors;
     channel::channels channels;
 
-    /*
+    /**
      * Parameter configuration.
      */
     param::address_map param_addresses;
 
-    /*
+    /**
      * Firmware
      */
     firmware::module firmware;
@@ -209,13 +214,13 @@ public:
     std::atomic<hw::run::run_task> run_task;
     std::atomic<hw::run::control_task> control_task;
 
-    /*
+    /**
      * Number of buffers in the FIFO pool. The buffers are fixed to the
      * maximum DMA block size and allocated at the start of a run.
      */
     size_t fifo_buffers;
 
-    /*
+    /**
      * FIFO run wait poll period. This setting needs to be less than the
      * period of time it takes to full the FIFO device at the maxiumum data
      * rate. It is used when a run using the FIFO starts or data is detected
@@ -223,7 +228,7 @@ public:
      */
     std::atomic_size_t fifo_run_wait_usecs;
 
-    /*
+    /**
      * FIFO idle wait poll period. This setting is a back ground poll period
      * used when there is not run active using the FIFO. When a run
      * finishes the poll period increases by the power 2 every hold period
@@ -231,14 +236,14 @@ public:
      */
     std::atomic_size_t fifo_idle_wait_usecs;
 
-    /*
+    /**
      * FIFO hold time is the period data is held in the FIFO before being
      * read into a buffer. Slow data and long poll periods by the user can
      * use all the buffers. If buffers run low the queue is compacted.
      */
     std::atomic_size_t fifo_hold_usecs;
 
-    /*
+    /**
      * Maximum bandwidth the module is to use. The value is Mbytes/secs. If
      * set to 0 there is no throttling of the bandwidth.
      */
@@ -258,22 +263,22 @@ public:
     std::atomic_size_t data_fifo_run_in; /* DMA data into the fifo queue */
     std::atomic_size_t data_fifo_run_out; /* Data read from the fifo queue */
 
-    /*
+    /**
      * Crate revision
      */
     int crate_revision;
 
-    /*
+    /**
      * Board revision
      */
     int board_revision;
 
-    /*
+    /**
      * Diagnostics
      */
     bool reg_trace;
 
-    /*
+    /**
      * Modules are created by the crate.
      */
     module();
@@ -281,55 +286,55 @@ public:
     virtual ~module();
     module& operator=(module&& mod);
 
-    /*
+    /**
      * If the module present?
      */
     bool present() const;
 
-    /*
+    /**
      * Has the module been booted and is online?
      */
     bool online() const;
 
-    /*
+    /**
      * Open the module and find the device on the bus.
      */
     virtual void open(size_t device_number);
     virtual void close();
 
-    /*
+    /**
      * Force offline.
      */
     void force_offline();
 
-    /*
+    /**
      * Range check the channel number.
      */
     template<typename T>
     void check_channel_num(T number);
 
-    /*
+    /**
      * Probe the board to see what is running.
      */
     virtual void probe();
 
-    /*
+    /**
      * Boot the module. If successful it will be online.
      */
     virtual void boot(bool boot_comms = true, bool boot_fippi = true, bool boot_dsp = true);
 
-    /*
+    /**
      * Initialise the module ready for use.
      */
     virtual void initialize();
 
-    /*
+    /**
      * Add or get the firmware.
      */
     void add(firmware::module& fw);
     firmware::firmware_ref get(const std::string device);
 
-    /*
+    /**
      * Range checking operator to index channels based on various index
      * types.
      */
@@ -386,13 +391,13 @@ public:
     void write_var(param::channel_var, param::value_type value, size_t channel, size_t offset = 0,
                    bool io = true);
 
-    /*
+    /**
      * Synchronize dirty variables with the hardware and then sync the
      * hardware state.
      */
     void sync_vars();
 
-    /*
+    /**
      * Sync the hardware after the variables have been sync'ed.
      */
     void sync_hw();
@@ -444,7 +449,7 @@ public:
     void read_list_mode(hw::words& words);
     void read_list_mode(hw::word_ptr values, const size_t size);
 
-    /*
+    /**
      * Read the stats
      */
     void read_stats(stats::stats& stats);
@@ -455,12 +460,12 @@ public:
     void output(std::ostream& out) const;
     char revision_label() const;
 
-    /*
+    /**
      * Read a word.
      */
     hw::word read_word(int reg);
 
-    /*
+    /**
      * Write a word
      */
     void write_word(int reg, const hw::word value);
@@ -472,7 +477,7 @@ public:
     virtual void dma_read(const hw::address source, hw::word_ptr values, const size_t size);
 
     /*
-     * Revision tag operators to make comparisions of a version simpler to
+     * Revision tag operators to make comparisons of a version simpler to
      * code.
      */
     bool operator==(const hw::rev_tag rev) const;
@@ -645,7 +650,7 @@ inline void module::write_word(int reg, const hw::word value) {
     }
 }
 
-/*
+/**
  * Make a label from the module
  */
 std::string module_label(const module& mod, const char* label = "module");
@@ -656,32 +661,32 @@ std::string module_label(const module& mod, const char* label = "module");
 typedef std::pair<int, int> number_slot;
 typedef std::vector<number_slot> number_slots;
 
-/*
+/**
  * A module pointer.
  */
 typedef std::shared_ptr<module> module_ptr;
 
-/*
+/**
  * A container of modules.
  */
 typedef std::vector<module_ptr> modules;
 
-/*
+/**
  * Assign the number to the slots in the rack.
  */
 void assign(modules& mods, const number_slots& numbers);
 
-/*
+/**
  * Sort the modules by index.
  */
 void order_by_number(modules& mods);
 
-/*
+/**
  * Sort the modules by slot.
  */
 void order_by_slot(modules& mods);
 
-/*
+/**
  * Set the module numbers to the slot order.
  */
 void set_number_by_slot(modules& mods);
@@ -689,8 +694,8 @@ void set_number_by_slot(modules& mods);
 }  // namespace pixie
 }  // namespace xia
 
-/*
- * Output stream operator.
+/**
+ * @brief Output stream operator for modules
  */
 std::ostream& operator<<(std::ostream& out, const xia::pixie::module::module& module);
 

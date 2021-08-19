@@ -34,20 +34,11 @@ pcf8574::pcf8574(module::module& module, int reg, uint32_t SDA, uint32_t SCL, ui
 uint8_t pcf8574::read_a_byte() {
     module::module::bus_guard guard(module);
 
-    /*
-     * Send START, device select code
-     */
     start();
     write_ack(0x43, "pcf8574::read_a_byte: no ACK after DevSel");
 
-    /*
-     * Read a byte
-     */
     uint8_t value = read_ack();
 
-    /*
-     * Send "STOP"
-     */
     stop();
 
     return value;

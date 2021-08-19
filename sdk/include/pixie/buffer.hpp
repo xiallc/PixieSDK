@@ -37,30 +37,48 @@
 #include <pixie/pixie16/hw.hpp>
 
 namespace xia {
+/**
+ * @brief Handles threaded data buffers to read data from the External FIFO.
+ */
 namespace buffer {
 /*
  * Local error
  */
 typedef pixie::error::error error;
 
-/*
- * Buffer lock types
+/**
+ * @brief Defines the Buffer lock type
  */
 typedef std::mutex lock_type;
+/**
+ * @brief A vector of lock_types is a lock_guard.
+ */
 typedef std::lock_guard<lock_type> lock_guard;
 
-/*
- * A buffer is still based on the hardware words. A generic container is more
- * work than it is worth at this point in time.
+/**
+ * @brief A buffer value is still based on the hardware words.
+ * A generic container is more work than it is worth at this point in time.
  */
 typedef pixie::hw::word buffer_value;
+/**
+ * @brief Defines a type for pointers to buffer_values
+ */
 typedef pixie::hw::word_ptr buffer_value_ptr;
+/**
+ * @brief Defines a type for a vector of buffer words.
+*/
 typedef pixie::hw::words buffer;
+/**
+ * @brief Defines a pointer to a vector of buffer words.
+*/
 typedef buffer* buffer_ptr;
+/**
+ * @brief Defines a shared pointer of buffer objects to share between threads.
+*/
 typedef std::shared_ptr<buffer> handle;
 
-/*
- * Pool of buffers
+/**
+ * @brief The buffer pool to manage the buffer workers.
  */
 struct pool {
     pool();
@@ -103,8 +121,8 @@ private:
     lock_type lock;
 };
 
-/*
- * Queue of buffers
+/**
+ * @brief Buffer queue for allocating work to the workers.
  */
 struct queue {
     typedef std::deque<handle> handles;

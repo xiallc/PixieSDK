@@ -32,11 +32,14 @@
 
 namespace xia {
 namespace pixie {
+/**
+ * @brief Collects tools for simulating the Pixie-16 hardware.
+ */
 namespace sim {
 typedef xia::pixie::error::error error;
 
-/*
- * Simulated a module.
+/**
+ * @brief A Simulated a module derived from the module class.
  */
 class module : public xia::pixie::module::module {
 public:
@@ -60,8 +63,8 @@ public:
     std::string var_defaults;
 };
 
-/*
- * Simulated a crate. Crates the simulated module.
+/**
+ * @brief Simulated a crate. Creates the simulated module.
  */
 class crate : public xia::pixie::crate::crate {
 public:
@@ -70,8 +73,8 @@ public:
     void add_module() override;
 };
 
-/*
- * Module definition.
+/**
+ * @brief Module definition used to set up the simulation.
  */
 struct module_def {
     size_t device_number;

@@ -89,7 +89,7 @@ void pool::destroy() {
 handle pool::request() {
     lock_guard guard(lock);
     if (empty()) {
-        throw error(error::code::buffer_pool_empty, "no buffers avaliable");
+        throw error(error::code::buffer_pool_empty, "no buffers available");
     }
     count_--;
     buffer_ptr buf = buffers.front();
@@ -182,7 +182,7 @@ void queue::compact() {
     /*
      * Erasing elements from the queue's container invalidates the
      * iterators. After moving one or more buffers into another buffer and
-     * removing them we start again so we have valid iterators.
+     * removing them we start again, so we have valid iterators.
      */
     bool rerun = true;
     while (rerun) {

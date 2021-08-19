@@ -37,35 +37,44 @@ namespace module {
 class module;
 }
 namespace hw {
+/**
+ * @brief Defines functionality for working with Pixie-16's DSP chip.
+ */
 namespace dsp {
+/**
+ * @brief Defines an object for working with the DSP on-board the modules.
+ */
 struct dsp {
-    /*
+    /**
      * The word loaded into the DSP.
      */
     typedef uint16_t load_value_type;
 
     module::module& module;
 
-    /*
+    /**
      * Online?
      */
     bool online;
 
-    /*
-     * Trace the load operation
+    /**
+     * Diagnostic trace of the load operation
      */
     bool trace;
 
     dsp(module::module& module, bool trace = false);
     dsp& operator=(dsp&& d);
 
-    /*
-     * Boot
+    /**
+     * @brief Boots the DSP chip
+     * @param image The firmware image to load to the chip
+     * @param retries The number of times to try loading if we encounter an issue.
      */
     void boot(const firmware::image& image, int retries = 10);
 
-    /*
-     * Is the DSP loaded and runing?
+    /**
+     * @brief Checks if the DSP loaded and running
+     * @return True if the PowerUpInitDone variable is set.
      */
     bool init_done();
 

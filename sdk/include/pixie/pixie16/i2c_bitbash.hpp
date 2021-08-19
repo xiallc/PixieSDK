@@ -33,11 +33,17 @@ namespace module {
 class module;
 }
 namespace hw {
+/**
+ * @brief Root namespace for working with Pixie-16 I2C chips.
+ */
 namespace i2c {
+/**
+ * @brief Defines how we work with the bits in the I2C chips.
+ */
 struct bitbash {
     module::module& module;
 
-    /*
+    /**
      * The register offset in the module's address space.
      */
     const int reg;

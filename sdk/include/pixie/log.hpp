@@ -31,9 +31,12 @@
 #include <pixie/os_compat.hpp>
 
 namespace xia {
+/**
+ * @brief Components for logging to a file or stream.
+ */
 namespace logging {
-/*
- * An outputter outputs a log stream. Destruct them last.
+/**
+ * @brief An outputter outputs a log stream. Destruct them last.
  */
 struct outputter;
 typedef std::list<outputter> outputters;
@@ -43,7 +46,7 @@ static outputters_ptr outputs_ptr = make_outputters();
 };  // namespace logging
 
 /**
- * Log class.
+ * @brief A class to provide logging support throughout the SDK.
  *
  * This class lives in the pixie namespace to make the references in the code
  * simpler.
@@ -52,11 +55,11 @@ class log {
     friend logging::outputter;
 
 public:
-    /*
-     * A log level.
+    /**
+     * The log level defines what type of messages get processed.
      *
      * The levels are ordered from high priority to lower priority with `off`
-     * always being first and 0.
+     * being always first and 0.
      */
     enum level { off = 0, error, warning, info, debug, max_level };
 
@@ -100,15 +103,15 @@ void set_line_numbers(const std::string name, bool line_numbers);
 bool level_logging(log::level level);
 
 /**
- * Hex display memory.
- *
- * @param addr The address of the memory to display.
- * @param length The number of elements to display.
- * @param size The size of the data element.
- * @param line_length Number of elements per line.
- * @param offset The printed offset.
- *
- * From https://git.rtems.org/rtems-tools/tree/rtemstoolkit/rtems-utils.cpp#n39
+ * @brief Outputs a memory segment as hex values.
+ * @see https://git.rtems.org/rtems-tools/tree/rtemstoolkit/rtems-utils.cpp%23n39
+ * @param[in] level The logging level for the output.
+ * @param[in] label A label that can be used to name the output for finding it in the logs.
+ * @param[in] addr The address of the memory to display.
+ * @param[in] length The number of elements to display.
+ * @param[in] size The size of the data element.
+ * @param[in] line_length Number of elements per line.
+ * @param[in] offset The printed offset.
  */
 void memdump(log::level level, const std::string label, const void* addr, size_t length,
              size_t size = 1, size_t line_length = 16, size_t offset = 0);

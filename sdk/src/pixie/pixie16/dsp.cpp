@@ -94,7 +94,7 @@ void dsp::boot(const firmware::image& image, int retries) {
     module::module::bus_guard guard(module);
 
     /*
-     * Guard the download bit so it is cleared when we exit.
+     * Guard the download bit, so it is cleared when we exit.
      */
     csr::set_clear csr(module, 1 << hw::bit::DSPDOWNLOAD);
 

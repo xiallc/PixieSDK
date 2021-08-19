@@ -30,6 +30,10 @@
 namespace xia {
 namespace pixie {
 namespace hw {
+/**
+ * @brief Defines device level memory addresses used to access data
+ *          directly on the hardware.
+ */
 struct device {
     /*
      * PCI address decoding and control registers
@@ -59,135 +63,136 @@ struct device {
     static const address WRT_RESET_RFCNT = 0xf4;
 };
 
-/*
- * Various bit numbers
+/**
+ * @brief Defines various bit numbers used to decode/encode data from the hw.
  */
 struct bit {
     /*
      * Host PCI CSR bits definitions
      */
-    /*
+    /**
      * Enable run
      */
     static const size_t RUNENA = 0;
-    /*
+    /**
      * Enable DSP code download
      */
     static const size_t DSPDOWNLOAD = 1;
-    /*
+    /**
      * Indicate PCI I/O is active
      */
     static const size_t PCIACTIVE = 2;
-    /*
+    /**
      * Control pull-up for the SYNC lines
      */
     static const size_t PULLUP_CTRL = 3;
-    /*
+    /**
      * Reset DSP
      */
     static const size_t DSPRESET = 4;
-    /*
+    /**
      * External FIFO watermark level indicator
      */
     static const size_t EXTFIFO_WML = 6;
-    /*
+    /**
      * Run active indicator
      */
     static const size_t RUNACTIVE = 13;
-    /*
+    /**
      * Clearing external memory active indicator
      */
     static const size_t CLREXTMEM_ACTIVE = 15;
 
-    /*
+    /**
      * Control pullups for PXI trigger lines on the backplane through CPLD
      */
     static const size_t MODCSRB_CPLDPULLUP = 0;
-    /*
+    /**
      * Set this module as the Director module (1) or non-Director module (0)
      */
     static const size_t MODCSRB_CHASSISMASTER = 6;
-    /*
+    /**
      *  Control connections of PXI nearest neighbor lines (J2) onto the
      *  backplane for Rev-B/C/D modules
      */
     static const size_t CPLDCSR_BPCONNECT = 12;
-    /*
+    /**
      * Control backplane pullups: 1: pulled up, 0: not pulled up
      */
     static const size_t CPLDCSR_PULLUP = 13;
+
     /*
      * CHANCSRA bits definitions
      */
-    /*
+    /**
      * fast trigger selection - 1: select external fast trigger; 0: select
      * group trigger
      */
     static const size_t CCSRA_FTRIGSEL = 0;
-    /*
+    /**
      * module validation signal selection - 1: select module gate signal; 0:
      * select global validation signal (RevD & RevF only)
      */
     static const size_t CCSRA_EXTTRIGSEL = 1;
-    /*
+    /**
      * good-channel bit - 1: channel data will be read out; 0: channel data
      * will not be read out
      */
     static const size_t CCSRA_GOOD = 2;
-    /*
+    /**
      * channel validation signal selection - 1: select channel gate signal; 0:
      * select channel validation signal (RevD & RevF only)
      */
     static const size_t CCSRA_CHANTRIGSEL = 3;
-    /*
+    /**
      * block data acquisition if trace or header DPMs are full - 1: enable; 0:
      * disable
      */
     static const size_t CCSRA_SYNCDATAACQ = 4;
-    /*
+    /**
      * input signal polarity control
      */
     static const size_t CCSRA_POLARITY = 5;
-    /*
+    /**
      * veto channel trigger - 1: enable; 0: disable
      */
     static const size_t CCSRA_VETOENA = 6;
-    /*
+    /**
      * histogram energy in the on-board MCA
      */
     static const size_t CCSRA_HISTOE = 7;
-    /*
+    /**
      * trace capture and associated header data - 1: enable; 0: disable
      */
     static const size_t CCSRA_TRACEENA = 8;
-    /*
+    /**
      * QDC summing and associated header data - 1: enable; 0: dsiable
      */
     static const size_t CCSRA_QDCENA = 9;
-    /*
+    /**
      * CFD for real time, trace capture and QDC capture - 1: enable; 0: disable
      */
     static const size_t CCSRA_CFDMODE = 10;
-    /*
+    /**
      * global trigger for validation - 1: enable; 0: disable
      */
     static const size_t CCSRA_GLOBTRIG = 11;
-    /*
+    /**
      * raw energy sums and baseline in event header - 1: enable; 0: disable
      */
     static const size_t CCSRA_ESUMSENA = 12;
-    /*
+    /**
      * channel trigger for validation - 1: enable; 0: disable
      */
     static const size_t CCSRA_CHANTRIG = 13;
-    /*
+    /**
      * Control input relay: 1: connect, 0: disconnect
      */
     static const size_t CCSRA_ENARELAY = 14;
 };
 
-/*
- * Limits
+/**
+ * @brief Data structure defining limits for variables and parameters.
  */
 struct limit {
     static const size_t CFDDELAY_MAX = 63;

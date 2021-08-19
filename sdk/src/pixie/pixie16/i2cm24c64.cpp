@@ -35,21 +35,12 @@ void i2cm24c64::read(int address, size_t length, eeprom::contents& data) {
     data.clear();
     data.reserve(length);
 
-    /*
-     *  Send "START"
-     */
     start();
 
-    /*
-     * Send device select code, the address
-     */
     write_ack(0xA0, "i2cm24c64::sequential_read: no ACK after DevSel");
     write_ack(address >> 8, "i2cm24c64::sequential_read: no ACK after addr (MSB)");
     write_ack(address & 0xff, "i2cm24c64::sequential_read: no ACK after addr (LSB)");
 
-    /*
-     * Send "START", device select code, read data
-     */
     start();
     write_ack(0xA1, "i2cm24c64::sequential_read: no ACK after DevSel");
     for (size_t k = 0; k < length - 1; k++) {
@@ -57,9 +48,6 @@ void i2cm24c64::read(int address, size_t length, eeprom::contents& data) {
     }
     data.push_back(read_ack(false));
 
-    /*
-     * Send "STOP"
-     */
     stop();
 }
 

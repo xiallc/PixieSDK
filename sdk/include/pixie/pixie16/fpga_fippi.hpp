@@ -28,11 +28,16 @@ namespace xia {
 namespace pixie {
 namespace hw {
 namespace fpga {
+/**
+ * @brief A data structure for handling Signal processing (FIPPI) FPGAs
+ *
+ * These FPGAs are the ones that perform the on-board filtering of ADC data.
+ */
 struct fippi {
     module::module& module;
 
     /*
-     * 4 FPGA devices grouped in pairs.
+     * Each Pixie-16 module has 4 FPGA devices grouped in pairs.
      */
     control ctrl_1_2;
     control ctrl_3_4;

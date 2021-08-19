@@ -34,48 +34,54 @@
 
 namespace xia {
 namespace pixie {
+/**
+ * @brief Namespace for working with hardware EEPROM chips.
+ */
 namespace eeprom {
 /*
  * Local error
  */
 typedef pixie::error::error error;
 
-/*
- * Supported tags. Gaps allow additions in each section.
+/**
+ * @brief Supported tags. Gaps allow additions in each section.
  */
 enum struct tag {
-    null = 0, /* invalid */
+    null = 0, /*!< invalid */
     /*
      * Build state
      */
-    model = 10, /* model, part number */
-    serial_num, /* serial number */
-    revision, /* revision string */
-    mod_strike, /* hardware modifications */
+    model = 10, /*!< model, part number */
+    serial_num, /*!< serial number */
+    revision, /*!< revision string */
+    mod_strike, /*!< hardware modifications */
     /*
      * Parameters
      */
-    index = 30, /* number, index, slot, id */
-    size, /* number of items, channels, modules */
-    format_ver, /* format version */
+    index = 30, /*!< number, index, slot, id */
+    size, /*!< number of items, channels, modules */
+    format_ver, /*!< format version */
     /*
      * Analog Front End (AFE)
      */
-    adc_msps = 100,
-    adc_bits,
-    adc_clk_div,
-    fpga_clk,
-    /*
-     * Last maps to the erase EEPROM value
-     */
-    end = 0xff
+    adc_msps = 100, /*!< The ADC's sampling frequency*/
+    adc_bits, /*!< The ADC's bit resolution */
+    adc_clk_div, /*!< The ADC's clock division, defined as the adc_msps / fpga_clk. */
+    fpga_clk, /*!< The Signal processing FPGA's clock frequency.*/
+    end = 0xff /*!< Last maps to erase EEPROM value */
 };
 
+/**
+ * @brief Defines the data types that values may take.
+ */
 enum element_type { null, string, num8, num16, num32, ieee_float, mac, ipv4 };
 
 using mac_addr = std::array<uint8_t, 6>;
 using ipv4_addr = std::array<uint8_t, 4>;
 
+/**
+ * @brief Defines the EEPROM element descriptor.
+ */
 struct element_decs {
     tag key;
     std::string name;
@@ -85,6 +91,9 @@ struct element_decs {
     bool depreciated;
 };
 
+/**
+ * @brief The EEPROM header that's used to validate the EEPROM contents.
+ */
 struct header {
     static const size_t size = 4 + 1 + 1;
 
@@ -100,6 +109,9 @@ struct header {
 
 using contents = std::vector<uint8_t>;
 
+/**
+ * @brief A data structure holding the data decoded from a module's EEPROM.
+ */
 struct eeprom {
     contents data;
     util::crc32 crc;
@@ -122,12 +134,12 @@ struct eeprom {
 
     void clear();
 
-    /*
+    /**
      * Process the loaded data
      */
     void process();
 
-    /*
+    /**
      * Is there a valid EEPROM configuration.
      */
     bool valid() const;
@@ -151,12 +163,12 @@ struct eeprom {
     template<typename T>
     T get8(const size_t offset) const;
 
-    /*
+    /**
      * Find an instance of a tag in the data
      */
     size_t find(const tag key, size_t count = 0) const;
 
-    /*
+    /**
      * Return the tag's descriptor
      */
     const element_decs& lookup(const tag key) const;

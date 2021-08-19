@@ -31,28 +31,35 @@
 #include <vector>
 
 namespace xia {
+/**
+ * @brief Utilities to accomplish various needs in the SDK.
+ */
 namespace util {
-/*
- * String trim and split support.
+/**
+ * @brief Defines a type for a vector of strings.
  */
 typedef std::vector<std::string> strings;
 
 /**
- * Split a string into a vector of strings.
- *
- * @param split_string The split string
- * @param s String to split
- * @param count Number of split to make before returning
- * @param strip_whitespace Trim white space from the split strings
- * @param strip_quotes Remove quotes from string fragments
- * @param empty Include empty string fragments
+ * @brief Split a string into a vector of strings.
+ * @param[out] split_string The split string
+ * @param[in] s String to split
+ * @param[in] delimiter delimiter to split on. Default: ' '.
+ * @param[in] count Number of split to make before returning. Default: 0.
+ * @param[in] strip_whitespace Trim white space from the split strings. Default: True
+ * @param[in] strip_quotes Remove quotes from string fragments. Default: True
+ * @param[in] empty Include empty string fragments. Default: False.
  */
 void split(strings& split_string, const std::string& s, const char delimiter = ' ',
            size_t count = 0, bool strip_whitespace = true, bool strip_quotes = true,
            bool empty = false);
 
-/*
- * Join the strings into a single string.
+/**
+ * @brief Join the strings into a single string.
+ * @tparam T Templated parameter for the stream type
+ * @param ss stream containing the data to join.
+ * @param c delimiter to join with
+ * @return The joined string
  */
 template<typename T>
 std::string join(T& ss, const char c = ' ') {
@@ -66,28 +73,36 @@ std::string join(T& ss, const char c = ' ') {
     return ns;
 }
 
-/*
- * Remove spaces from the front of the string.
+/**
+ * @brief Remove spaces from the front of the string.
+ * @param[in,out] s the string that we'll trim.
  */
 void ltrim(std::string& s);
 
-/*
- * Remove spaces from the end of the string
+/**
+ * @brief Remove spaces from the end of the string
+ * @param[in,out] s the string that we'll trim.
  */
 void rtrim(std::string& s);
 
-/*
- * Trim spaces from both ends of a string
+/**
+ * @brief Trim spaces from both ends of a string
+ * @param[in,out] s the string that we'll trim.
  */
 void trim(std::string& s);
 
-/*
- * Dequote a string
+/**
+ * @brief Dequote a string
+ * @param[in,out] s the string that we'll trim.
  */
 void dequote(std::string& s);
 
-/*
- * Humanize a number
+/**
+ * @brief Humanize a number into standard size names. Ex. gigabyte (GB).
+ * @tparam T A type that can be streamed into a ostringstream
+ * @param[in] value The number that we'll humanize.
+ * @param[in] suffix Any additional information to go after the unit.
+ * @returns The string as a human-readable number
  */
 template<typename T>
 std::string humanize(T value, const std::string suffix = "") {
@@ -109,8 +124,8 @@ std::string humanize(T value, const std::string suffix = "") {
     return oss.str();
 }
 
-/*
- * Save and restore the output stream's settings.
+/**
+ * @brief Save and restore the output stream's settings.
  */
 struct ostream_guard {
     std::ostream& o;
@@ -121,8 +136,8 @@ struct ostream_guard {
     }
 };
 
-/*
- * Timepiont measures a period of time between two points.
+/**
+ * @brief Timepoint measures a period of time between two points.
  */
 struct timepoint {
     using marker = std::chrono::time_point<std::chrono::steady_clock>;
@@ -165,8 +180,8 @@ private:
     std::atomic_bool locked;
 };
 
-/*
- * IEEE float as a type.
+/**
+ * @brief Defines a type for the IEEE 754 floating point standard.
  */
 struct ieee_float {
     using value_type = unsigned int;
@@ -192,12 +207,13 @@ private:
     value_type value;
 };
 
-/*
- * CRC32 checksum
- * https://en.wikipedia.org/wiki/Cyclic_redundancy_check
+/**
+ * @brief Defines a function for a CRC32 checksum
  *
  * The polynomial is
  * `X^32+X^26+X^23+X^22+X^16+X^12+X^11+X^10+X^8+X^7+X^5+X^4+X^2+X^1+X^0`
+ *
+ * @see https://en.wikipedia.org/wiki/Cyclic_redundancy_check
  */
 struct crc32 {
     using value_type = uint32_t;
@@ -231,7 +247,7 @@ struct crc32 {
 
 private:
     void update(const unsigned char* data, int len);
-    /*
+    /**
      * A precomputed lookup table for the CRC32 bitwise algorithm
      */
     static const value_type table[256];
@@ -240,8 +256,8 @@ private:
 }  // namespace util
 }  // namespace xia
 
-/*
- * Output stream operator.
+/**
+ * @brief Output stream operator for timepoint objects.
  */
 std::ostream& operator<<(std::ostream& out, xia::util::timepoint& timepoint);
 

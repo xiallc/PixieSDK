@@ -37,6 +37,9 @@ namespace module {
 class module;
 }
 namespace hw {
+/**
+ * @brief Pixie-16 memory management
+ */
 namespace memory {
 /*
  * Bus addresses
@@ -52,6 +55,9 @@ static const address MCA_MEM_DATA = 0x00400000; /* R W */
  */
 static const address HISTOGRAM_MEMORY = 0x00000000;
 
+/**
+ * @brief Defines a memory bus for low level communication with the hardware.
+ */
 struct bus {
     module::module& module;
 
@@ -69,6 +75,9 @@ protected:
     }
 };
 
+/**
+ * @brief Defines the communications channel for the DSP.
+ */
 struct dsp : public bus {
     dsp(module::module& module);
 
@@ -116,6 +125,9 @@ inline void dsp::read(const address addr, B& values, const size_t length) {
     read(addr, values.data(), length != 0 ? length : values.size());
 }
 
+/**
+ * @brief Defines the memory bus access for the MCA data.
+ */
 struct mca : public bus {
     mca(module::module& module);
 
@@ -127,10 +139,13 @@ struct mca : public bus {
     void write(const address addr, const words& values);
 };
 
+/**
+ * @brief Defines the memory bus for interacting with the External FIFO.
+ */
 struct fifo : public bus {
     fifo(module::module& module);
 
-    /*
+    /**
      * Level of data currently in the FIFO in words
      */
     size_t level();

@@ -34,9 +34,12 @@ namespace pixie {
 namespace module {
 class module;
 }
+/**
+ * @brief Tools to handle statistics data
+ */
 namespace stats {
-/*
- * Statistics
+/**
+ * @brief A data structure holding channel statistics read from the module.
  *
  * The channel and module stats cannot contain any containers while they
  * are used in the legacy API.
@@ -63,6 +66,12 @@ struct channel {
 
 typedef std::vector<channel> channels;
 
+/**
+ * @brief A data structure holding module statistics read from the module.
+ *
+ * The channel and module stats cannot contain any containers while they
+ * are used in the legacy API.
+ */
 struct module {
     param::value_type num_events_a;
     param::value_type num_events_b;
@@ -77,6 +86,9 @@ struct module {
 
 typedef std::vector<module> modules;
 
+/**
+ * @brief A data structure aggregating module and channel statistics from a single module.
+ */
 struct stats {
     module mod;
     channels chans;

@@ -27,17 +27,32 @@
 #include <sstream>
 #include <stdexcept>
 
+/**
+ * @brief The top level XIA namespace
+ */
 namespace xia {
+/**
+ * @brief Namespace for the Pixie product lines.
+ */
 namespace pixie {
+/**
+ * @brief Namespace for error handling in the PixieSDK.
+ */
 namespace error {
-/*
- * Codes
+/**
+ * @brief Defines the error codes that we use throughout the software.
+ *
+ * Each code maps to an API code and a description text. The codes and descriptions may shift over
+ * time. Users should access the associated information using the associated lookup functions.
+ *
+ * @see error::api_result
+ * @see error::api_result_text
  */
 enum struct code {
     /*
-     * Success is always 0. Do not number any other enum entries.
+     * Do not number any other enum entries.
      */
-    success = 0,
+    success = 0, /*!< Success is always 0. */
     /*
      * Crate
      */
@@ -122,11 +137,11 @@ enum struct code {
     internal_failure,
     bad_allocation,
     bad_error_code,
-    last
+    last /*!< Defined for use in internal checks to validate result map. */
 };
 
-/*
- * All exceptions need to be based on this error.
+/**
+ * @brief All PixieSDK exceptions need to be based on this error.
  */
 struct error : public std::runtime_error {
     typedef pixie::error::code code;
@@ -145,34 +160,43 @@ struct error : public std::runtime_error {
     int return_code() const;
 };
 
-/*
- * Internal test: check that error code definition are consistent.
+/**
+ * @brief Internal test: check that error code definition are consistent.
  */
 bool check_code_match();
 
-/*
- * Get the API code for an error code.
+/**
+ * @brief Get the API code for an error code.
+ * @param type The error code to lookup.
+ * @return The API code associated with the error code.
  */
 int api_result(enum code type);
+/**
+ * @brief Get the description text for an error code.
+ * @param type The error code to lookup.
+ * @return The description text string associated with the error code.
+ */
 std::string api_result_text(enum code type);
 
-/*
- * Turn the API result into a result code.
+/**
+ * @brief Turn the API result into a C style result code.
+ * @param[in] result The API result to convert.
+ * @return The API code as a negative number.
  */
 int return_code(int result);
 
-/*
- * Bad allocatino error helper.
+/**
+ * @brief Bad allocation error helper.
  */
 int api_result_bad_alloc_error();
 
-/*
- * Unknown error helper.
+/**
+ * @brief Unknown error helper.
  */
 int api_result_unknown_error();
 
-/*
- * Not support helper.
+/**
+ * @brief Not supported helper.
  */
 int api_result_not_supported();
 }  // namespace error

@@ -170,7 +170,7 @@ void baseline::get(baseline::channels_values& chan_values, bool run) {
 
     if (chan_values[0].size() > (buffer.size() / bl_block_len)) {
         throw module::error(module.number, module.slot, error::code::invalid_value,
-                            "channels values more than avaliable baselines");
+                            "channels values more than available baselines");
     }
 
     if (run) {
@@ -288,15 +288,9 @@ void channel::update_fifo(param::value_type trace_delay) {
     param::value_type trigger_delay;
     param::value_type paf_length;
 
-    /*
-     * Calculate the trigger delay and PAF length.
-     */
     trigger_delay = (peak_sep - 1) * sfr_mask;
     paf_length = (trigger_delay / ffr_mask) + trace_delay;
 
-    /*
-     * PAF Length must not be larger than the FIFO Length
-     */
     if (paf_length > fifo_length) {
         paf_length = fifo_length - 1;
         trigger_delay = (paf_length - trace_delay) * ffr_mask;
@@ -424,7 +418,7 @@ double channel::energy_flattop() {
 }
 
 void channel::energy_risetime_flattop(param::channel_param par, double value) {
-    ///@TODO Need range checking to prevent negative values.
+    ///@todo Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
@@ -531,7 +525,7 @@ double channel::trace_length() {
 }
 
 void channel::trace_length(double value) {
-    ///@TODO Need range checking to prevent negative values.
+    ///@todo Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
@@ -578,7 +572,7 @@ double channel::trace_delay() {
 }
 
 void channel::trace_delay(double value) {
-    ///@TODO Need range checking to prevent negative values.
+    ///@todo Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
@@ -636,7 +630,7 @@ double channel::xdt() {
 }
 
 void channel::xdt(double value) {
-    ///@TODO Need range checking to prevent negative values.
+    ///@todo Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
@@ -686,7 +680,7 @@ double channel::baseline_percent() {
 }
 
 void channel::baseline_percent(double value) {
-    ///@TODO Need range checking to prevent negative values.
+    ///@todo Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
@@ -712,7 +706,7 @@ double channel::emin() {
 }
 
 void channel::emin(double value) {
-    ///@TODO Need range checking to prevent negative values.
+    ///@todo Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
@@ -730,7 +724,7 @@ double channel::binfactor() {
 }
 
 void channel::binfactor(double value) {
-    ///@TODO Need range checking to prevent negative values.
+    ///@todo Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
@@ -764,7 +758,7 @@ double channel::baseline_average() {
 }
 
 void channel::baseline_average(double value) {
-    ///@TODO Need range checking to prevent negative values.
+    ///@todo Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
@@ -790,7 +784,7 @@ double channel::csra() {
 }
 
 void channel::csra(double value) {
-    ///@TODO Need range checking to prevent negative values.
+    ///@todo Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
@@ -822,7 +816,7 @@ double channel::csrb() {
 }
 
 void channel::csrb(double value) {
-    ///@TODO Need range checking to prevent negative values.
+    ///@todo Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
@@ -840,7 +834,7 @@ double channel::bl_cut() {
 }
 
 void channel::bl_cut(double value) {
-    ///@TODO Need range checking to prevent negative values.
+    ///@todo Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
@@ -858,8 +852,8 @@ double channel::integrator() {
 }
 
 void channel::integrator(double value) {
-    ///@TODO Need range checking to prevent negative values.
-    ///@Note This variable is disabled. Do we still need this functionality??
+    ///@todo Need range checking to prevent negative values.
+    ///@note This variable is disabled. Do we still need this functionality??
     module::module& mod = module.get();
 
     if (value > 7) {
@@ -882,7 +876,7 @@ double channel::fast_trig_backlen() {
 }
 
 void channel::fast_trig_backlen(double value) {
-    ///@TODO Need range checking to prevent negative values.
+    ///@todo Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
@@ -921,7 +915,7 @@ double channel::cfd_delay() {
 }
 
 void channel::cfd_delay(double value) {
-    ///@TODO Need range checking to prevent negative values.
+    ///@todo Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
@@ -950,7 +944,7 @@ double channel::cfd_scale() {
 }
 
 void channel::cfd_scale(double value) {
-    ///@TODO Need range checking to prevent negative values.
+    ///@todo Need range checking to prevent negative values.
     module::module& mod = module.get();
 
     param::value_type cfdscale = param::value_type(value);
@@ -1038,7 +1032,7 @@ double channel::qdc_len(param::channel_param par) {
 }
 
 void channel::qdc_len(param::channel_param par, double value) {
-    ///@TODO Need range checking to prevent negative values.
+    ///@todo Need range checking to prevent negative values.
 
     module::module& mod = module.get();
 
@@ -1104,9 +1098,8 @@ double channel::ext_trig_stretch() {
 }
 
 void channel::ext_trig_stretch(double value) {
-    ///@TODO Need range checking to prevent negative values.
-
-    ///@Note this logic is identical to channel::chan_trig_stretch and channel::veto_stretch.
+    ///@todo Need range checking to prevent negative values.
+    ///@note this logic is identical to channel::chan_trig_stretch and channel::veto_stretch.
 
     module::module& mod = module.get();
 
@@ -1135,8 +1128,8 @@ double channel::veto_stretch() {
 }
 
 void channel::veto_stretch(double value) {
-    ///@TODO Need range checking to prevent negative values.
-    ///@Note this logic is identical to channel::chan_trig_stretch and channel::ext_trig_stretch.
+    ///@todo Need range checking to prevent negative values.
+    ///@note this logic is identical to channel::chan_trig_stretch and channel::ext_trig_stretch.
     module::module& mod = module.get();
 
     param::value_type vetostretch = param::value_type(std::round(value * config.fpga_clk_mhz));
@@ -1164,7 +1157,7 @@ double channel::multiplicity_mask_l() {
 }
 
 void channel::multiplicity_mask_l(double value) {
-    ///@TODO Need range checking to prevent negative values.
+    ///@todo Need range checking to prevent negative values.
     module::module& mod = module.get();
 
     param::value_type multiplicitymaskl = param::value_type(value);
@@ -1185,7 +1178,7 @@ double channel::multiplicity_mask_h() {
 }
 
 void channel::multiplicity_mask_h(double value) {
-    ///@TODO Need range checking to prevent negative values.
+    ///@todo Need range checking to prevent negative values.
     module::module& mod = module.get();
 
     param::value_type multiplicitymaskh = param::value_type(value);
@@ -1206,8 +1199,8 @@ double channel::extern_delay_len() {
 }
 
 void channel::extern_delay_len(double value) {
-    ///@TODO Need range checking to prevent negative values. For now negative values get set to max.
-    ///@NOTE This function's logic is identical to channel::ftrig_out_delay, maybe we can simplify?
+    ///@todo Need range checking to prevent negative values. For now negative values get set to max.
+    ///@note This function's logic is identical to channel::ftrig_out_delay, maybe we can simplify?
     module::module& mod = module.get();
 
     param::value_type externdelaylen = param::value_type(std::round(value * config.fpga_clk_mhz));
@@ -1253,7 +1246,7 @@ double channel::ftrig_out_delay() {
 }
 
 void channel::ftrig_out_delay(double value) {
-    ///@TODO Need range checking to prevent negative values. For now negative values get set to max.
+    ///@todo Need range checking to prevent negative values. For now negative values get set to max.
     module::module& mod = module.get();
 
     param::value_type ftrigoutdelay = param::value_type(std::round(value * config.fpga_clk_mhz));
@@ -1294,8 +1287,8 @@ double channel::chan_trig_stretch() {
 }
 
 void channel::chan_trig_stretch(double value) {
-    ///@TODO Need range checking here. Negative values get set to max.
-    ///@Note this logic is identical to channel::veto_stretch and channel::ext_trig_stretch.
+    ///@todo Need range checking here. Negative values get set to max.
+    ///@note this logic is identical to channel::veto_stretch and channel::ext_trig_stretch.
 
     module::module& mod = module.get();
 

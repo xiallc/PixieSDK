@@ -628,7 +628,7 @@ module_var map_module_param(module_param par) {
 void load(firmware::firmware_ref& firmware, module_var_descs& module_var_descriptors,
           channel_var_descs& channel_var_descriptors) {
     /*
-     * Sanity check for the enums and the tables so they match. If the enum
+     * Sanity check for the enums and the tables, so they match. If the enum
      * does not reference the correct variable descriptor things break.
      */
     for (size_t d = 0; d < module_var_descriptors_default.size(); ++d) {

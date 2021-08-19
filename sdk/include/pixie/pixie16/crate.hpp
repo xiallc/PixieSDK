@@ -35,16 +35,17 @@
 
 namespace xia {
 namespace pixie {
+/**
+ * @brief Defines functions and data structures related to handling a Pixie-16 crate.
+ */
 namespace crate {
 /*
  * Crate errors
  */
 typedef pixie::error::error error;
 
-/*
- * Crate
- *
- * A crate is a series of slots that contain modules.
+/**
+ * @brief A crate is a series of slots that contain modules.
  */
 struct crate {
 private:
@@ -55,8 +56,8 @@ private:
     using lock_guard = std::lock_guard<lock_type>;
 
 public:
-    /*
-     * Module lock guard
+    /**
+     * @brief Module lock guard to prevent concurrent access to a module.
      */
     class guard {
         lock_type& lock_;
@@ -67,8 +68,9 @@ public:
         ~guard() = default;
     };
 
-    /*
-     * Hold an instance while using a module.
+    /**
+     * @brief Hold an instance while using a module to allow concurrent
+     *          access to the crate.
      */
     class user {
         crate& crate_;
@@ -78,30 +80,24 @@ public:
         ~user();
     };
 
-    /*
-     * Number of modules present in the crate.
-     */
-    size_t num_modules;
+    size_t num_modules; /*!< Number of modules present in the crate. */
 
-    /*
-     * Crate revision
-     */
-    int revision;
+    int revision; /*!< Crate revision */
 
-    /*
+    /**
      * A crate contains a number of modules in slots. These modules are
      * online and ready for use.
      */
     module::modules modules;
 
-    /*
+    /**
      * The offline modules have been detected by are not online. This lets
      * a user check a crate and determine the state of all detected
      * modules.
      */
     module::modules offline;
 
-    /*
+    /**
      * Firmware for the crate. Check the modules for the ones they have
      * loaded.
      */
@@ -110,25 +106,29 @@ public:
     crate();
     virtual ~crate();
 
-    /*
-     * Check the crate has been intialised and ready for use. Throws an
-     * error if not ready.
+    /**
+     * Check the crate has been initialised and ready for use.
+     * @throws pixie::error::code::crate_not_ready
      */
     void ready();
 
-    /*
-     * Check if the crate is busy?
+    /**
+     * @brief Check if the crate is busy?
+     * @return True if the crate is busy with another operation.
      */
     bool busy() const;
 
-    /*
-     * How many active users are in the crate when this call is made?
+    /**
+     * @brief Checks how many users are using the crate object.
+     * @return The number of active users are in the crate when this call is made.
      */
     int users() const;
 
-    /*
-     * Range checking operator to index modules based on various index
-     * types.
+    /**
+     * @brief Range checking operator to index modules based on index types.
+     * @tparam T The templated index type
+     * @param number The module number from the index
+     * @return A pointer to the module object found at the requested index.
      */
     template<typename T>
     module::module& operator[](T number) {
@@ -140,8 +140,11 @@ public:
         return *(modules[number_]);
     }
 
-    /*
-     * Return a module indexed by a slot.
+    /**
+     * @brief Return a module indexed by a slot.
+     * @tparam T The template for various ways to determine the slot.
+     * @param slot The physical slot in the crate that we'd like to access.
+     * @return A pointer to the module object associated with the physical slot.
      */
     template<typename T>
     module::module_ptr find(T slot) {
@@ -158,57 +161,69 @@ public:
         return *mod;
     }
 
-    /*
-     * Initialise the crate and get it ready.
+    /**
+     * @brief Initialise the crate and get it ready.
+     * @param reg_trace When true enables enhanced diagnostic information to be output.
      */
     void initialize(bool reg_trace = false);
 
-    /*
-     * Mark a module as offline and move to the offline module list. This
-     * invalidates any iterators you may hold to the modules and offline
+    /**
+     * @brief Mark a module as offline and move to the offline module list.
+     *
+     * This invalidates any iterators you may hold to the modules and offline
      * containers.
+     *
+     * @param module Pointer to the module object that should be set offline.
      */
     void set_offline(module::module_ptr module);
 
-    /*
-     * Probe the modules.
+    /**
+     * @brief Loads the firmware from disk and checks if the modules are online.
      */
     void probe();
 
-    /*
-     * Boot all modules.
+    /**
+     * @brief Boot all modules by loading the firmware onto the hardware.
      */
     void boot();
 
-    /*
-     * Assign numbers to the modules by slot. Modules not in the map are
-     * forced offline. You can optionally stop this happening but the
-     * number for the modules not in the map will be invalid.
+    /**
+     * @brief Assign numbers to the modules by slot.
+     *
+     * Modules not in the map are forced offline. You can optionally stop
+     * this happening but the number for the modules not in the map will be
+     * invalid.
+     *
+     * @param numbers A list of slots that should be assigned.
+     * @param force_offline Forces slots not in the list to be offline. Default = True.
      */
     void assign(const module::number_slots& numbers, bool force_offline = true);
 
-    /*
-     * Set the firmwares into the modules in the crate.
+    /**
+     * @brief Associates the firmware with modules in the crate.
      */
     void set_firmware();
 
-    /*
-     * Import a configuration. Returning a list of loaded modules.
+    /**
+     * @brief Import a configuration. Returning a list of loaded modules.
+     * @param[in] json_file The path to the JSON configuration file to load.
+     * @param[out] loaded The list of modules that received configurations.
      */
     void import_config(const std::string json_file, module::number_slots& loaded);
 
-    /*
-     * Export the configuration
+    /**
+     * @brief Export the active module configurations to a file.
+     * @param json_file Path to the file that will hold the configurations.
      */
     void export_config(const std::string json_file);
 
-    /*
-     * Move offline modules from the online list to offline.
+    /**
+     * @brief Move offline modules from the online list to offline.
      */
     void move_offlines();
 
-    /*
-     * Output the crate details.
+    /**
+     * @brief Output the crate details.
      */
     void output(std::ostream& out) const;
 
@@ -242,8 +257,10 @@ private:
     std::atomic_int users_;
 };
 
-/*
- * Module handle. This allows you to access a module during while operating
+/**
+ * @brief A module handle prevents concurrent access to a module.
+ *
+ * This allows you to access a module during while operating
  * on it. The crate as a user register and the module is locked while this
  * object exists.
  */
@@ -268,8 +285,8 @@ private:
 }  // namespace pixie
 }  // namespace xia
 
-/*
- * Output stream operator.
+/**
+ * @brief Output stream operator for crates
  */
 std::ostream& operator<<(std::ostream& out, const xia::pixie::crate::crate& crate);
 

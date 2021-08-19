@@ -204,7 +204,7 @@ void eeprom::process() {
         configs.resize(num_channels, config);
 
         /*
-         * V1 format channel indexs to the variables are 1:1 mapped.
+         * V1 format channel indices to the variables are 1:1 mapped.
          */
         int index = 0;
         for (auto& cfg : configs) {

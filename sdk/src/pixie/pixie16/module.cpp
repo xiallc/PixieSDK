@@ -521,14 +521,8 @@ void module::close() {
 
         log(log::debug) << module_label(*this) << "close: device-number=" << device->device_number;
 
-        /*
-         * Stop the FIFO worker and destroy the buffer pool.
-         */
         stop_fifo_services();
 
-        /*
-         * Close the DMA channel.
-         */
         ps_dma = ::PlxPci_DmaChannelClose(&device->handle, 0);
         if (ps_dma != PLX_STATUS_OK) {
             log(log::debug) << module_label(*this) << "DMA close: " << pci_error_text(ps_dma);
@@ -551,10 +545,6 @@ void module::close() {
         have_hardware = false;
         present_ = false;
 
-        /*
-         * A single error for both operations and the device is always
-         * closed..
-         */
         if (ps_unmap_bar != PLX_STATUS_OK || ps_close != PLX_STATUS_OK) {
             std::ostringstream oss;
             oss << "Pixie PCI ";
@@ -721,7 +711,7 @@ firmware::firmware_ref module::get(const std::string device) {
     lock_guard guard(lock_);
     /*
      * First check if a slot assigned firmware exists for this
-     * device. If not see if a default is available.
+     * device. If not, then see if a default is available.
      */
     for (auto& fwr : firmware) {
         if (fwr->device == device) {
@@ -893,7 +883,6 @@ bool module::write(param::module_param par, param::value_type value) {
         case param::module_param::in_synch:
         case param::module_param::host_rt_preset:
             bcast = true;
-            /* fall through */
         case param::module_param::module_format:
         case param::module_param::max_events:
             write_var(param::map_module_param(par), value, offset);
@@ -903,7 +892,6 @@ bool module::write(param::module_param par, param::value_type value) {
         case param::module_param::trigconfig2:
         case param::module_param::trigconfig3:
             offset = size_t(par) - size_t(param::module_param::trigconfig0);
-            /* fall through */
         case param::module_param::module_csra:
         case param::module_param::fasttrigbackplaneena:
         case param::module_param::crateid:
@@ -1311,9 +1299,6 @@ void module::sync_hw() {
         hw::csr::write(*this, csr);
     }
 
-    /*
-     * Reset the DAC on rev F only.
-     */
     if (*this == hw::rev_F) {
         hw::run::control(*this, hw::run::control_task::reset_adc);
     }
@@ -1748,9 +1733,6 @@ void module::slow_filter_range(param::value_type value, size_t offset, bool io) 
     write_var(param::module_var::SlowFilterRange, value, offset, io);
 
     if (io) {
-        /*
-         * Recompute the FIFO settings
-         */
         value = 1 << read_var(param::module_var::FastFilterRange, 0, false);
         for (size_t channel = 0; channel < num_channels; ++channel) {
             param::value_type paf_length =
@@ -1760,14 +1742,8 @@ void module::slow_filter_range(param::value_type value, size_t offset, bool io) 
             channels[channel].update_fifo(paf_length - (trigger_delay / value));
         }
 
-        /*
-         * Apply the settings to the FIPPI FPGA
-         */
         hw::run::control(*this, hw::run::control_task::program_fippi);
 
-        /*
-         * Update the baseline cut value
-         */
         channel::range chans(num_channels);
         channel::range_set(chans);
         channel::baseline bl(*this, chans);
@@ -1791,9 +1767,6 @@ void module::fast_filter_range(param::value_type value, size_t offset, bool io) 
     if (io) {
         param::value_type last_ffr = 1 << read_var(param::module_var::FastFilterRange, 0, false);
 
-        /*
-         * Recompute the FIFO settings
-         */
         for (size_t channel = 0; channel < num_channels; ++channel) {
             param::value_type paf_length =
                 read_var(param::channel_var::PAFlength, channel, 0, false);
@@ -1802,9 +1775,6 @@ void module::fast_filter_range(param::value_type value, size_t offset, bool io) 
             channels[channel].update_fifo(paf_length - (trigger_delay / last_ffr));
         }
 
-        /*
-         * Apply the settings to the FIPPI FPGA
-         */
         hw::run::control(*this, hw::run::control_task::program_fippi);
     }
 }
@@ -1881,9 +1851,6 @@ void module::fifo_worker() {
         util::timepoint bw_interval(true);
 
         while (fifo_worker_running.load()) {
-            /*
-             * If not online do nothing.
-             */
             if (!online()) {
                 hw::wait(250 * 1000);
                 bw_interval.restart();
@@ -2017,14 +1984,8 @@ void module::fifo_worker() {
                 }
             }
 
-            /*
-             * Nap the wait time.
-             */
             hw::wait(wait_time);
 
-            /*
-             * Update the hold time if below the hold period.
-             */
             if (hold_time < fifo_hold_usecs.load()) {
                 hold_time += wait_time;
             }

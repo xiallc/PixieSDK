@@ -29,12 +29,18 @@ namespace xia {
 namespace pixie {
 namespace hw {
 namespace i2c {
+/**
+ * @brief Defines communication with the PCF8574 chip.
+ *
+ * This chip contains information about the physical slot the module occupies.
+ */
 struct pcf8574 : public bitbash {
     pcf8574(module::module& module, int reg, uint32_t SDA, uint32_t SCL, uint32_t CTRL,
             bool trace = false);
 
-    /*
-     * Read a byte.
+    /**
+     * @brief Read a byte.
+     * @returns the byte that was read.
      */
     uint8_t read_a_byte();
 };

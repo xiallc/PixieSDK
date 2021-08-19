@@ -130,7 +130,7 @@ void firmware::clear() {
 size_t firmware::words() const {
     /*
      * Size of the vector should be uint32_t aligned so rounding there
-     * should redundant but it does not harm so lets keep it.
+     * should be redundant, but it does not harm so lets keep it.
      */
     return ((size_t(data.size()) - 1) / sizeof(image_value_type)) + 1;
 }
@@ -186,7 +186,7 @@ bool check(const crate& firmwares, const firmware& fw) {
 firmware_ref find(module& firmwares, const std::string device, const int slot) {
     /*
      * First check if a slot assigned firmware exists for this
-     * device. If not see if a default is available.
+     * device. If not, then see if a default is available.
      */
     for (auto& fwr : firmwares) {
         if (fwr->device == device && !fwr->slot.empty()) {

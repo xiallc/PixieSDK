@@ -32,17 +32,25 @@
 
 namespace xia {
 namespace pixie {
+/**
+ * @brief Tools for handling configuration files.
+ */
 namespace config {
 
 typedef pixie::error::error error;
 
-/*
- * Import a JSON confuguration into a crate's internal variables.
+/**
+ * @brief Import a JSON configuration into a crate's internal variables.
+ * @param[in] filename The name of the file with the relative or absolute path.
+ * @param[in] crate The crate object that we're going to load this configuration into.
+ * @param[in] loaded List of modules that will receive the configuration.
  */
 void import_json(const std::string& filename, crate::crate& crate, module::number_slots& loaded);
 
-/*
- * Export the crate's configuration to a JSON file.
+/**
+ * @brief Export the active module configurations to a JSON file.
+ * @param[in] filename The name of the JSON output file used for the export.
+ * @param[in] crate The crate object holding the modules to be exported.
  */
 void export_json(const std::string& filename, crate::crate& crate);
 
