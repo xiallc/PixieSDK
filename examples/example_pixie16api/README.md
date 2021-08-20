@@ -61,18 +61,17 @@ objects defines the slot to module number mapping. In the example below, Slot 2 
 These instructions assume that you've built and installed PixieSDK into the default location.
 
 ### Linux
-1. Prepare the execution directory
-    1. Create the directory
-       ```shell script
-       mkdir ~/pixie_sdk_example
-       cd ~/pixie_sdk_example
-       ```
-    1. Copy the sample configuration file from the repo
-        ```shell script
-        cp /usr/local/xia/PixieSdk/share/config/example_config.json .
-        ```
-    2. Update the configuration file (see below). You can name it whatever you want.
-2. Execute the program to boot the modules
+1. Create the directory
+   ```shell script
+   mkdir ~/pixie_sdk_example
+   cd ~/pixie_sdk_example
+   ```
+2. Copy the sample configuration file from the repo
+   ```shell script
+   cp /usr/local/xia/PixieSdk/share/config/example_config.json .
+   ```
+3. Update the configuration file. You can name it whatever you want.
+4. Execute the program to boot the modules
    ```shell script
    LD_LIBRARY_PATH=/usr/local/xia/PixieSDK/lib/ /usr/local/xia/PixieSDK/bin/pixie_sdk_example boot <name of config file>
    ```
