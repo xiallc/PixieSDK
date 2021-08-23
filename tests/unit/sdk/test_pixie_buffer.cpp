@@ -86,7 +86,7 @@ TEST_SUITE("xia::buffer") {
             for (size_t b = 0; b < pool.number; ++b) {
                 handles.push_back(pool.request());
             }
-            CHECK_THROWS_WITH_AS(pool.request(), "no buffers avaliable", xia::buffer::error);
+            CHECK_THROWS_WITH_AS(pool.request(), "no buffers available", xia::buffer::error);
             CHECK(pool.empty());
             CHECK(!pool.full());
             CHECK(pool.count() == 0);
