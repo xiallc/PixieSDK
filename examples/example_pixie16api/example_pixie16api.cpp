@@ -245,7 +245,7 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
     LOG(INFO) << "Starting list mode data run for " << runtime_in_seconds << " s.";
 
     LOG(INFO) << "Calling Pixie16WriteSglModPar to write SYNCH_WAIT = 1 in Module 0.";
-    if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", 0, 0),
+    if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", 1, 0),
                                  "Pixie16WriteSglModPar - SYNC_WAIT"))
         return false;
 
