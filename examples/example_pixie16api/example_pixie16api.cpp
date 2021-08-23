@@ -196,35 +196,34 @@ bool save_dsp_pars(const std::string& filename) {
     return true;
 }
 
-bool execute_adjust_offsets(const module_configs& mods) {
-    for (const auto& mod : mods) {
-        LOG(INFO) << "Adjusting baseline offset for Module " << mod.number << ".";
-        if (!verify_api_return_value(Pixie16AdjustOffsets(mod.number),
-                                     "Pixie16AdjustOffsets for Module " +
-                                         std::to_string(mod.number)))
-            return false;
-        if (!save_dsp_pars(mod.dsp_par))
-            return false;
-    }
+bool execute_adjust_offsets(const module_config& module) {
+    LOG(INFO) << "Adjusting baseline offset for Module " << module.number << ".";
+    if (!verify_api_return_value(Pixie16AdjustOffsets(module.number),
+                                 "Pixie16AdjustOffsets for Module " +
+                                     std::to_string(module.number)))
+        return false;
+    if (!save_dsp_pars(module.dsp_par))
+        return false;
     return true;
 }
 
-bool execute_baseline_capture(const unsigned int& module) {
-    LOG(INFO) << "Starting baseline capture.";
-    if (!verify_api_return_value(Pixie16AcquireBaselines(module), "Pixie16AcquireBaselines"))
+bool execute_baseline_capture(const unsigned short& module_number) {
+    LOG(INFO) << "Starting baseline capture for Module " << module_number;
+    if (!verify_api_return_value(Pixie16AcquireBaselines(module_number), "Pixie16AcquireBaselines"))
         return false;
 
     double baselines[NUMBER_OF_CHANNELS][MAX_NUM_BASELINES];
     double timestamps[MAX_NUM_BASELINES];
     for (unsigned int i = 0; i < NUMBER_OF_CHANNELS; i++) {
         LOG(INFO) << "Acquiring baselines for Channel " << i;
-        if (!verify_api_return_value(
-                Pixie16ReadSglChanBaselines(baselines[i], timestamps, MAX_NUM_BASELINES, module, i),
-                "Pixie16ReadsglChanBaselines"))
+        if (!verify_api_return_value(Pixie16ReadSglChanBaselines(baselines[i], timestamps,
+                                                                 MAX_NUM_BASELINES, module_number,
+                                                                 i),
+                                     "Pixie16ReadsglChanBaselines"))
             return false;
     }
 
-    std::ofstream ofstream1(generate_filename(module, "baselines", "csv"));
+    std::ofstream ofstream1(generate_filename(module_number, "baselines", "csv"));
     ofstream1 << "bin,timestamp,";
     for (unsigned int i = 0; i < NUMBER_OF_CHANNELS; i++)
         ofstream1 << "Chan" << i << ",";
@@ -239,7 +238,6 @@ bool execute_baseline_capture(const unsigned int& module) {
         }
         ofstream1 << std::endl;
     }
-
     return true;
 }
 
@@ -252,7 +250,7 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
         return false;
 
     LOG(INFO) << "Calling Pixie16WriteSglModPar to write IN_SYNCH  = 0 in Module 0.";
-    if (!verify_api_return_value(Pixie16WriteSglModPar("IN_SYNCH", 1, 0),
+    if (!verify_api_return_value(Pixie16WriteSglModPar("IN_SYNCH", 0, 0),
                                  "Pixie16WriteSglModPar - IN_SYNC"))
         return false;
 
@@ -485,24 +483,21 @@ bool execute_parameter_write(args::ValueFlag<std::string>& parameter,
     return true;
 }
 
-bool execute_trace_capture(args::ValueFlag<unsigned int>& module) {
-    if (!module)
-        return false;
-
-    LOG(INFO) << "Pixie16AcquireADCTrace acquiring traces for Module " << module.Get() << ".";
-    if (!verify_api_return_value(Pixie16AcquireADCTrace(module.Get()), "Pixie16AcquireADCTrace"))
+bool execute_trace_capture(const unsigned short& module_number) {
+    LOG(INFO) << "Pixie16AcquireADCTrace acquiring traces for Module " << module_number << ".";
+    if (!verify_api_return_value(Pixie16AcquireADCTrace(module_number), "Pixie16AcquireADCTrace"))
         return false;
 
 
     unsigned short trace[NUMBER_OF_CHANNELS][MAX_ADC_TRACE_LEN];
     for (unsigned int i = 0; i < NUMBER_OF_CHANNELS; i++) {
         if (!verify_api_return_value(
-                Pixie16ReadSglChanADCTrace(trace[i], MAX_ADC_TRACE_LEN, module.Get(), i),
+                Pixie16ReadSglChanADCTrace(trace[i], MAX_ADC_TRACE_LEN, module_number, i),
                 "Pixie16AcquireADCTrace", false))
             return false;
     }
 
-    std::ofstream ofstream1(generate_filename(module.Get(), "adc", "csv"));
+    std::ofstream ofstream1(generate_filename(module_number, "adc", "csv"));
     ofstream1 << "bin,";
     for (unsigned int i = 0; i < NUMBER_OF_CHANNELS; i++)
         ofstream1 << "Chan" << i << ",";
@@ -517,7 +512,6 @@ bool execute_trace_capture(args::ValueFlag<unsigned int>& module) {
         }
         ofstream1 << std::endl;
     }
-
     return true;
 }
 
@@ -566,8 +560,8 @@ void output_module_info(const configuration& cfg) {
     unsigned short adc_msps;
     for (const auto& mod : cfg.modules) {
         if (!verify_api_return_value(
-            Pixie16ReadModuleInfo(mod.number, &rev, &serial_number, &adc_bits, &adc_msps),
-            "Pixie16ReadModuleInfo", false))
+                Pixie16ReadModuleInfo(mod.number, &rev, &serial_number, &adc_bits, &adc_msps),
+                "Pixie16ReadModuleInfo", false))
             throw std::runtime_error("Could not get module information for Module " +
                                      std::to_string(mod.number));
         LOG(INFO) << "Begin module information for Module " << mod.number;
@@ -648,6 +642,7 @@ int main(int argc, char** argv) {
         write, "parameter_value", "The value of the parameter we want to write.", {'v', "value"});
     adjust_offsets.Add(conf_flag);
     adjust_offsets.Add(boot_pattern_flag);
+    adjust_offsets.Add(module);
     baseline.Add(is_fast_boot);
     baseline.Add(boot_pattern_flag);
     baseline.Add(module);
@@ -755,12 +750,12 @@ int main(int argc, char** argv) {
     }
 
     if (adjust_offsets) {
-        if (!execute_adjust_offsets(cfg.modules))
+        if (!execute_adjust_offsets(cfg.modules[module.Get()]))
             return EXIT_FAILURE;
     }
 
     if (trace) {
-        if (!execute_trace_capture(module))
+        if (!execute_trace_capture(module.Get()))
             return EXIT_FAILURE;
     }
 
@@ -775,12 +770,12 @@ int main(int argc, char** argv) {
     }
 
     if (baseline) {
-        if (!execute_baseline_capture(args::get(module)))
+        if (!execute_baseline_capture(module.Get()))
             return EXIT_FAILURE;
     }
 
     if (mca) {
-        if (!execute_mca_run(args::get(module), run_time.Get()))
+        if (!execute_mca_run(module.Get(), run_time.Get()))
             return EXIT_FAILURE;
     }
 
