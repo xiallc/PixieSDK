@@ -480,7 +480,7 @@ void address_map::check_channel_gap(const size_t max_channels,
                                     const channel_var_descs& channel_descs,
                                     const desc_addresses& addresses) {
     /*
-     * The var file of addresses are not in the same order as the logcal
+     * The var file of addresses are not in the same order as the logical
      * descriptor table. Sort by address then check the gaps.
      */
     for (size_t a = 0; a < addresses.size() - 1; ++a) {
