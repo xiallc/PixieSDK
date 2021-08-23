@@ -77,7 +77,7 @@ void settings::load(const std::string& parfile) {
     }
 
     dsp_mem.clear();
-    dsp_mem.resize(size / sizeof(hw::word));
+    dsp_mem.resize(static_cast<unsigned int>(size) / sizeof(hw::word));
     input.read(reinterpret_cast<char*>(dsp_mem.data()), size);
 }
 

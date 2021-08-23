@@ -883,15 +883,18 @@ bool module::write(param::module_param par, param::value_type value) {
         case param::module_param::in_synch:
         case param::module_param::host_rt_preset:
             bcast = true;
+            /* fall through */
         case param::module_param::module_format:
         case param::module_param::max_events:
             write_var(param::map_module_param(par), value, offset);
             break;
+            /* fall through */
         case param::module_param::trigconfig0:
         case param::module_param::trigconfig1:
         case param::module_param::trigconfig2:
         case param::module_param::trigconfig3:
             offset = size_t(par) - size_t(param::module_param::trigconfig0);
+            /* fall through */
         case param::module_param::module_csra:
         case param::module_param::fasttrigbackplaneena:
         case param::module_param::crateid:
