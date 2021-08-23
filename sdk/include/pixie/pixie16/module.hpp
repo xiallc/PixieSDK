@@ -422,10 +422,24 @@ public:
     void start_histograms(hw::run::run_mode mode);
     void start_listmode(hw::run::run_mode mode);
 
-    /*
-     * ADC trace
+    /**
+     * @brief Reads an ADC trace from the specified channel.
+     * @param[in] channel The channel that we'd like to read the ADC trace from.
+     * @param[out] buffer A buffer large enough to hold the ADC trace.
+     * @param[in] size The size of the buffer to hold the trace.
+     * @param[in] run If true, then we execute the control task to collect the
+     *                  ADC traces. If false, then we assume the control task has
+     *                  already been run.
      */
     void read_adc(size_t channel, hw::adc_word* buffer, size_t size, bool run = true);
+    /**
+     * @brief Reads an ADC trace from the specified channel.
+     * @param[in] channel The channel that we'd like to read the ADC trace from.
+     * @param[out] buffer An adc_trace vector that will hold the resultant data.
+     * @param[in] run If true, then we execute the control task to collect the
+     *                  ADC traces. If false, then we assume the control task has
+     *                  already been run.
+     */
     void read_adc(size_t channel, hw::adc_trace& buffer, bool run = true);
 
     /*
