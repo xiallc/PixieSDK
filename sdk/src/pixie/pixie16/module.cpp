@@ -688,21 +688,22 @@ void module::initialize() {}
 void module::add(firmware::module& fw) {
     lock_guard guard(lock_);
     if (online()) {
-        throw error(number, slot, error::code::module_invalid_operation,
-                    "module is online when setting firmware");
-    }
-    for (auto fp : fw) {
-        bool found = false;
-        for (auto fm : firmware) {
-            if (fm == fp) {
-                found = true;
-                break;
+        log(log::warning) << module_label(*this)
+                          << "module already online, do not need to add firmware";
+    } else {
+        for (auto fp : fw) {
+            bool found = false;
+            for (auto fm : firmware) {
+                if (fm == fp) {
+                    found = true;
+                    break;
+                }
             }
-        }
-        if (!found) {
-            log(log::debug) << module_label(*this) << "add module firmware: " << fp->tag
-                            << " device: " << fp->device;
-            firmware.push_back(fp);
+            if (!found) {
+                log(log::debug) << module_label(*this) << "add module firmware: " << fp->tag
+                                << " device: " << fp->device;
+                firmware.push_back(fp);
+            }
         }
     }
 }
