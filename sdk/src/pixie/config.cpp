@@ -142,7 +142,13 @@ void import_json(const std::string& filename, crate::crate& crate, module::numbe
                                 }
                             } else {
                                 try {
-                                    module.write_var(var, el.value(), 0, false);
+                                    if (desc.par == xia::pixie::param::module_var::SlotID) {
+                                        module.write_var(var, module.slot, 0, false);
+                                    } else if (desc.par == xia::pixie::param::module_var::ModNum) {
+                                        module.write_var(var, module.number, 0, false);
+                                    } else {
+                                        module.write_var(var, el.value(), 0, false);
+                                    }
                                 } catch (json::exception& e) {
                                     auto s = el.key() + ": " + std::string(el.value());
                                     throw_json_error(e, s);
