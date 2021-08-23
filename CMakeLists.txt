@@ -31,9 +31,9 @@ include(CMakeDependentOption)
 
 option(BUILD_DOCO "Tells CMake to build documentation" OFF)
 option(BUILD_EXAMPLES "Builds the example programs" ON)
-option(BUILD_LEGACY "Builds the legacy C API Pixie16App.a" ON)
+option(BUILD_LEGACY "Builds the legacy C API Pixie16App.a" OFF)
 option(BUILD_SDK "Builds PixieSdk.a" ON)
-option(BUILD_TESTS "Builds the test suites" ON)
+option(BUILD_TESTS "Builds the test suites" OFF)
 
 cmake_dependent_option(BUILD_INTEGRATION_TESTS "Builds integration tests" ON "BUILD_TESTS;BUILD_SDK" OFF)
 cmake_dependent_option(BUILD_LEGACY_UNIT_TESTS "Builds unit tests" ON "BUILD_TESTS;BUILD_LEGACY" OFF)
