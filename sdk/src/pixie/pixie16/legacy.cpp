@@ -98,7 +98,13 @@ void settings::import(module::module& module) {
     for (auto& desc : module_var_descriptors) {
         if (desc.writeable()) {
             auto value = read_var(desc.par, module.number);
-            module.write_var(desc.par, value, 0, false);
+            if (desc.par == xia::pixie::param::module_var::SlotID) {
+                module.write_var(desc.par, module.slot, 0, false);
+            } else if (desc.par == xia::pixie::param::module_var::ModNum) {
+                module.write_var(desc.par, module.number, 0, false);
+            } else {
+                module.write_var(desc.par, value, 0, false);
+            }
         }
     }
     for (auto& desc : channel_var_descriptors) {
