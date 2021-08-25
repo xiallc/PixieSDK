@@ -900,7 +900,7 @@ bool module::write(param::module_param par, param::value_type value) {
         case param::module_param::fasttrigbackplaneena:
         case param::module_param::crateid:
         case param::module_param::slotid:
-        case param::module_param::modid:
+        case param::module_param::module_id:
             write_var(param::map_module_param(par), value, offset);
             hw::run::control(*this, hw::run::control_task::program_fippi);
             break;

@@ -46,14 +46,24 @@ namespace param {
 /**
  * @brief Defines System parameters that we use in various locations.
  *
- * Do not force any values onto the enum.
+ * @note Order of entries in this enum must match with the definitions in
+ * `system_params`.
  */
 enum struct system_param {
+    /**
+     * @brief The number of modules that are online.
+     */
     number_modules,
+    /**
+     * @brief **Not implemented.**
+     */
     offline_analysis,
+    /**
+     * @brief **Not implemented.**
+     */
     pxi_slot_map,
-    /*
-     * Size marker
+    /**
+     * @brief Size marker
      */
     END
 };
@@ -63,8 +73,9 @@ enum struct system_param {
  *
  * Please see the linked DSP Variables for more information.
  *
- * @note All ranges are integer steps unless otherwise noted.
- * @remark Do not force any values onto the enum.
+ * @remark All ranges are integer steps unless otherwise noted.
+ * @note Order of entries in this enum must match with the definitions in
+ * `module_params`.
  */
 enum struct module_param {
     /**
@@ -97,17 +108,6 @@ enum struct module_param {
      */
     max_events,
     /**
-     * @ref xia::pixie::param::module_var::ModID <br>
-     * **Values**: [0, number of modules)
-     */
-    modid,
-    /**
-     * @ref xia::pixie::param::module_var::ModNum
-     *
-     * **Range**: [0, # active modules)
-     */
-    module_number,
-    /**
      * @ref xia::pixie::param::module_var::ModCSRA
      *
      * **Values**: [0, 2<sup>32</sup>-1]
@@ -123,6 +123,17 @@ enum struct module_param {
      * @ref xia::pixie::param::module_var::ModFormat
      */
     module_format,
+    /**
+     * @ref xia::pixie::param::module_var::ModID <br>
+     * **Values**: [0, number of modules)
+     */
+    module_id,
+    /**
+     * @ref xia::pixie::param::module_var::ModNum
+     *
+     * **Range**: [0, # active modules)
+     */
+    module_number,
     /**
      * @ref xia::pixie::param::module_var::SlotID <br>
      * **Values**: [2, 14]
@@ -175,7 +186,8 @@ enum struct module_param {
  * the original string values. For example, `CHANNEL_CSRA` maps to the
  * enumerator `channel_csra`.
  *
- * Do not force any values onto the enum.
+ * @note Order of entries in this enum must match with the definitions in
+ * `channel_params`.
  */
 enum struct channel_param {
     /**
@@ -408,7 +420,8 @@ enum struct channel_param {
 /**
  * @brief Module variables that are defined within the DSP VAR file
  *
- * Do not force any values onto the enum.
+ * @note Order of entries in this enum must match with the definitions in
+ * `module_vars` and `module_var_descriptors_default`.
  */
 enum struct module_var {
     /**
@@ -645,16 +658,16 @@ enum struct module_var {
      */
     RunTimeB,
     /**
+     * @brief [INPUT] ID number for physical slot in chassis. Reported in
+     * list-mode data for purposes of event building. Limited to 0..15.
+     */
+    SlotID,
+    /**
      * @brief [INPUT] Sets the number of ADC samples
      * (2<sup>SLOWFILTERRANGE</sup>) to be averaged before entering the energy
      * filtering logic.
      */
     SlowFilterRange,
-    /**
-     * @brief [INPUT] ID number for physical slot in chassis. Reported in
-     * list-mode data for purposes of event building. Limited to 0..15.
-     */
-    SlotID,
     /**
      * @brief [OUTPUT] This variable is used to indicate whether the
      * synchronization interrupt has successfully occurred in the DSP when a
@@ -708,7 +721,8 @@ enum struct module_var {
 /**
  * @brief Defines Channel variables that are defined within the DSP VAR file.
  *
- * Do not force any values onto the enum.
+ * @note Order of entries in this enum must match with the definitions in
+ * `channel_vars` and `channel_var_descriptors_default`.
  */
 enum struct channel_var {
     /**
