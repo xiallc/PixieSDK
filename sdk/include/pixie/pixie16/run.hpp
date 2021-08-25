@@ -49,9 +49,39 @@ enum struct run_mode {
  * @brief Run tasks used to collect data from the hardware.
  */
 enum struct run_task {
-    nop = 0, /*!< An invalid run-task, used to indicate no run type. */
-    list_mode = 0x100, /*!< List-mode data write to the External FIFO */
-    histogram = 0x301 /*!< Histogram data write to the internal memory. */
+    /**
+     * @brief Control task data run.
+     *
+     * RunTask 0 is used to request slow control tasks. These include
+     * programming the trigger/filter FPGAs, setting the DACs in the system,
+     * transfers to/from the external memory, and calibration tasks.
+     */
+    nop = 0,
+    /**
+     * @brief List-mode data run.
+     *
+     * In this run type triggered waveforms together with time of arrival
+     * (trigger time), event energy, and other event information are written
+     * into the External FIFO for each channel and module. The raw data stream
+     * is always sent to the intermediate buffer in the signal processing FPGAs.
+     * The data-gathering routine in the DSP reads the raw data from the FPGAs,
+     * computes the event energy, and then writes those data to the external
+     * FIFO. If the intermediate buffer in the FPGA is full, newly arrived
+     * events will be ignored until there is room again in the buffer.
+     */
+    list_mode = 0x100,
+    /**
+     * @brief Histogram data run.
+     *
+     * Similar to RunTask 0x100, the event raw data stream is always sent to the
+     * intermediate buffer in the signal processing FPGAs. The data-gathering
+     * routine in the DSP reads the raw data from the FPGAs, computes the event
+     * energy, and then writes the energy value to the External Histogram
+     * Memory. If the intermediate buffer in the FPGA is full, newly arrived
+     * events will be ignored until there is room again in the buffer. This run
+     * type does not write data to the External FIFO.
+     */
+    histogram = 0x301
 };
 
 /**
