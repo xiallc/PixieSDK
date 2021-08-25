@@ -46,6 +46,9 @@ minimize the impact we encourage all users to migrate to the backward compatible
 > **Note**: The Legacy code can be used with much older compilers (ex. GCC 4.5+) and older versions
 > of the Broadcom PCI/PCIe SDK (ex. 7.11). You'll still need CMake 3.10+ to generate the build files.
 
+## Library Architecture
+![PixieSDK Architecture](doc/images/pixiesdk-library-architecture.png "PixieSDK Architecture")
+
 ## Copyright
 
 Copyright (c) 2005 - 2021, XIA LLC All rights reserved.

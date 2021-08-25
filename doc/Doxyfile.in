@@ -43,7 +43,7 @@ EXCLUDE_PATTERNS       = CMakeLists.txt
 EXAMPLE_PATH           =
 EXAMPLE_PATTERNS       = *
 EXAMPLE_RECURSIVE      = NO
-#IMAGE_PATH             = images
+IMAGE_PATH             = "@PROJECT_SOURCE_DIR@/doc"
 USE_MDFILE_AS_MAINPAGE = "@PROJECT_SOURCE_DIR@/README.md"
 #---------------------------------------------------------------------------
 # Configuration options related to source browsing
