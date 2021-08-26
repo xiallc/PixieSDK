@@ -1,1 +1,0 @@
-Copy Configuration\.cfgPixie_RevF Configuration\.cfgPixie

@@ -1,24 +1,29 @@
 # PixieSDK - System Tests
+
 This folder contains various system level tests for the PixieSDK. We define system tests as being
-any test that requires hardware to be present. For example, we can't test whether or not we can 
-write to and read from the DSP memory without having the DSP connected to the system. 
+any test that requires hardware to be present. For example, we can't test whether or not we can
+write to and read from the DSP memory without having the DSP connected to the system.
 
 ## test_direct_communication
+
 This test program allows users direct access to the modules via the hardware level APIs. It doesn't
 use any of the functionality provided at the User API level. Users can test the following features:
- * booting modules
- * writing to and reading from the
-   * DSP
-   * Main Memory (MCA)
- * Checking the status of the External FIFO (list-mode data)
- * Direct register access
 
-The program has a dry-run mode activated with the `--dry_run` switch. This switch disables any 
-communication with the modules and starts the API in the `Offline` setting. 
+* booting modules
+* writing to and reading from the
+    * DSP
+    * Main Memory (MCA)
+* Checking the status of the External FIFO (list-mode data)
+* Direct register access
+
+The program has a dry-run mode activated with the `--dry_run` switch. This switch disables any
+communication with the modules and starts the API in the `Offline` setting.
 
 ### Configuration File
-For the moment, we're only allowing interaction with a single module type in the system. The 
+
+For the moment, we're only allowing interaction with a single module type in the system. The
 configuration file should take the following form:
+
 ```shell
 1
 5
@@ -29,10 +34,11 @@ FPGATrig
 pixie.set
 /usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/dsp/Pixie16DSP_revfgeneral_16b250m_r35921.var
 ```
-Where the first line is the number of modules in the system (only 1 supported) and 5 is the slot 
-number of that module. The remaining files are firmware for the FPGAs and DSP along with the 
-DSP settings file. Multiple modules can be added by adding their slots and updating the number of
-modules in the system. **Note** This will only work if all modules have the same type! 
+
+Where the first line is the number of modules in the system (only 1 supported) and 5 is the slot
+number of that module. The remaining files are firmware for the FPGAs and DSP along with the DSP
+settings file. Multiple modules can be added by adding their slots and updating the number of
+modules in the system. **Note** This will only work if all modules have the same type!
 
 ```shell
 2
@@ -40,9 +46,12 @@ modules in the system. **Note** This will only work if all modules have the same
 10
 ...
 ```
+
 ### Test Data Patterns
+
 The software recognizes a number of test data patterns. Each pattern may be useful to test different
 aspects of the system.
+
 * HI_LO
     * Even elements = `0xAAAA5555`
     * Odd elements = `0x5555AAAA`
@@ -57,7 +66,9 @@ aspects of the system.
 * ZERO - All elements equal to `0x0`
 
 ### Usage
+
 #### Booting
+
 * Perform a full boot - 0x7F
   ```shell
   test_direct_communication boot cfg.txt
@@ -66,15 +77,20 @@ aspects of the system.
   ```shell
   test_direct_communication boot cfg.txt -b 0x70
   ```
+
 #### Direct Register Access
+
 This type of access will only write a single 32-bit word to the provided memory register. The memory
 address is referenced from the modules PLX Virtual Address. We use `Pixie_Register_IO`.
+
 ```shell
 test_direct_communication raw cfg.txt -wr -d 0x1 -a 0x10
 ```
+
 #### DSP Tests
-All of the examples below perform a full boot of the system and test the DSP and test against 
-memory address 0x50000.
+
+All of the examples below perform a full boot of the system and test the DSP and test against memory
+address 0x50000.
 
 * Perform a write/read with constant data at memory address 0x50000
    ```shell
@@ -98,18 +114,22 @@ memory address 0x50000.
    ```
 
 #### External FIFO
+
 All of these examples perform a full boot of the system.
+
 * Read the external FIFO data
     ```shell
     test_direct_communication external_fifo cfg.txt -r
     ```
-* Check the number of words in the External FIFO 
+* Check the number of words in the External FIFO
     ```shell
     test_direct_communication external_fifo cfg.txt -s
     ```
 
 #### Main Memory (MCA)
+
 All of these examples perform a full boot of the system.
+
 * Clear the MCA memory
     ```shell
     test_direct_communication mca cfg.txt -c
@@ -122,7 +142,7 @@ All of these examples perform a full boot of the system.
     ```shell
     test_direct_communication mca cfg.txt -wr -p CONSTANT
     ```
-* Write CONSTANT data to the MCA memory 
+* Write CONSTANT data to the MCA memory
     ```shell
     test_direct_communication mca cfg.txt -w -p CONSTANT
     ```

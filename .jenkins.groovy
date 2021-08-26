@@ -17,13 +17,57 @@ pipeline {
             }
         }
         stage('PixieSDK') {
-            steps{
-                dir('build') {
-                    sh '''
-                    cmake3 ../
-                    make
-                    ./tests/unit/legacy/legacy_unit_test_runner
-                    '''
+            matrix {
+                axes {
+                    axis {
+                        name 'RELEASE_TYPE'
+                        values 'Release', 'Debug'
+                    }
+                }
+                stages {
+                    stage("Build") {
+                        steps{
+                            dir("build-${RELEASE_TYPE}") {
+                                sh '''
+                                pwd
+                                cmake3 ../ -DCMAKE_BUILD_TYPE=${RELEASE_TYPE}
+                                make
+                                '''
+                            }
+                        }
+                    }
+                    stage("Legacy") {
+                        steps{
+                            dir("build-${RELEASE_TYPE}") {
+                                sh '''
+                                pwd
+                                ./tests/unit/legacy_unit_test_runner
+                                '''
+                            }
+                        }
+                    }
+                    stage("Unit") {
+                        steps{
+                            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                                dir("build-${RELEASE_TYPE}") {
+                                    sh '''
+                                    pwd
+                                    ./tests/unit/pixie_sdk_unit_test_runner
+                                    '''
+                                }
+                            }
+                        }
+                    }
+                    stage("Integration") {
+                        steps{
+                            dir("build-${RELEASE_TYPE}") {
+                                sh '''
+                                pwd
+                                ./tests/integration/pixie_sdk_integration_test_runner
+                                '''
+                            }
+                        }
+                    }
                 }
             }
         }
