@@ -27,7 +27,7 @@ minimize the impact we encourage all users to migrate to the backward compatible
 * Host-side list-mode data buffering prevents data loss from full list-mode data FIFOs.
 * JSON settings files contain metadata regarding the module's configuration and firmware as well as
   DSP variables.
-* Firmware loads in parallel. A full crate takes just over 1 second to get all modules booted.
+* Firmware loads in parallel. A full crate takes about 3 seconds to boot.
 * Optimized wait times reduces the time spent waiting on the hardware.
 * Removed the need for `pxisys.ini`.
 
