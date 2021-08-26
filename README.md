@@ -17,6 +17,9 @@ minimize the impact we encourage all users to migrate to the backward compatible
 * [Installation](doc/pages/installation.md)
 * [Example Programs](examples/README.md)
 * [Project Glossary](doc/pages/glossary.md)
+* Legacy API
+    * [Architecture](doc/pages/pixie16/legacy/legacy-api-architecture.md)
+    * [Usage Overview](doc/pages/pixie16/legacy/legacy-overview.md)
 
 ## Feature highlights
 
@@ -47,6 +50,7 @@ minimize the impact we encourage all users to migrate to the backward compatible
 > of the Broadcom PCI/PCIe SDK (ex. 7.11). You'll still need CMake 3.10+ to generate the build files.
 
 ## Library Architecture
+
 ![PixieSDK Architecture](doc/images/pixiesdk-library-architecture.png "PixieSDK Architecture")
 
 ## Copyright
