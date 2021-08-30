@@ -64,6 +64,7 @@ if (BUILD_SDK OR BUILD_LEGACY)
     if (BUILD_EXAMPLES)
         add_subdirectory(examples)
     endif()
+
     add_subdirectory(externals)
 endif ()
 
