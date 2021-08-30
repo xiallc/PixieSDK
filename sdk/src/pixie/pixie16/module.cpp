@@ -83,6 +83,7 @@ std::string error::make_what(const int num, const int slot, const char* what_) {
 const int vendor_id = 0x10b5;
 const int device_id = 0x9054;
 
+#if PLX_SDK_VERSION_MAJOR == 8
 static const char* pci_error_labels[] = {"PLX_STATUS_OK",
                                          "PLX_STATUS_FAILED",
                                          "PLX_STATUS_NULL_PARAM",
@@ -110,6 +111,58 @@ static const char* pci_error_labels[] = {"PLX_STATUS_OK",
                                          "PLX_STATUS_NOT_FOUND",
                                          "PLX_STATUS_INVALID_STATE",
                                          "PLX_STATUS_BUFF_TOO_SMALL"};
+#else
+#define PLX_STATUS_OK ApiSuccess
+#define PLX_STATUS_NO_DRIVER ApiNoActiveDriver
+#define PLX_STATUS_INVALID_OBJECT ApiInvalidDeviceInfo
+#define PLX_STATUS_INVALID_ACCESS ApiDmaChannelUnavailable
+#define PLX_STATUS_IN_PROGRESS ApiDmaInProgress
+#define PLX_STATUS_RSVD_LAST_ERROR ApiLastError
+
+static const char* pci_error_labels[] = {"ApiSuccess",
+                                         "ApiFailed",
+                                         "ApiNullParam",
+                                         "ApiUnsupportedFunction",
+                                         "ApiNoActiveDriver",
+                                         "ApiConfigAccessFailed",
+                                         "ApiInvalidDeviceInfo",
+                                         "ApiInvalidDriverVersion",
+                                         "ApiInvalidOffset",
+                                         "ApiInvalidData",
+                                         "ApiInvalidSize",
+                                         "ApiInvalidAddress",
+                                         "ApiInvalidAccessType",
+                                         "ApiInvalidIndex",
+                                         "ApiInvalidPowerState",
+                                         "ApiInvalidIopSpace",
+                                         "ApiInvalidHandle",
+                                         "ApiInvalidPciSpace",
+                                         "ApiInvalidBusIndex",
+                                         "ApiInsufficientResources",
+                                         "ApiWaitTimeout",
+                                         "ApiWaitCanceled",
+                                         "ApiDmaChannelUnavailable",
+                                         "ApiDmaChannelInvalid",
+                                         "ApiDmaDone",
+                                         "ApiDmaPaused",
+                                         "ApiDmaInProgress",
+                                         "ApiDmaCommandInvalid",
+                                         "ApiDmaInvalidChannelPriority",
+                                         "ApiDmaSglPagesGetError",
+                                         "ApiDmaSglPagesLockError",
+                                         "ApiMuFifoEmpty",
+                                         "ApiMuFifoFull",
+                                         "ApiPowerDown",
+                                         "ApiHSNotSupported",
+                                         "ApiVPDNotSupported",
+                                         "ApiDeviceInUse",
+                                         "ApiDeviceDisabled",
+                                         "ApiPending",
+                                         "ApiObjectNotFound",
+                                         "ApiInvalidState",
+                                         "ApiBufferTooSmall",
+                                         "ApiLastError"};
+#endif
 
 struct pci_bus_handle {
     int device_number;
