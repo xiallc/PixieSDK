@@ -25,7 +25,7 @@ function(xia_configure_target)
 
     if (${XIA_CT_USE_PLX})
         target_include_directories(${XIA_CT_TARGET} PUBLIC ${PLX_INCLUDE_DIR})
-        if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.13")
+        if (${CMAKE_VERSION} VERSION_GREATER "3.12")
             target_link_directories(${XIA_CT_TARGET} PUBLIC ${PLX_LIBRARY_DIR})
         endif ()
         if (NOT ${XIA_CT_CONFIG_OBJ})
