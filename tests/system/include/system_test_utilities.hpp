@@ -26,6 +26,7 @@
 #include <chrono>
 #include <iomanip>
 #include <ostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
