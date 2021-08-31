@@ -20,10 +20,9 @@
  * @brief Implements functions that are useful across several system test codes.
  */
 
-#include "system_test_utilities.hpp"
-#include "easylogging/easylogging++.h"
-
 #include <iostream>
+
+#include "system_test_utilities.hpp"
 
 std::vector<unsigned int> prepare_data_to_write(const DATA_PATTERN& data_pattern,
                                                 const unsigned int& size) {
@@ -75,11 +74,11 @@ std::vector<unsigned int> prepare_data_to_write(const DATA_PATTERN& data_pattern
 bool verify_api_return_value(const int& val, const std::string& func_name,
                              const bool& print_success_msg /*=true*/) {
     if (val < 0) {
-        LOG(ERROR) << func_name << " failed with Error Code " << val;
+        std::cout << LOG("ERROR") << func_name << " failed with Error Code " << val;
         return false;
     }
     if (print_success_msg)
-        LOG(INFO) << func_name << " finished successfully.";
+        std::cout << LOG("INFO") << func_name << " finished successfully.";
     return true;
 }
 
@@ -88,9 +87,9 @@ int verify_data_read(const unsigned int* expected, const unsigned int* returned,
     unsigned int error_count = 0;
     for (unsigned int idx = 0; idx < size; idx++) {
         if (expected[idx] != returned[idx]) {
-            LOG(ERROR) << " Data mismatch in module " << module_number << ", rd_data=" << std::hex
-                       << returned[idx] << ", wr_data=" << expected[idx]
-                       << ", position=" << std::dec << idx << std::endl;
+            std::cout << LOG("ERROR") << " Data mismatch in module " << module_number
+                      << ", rd_data=" << std::hex << returned[idx] << ", wr_data=" << expected[idx]
+                      << ", position=" << std::dec << idx;
             error_count++;
         }
     }

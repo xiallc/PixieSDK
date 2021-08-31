@@ -22,6 +22,10 @@
 
 #ifndef PIXIE_SDK_SYSTEM_TEST_UTILITIES_HPP
 #define PIXIE_SDK_SYSTEM_TEST_UTILITIES_HPP
+
+#include <chrono>
+#include <iomanip>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -37,6 +41,32 @@ enum class DATA_PATTERN {
 };
 
 enum class DATA_IO { WRITE = 0, READ = 1 };
+
+struct LOG {
+    explicit LOG(const std::string& type) {
+        type_ = type;
+
+        std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+        std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
+        std::chrono::milliseconds now2 = std::chrono::duration_cast<std::chrono::milliseconds>(
+            now.time_since_epoch());
+        char timeBuffer[80];
+        std::strftime(timeBuffer, 80, "%FT%T", gmtime(&currentTime));
+
+        std::stringstream tmp;
+        tmp << timeBuffer << "." << std::setfill('0') << std::setw(3) << now2.count() % 1000 << "Z";
+
+        datetime_ = tmp.str();
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const LOG& log) {
+        os << log.datetime_ << " - " << log.type_ << " - ";
+        return os;
+    }
+
+    std::string type_;
+    std::string datetime_;
+};
 
 std::vector<unsigned int> prepare_data_to_write(const DATA_PATTERN& data_pattern,
                                                 const unsigned int& size);

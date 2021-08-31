@@ -23,12 +23,12 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <fstream>
 #include <iostream>
 #include <thread>
 #include <vector>
 
 #include "args/args.hxx"
-#include "easylogging/easylogging++.h"
 #include "pixie16app_export.h"
 #include "pixie16sys_export.h"
 #include "system_test_utilities.hpp"
@@ -37,7 +37,6 @@
 #include <windows.h>
 #endif
 
-INITIALIZE_EASYLOGGINGPP
 
 /**
  * @brief A small configuration class to hold information useful to the legacy API.
@@ -56,7 +55,7 @@ public:
 
 /**
  * @brief Reads the provided configuration file into the Configuration class.
- * @param config_file_name : The name of the configuration file we'll open.
+ * @param[in] config_file_name The name of the configuration file we'll open.
  * @return A populated instance of the Configuration class.
  */
 Configuration read_configuration_file(const std::string& config_file_name) {
@@ -81,27 +80,7 @@ Configuration read_configuration_file(const std::string& config_file_name) {
     return cfg;
 }
 
-
-/**
- * @brief Configures the EasyLogging++ logger
- * @param[in] argc : The number of arguments passed in from the command line
- * @param[in] argv : The argument array from the command line
- * @returns Nothing!
- */
-void configure_logging(int argc, char** argv) {
-    START_EASYLOGGINGPP(argc, argv);
-    el::Configurations defaultConf;
-    defaultConf.setToDefault();
-    defaultConf.setGlobally(el::ConfigurationType::Filename, "test_direct_communication.log");
-    defaultConf.setGlobally(el::ConfigurationType::Format,
-                            "%datetime{%Y-%M-%dT%H:%m:%s.%g} - %level - %msg");
-    el::Loggers::reconfigureLogger("default", defaultConf);
-}
-
-
 int main(int argc, char* argv[]) {
-    configure_logging(argc, argv);
-
     args::ArgumentParser parser("Tests direct communication with the system.");
     parser.helpParams.addDefault = true;
     parser.helpParams.addChoices = true;
@@ -171,21 +150,22 @@ int main(int argc, char* argv[]) {
     try {
         parser.ParseCLI(argc, argv);
     } catch (args::Help& help) {
-        LOG(INFO) << help.what();
+        std::cout << LOG("INFO") << help.what() << std::endl;
         std::cout << parser;
         return EXIT_SUCCESS;
     } catch (args::Error& e) {
-        LOG(ERROR) << e.what();
+        std::cout << LOG("ERROR") << e.what() << std::endl;
         std::cout << parser;
         return EXIT_FAILURE;
     }
 
     if (is_dry_run)
-        LOG(INFO) << "Performing a dry run, none of these commands actually execute.";
+        std::cout << LOG("INFO") << "Performing a dry run, none of these commands actually execute."
+                  << std::endl;
 
     unsigned int address;
     if (args::get(address_flag) == "0x10073D" && !csr && !external_fifo && !boot && !mca) {
-        LOG(ERROR) << " You must provide us with a memory address!";
+        std::cout << LOG("ERROR") << " You must provide us with a memory address!" << std::endl;
         return EXIT_FAILURE;
     } else
         address = stoul(args::get(address_flag), nullptr, 0);
@@ -194,7 +174,7 @@ int main(int argc, char* argv[]) {
     try {
         read_configuration_file(args::get(configuration));
     } catch (std::invalid_argument& invalidArgument) {
-        LOG(ERROR) << invalidArgument.what();
+        std::cout << LOG("ERROR") << invalidArgument.what() << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -202,17 +182,17 @@ int main(int argc, char* argv[]) {
     if (is_dry_run)
         offline_mode = 1;
 
-    LOG(INFO) << "Calling Pixie16InitSystem.";
+    std::cout << LOG("INFO") << "Calling Pixie16InitSystem." << std::endl;
     if (!verify_api_return_value(Pixie16InitSystem(cfg.numModules, cfg.slot_map, offline_mode),
                                  "Pixie16InitSystem"))
         return EXIT_FAILURE;
 
     unsigned int boot_pattern = stoul(args::get(boot_pattern_flag), nullptr, 0);
     if (is_dry_run || external_fifo) {
-        LOG(INFO) << "Will not boot the module!";
+        std::cout << LOG("INFO") << "Will not boot the module!" << std::endl;
     } else {
-        LOG(INFO) << "Calling Pixie16BootModule with boot pattern: " << std::showbase << std::hex
-                  << boot_pattern << std::dec;
+        std::cout << LOG("INFO") << "Calling Pixie16BootModule with boot pattern: " << std::showbase
+                  << std::hex << boot_pattern << std::dec << std::endl;
 
         if (!verify_api_return_value(
                 Pixie16BootModule(cfg.ComFPGAConfigFile.c_str(), cfg.SPFPGAConfigFile.c_str(), NULL,
@@ -225,18 +205,20 @@ int main(int argc, char* argv[]) {
     }
 
     bool has_written_data = false;
-    LOG(INFO) << "User requested that we perform our tests " << args::get(loop_flag) << " time(s).";
+    std::cout << LOG("INFO") << "User requested that we perform our tests " << args::get(loop_flag)
+              << " time(s)." << std::endl;
     for (unsigned int test_number = 0; test_number < args::get(loop_flag); test_number++) {
-        LOG(INFO) << "Starting test number " << test_number;
+        std::cout << LOG("INFO") << "Starting test number " << test_number << std::endl;
         if (dsp) {
-            LOG(INFO) << "Starting DSP test";
+            std::cout << LOG("INFO") << "Starting DSP test" << std::endl;
             auto data =
                 prepare_data_to_write(args::get(data_pattern_flag), args::get(data_size_flag));
 
             if (write && !has_written_data) {
-                LOG(INFO) << "Performing a write to memory address " << args::get(address_flag)
-                          << " with a size of " << args::get(data_size_flag) << " on Module "
-                          << args::get(module_number_flag);
+                std::cout << LOG("INFO") << "Performing a write to memory address "
+                          << args::get(address_flag) << " with a size of "
+                          << args::get(data_size_flag) << " on Module "
+                          << args::get(module_number_flag) << std::endl;
                 if (!is_dry_run)
                     Pixie_DSP_Memory_IO(
                         data.data(), address, args::get(data_size_flag),
@@ -247,21 +229,23 @@ int main(int argc, char* argv[]) {
             }
 
             if (read) {
-                LOG(INFO) << "Performing a read from memory address " << args::get(address_flag)
-                          << " with a size of " << args::get(data_size_flag) << " on Module "
-                          << args::get(module_number_flag);
+                std::cout << LOG("INFO") << "Performing a read from memory address "
+                          << args::get(address_flag) << " with a size of "
+                          << args::get(data_size_flag) << " on Module "
+                          << args::get(module_number_flag) << std::endl;
                 if (!is_dry_run) {
                     std::vector<unsigned int> read_data(args::get(data_size_flag), 0);
                     if (burst_read) {
-                        LOG(INFO) << "Performing the burst read from memory address "
-                                  << args::get(address_flag);
+                        std::cout << LOG("INFO") << "Performing the burst read from memory address "
+                                  << args::get(address_flag) << std::endl;
                         Pixie_DSP_Memory_IO(
                             read_data.data(), address, args::get(data_size_flag),
                             static_cast<std::underlying_type<DATA_IO>::type>(DATA_IO::READ),
                             args::get(module_number_flag));
                     } else {
-                        LOG(INFO) << "Performing a word-by-word read from memory address "
-                                  << args::get(address_flag);
+                        std::cout << LOG("INFO")
+                                  << "Performing a word-by-word read from memory address "
+                                  << args::get(address_flag) << std::endl;
                         for (unsigned int word = 0; word < args::get(data_size_flag); word++) {
                             Pixie_DSP_Memory_IO(
                                 &read_data[word], address + word, 1,
@@ -274,9 +258,11 @@ int main(int argc, char* argv[]) {
                         verify_data_read(data.data(), read_data.data(),
                                          args::get(module_number_flag), args::get(data_size_flag));
                     if (error_count == 0)
-                        LOG(INFO) << "Data read was the same as data written!";
+                        std::cout << LOG("INFO") << "Data read was the same as data written!"
+                                  << std::endl;
                     if (verbose) {
-                        LOG(INFO) << "Outputting read data to terminal:";
+                        std::cout << LOG("INFO")
+                                  << "Outputting read data to terminal:" << std::endl;
                         std::cout << std::hex;
                         for (const auto& it : read_data) {
                             std::cout << it;
@@ -288,15 +274,16 @@ int main(int argc, char* argv[]) {
         }
 
         if (mca) {
-            LOG(INFO) << "Performing a test with the MCA";
+            std::cout << LOG("INFO") << "Performing a test with the MCA" << std::endl;
 
             auto data = prepare_data_to_write(args::get(data_pattern_flag), 32768);
 
             if (write && !has_written_data) {
                 if (!is_dry_run) {
                     for (unsigned int channel = 0; channel < NUMBER_OF_CHANNELS; channel++) {
-                        LOG(INFO) << "Writing Channel " << channel << "'s MCA spectrum on Module "
-                                  << args::get(module_number_flag) << ".";
+                        std::cout << LOG("INFO") << "Writing Channel " << channel
+                                  << "'s MCA spectrum on Module " << args::get(module_number_flag)
+                                  << "." << std::endl;
                         if (!verify_api_return_value(
                                 Pixie_Main_Memory_IO(
                                     data.data(), data.size() * channel, data.size(),
@@ -304,8 +291,9 @@ int main(int argc, char* argv[]) {
                                         DATA_IO::WRITE),
                                     args::get(module_number_flag)),
                                 "Pixie_Main_Memory_IO", "OK")) {
-                            LOG(ERROR) << " Had a problem writing the MCA spectrum for Channel "
-                                       << channel << "! Aborting!";
+                            std::cout << LOG("ERROR")
+                                      << " Had a problem writing the MCA spectrum for Channel "
+                                      << channel << "! Aborting!" << std::endl;
                             return EXIT_FAILURE;
                         }
                     }
@@ -315,11 +303,13 @@ int main(int argc, char* argv[]) {
             }
 
             if (read) {
-                LOG(INFO) << "Reading MCA spectrum from Module " << args::get(module_number_flag);
+                std::cout << LOG("INFO") << "Reading MCA spectrum from Module "
+                          << args::get(module_number_flag) << std::endl;
                 if (!is_dry_run) {
                     for (unsigned int channel = 0; channel < NUMBER_OF_CHANNELS; channel++) {
-                        LOG(INFO) << "Reading Channel " << channel << "'s MCA spectrum on Module "
-                                  << args::get(module_number_flag) << ".";
+                        std::cout << LOG("INFO") << "Reading Channel " << channel
+                                  << "'s MCA spectrum on Module " << args::get(module_number_flag)
+                                  << "." << std::endl;
 
                         std::vector<unsigned int> read_data(data.size(), 0x1a1a1a1a);
 
@@ -329,8 +319,9 @@ int main(int argc, char* argv[]) {
                                     static_cast<std::underlying_type<DATA_IO>::type>(DATA_IO::READ),
                                     args::get(module_number_flag)),
                                 "Pixie_Main_Memory_IO", "OK")) {
-                            LOG(ERROR) << " Had a problem reading the MCA spectrum for Channel "
-                                       << channel << "! Aborting!";
+                            std::cout << LOG("ERROR")
+                                      << " Had a problem reading the MCA spectrum for Channel "
+                                      << channel << "! Aborting!" << std::endl;
                             return EXIT_FAILURE;
                         }
 
@@ -338,9 +329,11 @@ int main(int argc, char* argv[]) {
                             verify_data_read(data.data(), read_data.data(),
                                              args::get(module_number_flag), data.size());
                         if (error_count == 0)
-                            LOG(INFO) << "Data read was the same as data written!";
+                            std::cout << LOG("INFO") << "Data read was the same as data written!"
+                                      << std::endl;
                         if (verbose) {
-                            LOG(INFO) << "Outputting read data to terminal:";
+                            std::cout << LOG("INFO")
+                                      << "Outputting read data to terminal:" << std::endl;
                             std::cout << std::hex;
                             for (const auto& it : read_data)
                                 std::cout << it << std::dec;
@@ -349,28 +342,30 @@ int main(int argc, char* argv[]) {
                 }
             }
             if (!is_dry_run && clear) {
-                LOG(INFO) << "Clearing MCA memory";
+                std::cout << LOG("INFO") << "Clearing MCA memory" << std::endl;
                 if (!verify_api_return_value(Pixie_Clear_Main_Memory(0, 32768 * NUMBER_OF_CHANNELS,
                                                                      args::get(module_number_flag)),
                                              "Pixie Clear Main Memory")) {
-                    LOG(ERROR) << "Couldn't clear the main memory in Module "
-                               << args::get(module_number_flag);
+                    std::cout << LOG("ERROR") << "Couldn't clear the main memory in Module "
+                              << args::get(module_number_flag) << std::endl;
                     return EXIT_FAILURE;
                 }
             }
         }
 
         if (raw) {
-            LOG(INFO) << "Performing a test with raw memory access.";
+            std::cout << LOG("INFO") << "Performing a test with raw memory access." << std::endl;
             if (write) {
                 if (!data_flag) {
-                    LOG(ERROR) << " Must define the data that you'd like to write!";
+                    std::cout << LOG("ERROR") << " Must define the data that you'd like to write!"
+                              << std::endl;
                     return EXIT_FAILURE;
                 }
                 unsigned int data = stoul(args::get(data_flag), nullptr, 0);
 
-                LOG(INFO) << "Writing " << args::get(data_flag) << " to " << args::get(address_flag)
-                          << " in Module " << args::get(module_number_flag);
+                std::cout << LOG("INFO") << "Writing " << args::get(data_flag) << " to "
+                          << args::get(address_flag) << " in Module "
+                          << args::get(module_number_flag) << std::endl;
                 if (!is_dry_run)
                     Pixie_Register_IO(
                         args::get(module_number_flag), address,
@@ -379,27 +374,29 @@ int main(int argc, char* argv[]) {
 
             if (read) {
                 unsigned int data;
-                LOG(INFO) << "Reading from " << args::get(address_flag) << " in Module "
-                          << args::get(module_number_flag);
+                std::cout << LOG("INFO") << "Reading from " << args::get(address_flag)
+                          << " in Module " << args::get(module_number_flag) << std::endl;
                 if (!is_dry_run) {
                     Pixie_Register_IO(
                         args::get(module_number_flag), address,
                         static_cast<std::underlying_type<DATA_IO>::type>(DATA_IO::READ), &data);
-                    LOG(INFO) << "Read " << std::showbase << std::hex << data << " from "
-                              << args::get(address_flag) << " in Module " << std::dec
-                              << args::get(module_number_flag);
+                    std::cout << LOG("INFO") << "Read " << std::showbase << std::hex << data
+                              << " from " << args::get(address_flag) << " in Module " << std::dec
+                              << args::get(module_number_flag) << std::endl;
                 } else {
-                    LOG(INFO) << "Dry run active didn't perform the read!";
+                    std::cout << LOG("INFO") << "Dry run active didn't perform the read!"
+                              << std::endl;
                 }
             }
         }
 
         if (external_fifo) {
-            LOG(INFO) << "Performing a test with the External FIFO";
+            std::cout << LOG("INFO") << "Performing a test with the External FIFO" << std::endl;
             unsigned int number_of_words_in_fifo = 0;
             Pixie_Read_ExtFIFOStatus(&number_of_words_in_fifo, args::get(module_number_flag));
-            LOG(INFO) << "Number of 32-bit words in the external FIFO of Module"
-                      << args::get(module_number_flag) << ": " << number_of_words_in_fifo;
+            std::cout << LOG("INFO") << "Number of 32-bit words in the external FIFO of Module"
+                      << args::get(module_number_flag) << ": " << number_of_words_in_fifo
+                      << std::endl;
             if (read && number_of_words_in_fifo > 0) {
                 std::vector<unsigned int> data = {number_of_words_in_fifo, 0};
                 if (!verify_api_return_value(Pixie_ExtFIFO_Read(data.data(),
@@ -407,36 +404,41 @@ int main(int argc, char* argv[]) {
                                                                 args::get(module_number_flag)),
                                              "Pixie_ExtFIFO_Read", ""))
                     return EXIT_FAILURE;
-                LOG(INFO) << "Read " << number_of_words_in_fifo
-                          << " 32-bit words from the External FIFO.";
+                std::cout << LOG("INFO") << "Read " << number_of_words_in_fifo
+                          << " 32-bit words from the External FIFO." << std::endl;
             } else {
-                LOG(INFO) << "External FIFO doesn't have anything to read!";
+                std::cout << LOG("INFO") << "External FIFO doesn't have anything to read!"
+                          << std::endl;
             }
         }
 
         if (csr) {
-            LOG(INFO) << "CSR on Module " << args::get(module_number_flag) << ".";
+            std::cout << LOG("INFO") << "CSR on Module " << args::get(module_number_flag) << "."
+                      << std::endl;
             if (write) {
                 if (args::get(data_flag) == "0x70FFE3") {
-                    LOG(ERROR) << " Must define the data that you'd like to write!";
+                    std::cout << LOG("ERROR") << " Must define the data that you'd like to write!"
+                              << std::endl;
                     return EXIT_FAILURE;
                 }
                 unsigned int data = stoul(args::get(data_flag), nullptr, 0);
-                LOG(INFO) << "Writing " << args::get(data_flag) << " to CSR in Module "
-                          << args::get(module_number_flag);
+                std::cout << LOG("INFO") << "Writing " << args::get(data_flag)
+                          << " to CSR in Module " << args::get(module_number_flag) << std::endl;
                 Pixie_WrtCSR(args::get(module_number_flag), data);
             }
             if (read) {
                 unsigned int data;
-                LOG(INFO) << "Reading from to CSR in Module " << args::get(module_number_flag);
+                std::cout << LOG("INFO") << "Reading from to CSR in Module "
+                          << args::get(module_number_flag) << std::endl;
                 Pixie_ReadCSR(args::get(module_number_flag), &data);
-                LOG(INFO) << "Read " << data << " from Module " << args::get(module_number_flag)
-                          << " CSR.";
+                std::cout << LOG("INFO") << "Read " << data << " from Module "
+                          << args::get(module_number_flag) << " CSR." << std::endl;
             }
         }
-        LOG(INFO) << "Completed test number " << test_number;
+        std::cout << LOG("INFO") << "Completed test number " << test_number << std::endl;
         if (args::get(loop_flag) > 1 && test_number != args::get(loop_flag) - 1) {
-            LOG(INFO) << "Will now sleep for 1 second before starting next test.";
+            std::cout << LOG("INFO") << "Will now sleep for 1 second before starting next test."
+                      << std::endl;
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
     }
