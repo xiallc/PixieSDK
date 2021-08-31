@@ -1,4 +1,4 @@
-if (BUILD_INTEGRATION_TESTS OR BUILD_UNIT_TESTS)
+if (BUILD_INTEGRATION_TESTS OR BUILD_UNIT_TESTS OR BUILD_LEGACY_UNIT_TESTS)
     add_library(BaseTestRunnerObjLib OBJECT base_test_runner.cpp)
     target_include_directories(BaseTestRunnerObjLib PUBLIC
             ${PROJECT_SOURCE_DIR}/externals/doctest)
