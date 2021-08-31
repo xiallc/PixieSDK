@@ -2620,6 +2620,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
         multiplicitymaskl, multiplicitymaskh, ftrigoutdelay;
     unsigned int chantrigstretch, cfdthresh, integrator;
 
+    FL = FG = 0;
+
     // Check if ModNum is valid
     if (ModNum >= Number_Modules) {
         Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
