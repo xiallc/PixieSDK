@@ -83,7 +83,7 @@ std::string error::make_what(const int num, const int slot, const char* what_) {
 const int vendor_id = 0x10b5;
 const int device_id = 0x9054;
 
-#if PLX_SDK_VERSION_MAJOR == 8
+#if PLX_SDK_VERSION_MAJOR >= 8
 static const char* pci_error_labels[] = {"PLX_STATUS_OK",
                                          "PLX_STATUS_FAILED",
                                          "PLX_STATUS_NULL_PARAM",
