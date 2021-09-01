@@ -75,7 +75,7 @@ include(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(PixieSDK DEFAULT_MSG
         PIXIESDK_LIBRARY_DIR PIXIESDK_INCLUDE_DIR)
 
-if (PixieSDK_FOUND)
+if (PixieSDK_FOUND OR PIXIESDK_FOUND)
     if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
         set(PIXIESDK_LIBRARIES PixieSdk dl m pthread)
         set(PIXIESDK_PIXIE16_LIBRARIES Pixie16Api PixieSdk dl m pthread)

@@ -51,11 +51,11 @@ include(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(BroadcomAPI DEFAULT_MSG
         PLX_LIBRARY_DIR PLX_INCLUDE_DIR PLX_STATIC_LIBRARY_PATH)
 
-if (BroadcomAPI_FOUND)
+if (BroadcomAPI_FOUND OR BROADCOMAPI_FOUND)
     mark_as_advanced(PLX_STATIC_LIBRARY_PATH PLX_LIBRARY_DIR PLX_INCLUDE_DIR)
     if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
         set(PLX_STATIC_LIB -l:PlxApi.a dl m)
     elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         set(PLX_STATIC_LIB PlxApi.lib)
     endif ()
-endif (BroadcomAPI_FOUND)
+endif (BroadcomAPI_FOUND OR BROADCOMAPI_FOUND)

@@ -284,9 +284,9 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
                                  "Pixie16StartListModeRun"))
         return false;
 
-    std::vector<std::ofstream> output_streams(cfg.num_modules());
+    std::vector<std::ofstream*> output_streams(cfg.num_modules());
     for (unsigned short i = 0; i < cfg.num_modules(); i++) {
-        output_streams[i] = std::ofstream(generate_filename(i, "list-mode", "bin"),
+        output_streams[i] = new std::ofstream(generate_filename(i, "list-mode", "bin"),
                                           std::ios::out | std::ios::binary);
     }
 
@@ -311,7 +311,7 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
                             Pixie16ReadDataFromExternalFIFO(data.data(), num_fifo_words, mod_num),
                             "Pixie16ReadDataFromExternalFIFO", false))
                         return false;
-                    output_streams[mod_num].write(reinterpret_cast<char*>(data.data()),
+                    output_streams[mod_num]->write(reinterpret_cast<char*>(data.data()),
                                                   num_fifo_words * sizeof(uint32_t));
                 } else {
                     continue;
@@ -380,7 +380,7 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
                     Pixie16ReadDataFromExternalFIFO(data.data(), num_fifo_words, mod_num),
                     "Pixie16ReadDataFromExternalFIFO", false))
                 return false;
-            output_streams[mod_num].write(reinterpret_cast<char*>(data.data()),
+            output_streams[mod_num]->write(reinterpret_cast<char*>(data.data()),
                                           num_fifo_words * sizeof(uint32_t));
         }
         if (!output_statistics_data(mod_num, "list-mode-stats")) {
