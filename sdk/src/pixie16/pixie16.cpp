@@ -1036,6 +1036,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsign
     return 0;
 }
 
+PIXIE_EXPORT int PIXIE_API Pixie16TauFinder(unsigned short ModNum, double* Tau) {
+    xia_log(xia_log::info) << "Pixie16TauFinder: ModNum=" << ModNum;
+
+    (void) Tau;
+    return not_supported();
+}
+
 PIXIE_EXPORT int PIXIE_API Pixie16WriteSglChanPar(const char* ChanParName, double ChanParData,
                                                   unsigned short ModNum, unsigned short ChanNum) {
     xia_log(xia_log::info) << "Pixie16WriteSglChanPar: ModNum=" << ModNum << " ChanNum=" << ChanNum
