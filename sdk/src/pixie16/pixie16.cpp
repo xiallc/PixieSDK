@@ -523,6 +523,17 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeRealTime(unsigned int* Statistics,
     return result;
 }
 
+PIXIE_EXPORT int PIXIE_API Pixie16CopyDSPParameters(unsigned short BitMask,
+                                                    unsigned short SourceModule,
+                                                    unsigned short SourceChannel,
+                                                    unsigned short* DestinationMask){
+    xia_log(xia_log::info) << "Pixie16CopyDSPParameters: Source Module=" << SourceModule
+        << " Source Channel = " << SourceChannel << "  Destination Mask = " << DestinationMask
+        << " Bit Mask = " << BitMask;
+
+    return not_supported();
+}
+
 PIXIE_EXPORT int PIXIE_API Pixie16EndRun(unsigned short ModNum) {
     xia_log(xia_log::info) << "Pixie16EndRun: ModNum=" << ModNum;
 

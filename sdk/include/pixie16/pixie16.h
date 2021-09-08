@@ -34,6 +34,9 @@ extern "C" {
  * code. Since this glue is to support legacy C applications, we assume that
  * users will only be dealing with Rev F or older.
  */
+#define CCSRA_ENARELAY 14
+#define CCSRA_GOOD 2
+#define CCSRA_POLARITY 5
 #define EXTERNAL_FIFO_LENGTH 131072
 #define LIST_MODE_RUN 0x100
 #define MAX_ADC_TRACE_LEN 8192
@@ -384,6 +387,49 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeProcessedEvents(unsigned int* Statis
  */
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeRealTime(unsigned int* Statistics,
                                                      unsigned short ModNum);
+
+/**
+ * @ingroup PIXIE16_API
+ * @brief Copy DSP parameters from one module to other modules.
+ *
+ * Use this function to copy DSP parameters from one module to the others that are installed in
+ * the system.
+ *
+ * @param[in] BitMask A bit pattern that designates what items should be copied from the source
+ *     module to the destination module(s). For example, a value of 4097
+ *     (2<sup>0</sup> + 2<sup>12</sup>) will copy the filter parameters and QDC.
+ *     | Bit | Item |
+ *     |-|-|
+ *     | 0 | Filter (energy and trigger) |
+ *     | 1 | Analog signal conditioning (polarity, dc-offset,   gain/attenuation) |
+ *     | 2 | Histogram control (minimum energy, binning factor) |
+ *     | 3 | Decay time |
+ *     | 4 | Pulse shape analysis (trace length and trace delay) |
+ *     | 5 | Baseline control (baseline cut, baseline percentage) |
+ *     | 7 | Channel CSRA register (good channel, trigger enabled, etc.)   |
+ *     | 8 | CFD trigger (CFD delay, scaling factor) |
+ *     | 9 | Trigger stretch lengths (veto, external trigger, etc.) |
+ *     | 10 | FIFO delays (analog input delay, fast trigger output delay,   etc.) |
+ *     | 11 | Multiplicity (bit masks, thresholds, etc.) |
+ *     | 12 | QDC (QDC sum lengths) |
+ * @param[in] SourceModule The module that we'll read the settings from, starts counting at 0.
+ * @param[in] SourceChannel The channel we'll read settings from, starts counting at 0.
+ * @param[in] DestinationMask A pointer to an array that indicates the channel and module whose
+ *     settings will be copied from the source channel and module. For instance, if there are 5
+ *     modules (total 80 channels) in the system, DestinationMask would be defined as
+ *     `DestinationMask[80]`, where `DestinationMask[0]` to `DestinationMask[15]` would select
+ *     channel 0 to 15 of module 0, `DestinationMask[16]` to `DestinationMask[31]` would select
+ *     channel 0 to 15 of module 1, and so on. If a given channel i is to be copied,
+ *     then `DestinationMask[i]` should be set to 1, otherwise, it should be set to 0.
+ * @returns A status code indicating the result of the operation
+ * @retval  0 - Success
+ * @retval -1 - Failed to program Fippi in a module
+ * @retval -2 - Failed to set DACs in a module
+ */
+PIXIE_EXPORT int PIXIE_API Pixie16CopyDSPParameters(unsigned short BitMask,
+                                                    unsigned short SourceModule,
+                                                    unsigned short SourceChannel,
+                                                    unsigned short* DestinationMask);
 
 /**
  * @ingroup PIXIE16_API
