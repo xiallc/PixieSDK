@@ -1498,16 +1498,16 @@ void module::read_histogram(size_t channel, hw::word_ptr values, const size_t si
 }
 
 size_t module::read_list_mode_level() {
-    log(log::info) << module_label(*this) << "read-list-mode-level";
+    log(log::debug) << module_label(*this) << "read-list-mode-level";
     online_check();
     if (!fifo_worker_running.load()) {
-        log(log::info) << module_label(*this) << "read-list-mode-level: FIFO worker not running";
+        log(log::debug) << module_label(*this) << "read-list-mode-level: FIFO worker not running";
     }
     return fifo_data.size();
 }
 
 void module::read_list_mode(hw::words& values) {
-    log(log::info) << module_label(*this) << "read-list-mode: length=" << values.size()
+    log(log::debug) << module_label(*this) << "read-list-mode: length=" << values.size()
                    << " fifo-size=" << fifo_data.size();
     online_check();
     if (!fifo_worker_running.load()) {
