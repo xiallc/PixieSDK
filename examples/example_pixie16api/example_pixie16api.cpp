@@ -178,7 +178,11 @@ bool verify_api_return_value(const int& val, const std::string& func_name,
 }
 
 bool output_statistics_data(const unsigned short& mod_num, const std::string& type) {
-    std::vector<unsigned int> stats(448, 0);
+#ifndef LEGACY_EXAMPLE
+    std::vector<unsigned int> stats(Pixie16GetStatisticsSize(), 0);
+#else
+    std::vector<unsigned int> stats(N_DSP_PAR - DSP_IO_BORDER, 0);
+#endif
     if (!verify_api_return_value(Pixie16ReadStatisticsFromModule(stats.data(), mod_num),
                                  "Pixie16ReadStatisticsFromModule", false))
         return false;
