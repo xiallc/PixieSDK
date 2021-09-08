@@ -1364,6 +1364,7 @@ void module::sync_hw() {
 void module::run_end() {
     online_check();
     lock_guard guard(lock_);
+    log(log::info) << module_label(*this) << "run_end: attempting to stop run";
     if (run_task == hw::run::run_task::nop) {
         log(log::warning) << module_label(*this) << "run-end: no run active";
     }
