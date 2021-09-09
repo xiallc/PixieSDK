@@ -391,6 +391,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeRealTime(unsigned int* Statistics,
 /**
  * @ingroup PIXIE16_API
  * @brief Copy DSP parameters from one module to other modules.
+ * @note This function is **not** implemented at this time.
  *
  * Use this function to copy DSP parameters from one module to the others that are installed in
  * the system.
