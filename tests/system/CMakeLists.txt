@@ -14,4 +14,11 @@ if (BUILD_SDK)
     add_executable(test_api src/test_api.cpp $<TARGET_OBJECTS:PixieSdkObjLib>)
     target_include_directories(test_api PUBLIC ${PROJECT_SOURCE_DIR}/sdk/include ${PROJECT_SOURCE_DIR}/externals/)
     xia_configure_target(TARGET test_api USE_PLX)
+
+    if (BUILD_PIXIE16_API)
+        add_executable(p16_371 src/p16_371.cpp)
+        target_include_directories(p16_371 PUBLIC ${PROJECT_SOURCE_DIR}/sdk/include ${PROJECT_SOURCE_DIR}/externals/)
+        xia_configure_target(TARGET p16_371 USE_PLX LIBS Pixie16Api)
+    endif ()
 endif ()
+
