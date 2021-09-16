@@ -17,7 +17,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-""" data_visualizer.py
+""" data_visualizer.py visualizes CSV and list-mode energies from the example software. 
 
 """
 
@@ -40,13 +40,47 @@ logging.basicConfig(stream=sys.stdout, datefmt="%Y-%m-%dT%H:%M:%S.000Z", level=l
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 
+def calculate_subplot_dims(num_elements):
+    """
+    Calculates the subplot dimentions based on the number of channels
+    that we're going to be plotting.
+    :param num_elements: The number of channels that need plotted.
+    :return: A dictionary containing the calculated subplot dimensions
+    """
+    square_dim = int(math.sqrt(math.pow(math.ceil(math.sqrt(num_elements)), 2)))
+    pad = square_dim ** 2 - num_elements
+    if pad == 0:
+        rows = square_dim
+    else:
+        pad = pad - square_dim
+        rows = int((num_elements + pad) / square_dim)
+    return {
+        "rows": rows,
+        "cols": square_dim,
+        "pad": pad
+    }
+
+
 def process_data_buffer(args):
+    """
+    Decodes a list-mode data buffer sent to a worker thread.
+    :param args: The argument list where the first element is the
+                 data buffer, and the second element is the data mask.
+    :return: The decoded data buffer as a dictionary.
+    """
     buffer = args[0]
     mask = args[1]
     return decode_listmode_data(buffer, mask)[0]
 
 
 def process_list_mode_data_file(args):
+    """
+    Processes an entire list-mode data file written by the example software.
+    The file contains nothing but data buffers from the Pixie-16's
+    external FIFO.
+    :param args: The argument list as received from the argument parser.
+    :return: A pandas data frame containing the events.
+    """
     data_mask = ListModeDataMask(args.freq, args.rev)
     data_buffer_list = list()
     logging.info("Started reading data buffers into memory.")
@@ -68,21 +102,32 @@ def process_list_mode_data_file(args):
 
 
 def plot_lmd(df, args):
-    channels = df.channel.unique()
+    """
+    Plots the energy from each channel present in a data frame containing
+    decoded list-mode data.
+    :param df: The data frame containing the data, which much have both
+               a channel and energy column.
+    :param args: The arguments obtained from the argument parser
+    :return: None
+    """
+    channels = [float(x) for x in df.channel.unique()]
     channels.sort()
 
     if len(channels) < 4:
         fig, axes = plt.subplots(nrows=len(channels), ncols=1, sharex='all',
                                  sharey='all')
     else:
-        subplot_dim = int(math.sqrt(math.pow(math.ceil(math.sqrt(len(channels))), 2)))
-        channels = np.pad(channels, (0, subplot_dim ** 2 - len(channels)), mode='constant',
-                          constant_values=None)
-        fig, axes = plt.subplots(nrows=subplot_dim, ncols=subplot_dim, sharex='col',
+        subplot_cfg = calculate_subplot_dims(len(channels))
+
+        if subplot_cfg['pad'] != 0:
+            channels = np.pad(channels, (0, subplot_cfg['pad']), mode='constant',
+                              constant_values=np.nan)
+
+        fig, axes = plt.subplots(nrows=subplot_cfg['rows'], ncols=subplot_cfg['cols'], sharex='col',
                                  sharey='row')
 
     for channel, ax in np.column_stack((channels, fig.axes)):
-        if numpy.isnan(channel):
+        if np.isnan(channel):
             continue
         df[df['channel'] == channel].hist(column='energy', ax=ax, grid=False)
         ax.title.set_text(f'Chan {int(channel)}')
@@ -98,6 +143,13 @@ def plot_lmd(df, args):
 
 
 def plot_csv(plot_type, data, args):
+    """
+    Plots the various CSV data produced by the example software.
+    :param plot_type: One of mca, adc, baseline, or stats.
+    :param data: The data frame containing the data that we need to plot
+    :param args: The arguments parsed by the argument parser.
+    :return: None
+    """
     title = "Untitled"
     xlabel = "Sample"
     ylabel = "ADC (arb) / Sample"
@@ -106,6 +158,9 @@ def plot_csv(plot_type, data, args):
         xlabel = "Bin"
         ylabel = "Energy (arb) / Bin"
         title = "MCA Spectrum"
+
+        logging.info("MCA Sums")
+        print(df.sum())
     if plot_type == 'adc':
         title = "ADC Traces"
     if plot_type == 'baseline':
@@ -120,8 +175,9 @@ def plot_csv(plot_type, data, args):
             data[f'Chan{args.chan}'].plot(title=title, xlabel=xlabel, ylabel=ylabel)
             plt.legend()
         else:
-            data.plot(subplots=True, layout=(4, 4), title=title, xlabel=xlabel, ylabel=ylabel,
-                      figsize=(11, 8.5), sharey=True)
+            subplot_cfg = calculate_subplot_dims(len(df.columns))
+            data.plot(subplots=True, layout=(subplot_cfg['rows'], subplot_cfg['cols']), title=title,
+                      xlabel=xlabel, ylabel=ylabel, figsize=(11, 8.5), sharey=True)
             plt.tight_layout()
 
     if args.xlim:

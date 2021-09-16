@@ -254,8 +254,12 @@ bool execute_baseline_capture(const unsigned short& module_number) {
 
     std::ofstream ofstream1(generate_filename(module_number, "baselines", "csv"));
     ofstream1 << "bin,timestamp,";
-    for (unsigned int i = 0; i < NUMBER_OF_CHANNELS; i++)
-        ofstream1 << "Chan" << i << ",";
+    for (unsigned int i = 0; i < NUMBER_OF_CHANNELS; i++) {
+        if (i != NUMBER_OF_CHANNELS - 1)
+            ofstream1 << "Chan" << i << ",";
+        else
+            ofstream1 << "Chan" << i;
+    }
     ofstream1 << std::endl;
     for (unsigned int i = 0; i < MAX_NUM_BASELINES; i++) {
         ofstream1 << i << "," << timestamps[i] << ",";
@@ -440,14 +444,20 @@ bool execute_mca_run(const unsigned int& mod, const double& runtime_in_seconds) 
         std::vector<uint32_t> hist(MAX_HISTOGRAM_LENGTH, 0);
         Pixie16ReadHistogramFromModule(hist.data(), MAX_HISTOGRAM_LENGTH, mod, i);
         hists.push_back(hist);
-        out << "Chan" << i << ",";
+        if (i < NUMBER_OF_CHANNELS - 1)
+            out << "Chan" << i << ",";
+        else
+            out << "Chan" << i;
     }
     out << std::endl;
 
     for (unsigned int bin = 0; bin < MAX_HISTOGRAM_LENGTH; bin++) {
         out << bin << ",";
-        for (auto hist : hists) {
-            out << hist[bin] << ",";
+        for (auto& hist : hists) {
+            if (&hist != &hists.back())
+                out << hist[bin] << ",";
+            else
+                out << hist[bin];
         }
         out << std::endl;
     }
@@ -528,8 +538,12 @@ bool execute_trace_capture(const unsigned short& module_number) {
 
     std::ofstream ofstream1(generate_filename(module_number, "adc", "csv"));
     ofstream1 << "bin,";
-    for (unsigned int i = 0; i < NUMBER_OF_CHANNELS; i++)
-        ofstream1 << "Chan" << i << ",";
+    for (unsigned int i = 0; i < NUMBER_OF_CHANNELS; i++) {
+        if (i != NUMBER_OF_CHANNELS - 1)
+            ofstream1 << "Chan" << i << ",";
+        else
+            ofstream1 << "Chan" << i;
+    }
     ofstream1 << std::endl;
     for (unsigned int i = 0; i < MAX_ADC_TRACE_LEN; i++) {
         ofstream1 << i << ",";
