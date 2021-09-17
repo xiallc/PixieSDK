@@ -10,15 +10,18 @@ creates both
 familiar with this implementation. `example_pixie16_sdk` compiles and links against the new library
 `Pixie16Api.so`. This library provides users a legacy compatible C wrapper to the `PixieSDK`.
 
-Users will note that the difference between using the Legacy library and the Pixie16Api is simply the
-linked library and a change to the included header file. This strikes a balance between maintaining
-backward compatibility, while also allowing users access to enhanced functionality.
+Users will note that the difference between using the Legacy library and the Pixie16Api is simply
+the linked library and a change to the included header file. This strikes a balance between
+maintaining backward compatibility, while also allowing users access to enhanced functionality.
 
 ## Configuration file format
+
 The configuration file format is a JSON file. The file contains a single array element, where each
 element represents a module in the configuration. The software will automatically determine the
 number of modules in the system according to the number of objects in the file. The order of the
-objects defines the slot to module number mapping. In the example below, Slot 2 will map to Module 0.
+objects defines the slot to module number mapping. For example, Slot 2 will map to Module 0.
+On Windows environments the `\` in file paths should be escaped, see the example below.
+
 ```
 [
   {
@@ -39,7 +42,9 @@ objects defines the slot to module number mapping. In the example below, Slot 2 
 
 ### Example config
 
-```
+#### Linux
+
+```json
 [
   {
     "slot": 2,
@@ -50,7 +55,27 @@ objects defines the slot to module number mapping. In the example below, Slot 2 
     },
     "fpga": {
       "fippi": "/usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/firmware/fippixie16_revfgeneral_16b250m_r36563.bin",
-      "sys": "/usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin",
+      "sys": "/usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin"
+    }
+  }
+]
+```
+
+#### Windows
+
+```json
+[
+  {
+    "slot": 2,
+    "dsp": {
+      "ldr": "C:\\Program Files (x86)\\XIA\\Pixie16_VB 2.3.1\\DSP\\Pixie16DSP_revfgeneral_16b250m_r35921.ldr",
+      "par": "pixie.set",
+      "var": "C:\\Program Files (x86)\\XIA\\Pixie16_VB 2.3.1\\DSP\\Pixie16DSP_revfgeneral_16b250m_r35921.var"
+    },
+    "fpga": {
+      "fippi": "C:\\Program Files (x86)\\XIA\\Pixie16_VB 2.3.1\\Firmware\\fippixie16_revfgeneral_16b250m_r36563.bin",
+      "sys": "C:\\Program Files (x86)\\XIA\\Pixie16_VB 2.3.1\\Firmware\\syspixie16_revfgeneral_adc250mhz_r33339.bin",
+      "trig": "FPGATrig"
     }
   }
 ]
@@ -61,6 +86,7 @@ objects defines the slot to module number mapping. In the example below, Slot 2 
 These instructions assume that you've built and installed PixieSDK into the default location.
 
 ### Linux
+
 1. Create the directory
    ```shell script
    mkdir ~/pixie_sdk_example
@@ -77,4 +103,6 @@ These instructions assume that you've built and installed PixieSDK into the defa
    ```
 
 ### Windows
-Windows will work similarly to Linux. You'll need to add the PixieSDK library and bin paths to your `Path` variable.
+
+Windows will work similarly to Linux. You'll need to add the PixieSDK library and bin paths to
+your `Path` variable.
