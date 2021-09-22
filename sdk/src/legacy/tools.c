@@ -170,6 +170,10 @@ PIXIE16SYS_EXPORT int PIXIE16SYS_API get_ns_per_cycle(double* ns_per_cycle) {
 
     *ns_per_cycle = NSMULTIPLIER * ceil((double) duration / (double) NumCycles * 1.0e9);
 
+    if (*ns_per_cycle == 0) {
+        *ns_per_cycle = 3.0;
+    }
+
 #else  // USleep function will be used
 
     *ns_per_cycle = NSMULTIPLIER;
