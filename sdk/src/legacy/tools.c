@@ -168,10 +168,10 @@ PIXIE16SYS_EXPORT int PIXIE16SYS_API get_ns_per_cycle(double* ns_per_cycle) {
     // in pixie16sys_defs.h and can be modified to accommodate different booting timing
     // requirements in different Linux systems.
 
-    *ns_per_cycle = NSMULTIPLIER * ceil((double) duration / (double) NumCycles * 1.0e9);
-
-    if (*ns_per_cycle == 0) {
-        *ns_per_cycle = 3.0;
+    if (duration < 1) {
+        *ns_per_cycle = NSMULTIPLIER;
+    } else {
+        *ns_per_cycle = NSMULTIPLIER * ceil((double) duration / (double) NumCycles * 1.0e9);
     }
 
 #else  // USleep function will be used

@@ -40,8 +40,17 @@ PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_SetBit(unsigned short bit, u
 PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_ClrBit(unsigned short bit, unsigned int value);
 PIXIE16SYS_EXPORT unsigned int PIXIE16SYS_API SYS32_TstBit(unsigned short bit, unsigned int value);
 
+#if !defined(_WIN64) && !defined(_WIN32)
+#pragma GCC push_options
+#pragma GCC optimize("O0")
+#endif
+
 PIXIE16SYS_EXPORT int PIXIE16SYS_API get_ns_per_cycle(double* ns_per_cycle);
 PIXIE16SYS_EXPORT void PIXIE16SYS_API wait_for_a_short_time(int cycles);
+
+#if !defined(_WIN64) && !defined(_WIN32)
+#pragma GCC pop_options
+#endif
 
 int Pixie_DSP_Memory_Burst_Read(unsigned int* dsp_data,  // DSP data for the I/O
                                 unsigned int dsp_address,  // DSP data memory address
