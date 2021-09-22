@@ -515,6 +515,21 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO
 
 /**
  * @ingroup PIXIE16_API
+ * @brief Load DSP parameters from a settings file
+ *
+ * Use this function to read DSP parameters from a settings file and then download the settings to
+ * Pixie-16 modules that are installed in the system. Each module has exactly 1280 DSP parameter
+ * values (32-bit unsigned integers), and depending on the value of PRESET_MAX_MODULES
+ * (defined in pixie16app_defs.h), the settings file should have exactly
+ * `(1280 * PRESET_MAX_MODULES * 4)` bytes when stored on the computer hard drive.
+ *
+ * @param[in] FileName Absolute path to where we will write the DSP parameter file.
+ * @returns A status code indicating the result of the operation
+ */
+PIXIE_EXPORT int PIXIE_API Pixie16LoadDSPParametersFromFile(const char* FileName);
+
+/**
+ * @ingroup PIXIE16_API
  * @brief Retrieve a channel's histogram data from a Pixie module.
  *
  * Use this function to read out the histogram data from a Pixie-16 module’s histogram memory.

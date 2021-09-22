@@ -673,6 +673,8 @@ int main(int argc, char** argv) {
 
     args::ValueFlag<std::string> conf_flag(arguments, "cfg", "The configuration file to load.",
                                            {'c', "config"}, args::Options::Required);
+    args::ValueFlag<std::string> additional_cfg_flag(
+        arguments, "cfg", "The configuration file to load.", {"additional-config"});
     args::HelpFlag help_flag(arguments, "help", "Displays this message", {'h', "help"});
     args::Flag is_fast_boot(boot, "fast-boot", "Performs a partial boot of the system.",
                             {'f', "fast-boot"});
@@ -691,6 +693,7 @@ int main(int argc, char** argv) {
     args::ValueFlag<unsigned int> channel(read, "channel", "The channel", {"chan"});
     args::ValueFlag<double> parameter_value(
         write, "parameter_value", "The value of the parameter we want to write.", {'v', "value"});
+
     adjust_offsets.Add(conf_flag);
     adjust_offsets.Add(boot_pattern_flag);
     adjust_offsets.Add(module);
@@ -766,7 +769,7 @@ int main(int argc, char** argv) {
     }
 
     unsigned int boot_pattern = stoul(args::get(boot_pattern_flag), nullptr, 0);
-    if (is_fast_boot)
+    if (is_fast_boot || additional_cfg_flag)
         boot_pattern = 0x70;
 
     for (const auto& mod : cfg.modules) {
@@ -789,6 +792,13 @@ int main(int argc, char** argv) {
     if (boot) {
         execute_close_module_connection(cfg.num_modules());
         return EXIT_SUCCESS;
+    }
+
+    if (additional_cfg_flag) {
+        if (!verify_api_return_value(
+                Pixie16LoadDSPParametersFromFile(additional_cfg_flag.Get().c_str()),
+                "Pixie16LoadDSPParametersFromFile", true))
+            return EXIT_FAILURE;
     }
 
     if (read) {

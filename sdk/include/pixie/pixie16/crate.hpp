@@ -208,8 +208,11 @@ public:
      * @brief Import a configuration. Returning a list of loaded modules.
      * @param[in] json_file The path to the JSON configuration file to load.
      * @param[out] loaded The list of modules that received configurations.
+     * @param[in] sync_hw Determines if the imported configuration is
+     *                    synchronized to the hardware. Defaults to true.
      */
-    void import_config(const std::string json_file, module::number_slots& loaded);
+    void import_config(const std::string json_file, module::number_slots& loaded,
+                       const bool& sync_hw = true);
 
     /**
      * @brief Export the active module configurations to a file.

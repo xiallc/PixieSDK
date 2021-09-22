@@ -221,7 +221,8 @@ void crate::set_firmware() {
     }
 }
 
-void crate::import_config(const std::string json_file, module::number_slots& loaded) {
+void crate::import_config(const std::string json_file, module::number_slots& loaded,
+                          const bool& sync_hw) {
     log(log::info) << "crate: import configuration";
     ready();
     lock_guard guard(lock_);
@@ -230,7 +231,9 @@ void crate::import_config(const std::string json_file, module::number_slots& loa
     for (auto& module : modules) {
         if (module->online()) {
             module->sync_vars();
-            module->sync_hw();
+            if (sync_hw) {
+                module->sync_hw();
+            }
         }
     }
 }
