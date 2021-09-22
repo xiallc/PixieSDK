@@ -649,12 +649,10 @@ void module::probe() {
     if (comms_fpga) {
         hw::fpga::fippi fippi(*this);
         fippi_fpga = fippi.done();
-
-        if (fippi_fpga) {
-            hw::dsp::dsp dsp(*this);
-            dsp_online = dsp.init_done();
-        }
     }
+
+    hw::dsp::dsp dsp(*this);
+    dsp_online = dsp.init_done();
 
     log(log::info) << std::boolalpha << module_label(*this) << "probe: sys=" << comms_fpga
                    << " fippi=" << fippi_fpga << " dsp=" << dsp_online;
@@ -731,7 +729,7 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
     start_fifo_services();
 
     log(log::info) << module_label(*this) << std::boolalpha << "boot: sys-fpga=" << comms_fpga
-                   << " fippi-fpga=" << boot_fippi << " dsp=" << dsp_online;
+                   << " fippi-fpga=" << fippi_fpga << " dsp=" << dsp_online;
 
     online_ = comms_fpga && fippi_fpga && dsp_online;
 }
