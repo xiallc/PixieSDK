@@ -31,6 +31,7 @@
 
 #include <pixie/pixie16/crate.hpp>
 #include <pixie/pixie16/legacy.hpp>
+#include <pixie/pixie16/run.hpp>
 
 /*
  * Local types for convenience.
@@ -585,7 +586,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16LoadDSPParametersFromFile(const char* FileName
     try {
         xia::pixie::crate::crate::user user(crate);
         for (auto& module : crate.modules) {
-            load_settings_file(*module, FileName, true);
+            load_settings_file(*module, FileName, false);
+            xia::pixie::hw::run::control(*module, xia::pixie::hw::run::control_task::program_fippi);
+            xia::pixie::hw::run::control(*module, xia::pixie::hw::run::control_task::set_dacs);
         }
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
