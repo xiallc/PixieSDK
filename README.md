@@ -11,7 +11,7 @@ up-and-running without the user writing a single line of code.
 ##### Notice regarding Legacy C API
 
 The Legacy C API is now deprecated and will no longer receive support outside critical bug fixes. To
-minimize the impact we encourage all users to migrate to the backward compatible Pixie16Api library.
+minimize the impact we encourage all users to migrate to the Pixie16Api compatibility library.
 **We will remove the legacy C API on July 31, 2023**.
 
 ## Quick Links

@@ -42,102 +42,289 @@ namespace error {
 /**
  * @brief Defines the error codes that we use throughout the software.
  *
- * Each code maps to an API code and a description text. The codes and descriptions may shift over
- * time. Users should access the associated information using the associated lookup functions.
+ * Each code maps to an API code and a description text. The codes and
+ * descriptions may shift over time. Users should access the associated
+ * information using the associated lookup functions.
+ *
+ * @note Order of entries in this enum must match with the definitions in
+ * `module_params`.
  *
  * @see error::api_result
  * @see error::api_result_text
  */
 enum struct code {
-    /*
-     * Do not number any other enum entries.
+    /**
+     * @brief 0
      */
-    success = 0, /*!< Success is always 0. */
+    success = 0,
     /*
      * Crate
      */
+    /**
+     * @brief 100
+     */
     crate_already_open,
+    /**
+     * @brief 101
+     */
     crate_not_ready,
+    /**
+     * @brief 102
+     */
     crate_invalid_param,
     /*
      * Module
      */
+    /**
+     * @brief 200
+     */
     module_number_invalid,
+    /**
+     * @brief 201
+     */
     module_total_invalid,
+    /**
+     * @brief 202
+     */
     module_already_open,
+    /**
+     * @brief 203
+     */
     module_close_failure,
+    /**
+     * @brief 204
+     */
     module_offline,
+    /**
+     * @brief 205
+     */
     module_info_failure,
+    /**
+     * @brief 206
+     */
     module_invalid_operation,
+    /**
+     * @brief 207
+     */
     module_invalid_firmware,
+    /**
+     * @brief 208
+     */
     module_initialize_failure,
+    /**
+     * @brief 209
+     */
     module_invalid_param,
+    /**
+     * @brief 210
+     */
     module_invalid_var,
+    /**
+     * @brief 211
+     */
     module_param_disabled,
+    /**
+     * @brief 212
+     */
     module_param_readonly,
+    /**
+     * @brief 213
+     */
     module_param_writeonly,
+    /**
+     * @brief 214
+     */
     module_task_timeout,
+    /**
+     * @brief 215
+     */
     module_invalid_slot,
+    /**
+     * @brief 216
+     */
     module_not_found,
+    /**
+     * @brief 217
+     */
     module_test_invalid,
     /*
      * Channel
      */
+    /**
+     * @brief 300
+     */
     channel_number_invalid,
+    /**
+     * @brief 301
+     */
     channel_invalid_param,
+    /**
+     * @brief 302
+     */
     channel_invalid_var,
+    /**
+     * @brief 303
+     */
     channel_invalid_index,
+    /**
+     * @brief 304
+     */
     channel_param_disabled,
+    /**
+     * @brief 305
+     */
     channel_param_readonly,
+    /**
+     * @brief 306
+     */
     channel_param_writeonly,
     /*
      * Device
      */
+    /**
+     * @brief 500
+     */
     device_load_failure,
+    /**
+     * @brief 501
+     */
     device_boot_failure,
+    /**
+     * @brief 502
+     */
     device_initialize_failure,
+    /**
+     * @brief 503
+     */
     device_copy_failure,
+    /**
+     * @brief 504
+     */
     device_image_failure,
+    /**
+     * @brief 505
+     */
     device_hw_failure,
+    /**
+     * @brief 506
+     */
     device_dma_failure,
+    /**
+     * @brief 507
+     */
     device_dma_busy,
+    /**
+     * @brief 508
+     */
     device_fifo_failure,
+    /**
+     * @brief 509
+     */
     device_eeprom_failure,
+    /**
+     * @brief 510
+     */
     device_eeprom_bad_type,
+    /**
+     * @brief 511
+     */
     device_eeprom_not_found,
     /*
      * Configuration
      */
+    /**
+     * @brief 600
+     */
     config_invalid_param,
+    /**
+     * @brief 601
+     */
     config_param_not_found,
+    /**
+     * @brief 602
+     */
     config_json_error,
     /*
      * File handling
      */
+    /**
+     * @brief 700
+     */
     file_not_found,
+    /**
+     * @brief 701
+     */
     file_open_failure,
+    /**
+     * @brief 702
+     */
     file_read_failure,
+    /**
+     * @brief 703
+     */
     file_size_invalid,
+    /**
+     * @brief 704
+     */
     file_create_failure,
     /*
      * System
      */
+    /**
+     * @brief 800
+     */
     no_memory,
+    /**
+     * @brief 801
+     */
     slot_map_invalid,
+    /**
+     * @brief 802
+     */
     invalid_value,
+    /**
+     * @brief 803
+     */
     not_supported,
+    /**
+     * @brief 804
+     */
     buffer_pool_empty,
+    /**
+     * @brief 805
+     */
     buffer_pool_not_empty,
+    /**
+     * @brief 806
+     */
     buffer_pool_busy,
+    /**
+     * @brief 807
+     */
     buffer_pool_not_enough,
     /*
      * Catch all
      */
+    /**
+     * @brief 900
+     */
     unknown_error,
+    /**
+     * @brief 901
+     */
     internal_failure,
+    /**
+     * @brief 902
+     */
     bad_allocation,
+    /**
+     * @brief 990
+     */
     bad_error_code,
-    last /*!< Defined for use in internal checks to validate result map. */
+    /**
+     * @brief Defined for use in internal checks.
+     */
+    last
 };
 
 /**
