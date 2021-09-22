@@ -100,7 +100,7 @@ static int not_supported() {
 }
 
 void load_settings_file(xia::pixie::module::module& module, const std::string& filename,
-                                const bool& sync_hw) {
+                        const bool& sync_hw) {
     bool json_config = false;
     xia::pixie::legacy::settings settings(module);
     try {
@@ -124,6 +124,44 @@ void load_settings_file(xia::pixie::module::module& module, const std::string& f
             module.sync_hw();
         }
     }
+}
+
+PIXIE_EXPORT unsigned short PIXIE_API APP16_TstBit(unsigned short bit, unsigned short value) {
+    if (bit > 15)
+        return false;
+    return (((value & (unsigned short) (pow(2.0, (double) bit))) >> bit));
+}
+
+PIXIE_EXPORT unsigned short PIXIE_API APP16_SetBit(unsigned short bit, unsigned short value) {
+    if (bit > 15)
+        return value;
+    return (value | (unsigned short) (pow(2.0, (double) bit)));
+}
+
+PIXIE_EXPORT unsigned short PIXIE_API APP16_ClrBit(unsigned short bit, unsigned short value) {
+    if (bit > 15)
+        return value;
+    value = APP16_SetBit(bit, value);
+    return (value ^ (unsigned short) (pow(2.0, (double) bit)));
+}
+
+PIXIE_EXPORT unsigned int PIXIE_API APP32_SetBit(unsigned short bit, unsigned int value) {
+    if (bit > 31)
+        return value;
+    return (value | (unsigned int) (pow(2.0, (double) bit)));
+}
+
+PIXIE_EXPORT unsigned int PIXIE_API APP32_ClrBit(unsigned short bit, unsigned int value) {
+    if (bit > 31)
+        return value;
+    value = APP32_SetBit(bit, value);
+    return (value ^ (unsigned int) (pow(2.0, (double) bit)));
+}
+
+PIXIE_EXPORT unsigned int PIXIE_API APP32_TstBit(unsigned short bit, unsigned int value) {
+    if (bit > 31)
+        return false;
+    return (((value & (unsigned int) (pow(2.0, (double) bit))) >> bit));
 }
 
 PIXIE_EXPORT double PIXIE_API IEEEFloating2Decimal(unsigned int IEEEFloatingNumber) {
