@@ -72,7 +72,7 @@ int main() {
         module->start_listmode(xia::pixie::hw::run::run_mode::new_run);
 
         module->fifo_buffers = 1;
-        module->fifo_hold_usecs = 1e7;
+        module->fifo_hold_usecs = (unsigned long)1e7;
         std::this_thread::sleep_for(std::chrono::seconds(2));
 
         xia::pixie::hw::memory::fifo fifo(*module);
