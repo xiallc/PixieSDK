@@ -20,6 +20,8 @@
  * @brief C wrappers for the C++ API that expose the same signature as the legacy code
  */
 
+#include <bitset>
+
 #include <pixie16/pixie16.h>
 
 #include <pixie/config.hpp>
@@ -127,42 +129,51 @@ void load_settings_file(xia::pixie::module::module& module, const std::string& f
     }
 }
 
+template<class T>
+T set_bit(const std::string& name, unsigned short& bit, T value, const bool& bit_status) {
+    T local_val = value;
+    try {
+        auto value_bits = std::bitset<std::numeric_limits<T>::digits>(value);
+        value_bits.set(bit, bit_status);
+        return (T) value_bits.to_ulong();
+    } catch (std::out_of_range& out_of_range) {
+        xia_log(xia_log::warning) << name << ": bit out of range - " << out_of_range.what();
+    }
+    return local_val;
+}
+
+template<class T>
+T test_bit(const std::string& name, unsigned short& bit, T value) {
+    try {
+        return std::bitset<std::numeric_limits<T>::digits>(value).test(bit);
+    } catch (std::out_of_range& out_of_range) {
+        xia_log(xia_log::warning) << name << ": bit out of range - " << out_of_range.what();
+    }
+    return false;
+}
+
 PIXIE_EXPORT unsigned short PIXIE_API APP16_TstBit(unsigned short bit, unsigned short value) {
-    if (bit > 15)
-        return false;
-    return (((value & (unsigned short) (pow(2.0, (double) bit))) >> bit));
+    return test_bit("APP16_TstBit", bit, value);
 }
 
 PIXIE_EXPORT unsigned short PIXIE_API APP16_SetBit(unsigned short bit, unsigned short value) {
-    if (bit > 15)
-        return value;
-    return (value | (unsigned short) (pow(2.0, (double) bit)));
+    return set_bit("APP16_SetBit", bit, value, true);
 }
 
 PIXIE_EXPORT unsigned short PIXIE_API APP16_ClrBit(unsigned short bit, unsigned short value) {
-    if (bit > 15)
-        return value;
-    value = APP16_SetBit(bit, value);
-    return (value ^ (unsigned short) (pow(2.0, (double) bit)));
+    return set_bit("APP16_ClrBit", bit, value, false);
 }
 
 PIXIE_EXPORT unsigned int PIXIE_API APP32_SetBit(unsigned short bit, unsigned int value) {
-    if (bit > 31)
-        return value;
-    return (value | (unsigned int) (pow(2.0, (double) bit)));
+    return set_bit("APP32_SetBit", bit, value, true);
 }
 
 PIXIE_EXPORT unsigned int PIXIE_API APP32_ClrBit(unsigned short bit, unsigned int value) {
-    if (bit > 31)
-        return value;
-    value = APP32_SetBit(bit, value);
-    return (value ^ (unsigned int) (pow(2.0, (double) bit)));
+    return set_bit("APP32_ClrBit", bit, value, false);
 }
 
 PIXIE_EXPORT unsigned int PIXIE_API APP32_TstBit(unsigned short bit, unsigned int value) {
-    if (bit > 31)
-        return false;
-    return (((value & (unsigned int) (pow(2.0, (double) bit))) >> bit));
+    return test_bit("APP32_TstBit", bit, value);
 }
 
 PIXIE_EXPORT double PIXIE_API IEEEFloating2Decimal(unsigned int IEEEFloatingNumber) {
