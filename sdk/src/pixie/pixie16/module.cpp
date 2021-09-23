@@ -1293,20 +1293,20 @@ void module::sync_vars() {
     }
 }
 
-void module::sync_hw() {
+void module::sync_hw(const bool& program_fippi, const bool& set_dacs) {
     online_check();
-    log(log::info) << module_label(*this) << "sync hardware";
+    log(log::info) << module_label(*this) << std::boolalpha << "sync hardware: "
+                   << "program_fippi=" << program_fippi << " set_dacs=" << set_dacs;
+
     lock_guard guard(lock_);
 
-    /*
-     * Update the FIPPI with the values
-     */
-    hw::run::control(*this, hw::run::control_task::program_fippi);
+    if (program_fippi) {
+        hw::run::control(*this, hw::run::control_task::program_fippi);
+    }
 
-    /*
-     * Set the DAC
-     */
-    hw::run::control(*this, hw::run::control_task::set_dacs);
+    if (set_dacs) {
+        hw::run::control(*this, hw::run::control_task::set_dacs);
+    }
 
     /*
      * Get the current module CSRb parameter.

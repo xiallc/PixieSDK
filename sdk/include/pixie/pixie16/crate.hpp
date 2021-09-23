@@ -211,8 +211,15 @@ public:
      * @param[in] sync_hw Determines if the imported configuration is
      *                    synchronized to the hardware. Defaults to true.
      */
-    void import_config(const std::string json_file, module::number_slots& loaded,
-                       const bool& sync_hw = true);
+    void import_config(const std::string json_file, module::number_slots& loaded);
+
+    /**
+     * @brief Initializes the module's analog front end after importing a configuration.
+     * @see xia::pixie::module::sync_hw
+     * For each online module, the function executes the xia::pixie::module::sync_hw function with
+     * the default values.
+     */
+    void initialize_afe();
 
     /**
      * @brief Export the active module configurations to a file.

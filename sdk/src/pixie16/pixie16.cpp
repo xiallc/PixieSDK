@@ -102,8 +102,7 @@ static int not_supported() {
     return xia::pixie::error::return_code(error);
 }
 
-void load_settings_file(xia::pixie::module::module& module, const std::string& filename,
-                        const bool& sync_hw) {
+void load_settings_file(xia::pixie::module::module& module, const std::string& filename) {
     bool json_config = false;
     xia::pixie::legacy::settings settings(module);
     try {
@@ -113,7 +112,7 @@ void load_settings_file(xia::pixie::module::module& module, const std::string& f
             json_config = true;
             xia::pixie::module::number_slots modules;
             ///TODO: Not super efficient if we're calling module-by-module.
-            crate.import_config(filename, modules, sync_hw);
+            crate.import_config(filename, modules);
         } else {
             throw;
         }
@@ -123,9 +122,6 @@ void load_settings_file(xia::pixie::module::module& module, const std::string& f
         settings.import(module);
         settings.write(module);
         module.sync_vars();
-        if (sync_hw) {
-            module.sync_hw();
-        }
     }
 }
 
@@ -337,14 +333,16 @@ static void PixieBootModule(xia::pixie::module::module& module, const char* ComF
     crate.set_firmware();
     xia::pixie::firmware::load(crate.firmware);
 
-    bool boot_comm = (BootPattern & BOOTPATTERN_COMFPGA_BIT) != 0;
-    bool boot_fippi = (BootPattern & BOOTPATTERN_SPFPGA_BIT) != 0;
-    bool boot_dsp = (BootPattern & BOOTPATTERN_DSPCODE_BIT) != 0;
-
+    auto pattern = std::bitset<std::numeric_limits<unsigned short>::digits>(BootPattern);
     module.probe();
-    module.boot(boot_comm, boot_fippi, boot_dsp);
+    module.boot(pattern.test(BOOTPATTERN_COMFPGA_BIT), pattern.test(BOOTPATTERN_SPFPGA_BIT),
+                pattern.test(BOOTPATTERN_DSPCODE_BIT));
 
-    load_settings_file(module, DSPParFile, (BootPattern & BOOTPATTERN_DSPPAR_BIT) != 0);
+    if (pattern.test(BOOTPATTERN_DSPPAR_BIT)) {
+        load_settings_file(module, DSPParFile);
+    }
+
+    module.sync_hw(pattern.test(BOOTPATTERN_PROGFIPPI_BIT), pattern.test(BOOTPATTERN_SETDACS_BIT));
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
@@ -597,7 +595,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16LoadDSPParametersFromFile(const char* FileName
     try {
         xia::pixie::crate::crate::user user(crate);
         for (auto& module : crate.modules) {
-            load_settings_file(*module, FileName, false);
+            load_settings_file(*module, FileName);
             xia::pixie::hw::run::control(*module, xia::pixie::hw::run::control_task::program_fippi);
             xia::pixie::hw::run::control(*module, xia::pixie::hw::run::control_task::set_dacs);
         }

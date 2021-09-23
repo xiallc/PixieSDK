@@ -400,7 +400,7 @@ public:
     /**
      * Sync the hardware after the variables have been sync'ed.
      */
-    void sync_hw();
+    void sync_hw(const bool& program_fippi = true, const bool& set_dacs = true);
 
     /*
      * Run control and status

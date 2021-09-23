@@ -1005,6 +1005,7 @@ static void import(xia::pixie::crate::crate& crate, options& cmd) {
     xia::pixie::module::number_slots modules;
     tp.start();
     crate.import_config(cmd[1], modules);
+    crate.initialize_afe();
     tp.end();
     std::cout << "Modules imported: " << modules.size() << " time=" << tp << std::endl;
 }

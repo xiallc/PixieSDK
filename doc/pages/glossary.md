@@ -1,5 +1,9 @@
 # Glossary of Terms
 
+### Analog Front-end (AFE)
+This refers to processes and components from input of a channel through its 
+signal processing FPGA. 
+
 ## Analog to Digital Converter (ADC)
 
 This chip samples the analog signal and digitizes it. The digitized signal is then sent to the FIPPI
