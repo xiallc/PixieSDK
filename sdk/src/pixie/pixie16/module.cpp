@@ -1507,7 +1507,7 @@ size_t module::read_list_mode_level() {
 
 void module::read_list_mode(hw::words& values) {
     log(log::debug) << module_label(*this) << "read-list-mode: length=" << values.size()
-                   << " fifo-size=" << fifo_data.size();
+                    << " fifo-size=" << fifo_data.size();
     online_check();
     if (!fifo_worker_running.load()) {
         log(log::warning) << module_label(*this) << "read-list-mode: FIFO worker not running";
