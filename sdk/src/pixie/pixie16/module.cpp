@@ -649,10 +649,10 @@ void module::probe() {
     if (comms_fpga) {
         hw::fpga::fippi fippi(*this);
         fippi_fpga = fippi.done();
-    }
 
-    hw::dsp::dsp dsp(*this);
-    dsp_online = dsp.init_done();
+        hw::dsp::dsp dsp(*this);
+        dsp_online = dsp.init_done();
+    }
 
     log(log::info) << std::boolalpha << module_label(*this) << "probe: sys=" << comms_fpga
                    << " fippi=" << fippi_fpga << " dsp=" << dsp_online;
