@@ -70,7 +70,8 @@ PIXIE_EXPORT unsigned short PIXIE_API APP16_TstBit(unsigned short bit, unsigned 
  * @brief Set a bit in a 16-bit unsigned integer.
  * @param[in] bit The bit position to set, which starts counting at 0.
  * @param[in] value A 16-bit number that will have its bit set to true.
- * @return The new integer after the bit has been toggled.
+ * @return The new integer after the bit has been toggled if the bit was between 0 - 15, the input
+ *         value otherwise.
  */
 PIXIE_EXPORT unsigned short PIXIE_API APP16_SetBit(unsigned short bit, unsigned short value);
 
@@ -79,7 +80,8 @@ PIXIE_EXPORT unsigned short PIXIE_API APP16_SetBit(unsigned short bit, unsigned 
  * @brief Clear a bit in a 16-bit unsigned integer.
  * @param[in] bit The bit position to clear, which starts counting at 0.
  * @param[in] value A 16-bit number that will have its bit set to false.
- * @return The new integer after the bit has been toggled.
+ * @return The new integer after the bit has been toggled if the bit was between 0 - 15, the input
+ *         value otherwise.
  */
 PIXIE_EXPORT unsigned short PIXIE_API APP16_ClrBit(unsigned short bit, unsigned short value);
 
@@ -88,7 +90,8 @@ PIXIE_EXPORT unsigned short PIXIE_API APP16_ClrBit(unsigned short bit, unsigned 
  * @brief Set a bit in a 32-bit unsigned integer.
  * @param[in] bit The bit position to set, which starts counting at 0.
  * @param[in] value A 32-bit number that will have its bit set to true.
- * @return The new integer after the bit has been toggled.
+ * @return The new integer after the bit has been toggled if the bit was between 0 - 31, the input
+ *         value otherwise.
  */
 PIXIE_EXPORT unsigned int PIXIE_API APP32_SetBit(unsigned short bit, unsigned int value);
 
@@ -97,7 +100,8 @@ PIXIE_EXPORT unsigned int PIXIE_API APP32_SetBit(unsigned short bit, unsigned in
  * @brief Clear a bit in a 32-bit unsigned integer.
  * @param[in] bit The bit position to clear, which starts counting at 0.
  * @param[in] value A 32-bit number that will have its bit set to false.
- * @return The new integer after the bit has been toggled.
+ * @return The new integer after the bit has been toggled if the bit was between 0 - 31, the input
+ *         value otherwise.
  */
 PIXIE_EXPORT unsigned int PIXIE_API APP32_ClrBit(unsigned short bit, unsigned int value);
 

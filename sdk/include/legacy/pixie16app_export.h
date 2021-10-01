@@ -584,8 +584,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16complexFFT(double* data, unsigned in
 /**
  * @ingroup APP
  * @brief Test a bit in a 16-bit unsigned integer.
- * @param[in] bit: The bit position to test, which starts counting at 0.
- * @param[in] value: A 16-bit number that we'll test to see if the requested bit is true.
+ * @param[in] bit The bit position to test, which starts counting at 0.
+ * @param[in] value A 16-bit number that we'll test to see if the requested bit is true.
  * @return 0 if the bit was set, 1 otherwise.
  */
 PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_TstBit(unsigned short bit,
@@ -594,9 +594,10 @@ PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_TstBit(unsigned short bit,
 /**
  * @ingroup APP
  * @brief Set a bit in a 16-bit unsigned integer.
- * @param[in] bit: The bit position to test, which starts counting at 0.
- * @param[in] value: A 16-bit number that will have its bit set to true.
- * @return The new integer after the bit has been toggled.
+ * @param[in] bit The bit position to test, which starts counting at 0.
+ * @param[in] value A 16-bit number that will have its bit set to true.
+ * @return The new integer after the bit has been toggled if the bit was between 0 - 16, the input
+ *         value otherwise.
  */
 PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_SetBit(unsigned short bit,
                                                              unsigned short value);
@@ -604,9 +605,10 @@ PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_SetBit(unsigned short bit,
 /**
  * @ingroup APP
  * @brief Clear a bit in a 16-bit unsigned integer.
- * @param[in] bit: The bit position to test, which starts counting at 0.
- * @param[in] value: A 16-bit number that will have its bit set to false.
- * @return The new integer after the bit has been toggled.
+ * @param[in] bit The bit position to test, which starts counting at 0.
+ * @param[in] value A 16-bit number that will have its bit set to false.
+ * @return The new integer after the bit has been toggled if the bit was between 0 - 16, the input
+ *         value otherwise.
  */
 PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_ClrBit(unsigned short bit,
                                                              unsigned short value);
@@ -614,26 +616,28 @@ PIXIE16APP_EXPORT unsigned short PIXIE16APP_API APP16_ClrBit(unsigned short bit,
 /**
  * @ingroup APP
  * @brief Set a bit in a 32-bit unsigned integer.
- * @param[in] bit: The bit position to test, which starts counting at 0.
- * @param[in] value: A 32-bit number that will have its bit set to true.
- * @return The new integer after the bit has been toggled.
+ * @param[in] bit The bit position to test, which starts counting at 0.
+ * @param[in] value A 32-bit number that will have its bit set to true.
+ * @return The new integer after the bit has been toggled if the bit was between 0 - 31, the input
+*         value otherwise.
  */
 PIXIE16APP_EXPORT unsigned int PIXIE16APP_API APP32_SetBit(unsigned short bit, unsigned int value);
 
 /**
  * @ingroup APP
  * @brief Clear a bit in a 32-bit unsigned integer.
- * @param[in] bit: The bit position to test, which starts counting at 0.
- * @param[in] value: A 32-bit number that will have its bit set to false.
- * @return The new integer after the bit has been toggled.
+ * @param[in] bit The bit position to test, which starts counting at 0.
+ * @param[in] value A 32-bit number that will have its bit set to false.
+ * @return The new integer after the bit has been toggled if the bit was between 0 - 31, the input
+*         value otherwise.
  */
 PIXIE16APP_EXPORT unsigned int PIXIE16APP_API APP32_ClrBit(unsigned short bit, unsigned int value);
 
 /**
  * @ingroup APP
  * @brief Test a bit in a 32-bit unsigned integer.
- * @param[in] bit: The bit position to test, which starts counting at 0.
- * @param[in] value: A 32-bit number that we'll test to see if the requested bit is true.
+ * @param[in] bit The bit position to test, which starts counting at 0.
+ * @param[in] value A 32-bit number that we'll test to see if the requested bit is true.
  * @return 0 if the bit was set, 1 otherwise.
  */
 PIXIE16APP_EXPORT unsigned int PIXIE16APP_API APP32_TstBit(unsigned short bit, unsigned int value);
