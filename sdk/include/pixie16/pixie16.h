@@ -890,7 +890,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsign
 /**
  * @ingroup PIXIE16_API
  * @brief Find the exponential decay constant of the detector/preamplifier signals.
- * @note This function is **not** implemented at this time.
  * Use this function to find the exponential decay time constants (Tau value) of the detector or
  * preamplifier signal that is connected to each of the 16 channels of a Pixie-16 module. Tau
  * is used as part of the on-board energy calculations.
@@ -898,8 +897,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsign
  * @see [High Rate Pulse Processing Algorithms for Microcalorimeters](https://xia.com/wp-content/uploads/2021/03/High-Rate-Pulse-Processing-Algorithms-for-Microcalorimeters-Tan-2008-.pdf)
  *
  * @param[in] ModNum The module number to work with. Starts counting at 0.
- * @param[out] Tau Pointer to the array containing the calculated tau values. A value of -1.0
- *     indicates a failed calculation for that channel. Units are microseconds.
+ * @param[out] Tau Pointer to an array big enough to hold the calculated tau value for each
+ *     channel of the module. A value of -1.0 indicates a failed calculation for that channel.
+ *     Units are microseconds.
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
  * @retval  0 - success
  * @retval -1 - invalid Pixie module number

@@ -1130,8 +1130,32 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsign
 PIXIE_EXPORT int PIXIE_API Pixie16TauFinder(unsigned short ModNum, double* Tau) {
     xia_log(xia_log::debug) << "Pixie16TauFinder: ModNum=" << ModNum;
 
-    (void) Tau;
-    return not_supported();
+    try {
+        crate.ready();
+        auto& mod = crate[ModNum];
+        xia::pixie::hw::run::control(mod, xia::pixie::hw::run::control_task::tau_finder);
+        std::vector<double> taus(mod.num_channels, -1);
+        for (auto& chan : mod.channels) {
+            auto val = chan.tau();
+            if (val >= 0) {
+                taus.at(chan.number) = chan.tau();
+            }
+        }
+        std::copy(taus.begin(), taus.end(), Tau);
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::api_result_unknown_error();
+    } catch (...) {
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::api_result_unknown_error();
+    }
+    return 0;
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16WriteSglChanPar(const char* ChanParName, double ChanParData,

@@ -666,6 +666,8 @@ int main(int argc, char** argv) {
     args::Command blcut(commands, "blcut",
                         "Starts a control task to find the BLCut for a channel.");
     args::Command dacs(commands, "dacs", "Starts a control task to set the module's DACs");
+    args::Command tau_finder(commands, "tau_finder",
+                             "Executes the Tau Finder control task and returns the values.");
 
     args::Group arguments(parser, "arguments", args::Group::Validators::AtLeastOne,
                           args::Options::Global);
@@ -708,6 +710,7 @@ int main(int argc, char** argv) {
     mca.Add(module);
     mca.Add(boot_pattern_flag);
     read.Add(conf_flag);
+    tau_finder.Add(module);
     trace.Add(conf_flag);
     trace.Add(module);
     trace.Add(boot_pattern_flag);
@@ -799,6 +802,21 @@ int main(int argc, char** argv) {
                 Pixie16LoadDSPParametersFromFile(additional_cfg_flag.Get().c_str()),
                 "Pixie16LoadDSPParametersFromFile", true))
             return EXIT_FAILURE;
+    }
+
+    if (tau_finder) {
+        if (!module) {
+            std::cout << LOG("ERROR") << "Pixie16TauFinder requires the module flag to execute!"
+                      << std::endl;
+        }
+        std::vector<double> taus(NUMBER_OF_CHANNELS);
+        if (!verify_api_return_value(Pixie16TauFinder(module.Get(), taus.data()),
+                                     "Pixie16TauFinder", true)) {
+            return EXIT_FAILURE;
+        }
+        for(unsigned int i = 0; i < taus.size(); i++) {
+            std::cout << "Channel " << i << ": " << taus.at(i) << std::endl;
+        }
     }
 
     if (read) {
