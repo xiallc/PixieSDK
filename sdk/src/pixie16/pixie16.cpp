@@ -582,11 +582,40 @@ PIXIE_EXPORT int PIXIE_API Pixie16CopyDSPParameters(unsigned short BitMask,
                                                     unsigned short SourceChannel,
                                                     unsigned short* DestinationMask) {
     xia_log(xia_log::debug) << "Pixie16CopyDSPParameters: Source Module=" << SourceModule
-                            << " Source Channel = " << SourceChannel
-                            << "  Destination Mask = " << DestinationMask
-                            << " Bit Mask = " << BitMask;
+                            << " Source Channel=" << SourceChannel
+                            << "  Destination Mask=" << DestinationMask
+                            << " Bit Mask=" << BitMask;
 
-    return not_supported();
+    try {
+        crate.ready();
+        xia::pixie::crate::module_handle source(crate, SourceModule);
+
+        for (size_t dest_mod = 0; dest_mod < crate.num_modules; dest_mod++) {
+            xia::pixie::crate::module_handle dest_handle(crate, dest_mod);
+
+            for (size_t dest_chan = 0; dest_chan < dest_handle->num_channels; dest_chan++) {
+                if (DestinationMask[dest_mod * dest_handle->num_channels + dest_chan] == 0) {
+                    continue;
+                }
+                xia::pixie::param::copy_parameters(BitMask, source->channels[dest_chan].vars,
+                                                   dest_handle->channels[dest_chan].vars);
+            }
+        }
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::api_result_unknown_error();
+    } catch (...) {
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::api_result_unknown_error();
+    }
+
+    return 0;
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16LoadDSPParametersFromFile(const char* FileName) {

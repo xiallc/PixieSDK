@@ -647,9 +647,9 @@ int main(int argc, char** argv) {
         "Sample code that interfaces with a Pixie system through the User API.");
     parser.LongSeparator("=");
 
-
     args::Group commands(parser, "commands");
     args::Command boot(commands, "boot", "Boots the crate of modules.");
+    args::Command copy(commands, "copy", "Copies DSP parameters from source to destination.");
     args::Command export_settings(
         commands, "export-settings",
         "Boots the system and dumps the settings to the file defined in the config.");
@@ -671,8 +671,6 @@ int main(int argc, char** argv) {
 
     args::Group arguments(parser, "arguments", args::Group::Validators::AtLeastOne,
                           args::Options::Global);
-    args::Flag api_pixie(arguments, "api", "Select the Pixie API (default: pixie16)", {'P', "api"});
-
     args::ValueFlag<std::string> conf_flag(arguments, "cfg", "The configuration file to load.",
                                            {'c', "config"}, args::Options::Required);
     args::ValueFlag<std::string> additional_cfg_flag(
@@ -689,10 +687,19 @@ int main(int argc, char** argv) {
         list_mode, "time", "The amount of time that a list mode run will take in seconds.",
         {'t', "run-time"}, 10.);
     args::ValueFlag<std::string> parameter(
-        read, "parameter", "The parameter we want to read from the system.", {'n', "name"});
-    args::ValueFlag<unsigned int> crate(read, "crate", "The crate", {"crate"}, 0);
-    args::ValueFlag<unsigned int> module(read, "module", "The module", {"mod"});
-    args::ValueFlag<unsigned int> channel(read, "channel", "The channel", {"chan"});
+        arguments, "parameter", "The parameter we want to read from the system.", {'n', "name"});
+    args::ValueFlag<unsigned int> channel(arguments, "channel", "The channel to operate on.",
+                                          {"chan"});
+    args::ValueFlag<unsigned int> crate(arguments, "crate", "The crate", {"crate"}, 0);
+    args::ValueFlag<unsigned int> copy_mask(
+        copy, "copy_mask", "An integer representing the set of parameters to copy", {"copy-mask"});
+    args::ValueFlag<unsigned int> dest_mask(
+        copy, "dest_mask", "An integer representing the destination channels", {"dest-mask"});
+    args::ValueFlag<unsigned int> dest_channel(copy, "dest_channel",
+                                               "The channel that we'll copy to", {"dest-chan"});
+    args::ValueFlag<unsigned int> dest_module(copy, "dest_module", "The module that we'll copy to.",
+                                              {"dest-mod"});
+    args::ValueFlag<unsigned int> module(arguments, "module", "The module to operate on.", {"mod"});
     args::ValueFlag<double> parameter_value(
         write, "parameter_value", "The value of the parameter we want to write.", {'v', "value"});
 
@@ -706,10 +713,17 @@ int main(int argc, char** argv) {
     blcut.Add(channel);
     boot.Add(conf_flag);
     boot.Add(boot_pattern_flag);
+    copy.Add(boot_pattern_flag);
+    copy.Add(module);
+    copy.Add(channel);
     dacs.Add(module);
     mca.Add(module);
     mca.Add(boot_pattern_flag);
     read.Add(conf_flag);
+    read.Add(crate);
+    read.Add(module);
+    read.Add(channel);
+    read.Add(parameter);
     tau_finder.Add(module);
     trace.Add(conf_flag);
     trace.Add(module);
@@ -804,6 +818,30 @@ int main(int argc, char** argv) {
             return EXIT_FAILURE;
     }
 
+    if (copy) {
+        if (!module || !channel || !copy_mask || !dest_channel || !dest_module) {
+            std::cout
+                << LOG("ERROR")
+                << "Pixie16CopyDSPParameters requires the source/destination module and channel "
+                   "and the destination mask to execute!"
+                << std::endl;
+        }
+        std::vector<unsigned short> dest_mask;
+        for(size_t mod = 0; mod < cfg.num_modules(); mod++) {
+            for(size_t chan = 0; chan < NUMBER_OF_CHANNELS; chan++) {
+                if (mod == dest_module.Get() && chan == dest_channel.Get())
+                    dest_mask.push_back(1);
+                else
+                    dest_mask.push_back(0);
+            }
+        }
+        if (!verify_api_return_value(
+                Pixie16CopyDSPParameters(copy_mask.Get(), module.Get(), channel.Get(), dest_mask.data()),
+                "Pixie16CopyDSPParameters", true)) {
+            return EXIT_FAILURE;
+        }
+    }
+
     if (tau_finder) {
         if (!module) {
             std::cout << LOG("ERROR") << "Pixie16TauFinder requires the module flag to execute!"
@@ -814,7 +852,7 @@ int main(int argc, char** argv) {
                                      "Pixie16TauFinder", true)) {
             return EXIT_FAILURE;
         }
-        for(unsigned int i = 0; i < taus.size(); i++) {
+        for (unsigned int i = 0; i < taus.size(); i++) {
             std::cout << "Channel " << i << ": " << taus.at(i) << std::endl;
         }
     }
