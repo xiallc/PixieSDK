@@ -1292,12 +1292,12 @@ typedef std::vector<copy_filter_var<channel_var>> copy_filter;
  * Copy filter masks. The masks select the filters used in a copy.
  */
 const unsigned int energy_mask = 1 << 0;
-const unsigned int trigger_mask = 1 << 1;
-const unsigned int analog_signal_cond_mask = 1 << 2;
-const unsigned int histogram_control_mask = 1 << 3;
-const unsigned int decay_time_mask = 1 << 4;
-const unsigned int pulse_shape_analysis_mask = 1 << 5;
-const unsigned int baseline_control_mask = 1 << 6;
+const unsigned int trigger_mask = 1 << 0;
+const unsigned int analog_signal_cond_mask = 1 << 1;
+const unsigned int histogram_control_mask = 1 << 2;
+const unsigned int decay_time_mask = 1 << 3;
+const unsigned int pulse_shape_analysis_mask = 1 << 4;
+const unsigned int baseline_control_mask = 1 << 5;
 const unsigned int channel_csra_mask = 1 << 7;
 const unsigned int cfd_trigger_mask = 1 << 8;
 const unsigned int trigger_stretch_len_mask = 1 << 9;

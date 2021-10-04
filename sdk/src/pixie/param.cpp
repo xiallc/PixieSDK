@@ -721,7 +721,7 @@ void copy_parameters(const copy_filter& filter, const channel_variables& source,
 
     for (auto f : filter) {
         int v = static_cast<int>(f.var);
-        for (size_t i = 0; i < dest.size(); ++i) {
+        for (size_t i = 0; i < dest[v].value.size(); ++i) {
             dest[v].value[i].value =
                 (dest[v].value[i].value & ~f.mask) | (source[v].value[i].value & f.mask);
             dest[v].value[i].dirty = true;
@@ -769,6 +769,13 @@ void copy_parameters(const unsigned int filter_mask, const channel_variables& so
     }
     if ((filter_mask & qdc_mask) != 0) {
         copy_parameters(qdc_filter, source, dest);
+    }
+    if (filter_mask == all_mask) {
+        copy_filter all;
+        for (const auto& var: channel_var_descriptors_default) {
+            all.push_back(var.par);
+        }
+        copy_parameters(all, source, dest);
     }
 }
 
