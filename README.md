@@ -12,6 +12,7 @@ up-and-running without the user writing a single line of code.
 * [Installation](doc/pages/installation.md)
 * [Example Programs](examples/README.md)
 * [Project Glossary](doc/pages/glossary.md)
+* [FAQ](doc/pages/faq.md)
 * Legacy API
     * [Architecture](doc/pages/pixie16/legacy/legacy-api-architecture.md)
     * [Usage Overview](doc/pages/pixie16/legacy/legacy-overview.md)
