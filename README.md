@@ -1,18 +1,11 @@
 # PixieSDK
 
 [![Build Status](https://travis-ci.com/xiallc/pixie_sdk.svg?branch=master)](https://travis-ci.com/xiallc/pixie_sdk)
-[![Build Status](https://img.shields.io/github/v/release/xiallc/pixie_sdk)](https://github.com/xiallc/pixie_sdk/releases/latest)
-
+[![Latest Release](https://img.shields.io/github/v/release/xiallc/pixie_sdk)](https://github.com/xiallc/pixie_sdk/releases/latest)
 
 The PixieSDK is a fully featured, cross-platform, C++ based software development kit for XIA LLC's
 Pixie-16 product line. We've tried to provide all the tools necessary to get a fresh system
 up-and-running without the user writing a single line of code.
-
-##### Notice regarding Legacy C API
-
-The Legacy C API is now deprecated and will no longer receive support outside critical bug fixes. To
-minimize the impact we encourage all users to migrate to the Pixie16Api compatibility library.
-**We will remove the legacy C API on July 31, 2023**.
 
 ## Quick Links
 
@@ -22,6 +15,27 @@ minimize the impact we encourage all users to migrate to the Pixie16Api compatib
 * Legacy API
     * [Architecture](doc/pages/pixie16/legacy/legacy-api-architecture.md)
     * [Usage Overview](doc/pages/pixie16/legacy/legacy-overview.md)
+
+## Deprecation Policy
+
+By necessity, we will be making changes to the public API calls and the SDK. We will adopt a process
+of depreciating interfaces then removing them. We will provide notice of
+
+* no less than 12 months before removing an interface,
+* and no less than 6 months before changing an interface.
+
+Notices will appear in the source code, documentation, and release notes. We will notify users via
+email 30 days prior to the deprecation date.
+
+Deprecated interfaces will receive bug fixes during their deprecation phase, but will receive no
+added functionality. This policy may not cover all situations, and will evolve over time. For
+situations that don’t fit neatly into this policy, we will ensure that the information is available
+in all relevant Release Notes.
+
+### Notice regarding Legacy C API
+
+The Legacy C API is now deprecated and will no longer receive support outside critical bug fixes.
+**We will remove the legacy C API on July 31, 2023**.
 
 ## Feature highlights
 
@@ -38,7 +52,6 @@ minimize the impact we encourage all users to migrate to the Pixie16Api compatib
 | Operating System | CMake Version | Compiler | Compiler Version |
 |---|---|---|---|
 | Windows 10 | 3.20.2 | MSVC | 14.28.29333 |
-| Ubuntu 20.04 | 3.16.3 | GCC | 9.3.0 |
 | CentOS 8 | 3.11.4 | GCC | 8.3.1 |
 
 ## Dependencies and Prerequisites
