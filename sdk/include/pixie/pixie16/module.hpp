@@ -551,6 +551,8 @@ protected:
     /*
      * Module parameter handlers.
      */
+    double host_rt_preset();
+    void host_rt_preset(double value);
     void module_csrb(param::value_type value, size_t offset = 0, bool io = true);
     void slow_filter_range(param::value_type value, size_t offset = 0, bool io = true);
     void fast_filter_range(param::value_type value, size_t offset = 0, bool io = true);

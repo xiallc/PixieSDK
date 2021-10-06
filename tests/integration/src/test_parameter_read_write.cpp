@@ -97,6 +97,16 @@ TEST_SUITE("Simulation Initialization") {
     }
 }
 
+TEST_SUITE("Module Parameter Reads and Writes") {
+    TEST_CASE("HOST_RT_PRESET") {
+        SUBCASE("Happy path") {
+            const double value = 10;
+            crate[1].write("HOST_RT_PRESET", value);
+            CHECK(crate[1].read_var("HostRunTimePreset", 0) == 1092616192);
+            CHECK(crate[1].read("HOST_RT_PRESET") == value);
+        }
+}
+
 TEST_SUITE("Channel Parameter Reads and Writes") {
     TEST_CASE("BASELINE_AVERAGE") {
         SUBCASE("Happy path") {
