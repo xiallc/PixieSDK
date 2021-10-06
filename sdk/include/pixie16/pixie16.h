@@ -901,10 +901,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsign
  *     channel of the module. A value of -1.0 indicates a failed calculation for that channel.
  *     Units are microseconds.
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
- * @retval  0 - success
- * @retval -1 - invalid Pixie module number
- * @retval -2 - failed to start TAU_FINDER run
- * @retval -3 - TAU_FINDER run timed out
  */
 PIXIE_EXPORT int PIXIE_API Pixie16TauFinder(unsigned short ModNum, double* Tau);
 
