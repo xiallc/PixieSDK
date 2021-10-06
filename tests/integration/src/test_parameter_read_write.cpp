@@ -105,6 +105,7 @@ TEST_SUITE("Module Parameter Reads and Writes") {
             CHECK(crate[1].read_var("HostRunTimePreset", 0) == 1092616192);
             CHECK(crate[1].read("HOST_RT_PRESET") == value);
         }
+    }
 }
 
 TEST_SUITE("Channel Parameter Reads and Writes") {
