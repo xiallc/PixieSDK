@@ -1123,17 +1123,22 @@ param::value_type module::read_var(param::module_var var, size_t offset, bool io
         throw error(number, slot, error::code::channel_invalid_param,
                     "invalid module variable offset: " + desc.name);
     }
-    lock_guard guard(lock_);
     param::value_type value;
-    if (have_hardware && io) {
-        hw::memory::dsp dsp(*this);
-        hw::word mem = dsp.read(offset, desc.address);
-        hw::convert(mem, value);
-        module_vars[index].value[offset].value = value;
-        module_vars[index].value[offset].dirty = false;
-    } else {
-        value = module_vars[index].value[offset].value;
+    {
+        lock_guard guard(lock_);
+        if (have_hardware && io) {
+            hw::memory::dsp dsp(*this);
+            hw::word mem = dsp.read(offset, desc.address);
+            hw::convert(mem, value);
+            module_vars[index].value[offset].value = value;
+            module_vars[index].value[offset].dirty = false;
+        } else {
+            value = module_vars[index].value[offset].value;
+        }
     }
+    log(log::debug) << module_label(*this) << "read_var: module var=" << desc.name
+                    << " value[" << offset << "]=" << value
+                    << " (0x" << std::hex << value << ')';
     return value;
 }
 
@@ -1161,16 +1166,21 @@ param::value_type module::read_var(param::channel_var var, size_t channel, size_
         throw error(number, slot, error::code::channel_invalid_param,
                     "invalid channel variable offset: " + desc.name);
     }
-    lock_guard guard(lock_);
     param::value_type value;
-    if (have_hardware && io) {
-        hw::memory::dsp dsp(*this);
-        hw::convert(dsp.read(channel, offset, desc.address), value);
-        channels[channel].vars[index].value[offset].value = value;
-        channels[channel].vars[index].value[offset].dirty = false;
-    } else {
-        value = channels[channel].vars[index].value[offset].value;
+    {
+        lock_guard guard(lock_);
+        if (have_hardware && io) {
+            hw::memory::dsp dsp(*this);
+            hw::convert(dsp.read(channel, offset, desc.address), value);
+            channels[channel].vars[index].value[offset].value = value;
+            channels[channel].vars[index].value[offset].dirty = false;
+        } else {
+            value = channels[channel].vars[index].value[offset].value;
+        }
     }
+    log(log::debug) << module_label(*this) << "read_var: channel var=" << desc.name
+                    << " value[" << offset << "]=" << value
+                    << " (0x" << std::hex << value << ')';
     return value;
 }
 
@@ -1358,6 +1368,8 @@ void module::sync_hw(const bool& program_fippi, const bool& set_dacs) {
             cpld_csr |= (1 << hw::bit::CPLDCSR_BPCONNECT);
         }
 
+        log(log::debug) << module_label(*this)
+                        << "write: cfg_ctrlcs=0x" << std::hex << cpld_csr;
         write_word(hw::device::CFG_CTRLCS, cpld_csr);
 
         /*
