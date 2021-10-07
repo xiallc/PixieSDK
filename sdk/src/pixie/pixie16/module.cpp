@@ -939,11 +939,9 @@ bool module::write(param::module_param par, param::value_type value) {
         case param::module_param::fast_filter_range:
             fast_filter_range(value);
             break;
-        case param::module_param::host_rt_preset:
-            host_rt_preset(value);
-            /* fall through */
         case param::module_param::synch_wait:
         case param::module_param::in_synch:
+        case param::module_param::host_rt_preset:
             bcast = true;
             /* fall through */
         case param::module_param::module_format:
@@ -1270,16 +1268,6 @@ void module::write_var(param::channel_var var, param::value_type value, size_t c
         dsp.write(channel, offset, desc.address, word);
         channels[channel].vars[index].value[offset].dirty = false;
     }
-}
-
-double module::host_rt_preset() {
-    util::ieee_float host_rt_preset = this->read_var(param::module_var::HostRunTimePreset, number);
-    return host_rt_preset;
-}
-
-void module::host_rt_preset(double value) {
-    param::value_type host_rt_preset = util::ieee_float(value);
-    this->write_var(param::module_var::HostRunTimePreset, host_rt_preset);
 }
 
 void module::sync_vars() {
