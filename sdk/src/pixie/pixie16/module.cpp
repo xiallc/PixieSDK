@@ -1101,8 +1101,6 @@ param::value_type module::read_var(const std::string& var, size_t channel, size_
 }
 
 param::value_type module::read_var(param::module_var var, size_t offset, bool io) {
-    log(log::debug) << module_label(*this) << "read_var: module var=" << int(var)
-                    << " offset=" << offset;
     online_check();
     const size_t index = static_cast<size_t>(var);
     if (index >= module_var_descriptors.size()) {
@@ -1111,7 +1109,8 @@ param::value_type module::read_var(param::module_var var, size_t offset, bool io
         throw error(number, slot, error::code::module_invalid_param, oss.str());
     }
     const auto& desc = module_var_descriptors[index];
-    log(log::debug) << "module: read: " << desc.name;
+    log(log::debug) << module_label(*this) << "read_var: module var=" << desc.name
+                    << " offset=" << offset;
     if (desc.state == param::disable) {
         throw error(number, slot, error::code::module_param_disabled,
                     "module variable disabled: " + desc.name);
@@ -1139,8 +1138,6 @@ param::value_type module::read_var(param::module_var var, size_t offset, bool io
 }
 
 param::value_type module::read_var(param::channel_var var, size_t channel, size_t offset, bool io) {
-    log(log::debug) << module_label(*this) << "read_var: channel var=" << int(var)
-                    << " channel=" << channel << " offset=" << offset << " io=" << io;
     online_check();
     channel_check(channel);
     const size_t index = static_cast<size_t>(var);
@@ -1150,6 +1147,8 @@ param::value_type module::read_var(param::channel_var var, size_t channel, size_
         throw error(number, slot, error::code::channel_invalid_param, oss.str());
     }
     const auto& desc = channel_var_descriptors[index];
+    log(log::debug) << module_label(*this) << "read_var: channel var=" << desc.name
+                    << " channel=" << channel << " offset=" << offset << " io=" << io;
     if (desc.state == param::disable) {
         throw error(number, slot, error::code::channel_param_disabled,
                     "channel variable disabled: " + desc.name);
@@ -1190,8 +1189,6 @@ void module::write_var(const std::string& var, param::value_type value, size_t c
 }
 
 void module::write_var(param::module_var var, param::value_type value, size_t offset, bool io) {
-    log(log::debug) << module_label(*this) << "write_var: module var=" << int(var) << " value["
-                    << offset << "]=" << value << " (0x" << std::hex << value << ')';
     online_check();
     const size_t index = static_cast<size_t>(var);
     if (index >= module_var_descriptors.size()) {
@@ -1200,6 +1197,9 @@ void module::write_var(param::module_var var, param::value_type value, size_t of
         throw error(number, slot, error::code::module_invalid_param, oss.str());
     }
     const auto& desc = module_var_descriptors[index];
+    log(log::debug) << module_label(*this) << "write_var: module var=" << desc.name
+                    << " value[" << offset << "]=" << value
+                    << " (0x" << std::hex << value << ')';
     if (desc.state == param::disable) {
         throw error(number, slot, error::code::module_param_disabled,
                     "module variable disabled: " + desc.name);
@@ -1226,9 +1226,6 @@ void module::write_var(param::module_var var, param::value_type value, size_t of
 
 void module::write_var(param::channel_var var, param::value_type value, size_t channel,
                        size_t offset, bool io) {
-    log(log::debug) << module_label(*this) << "write_var: channel var=" << int(var)
-                    << " channel=" << channel << " value[" << offset << "]=" << value << " (0x"
-                    << std::hex << value << ')';
     online_check();
     channel_check(channel);
     const size_t index = static_cast<size_t>(var);
@@ -1238,6 +1235,9 @@ void module::write_var(param::channel_var var, param::value_type value, size_t c
         throw error(number, slot, error::code::channel_invalid_param, oss.str());
     }
     const auto& desc = channel_var_descriptors[index];
+    log(log::debug) << module_label(*this) << "write_var: channel var=" << desc.name
+                    << " channel=" << channel << " value[" << offset << "]=" << value << " (0x"
+                    << std::hex << value << ')';
     if (desc.state == param::disable) {
         throw error(number, slot, error::code::channel_param_disabled,
                     "channel variable disabled: " + desc.name);
