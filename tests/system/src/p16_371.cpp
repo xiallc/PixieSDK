@@ -28,36 +28,64 @@
 #include <thread>
 #include <vector>
 
+#include <pixie/error.hpp>
+#include <pixie/util.hpp>
+
 #include <pixie16/pixie16.h>
+
+int check_settings(const char* settings, uint32_t crc_value) {
+    try {
+        xia::util::crc32 crc;
+        crc.file(settings);
+        if (crc.value != crc_value) {
+            std::cerr << "error: invalid settings crc: " << std::string(crc) << std::endl;
+            return -900;
+        }
+    } catch(xia::pixie::error::error& e) {
+      std::cerr << e << std::endl;
+      return e.return_code();
+    }
+    return 0;
+}
+
+void check(int error)
+{
+    if (error < 0) {
+        std::cerr << "error: code=" << error << std::endl;
+        std::exit(1);
+    }
+}
 
 int main() {
 
+    check(check_settings("./pixie_p16_371.set", 0x6570284));
+
     static const unsigned short number_of_modules = 2;
     std::vector<unsigned short> slot_map = {2, 10};
-    Pixie16InitSystem(number_of_modules, slot_map.data(), 0);
+    check(Pixie16InitSystem(number_of_modules, slot_map.data(), 0));
 
-    Pixie16BootModule(
+    check(Pixie16BootModule(
         "/usr/local/xia/pixie/firmware/revf_general_14b500m_r35207/firmware/syspixie16_revfgeneral_adc500mhz_r33341.bin",
         "/usr/local/xia/pixie/firmware/revf_general_14b500m_r35207/firmware/fippixie16_revfgeneral_14b500m_r34687.bin",
         nullptr,
         "/usr/local/xia/pixie/firmware/revf_general_14b500m_r35207/dsp/Pixie16DSP_revfgeneral_14b500m_r35207.ldr",
-        "./pixie.set",
+        "./pixie_p16_371.set",
         "/usr/local/xia/pixie/firmware/revf_general_14b500m_r35207/dsp/Pixie16DSP_revfgeneral_14b500m_r35207.var",
-        0, 0x7F);
+        0, 0x7F));
 
-    Pixie16BootModule(
+    check(Pixie16BootModule(
         "/usr/local/xia/pixie/firmware/revf_general_14b250m_r33356/firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin",
         "/usr/local/xia/pixie/firmware/revf_general_14b250m_r33356/firmware/fippixie16_revfgeneral_14b250m_r33332.bin",
         nullptr,
         "/usr/local/xia/pixie/firmware/revf_general_14b250m_r33356/dsp/Pixie16DSP_revfgeneral_14b250m_r33356.ldr",
-        "./pixie.set",
+        "./pixie_p16_371.set",
         "/usr/local/xia/pixie/firmware/revf_general_14b250m_r33356/dsp/Pixie16DSP_revfgeneral_14b250m_r33356.var",
-        1, 0x7F);
+        1, 0x7F));
 
-    Pixie16WriteSglModPar("SYNCH_WAIT", 1, 0);
-    Pixie16WriteSglModPar("SYNCH_WAIT", 1, 1);
-    Pixie16WriteSglModPar("IN_SYNCH", 0, 0);
-    Pixie16WriteSglModPar("IN_SYNCH", 0, 1);
+    check(Pixie16WriteSglModPar("SYNCH_WAIT", 1, 0));
+    check(Pixie16WriteSglModPar("SYNCH_WAIT", 1, 1));
+    check(Pixie16WriteSglModPar("IN_SYNCH", 0, 0));
+    check(Pixie16WriteSglModPar("IN_SYNCH", 0, 1));
 
     static const size_t max_attempts = 2;
     static const size_t run_time_in_seconds = 3;
@@ -75,9 +103,9 @@ int main() {
 
         std::this_thread::sleep_for(std::chrono::seconds(run_time_in_seconds));
 
-        Pixie16CheckExternalFIFOStatus(&fifo_words, 0);
+        check(Pixie16CheckExternalFIFOStatus(&fifo_words, 0));
         std::cout << "Module 0 has " << fifo_words << std::endl;
-        Pixie16CheckExternalFIFOStatus(&fifo_words, 1);
+        check(Pixie16CheckExternalFIFOStatus(&fifo_words, 1));
         std::cout << "Module 1 has " << fifo_words << std::endl;
 
         if (Pixie16EndRun(2) != 0) {
@@ -90,5 +118,5 @@ int main() {
                   << "-----------------" << std::endl;
         std::this_thread::sleep_for(std::chrono::seconds(seconds_between_attempts));
     }
-    Pixie16ExitSystem(2);
+    check(Pixie16ExitSystem(2));
 }
