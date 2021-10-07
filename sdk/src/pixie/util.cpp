@@ -23,11 +23,14 @@
 #include <algorithm>
 #include <bitset>
 #include <cmath>
+#include <cstring>
 #include <ctime>
+#include <fstream>
 #include <iomanip>
 #include <sstream>
 #include <stdexcept>
 
+#include <pixie/error.hpp>
 #include <pixie/util.hpp>
 
 namespace xia {
@@ -355,6 +358,22 @@ void crc32::clear() {
 crc32& crc32::operator<<(const std::string& val) {
     update(reinterpret_cast<const unsigned char*>(val.c_str()), int(val.length()));
     return *this;
+}
+
+void crc32::file(const std::string path) {
+    std::ifstream input(path, std::ifstream::in | std::ifstream::binary);
+    if (!input) {
+        throw xia::pixie::error::error(pixie::error::code::file_open_failure,
+                                       "crc32: opening fiile: " + path +
+                                       ": " + std::strerror(errno));
+    }
+    input.unsetf(std::ios::skipws);
+    input.seekg(0, std::ios::end);
+    auto size = input.tellg();
+    input.seekg(0, std::ios::beg);
+    std::vector<char> data(size);
+    input.read(data.data(), size);
+    update(data);
 }
 
 crc32::operator const std::string() const {

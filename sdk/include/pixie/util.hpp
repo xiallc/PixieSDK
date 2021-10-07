@@ -229,7 +229,7 @@ struct crc32 {
     template<typename T>
     void update(const std::vector<T>& vals, const size_t start = 0) {
         const size_t so = ((vals.size() - start) * sizeof(typename std::vector<T>::value_type));
-        update(static_cast<const unsigned char*>(&vals[start]), int(so));
+        update(reinterpret_cast<const unsigned char*>(&vals[start]), int(so));
     }
 
     template<typename T>
@@ -238,8 +238,19 @@ struct crc32 {
         return *this;
     }
 
+    /**
+     * Update the CRC with the string
+     */
     crc32& operator<<(const std::string& val);
 
+    /**
+     * Update the CRC with the data in the file at the path.
+     */
+    void file(const std::string path);
+
+    /**
+     * Return the CRC32 value as a hex string
+     */
     operator const std::string() const;
 
     crc32();
@@ -253,6 +264,7 @@ private:
      */
     static const value_type table[256];
 };
+
 
 }  // namespace util
 }  // namespace xia
