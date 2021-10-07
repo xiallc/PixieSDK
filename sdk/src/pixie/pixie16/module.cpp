@@ -234,7 +234,7 @@ module::module()
       fifo_buffers(default_fifo_buffers), fifo_run_wait_usecs(default_fifo_run_wait_usec),
       fifo_idle_wait_usecs(default_fifo_idle_wait_usec), fifo_hold_usecs(default_fifo_hold_usec),
       fifo_bandwidth(0), data_dma_in(0), data_fifo_in(0), data_fifo_out(0), data_fifo_run_in(0),
-      data_fifo_run_out(0), crate_revision(-1), board_revision(-1), reg_trace(false),
+      data_fifo_run_out(0), crate_revision(-1), board_revision(-1), reg_trace(false), bus_cycle_period(1),
       fifo_worker_running(false), fifo_worker_finished(false), in_use(0), present_(false),
       online_(false), forced_offline_(false), pause_fifo_worker(true), comms_fpga(false),
       fippi_fpga(false), have_hardware(false), vars_loaded(false),
@@ -254,7 +254,7 @@ module::module(module&& m)
       data_dma_in(m.data_dma_in.load()), data_fifo_in(m.data_fifo_in.load()),
       data_fifo_out(m.data_fifo_out.load()), data_fifo_run_in(m.data_fifo_run_in.load()),
       data_fifo_run_out(m.data_fifo_run_out.load()), crate_revision(m.crate_revision),
-      board_revision(m.board_revision), reg_trace(m.reg_trace), fifo_worker_running(false),
+      board_revision(m.board_revision), reg_trace(m.reg_trace), bus_cycle_period(1), fifo_worker_running(false),
       fifo_worker_finished(false), in_use(0), present_(m.present_.load()),
       online_(m.online_.load()), forced_offline_(m.forced_offline_.load()),
       pause_fifo_worker(m.pause_fifo_worker.load()), comms_fpga(m.comms_fpga),
@@ -288,6 +288,7 @@ module::module(module&& m)
     m.crate_revision = -1;
     m.board_revision = -1;
     m.reg_trace = false;
+    m.bus_cycle_period = 1;
     m.present_ = false;
     m.online_ = false;
     m.forced_offline_ = false;
@@ -347,6 +348,7 @@ module& module::operator=(module&& m) {
     crate_revision = m.crate_revision;
     board_revision = m.board_revision;
     reg_trace = m.reg_trace;
+    bus_cycle_period = m.reg_trace;
     present_ = m.present_.load();
     online_ = m.online_.load();
     forced_offline_ = m.forced_offline_.load();
@@ -383,6 +385,7 @@ module& module::operator=(module&& m) {
     m.crate_revision = -1;
     m.board_revision = -1;
     m.reg_trace = false;
+    m.bus_cycle_period = 1;
     m.present_ = false;
     m.online_ = false;
     m.forced_offline_ = false;
@@ -505,6 +508,11 @@ void module::open(size_t device_number) {
         }
 
         have_hardware = true;
+
+        /*
+         * Determine the bus speed.
+         */
+        calc_bus_speed();
 
         /*
          * We can only touch specific registers at this early stage of
@@ -2083,6 +2091,25 @@ void module::fifo_worker() {
 
     fifo_worker_running = false;
     fifo_worker_finished = true;
+}
+
+
+void module::calc_bus_speed() {
+    const size_t count = 5000;
+    util::timepoint tp;
+    {
+        module::module::bus_guard guard(*this);
+        size_t polls = count;
+        tp.start();
+        while (polls-- != 0) {
+          volatile uint32_t tmp = read_word(hw::device::CFG_DATACS);
+        }
+        tp.stop();
+    }
+    double usecs = static_cast<double>(tp.usecs());
+    bus_cycle_period = usecs / count;
+    log(log::debug) << "module: PCI bus-cycle-speed=" << bus_cycle_period
+                    << "usec sample-period=" << usecs << "usec";
 }
 
 void assign(modules& modules_, const number_slots& numbers) {

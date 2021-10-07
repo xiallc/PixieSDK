@@ -34,7 +34,13 @@ namespace hw {
 namespace i2c {
 bitbash::bitbash(module::module& module_, int reg_, uint32_t SDA_, uint32_t SCL_, uint32_t CTRL_,
                  bool trace_)
-    : module(module_), reg(reg_), SDA(SDA_), SCL(SCL_), CTRL(CTRL_), trace(trace_) {}
+    : module(module_), reg(reg_), SDA(SDA_), SCL(SCL_), CTRL(CTRL_), trace(trace_),
+      access_backoff(0), access_multiplier(1), access_multiplier_limit(4) {
+    /*
+     * Maximum clock freq is 200KHz
+     */
+    access_backoff = ((1 / 200000.0) / module.bus_cycle_period) + 2;
+}
 
 bitbash::~bitbash() {
     if (module.present())
@@ -76,8 +82,23 @@ void bitbash::write_ack(uint8_t data, const char* what) {
         log(log::debug) << "i2c-bb: write_ack";
     }
 
-    write(data);
-    if (!get_ack()) {
+    bool acked = false;
+    access_multiplier = 1;
+
+    while (access_multiplier < access_multiplier_limit) {
+        write(data);
+        if (get_ack()) {
+            acked = true;
+            break;
+        }
+        ++access_multiplier;
+        if (trace) {
+            log(log::debug) << "i2c-bb: write_ack: access-multiplier="
+                            << access_multiplier;
+        }
+    }
+
+    if (!acked) {
         stop();
         throw error(error::code::device_hw_failure, what);
     }
@@ -245,11 +266,18 @@ void bitbash::send_nack() {
 
 void bitbash::bus_write(uint8_t data) {
     module.write_word(reg, static_cast<word>(data));
-    wait(5);
+    bus_wait();
 }
 
 uint8_t bitbash::bus_read() {
     return static_cast<uint8_t>(module.read_word(reg));
+}
+
+void bitbash::bus_wait() {
+    size_t polls = access_backoff * access_multiplier;
+    while (polls-- > 0) {
+        volatile uint8_t tmp = bus_read();
+    }
 }
 };  // namespace i2c
 };  // namespace hw

@@ -57,6 +57,15 @@ struct bitbash {
 
     const bool trace;
 
+    /**
+     * A count of dummy accesses to backoff the timing to meet the required
+     * I2C slave clock speed. This backoff doubles on write ACK errors until
+     * the multiplier limit is reached.
+     */
+    size_t access_backoff;
+    size_t access_multiplier;
+    const size_t access_multiplier_limit;
+
     bitbash(module::module& module, int reg, uint32_t SDA, uint32_t SCL, uint32_t CTRL,
             bool trace = false);
     virtual ~bitbash();
@@ -91,6 +100,11 @@ struct bitbash {
      */
     void bus_write(uint8_t data);
     uint8_t bus_read();
+
+    /*
+     * the bus wait is based on the access backoff counter
+     */
+    void bus_wait();
 };
 }  // namespace i2c
 }  // namespace hw

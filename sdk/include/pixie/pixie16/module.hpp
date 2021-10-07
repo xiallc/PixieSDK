@@ -278,6 +278,11 @@ public:
      */
     bool reg_trace;
 
+    /*
+     * Microsconds for a read
+     */
+    double bus_cycle_period;
+
     /**
      * Modules are created by the crate.
      */
@@ -570,6 +575,11 @@ protected:
     void start_fifo_worker();
     void stop_fifo_worker();
     void fifo_worker();
+
+    /*
+     * Calculate the bus speed
+     */
+    void calc_bus_speed();
 
     std::thread fifo_thread;
 
