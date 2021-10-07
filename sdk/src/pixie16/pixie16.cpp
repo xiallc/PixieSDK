@@ -706,9 +706,17 @@ PIXIE_EXPORT int PIXIE_API Pixie16ExitSystem(unsigned short ModNum) {
 PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
                                              unsigned short OfflineMode) {
     /*
-     * Create a log file.
+     * Create a log file. The environment can change the level of logging.
      */
-    xia::logging::start("log", "Pixie16Msg.log", xia_log::info, true);
+    xia_log::level log_level = xia_log::info;
+    const char* env_log_level = std::getenv("PIXIE16_LOG_LEVEL");
+    if (env_log_level != nullptr) {
+        std::string ell = env_log_level;
+        if (ell == "DEBUG" || ell == "debug") {
+            log_level = xia_log::debug;
+        }
+    }
+    xia::logging::start("log", "Pixie16Msg.log", log_level, true);
 
     xia_log(xia_log::info) << "Pixie16InitSystem: NumModules=" << NumModules
                            << " PXISlotMap=" << PXISlotMap << " OfflineMode=" << OfflineMode;
