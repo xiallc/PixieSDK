@@ -184,9 +184,7 @@ void baseline::get(baseline::channels_values& chan_values, bool run) {
 
     for (size_t bl = 0; bl < max_num; ++bl, offset += bl_block_len) {
         double timestamp = time(buffer[offset], buffer[offset + 1]) - starttime;
-        for (size_t c = 0;
-             c < channels.size() && c < chan_values.size();
-             ++c) {
+        for (size_t c = 0; c < channels.size() && c < chan_values.size(); ++c) {
             auto chan = channels[c];
             values& chan_vals = chan_values[c];
             if (bl < chan_vals.size()) {
@@ -200,22 +198,22 @@ void baseline::get(baseline::channels_values& chan_values, bool run) {
 void baseline::compute_cut(size_t num) {
     for (size_t count = 0; count < 10; ++count) {
         get(bl_values);
-        for (auto chan : channels) {
+        for (size_t idx = 0; idx < channels.size(); idx++) {
             double sdev = 0.0;
             size_t sdev_count = 0;
-            cuts[chan] = 0;
+            cuts[idx] = 0;
             for (size_t bl = 0; bl < (num - 1); ++bl) {
                 double val =
-                    (std::fabs(bl_values[chan][bl].second - bl_values[chan][bl + 1].second));
+                    (std::fabs(bl_values[idx][bl].second - bl_values[idx][bl + 1].second));
                 if (val != 0) {
-                    if (val < (10.0 * bl_values[chan][bl].second) &&
-                        val < (10.0 * bl_values[chan][bl + 1].second)) {
+                    if (val < (10.0 * bl_values[idx][bl].second) &&
+                        val < (10.0 * bl_values[idx][bl + 1].second)) {
                         /*
-                         * @todo This peice of logic does not make sense because
+                         * @todo This piece of logic does not make sense because
                          * `cut` is set to 0 and not touched. It is a form of the
                          * code from before but it needs to be checked.
                          */
-                        if (cuts[chan] == 0 || val < cuts[chan]) {
+                        if (cuts[idx] == 0 || val < cuts[idx]) {
                             sdev += val;
                             ++sdev_count;
                         }
@@ -225,13 +223,13 @@ void baseline::compute_cut(size_t num) {
             if (sdev_count > 0) {
                 const double sqrpi = std::sqrt(M_PI_2);
                 double bl_sigma = sdev * sqrpi / sdev_count;
-                cuts[chan] = static_cast<param::value_type>(std::floor(8.0 * bl_sigma));
+                cuts[idx] = static_cast<param::value_type>(std::floor(8.0 * bl_sigma));
             } else {
-                cuts[chan] = 0;
+                cuts[idx] = 0;
             }
 
-            log(log::debug) << module::module_label(module) << " channel=" << chan
-                            << "computed cut=" << cuts[chan];
+            log(log::debug) << module::module_label(module) << " idxnel=" << channels[idx]
+                            << " computed cut=" << cuts[idx];
         }
     }
 }
