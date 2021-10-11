@@ -126,8 +126,10 @@ void end(module::module& module) {
         if (msecs >= wait_msecs) {
             module.run_task = run_task::nop;
             module.control_task = control_task::nop;
-            log(log::debug) << module::module_label(module, "run") << "failed to end task";
-            throw error(error::code::module_task_timeout, "failed to end active run task");
+            log(log::error) << module::module_label(module, "run")
+                            << "failed to end task; module reboot required";
+            throw error(error::code::module_task_timeout,
+                        "failed to end active run task; module reboot required");
         }
     }
     module.run_task = run_task::nop;
