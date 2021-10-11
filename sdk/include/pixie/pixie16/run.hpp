@@ -58,6 +58,12 @@ enum struct run_task {
      */
     nop = 0,
     /**
+     * @brief Control task data run.
+     *
+     * RunTask 1 is used to indicate a run stop is active.
+     */
+    run_stopping = 1,
+    /**
      * @brief List-mode data run.
      *
      * In this run type triggered waveforms together with time of arrival

@@ -103,27 +103,35 @@ void start(module::module& module, run_mode mode, run_task run_tsk, control_task
 }
 
 void end(module::module& module) {
-    module.run_task = run_task::nop;
-    module.control_task = control_task::nop;
     if (active(module)) {
-        log(log::debug) << module::module_label(module, "run") << "end";
+        log(log::debug) << module::module_label(module, "run") << "ending";
         util::timepoint tp;
-        tp.start();
-        {
-            module::module::bus_guard guard(module);
-            csr::clear(module, 1 << hw::bit::RUNENA);
-        }
         int wait_msecs = 1000;
-        for (int msecs = 0; msecs < wait_msecs; ++msecs) {
+        int msecs = 0;
+        module.run_task = run_task::run_stopping;
+        tp.start();
+        while (msecs < wait_msecs) {
+            {
+                module::module::bus_guard guard(module);
+                csr::clear(module, 1 << hw::bit::RUNENA);
+            }
+            ++msecs;
             if (!hw::run::active(module)) {
                 tp.end();
-                log(log::debug) << module::module_label(module, "run") << "end duration=" << tp;
-                return;
+                log(log::debug) << module::module_label(module, "run") << "ended, duration=" << tp;
+                break;
             }
             hw::wait(1000);
         }
-        throw error(error::code::module_task_timeout, "failed to stop task");
+        if (msecs >= wait_msecs) {
+            module.run_task = run_task::nop;
+            module.control_task = control_task::nop;
+            log(log::debug) << module::module_label(module, "run") << "failed to end task";
+            throw error(error::code::module_task_timeout, "failed to end active run task");
+        }
     }
+    module.run_task = run_task::nop;
+    module.control_task = control_task::nop;
 }
 
 bool active(module::module& module) {

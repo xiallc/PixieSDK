@@ -1386,9 +1386,9 @@ void module::run_end() {
     if (run_task == hw::run::run_task::nop) {
         log(log::warning) << module_label(*this) << "run-end: no run active";
     }
+    hw::run::end(*this);
     run_interval.end();
     pause_fifo_worker = true;
-    hw::run::end(*this);
 }
 
 bool module::run_active() {
@@ -1910,9 +1910,11 @@ void module::stop_fifo_worker() {
 }
 
 void module::fifo_worker() {
-    log(log::info) << module_label(*this) << "FIFO worker: running";
-
     hw::memory::fifo fifo(*this);
+
+    size_t level = fifo.level();
+
+    log(log::info) << module_label(*this) << "FIFO worker: running, level=" << level;
 
     try {
         size_t wait_time = fifo_run_wait_usecs.load();
@@ -1920,9 +1922,6 @@ void module::fifo_worker() {
 
         bool pool_empty_logged = false;
         bool fifo_full_logged = false;
-
-        (void) fifo.level();
-
         size_t last_dma_in = 0;
         util::timepoint bw_interval(true);
 
@@ -1933,7 +1932,7 @@ void module::fifo_worker() {
                 continue;
             }
 
-            const hw::run::run_task this_run_tsk = run_task.load();
+            hw::run::run_task this_run_tsk = run_task.load();
 
             /*
              * If list mode is running the wait period is the currently
@@ -1947,15 +1946,6 @@ void module::fifo_worker() {
              */
             if (this_run_tsk == hw::run::run_task::list_mode) {
                 wait_time = fifo_run_wait_usecs.load();
-                /*
-                 * See if the task is still running? If not the module may
-                 * have been directed to stop running by another module.
-                 */
-                if (!hw::run::active(*this)) {
-                    fifo_worker_running = false;
-                    run_task = hw::run::run_task::nop;
-                    log(log::info) << module_label(*this) << "FIFO worker: run not active";
-                }
             }
             if (test_mode.load() != test::off) {
                 wait_time = fifo_run_wait_usecs.load();
@@ -1986,7 +1976,21 @@ void module::fifo_worker() {
              * only starts to decay once we do not see data.
              */
             while (fifo_worker_running.load() && !pause_fifo_worker.load()) {
-                size_t level = fifo.level();
+                /*
+                 * See if the task is still running? If not the module may
+                 * have been directed to stop running by another module.
+                 */
+                this_run_tsk = run_task.load();
+                if (this_run_tsk != hw::run::run_task::nop &&
+                    this_run_tsk != hw::run::run_task::run_stopping &&
+                    !hw::run::active(*this)) {
+                    run_task = hw::run::run_task::nop;
+                    log(log::info) << module_label(*this) << "FIFO worker: run not active";
+                }
+                /*
+                 * Read the level of the FIFI.
+                 */
+                level = fifo.level();
                 if (level == 0 ||
                     (hold_time < fifo_hold_usecs.load() && level < hw::max_dma_block_size)) {
                     break;
@@ -1997,10 +2001,11 @@ void module::fifo_worker() {
                                     << " repeat read: " << level2;
                     break;
                 }
-                bool queue_buf =
-                    this_run_tsk == hw::run::run_task::list_mode || test_mode.load() != test::off;
-                buffer::handle buf;
-                if (fifo_pool.empty()) {
+                /*
+                 * We do not bother compacting if we are less than 3
+                 */
+                const size_t fifo_pool_count = fifo_pool.count();
+                if (fifo_pool_count < 4 && fifo_pool_count > 1) {
                     if (!pool_empty_logged) {
                         log(log::warning) << module_label(*this) << "FIFO worker: pool empty,"
                                           << " compacting queue ...";
@@ -2008,10 +2013,18 @@ void module::fifo_worker() {
                     fifo_data.compact();
                 }
                 /*
+                 * Only queue the buffer if it is not the last and there is a
+                 * valid run tasking or we are testing,
+                 */
+                bool queue_buf =
+                    fifo_pool_count > 1 &&
+                    (this_run_tsk == hw::run::run_task::list_mode || test_mode.load() != test::off);
+                /*
                  * If the pool is still empty after compacting wait
                  * letting the FIFO fill.
                  */
                 if (!fifo_pool.empty()) {
+                    buffer::handle buf;
                     log(log::debug) << module_label(*this) << "FIFO read, level=" << level;
                     buf = fifo_pool.request();
                     if (level > buf->capacity()) {
@@ -2087,7 +2100,8 @@ void module::fifo_worker() {
         log(log::error) << "FIFO worker: unhandled exception";
     }
 
-    log(log::info) << module_label(*this) << "FIFO worker: finishing";
+    level = fifo.level();
+    log(log::info) << module_label(*this) << "FIFO worker: finishing, level=" << level;
 
     fifo_worker_running = false;
     fifo_worker_finished = true;
