@@ -8,6 +8,10 @@ if (BUILD_LEGACY)
             ${PROJECT_SOURCE_DIR}/sdk/include/legacy
             ${PROJECT_SOURCE_DIR}/externals/)
     xia_configure_target(TARGET test_direct_communication USE_PLX LEGACY)
+
+    add_executable(p16_371_legacy src/p16_371.cpp)
+    target_include_directories(p16_371_legacy PUBLIC ${PROJECT_SOURCE_DIR}/sdk/include ${PROJECT_SOURCE_DIR}/externals/)
+    xia_configure_target(TARGET p16_371_legacy USE_PLX LIBS Pixie16App PixieSDK COMPILE_DEFS LEGACY_SWITCH)
 endif ()
 
 if (BUILD_SDK)

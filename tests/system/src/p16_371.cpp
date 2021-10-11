@@ -31,7 +31,11 @@
 #include <pixie/error.hpp>
 #include <pixie/util.hpp>
 
+#ifdef LEGACY_SWITCH
+#include <legacy/pixie16app_export.h>
+#else
 #include <pixie16/pixie16.h>
+#endif
 
 int check_settings(const char* settings, uint32_t crc_value) {
     try {
