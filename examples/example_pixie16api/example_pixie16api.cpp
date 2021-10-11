@@ -606,11 +606,8 @@ bool execute_set_dacs(args::ValueFlag<unsigned int>& module) {
 }
 
 bool execute_close_module_connection(const int& numModules) {
-    for (int i = 0; i < numModules; i++) {
-        std::cout << LOG("INFO") << "Closing out connection to Module " << i << "." << std::endl;
-        verify_api_return_value(Pixie16ExitSystem(i),
-                                "Pixie16ExitSystem for Module " + std::to_string(i));
-    }
+    std::cout << LOG("INFO") << "Closing out connection to Modules." << std::endl;
+    verify_api_return_value(Pixie16ExitSystem(numModules),"Pixie16ExitSystem");
     return true;
 }
 

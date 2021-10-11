@@ -170,7 +170,7 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16ExitSystem(unsigned short ModNum) {
     int retval;  // return values
 
     // Check if ModNum is valid
-    if (ModNum >= Number_Modules) {
+    if (ModNum > Number_Modules) {
         Pixie_Print_Error(PIXIE_FUNC, "invalid Pixie module number %d", ModNum);
         return (-1);
     }
