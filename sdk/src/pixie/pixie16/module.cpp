@@ -582,7 +582,7 @@ void module::close() {
 
         log(log::debug) << module_label(*this) << "close: device-number=" << device->device_number;
 
-        stop_fifo_services();
+        force_offline();
 
         ps_dma = ::PlxPci_DmaChannelClose(&device->handle, 0);
         if (ps_dma != PLX_STATUS_OK) {
@@ -629,6 +629,11 @@ void module::force_offline() {
     log(log::info) << module_label(*this) << "set offline";
     lock_guard guard(lock_);
     if (!forced_offline_.load()) {
+        try {
+            run_end();
+        } catch (error& e) {
+            log(log::error) << "force offline: " << e;
+        }
         stop_fifo_services();
         forced_offline_ = true;
     }
