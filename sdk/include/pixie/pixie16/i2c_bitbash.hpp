@@ -49,6 +49,11 @@ struct bitbash {
     const int reg;
 
     /*
+     * Maximum frequency of the bus clock for the device
+     */
+    const size_t bus_freq;
+
+    /*
      * Bit mask of the signals.
      */
     const uint32_t SDA;
@@ -66,8 +71,8 @@ struct bitbash {
     size_t access_multiplier;
     const size_t access_multiplier_limit;
 
-    bitbash(module::module& module, int reg, uint32_t SDA, uint32_t SCL, uint32_t CTRL,
-            bool trace = false);
+    bitbash(module::module& module, int reg, size_t bus_freq, uint32_t SDA, uint32_t SCL,
+            uint32_t CTRL, bool trace = false);
     virtual ~bitbash();
 
     /*

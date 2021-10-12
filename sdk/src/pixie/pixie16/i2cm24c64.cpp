@@ -28,7 +28,7 @@ namespace pixie {
 namespace hw {
 namespace i2c {
 i2cm24c64::i2cm24c64(module::module& module, int reg, uint32_t SDA, uint32_t SCL, uint32_t CTRL)
-    : bitbash(module, reg, SDA, SCL, CTRL) {}
+    : bitbash(module, reg, 400000, SDA, SCL, CTRL) {}
 
 void i2cm24c64::read(int address, size_t length, eeprom::contents& data) {
     module::module::bus_guard guard(module);

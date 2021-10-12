@@ -29,7 +29,7 @@ namespace hw {
 namespace i2c {
 pcf8574::pcf8574(module::module& module, int reg, uint32_t SDA, uint32_t SCL, uint32_t CTRL,
                  bool trace)
-    : bitbash(module, reg, SDA, SCL, CTRL, trace) {}
+    : bitbash(module, reg, 100000, SDA, SCL, CTRL, trace) {}
 
 uint8_t pcf8574::read_a_byte() {
     module::module::bus_guard guard(module);

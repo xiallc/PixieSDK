@@ -32,14 +32,14 @@ namespace xia {
 namespace pixie {
 namespace hw {
 namespace i2c {
-bitbash::bitbash(module::module& module_, int reg_, uint32_t SDA_, uint32_t SCL_, uint32_t CTRL_,
-                 bool trace_)
-    : module(module_), reg(reg_), SDA(SDA_), SCL(SCL_), CTRL(CTRL_), trace(trace_),
-      access_backoff(0), access_multiplier(1), access_multiplier_limit(4) {
+bitbash::bitbash(module::module& module_, int reg_, size_t bus_freq_, uint32_t SDA_, uint32_t SCL_,
+                 uint32_t CTRL_, bool trace_)
+    : module(module_), reg(reg_), bus_freq(bus_freq_), SDA(SDA_), SCL(SCL_), CTRL(CTRL_),
+      trace(trace_), access_backoff(0), access_multiplier(1), access_multiplier_limit(4) {
     /*
      * Maximum clock freq is 200KHz
      */
-    access_backoff = ((1 / 200000.0) / module.bus_cycle_period) + 2;
+    access_backoff = ((1.0 / bus_freq) / module.bus_cycle_period) + 2;
 }
 
 bitbash::~bitbash() {
