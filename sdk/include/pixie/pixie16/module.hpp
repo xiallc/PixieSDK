@@ -127,6 +127,28 @@ public:
         void unlock();
     };
 
+    /*
+     * Stats for the module or a run.
+     */
+    struct fifo_stats {
+        std::atomic_size_t in; /* Data into the fifo queue */
+        std::atomic_size_t out; /* Data read from the fifo queue */
+        std::atomic_size_t overflows; /* Fifo queue overflows */
+        std::atomic_size_t dropped; /* Fifo queue data dropped */
+        std::atomic_size_t hw_overflows; /* Fifo HW overflows */
+        std::atomic_size_t bandwidth; /* Current bandwidth */
+        std::atomic_size_t max_bandwidth; /* Maximum bandwidth */
+        std::atomic_size_t min_bandwidth; /* Minimum bandwidth */
+
+        fifo_stats();
+        fifo_stats(const fifo_stats& s);
+
+        fifo_stats& operator=(const fifo_stats& s);
+
+        void clear();
+        void set_bandwidth(const size_t bw);
+    };
+
     /**
      * @brief Test mode
      */
@@ -253,15 +275,13 @@ public:
      * Dataflow stats
      */
     std::atomic_size_t data_dma_in; /* DMA data in */
-    std::atomic_size_t data_fifo_in; /* Data into the fifo queue */
-    std::atomic_size_t data_fifo_out; /* Data read from the fifo queue */
+    fifo_stats data_stats;
 
     /*
      * Run stats
      */
     util::timepoint run_interval; /* Period of the run */
-    std::atomic_size_t data_fifo_run_in; /* DMA data into the fifo queue */
-    std::atomic_size_t data_fifo_run_out; /* Data read from the fifo queue */
+    fifo_stats run_stats;
 
     /**
      * Crate revision
@@ -578,6 +598,11 @@ protected:
      * Calculate the bus speed
      */
     void calc_bus_speed();
+
+    /*
+     * Output stats
+     */
+    void log_stats(const char* label, const fifo_stats& stats);
 
     std::thread fifo_thread;
 
