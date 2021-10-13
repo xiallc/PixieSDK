@@ -506,10 +506,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16EndRun(unsigned short ModNum);
 /**
  * @ingroup PIXIE16_API
  *
- * @brief Close the modules and release resources used by PCI devices before
- * exiting the application.
+ * @brief Release resources used by PCI devices before exiting the application.
  *
- * @param[in] ModNum The module number that we'll be closing.
+ * Use this function to release the user virtual addressees that are assigned
+ * to Pixie-16 modules when these modules are initialized by function
+ * Pixie16InitSystem. This function should be called before a user’s
+ * application exits.
+ *
+ * @param[in] ModNum The module number to close, which starts counting at 0. If
+ *   ModNum is equal to the number of modules in the system then all modules will
+ *   exit.
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
  */
 PIXIE_EXPORT int PIXIE_API Pixie16ExitSystem(unsigned short ModNum);
