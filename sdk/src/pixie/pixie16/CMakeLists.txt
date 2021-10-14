@@ -6,6 +6,7 @@ set(SDK_PIXIE16_SOURCES
         pixie16/fpga.cpp
         pixie16/fpga_comms.cpp
         pixie16/fpga_fippi.cpp
+        pixie16/hbr.cpp
         pixie16/hw.cpp
         pixie16/i2c_bitbash.cpp
         pixie16/i2cm24c64.cpp

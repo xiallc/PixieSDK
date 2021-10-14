@@ -27,6 +27,7 @@
 
 #include <pixie/pixie16/csr.hpp>
 #include <pixie/pixie16/defs.hpp>
+#include <pixie/pixie16/hbr.hpp>
 #include <pixie/pixie16/memory.hpp>
 #include <pixie/pixie16/module.hpp>
 
@@ -44,36 +45,13 @@ namespace xia {
 namespace pixie {
 namespace hw {
 namespace memory {
-struct host_bus_request {
-    module::module& module;
-    bool holding;
-    host_bus_request(module::module& module_) : module(module_), holding(false) {
-        request();
-    }
-    ~host_bus_request() {
-        release();
-    }
-    void request() {
-        if (!holding) {
-            module.write_word(hw::device::REQUEST_HBR, 7);
-            holding = true;
-        }
-    }
-    void release() {
-        if (holding) {
-            module.write_word(hw::device::HBR_DONE, 7);
-            holding = false;
-        }
-    }
-};
-
 bus::bus(module::module& module_) : module(module_) {}
 
 dsp::dsp(module::module& module_) : bus(module_) {}
 
 word dsp::read(const address addr) {
     module::module::bus_guard guard(module);
-    host_bus_request hbr(module);
+    hbr::host_bus_request hbr(module);
     bus_write(hw::device::EXT_MEM_TEST, addr);
     word value = bus_read(hw::device::WRT_DSP_MMA);
     return value;
@@ -109,7 +87,7 @@ void dsp::read(const address addr, word_ptr buffer, const size_t length) {
         offset += block_size;
     }
     if (size > 0) {
-        host_bus_request hbr(module);
+        hbr::host_bus_request hbr(module);
         bus_write(hw::device::EXT_MEM_TEST, hw::word(addr + offset));
         buffer += offset;
         while (size-- > 0) {
@@ -121,7 +99,7 @@ void dsp::read(const address addr, word_ptr buffer, const size_t length) {
 
 void dsp::write(const address addr, const word value) {
     module::module::bus_guard guard(module);
-    host_bus_request hbr(module);
+    hbr::host_bus_request hbr(module);
     bus_write(hw::device::EXT_MEM_TEST, addr);
     bus_write(hw::device::WRT_DSP_MMA, value);
 }
@@ -142,7 +120,7 @@ void dsp::write(const size_t channel, const size_t offset, const address addr, c
 
 void dsp::write(const address addr, const words& values) {
     module::module::bus_guard guard(module);
-    host_bus_request hbr(module);
+    hbr::host_bus_request hbr(module);
     bus_write(hw::device::EXT_MEM_TEST, addr);
     for (auto value : values) {
         bus_write(hw::device::WRT_DSP_MMA, value);
@@ -157,7 +135,7 @@ void dsp::dma_read(const address addr, word_ptr buffer, const size_t length) {
      * The bus is held on entry.
      */
 
-    host_bus_request hbr(module);
+    hbr::host_bus_request hbr(module);
 
     bus_write(hw::device::EXT_MEM_TEST, DMASTAT);
     if ((bus_read(hw::device::WRT_DSP_MMA) & (1 << 11)) != 0) {

@@ -68,7 +68,27 @@ struct device {
  */
 struct bit {
     /*
-     * Host PCI CSR bits definitions
+     * Host Bus Request bit definitions. Used on rev H and later and don't on
+     * earlier versions.
+     */
+    /*
+     * HBR pin
+     */
+    static const size_t HDR_HBR = 0;
+    /*
+     * DSP CS pin
+     */
+    static const size_t HBR_DSP_CS = 1;
+    /*
+     * Auto-increment after read
+     */
+    static const size_t HBR_AUTO_INC = 2;
+    /*
+     * Read another word from new address after rread
+     */
+    static const size_t HBR_READ_AGAIN_READ = 3;
+    /*
+     * Host PCI CSR bit definitions
      */
     /**
      * Enable run

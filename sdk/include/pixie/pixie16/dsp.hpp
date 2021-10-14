@@ -29,6 +29,7 @@
 
 #include <pixie/fw.hpp>
 
+#include <pixie/pixie16/hbr.hpp>
 #include <pixie/pixie16/hw.hpp>
 
 namespace xia {
@@ -83,7 +84,8 @@ private:
      * Checked write, writes and value then checks for a reply.
      */
     bool checked_write(const word out, const word value, const word in, const word result,
-                       const int out_wait = 0, const int in_wait = 1000);
+                       const int out_wait = 0, const bool request_hbr = false,
+                       const int in_wait = 1000);
 
     /*
      * Image section loader.
@@ -97,6 +99,11 @@ private:
     uint32_t bus_read(int reg);
 
     std::string make_what(const char* msg);
+
+    /*
+     * Host bus request control
+     */
+    hbr::host_bus_request hbr;
 };
 }  // namespace dsp
 }  // namespace hw
