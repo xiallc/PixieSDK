@@ -280,7 +280,7 @@ module::module()
       fifo_buffers(default_fifo_buffers), fifo_run_wait_usecs(default_fifo_run_wait_usec),
       fifo_idle_wait_usecs(default_fifo_idle_wait_usec), fifo_hold_usecs(default_fifo_hold_usec),
       fifo_bandwidth(0), data_dma_in(0), crate_revision(-1), board_revision(-1), reg_trace(false),
-      bus_cycle_period(1), fifo_worker_running(false), fifo_worker_finished(false), in_use(0),
+      bus_cycle_period(100), fifo_worker_running(false), fifo_worker_finished(false), in_use(0),
       present_(false), online_(false), forced_offline_(false), pause_fifo_worker(true), comms_fpga(false),
       fippi_fpga(false), have_hardware(false), vars_loaded(false),
       device(std::make_unique<pci_bus_handle>()), test_mode(test::off) {}
@@ -298,7 +298,7 @@ module::module(module&& m)
       fifo_hold_usecs(m.fifo_hold_usecs.load()), fifo_bandwidth(m.fifo_bandwidth.load()),
       data_dma_in(m.data_dma_in.load()), data_stats(m.data_stats), run_stats(m.run_stats),
       crate_revision(m.crate_revision), board_revision(m.board_revision), reg_trace(m.reg_trace),
-      bus_cycle_period(1), fifo_worker_running(false),
+      bus_cycle_period(100), fifo_worker_running(false),
       fifo_worker_finished(false), in_use(0), present_(m.present_.load()),
       online_(m.online_.load()), forced_offline_(m.forced_offline_.load()),
       pause_fifo_worker(m.pause_fifo_worker.load()), comms_fpga(m.comms_fpga),
@@ -330,7 +330,7 @@ module::module(module&& m)
     m.crate_revision = -1;
     m.board_revision = -1;
     m.reg_trace = false;
-    m.bus_cycle_period = 1;
+    m.bus_cycle_period = 100;
     m.present_ = false;
     m.online_ = false;
     m.forced_offline_ = false;
@@ -423,7 +423,7 @@ module& module::operator=(module&& m) {
     m.crate_revision = -1;
     m.board_revision = -1;
     m.reg_trace = false;
-    m.bus_cycle_period = 1;
+    m.bus_cycle_period = 100;
     m.present_ = false;
     m.online_ = false;
     m.forced_offline_ = false;
@@ -2178,7 +2178,7 @@ void module::calc_bus_speed() {
         size_t polls = count;
         tp.start();
         while (polls-- != 0) {
-          volatile uint32_t tmp = read_word(hw::device::CFG_DATACS);
+          volatile uint32_t tmp = read_word(hw::device::PCF8574);
         }
         tp.stop();
     }
