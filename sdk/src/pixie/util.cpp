@@ -371,7 +371,7 @@ void crc32::file(const std::string path) {
     input.seekg(0, std::ios::end);
     auto size = input.tellg();
     input.seekg(0, std::ios::beg);
-    std::vector<char> data(size);
+    std::vector<char> data(static_cast<unsigned int>(size));
     input.read(data.data(), size);
     update(data);
 }
