@@ -364,7 +364,7 @@ void crc32::file(const std::string path) {
     std::ifstream input(path, std::ifstream::in | std::ifstream::binary);
     if (!input) {
         throw xia::pixie::error::error(pixie::error::code::file_open_failure,
-                                       "crc32: opening fiile: " + path +
+                                       "crc32: opening file: " + path +
                                        ": " + std::strerror(errno));
     }
     input.unsetf(std::ios::skipws);
