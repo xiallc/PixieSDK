@@ -28,42 +28,21 @@
 #include <thread>
 #include <vector>
 
-#include <pixie/error.hpp>
-#include <pixie/util.hpp>
-
 #ifdef LEGACY_SWITCH
 #include <legacy/pixie16app_export.h>
 #else
 #include <pixie16/pixie16.h>
 #endif
 
-int check_settings(const char* settings, uint32_t crc_value) {
-    try {
-        xia::util::crc32 crc;
-        crc.file(settings);
-        if (crc.value != crc_value) {
-            std::cerr << "error: invalid settings crc: " << std::string(crc) << std::endl;
-            return -900;
-        }
-    } catch(xia::pixie::error::error& e) {
-      std::cerr << e << std::endl;
-      return e.return_code();
-    }
-    return 0;
-}
-
 void check(int error)
 {
     if (error < 0) {
         std::cerr << "error: code=" << error << std::endl;
-        std::exit(1);
+        std::exit(EXIT_FAILURE);
     }
 }
 
 int main() {
-
-    check(check_settings("./pixie_p16_371.set", 0x6570284));
-
     static const unsigned short number_of_modules = 2;
     std::vector<unsigned short> slot_map = {2, 10};
     check(Pixie16InitSystem(number_of_modules, slot_map.data(), 0));
@@ -73,7 +52,7 @@ int main() {
         "/usr/local/xia/pixie/firmware/revf_general_14b500m_r35207/firmware/fippixie16_revfgeneral_14b500m_r34687.bin",
         nullptr,
         "/usr/local/xia/pixie/firmware/revf_general_14b500m_r35207/dsp/Pixie16DSP_revfgeneral_14b500m_r35207.ldr",
-        "./pixie_p16_371.set",
+        "./p16_371.set",
         "/usr/local/xia/pixie/firmware/revf_general_14b500m_r35207/dsp/Pixie16DSP_revfgeneral_14b500m_r35207.var",
         0, 0x7F));
 
@@ -82,7 +61,7 @@ int main() {
         "/usr/local/xia/pixie/firmware/revf_general_14b250m_r33356/firmware/fippixie16_revfgeneral_14b250m_r33332.bin",
         nullptr,
         "/usr/local/xia/pixie/firmware/revf_general_14b250m_r33356/dsp/Pixie16DSP_revfgeneral_14b250m_r33356.ldr",
-        "./pixie_p16_371.set",
+        "./p16_371.set",
         "/usr/local/xia/pixie/firmware/revf_general_14b250m_r33356/dsp/Pixie16DSP_revfgeneral_14b250m_r33356.var",
         1, 0x7F));
 
