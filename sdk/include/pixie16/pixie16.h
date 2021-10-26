@@ -155,6 +155,9 @@ PIXIE_EXPORT unsigned int PIXIE_API Pixie16GetStatisticsSize(void);
  * Pixie16ReadSglChanADCTrace to read the ADC trace data out to the host computer,
  * channel by channel.
  *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16AcquireADCTrace
+ *
  * @see Pixie16ReadSglChanADCTrace
  *
  * @param[in] ModNum The module number that we'll be working with
@@ -175,6 +178,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16AcquireADCTrace(unsigned short ModNum);
  * After the successful return of this function, the DSP’s internal memory will be filled with
  * baselines data. Users should then call the function Pixie16ReadSglChanBaselines to read the
  * baselines data out to the host computer, channel by channel.
+ *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16AcquireBaselines
  *
  * @see Pixie16ReadSglChanBaselines
  *
@@ -201,8 +207,10 @@ PIXIE_EXPORT int PIXIE_API Pixie16AcquireBaselines(unsigned short ModNum);
  * The main purpose of this function is to ensure the input signals fall within the voltage range
  * of the ADCs so that all input signals can be digitized by the ADCs properly.
  *
- * @param[in] ModNum The module number to adjust baselines for
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16AdjustOffsets
  *
+ * @param[in] ModNum The module number to adjust baselines for
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
  */
 PIXIE_EXPORT int PIXIE_API Pixie16AdjustOffsets(unsigned short ModNum);
@@ -217,6 +225,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16AdjustOffsets(unsigned short ModNum);
  * process, i.e., if a baseline value is outside the baseline cut range, it will not be used for
  * computing the baseline average. Averaging baselines over time improves energy resolution
  * measurement.
+ *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16BLcutFinder
  *
  * @param[in] ModNum The module number to work with, starts counting at 0.
  * @param[in] ChanNum The channel number to work with, starts counting at 0.
@@ -261,6 +272,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16BLcutFinder(unsigned short ModNum, unsigned sh
  * | 5 | Program on-board FPGAs  | All Pixie Revisions  |
  * | 6 | Set on-board DACs  | All Pixie Revisions  |
  *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16BootModule
+ *
  * @param[in] ComFPGAConfigFile name of communications FPGA configuration file
  * @param[in] SPFPGAConfigFile name of signal processing FPGA configuration file
  * @param[in] TrigFPGAConfigFile name of trigger FPGA configuration file (!!! IGNORED)
@@ -268,7 +282,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16BLcutFinder(unsigned short ModNum, unsigned sh
  * @param[in] DSPParFile name of DSP parameter file
  * @param[in] DSPVarFile name of DSP variable names file
  * @param[in] ModNum The module number. If set to Number_Modules we'll boot all modules.
- * @param[in] BootPattern: boot pattern bit mask
+ * @param[in] BootPattern boot pattern bit mask
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
  */
 PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
@@ -291,9 +305,12 @@ PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
  * (pixie16app_defs.h) has defined a threshold with value of 1024 for external FIFO read out
  * (EXTFIFO_READ_THRESH).
  *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16CheckExternalFIFOStatus
+ *
  * @see Pixie16ReadDataFromExternalFIFO
  *
- * @param[out] nFIFOWords: The number of 32-bit unsigned integer words contained in the module's
+ * @param[out] nFIFOWords The number of 32-bit unsigned integer words contained in the module's
  *     External FIFO
  * @param[in] ModNum The module number to read from. Numbering starts counting at 0.
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
@@ -315,6 +332,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckExternalFIFOStatus(unsigned int* nFIFOWor
  * In MCA histogram run mode, this function can also be called to check if the run is still in
  * progress even though it is normally self-terminating.
  *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16CheckRunStatus
+ *
  * @param[in] ModNum The module number to interrogate and counting starts at 0.
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
  * @retval  0 - No run is in progress
@@ -334,6 +354,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckRunStatus(unsigned short ModNum);
  *
  * The *Statistics array is filled with data from a Pixie-16 module after calling function
  * Pixie16ReadStatisticsFromModule.
+ *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16ComputeInputCountRate
  *
  * @note The units on the return value are triggers per second.
  *
@@ -359,8 +382,11 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeInputCountRate(unsigned int* Statist
  * function, another function, Pixie16ReadStatisticsFromModule, should be called to read
  * statistics data from the module.
  *
- * The *Statistics array is filled with data from a Pixie-16 module after calling function
+ * The Statistics array is filled with data from a Pixie-16 module after calling function
  * Pixie16ReadStatisticsFromModule.
+ *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16ComputeLiveTime
  *
  * @see Pixie16ReadStatisticsFromModule
  *
@@ -382,8 +408,11 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeLiveTime(unsigned int* Statistics,
  * function, Pixie16ReadStatisticsFromModule, should be called to read statistics data from the
  * module.
  *
- * The *Statistics array is filled with data from a Pixie-16 module after calling function
+ * The Statistics array is filled with data from a Pixie-16 module after calling function
  * Pixie16ReadStatisticsFromModule.
+ *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16ComputeOutputCountRate
  *
  * @note The return value's units are channel events per second.
  *
@@ -411,8 +440,11 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeOutputCountRate(unsigned int* Statis
  * Before calling this function, another function, Pixie16ReadStatisticsFromModule, should be
  * called to read statistics data from the module first.
  *
- * The *Statistics array is filled with data from a Pixie-16 module after calling function
+ * The Statistics array is filled with data from a Pixie-16 module after calling function
  * Pixie16ReadStatisticsFromModule.
+ *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16ComputeProcessedEvents
  *
  * @see Pixie16ReadStatisticsFromModule
  *
@@ -433,8 +465,11 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeProcessedEvents(unsigned int* Statis
  * Before calling this function, another function, Pixie16ReadStatisticsFromModule, should be
  * called to read statistics data from the module first.
  *
- * The *Statistics array is filled with data from a Pixie-16 module after calling function
+ * The Statistics array is filled with data from a Pixie-16 module after calling function
  * Pixie16ReadStatisticsFromModule.
+ *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16ComputeRealTime
  *
  * @see Pixie16ReadStatisticsFromModule
  *
@@ -453,6 +488,9 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeRealTime(unsigned int* Statistics,
  *
  * Use this function to copy DSP parameters from one module to the others that are installed in
  * the system.
+ *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16CopyDSPParameters
  *
  * @param[in] BitMask A bit pattern that designates what items should be copied from the source
  *     module to the destination module(s). For example, a value of 4097
@@ -499,6 +537,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16CopyDSPParameters(unsigned short BitMask,
  * to stop run in all modules simultaneously, if DSP parameter SynchWait is set to 1.
  * If SynchWait is set to 0, then CSR bit 0 is cleared to stop the run.
  *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16EndRun
+ *
  * @param[in] ModNum The module number to interrogate and counting starts at 0.
  */
 PIXIE_EXPORT int PIXIE_API Pixie16EndRun(unsigned short ModNum);
@@ -512,6 +553,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16EndRun(unsigned short ModNum);
  * to Pixie-16 modules when these modules are initialized by function
  * Pixie16InitSystem. This function should be called before a user’s
  * application exits.
+ *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16ExitSystem
  *
  * @param[in] ModNum The module number to close, which starts counting at 0. If
  *   ModNum is equal to the number of modules in the system then all modules will
@@ -543,6 +587,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16ExitSystem(unsigned short ModNum);
  * This function must be called as the first step in the boot process. It makes the modules known
  * to the system and “opens” each module for communication.
  *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16InitSystem
+ *
  * @param[in] NumModules The total number of Pixie modules in the system provided by the user. If
  *     0 all slots are check for modules automatically.
  * @param[in] PXISlotMap An array containing the PXI slot number for each module. The array index
@@ -561,6 +608,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned
  * 32-bit unsigned integers. Normally, function Pixie16CheckExternalFIFOStatus is called first to
  * see how many words the external FIFO currently has, and then this function is called to read
  * the data from the FIFO.
+ *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16ReadDataFromExternalFIFO
  *
  * @see Pixie16CheckExternalFIFOStatus
  *
@@ -584,6 +634,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO
  * (defined in pixie16app_defs.h), the settings file should have exactly
  * `(1280 * PRESET_MAX_MODULES * 4)` bytes when stored on the computer hard drive.
  *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16LoadDSPParametersFromFile
+ *
  * @param[in] FileName Absolute path to where we will write the DSP parameter file.
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
  */
@@ -598,8 +651,11 @@ PIXIE_EXPORT int PIXIE_API Pixie16LoadDSPParametersFromFile(const char* FileName
  * store the histogram data. The default histogram length is 32768. Histogram data are 32-bit
  * unsigned integers.
  *
- * @param[out] Histogram: The histogram data that we read from the module.
- * @param[in] NumWords: The number of words we'll read out of the histogram memory.
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16ReadHistogramFromModule
+ *
+ * @param[out] Histogram The histogram data that we read from the module.
+ * @param[in] NumWords The number of words we'll read out of the histogram memory.
  * @param[in] ModNum The module number that we want the histogram from
  * @param[in] ChanNum The channel number that we'd like to read from
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
@@ -618,11 +674,32 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
  * Information from the module can be used to select the appropriate firmware, DSP, and
  * configuration parameters files before booting the module.
  *
+ * ### EEPROM Format
+ *
+ * Read the first 128 bytes from the beginning of the I2C serial EEPROM.
+ *
+ * #### Version 1
+ *   First three words of EEPROM stores serial number and revision number
+ *
+ * #### Version 2
+ *   If the CRC in the header validates it is a version 2 or higher format.
+ *
+ *   Header: [CRC32 (little endian, 4 bytes)] [CTRL (1 byte)] [RESERVED (1 byte)]
+ *   Data: [[ID (1 byte)] [DATA (variable length)]
+ *
+ * **Supported Ids**
+ *   - SERIAL_NUM = 11, little endian number, size = 4
+ *   - REVISION = 12, little endian number, size = 2
+ *   - END = 255
+ *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16ReadModuleInfo
+ *
  * @param[in] ModNum The module number (counts from 0) that we'll read information
- * @param[out] ModRev: The revision read from the on-board EEPROM
- * @param[out] ModSerNum: The serial number read from the on-board EEPROM
- * @param[out] ModADCBits: The ADC bit resolution read from the on-board EEPROM
- * @param[out] ModADCMSPS: The ADC sampling frequency read from the on-board EEPROM
+ * @param[out] ModRev The revision read from the on-board EEPROM
+ * @param[out] ModSerNum The serial number read from the on-board EEPROM
+ * @param[out] ModADCBits The ADC bit resolution read from the on-board EEPROM
+ * @param[out] ModADCMSPS The ADC sampling frequency read from the on-board EEPROM
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
  */
 PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned short* ModRev,
@@ -646,10 +723,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned
  * Specify the module using ModNum and the channel on the module using ChanNum. Note that both the
  * modules and channels are counted starting at 0.
  *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16ReadSglChanADCTrace
+ *
  * @see Pixie16AcquireADCTrace
  *
- * @param[out] Trace_Buffer: Pointer to the data buffer that will hold the data.
- * @param[in] Trace_Length: Length of the traces for the module.
+ * @param[out] Trace_Buffer Pointer to the data buffer that will hold the data.
+ * @param[in] Trace_Length Length of the traces for the module.
  * @param[in] ModNum The module that we want to read
  * @param[in] ChanNum The channel that we want to read
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
@@ -671,11 +751,14 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buff
  * convert each baseline data to a decimal number. In addition to baseline values, timestamps
  * corresponding to each baseline are also returned after this function call.
  *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16ReadSglChanBaselines
+ *
  * @see Pixie16AcquireBaselines
  *
- * @param[out] Baselines: Buffer to hold the baseline values
- * @param[in] TimeStamps: The timestamp that the baselines were obtained at
- * @param[in] NumBases: The number of baselines values read
+ * @param[out] Baselines Buffer to hold the baseline values
+ * @param[in] TimeStamps The timestamp that the baselines were obtained at
+ * @param[in] NumBases The number of baselines values read
  * @param[in] ModNum The module number to read the baselines from, counting from 0.
  * @param[in] ChanNum The channel number to read the baselines from, counting from 0.
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
@@ -730,8 +813,11 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanBaselines(double* Baselines, double
  * | FtrigoutDelay | &mu;s | user set | FTRIGOUTDELAY |
  * | ChanTrigStretch | &mu;s | user set | CHANTRIGSTRETCH |
  *
- * @param[in] ChanParName: The name of the channel parameter that we'll read
- * @param[out] ChanParData: Contains the value we read from the channel.
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16ReadSglChanPar
+ *
+ * @param[in] ChanParName The name of the channel parameter that we'll read
+ * @param[out] ChanParData Contains the value we read from the channel.
  * @param[in] ModNum The module number we'll read from. Counting starts at 0.
  * @param[in] ChanNum The channel number we'll read from. Counting starts at 0.
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
@@ -764,6 +850,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanPar(const char* ChanParName, double
  * | TrigConfig3 | None | user set | TRIGCONFIG[3] |
  * | HOST_RT_PRESET | seconds | user set | HOSTRUNTIMEPRESET |
  *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16ReadSglModPar
+ *
  * @param[in] ModParName The name of the module parameter that we'll read
  * @param[out] ModParData Contains the value of the requested parameters.
  * @param[in] ModNum The module number we'll write to. Numbering starts counting at 0.
@@ -780,6 +869,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglModPar(const char* ModParName, unsigned
  * function, the host code should allocate appropriate amount of memory to store the statistics
  * data. The number of statistics data for each module is fixed at 448. Statistics data are 32-bit
  * unsigned integers.
+ *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16ReadStatisticsFromModule
  *
  * @param[out] Statistics Pointer to a data block with size 448 32-bit unsigned integers to hold
  *    the data read from the module.
@@ -799,6 +891,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadStatisticsFromModule(unsigned int* Statist
  * PRESET_MAX_MODULES (defined in pixie16app_defs.h), the settings file should have exactly
  * `(1280 * PRESET_MAX_MODULES * 4)` bytes when stored on the computer hard drive.
  *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16SaveDSPParametersToFile
+ *
  * @param[in] FileName Absolute path to where we will write the DSP parameter file.
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
  */
@@ -813,6 +908,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16SaveDSPParametersToFile(const char* FileName);
  * binary file, and it then saves the histogram data to an ASCII file with run statistics data
  * appended to the end of the ASCII file. **Existing files will be overwritten.**
  *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16SaveHistogramToFile
+ *
  * @param[in] FileName The file name for the file containing the histogram data
  * @param[in] ModNum The module number we'll read histogram data from. Counting from 0.
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
@@ -826,6 +924,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16SaveHistogramToFile(const char* FileName, unsi
  * Use this function to reprogram the on-board digital to analog converters (DAC) of the Pixie-16
  * modules. In this operation the DSP uses data from the DSP parameters that were previously
  * downloaded.
+ *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16SetDACs
  *
  * @param[in] ModNum The module number, which starts counting at 0.
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
@@ -851,6 +952,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16SetDACs(unsigned short ModNum);
  * total number of modules in the system, only the module specified by ModNum will have its
  * histogram run started. But if ModNum is set to be equal to the total number of modules in the
  * system, then all modules in the system will have their runs started together.
+ *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16StartHistogramRun
  *
  * @param[in] ModNum The module number that we'd like to work against. Starts counting at 0.
  * @param[in] mode How we'll handle existing data when starting up the run. Use mode=NEW_RUN (=1)
@@ -881,6 +985,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartHistogramRun(unsigned short ModNum, unsig
  * mode run started. But if ModNum is set to equal to the total number of modules in the system,
  * then all modules in the system will have their runs started together.
  *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16StartListModeRun
+ *
  * @param[in] ModNum The module number that we'd like to work against. Starts counting at 0.
  * @param[in] RunType The type of run that we're going to be executing. There's only one 0x100.
  * @param[in] mode How we'll handle existing data when starting up the run. Use mode=NEW_RUN (=1)
@@ -899,6 +1006,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsign
  * Use this function to find the exponential decay time constants (Tau value) of the detector or
  * preamplifier signal that is connected to each of the 16 channels of a Pixie-16 module. Tau
  * is used as part of the on-board energy calculations.
+ *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16TauFinder
  *
  * @see [High Rate Pulse Processing Algorithms for Microcalorimeters](https://xia.com/wp-content/uploads/2021/03/High-Rate-Pulse-Processing-Algorithms-for-Microcalorimeters-Tan-2008-.pdf)
  *
@@ -955,6 +1065,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16TauFinder(unsigned short ModNum, double* Tau);
  * | FtrigoutDelay | &mu;s | user set | FTRIGOUTDELAY |
  * | ChanTrigStretch | &mu;s | user set | CHANTRIGSTRETCH |
  *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16WriteSglChanPar
+ *
  * @param[in] ChanParName The name of the channel parameter that we'll write
  * @param[in] ChanParData The value that we'll write to the provided channel
  * @param[in] ModNum The module number we'll write to. Counting starts at 0.
@@ -988,6 +1101,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglChanPar(const char* ChanParName, doubl
  * | TrigConfig2 | None | user set | TRIGCONFIG[2] |
  * | TrigConfig3 | None | user set | TRIGCONFIG[3] |
  * | HOST_RT_PRESET | seconds | user set | HOSTRUNTIMEPRESET |
+ *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16WriteSglModPar
  *
  * @param[in] ModParName The name of the module parameter that we'll write
  * @param[in] ModParData The value of the module parameter that we'll write
