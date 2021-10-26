@@ -13,7 +13,7 @@ int retval;
 ModNum = 0;
 // acquire the trace
 retval = Pixie16AcquireBaselines(ModNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16AcquireBaselines]
@@ -25,7 +25,7 @@ unsigned short ModNum;
 ModNum = 0;
 // adjust dc-offsets
 retval = Pixie16AdjustOffsets(ModNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16AdjustOffsets]
@@ -40,7 +40,7 @@ ModNum = 0;
 ChanNum = 0;
 // find the BLcut value
 retval = Pixie16BLcutFinder(ModNum, ChanNum, &BLcut);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16BLcutFinder]
@@ -70,7 +70,7 @@ BootPattern = 0x7F;
 // finally, boot the selected modules
 retval = Pixie16BootModule(ComFPGAConfigFile, SPFPGAConfigFile, TrigFPGAConfigFile, DSPCodeFile,
                            DSPParFile, DSPVarFile, ModNum, BootPattern);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16BootModule]
@@ -88,7 +88,7 @@ int retval;
 unsigned short ModNum;
 ModNum = 0;  // the first module
 retval = Pixie16CheckRunStatus(ModNum);
-if (retval <) {
+if (retval < 0) {
     // invalid module number
 } else if (retval == 1) {
     // run is still in progress
@@ -113,7 +113,7 @@ FileLocation = 16;  // the starting address of the trace in the
 RcdTraceLength = 1000;  // the length of the recorded trace
 retval = Pixie16ComputeFastFiltersOffline(FileName, ModuleNumber, ChannelNumber, FileLocation,
                                           RcdTrace, fastfilter, cfd);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16ComputeFastFiltersOffline]
@@ -127,7 +127,7 @@ ModNum = 0;  // the first module
 ChanNum = 0;  // the first channel
 // first call Pixie16ReadStatisticsFromModule to get the statistics data
 retval = Pixie16ReadStatisticsFromModule(Statistics, ModNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 // compute input count rate
@@ -143,7 +143,7 @@ ModNum = 0;  // the first module
 ChanNum = 0;  // the first channel
 // first call Pixie16ReadStatisticsFromModule to get the statistics data
 retval = Pixie16ReadStatisticsFromModule(Statistics, ModNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 // compute live time
@@ -159,7 +159,7 @@ ModNum = 0;  // the first module
 ChanNum = 0;  // the first channel
 // first call Pixie16ReadStatisticsFromModule to get the statistics data
 retval = Pixie16ReadStatisticsFromModule(Statistics, ModNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 // compute output count rate
@@ -174,7 +174,7 @@ int retval;
 ModNum = 0;  // the first module
 // first call Pixie16ReadStatisticsFromModule to get the statistics data
 retval = Pixie16ReadStatisticsFromModule(Statistics, ModNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 // compute number of processed events
@@ -189,7 +189,7 @@ int retval;
 ModNum = 0;  // the first module
 // first call Pixie16ReadStatisticsFromModule to get the statistics data
 retval = Pixie16ReadStatisticsFromModule(Statistics, ModNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 // compute real time
@@ -211,7 +211,7 @@ FileLocation = 16;  // the starting address of the trace in the
 RcdTraceLength = 1000;  // the length of the recorded trace
 retval = Pixie16ComputeSlowFiltersOffline(FileName, ModuleNumber, ChannelNumber, FileLocation,
                                           RcdTrace, slowfilter);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16ComputeSlowFiltersOffline]
@@ -224,7 +224,7 @@ ModNum = 0;  // this is the first module
 ControlTask = SET_DACS;  // constant SET_DACS defined in header file
 Max_Poll = 10000;  // give the run 10 seconds to finish
 retval = Pixie16ControlTaskRun(ControlTask, ModNum, Max_Poll);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16ControlTaskRun]
@@ -244,7 +244,7 @@ for (k = 0; k < (6 * 16); k++) {
     DestinationMask[k] = 1;  // copy to all channels of all modules
 }
 retval = Pixie16CopyDSPParameters(BitMask, SourceModule, SourceChannel, DestinationMask);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16CopyDSPParameters]
@@ -269,7 +269,7 @@ int retval;
 unsigned short ModNum;
 ModNum = 0;  // the first module
 retval = Pixie16EndRun(ModNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16EndRun]
@@ -281,13 +281,13 @@ unsigned short ModNum, k;
 // so close all 5 modules
 ModNum = 5;
 retval = Pixie16ExitSystem(ModNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 // or module by module
 for (k = 0; k < 5; k++) {
     retval = Pixie16ExitSystem(k);
-    if (retval <) {
+    if (retval < 0) {
         //Error handling
     }
 }
@@ -300,13 +300,13 @@ unsigned short ModuleNumber;
 unsigned int* EventInformation;
 unsigned int ModuleEvents[7];  // assume maximum number of modules is 7
 retval = Pixie16GetModuleEvents(FileName, ModuleEvents);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 ModuleNumber = 0;  // the first module
 EventInformation = (unsigned int*) malloc(sizeof(unsigned int) * ModuleEvents[ModuleNumber] * 68);
 retval = Pixie16GetEventsInfo(FileName, EventInformation, ModuleNumber);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16GetEventsInfo]
@@ -316,7 +316,7 @@ int retval;
 char* FileName = {"C:\\XIA\\Pixie16\\PulseShape\\listmodedata.bin"};
 unsigned int ModuleEvents[7];  // assume maximum number of modules is 7
 retval = Pixie16GetModuleEvents(FileName, ModuleEvents);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16GetModuleEvents]
@@ -351,7 +351,7 @@ PXISlotMap[4] = 6;
 OfflineMode = 0;
 // configure the PXI slots in the chassis
 retval = Pixie16InitSystem(NumModules, PXISlotMap, OfflineMode);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16InitSystem]
@@ -360,7 +360,7 @@ if (retval <) {
 int retval;
 char* FileName = {"C:\\XIA\\Pixie16\\Configuration\\test.set"};
 retval = Pixie16LoadDSPParametersFromFile(FileName);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16LoadDSPParametersFromFile]
@@ -370,7 +370,7 @@ int retval;
 unsigned short ModNum;
 ModNum = 0;  // the first module
 retval = Pixie16ProgramFippi(ModNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16ProgramFippi]
@@ -380,7 +380,7 @@ int retval;
 unsigned short ModNum;
 ModNum = 0;  // the first module
 retval = Pixie16RampOffsetDACs(ModNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16RampOffsetDACs]
@@ -398,7 +398,7 @@ unsigned int nFIFOWords, *ExtFIFO_Data;
 unsigned short ModNum;
 ModNum = 0;  // the first module in the system
 retval = Pixie16CheckExternalFIFOStatus(&nFIFOWords, ModNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 if (nFIFOWords > 0)  // Check if there is data in the external FIFO
@@ -420,7 +420,7 @@ ModNum = 0;  // the first module
 ChanNum = 0;  // the first channel
 NumWords = 32768;
 retval = Pixie16ReadHistogramFromFile(FileName, Histogram, NumWords, ModNum, ChanNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16ReadHistogramFromFile]
@@ -433,7 +433,7 @@ ModNum = 0;  // the first module
 ChanNum = 0;  // the first channel
 NumWords = 32768;
 retval = Pixie16ReadHistogramFromModule(Histogram, NumWords, ModNum, ChanNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16ReadHistogramFromModule]
@@ -446,13 +446,13 @@ unsigned int *EventInformation, FileLocation, EventNumber;
 unsigned short *Trace_Data, NumWords;
 unsigned int ModuleEvents[7];  // assume maximum number of modules is 7
 retval = Pixie16GetModuleEvents(FileName, ModuleEvents);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 ModuleNumber = 0;  // the first module
 EventInformation = (unsigned int*) malloc(sizeof(unsigned int) * ModuleEvents[ModuleNumber] * 68);
 retval = Pixie16GetEventsInfo(FileName, EventInformation, ModuleNumber);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 ChannelNumber = 0;  // the first channel
@@ -461,7 +461,7 @@ NumWords = (unsigned short) EventInformation[EventNumber * 68 + 10] * 2;
 FileLocation = EventInformation[EventNumber * 68 + 11];
 Trace_Data = (unsigned short*) malloc(sizeof(unsigned short) * NumWords);
 retval = Pixie16ReadListModeTrace(FileName, Trace_Data, NumWords, FileLocation);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16ReadListModeTrace]
@@ -474,7 +474,7 @@ unsigned int ModSerNum;
 unsigned short ModADCBits;
 unsigned short ModADCMSPS;
 retval = Pixie16ReadModuleInfo(ModuleNumber, &ModRev, &ModSerNum, &ModADCBits, &ModADCMSPS);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16ReadModuleInfo]
@@ -490,12 +490,12 @@ ChanNum = 0;
 NumWords = 8192;
 // acquire the trace
 retval = Pixie16AcquireADCTrace(ModNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 // read out the trace
 retval = Pixie16ReadSglChanADCTrace(ADCTrace, NumWords, ModNum, ChanNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16ReadSglChanADCTrace]
@@ -511,12 +511,12 @@ ChanNum = 0;
 NumWords = 3640;
 // acquire the baselines
 retval = Pixie16AcquireBaselines(ModNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 // read out the baselines
 retval = Pixie16ReadSglChanBaselines(Baselines, TimeStamps, NumWords, ModNum, ChanNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16ReadSglChanBaselines]
@@ -529,7 +529,7 @@ double ChanParData;
 ModNum = 0;  // this is the first module
 ChanNum = 0;  // the first channel
 retval = Pixie16ReadSglChanPar("ENERGY_RISETIME", &ChanParData, ModNum, ChanNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16ReadSglChanPar]
@@ -541,7 +541,7 @@ unsigned int ModParData;
 // Read SlowFilterRange in module 0
 ModNum = 0;  // this is the first module
 retval = Pixie16ReadSglModPar("SLOW_FILTER_RANGE", &ModParData, ModNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16ReadSglModPar]
@@ -553,7 +553,7 @@ unsigned int Statistics[448];
 ModNum = 0;  // the first module
 ChanNum = 0;  // the first channel
 retval = Pixie16ReadStatisticsFromModule(Statistics, ModNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16ReadStatisticsFromModule]
@@ -566,7 +566,7 @@ ModNum = 0;  // the first module
 address = PCI_STOPRUN_REGADDR;  // address of the register for ending run
 value = 0;
 retval = Pixie16RegisterIO(ModNum, address, MOD_WRITE, &value);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16RegisterIO]
@@ -575,7 +575,7 @@ if (retval <) {
 int retval;
 char* FileName = {"C:\\XIA\\Pixie16\\Configuration\\test.set"};
 retval = Pixie16SaveDSPParametersToFile(FileName);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16SaveDSPParametersToFile]
@@ -588,7 +588,7 @@ ModNum = 0;  // the first module in the system
 EndOfRunRead = 0;  // this is a read during the run
 retval =
     Pixie16SaveExternalFIFODataToFile("listmodedata_mod0.bin", &nFIFOWords, ModNum, EndOfRunRead);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16SaveExternalFIFODataToFile]
@@ -599,7 +599,7 @@ char* FileName = {"C:\\XIA\\Pixie16\\MCA\\histogramdata.bin"};
 unsigned short ModNum;
 ModNum = 0;  // the first module
 retval = Pixie16SaveHistogramToFile(FileName, ModNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16SaveHistogramToFile]
@@ -609,7 +609,7 @@ int retval;
 unsigned short ModNum;
 ModNum = 0;  // the first module
 retval = Pixie16SetDACs(ModNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16SetDACs]
@@ -627,12 +627,12 @@ preset_run_time = 10.0;
 // Convert preset run time to IEEE 32-bit floating point number
 ieee_preset_run_time = Decimal2IEEEFloating(preset_run_time);
 // Download the preset run time to the DSP
-retval = Pixie16WriteSglModPar("HOST_RT_PRESET", ieee_preset_run_time, ModNum) if (retval <) {
+retval = Pixie16WriteSglModPar("HOST_RT_PRESET", ieee_preset_run_time, ModNum) if (retval < 0) {
     //Error handling
 }
 // Start the histogram run
 retval = Pixie16StartHistogramRun(ModNum, mode);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16StartHistogramRun]
@@ -645,7 +645,7 @@ RunType = 0x100;  // general purpose list mode run
 // Assume there are 5 modules in the system
 ModNum = 5;  // start list mode run in all 5 modules
 retval = Pixie16StartListModeRun(ModNum, RunType, mode);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16StartListModeRun]
@@ -656,7 +656,7 @@ unsigned short ModNum;
 double Tau[16];
 ModNum = 0;  // the first module
 retval = Pixie16TauFinder(ModNum, Tau);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16TauFinder]
@@ -667,12 +667,12 @@ unsigned short ModNum;
 unsigned int CSR;
 ModNum = 0;  // the first module
 retval = Pixie16ReadCSR(ModNum, &CSR);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 CSR = APP32_ClrBit(3, CSR);
 retval = Pixie16WriteCSR(ModNum, CSR);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16WriteCSR]
@@ -686,7 +686,7 @@ ModNum = 0;  // this is the first module
 ChanNum = 0;  // the first channel
 ChanParData = 6.08;  // energy filter rise time = 6.08 us
 retval = Pixie16WriteSglChanPar("ENERGY_RISETIME", ChanParData, ModNum, ChanNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16WriteSglChanPar]
@@ -699,7 +699,7 @@ unsigned int ModParData;
 ModNum = 0;  // this is the first module
 ModParData = 4;  // SlowFilterRange = 4
 retval = Pixie16WriteSglModPar("SLOW_FILTER_RANGE", ModParData, ModNum);
-if (retval <) {
+if (retval < 0) {
     //Error handling
 }
 //! [Pixie16WriteSglModPar]
