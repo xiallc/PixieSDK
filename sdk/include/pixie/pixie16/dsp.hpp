@@ -84,8 +84,7 @@ private:
      * Checked write, writes and value then checks for a reply.
      */
     bool checked_write(const word out, const word value, const word in, const word result,
-                       const int out_wait = 0, const bool request_hbr = false,
-                       const int in_wait = 1000);
+                       const int out_wait = 0, const int in_wait = 1000);
 
     /*
      * Image section loader.

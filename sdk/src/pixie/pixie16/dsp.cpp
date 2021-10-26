@@ -122,12 +122,13 @@ void dsp::boot(const firmware::image& image, int retries) {
              */
             hbr.release(true);
             wait(1000);
+            hbr.request();
 
             /*
              * Check SYSCON address
              */
             ok =
-                checked_write(hw::device::EXT_MEM_TEST, SYSCON, hw::device::WRT_DSP_MMA, 0x10, true);
+                checked_write(hw::device::EXT_MEM_TEST, SYSCON, hw::device::WRT_DSP_MMA, 0x10);
             if (!ok) {
                 throw error(error::code::device_load_failure, make_what("DSP SYSCON set failure"));
             }
@@ -280,13 +281,9 @@ void dsp::section_load(firmware::reader& reader, const size_t wordsize) {
 }
 
 bool dsp::checked_write(const uint32_t out, const uint32_t value, const uint32_t in,
-                        const uint32_t result, const int out_wait, const bool request_hbr,
-                        const int in_wait) {
+                        const uint32_t result, const int out_wait, const int in_wait) {
     int retry = 5;
     bus_write(out, value);
-    if (request_hbr) {
-        hbr.request();
-    }
     if (out_wait > 0) {
         wait(out_wait);
     }
