@@ -202,7 +202,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16AcquireBaselines(unsigned short ModNum);
  * After the DC-offset levels have been adjusted, the baseline level of the digitized input
  * signals will be determined by the DSP parameter BaselinePercent. For instance, if
  * BaselinePercent is set to 10(%), the baseline level of the input signals will be ~ 409 on the
- * 12-bit ADC scale (minimum: 0; maximum: 4095).
+ * 12-bit ADC scale ([0,4095]).
  *
  * The main purpose of this function is to ensure the input signals fall within the voltage range
  * of the ADCs so that all input signals can be digitized by the ADCs properly.
@@ -336,10 +336,10 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckExternalFIFOStatus(unsigned int* nFIFOWor
  * \snippet snippets/api_function_examples.c Pixie16CheckRunStatus
  *
  * @param[in] ModNum The module number to interrogate and counting starts at 0.
- * @returns The value of the xia::pixie::error::code indicating the result of the operation
+ * @returns The result of the check or an error code.
  * @retval  0 - No run is in progress
  * @retval  1 - Run is still in progress
- * @retval -1 - Invalid Pixie module number
+ * @retval The value of the xia::pixie::error::code if there was an error.
  */
 PIXIE_EXPORT int PIXIE_API Pixie16CheckRunStatus(unsigned short ModNum);
 
@@ -547,15 +547,21 @@ PIXIE_EXPORT int PIXIE_API Pixie16EndRun(unsigned short ModNum);
 /**
  * @ingroup PIXIE16_API
  *
- * @brief Release resources used by PCI devices before exiting the application.
+ * @brief Release resources used by the modules before exiting the application.
  *
- * Use this function to release the user virtual addressees that are assigned
- * to Pixie-16 modules when these modules are initialized by function
- * Pixie16InitSystem. This function should be called before a user’s
- * application exits.
+ * This function to cleanly shut down a module or modules when it(they) reach
+ * the end of their lifecycle. Closing the module
+ *   * releases the PCI virtual address,
+ *   * stops any in-progress runs,
+ *   * removes the list-mode data workers.
+ *
+ * @note This function should be called before a user’s application exits.
  *
  * ### Example
- * \snippet snippets/api_function_examples.c Pixie16ExitSystem
+ * #### Exit a single module
+ * \snippet snippets/api_function_examples.c Pixie16ExitSystem - single module
+ * #### Exit all modules
+ * \snippet snippets/api_function_examples.c Pixie16ExitSystem - all modules
  *
  * @param[in] ModNum The module number to close, which starts counting at 0. If
  *   ModNum is equal to the number of modules in the system then all modules will
