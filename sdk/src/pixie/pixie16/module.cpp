@@ -2178,7 +2178,8 @@ void module::calc_bus_speed() {
         size_t polls = count;
         tp.start();
         while (polls-- != 0) {
-          volatile uint32_t tmp = read_word(hw::device::PCF8574);
+            volatile uint32_t tmp = read_word(hw::device::PCF8574);
+            (void) tmp;
         }
         tp.stop();
     }

@@ -39,7 +39,7 @@ bitbash::bitbash(module::module& module_, int reg_, size_t bus_freq_, uint32_t S
     /*
      * Maximum clock freq is 200KHz
      */
-    access_backoff = ((1.0 / bus_freq) / module.bus_cycle_period) + 2;
+    access_backoff = static_cast<size_t>(((1.0 / bus_freq) / module.bus_cycle_period)) + 2;
 }
 
 bitbash::~bitbash() {
@@ -277,6 +277,7 @@ void bitbash::bus_wait() {
     size_t polls = access_backoff * access_multiplier;
     while (polls-- > 0) {
         volatile uint8_t tmp = bus_read();
+        (void) tmp;
     }
 }
 };  // namespace i2c
