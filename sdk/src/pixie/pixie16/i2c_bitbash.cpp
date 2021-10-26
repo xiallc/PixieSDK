@@ -276,7 +276,8 @@ uint8_t bitbash::bus_read() {
 void bitbash::bus_wait() {
     size_t polls = access_backoff * access_multiplier;
     while (polls-- > 0) {
-        bus_read();
+        volatile uint8_t tmp = bus_read();
+        (void) tmp;
     }
 }
 };  // namespace i2c
