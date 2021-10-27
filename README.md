@@ -16,8 +16,9 @@ up-and-running without the user writing a single line of code.
 * Legacy API
     * [Architecture](doc/pages/pixie16/legacy/legacy-api-architecture.md)
     * [Usage Overview](doc/pages/pixie16/legacy/legacy-overview.md)
+* [API Transition Guide](doc/pages/pixie16/pixiesdk-transition-guide.md)
 
-## Deprecation Policy
+## API Update Policy
 
 By necessity, we will be making changes to the public API calls and the SDK. We will adopt a process
 of depreciating interfaces then removing them. We will provide notice of
@@ -37,6 +38,10 @@ in all relevant Release Notes.
 
 The Legacy C API is now deprecated and will no longer receive support outside critical bug fixes.
 **We will remove the legacy C API on July 31, 2023**.
+
+We provide
+a [basic guide on how to transition to the new API](doc/pages/pixie16/pixiesdk-transition-guide.md)
+within the documentation.
 
 ## Feature highlights
 
