@@ -4,6 +4,7 @@
 
 * [Why is the SDK changing so extensively?](#why-is-the-sdk-changing-so-extensively)
 
+<a id="why-is-the-sdk-changing-so-extensively"></a>
 ## Why is the SDK changing so extensively?
 
 The C (Legacy) API has done an excellent job of supporting the Pixie-16 hardware over many years.
