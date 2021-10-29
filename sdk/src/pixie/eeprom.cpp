@@ -20,6 +20,7 @@
  * @brief Implements data structures and functions for working with EEPROMs
  */
 
+#include <algorithm>
 #include <map>
 
 #include <pixie/eeprom.hpp>
@@ -60,15 +61,17 @@ static const std::vector<v1_config> v1_configs = {{{0, 255}, 12, 100, 16, 0, {0x
 
 static const std::map<tag, element_decs> descriptors = {
     {tag::model, {tag::model, "model", string, 16, true, false}},
-    {tag::serial_num, {tag::serial_num, "serial_num", num32, 4, true, false}},
+    {tag::serial_num, {tag::serial_num, "serial num", num32, 4, true, false}},
     {tag::revision, {tag::revision, "revision", num8, 1, true, false}},
+    {tag::major_revision, {tag::major_revision, "major revision", num8, 1, true, false}},
+    {tag::minor_revision, {tag::minor_revision, "minor revision", num8, 1, true, false}},
     {tag::mod_strike, {tag::mod_strike, "mod-strike", num8, 1, true, false}},
     {tag::index, {tag::index, "index", num16, 2, false, false}},
     {tag::size, {tag::size, "size", num16, 2, false, false}},
     {tag::format_ver, {tag::format_ver, "format ver", num8, 1, false, false}},
-    {tag::adc_bits, {tag::adc_bits, "adc_bits", num8, 1, false, false}},
+    {tag::db, {tag::db, "daughter board", num8, 2, false, false}},
+    {tag::adc_bits, {tag::adc_bits, "adc bits", num8, 1, false, false}},
     {tag::adc_msps, {tag::adc_msps, "adc msps", num16, 2, false, false}},
-    {tag::adc_clk_div, {tag::adc_clk_div, "adc clk div", num8, 2, false, false}},
     {tag::fpga_clk, {tag::fpga_clk, "fpga clk", num8, 2, false, false}},
     {tag::end, {tag::end, "end", null, 0, true, false}}};
 
@@ -91,6 +94,25 @@ static const std::map<hw::rev_tag, int> rev_max_channels = {
     {hw::rev_E, 16}, {hw::rev_F, 16}, {hw::rev_G, 16}, {hw::rev_H, 32},
 };
 
+static const v2_config& find_v2_config(const int id) {
+    for (auto& db : v2_configs) {
+        if (id == db.id) {
+            return db;
+        }
+    }
+    throw error(error::code::device_eeprom_failure,
+                "invalid V2 config id: " + std::to_string(id));
+}
+
+static const v2_config& find_v2_config(const std::string label) {
+    for (auto& db : v2_configs) {
+        if (label == db.label) {
+            return db;
+        }
+    }
+    throw error(error::code::device_eeprom_failure, "invalid DB label: " + label);
+}
+
 header::header() {
     clear();
 }
@@ -102,6 +124,9 @@ void header::clear() {
 
 int header::version() const {
     return int(control & 0xf);
+}
+
+db_assemble::db_assemble() : id(-1), position(0) {
 }
 
 eeprom::eeprom() {
@@ -116,10 +141,18 @@ void eeprom::clear() {
     model.clear();
     serial_num = 0;
     revision = 0;
+    major_revision = 0;
+    minor_revision = 0;
     mod_strike = 0;
     num_channels = 0;
     max_channels = 0;
     configs.clear();
+}
+
+void eeprom::clear_data() {
+    data.clear();
+    hdr.clear();
+    crc.clear();
 }
 
 void eeprom::process() {
@@ -216,23 +249,19 @@ void eeprom::process() {
         format = hdr.version();
         serial_num = get_number(tag::serial_num);
         revision = get_number(tag::revision);
+        major_revision = get_number(tag::major_revision);
+        minor_revision = get_number(tag::minor_revision);
         mod_strike = get_number(tag::mod_strike);
 
-        /*
-         * Hack to load a daughter board configuration.
-         */
-        std::vector<int> db_ids = {4};
+        get_dbs();
 
         int index = 0;
-        for (auto id : db_ids) {
-            for (auto db : v2_configs) {
-                if (id == db.id) {
-                    for (int c = 0; c < db.channels; ++c) {
-                        configs.push_back(db.config);
-                        configs.back().index = index;
-                        ++index;
-                    }
-                }
+        for (auto db : dbs) {
+            auto& db_config = find_v2_config(db.id);
+            for (int c = 0; c < db_config.channels; ++c) {
+                configs.push_back(db_config.config);
+                configs.back().index = index;
+                ++index;
             }
         }
 
@@ -257,28 +286,94 @@ void eeprom::process() {
      * Log the configuration
      */
     log(log::info) << "eeprom: format=" << format << " snum=" << serial_num
-                   << " revision=" << revision << " mod-strike=" << mod_strike
-                   << " num-channels=" << num_channels;
+                   << " revision=" << revision << " major-revision=" << major_revision
+                   << " minor-revision=" << minor_revision
+                   << " mod-strike=" << mod_strike << " num-channels=" << num_channels;
     if (num_channels != 0) {
-        int start = 0;
-        hw::config config = configs[0];
-        for (int c = 0; c < num_channels; ++c) {
-            if (config != configs[c] || c == (num_channels - 1)) {
-                int end = config == configs[c] ? c : c - 1;
-                log(log::info) << "eeprom: " << start << '-' << end
-                               << ": adc-bits=" << config.adc_bits
-                               << " adc-msps=" << config.adc_msps
-                               << " adc-clk-div=" << config.adc_clk_div
-                               << " fpga-clk=" << config.fpga_clk_mhz << "Mhz";
-                start = c;
-                config = configs[c];
+        int found_configs = 0;
+        while (true) {
+            ++found_configs;
+            hw::config config = configs[0];
+            if (found_configs > 1) {
+                int to_match = found_configs;
+                for (int c = 0; c < num_channels; ++c) {
+                    if (config != configs[c]) {
+                        if (--to_match == 0) {
+                            break;
+                        }
+                        config = configs[c];
+                    }
+                }
+                if (to_match != 0) {
+                    break;
+                }
             }
+            int start = 0;
+            bool in = config == configs[0];;
+            std::string channels;
+            for (int c = 0; c < num_channels; ++c) {
+                if (config == configs[c]) {
+                    if (!in) {
+                        start = c;
+                    }
+                    in = true;
+                } else {
+                    if (in) {
+                        const int end = config == configs[c] ? c : c - 1;
+                        if (!channels.empty()) {
+                            channels += ',';
+                        }
+                        channels += std::to_string(start) + '-' + std::to_string(end);
+                    }
+                    in = false;
+                }
+            }
+            if (in) {
+                const int end = num_channels - 1;
+                if (!channels.empty()) {
+                    channels += ',';
+                }
+                channels += std::to_string(start) + '-' + std::to_string(end);
+            }
+            log(log::info) << "eeprom: channels: " << channels
+                           << ": adc-bits=" << config.adc_bits
+                           << " adc-msps=" << config.adc_msps
+                           << " adc-clk-div=" << config.adc_clk_div
+                           << " fpga-clk=" << config.fpga_clk_mhz << "Mhz";
         }
     }
 }
 
 bool eeprom::valid() const {
     return hdr.crc != 0 && hdr.crc == crc.value;
+}
+
+int eeprom::find_db_id(const std::string label) const {
+    return find_v2_config(label).id;
+}
+
+std::string eeprom::find_db_label(const int id) const {
+    return find_v2_config(id).label;
+}
+
+void eeprom::get_dbs()
+{
+    auto& desc = lookup(tag::db);
+    while (true) {
+        size_t offset = find(tag::db, dbs.size() + 1, false);
+        if (offset == 0) {
+            std::sort(dbs.begin(), dbs.end(),
+                      [](const db_assemble& a, const db_assemble& b) {
+                          return a.position < b.position;
+                      });
+            break;
+        }
+        db_assemble db;
+        db.id = get8<int>(offset + 0);
+        db.position = get8<int>(offset + 1);
+        db.label = find_db_label(db.id);
+        dbs.push_back(db);
+    }
 }
 
 std::string eeprom::get_string(const tag key, size_t count) {
@@ -347,7 +442,7 @@ ipv4_addr eeprom::get_ipv4(const tag key, size_t count) {
     return ip;
 }
 
-size_t eeprom::find(const tag key, size_t count) const {
+size_t eeprom::find(const tag key, size_t count, bool throw_error) const {
     if (format >= 2) {
         size_t offset = hdr.size;
         size_t found = 0;
@@ -363,21 +458,23 @@ size_t eeprom::find(const tag key, size_t count) const {
                 if (found == count) {
                     return offset;
                 }
-                --count;
             }
             offset += desc.size;
         }
     }
-    std::ostringstream oss;
-    oss << "tag not found: " << std::hex << int(key) << " count: " << count;
-    throw error(error::code::device_eeprom_not_found, oss.str());
+    if (throw_error) {
+        std::ostringstream oss;
+        oss << "tag not found: " << std::hex << int(key) << " count: " << count;
+        throw error(error::code::device_eeprom_not_found, oss.str());
+    }
+    return 0;
 }
 
 const element_decs& eeprom::lookup(const tag key) const {
     const auto di = descriptors.find(key);
     if (di == descriptors.end()) {
         std::ostringstream oss;
-        oss << "invalid EEPROM tag: " << std::hex << int(key);
+        oss << "invalid EEPROM tag: " << int(key);
         throw error(error::code::device_eeprom_failure, oss.str());
     }
     return std::get<1>(*di);
@@ -385,7 +482,7 @@ const element_decs& eeprom::lookup(const tag key) const {
 
 void eeprom::throw_bad_tag_type(const tag key) {
     std::ostringstream oss;
-    oss << "invalid tag type: " << std::hex << int(key);
+    oss << "invalid tag type: " << int(key);
     throw error(error::code::device_eeprom_bad_type, oss.str());
 }
 

@@ -275,18 +275,19 @@ void module::fifo_stats::set_bandwidth(const size_t bw) {
 }
 
 module::module()
-    : slot(0), number(-1), serial_num(0), revision(0), num_channels(0), vmaddr(nullptr),
-      eeprom_format(-1), run_task(hw::run::run_task::nop), control_task(hw::run::control_task::nop),
-      fifo_buffers(default_fifo_buffers), fifo_run_wait_usecs(default_fifo_run_wait_usec),
-      fifo_idle_wait_usecs(default_fifo_idle_wait_usec), fifo_hold_usecs(default_fifo_hold_usec),
-      fifo_bandwidth(0), data_dma_in(0), crate_revision(-1), board_revision(-1), reg_trace(false),
-      bus_cycle_period(100), fifo_worker_running(false), fifo_worker_finished(false), in_use(0),
-      present_(false), online_(false), forced_offline_(false), pause_fifo_worker(true), comms_fpga(false),
-      fippi_fpga(false), have_hardware(false), vars_loaded(false),
+    : slot(0), number(-1), serial_num(0), revision(0), major_revision(0), minor_revision(0),
+      num_channels(0), vmaddr(nullptr), eeprom_format(-1), run_task(hw::run::run_task::nop),
+      control_task(hw::run::control_task::nop), fifo_buffers(default_fifo_buffers),
+      fifo_run_wait_usecs(default_fifo_run_wait_usec), fifo_idle_wait_usecs(default_fifo_idle_wait_usec),
+      fifo_hold_usecs(default_fifo_hold_usec), fifo_bandwidth(0), data_dma_in(0), crate_revision(-1),
+      board_revision(-1), reg_trace(false), bus_cycle_period(100), fifo_worker_running(false),
+      fifo_worker_finished(false), in_use(0), present_(false), online_(false), forced_offline_(false),
+      pause_fifo_worker(true), comms_fpga(false), fippi_fpga(false), have_hardware(false), vars_loaded(false),
       device(std::make_unique<pci_bus_handle>()), test_mode(test::off) {}
 
 module::module(module&& m)
     : slot(m.slot), number(m.number), serial_num(m.serial_num), revision(m.revision),
+      major_revision(0), minor_revision(0),
       num_channels(m.num_channels), vmaddr(m.vmaddr), configs(m.configs), eeprom(m.eeprom),
       eeprom_format(m.eeprom_format), module_var_descriptors(std::move(m.module_var_descriptors)),
       module_vars(std::move(m.module_vars)),
@@ -308,6 +309,8 @@ module::module(module&& m)
     m.number = -1;
     m.serial_num = 0;
     m.revision = 0;
+    m.major_revision = 0;
+    m.minor_revision = 0;
     m.num_channels = 0;
     m.vmaddr = nullptr;
     m.configs.clear();
@@ -366,6 +369,8 @@ module& module::operator=(module&& m) {
     number = m.number;
     serial_num = m.serial_num;
     revision = m.revision;
+    major_revision = m.major_revision;
+    minor_revision = m.minor_revision;
     num_channels = m.num_channels;
     vmaddr = m.vmaddr;
     configs = m.configs;
@@ -405,6 +410,8 @@ module& module::operator=(module&& m) {
     m.number = -1;
     m.serial_num = 0;
     m.revision = 0;
+    m.major_revision = 0;
+    m.minor_revision = 0;
     m.num_channels = 0;
     m.vmaddr = nullptr;
     m.configs.clear();
@@ -602,6 +609,8 @@ void module::open(size_t device_number) {
         max_channels = eeprom.max_channels;
         serial_num = eeprom.serial_num;
         revision = eeprom.revision;
+        major_revision = eeprom.major_revision;
+        minor_revision = eeprom.minor_revision;
         configs = eeprom.configs;
 
         present_ = true;
@@ -1616,6 +1625,16 @@ void module::output(std::ostream& out) const {
         << " forced-offline:" << forced_offline_.load() << " serial:" << serial_num
         << " rev:" << revision_label() << " (" << revision << ") vaddr:" << vmaddr
         << " fw: " << firmware.size();
+}
+
+std::string module::version_label() const {
+    std::ostringstream oss;
+    oss << static_cast<char>(revision + 55);
+    if (revision_label() > 'F') {
+        oss << '-' << static_cast<char>(major_revision)
+            << '(' << minor_revision << ')';
+    }
+    return oss.str();
 }
 
 char module::revision_label() const {

@@ -37,7 +37,7 @@ config::config() {
 }
 
 bool config::operator==(const config& cfg) {
-    return adc_bits == cfg.adc_bits || adc_msps == cfg.adc_msps || adc_clk_div == cfg.adc_clk_div ||
+    return adc_bits == cfg.adc_bits && adc_msps == cfg.adc_msps && adc_clk_div == cfg.adc_clk_div &&
            fpga_clk_mhz == cfg.fpga_clk_mhz;
 }
 

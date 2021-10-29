@@ -54,6 +54,8 @@ enum struct tag {
     model = 10, /*!< model, part number */
     serial_num, /*!< serial number */
     revision, /*!< revision string */
+    major_revision, /*!< major revision string */
+    minor_revision, /*!< minor revision string */
     mod_strike, /*!< hardware modifications */
     /*
      * Parameters
@@ -62,11 +64,14 @@ enum struct tag {
     size, /*!< number of items, channels, modules */
     format_ver, /*!< format version */
     /*
+     * Sub-assemblies
+     */
+    db = 40, /*!< AFE Daughter board */
+    /*
      * Analog Front End (AFE)
      */
-    adc_msps = 100, /*!< The ADC's sampling frequency*/
+    adc_msps = 100, /*!< The ADC's sampling frequency */
     adc_bits, /*!< The ADC's bit resolution */
-    adc_clk_div, /*!< The ADC's clock division, defined as the adc_msps / fpga_clk. */
     fpga_clk, /*!< The Signal processing FPGA's clock frequency.*/
     end = 0xff /*!< Last maps to erase EEPROM value */
 };
@@ -110,9 +115,31 @@ struct header {
 using contents = std::vector<uint8_t>;
 
 /**
+ * @brief A daughter board assembly
+ */
+struct db_assemble {
+    std::string label;
+    int id;
+    int position;
+
+    db_assemble();
+};
+
+using db_assembles = std::vector<db_assemble>;
+
+/**
  * @brief A data structure holding the data decoded from a module's EEPROM.
+ *
+ * @note The @ref version is the module version and the revision may be
+ * referred to the major revision.
  */
 struct eeprom {
+    using tag = xia::pixie::eeprom::tag;
+    using element_type = xia::pixie::eeprom::element_type;
+    using contents = xia::pixie::eeprom::contents;
+    using db_assemble = xia::pixie::eeprom::db_assemble;
+    using db_assembles = xia::pixie::eeprom::db_assembles;
+
     contents data;
     util::crc32 crc;
 
@@ -123,6 +150,8 @@ struct eeprom {
     std::string model;
     int serial_num;
     int revision;
+    int major_revision;
+    int minor_revision;
     int mod_strike;
 
     int num_channels;
@@ -130,9 +159,12 @@ struct eeprom {
 
     hw::configs configs;
 
+    db_assembles dbs;
+
     eeprom();
 
     void clear();
+    void clear_data();
 
     /**
      * Process the loaded data
@@ -143,6 +175,17 @@ struct eeprom {
      * Is there a valid EEPROM configuration.
      */
     bool valid() const;
+
+    /*
+     * Get the DB id or label for a given DB label or id
+     */
+    int find_db_id(const std::string label) const;
+    std::string find_db_label(const int id) const;
+
+    /*
+     * Get the daughter boards
+     */
+    void get_dbs();
 
     /*
      * Tag queries.
@@ -166,7 +209,7 @@ struct eeprom {
     /**
      * Find an instance of a tag in the data
      */
-    size_t find(const tag key, size_t count = 0) const;
+    size_t find(const tag key, size_t count = 0, bool throw_error = true) const;
 
     /**
      * Return the tag's descriptor

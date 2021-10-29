@@ -181,6 +181,8 @@ public:
      * Revision of the board
      */
     int revision;
+    int major_revision;
+    int minor_revision;
 
     /**
      * Number of channels
@@ -497,6 +499,7 @@ public:
      * Output the module details.
      */
     void output(std::ostream& out) const;
+    std::string version_label() const;
     char revision_label() const;
 
     /**

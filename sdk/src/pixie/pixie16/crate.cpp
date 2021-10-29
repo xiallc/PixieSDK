@@ -97,7 +97,7 @@ void crate::initialize(bool reg_trace) {
             if (module.present()) {
                 log(log::info) << "module: device " << device_number << ": slot:" << module.slot
                                << " serial-number:" << module.serial_num
-                               << " revision:" << module.revision_label();
+                               << " version:" << module.version_label();
             } else {
                 if (last_module_found) {
                     modules.pop_back();
