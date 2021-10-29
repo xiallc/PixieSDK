@@ -60,7 +60,7 @@ functionality.
 The Legacy API exposed a number of globally defined constants that need to be internal to the SDK.
 This includes DSP sizes, maximum lengths for objects (trace, histogram), and control register bit
 values. We have internalized many of these constants. We have kept a handful of the defines
-available in `pixie.h` while we finalize their implementation.
+available in `pixie16.h` while we finalize their implementation.
 
 Users often calculate the size of the Statistics block using the following calculation:
 
@@ -69,7 +69,8 @@ Stastistics Size = `N_DSP_PAR` - `DSP_IO_BORDER`.
 We now have a helper function (`Pixie16GetStatisticsSize()`) that returns the size for the user.
 This allows us to make modifications to the statistics without impacts to the user's code. We've
 found that customers often use the constant `RANDOMINDICES_LENGTH` to initialize trace containers.
-The correct constant to use is `MAX_ADC_TRACE_LEN`.
+The correct constant to use is `MAX_ADC_TRACE_LEN`. We will be replacing many of these defines with
+helper functions in the future to accommodate changes in size.
 
 > All usages of constants defined in `pixie16app_defs.h` or `pixie16sys_defs.h` should be removed,
 > replaced, or brought into the user's code.
@@ -99,9 +100,9 @@ Please note that we will be deprecating these constants with the Legacy API.
 
 ## Error Codes
 
-The Legacy API functions redefined the meaning of their exit codes. `Pixie16BootModule` and
-`Pixie16InitSystem` both have a `-1` error code. The meaning of that error code is different. The
-new API now has consistent error codes across all functions. This provides users with much more
+The Legacy API functions redefined the meaning of their returned error codes. `Pixie16BootModule`
+and `Pixie16InitSystem` both have a `-1` error code. The meaning of that error code is different.
+The new API now has consistent error codes across all functions. This provides users with much more
 actionable insights into what the error was.
 
 > All error handling should be updated to include checks on the appropriate error codes.
