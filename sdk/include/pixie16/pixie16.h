@@ -891,11 +891,22 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadStatisticsFromModule(unsigned int* Statist
  * @ingroup PIXIE16_API
  * @brief Save DSP parameters to a settings file
  *
- * Use this function to save DSP parameters to a settings file. It will first read the values of
- * DSP parameters on each Pixie-16 module and then write them to the settings file. Each module has
- * exactly 1280 DSP parameter values (32-bit unsigned integers), and depending on the value of
- * PRESET_MAX_MODULES (defined in pixie16app_defs.h), the settings file should have exactly
- * `(1280 * PRESET_MAX_MODULES * 4)` bytes when stored on the computer hard drive.
+ * @note The settings file is an internally managed file and should not be modified by the user.
+ *
+ * This function saves the DSP parameters to the provided file name in JSON format. The
+ * JSON format replaces the legacy binary format.
+ *
+ * The data file now contains only the information necessary to initialize a module's
+ * variables and metadata about the module that was previously used. The metadata contains
+ *
+ *   * the module's serial number,
+ *   * the firmware associated with the module,
+ *   * the ADC information for each channel of the module,
+ *   * and other information that may be useful to reconstruct a specific setup.
+ *
+ * The API will only write out settings for active modules within the system. For example,
+ * if a crate has 5 modules (4 online and 1 offline), then the settings file will contain
+ * entries for the 4 online modules.
  *
  * ### Example
  * \snippet snippets/api_function_examples.c Pixie16SaveDSPParametersToFile
