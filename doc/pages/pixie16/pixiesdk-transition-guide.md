@@ -3,6 +3,9 @@
 ## Table of Contents
 
 * [Introduction](#introduction)
+* [Library changes](#library-changes)
+* [PCI definitions](#pci-definitions)
+* [Settings files](#settings-files)
 * [Header files](#header-files)
 * [Globally defined constants](#globally-defined-constants)
     * [Table of Defined Constants](#table-of-defined-constants)
@@ -17,7 +20,9 @@
 ## Introduction
 
 The new API has a number of differences with the Legacy API. We have not strictly followed our API
-Update Policy since the Legacy API is still available for use.
+Update Policy since the Legacy API is still available for use. Each section of this document
+contains a short discussion of why the specific changes are necessary, and closes with the
+recommended changes that user's will need to effect in their software.
 
 We'll detail the major differences here to provide users with an idea of what to look for.
 Implementations are as varied as our users. We can't cover all the uses in this document.
@@ -37,6 +42,69 @@ We've adopted CMake as a build script generator. For customers using CMake to bu
 projects, we offer `FindPixieSDK.cmake` to ease the location and linkage of these libraries.
 
 > Software should be linked against the new API library: `Pixie16Api.so`.
+
+<a id="pci-definitions"></a>
+
+## PCI definitions
+
+The Pixie crates have two PCI backplanes. In PCI based crates these backplanes are daisy-chained
+together. This ensures that the two PCI buses enumerate in a deterministic order. This also means
+that data read out of the second bus must pass through the first bus. This has the effect of
+limiting data throughput for modules on the second bus. The PCI crates used the `pxisys.ini` file to
+determine the specific bus configuration and setup. This allowed us to map the PCI bus and slot to a
+physical slot on the crate.
+
+We recently released a PCIe version of the crate where the two PCI busses are now in parallel. This
+greatly improves the throughput for modules on the second bus. This change makes the PCI bus
+enumeration non-deterministic. Now that the PCI bus order isn't guaranteed, the `pxisys.ini` file no
+longer works as expected.
+
+The modules have the ability to probe the backplane and determine their slot automatically. The 
+API now uses this functionality to determine the physical slot that the module occupies. This procedure
+eliminates the need for the `pxisys.ini` file.
+
+> Users no longer need to provide the API with the `pxisys.ini` file.
+
+<a id="settings-files"></a>
+
+## Settings files
+
+The Legacy API used binary settings files to write the initial set of variables to the module's DSP,
+and to output run statistics from list-mode data runs. The settings files could be decoded using the
+DSP's `.var` file and some magic numbers from the includes. This format presents several challenges.
+
+First, the file is written to disk as a binary data blob. This blob wasn't human-readable and
+required magic numbers from our headers to decode. We've internalized many of the magic numbers
+necessary to read this file. The section [Globally defined constants](#globally-defined-constants)
+highlights the changes related to constants.
+
+Second, user code may be dependent upon an internally managed file structure. The binary settings
+files are simply a snapshot of the DSP's internal memory. User code that's dependent on this file
+structure is implicitly dependent on the DSP firmware. This creates a problem when we need to add
+and update functionality for the DSP.
+
+Finally, this file mixes variable initialization and output data. This is problematic because it
+makes the purpose of the file unclear. Mixing input and output of data means that users may adopt
+habits for retrieving these data that are not supported by the API.
+
+The API now uses JSON based settings files. These files can be dynamically changed without affecting
+the DSP, only include input variables, and can support metadata. The metadata allows users to keep
+track of all the information necessary for a user to exactly reconstruct an experimental setup. All
+values are stored in their native DSP format.
+
+`Pixie16LoadDSPParametersFromFile` and `Pixie16BootModule` accept both binary and JSON based
+settings files. `Pixie16SaveDSPParametersToFile` will write a JSON file containing only the online
+modules in the system. The API handles this conversion internally for the user.
+
+The API will support legacy binary settings files until July 31, 2023.
+
+> No changes are necessary when calling `Pixie16LoadDSPParametersFromFile` and `Pixie16BootModule`.
+> <br>
+> User code that decodes the binary settings file should follow the recommendations listed in the
+> [Globally defined constants](#globally-defined-constants) section.
+> <br>
+> Users that use `Pixie16SaveDSPParametersToFile` to access run statistics data should update to use
+> `Pixie16ReadStatisticsFromModule` and the associated support functions.
 
 <a id="header-files"></a>
 
@@ -130,53 +198,53 @@ support, internal QA, or data analysis.
 |APP32_ClrBit|X|X|Will be deprecated in SDK.|
 |APP32_SetBit|X|X|Will be deprecated in SDK.|
 |APP32_TstBit|X|X|Will be deprecated in SDK.|
-|IEEEFloating2Decimal|X|X||
-|Decimal2IEEEFloating|X|X||
-| Pixie16AcquireADCTrace |X|X||
-| Pixie16AcquireBaselines |X|X||
-| Pixie16AdjustOffsets |X|X||
-| Pixie16BLcutFinder |X|X||
-| Pixie16BootModule |X|X||
-| Pixie16CheckExternalFIFOStatus |X|X||
-| Pixie16CheckRunStatus |X|X||
+|IEEEFloating2Decimal|X|X| |
+|Decimal2IEEEFloating|X|X| |
+| Pixie16AcquireADCTrace |X|X| |
+| Pixie16AcquireBaselines |X|X| |
+| Pixie16AdjustOffsets |X|X| |
+| Pixie16BLcutFinder |X|X| |
+| Pixie16BootModule |X|X| |
+| Pixie16CheckExternalFIFOStatus |X|X| |
+| Pixie16CheckRunStatus |X|X| |
 | Pixie16ComputeFastFiltersOffline |X|--|Used as part of GUI support|
-| Pixie16ComputeInputCountRate |X|X||
-| Pixie16ComputeLiveTime |X|X||
-| Pixie16ComputeOutputCountRate |X|X||
+| Pixie16ComputeInputCountRate |X|X| |
+| Pixie16ComputeLiveTime |X|X| |
+| Pixie16ComputeOutputCountRate |X|X| |
 | Pixie16ComputeProcessedEvents |X|X|Rev A modules only!|
-| Pixie16ComputeRealTime |X|X||
+| Pixie16ComputeRealTime |X|X| |
 | Pixie16ComputeSlowFiltersOffline |X|--|Used as part of GUI support|
 | Pixie16ControlTaskRun |X|--|QA use only|
-| Pixie16CopyDSPParameters |X|X||
+| Pixie16CopyDSPParameters |X|X| |
 | Pixie16EMbufferIO |X|--|QA use only|
-| Pixie16EndRun |X|X||
-| Pixie16ExitSystem |X|X||
+| Pixie16EndRun |X|X| |
+| Pixie16ExitSystem |X|X| |
 | Pixie16GetEventsInfo |X|--|Used as part of GUI support|
 | Pixie16GetModuleEvents |X|--|Used as part of GUI support|
 | Pixie16IMbufferIO |X|--|QA use only|
-| Pixie16InitSystem |X|X||
-| Pixie16LoadDSPParametersFromFile |X|X||
+| Pixie16InitSystem |X|X| |
+| Pixie16LoadDSPParametersFromFile |X|X| |
 | Pixie16ProgramFippi |X|--|Part of Pixie16BootModule|
 | Pixie16RampOffsetDACs (deprecated) |X|--|Deprecated for several years|
 | Pixie16ReadCSR |X|--|QA use only|
-| Pixie16ReadDataFromExternalFIFO |X|X||
+| Pixie16ReadDataFromExternalFIFO |X|X| |
 | Pixie16ReadHistogramFromFile |X|--|Used as part of GUI support|
-| Pixie16ReadHistogramFromModule |X|X||
+| Pixie16ReadHistogramFromModule |X|X| |
 | Pixie16ReadListModeTrace |X|--|Used as part of GUI support|
-| Pixie16ReadModuleInfo |X|X||
-| Pixie16ReadSglChanADCTrace |X|X||
-| Pixie16ReadSglChanBaselines |X|X||
-| Pixie16ReadSglChanPar |X|X||
-| Pixie16ReadSglModPar |X|X||
-| Pixie16ReadStatisticsFromModule |X|X||
+| Pixie16ReadModuleInfo |X|X| |
+| Pixie16ReadSglChanADCTrace |X|X| |
+| Pixie16ReadSglChanBaselines |X|X| |
+| Pixie16ReadSglChanPar |X|X| |
+| Pixie16ReadSglModPar |X|X| |
+| Pixie16ReadStatisticsFromModule |X|X| |
 | Pixie16RegisterIO |X|--|QA use only|
-| Pixie16SaveDSPParametersToFile |X|X||
+| Pixie16SaveDSPParametersToFile |X|X| |
 | Pixie16SaveExternalFIFODataToFile |X|--|QA use only|
-| Pixie16SaveHistogramToFile |X|--||
-| Pixie16SetDACs |X|X||
-| Pixie16StartHistogramRun |X|X||
-| Pixie16StartListModeRun |X|X||
-| Pixie16TauFinder |X|X||
+| Pixie16SaveHistogramToFile |X|--| |
+| Pixie16SetDACs |X|X| |
+| Pixie16StartHistogramRun |X|X| |
+| Pixie16StartListModeRun |X|X| |
+| Pixie16TauFinder |X|X| |
 | Pixie16WriteCSR |X|--|QA use only|
-| Pixie16WriteSglChanPar |X|X||
-| Pixie16WriteSglModPar |X|X||
+| Pixie16WriteSglChanPar |X|X| |
+| Pixie16WriteSglModPar |X|X| |
