@@ -98,29 +98,30 @@ void baseline::find_cut(size_t num) {
 
     bl_values.resize(channels.size());
 
-    for (auto chan : channels) {
-        log2_bweight[chan] = module.read_var(param::channel_var::Log2Bweight, chan, 0, false);
-        current_bl_cut[chan] = module.read_var(param::channel_var::BLcut, chan, 0, false);
-        module.write_var(param::channel_var::Log2Bweight, 0, chan);
-        module.write_var(param::channel_var::BLcut, 0, chan);
+    for (size_t idx = 0; idx < channels.size(); idx++) {
+        log2_bweight[idx] =
+            module.read_var(param::channel_var::Log2Bweight, channels[idx], 0, false);
+        current_bl_cut[idx] = module.read_var(param::channel_var::BLcut, channels[idx], 0, false);
+        module.write_var(param::channel_var::Log2Bweight, 0, channels[idx]);
+        module.write_var(param::channel_var::BLcut, 0, channels[idx]);
     }
 
     try {
         compute_cut(num);
-        for (auto chan : channels) {
-            module.write_var(param::channel_var::BLcut, cuts[chan], chan);
+        for (size_t idx = 0; idx < channels.size(); idx++) {
+            module.write_var(param::channel_var::BLcut, cuts[idx], channels[idx]);
         }
         compute_cut(num);
-        for (auto chan : channels) {
-            module.write_var(param::channel_var::BLcut, cuts[chan], chan);
-            log(log::info) << module::module_label(module) << "channel=" << chan
-                           << " bl cut=" << cuts[chan];
+        for (size_t idx = 0; idx < channels.size(); idx++) {
+            module.write_var(param::channel_var::BLcut, cuts[idx], channels[idx]);
+            log(log::info) << module::module_label(module) << "channel=" << channels[idx]
+                           << " bl cut=" << cuts[idx];
         }
     } catch (...) {
         try {
-            for (auto chan : channels) {
-                module.write_var(param::channel_var::Log2Bweight, log2_bweight[chan], chan);
-                module.write_var(param::channel_var::Log2Bweight, current_bl_cut[chan], chan);
+            for (size_t idx = 0; idx < channels.size(); idx++) {
+                module.write_var(param::channel_var::Log2Bweight, log2_bweight[idx], channels[idx]);
+                module.write_var(param::channel_var::Log2Bweight, current_bl_cut[idx], channels[idx]);
             }
         } catch (...) {
             /* ignore nesting exceptions, keep the first */
@@ -128,10 +129,10 @@ void baseline::find_cut(size_t num) {
         throw;
     }
 
-    for (auto chan : channels) {
-        module.write_var(param::channel_var::Log2Bweight, log2_bweight[chan], chan);
-        log(log::info) << module::module_label(module) << "channel=" << chan
-                       << "find bl cut: cut=" << cuts[chan];
+    for (size_t idx = 0; idx < channels.size(); idx++) {
+        module.write_var(param::channel_var::Log2Bweight, log2_bweight[idx], channels[idx]);
+        log(log::info) << module::module_label(module) << "channel=" << channels[idx]
+                       << "find bl cut: cut=" << cuts[idx];
     }
 
     tp.end();
@@ -203,8 +204,7 @@ void baseline::compute_cut(size_t num) {
             size_t sdev_count = 0;
             cuts[idx] = 0;
             for (size_t bl = 0; bl < (num - 1); ++bl) {
-                double val =
-                    (std::fabs(bl_values[idx][bl].second - bl_values[idx][bl + 1].second));
+                double val = (std::fabs(bl_values[idx][bl].second - bl_values[idx][bl + 1].second));
                 if (val != 0) {
                     if (val < (10.0 * bl_values[idx][bl].second) &&
                         val < (10.0 * bl_values[idx][bl + 1].second)) {
