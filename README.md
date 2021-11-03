@@ -1,6 +1,5 @@
 # PixieSDK
-
-[![Build Status](https://travis-ci.com/xiallc/pixie_sdk.svg?branch=master)](https://travis-ci.com/xiallc/pixie_sdk)
+[![Build Status](https://github.com/xiallc/pixie_sdk/actions/workflows/cmake.yml/badge.svg)](https://github.com/xiallc/pixie_sdk/actions)
 [![Latest Release](https://img.shields.io/github/v/release/xiallc/pixie_sdk)](https://github.com/xiallc/pixie_sdk/releases/latest)
 
 The PixieSDK is a fully featured, cross-platform, C++ based software development kit for XIA LLC's
