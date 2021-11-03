@@ -100,7 +100,7 @@ void set_line_numbers(const std::string name, bool line_numbers);
 /*
  * Level active
  */
-bool level_logging(log::level level);
+bool level_logging(const std::string name, log::level level);
 
 /**
  * @brief Outputs a memory segment as hex values.

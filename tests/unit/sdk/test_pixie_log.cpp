@@ -187,59 +187,60 @@ TEST_SUITE("xia::log") {
 
 TEST_SUITE("xia::logging") {
     TEST_CASE("level_logging") {
-        xia::logging::start("level_logging", "", xia::log::level::off, false);
+        std::string name = "level_logging";
+        xia::logging::start(name, "", xia::log::level::off, false);
         SUBCASE("off") {
-            CHECK(xia::logging::level_logging(xia::log::level::off));
-            CHECK_FALSE(xia::logging::level_logging(xia::log::level::error));
-            CHECK_FALSE(xia::logging::level_logging(xia::log::level::warning));
-            CHECK_FALSE(xia::logging::level_logging(xia::log::level::info));
-            CHECK_FALSE(xia::logging::level_logging(xia::log::level::debug));
-            CHECK_FALSE(xia::logging::level_logging(xia::log::level::max_level));
+            CHECK(xia::logging::level_logging(name, xia::log::level::off));
+            CHECK_FALSE(xia::logging::level_logging(name, xia::log::level::error));
+            CHECK_FALSE(xia::logging::level_logging(name, xia::log::level::warning));
+            CHECK_FALSE(xia::logging::level_logging(name, xia::log::level::info));
+            CHECK_FALSE(xia::logging::level_logging(name, xia::log::level::debug));
+            CHECK_FALSE(xia::logging::level_logging(name, xia::log::level::max_level));
         }
         SUBCASE("error") {
             xia::logging::set_level("level_logging", xia::log::level::error);
-            CHECK(xia::logging::level_logging(xia::log::level::off));
-            CHECK(xia::logging::level_logging(xia::log::level::error));
-            CHECK_FALSE(xia::logging::level_logging(xia::log::level::warning));
-            CHECK_FALSE(xia::logging::level_logging(xia::log::level::info));
-            CHECK_FALSE(xia::logging::level_logging(xia::log::level::debug));
-            CHECK_FALSE(xia::logging::level_logging(xia::log::level::max_level));
+            CHECK(xia::logging::level_logging(name, xia::log::level::off));
+            CHECK(xia::logging::level_logging(name, xia::log::level::error));
+            CHECK_FALSE(xia::logging::level_logging(name, xia::log::level::warning));
+            CHECK_FALSE(xia::logging::level_logging(name, xia::log::level::info));
+            CHECK_FALSE(xia::logging::level_logging(name, xia::log::level::debug));
+            CHECK_FALSE(xia::logging::level_logging(name, xia::log::level::max_level));
         }
         SUBCASE("warning") {
             xia::logging::set_level("level_logging", xia::log::level::warning);
-            CHECK(xia::logging::level_logging(xia::log::level::off));
-            CHECK(xia::logging::level_logging(xia::log::level::error));
-            CHECK(xia::logging::level_logging(xia::log::level::warning));
-            CHECK_FALSE(xia::logging::level_logging(xia::log::level::info));
-            CHECK_FALSE(xia::logging::level_logging(xia::log::level::debug));
-            CHECK_FALSE(xia::logging::level_logging(xia::log::level::max_level));
+            CHECK(xia::logging::level_logging(name, xia::log::level::off));
+            CHECK(xia::logging::level_logging(name, xia::log::level::error));
+            CHECK(xia::logging::level_logging(name, xia::log::level::warning));
+            CHECK_FALSE(xia::logging::level_logging(name, xia::log::level::info));
+            CHECK_FALSE(xia::logging::level_logging(name, xia::log::level::debug));
+            CHECK_FALSE(xia::logging::level_logging(name, xia::log::level::max_level));
         }
         SUBCASE("info") {
             xia::logging::set_level("level_logging", xia::log::level::info);
-            CHECK(xia::logging::level_logging(xia::log::level::off));
-            CHECK(xia::logging::level_logging(xia::log::level::error));
-            CHECK(xia::logging::level_logging(xia::log::level::warning));
-            CHECK(xia::logging::level_logging(xia::log::level::info));
-            CHECK_FALSE(xia::logging::level_logging(xia::log::level::debug));
-            CHECK_FALSE(xia::logging::level_logging(xia::log::level::max_level));
+            CHECK(xia::logging::level_logging(name, xia::log::level::off));
+            CHECK(xia::logging::level_logging(name, xia::log::level::error));
+            CHECK(xia::logging::level_logging(name, xia::log::level::warning));
+            CHECK(xia::logging::level_logging(name, xia::log::level::info));
+            CHECK_FALSE(xia::logging::level_logging(name, xia::log::level::debug));
+            CHECK_FALSE(xia::logging::level_logging(name, xia::log::level::max_level));
         }
         SUBCASE("debug") {
             xia::logging::set_level("level_logging", xia::log::level::debug);
-            CHECK(xia::logging::level_logging(xia::log::level::off));
-            CHECK(xia::logging::level_logging(xia::log::level::error));
-            CHECK(xia::logging::level_logging(xia::log::level::warning));
-            CHECK(xia::logging::level_logging(xia::log::level::info));
-            CHECK(xia::logging::level_logging(xia::log::level::debug));
-            CHECK_FALSE(xia::logging::level_logging(xia::log::level::max_level));
+            CHECK(xia::logging::level_logging(name, xia::log::level::off));
+            CHECK(xia::logging::level_logging(name, xia::log::level::error));
+            CHECK(xia::logging::level_logging(name, xia::log::level::warning));
+            CHECK(xia::logging::level_logging(name, xia::log::level::info));
+            CHECK(xia::logging::level_logging(name, xia::log::level::debug));
+            CHECK_FALSE(xia::logging::level_logging(name, xia::log::level::max_level));
         }
         SUBCASE("max_level") {
             xia::logging::set_level("level_logging", xia::log::level::max_level);
-            CHECK(xia::logging::level_logging(xia::log::level::off));
-            CHECK(xia::logging::level_logging(xia::log::level::error));
-            CHECK(xia::logging::level_logging(xia::log::level::warning));
-            CHECK(xia::logging::level_logging(xia::log::level::info));
-            CHECK(xia::logging::level_logging(xia::log::level::debug));
-            CHECK(xia::logging::level_logging(xia::log::level::max_level));
+            CHECK(xia::logging::level_logging(name, xia::log::level::off));
+            CHECK(xia::logging::level_logging(name, xia::log::level::error));
+            CHECK(xia::logging::level_logging(name, xia::log::level::warning));
+            CHECK(xia::logging::level_logging(name, xia::log::level::info));
+            CHECK(xia::logging::level_logging(name, xia::log::level::debug));
+            CHECK(xia::logging::level_logging(name, xia::log::level::max_level));
         }
         xia::logging::stop("level_logging");
     }

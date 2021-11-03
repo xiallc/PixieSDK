@@ -266,8 +266,12 @@ void set_line_numbers(const std::string name, bool line_numbers) {
     throw error(error::code::internal_failure, "invalid log output name in set line numbers");
 }
 
-bool level_logging(log::level level) {
+bool level_logging(const std::string name, log::level level) {
     for (auto& output : *outputs) {
+        if (output.name != name && !name.empty()) {
+            continue;
+        }
+
         log::level outputter_level = output.level.load();
         if ((outputter_level != log::off && outputter_level >= level) ||
             (outputter_level == log::off && level == log::off)) {
@@ -279,7 +283,7 @@ bool level_logging(log::level level) {
 
 void memdump(log::level level, const std::string label, const void* addr, size_t length,
              size_t size, size_t line_length, size_t offset) {
-    if (level_logging(level) && length > 0) {
+    if (level_logging("", level) && length > 0) {
         const uint8_t* addr8 = static_cast<const uint8_t*>(addr);
         std::ostringstream out;
         size_t b = 0;
