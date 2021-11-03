@@ -49,6 +49,7 @@ phases:
     commands:
       - echo Entered the build phase for ${CODEBUILD_BATCH_BUILD_IDENTIFIER} ...
       - echo Build started on `date`
+      - echo "Build running with options:" ${BUILD_OPTIONS}
       - mkdir build
       - cd build
       - cmake3 ../ ${BUILD_OPTIONS}
@@ -64,21 +65,21 @@ phases:
         fi;
         if [[ ${BUILD_OPTIONS} == *"BUILD_TESTS=ON"* ]];
         then
-        ./tests/unit/sdk/pixie_sdk_unit_test_runner;
-        ./tests/integration/pixie_sdk_integration_test_runner;
+        ./tests/unit/sdk/pixie_sdk_unit_test_runner || exit 5;
+        ./tests/integration/pixie_sdk_integration_test_runner || exit 6;
         fi;
         fi
       - >
         if [[ ${BUILD_OPTIONS} == *"BUILD_LEGACY=ON"* ]];
         then
-        test -e ./sdk/src/legacy/libPixie16App.a || exit 5;
+        test -e ./sdk/src/legacy/libPixie16App.a || exit 20;
         if [[ ${BUILD_OPTIONS} == *"BUILD_EXAMPLES=ON"* ]];
         then
-        test -e ./examples/example_pixie16api/example_pixie16_legacy || exit 6;
+        test -e ./examples/example_pixie16api/example_pixie16_legacy || exit 21;
         fi;
         if [[ ${BUILD_OPTIONS} == *"BUILD_TESTS=ON"* ]];
         then
-        ./tests/unit/legacy/legacy_unit_test_runner;
+        ./tests/unit/legacy/legacy_unit_test_runner || exit 22;
         fi;
         fi
     finally:
