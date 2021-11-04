@@ -130,6 +130,24 @@ using db_assembles = std::vector<db_assemble>;
 /**
  * @brief A data structure holding the data decoded from a module's EEPROM.
  *
+ * ### EEPROM Format
+ *
+ * Read the first 128 bytes from the beginning of the I2C serial EEPROM.
+ *
+ * #### Version 1
+ *   First three words of EEPROM stores serial number and revision number
+ *
+ * #### Version 2
+ *   If the CRC in the header validates it is a version 2 or higher format.
+ *
+ *   Header: [CRC32 (little endian, 4 bytes)] [CTRL (1 byte)] [RESERVED (1 byte)]
+ *   Data: [[ID (1 byte)] [DATA (variable length)]
+ *
+ * **Supported Ids**
+ *   - SERIAL_NUM = 11, little endian number, size = 4
+ *   - REVISION = 12, little endian number, size = 2
+ *   - END = 255
+ *
  * @note The @ref version is the module version and the revision may be
  * referred to the major revision.
  */

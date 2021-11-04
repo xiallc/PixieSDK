@@ -29,22 +29,78 @@
 extern "C" {
 #endif
 
-/**
+/*
  * We have some preprocessor constants defined here for use by customers in their
  * code. Since this glue is to support legacy C applications, we assume that
  * users will only be dealing with Rev F or older.
  */
+/**
+ * @brief Defines the Channel CSRA bit corresponding to the hardware's gain settings.
+ * @warning This variable will be deprecated July 31, 2023 with the Legacy API.
+ */
 #define CCSRA_ENARELAY 14
+/**
+ * @brief Defines the Channel CSRA bit corresponding a good channel.
+ * @warning This variable will be deprecated July 31, 2023 with the Legacy API.
+ */
 #define CCSRA_GOOD 2
+/**
+ * @brief Defines the Channel CSRA bit corresponding to the channel's polarity.
+ * @warning This variable will be deprecated July 31, 2023 with the Legacy API.
+ */
 #define CCSRA_POLARITY 5
+/**
+ * @brief Defines the size of the list-mode data FIFO on-board the module in bytes.
+ * @warning This variable will be deprecated July 31, 2023 with the Legacy API.
+ */
 #define EXTERNAL_FIFO_LENGTH 131072
+/**
+ * @brief Defines the code used to define a list mode run.
+ * @warning This variable will be deprecated July 31, 2023 with the Legacy API.
+ */
 #define LIST_MODE_RUN 0x100
+/**
+ * @brief Defines the maximum length for an ADC trace obtained via
+ *   ::Pixie16AcquireADCTrace and ::Pixie16ReadSglChanADCTrace
+ * @warning This variable will be deprecated July 31, 2023 with the Legacy API.
+ */
 #define MAX_ADC_TRACE_LEN 8192
+/**
+ * @brief Defines the maximum histogram length obtained from
+ *   ::Pixie16ReadHistogramFromModule
+ * @warning This variable will be deprecated July 31, 2023 with the Legacy API.
+ */
 #define MAX_HISTOGRAM_LENGTH 32768
+/**
+ * @brief Defines the maximum number of baselines obtained by
+ *   ::Pixie16AcquireBaselines and read out with ::Pixie16ReadSglChanBaselines
+ * @warning This variable will be deprecated July 31, 2023 with the Legacy API.
+ */
 #define MAX_NUM_BASELINES 3640
+/**
+ * @brief Defines the value that will start a new data run when calling
+ *   ::Pixie16StartHistogramRun or ::Pixie16StartListModeRun
+ * @warning This variable will be deprecated July 31, 2023 with the Legacy API.
+ */
 #define NEW_RUN 1
+/**
+ * @brief This variable defines the maximum number of channels on a Pixie-16
+ *   Rev A-F board.
+ * @warning This variable will be deprecated July 31, 2023 with the Legacy API.
+ */
 #define NUMBER_OF_CHANNELS 16
+/**
+ * @brief Defines the value that will resume a data run when calling
+*   ::Pixie16StartHistogramRun or ::Pixie16StartListModeRun
+ * @warning This variable will be deprecated July 31, 2023 with the Legacy API.
+ */
 #define RESUME_RUN 0
+/**
+ * @brief Defines the maximum number of modules that the API can handle.
+ * @note This is an artificial limit imposed to maintain compatibility with the
+ *    Legacy API.
+ * @warning This variable will be deprecated July 31, 2023 with the Legacy API.
+ */
 #define SYS_MAX_NUM_MODULES 32
 
 /**
@@ -59,6 +115,7 @@ extern "C" {
 /**
  * @ingroup PIXIE16_API
  * @brief Test a bit in a 16-bit unsigned integer.
+ * @warning This variable will be deprecated July 31, 2023 with the Legacy API.
  * @param[in] bit The bit position to test, which starts counting at 0.
  * @param[in] value A 16-bit number that we'll test to see if the requested bit is true.
  * @return 1 if the bit was set, 0 otherwise.
@@ -68,6 +125,7 @@ PIXIE_EXPORT unsigned short PIXIE_API APP16_TstBit(unsigned short bit, unsigned 
 /**
  * @ingroup PIXIE16_API
  * @brief Set a bit in a 16-bit unsigned integer.
+ * @warning This variable will be deprecated July 31, 2023 with the Legacy API.
  * @param[in] bit The bit position to set, which starts counting at 0.
  * @param[in] value A 16-bit number that will have its bit set to true.
  * @return The new integer after the bit has been toggled if the bit was between 0 - 15, the input
@@ -78,6 +136,7 @@ PIXIE_EXPORT unsigned short PIXIE_API APP16_SetBit(unsigned short bit, unsigned 
 /**
  * @ingroup PIXIE16_API
  * @brief Clear a bit in a 16-bit unsigned integer.
+ * @warning This variable will be deprecated July 31, 2023 with the Legacy API.
  * @param[in] bit The bit position to clear, which starts counting at 0.
  * @param[in] value A 16-bit number that will have its bit set to false.
  * @return The new integer after the bit has been toggled if the bit was between 0 - 15, the input
@@ -88,6 +147,7 @@ PIXIE_EXPORT unsigned short PIXIE_API APP16_ClrBit(unsigned short bit, unsigned 
 /**
  * @ingroup PIXIE16_API
  * @brief Set a bit in a 32-bit unsigned integer.
+ * @warning This variable will be deprecated July 31, 2023 with the Legacy API.
  * @param[in] bit The bit position to set, which starts counting at 0.
  * @param[in] value A 32-bit number that will have its bit set to true.
  * @return The new integer after the bit has been toggled if the bit was between 0 - 31, the input
@@ -98,6 +158,7 @@ PIXIE_EXPORT unsigned int PIXIE_API APP32_SetBit(unsigned short bit, unsigned in
 /**
  * @ingroup PIXIE16_API
  * @brief Clear a bit in a 32-bit unsigned integer.
+ * @warning This variable will be deprecated July 31, 2023 with the Legacy API.
  * @param[in] bit The bit position to clear, which starts counting at 0.
  * @param[in] value A 32-bit number that will have its bit set to false.
  * @return The new integer after the bit has been toggled if the bit was between 0 - 31, the input
@@ -108,6 +169,7 @@ PIXIE_EXPORT unsigned int PIXIE_API APP32_ClrBit(unsigned short bit, unsigned in
 /**
  * @ingroup PIXIE16_API
  * @brief Test a bit in a 32-bit unsigned integer.
+ * @warning This variable will be deprecated July 31, 2023 with the Legacy API.
  * @param[in] bit The bit position to test, which starts counting at 0.
  * @param[in] value A 32-bit number that we'll test to see if the requested bit is true.
  * @return 1 if the bit was set, 0 otherwise.
@@ -116,7 +178,7 @@ PIXIE_EXPORT unsigned int PIXIE_API APP32_TstBit(unsigned short bit, unsigned in
 
 /**
  * @ingroup PIXIE16_API
- * @brief Converts a IEEE 754 standard format number to a double.
+ * @brief Converts an IEEE 754 standard format number to a double.
  * @see https://en.wikipedia.org/wiki/IEEE_754
  * @param[in] IEEEFloatingNumber The IEEE 754 standard format number to convert
  * @returns The input value in double format.
@@ -134,9 +196,9 @@ PIXIE_EXPORT unsigned int PIXIE_API Decimal2IEEEFloating(double DecimalNumber);
 
 /**
  * @ingroup PIXIE16_API
- * @brief Get the size in bytes of the statistics buffer.
+ * @brief Gets the statistics buffer size in words.
  * @see Pixie16ReadStatisticsFromModule
- * @returns size in bytes
+ * @returns The number of words needed to hold all the statistics data.
  */
 PIXIE_EXPORT unsigned int PIXIE_API Pixie16GetStatisticsSize(void);
 
@@ -152,7 +214,7 @@ PIXIE_EXPORT unsigned int PIXIE_API Pixie16GetStatisticsSize(void);
  *
  * After the successful return of this function, the DSP’s internal memory will be filled with ADC
  * trace data. A user’s application software should then call the function
- * Pixie16ReadSglChanADCTrace to read the ADC trace data out to the host computer,
+ * ::Pixie16ReadSglChanADCTrace to read the ADC trace data out to the host computer,
  * channel by channel.
  *
  * ### Example
@@ -176,7 +238,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16AcquireADCTrace(unsigned short ModNum);
  * will have their baselines acquired.
  *
  * After the successful return of this function, the DSP’s internal memory will be filled with
- * baselines data. Users should then call the function Pixie16ReadSglChanBaselines to read the
+ * baselines data. Users should then call ::Pixie16ReadSglChanBaselines to read the
  * baselines data out to the host computer, channel by channel.
  *
  * ### Example
@@ -299,11 +361,11 @@ PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
  * Use this function to check the status of the external FIFO of a Pixie-16 module while a
  * list-mode data acquisition run is in progress. The function returns the number of words
  * (32-bit) that the external FIFO currently has. If the number of words is greater than a
- * user-set threshold, function Pixie16ReadDataFromExternalFIFO can then be used to read the data
+ * user-set threshold, ::Pixie16ReadDataFromExternalFIFO can then be used to read the data
  * from the external FIFO. The threshold can be set by the user to either minimize reading
  * overhead or to read data out of the FIFO as quickly as possible. The Pixie-16 API
  * (pixie16app_defs.h) has defined a threshold with value of 1024 for external FIFO read out
- * (EXTFIFO_READ_THRESH).
+ * (#EXTFIFO_READ_THRESH).
  *
  * ### Example
  * \snippet snippets/api_function_examples.c Pixie16CheckExternalFIFOStatus
@@ -348,12 +410,12 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckRunStatus(unsigned short ModNum);
  * @brief Compute input count rate of a channel
  *
  * Use this function to calculate the input count rate on one channel of a Pixie-16 module. This
- * function does not communicate with Pixie-16 modules. Before calling this function, another
- * function, Pixie16ReadStatisticsFromModule, should be called to read statistics data from the
+ * function does not communicate with Pixie-16 modules. Before calling this function,
+ * ::Pixie16ReadStatisticsFromModule should be called to read statistics data from the
  * module.
  *
  * The *Statistics array is filled with data from a Pixie-16 module after calling function
- * Pixie16ReadStatisticsFromModule.
+ * ::Pixie16ReadStatisticsFromModule.
  *
  * ### Example
  * \snippet snippets/api_function_examples.c Pixie16ComputeInputCountRate
@@ -362,8 +424,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckRunStatus(unsigned short ModNum);
  *
  * @see Pixie16ReadStatisticsFromModule
  *
- * @param[in] Statistics A pointer to the statistics array whose size is exactly 448 unsigned
- *    integer words (32-bit).
+ * @param[in] Statistics A pointer to the statistics array containing enough space to hold the
+ *     statistics data as 32-bit unsigned integers. The necessary size can be obtained from
+ *     ::Pixie16GetStatisticsSize.
  * @param[in] ModNum ModNum is the module number which starts counting at 0.
  * @param[in] ChanNum ChanNum is the channel number which starts counting at 0.
  * @return 0 if the live time was 0. The number of triggers divided by the live time in seconds
@@ -379,19 +442,20 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeInputCountRate(unsigned int* Statist
  *
  * Use this function to calculate the live time that one channel of a Pixie-16 module has spent on
  * data acquisition. This function does not communicate with Pixie-16 modules. Before calling this
- * function, another function, Pixie16ReadStatisticsFromModule, should be called to read
+ * function, ::Pixie16ReadStatisticsFromModule should be called to read
  * statistics data from the module.
  *
- * The Statistics array is filled with data from a Pixie-16 module after calling function
- * Pixie16ReadStatisticsFromModule.
+ * The Statistics array is filled with data from a Pixie-16 module after calling function,
+ * ::Pixie16ReadStatisticsFromModule.
  *
  * ### Example
  * \snippet snippets/api_function_examples.c Pixie16ComputeLiveTime
  *
  * @see Pixie16ReadStatisticsFromModule
  *
- * @param[in] Statistics A pointer to the statistics array whose size is exactly 448 unsigned
- *    integer words (32-bit).
+ * @param[in] Statistics A pointer to the statistics array containing enough space to hold the
+*     statistics data as 32-bit unsigned integers. The necessary size can be obtained from
+*     ::Pixie16GetStatisticsSize.
  * @param[in] ModNum ModNum is the module number, which starts counting at 0.
  * @param[in] ChanNum ChanNum is the channel number, which starts counting at 0.
  * @return The live time of the module in seconds.
@@ -404,12 +468,12 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeLiveTime(unsigned int* Statistics,
  * @brief Compute output count rate of a channel
  *
  * Use this function to calculate the output count rate on one channel of a Pixie-16 module. This
- * function does not communicate with Pixie-16 modules. Before calling this function, another
- * function, Pixie16ReadStatisticsFromModule, should be called to read statistics data from the
+ * function does not communicate with Pixie-16 modules. Before calling this function
+ * ::Pixie16ReadStatisticsFromModule should be called to read statistics data from the
  * module.
  *
  * The Statistics array is filled with data from a Pixie-16 module after calling function
- * Pixie16ReadStatisticsFromModule.
+ * ::Pixie16ReadStatisticsFromModule.
  *
  * ### Example
  * \snippet snippets/api_function_examples.c Pixie16ComputeOutputCountRate
@@ -418,8 +482,9 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeLiveTime(unsigned int* Statistics,
  *
  * @see Pixie16ReadStatisticsFromModule
  *
- * @param[in] Statistics A pointer to the statistics array whose size is exactly 448 unsigned
- *    integer words (32-bit).
+ * @param[in] Statistics A pointer to the statistics array containing enough space to hold the
+*     statistics data as 32-bit unsigned integers. The necessary size can be obtained from
+*     ::Pixie16GetStatisticsSize.
  * @param[in] ModNum ModNum is the module number which starts counting at 0.
  * @param[in] ChanNum ChanNum is the channel number which starts counting at 0.
  * @return 0 if the live time was 0. Otherwise, the number of channel events divided by the
@@ -435,21 +500,24 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeOutputCountRate(unsigned int* Statis
  *
  * @note This function is only used by Rev-A modules.
  *
+ * @warning This function is not currently implemented.
+ *
  * Use this function to calculate the number of events that have been processed by a Pixie-16
  * module during a data acquisition run. This function does not communicate with Pixie-16 modules.
- * Before calling this function, another function, Pixie16ReadStatisticsFromModule, should be
+ * Before calling this function, ::Pixie16ReadStatisticsFromModule should be
  * called to read statistics data from the module first.
  *
  * The Statistics array is filled with data from a Pixie-16 module after calling function
- * Pixie16ReadStatisticsFromModule.
+ * ::Pixie16ReadStatisticsFromModule.
  *
  * ### Example
  * \snippet snippets/api_function_examples.c Pixie16ComputeProcessedEvents
  *
  * @see Pixie16ReadStatisticsFromModule
  *
- * @param[in] Statistics A pointer to the statistics array whose size is exactly 448 unsigned
- *    integer words (32-bit).
+ * @param[in] Statistics A pointer to the statistics array containing enough space to hold the
+*     statistics data as 32-bit unsigned integers. The necessary size can be obtained from
+*     ::Pixie16GetStatisticsSize.
  * @param[in] ModNum ModNum is the module number, which starts counting at 0.
  * @return The number of events processed by the module.
  */
@@ -462,19 +530,20 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeProcessedEvents(unsigned int* Statis
  *
  * Use this function to calculate the real time that a Pixie-16 module has spent on data
  * acquisition.This function does not communicate with Pixie-16 modules.
- * Before calling this function, another function, Pixie16ReadStatisticsFromModule, should be
+ * Before calling this function, ::Pixie16ReadStatisticsFromModule should be
  * called to read statistics data from the module first.
  *
  * The Statistics array is filled with data from a Pixie-16 module after calling function
- * Pixie16ReadStatisticsFromModule.
+ * ::Pixie16ReadStatisticsFromModule.
  *
  * ### Example
  * \snippet snippets/api_function_examples.c Pixie16ComputeRealTime
  *
  * @see Pixie16ReadStatisticsFromModule
  *
- * @param[in] Statistics A pointer to the statistics array whose size is exactly 448 unsigned
- *    integer words (32-bit).
+ * @param[in] Statistics A pointer to the statistics array containing enough space to hold the
+*     statistics data as 32-bit unsigned integers. The necessary size can be obtained from
+*     ::Pixie16GetStatisticsSize.
  * @param[in] ModNum The module number, which starts counting at 0.
  * @return The number of seconds that the module spent on data acquisition.
  */
@@ -587,11 +656,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16ExitSystem(unsigned short ModNum);
  * PXISlotMap as follows: PXISlotMap = {3, 4, 5, 6, 7 ...} since module number 0 resides in slot
  * number 3, etc. To find out in which slot a module is located, any piece of subsequent code can
  * use the expression PXISlotMap[ModNum], where ModNum is the logic module number.
+ *
  * OfflineMode is used to indicate to the API whether the system is running in OFFLINE mode (1) or
  * ONLINE mode (0). OFFLINE mode is useful for situations where no Pixie-16 modules are present but
  * users can still test their calls to the API functions in their application software.
+ *
  * This function must be called as the first step in the boot process. It makes the modules known
- * to the system and “opens” each module for communication.
+ * to the system and "opens" each module for communication.
  *
  * ### Example
  * \snippet snippets/api_function_examples.c Pixie16InitSystem
@@ -611,7 +682,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned
  * @brief Read data from the external FIFO.
  *
  * This function reads list mode data from the external FIFO of a Pixie-16 module. The data are
- * 32-bit unsigned integers. Normally, function Pixie16CheckExternalFIFOStatus is called first to
+ * 32-bit unsigned integers. Normally, ::Pixie16CheckExternalFIFOStatus is called first to
  * see how many words the external FIFO currently has, and then this function is called to read
  * the data from the FIFO.
  *
@@ -635,10 +706,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO
  * @brief Load DSP parameters from a settings file
  *
  * Use this function to read DSP parameters from a settings file and then download the settings to
- * Pixie-16 modules that are installed in the system. Each module has exactly 1280 DSP parameter
- * values (32-bit unsigned integers), and depending on the value of PRESET_MAX_MODULES
- * (defined in pixie16app_defs.h), the settings file should have exactly
- * `(1280 * PRESET_MAX_MODULES * 4)` bytes when stored on the computer hard drive.
+ * Pixie-16 modules that are installed in the system. This function supports both legacy settings
+ * files and JSON settings files.
  *
  * ### Example
  * \snippet snippets/api_function_examples.c Pixie16LoadDSPParametersFromFile
@@ -654,8 +723,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16LoadDSPParametersFromFile(const char* FileName
  *
  * Use this function to read out the histogram data from a Pixie-16 module’s histogram memory.
  * Before calling this function, the host code should allocate appropriate amount of memory to
- * store the histogram data. The default histogram length is 32768. Histogram data are 32-bit
- * unsigned integers.
+ * store the histogram data. The maximum histogram length is provided by #MAX_HISTOGRAM_LENGTH.
+ * Histogram data are 32-bit unsigned integers.
  *
  * ### Example
  * \snippet snippets/api_function_examples.c Pixie16ReadHistogramFromModule
@@ -680,24 +749,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
  * Information from the module can be used to select the appropriate firmware, DSP, and
  * configuration parameters files before booting the module.
  *
- * ### EEPROM Format
- *
- * Read the first 128 bytes from the beginning of the I2C serial EEPROM.
- *
- * #### Version 1
- *   First three words of EEPROM stores serial number and revision number
- *
- * #### Version 2
- *   If the CRC in the header validates it is a version 2 or higher format.
- *
- *   Header: [CRC32 (little endian, 4 bytes)] [CTRL (1 byte)] [RESERVED (1 byte)]
- *   Data: [[ID (1 byte)] [DATA (variable length)]
- *
- * **Supported Ids**
- *   - SERIAL_NUM = 11, little endian number, size = 4
- *   - REVISION = 12, little endian number, size = 2
- *   - END = 255
- *
  * ### Example
  * \snippet snippets/api_function_examples.c Pixie16ReadModuleInfo
  *
@@ -718,13 +769,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned
  * @brief Acquire ADC traces from a Pixie module.
  *
  * Use this function to read ADC trace data from a Pixie-16 module. Before calling this function,
- * another function Pixie16AcquireADCTrace should be called to fill the DSP internal memory first.
+ * ::Pixie16AcquireADCTrace should be called to fill the DSP internal memory first.
  * Also, the host code should allocate appropriate amount of memory to store the trace data. The
- * ADC trace data length for each channel is 8192. Since the trace data are 16-bit unsigned
- * integers (for hardware variants with less than 16-bit ADCs only the lower 12-bit or 14-bit
- * contain real data), two consecutive 16-bit words are packed into one 32-bit word in the DSP
- * internal memory. So for each channel, 4096 32-bit words are read out first from the DSP, and
- * then each 32-bit word is unpacked to form two 16-bit words.
+ * ADC trace data length for each channel is #MAX_ADC_TRACE_LEN. Since the trace data are
+ * 16-bit unsigned integers (for hardware variants with less than 16-bit ADCs only the lower
+ * 12-bit or 14-bit contain real data), two consecutive 16-bit words are packed into one 32-bit
+ * word in the DSP internal memory. So for each channel, 4096 32-bit words are read out first
+ * from the DSP, and then each 32-bit word is unpacked to form two 16-bit words.
  *
  * Specify the module using ModNum and the channel on the module using ChanNum. Note that both the
  * modules and channels are counted starting at 0.
@@ -750,7 +801,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buff
  * @brief Read baselines from a channel in a module
  *
  * Use this function to read baseline data from a Pixie-16 module. Before calling this function,
- * another function Pixie16AcquireBaselines should be called to fill the DSP internal memory first.
+ * ::Pixie16AcquireBaselines should be called to fill the DSP internal memory first.
  * Also, the host code should allocate appropriate amount of memory to store the baseline data.
  * The number of baselines for each channel is 3640. In the DSP internal memory, each baseline is
  * a 32-bit IEEE floating point number. After being read out to the host, this function will
@@ -762,7 +813,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buff
  *
  * @see Pixie16AcquireBaselines
  *
- * @param[out] Baselines Buffer to hold the baseline values
+ * @param[out] Baselines An array of doubles to hold the baseline values
  * @param[in] TimeStamps The timestamp that the baselines were obtained at
  * @param[in] NumBases The number of baselines values read
  * @param[in] ModNum The module number to read the baselines from, counting from 0.
@@ -861,7 +912,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanPar(const char* ChanParName, double
  *
  * @param[in] ModParName The name of the module parameter that we'll read
  * @param[out] ModParData Contains the value of the requested parameters.
- * @param[in] ModNum The module number we'll write to. Numbering starts counting at 0.
+ * @param[in] ModNum The module number we'll read from. Numbering starts counting at 0.
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
  */
 PIXIE_EXPORT int PIXIE_API Pixie16ReadSglModPar(const char* ModParName, unsigned int* ModParData,
@@ -873,14 +924,15 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglModPar(const char* ModParName, unsigned
  *
  * Use this function to read out statistics data from a Pixie-16 module. Before calling this
  * function, the host code should allocate appropriate amount of memory to store the statistics
- * data. The number of statistics data for each module is fixed at 448. Statistics data are 32-bit
- * unsigned integers.
+ * data. The number of statistics data for each module can vary based on the firmware. Statistics
+ * data are 32-bit unsigned integers.
  *
  * ### Example
  * \snippet snippets/api_function_examples.c Pixie16ReadStatisticsFromModule
  *
- * @param[out] Statistics Pointer to a data block with size 448 32-bit unsigned integers to hold
- *    the data read from the module.
+ * @param[out] Statistics A pointer to the statistics array containing enough space to hold the
+*     statistics data as 32-bit unsigned integers. The necessary size can be obtained from
+*     ::Pixie16GetStatisticsSize.
  * @param[in] ModNum The module number that we want statistics data from.
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
  */
@@ -920,8 +972,11 @@ PIXIE_EXPORT int PIXIE_API Pixie16SaveDSPParametersToFile(const char* FileName);
  * @ingroup PIXIE16_API
  * @brief Retrieve histogram data from a Pixie module and then save the data to a file.
  *
+ * @warning This function is not currently implemented.
+ * @warning This variable will be deprecated July 31, 2023 with the Legacy API.
+ *
  * Use this function to read histogram data from a Pixie-16 module and save the histogram data to
- * a file with file name specified by the user. First this function saves the histogram data to a
+ * a file with file name specified by the user. First, this function saves the histogram data to a
  * binary file, and it then saves the histogram data to an ASCII file with run statistics data
  * appended to the end of the ASCII file. **Existing files will be overwritten.**
  *
@@ -962,7 +1017,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16SetDACs(unsigned short ModNum);
  * Actual data acquisition will start synchronously in all modules when the last module finished
  * the initialization (requires the synchronization parameter to be set). Histogram runs can be
  * self-terminating when the elapsed run time exceeds the preset run time, or the user can
- * prematurely terminate the run by calling Pixie16EndRun. On completion, final histogram and
+ * prematurely terminate the run by calling ::Pixie16EndRun. On completion, final histogram and
  * statistics data will be available.
  *
  * ModNum is the module number which starts counting at 0. If ModNum is set to be less than the
@@ -988,7 +1043,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartHistogramRun(unsigned short ModNum, unsig
  * Use this function to start a list-mode data acquisition run in Pixie-16 modules. list-mode runs
  * are used to collect data on an event-by-event basis, gathering energies, timestamps, pulse shape
  * analysis values, and waveforms for each event. Runs will continue until the user terminates the
- * run by calling function Pixie16EndRun. To start the data acquisition this function has to be
+ * run by calling ::Pixie16EndRun. To start the data acquisition, this function has to be
  * called for every Pixie-16 module in the system. If all modules are to run synchronously, the
  * last module addressed will release all others and the acquisition starts then. The first module
  * to end the run will immediately stop the run in all other modules if run synchronization has
