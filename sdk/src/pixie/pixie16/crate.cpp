@@ -205,7 +205,7 @@ void crate::set_firmware() {
     ready();
     lock_guard guard(lock_);
     for (auto& module : modules) {
-        for (auto& config : module->configs) {
+        for (auto& config : module->eeprom.configs) {
             auto tag = firmware::tag(module->revision, config.adc_msps, config.adc_bits);
             auto mod_fw = firmware.find(tag);
             if (mod_fw != firmware.end()) {

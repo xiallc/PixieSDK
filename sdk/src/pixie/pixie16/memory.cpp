@@ -63,12 +63,12 @@ word dsp::read(const size_t offset, const address addr) {
 
 word dsp::read(const size_t channel, const size_t offset, const address addr) {
     channel::channel& chan = module[channel];
-    if (chan.config.index < 0) {
+    if ( chan.fixture->config.index < 0) {
         throw error(error::code::channel_invalid_index,
                     "dsp: invalid index: module=" + std::to_string(module.number) +
                         " channel=" + std::to_string(channel));
     }
-    return read(addr + chan.config.index + offset);
+    return read(addr + chan.fixture->config.index + offset);
 }
 
 void dsp::read(const address addr, word_ptr buffer, const size_t length) {
@@ -110,12 +110,12 @@ void dsp::write(const size_t offset, const address addr, const word value) {
 
 void dsp::write(const size_t channel, const size_t offset, const address addr, const word value) {
     channel::channel& chan = module[channel];
-    if (chan.config.index < 0) {
+    if (chan.fixture->config.index < 0) {
         throw error(error::code::channel_invalid_index,
                     "dsp: invalid index: module=" + std::to_string(module.number) +
                         " channel=" + std::to_string(channel));
     }
-    write(addr + chan.config.index + offset, value);
+    write(addr + chan.fixture->config.index + offset, value);
 }
 
 void dsp::write(const address addr, const words& values) {

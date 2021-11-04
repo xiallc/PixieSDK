@@ -4,6 +4,7 @@ set(SDK_PIXIE16_SOURCES
         pixie16/csr.cpp
         pixie16/dsp.cpp
         pixie16/fpga.cpp
+        pixie16/fixture.cpp
         pixie16/fpga_comms.cpp
         pixie16/fpga_fippi.cpp
         pixie16/hbr.cpp

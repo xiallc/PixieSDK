@@ -119,8 +119,8 @@ using contents = std::vector<uint8_t>;
  */
 struct db_assemble {
     std::string label;
-    int id;
-    int position;
+    int index;  /**< Daughter board definition table index *. */
+    int position; /**< Position on the main board */
 
     db_assemble();
 };
@@ -185,25 +185,46 @@ struct eeprom {
     void clear_data();
 
     /**
+     * Is there a valid EEPROM configuration.
+     */
+    bool valid() const;
+
+    /**
      * Process the loaded data
      */
     void process();
 
     /**
-     * Is there a valid EEPROM configuration.
-     */
-    bool valid() const;
-
-    /*
-     * Get the DB id or label for a given DB label or id
-     */
-    int find_db_id(const std::string label) const;
-    std::string find_db_label(const int id) const;
-
-    /*
      * Get the daughter boards
      */
-    void get_dbs();
+    void process_dbs();
+
+    /**
+     * Get the DB table index given a module channel number.
+     *
+     * @param channel The channel to look up
+     * @returns int Return -1 if the channel does not have a DB
+     */
+    int db_find(const int channel) const;
+
+    /**
+     * Get the DB index for a given DB label. @note the index is not the index
+     * into this table of DBs, it is the index identifier for the DB.
+     */
+    int db_find_index(const std::string label) const;
+
+    /**
+     * Get the DB label given a DB index.
+     */
+    std::string db_find_label(const int index) const;
+
+    /**
+     * Get the DB channel base.
+     *
+     * @param number The DB number
+     * @returns int Return -1 if the number of out of range
+     */
+    int db_channel_base(const int number) const;
 
     /*
      * Tag queries.

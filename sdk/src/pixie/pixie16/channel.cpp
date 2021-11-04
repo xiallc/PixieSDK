@@ -304,7 +304,7 @@ double channel::trigger_risetime() {
     param::value_type ffr_mask = 1 << mod.read_var(param::module_var::FastFilterRange);
     double fast_length = mod.read_var(param::channel_var::FastLength, number);
 
-    double result = (fast_length * ffr_mask) / config.fpga_clk_mhz;
+    double result = (fast_length * ffr_mask) / fixture->config.fpga_clk_mhz;
 
     return result;
 }
@@ -316,7 +316,7 @@ void channel::trigger_risetime(double value) {
     param::value_type fast_gap = mod.read_var(param::channel_var::FastGap, number, 0, false);
 
     param::value_type fast_length =
-        param::value_type(std::round((value * config.fpga_clk_mhz) / ffr_mask));
+        param::value_type(std::round((value * fixture->config.fpga_clk_mhz) / ffr_mask));
 
     if ((fast_length + fast_gap) > hw::limit::FASTFILTER_MAX_LEN) {
         fast_length = hw::limit::FASTFILTER_MAX_LEN - fast_gap;
@@ -340,7 +340,7 @@ double channel::trigger_flattop() {
     param::value_type ffr_mask = 1 << mod.read_var(param::module_var::FastFilterRange);
     double fast_gap = mod.read_var(param::channel_var::FastGap, number);
 
-    double result = (fast_gap * ffr_mask) / config.fpga_clk_mhz;
+    double result = (fast_gap * ffr_mask) / fixture->config.fpga_clk_mhz;
 
     return result;
 }
@@ -352,7 +352,7 @@ void channel::trigger_flattop(double value) {
     param::value_type fast_length = mod.read_var(param::channel_var::FastLength, number, 0, false);
 
     param::value_type fast_gap =
-        param::value_type(std::round((value * config.fpga_clk_mhz) / ffr_mask));
+        param::value_type(std::round((value * fixture->config.fpga_clk_mhz) / ffr_mask));
 
     if ((fast_length + fast_gap) > hw::limit::FASTFILTER_MAX_LEN) {
         fast_gap = hw::limit::FASTFILTER_MAX_LEN - fast_length;
@@ -369,7 +369,7 @@ double channel::trigger_threshold() {
     double fast_thresh = mod.read_var(param::channel_var::FastThresh, number);
     double fast_length = mod.read_var(param::channel_var::FastLength, number);
 
-    double result = fast_thresh / (fast_length * double(config.adc_clk_div));
+    double result = fast_thresh / (fast_length * double(fixture->config.adc_clk_div));
 
     return result;
 }
@@ -380,7 +380,7 @@ void channel::trigger_threshold(double value) {
     double fast_length = mod.read_var(param::channel_var::FastLength, number);
 
     param::value_type fast_thresh =
-        static_cast<param::value_type>(value * fast_length * config.adc_clk_div);
+        static_cast<param::value_type>(value * fast_length * fixture->config.adc_clk_div);
 
     if (fast_thresh >= hw::limit::FAST_THRESHOLD_MAX) {
         double dbl_fast_thresh(fast_thresh);
@@ -399,7 +399,7 @@ double channel::energy_risetime() {
     param::value_type sfr_mask = 1 << mod.read_var(param::module_var::SlowFilterRange);
     double slow_length = mod.read_var(param::channel_var::SlowLength, number);
 
-    double result = (slow_length * sfr_mask) / config.fpga_clk_mhz;
+    double result = (slow_length * sfr_mask) / fixture->config.fpga_clk_mhz;
 
     return result;
 }
@@ -410,7 +410,7 @@ double channel::energy_flattop() {
     param::value_type sfr_mask = 1 << mod.read_var(param::module_var::SlowFilterRange);
     double slow_gap = mod.read_var(param::channel_var::SlowGap, number);
 
-    double result = (slow_gap * sfr_mask) / config.fpga_clk_mhz;
+    double result = (slow_gap * sfr_mask) / fixture->config.fpga_clk_mhz;
 
     return result;
 }
@@ -433,7 +433,7 @@ void channel::energy_risetime_flattop(param::channel_param par, double value) {
     param::value_type slow_gap;
 
     if (par == param::channel_param::energy_risetime) {
-        slow_length = param::value_type(std::round((value * config.fpga_clk_mhz) / sfr_mask));
+        slow_length = param::value_type(std::round((value * fixture->config.fpga_clk_mhz) / sfr_mask));
         slow_gap = mod.read_var(param::channel_var::SlowGap, number, 0, false);
         if ((slow_length + slow_gap) > hw::limit::SLOWFILTER_MAX_LEN) {
             slow_length = hw::limit::SLOWFILTER_MAX_LEN - slow_gap;
@@ -445,7 +445,7 @@ void channel::energy_risetime_flattop(param::channel_param par, double value) {
             }
         }
     } else if (par == param::channel_param::energy_flattop) {
-        slow_gap = param::value_type(std::round((value * config.fpga_clk_mhz) / sfr_mask));
+        slow_gap = param::value_type(std::round((value * fixture->config.fpga_clk_mhz) / sfr_mask));
         slow_length = mod.read_var(param::channel_var::SlowLength, number, 0, false);
         if ((slow_length + slow_gap) > hw::limit::SLOWFILTER_MAX_LEN) {
             slow_gap = hw::limit::SLOWFILTER_MAX_LEN - slow_length;
@@ -517,7 +517,7 @@ double channel::trace_length() {
     double trace_len = mod.read_var(param::channel_var::TraceLength, number);
     param::value_type ffr_mask = 1 << mod.read_var(param::module_var::FastFilterRange);
 
-    double result = trace_len / (double(config.adc_msps) * ffr_mask);
+    double result = trace_len / (double(fixture->config.adc_msps) * ffr_mask);
 
     return result;
 }
@@ -530,12 +530,12 @@ void channel::trace_length(double value) {
     param::value_type ffr_mask = 1 << mod.read_var(param::module_var::FastFilterRange);
     param::value_type fifo_length = mod.read_var(param::module_var::FIFOLength);
 
-    param::value_type trace_length = param::value_type(value * config.adc_msps / ffr_mask);
+    param::value_type trace_length = param::value_type(value * fixture->config.adc_msps / ffr_mask);
 
     /*
      * Adjust the length to suit the FPGA requirements
      */
-    switch (config.adc_msps) {
+    switch (fixture->config.adc_msps) {
         case 500:
             trace_length = (trace_length / 10) * 10;
             break;
@@ -564,7 +564,7 @@ double channel::trace_delay() {
     param::value_type fast_filter_range = mod.read_var(param::module_var::FastFilterRange);
     param::value_type ffr_mask = 1 << fast_filter_range;
 
-    double result = (paf_length - (trigger_delay / ffr_mask)) / config.fpga_clk_mhz * ffr_mask;
+    double result = (paf_length - (trigger_delay / ffr_mask)) / fixture->config.fpga_clk_mhz * ffr_mask;
 
     return result;
 }
@@ -577,7 +577,7 @@ void channel::trace_delay(double value) {
     param::value_type ffr_mask = 1 << mod.read_var(param::module_var::FastFilterRange);
     param::value_type trace_length = mod.read_var(param::channel_var::TraceLength, number);
 
-    param::value_type trace_delay = param::value_type(value * config.fpga_clk_mhz / ffr_mask);
+    param::value_type trace_delay = param::value_type(value * fixture->config.fpga_clk_mhz / ffr_mask);
 
     if (trace_delay > trace_length) {
         trace_delay = trace_length / 2;
@@ -638,7 +638,7 @@ void channel::xdt(double value) {
 
     double multiple;
 
-    switch (config.adc_msps) {
+    switch (fixture->config.adc_msps) {
         case 100:
         case 500:
             /*
@@ -868,7 +868,7 @@ double channel::fast_trig_backlen() {
 
     param::value_type value = mod.read_var(param::channel_var::FastTrigBackLen, number);
 
-    double result = double(value) / config.fpga_clk_mhz;
+    double result = double(value) / fixture->config.fpga_clk_mhz;
 
     return result;
 }
@@ -878,10 +878,10 @@ void channel::fast_trig_backlen(double value) {
 
     module::module& mod = module.get();
 
-    param::value_type fast_trig_blen = param::value_type(std::round(value * config.fpga_clk_mhz));
+    param::value_type fast_trig_blen = param::value_type(std::round(value * fixture->config.fpga_clk_mhz));
 
     param::value_type fast_trig_blen_min;
-    switch (config.adc_msps) {
+    switch (fixture->config.adc_msps) {
         case 100:
         case 500:
             fast_trig_blen_min = hw::limit::FASTTRIGBACKLEN_MIN_100MHZFIPCLK;
@@ -907,7 +907,7 @@ double channel::cfd_delay() {
 
     param::value_type value = mod.read_var(param::channel_var::CFDDelay, number);
 
-    double result = double(value) / config.fpga_clk_mhz;
+    double result = double(value) / fixture->config.fpga_clk_mhz;
 
     return result;
 }
@@ -917,7 +917,7 @@ void channel::cfd_delay(double value) {
 
     module::module& mod = module.get();
 
-    param::value_type cfddelay = param::value_type(std::round(value * config.fpga_clk_mhz));
+    param::value_type cfddelay = param::value_type(std::round(value * fixture->config.fpga_clk_mhz));
 
     if (cfddelay < hw::limit::CFDDELAY_MIN) {
         cfddelay = hw::limit::CFDDELAY_MIN;
@@ -1017,8 +1017,8 @@ double channel::qdc_len(param::channel_param par) {
                         "invalid QDCLen param offset");
     }
 
-    double divider = config.adc_msps;
-    if (config.adc_msps == 500) {
+    double divider = fixture->config.adc_msps;
+    if (fixture->config.adc_msps == 500) {
         divider /= 5;
     }
 
@@ -1066,8 +1066,8 @@ void channel::qdc_len(param::channel_param par, double value) {
                         "invalid QDCLen param offset");
     }
 
-    double multiplier = config.adc_msps;
-    if (config.adc_msps == 500) {
+    double multiplier = fixture->config.adc_msps;
+    if (fixture->config.adc_msps == 500) {
         multiplier /= 5;
     }
 
@@ -1090,7 +1090,7 @@ double channel::ext_trig_stretch() {
 
     param::value_type value = mod.read_var(param::channel_var::ExtTrigStretch, number);
 
-    double result = double(value) / config.fpga_clk_mhz;
+    double result = double(value) / fixture->config.fpga_clk_mhz;
 
     return result;
 }
@@ -1101,7 +1101,7 @@ void channel::ext_trig_stretch(double value) {
 
     module::module& mod = module.get();
 
-    param::value_type exttrigstretch = param::value_type(std::round(value * config.fpga_clk_mhz));
+    param::value_type exttrigstretch = param::value_type(std::round(value * fixture->config.fpga_clk_mhz));
 
     if (exttrigstretch < hw::limit::EXTTRIGSTRETCH_MIN) {
         exttrigstretch = hw::limit::EXTTRIGSTRETCH_MIN;
@@ -1120,7 +1120,7 @@ double channel::veto_stretch() {
 
     param::value_type value = mod.read_var(param::channel_var::VetoStretch, number);
 
-    double result = double(value) / config.fpga_clk_mhz;
+    double result = double(value) / fixture->config.fpga_clk_mhz;
 
     return result;
 }
@@ -1130,7 +1130,7 @@ void channel::veto_stretch(double value) {
     ///@note this logic is identical to channel::chan_trig_stretch and channel::ext_trig_stretch.
     module::module& mod = module.get();
 
-    param::value_type vetostretch = param::value_type(std::round(value * config.fpga_clk_mhz));
+    param::value_type vetostretch = param::value_type(std::round(value * fixture->config.fpga_clk_mhz));
 
     if (vetostretch < hw::limit::VETOSTRETCH_MIN) {
         vetostretch = hw::limit::VETOSTRETCH_MIN;
@@ -1191,7 +1191,7 @@ double channel::extern_delay_len() {
 
     param::value_type value = mod.read_var(param::channel_var::ExternDelayLen, number);
 
-    double result = double(value) / config.fpga_clk_mhz;
+    double result = double(value) / fixture->config.fpga_clk_mhz;
 
     return result;
 }
@@ -1201,7 +1201,7 @@ void channel::extern_delay_len(double value) {
     ///@note This function's logic is identical to channel::ftrig_out_delay, maybe we can simplify?
     module::module& mod = module.get();
 
-    param::value_type externdelaylen = param::value_type(std::round(value * config.fpga_clk_mhz));
+    param::value_type externdelaylen = param::value_type(std::round(value * fixture->config.fpga_clk_mhz));
     param::value_type externdelaylen_max;
 
     switch (mod.revision) {
@@ -1238,7 +1238,7 @@ double channel::ftrig_out_delay() {
 
     param::value_type value = mod.read_var(param::channel_var::FtrigoutDelay, number);
 
-    double result = double(value) / config.fpga_clk_mhz;
+    double result = double(value) / fixture->config.fpga_clk_mhz;
 
     return result;
 }
@@ -1247,7 +1247,7 @@ void channel::ftrig_out_delay(double value) {
     ///@todo Need range checking to prevent negative values. For now negative values get set to max.
     module::module& mod = module.get();
 
-    param::value_type ftrigoutdelay = param::value_type(std::round(value * config.fpga_clk_mhz));
+    param::value_type ftrigoutdelay = param::value_type(std::round(value * fixture->config.fpga_clk_mhz));
     param::value_type ftrigoutdelay_max;
 
     switch (mod.revision) {
@@ -1279,7 +1279,7 @@ double channel::chan_trig_stretch() {
 
     param::value_type value = mod.read_var(param::channel_var::ChanTrigStretch, number);
 
-    double result = double(value) / config.fpga_clk_mhz;
+    double result = double(value) / fixture->config.fpga_clk_mhz;
 
     return result;
 }
@@ -1290,7 +1290,7 @@ void channel::chan_trig_stretch(double value) {
 
     module::module& mod = module.get();
 
-    param::value_type chantrigstretch = param::value_type(std::round(value * config.fpga_clk_mhz));
+    param::value_type chantrigstretch = param::value_type(std::round(value * fixture->config.fpga_clk_mhz));
 
     if (chantrigstretch < hw::limit::CHANTRIGSTRETCH_MIN) {
         chantrigstretch = hw::limit::CHANTRIGSTRETCH_MIN;

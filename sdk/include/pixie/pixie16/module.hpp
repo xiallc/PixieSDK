@@ -200,11 +200,6 @@ public:
     void* vmaddr;
 
     /**
-     * Channel configs
-     */
-    hw::configs configs;
-
-    /**
      * EEPROM
      */
     eeprom::eeprom eeprom;
@@ -427,7 +422,7 @@ public:
     /**
      * Sync the hardware after the variables have been sync'ed.
      */
-    void sync_hw(const bool& program_fippi = true, const bool& set_dacs = true);
+    void sync_hw(const bool program_fippi = true, const bool program_dacs = true);
 
     /*
      * Run control and status
@@ -494,6 +489,11 @@ public:
      * Read the stats
      */
     void read_stats(stats::stats& stats);
+
+    /**
+     * Select the module's port
+     */
+    void select_port(const int port);
 
     /*
      * Output the module details.
@@ -666,6 +666,21 @@ protected:
      * Vars loaded?
      */
     bool vars_loaded;
+
+    /*
+     * Set DACs using the DSP
+     */
+    bool dsp_sets_dacs;
+
+    /*
+     * ADC acquire holds the traces for all channels in the DSP memory.
+     */
+    bool dsp_has_all_adc_traces;
+
+    /*
+     * Control CS shadow, it is a write-only register
+     */
+    hw::word cfg_ctrlcs;
 
     /*
      * PCI bus. The type is opaque.

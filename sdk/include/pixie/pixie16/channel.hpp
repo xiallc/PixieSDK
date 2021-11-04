@@ -29,7 +29,7 @@
 #include <pixie/error.hpp>
 #include <pixie/param.hpp>
 
-#include <pixie/pixie16/hw.hpp>
+#include <pixie/pixie16/fixture.hpp>
 
 namespace xia {
 namespace pixie {
@@ -136,7 +136,7 @@ struct channel {
     /**
      * The hardware configuration for the channel.
      */
-    hw::config config;
+    fixture::channel_ptr fixture;
 
     /**
      * The module this channel is part of.
@@ -147,6 +147,14 @@ struct channel {
      * Channel variables.
      */
     param::channel_variables vars;
+
+    /**
+     * ADC trace buffer. Modules with high channel counts cannot hold
+     * all the trace data in the module's memory. Offload to here during the
+     * acquire using the fixture.
+     */
+
+    hw::adc_trace adc_trace;
 
     /**
      * @brief Default constructor

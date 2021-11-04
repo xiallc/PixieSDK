@@ -971,7 +971,7 @@ static void stats(xia::pixie::crate::crate& crate, options& cmd) {
             channels[0] = get_value<size_t>(cmd[2]);
             stat = cmd[3];
         }
-        xia::pixie::stats::stats stats(crate[mod_num].configs);
+        xia::pixie::stats::stats stats(crate[mod_num]);
         crate[mod_num].read_stats(stats);
         if (stat == "pe") {
             std::cout << "module " << mod_num

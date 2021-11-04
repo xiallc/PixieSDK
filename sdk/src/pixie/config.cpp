@@ -374,10 +374,10 @@ void export_json(const std::string& filename, crate::crate& crate) {
         metadata["config"] = json::array();
         for (auto& chan : mod.channels) {
             json cfg;
-            cfg["adc_bits"] = chan.config.adc_bits;
-            cfg["adc_msps"] = chan.config.adc_msps;
-            cfg["adc_clk_div"] = chan.config.adc_clk_div;
-            cfg["fpga_clk_mhz"] = chan.config.fpga_clk_mhz;
+            cfg["adc_bits"] = chan.fixture->config.adc_bits;
+            cfg["adc_msps"] = chan.fixture->config.adc_msps;
+            cfg["adc_clk_div"] = chan.fixture->config.adc_clk_div;
+            cfg["fpga_clk_mhz"] = chan.fixture->config.fpga_clk_mhz;
             metadata["config"].push_back(cfg);
         }
 

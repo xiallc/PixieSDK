@@ -93,7 +93,7 @@ struct stats {
     module mod;
     channels chans;
 
-    stats(const hw::configs& configs);
+    stats(const pixie::module::module& module_);
 };
 
 void read(pixie::module::module& module_, stats& stats_);

@@ -153,9 +153,28 @@ typedef std::array<word, max_adc_trace_length> adc_trace_buffer;
 typedef std::vector<adc_word> adc_trace;
 
 /**
+ * @brief defines a type for a container of ADC traces
+ */
+typedef std::vector<adc_trace> adc_traces;
+
+/**
  * @brief Defines a type for Hardware errors
  */
 typedef error::error error;
+
+/**
+ * @brief Type of fixtures modules support.
+ *
+ * A module with no fixtures uses @ref mainboard.
+ */
+enum struct module_fixture {
+    mainboard,
+    DB01,
+    DB02,
+    DB04,
+    DB06,
+    DB07
+};
 
 /**
  * @brief The object representing the physical hardware configuration
@@ -168,6 +187,11 @@ struct config {
      * Channel index in variable array.
      */
     int index;
+
+    /*
+     * Type of fixture.
+     */
+    module_fixture fixture;
 
     /*
      * Analog front end (AFE)
@@ -187,6 +211,17 @@ struct config {
 };
 
 typedef std::vector<config> configs;
+
+/**
+ * Return the module fixture given a label. The motherboard fixture
+ * is not a valid result.
+ */
+module_fixture get_module_fixture(const std::string label);
+
+/**
+ * Return the module fixture label given a fixture.
+ */
+std::string get_module_fixture_label(const module_fixture fixture);
 
 /**
  * Convertor. Use with caution as this steps around the type system.

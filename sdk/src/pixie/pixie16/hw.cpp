@@ -23,14 +23,29 @@
 #include <chrono>
 #include <thread>
 
+#include <pixie/error.hpp>
 #include <pixie/pixie16/hw.hpp>
 
 namespace xia {
 namespace pixie {
 namespace hw {
+struct module_fixture_rec {
+    const std::string label;
+    module_fixture fixture_id;
+};
+
+static const std::vector<module_fixture_rec> fixtures = {
+    { "mainboard", module_fixture::mainboard },
+    { "DB01", module_fixture::DB01 },
+    { "DB02", module_fixture::DB02 },
+    { "DB04", module_fixture::DB04 },
+    { "DB06", module_fixture::DB06 },
+    { "DB07", module_fixture::DB07 }
+};
+
 config::config(int adc_bits_, int adc_msps_, int adc_clk_div_, int fpga_clk_mhz_)
-    : index(-1), adc_bits(adc_bits_), adc_msps(adc_msps_), adc_clk_div(adc_clk_div_),
-      fpga_clk_mhz(fpga_clk_mhz_) {}
+    : index(-1), fixture(module_fixture::mainboard), adc_bits(adc_bits_),
+      adc_msps(adc_msps_), adc_clk_div(adc_clk_div_), fpga_clk_mhz(fpga_clk_mhz_) {}
 
 config::config() {
     clear();
@@ -46,10 +61,31 @@ bool config::operator!=(const config& cfg) {
 }
 
 void config::clear() {
+    fixture = module_fixture::mainboard;
     adc_bits = 0;
     adc_msps = 0;
     adc_clk_div = 0;
     fpga_clk_mhz = 0;
+}
+
+module_fixture get_module_fixture(const std::string label) {
+    for (auto& fixture : fixtures) {
+        if (fixture.label == label) {
+            return fixture.fixture_id;
+        }
+    }
+    throw error(error::code::module_invalid_operation,
+                "invalid fixture label: " + label);
+}
+
+std::string get_module_fixture_label(const module_fixture fixture_id) {
+    for (auto& fixture : fixtures) {
+        if (fixture.fixture_id == fixture_id) {
+            return fixture.label;
+        }
+    }
+    throw error(error::code::module_invalid_operation,
+                "invalid fixture id: " + std::to_string(static_cast<int>(fixture_id)));
 }
 
 void wait(size_t microseconds) {

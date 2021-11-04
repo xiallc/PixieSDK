@@ -283,12 +283,13 @@ module::module()
       board_revision(-1), reg_trace(false), bus_cycle_period(100), fifo_worker_running(false),
       fifo_worker_finished(false), in_use(0), present_(false), online_(false), forced_offline_(false),
       pause_fifo_worker(true), comms_fpga(false), fippi_fpga(false), have_hardware(false), vars_loaded(false),
+      dsp_sets_dacs(true), dsp_has_all_adc_traces(true), cfg_ctrlcs(0xaaa),
       device(std::make_unique<pci_bus_handle>()), test_mode(test::off) {}
 
 module::module(module&& m)
     : slot(m.slot), number(m.number), serial_num(m.serial_num), revision(m.revision),
       major_revision(0), minor_revision(0),
-      num_channels(m.num_channels), vmaddr(m.vmaddr), configs(m.configs), eeprom(m.eeprom),
+      num_channels(m.num_channels), vmaddr(m.vmaddr), eeprom(m.eeprom),
       eeprom_format(m.eeprom_format), module_var_descriptors(std::move(m.module_var_descriptors)),
       module_vars(std::move(m.module_vars)),
       channel_var_descriptors(std::move(m.channel_var_descriptors)),
@@ -303,8 +304,9 @@ module::module(module&& m)
       fifo_worker_finished(false), in_use(0), present_(m.present_.load()),
       online_(m.online_.load()), forced_offline_(m.forced_offline_.load()),
       pause_fifo_worker(m.pause_fifo_worker.load()), comms_fpga(m.comms_fpga),
-      fippi_fpga(m.fippi_fpga), have_hardware(false), vars_loaded(false),
-      device(std::move(m.device)), test_mode(m.test_mode.load()) {
+      fippi_fpga(m.fippi_fpga), have_hardware(false), vars_loaded(false), dsp_sets_dacs(true),
+      dsp_has_all_adc_traces(true), cfg_ctrlcs(0xaaa), device(std::move(m.device)),
+      test_mode(m.test_mode.load()) {
     m.slot = 0;
     m.number = -1;
     m.serial_num = 0;
@@ -313,7 +315,6 @@ module::module(module&& m)
     m.minor_revision = 0;
     m.num_channels = 0;
     m.vmaddr = nullptr;
-    m.configs.clear();
     m.eeprom.clear();
     m.eeprom_format = -1;
     m.module_var_descriptors.clear();
@@ -342,6 +343,9 @@ module::module(module&& m)
     m.fippi_fpga = false;
     m.have_hardware = false;
     m.vars_loaded = false;
+    m.dsp_sets_dacs = true;
+    m.dsp_has_all_adc_traces = true;
+    m.cfg_ctrlcs = 0xaaa;
     m.test_mode = test::off;
 }
 
@@ -373,7 +377,6 @@ module& module::operator=(module&& m) {
     minor_revision = m.minor_revision;
     num_channels = m.num_channels;
     vmaddr = m.vmaddr;
-    configs = m.configs;
     eeprom = std::move(m.eeprom);
     eeprom_format = m.eeprom_format;
     module_var_descriptors = std::move(m.module_var_descriptors);
@@ -402,6 +405,9 @@ module& module::operator=(module&& m) {
     fippi_fpga = m.fippi_fpga;
     have_hardware = m.have_hardware;
     vars_loaded = m.vars_loaded;
+    dsp_sets_dacs = m.dsp_sets_dacs;
+    dsp_has_all_adc_traces = m.dsp_has_all_adc_traces;
+    cfg_ctrlcs = m.cfg_ctrlcs;
     test_mode = m.test_mode.load();
 
     device = std::move(m.device);
@@ -414,7 +420,6 @@ module& module::operator=(module&& m) {
     m.minor_revision = 0;
     m.num_channels = 0;
     m.vmaddr = nullptr;
-    m.configs.clear();
     m.eeprom.clear();
     m.eeprom_format = -1;
     m.run_task = hw::run::run_task::nop;
@@ -439,6 +444,9 @@ module& module::operator=(module&& m) {
     m.fippi_fpga = false;
     m.have_hardware = false;
     m.vars_loaded = false;
+    m.dsp_sets_dacs = true;
+    m.dsp_has_all_adc_traces = true;
+    m.cfg_ctrlcs = 0xaaa;
     m.test_mode = test::off;
 
     return *this;
@@ -611,9 +619,18 @@ void module::open(size_t device_number) {
         revision = eeprom.revision;
         major_revision = eeprom.major_revision;
         minor_revision = eeprom.minor_revision;
-        configs = eeprom.configs;
 
         present_ = true;
+
+        /*
+         * The ref H and later DSP does not support:
+         *   - Setting DACs
+         *   - Holding all ADC traces
+         */
+        if (*this >= hw::rev_H) {
+            dsp_sets_dacs = false;
+            dsp_has_all_adc_traces = false;
+        }
 
         start_fifo_services();
     }
@@ -1364,10 +1381,10 @@ void module::sync_vars() {
     }
 }
 
-void module::sync_hw(const bool& program_fippi, const bool& set_dacs) {
+void module::sync_hw(const bool program_fippi, const bool program_dacs) {
     online_check();
     log(log::info) << module_label(*this) << std::boolalpha << "sync hardware: "
-                   << "program_fippi=" << program_fippi << " set_dacs=" << set_dacs;
+                   << "program_fippi=" << program_fippi << " program_dacs=" << program_dacs;
 
     lock_guard guard(lock_);
 
@@ -1375,8 +1392,8 @@ void module::sync_hw(const bool& program_fippi, const bool& set_dacs) {
         hw::run::control(*this, hw::run::control_task::program_fippi);
     }
 
-    if (set_dacs) {
-        hw::run::control(*this, hw::run::control_task::set_dacs);
+    if (program_dacs) {
+        set_dacs();
     }
 
     /*
@@ -1393,12 +1410,10 @@ void module::sync_hw(const bool& program_fippi, const bool& set_dacs) {
          * Also enable connections of PXI nearest neighbor lines (J2) onto
          * the backplane if the module is a Rev-B or C module
          */
-        hw::word cpld_csr = 0xaaa;
-
         if ((csrb & (1 << hw::bit::MODCSRB_CPLDPULLUP)) != 0) {
-            cpld_csr |= (1 << hw::bit::CPLDCSR_PULLUP);
+            cfg_ctrlcs |= (1 << hw::bit::CPLDCSR_PULLUP);
         } else {
-            cpld_csr &= ~(1 << hw::bit::CPLDCSR_PULLUP);
+            cfg_ctrlcs &= ~(1 << hw::bit::CPLDCSR_PULLUP);
         }
 
         /*
@@ -1406,12 +1421,12 @@ void module::sync_hw(const bool& program_fippi, const bool& set_dacs) {
          * backplane if the module is a rev B or C module
          */
         if (*this == hw::rev_B || *this == hw::rev_C) {
-            cpld_csr |= (1 << hw::bit::CPLDCSR_BPCONNECT);
+            cfg_ctrlcs |= (1 << hw::bit::CPLDCSR_BPCONNECT);
         }
 
         log(log::debug) << module_label(*this)
-                        << "write: cfg_ctrlcs=0x" << std::hex << cpld_csr;
-        write_word(hw::device::CFG_CTRLCS, cpld_csr);
+                        << "write: cfg_ctrlcs=0x" << std::hex << cfg_ctrlcs;
+        write_word(hw::device::CFG_CTRLCS, cfg_ctrlcs);
 
         /*
          * Set pullups for the SYNCH lines on the backplane
@@ -1473,14 +1488,29 @@ void module::get_traces() {
     log(log::info) << module_label(*this) << "get-traces";
     online_check();
     lock_guard guard(lock_);
-    hw::run::control(*this, hw::run::control_task::get_traces);
+    if (dsp_has_all_adc_traces) {
+        hw::run::control(*this, hw::run::control_task::get_traces);
+    } else {
+        for (auto& channel : channels) {
+            channel.fixture->acquire_adc();
+        }
+    }
 }
 
 void module::set_dacs() {
     log(log::info) << module_label(*this) << "set-dacs";
     online_check();
     lock_guard guard(lock_);
-    hw::run::control(*this, hw::run::control_task::set_dacs);
+    if (dsp_sets_dacs) {
+        hw::run::control(*this, hw::run::control_task::set_dacs);
+    } else {
+        /*
+         * DAC setting is per channel
+         */
+        for (auto& channel : channels) {
+            channel.fixture->set_dac();
+        }
+    }
 }
 
 void module::start_histograms(hw::run::run_mode mode) {
@@ -1522,7 +1552,6 @@ void module::read_adc(size_t channel, hw::adc_word* buffer, size_t size, bool ru
                    << " run=" << std::boolalpha << run;
     online_check();
     lock_guard guard(lock_);
-    channel::channel& chan = channels[channel];
     if (run) {
         get_traces();
     }
@@ -1530,7 +1559,14 @@ void module::read_adc(size_t channel, hw::adc_word* buffer, size_t size, bool ru
         throw error(number, slot, error::code::module_invalid_operation,
                     "control task not `get_traces`");
     }
-    chan.read_adc(buffer, size);
+    channel::channel& chan = channels[channel];
+    if (dsp_has_all_adc_traces) {
+        chan.read_adc(buffer, size);
+    } else {
+        const size_t copy_size =
+            (size < chan.adc_trace.size() ? size : chan.adc_trace.size()) * sizeof(hw::adc_word);
+        memcpy(buffer, chan.adc_trace.data(), copy_size);
+    }
 }
 
 void module::read_adc(size_t channel, hw::adc_trace& buffer, bool run) {
@@ -1616,6 +1652,15 @@ void module::read_stats(stats::stats& stats) {
     online_check();
     lock_guard guard(lock_);
     stats::read(*this, stats);
+}
+
+void module::select_port(const int port) {
+    bus_guard guard(*this);
+    cfg_ctrlcs &= ~(7 << 19);
+    cfg_ctrlcs |= (port & 7) << 19;
+    log(log::debug) << module_label(*this)
+                    << "write: cfg_ctrlcs=0x" << std::hex << cfg_ctrlcs;
+    write_word(hw::device::CFG_CTRLCS, cfg_ctrlcs);
 }
 
 void module::output(std::ostream& out) const {
@@ -1796,7 +1841,7 @@ void module::init_values() {
     if (num_channels == 0) {
         throw error(number, slot, error::code::internal_failure, "number of channels is 0");
     }
-    if (configs.size() != num_channels) {
+    if (eeprom.configs.size() != num_channels) {
         throw error(number, slot, error::code::internal_failure,
                     "invalid number of channels configurations");
     }
@@ -1808,10 +1853,10 @@ void module::init_values() {
     channels.resize(num_channels, channel::channel(*this));
     for (size_t channel = 0; channel < num_channels; ++channel) {
         channels[channel].number = channel;
-        channels[channel].config = configs[channel];
         for (const auto& desc : channel_var_descriptors) {
             channels[channel].vars.push_back(param::channel_variable(desc));
         }
+        channels[channel].fixture = fixture::make(channels[channel], eeprom.configs[channel]);
     }
 }
 
@@ -1822,15 +1867,13 @@ void module::module_csrb(param::value_type value, size_t offset, bool io) {
 
         bus_guard guard(*this);
 
-        param::value_type csr = 0xaaa;
-
         /*
          * Set up Pull-up resistors
          */
         if ((value & (1 << hw::bit::MODCSRB_CPLDPULLUP)) != 0) {
-            csr |= 1 << hw::bit::MODCSRB_CPLDPULLUP;
+            cfg_ctrlcs |= 1 << hw::bit::MODCSRB_CPLDPULLUP;
         } else {
-            csr &= ~(1 << hw::bit::MODCSRB_CPLDPULLUP);
+            cfg_ctrlcs &= ~(1 << hw::bit::MODCSRB_CPLDPULLUP);
         }
 
         /*
@@ -1838,15 +1881,15 @@ void module::module_csrb(param::value_type value, size_t offset, bool io) {
          * backplane if the module is a Rev-B or C module
          */
         if (*this == hw::rev_B || *this == hw::rev_C) {
-            csr |= 1 << hw::bit::CPLDCSR_BPCONNECT;
+            cfg_ctrlcs |= 1 << hw::bit::CPLDCSR_BPCONNECT;
         }
 
-        write_word(hw::device::CFG_CTRLCS, csr);
+        write_word(hw::device::CFG_CTRLCS, cfg_ctrlcs);
 
         /*
          * Set pullups for the SYNCH lines on the backplane
          */
-        csr = hw::csr::read(*this);
+        hw::word csr = hw::csr::read(*this);
 
         if ((csr & (1 << hw::bit::MODCSRB_CHASSISMASTER)) != 0) {
             csr |= 1 << hw::bit::PULLUP_CTRL;

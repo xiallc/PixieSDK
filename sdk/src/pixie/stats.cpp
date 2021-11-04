@@ -79,7 +79,8 @@ double module::real_time() const {
     return make_u64_double(runtime_a, runtime_b) * (1.0e-6 / hw::system_clock_mhz);
 }
 
-stats::stats(const hw::configs& configs) {
+stats::stats(const pixie::module::module& mod) {
+    const hw::configs& configs = mod.eeprom.configs;
     chans.resize(configs.size());
     for (size_t channel = 0; channel < configs.size(); ++channel) {
         chans[channel].config = configs[channel];

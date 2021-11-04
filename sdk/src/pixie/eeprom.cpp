@@ -76,7 +76,7 @@ static const std::map<tag, element_decs> descriptors = {
     {tag::end, {tag::end, "end", null, 0, true, false}}};
 
 struct v2_config {
-    int id;
+    int index;
     int channels;
     hw::config config;
     std::string label;
@@ -96,7 +96,7 @@ static const std::map<hw::rev_tag, int> rev_max_channels = {
 
 static const v2_config& find_v2_config(const int id) {
     for (auto& db : v2_configs) {
-        if (id == db.id) {
+        if (id == db.index) {
             return db;
         }
     }
@@ -126,7 +126,7 @@ int header::version() const {
     return int(control & 0xf);
 }
 
-db_assemble::db_assemble() : id(-1), position(0) {
+db_assemble::db_assemble() : index(-1), position(0) {
 }
 
 eeprom::eeprom() {
@@ -153,6 +153,10 @@ void eeprom::clear_data() {
     data.clear();
     hdr.clear();
     crc.clear();
+}
+
+bool eeprom::valid() const {
+    return hdr.crc != 0 && hdr.crc == crc.value;
 }
 
 void eeprom::process() {
@@ -253,11 +257,12 @@ void eeprom::process() {
         minor_revision = get_number(tag::minor_revision);
         mod_strike = get_number(tag::mod_strike);
 
-        get_dbs();
+        process_dbs();
 
         int index = 0;
         for (auto db : dbs) {
-            auto& db_config = find_v2_config(db.id);
+            auto db_config = find_v2_config(db.index);
+            db_config.config.fixture = hw::get_module_fixture(db.label);
             for (int c = 0; c < db_config.channels; ++c) {
                 configs.push_back(db_config.config);
                 configs.back().index = index;
@@ -344,19 +349,7 @@ void eeprom::process() {
     }
 }
 
-bool eeprom::valid() const {
-    return hdr.crc != 0 && hdr.crc == crc.value;
-}
-
-int eeprom::find_db_id(const std::string label) const {
-    return find_v2_config(label).id;
-}
-
-std::string eeprom::find_db_label(const int id) const {
-    return find_v2_config(id).label;
-}
-
-void eeprom::get_dbs()
+void eeprom::process_dbs()
 {
     auto& desc = lookup(tag::db);
     while (true) {
@@ -369,11 +362,45 @@ void eeprom::get_dbs()
             break;
         }
         db_assemble db;
-        db.id = get8<int>(offset + 0);
+        db.index = get8<int>(offset + 0);
         db.position = get8<int>(offset + 1);
-        db.label = find_db_label(db.id);
+        db.label = db_find_label(db.index);
         dbs.push_back(db);
     }
+}
+
+int eeprom::db_find(const int channel) const {
+    int index = 0;
+    for (int db = 0; db < dbs.size(); ++db) {
+        auto db_config = find_v2_config(dbs[db].index);
+        if (channel < (index + db_config.channels)) {
+            return db;
+        }
+        index += db_config.channels;
+    }
+    return -1;
+}
+
+int eeprom::db_find_index(const std::string label) const {
+    return find_v2_config(label).index;
+}
+
+std::string eeprom::db_find_label(const int index) const {
+    return find_v2_config(index).label;
+}
+
+int eeprom::db_channel_base(const int index) const {
+    int base = -1;
+    if (index < dbs.size()) {
+        int db = 0;
+        base = 0;
+        while (db < index) {
+            auto db_config = find_v2_config(dbs[db].index);
+            base += db_config.channels;
+            ++db;
+        }
+    }
+    return base;
 }
 
 std::string eeprom::get_string(const tag key, size_t count) {

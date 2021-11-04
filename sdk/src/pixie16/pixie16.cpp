@@ -303,16 +303,15 @@ static void PixieBootModule(xia::pixie::module::module& module, const char* ComF
                             const char* SPFPGAConfigFile, const char* DSPCodeFile,
                             const char* DSPParFile, const char* DSPVarFile,
                             unsigned short BootPattern) {
-    typedef xia::pixie::firmware::firmware firmware;
+    using firmware = xia::pixie::firmware::firmware;
+    using hw_config = xia::pixie::hw::config;
 
-    firmware comm_fw("n/a", module.revision, module.configs[0].adc_msps, module.configs[0].adc_bits,
-                     "sys");
-    firmware fippi_fw("n/a", module.revision, module.configs[0].adc_msps,
-                      module.configs[0].adc_bits, "fippi");
-    firmware dsp_fw("n/a", module.revision, module.configs[0].adc_msps, module.configs[0].adc_bits,
-                    "dsp");
-    firmware dsp_var("n/a", module.revision, module.configs[0].adc_msps, module.configs[0].adc_bits,
-                     "var");
+    hw_config& config = module.eeprom.configs[0];
+
+    firmware comm_fw("n/a", module.revision, config.adc_msps, config.adc_bits, "sys");
+    firmware fippi_fw("n/a", module.revision, config.adc_msps, config.adc_bits, "fippi");
+    firmware dsp_fw("n/a", module.revision, config.adc_msps, config.adc_bits, "dsp");
+    firmware dsp_var("n/a", module.revision, config.adc_msps, config.adc_bits, "var");
 
     comm_fw.filename = ComFPGAConfigFile;
     comm_fw.slot.push_back(module.slot);
@@ -334,6 +333,7 @@ static void PixieBootModule(xia::pixie::module::module& module, const char* ComF
     xia::pixie::firmware::load(crate.firmware);
 
     auto pattern = std::bitset<std::numeric_limits<unsigned short>::digits>(BootPattern);
+
     module.probe();
     module.boot(pattern.test(BOOTPATTERN_COMFPGA_BIT), pattern.test(BOOTPATTERN_SPFPGA_BIT),
                 pattern.test(BOOTPATTERN_DSPCODE_BIT));
@@ -854,8 +854,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned
     try {
         *ModRev = crate.modules[ModNum]->revision;
         *ModSerNum = crate.modules[ModNum]->serial_num;
-        *ModADCBits = crate.modules[ModNum]->configs[0].adc_bits;
-        *ModADCMSPS = crate.modules[ModNum]->configs[0].adc_msps;
+        *ModADCBits = crate.modules[ModNum]->eeprom.configs[0].adc_bits;
+        *ModADCMSPS = crate.modules[ModNum]->eeprom.configs[0].adc_msps;
     } catch (std::bad_alloc& e) {
         xia_log(xia_log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::api_result_bad_alloc_error();
@@ -1003,9 +1003,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadStatisticsFromModule(unsigned int* Statist
         }
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
-        stats_legacy_ptr legacy_stats = new (Statistics) stats_legacy(module->configs);
+        stats_legacy_ptr legacy_stats = new (Statistics) stats_legacy(module->eeprom.configs);
         legacy_stats->validate();
-        xia::pixie::stats::stats stats(module->configs);
+        xia::pixie::stats::stats stats(*module);
         module->read_stats(stats);
         legacy_stats->num_channels = module->num_channels;
         legacy_stats->module = stats.mod;

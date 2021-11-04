@@ -60,7 +60,7 @@ void module::open(size_t device_number) {
             config.adc_msps = mod_def.adc_msps;
             config.adc_clk_div = mod_def.adc_clk_div;
             config.fpga_clk_mhz = mod_def.adc_msps / mod_def.adc_clk_div;
-            configs.resize(num_channels, config);
+            eeprom.configs.resize(num_channels, config);
 
             var_defaults = mod_def.var_defaults;
 

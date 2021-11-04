@@ -44,6 +44,7 @@ struct device {
     static const address I2CM24C64 = 0x10;
     static const address PCF8574 = 0x10;
     static const address CFG_DCMRST = 0x14;
+    static const address CFG_DAC = 0x18;
     static const address CSR = 0x48;
     static const address REQUEST_HBR = 0x80;
     static const address HBR_DONE = 0x84;
