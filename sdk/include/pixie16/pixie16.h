@@ -424,9 +424,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckRunStatus(unsigned short ModNum);
  *
  * @see Pixie16ReadStatisticsFromModule
  *
- * @param[in] Statistics A pointer to the statistics array containing enough space to hold the
- *     statistics data as 32-bit unsigned integers. The necessary size can be obtained from
- *     ::Pixie16GetStatisticsSize.
+ * @param[in] Statistics A pointer to the statistics array returned by ::Pixie16ReadStatisticsFromModule
  * @param[in] ModNum ModNum is the module number which starts counting at 0.
  * @param[in] ChanNum ChanNum is the channel number which starts counting at 0.
  * @return 0 if the live time was 0. The number of triggers divided by the live time in seconds
@@ -453,9 +451,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeInputCountRate(unsigned int* Statist
  *
  * @see Pixie16ReadStatisticsFromModule
  *
- * @param[in] Statistics A pointer to the statistics array containing enough space to hold the
-*     statistics data as 32-bit unsigned integers. The necessary size can be obtained from
-*     ::Pixie16GetStatisticsSize.
+ * @param[in] Statistics A pointer to the statistics array returned by ::Pixie16ReadStatisticsFromModule
  * @param[in] ModNum ModNum is the module number, which starts counting at 0.
  * @param[in] ChanNum ChanNum is the channel number, which starts counting at 0.
  * @return The live time of the module in seconds.
@@ -482,9 +478,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeLiveTime(unsigned int* Statistics,
  *
  * @see Pixie16ReadStatisticsFromModule
  *
- * @param[in] Statistics A pointer to the statistics array containing enough space to hold the
-*     statistics data as 32-bit unsigned integers. The necessary size can be obtained from
-*     ::Pixie16GetStatisticsSize.
+ * @param[in] Statistics A pointer to the statistics array returned by ::Pixie16ReadStatisticsFromModule
  * @param[in] ModNum ModNum is the module number which starts counting at 0.
  * @param[in] ChanNum ChanNum is the channel number which starts counting at 0.
  * @return 0 if the live time was 0. Otherwise, the number of channel events divided by the
@@ -515,9 +509,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeOutputCountRate(unsigned int* Statis
  *
  * @see Pixie16ReadStatisticsFromModule
  *
- * @param[in] Statistics A pointer to the statistics array containing enough space to hold the
-*     statistics data as 32-bit unsigned integers. The necessary size can be obtained from
-*     ::Pixie16GetStatisticsSize.
+ * @param[in] Statistics A pointer to the statistics array returned by ::Pixie16ReadStatisticsFromModule
  * @param[in] ModNum ModNum is the module number, which starts counting at 0.
  * @return The number of events processed by the module.
  */
@@ -541,9 +533,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeProcessedEvents(unsigned int* Statis
  *
  * @see Pixie16ReadStatisticsFromModule
  *
- * @param[in] Statistics A pointer to the statistics array containing enough space to hold the
-*     statistics data as 32-bit unsigned integers. The necessary size can be obtained from
-*     ::Pixie16GetStatisticsSize.
+ * @param[in] Statistics A pointer to the statistics array returned by ::Pixie16ReadStatisticsFromModule
  * @param[in] ModNum The module number, which starts counting at 0.
  * @return The number of seconds that the module spent on data acquisition.
  */
@@ -973,7 +963,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16SaveDSPParametersToFile(const char* FileName);
  * @brief Retrieve histogram data from a Pixie module and then save the data to a file.
  *
  * @warning This function is not currently implemented.
- * @warning This variable will be deprecated July 31, 2023 with the Legacy API.
+ * @warning This function will be deprecated July 31, 2023 with the Legacy API.
  *
  * Use this function to read histogram data from a Pixie-16 module and save the histogram data to
  * a file with file name specified by the user. First, this function saves the histogram data to a
