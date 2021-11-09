@@ -614,7 +614,7 @@ void channel::voffset(double value) {
 
     mod.write_var(param::channel_var::OffsetDAC, offset_dac, number);
 
-    hw::run::control(mod, hw::run::control_task::set_dacs);
+    mod.set_dacs();
 }
 
 double channel::xdt() {
@@ -793,7 +793,7 @@ void channel::csra(double value) {
     mod.write_var(param::channel_var::ChanCSRa, csra, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
-    hw::run::control(mod, hw::run::control_task::set_dacs);
+    mod.set_dacs();
 
     if ((csra & (1 << hw::bit::CCSRA_ENARELAY)) !=
         (current_csra & (1 << hw::bit::CCSRA_ENARELAY))) {

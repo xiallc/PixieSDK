@@ -626,7 +626,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16LoadDSPParametersFromFile(const char* FileName
         for (auto& module : crate.modules) {
             load_settings_file(*module, FileName);
             xia::pixie::hw::run::control(*module, xia::pixie::hw::run::control_task::program_fippi);
-            xia::pixie::hw::run::control(*module, xia::pixie::hw::run::control_task::set_dacs);
+            module->set_dacs();
         }
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
