@@ -228,8 +228,7 @@ void module::bus_guard::unlock() {
     lock_.unlock();
 }
 
-module::fifo_stats::fifo_stats()
-{
+module::fifo_stats::fifo_stats() {
     clear();
 }
 
@@ -246,12 +245,9 @@ module::fifo_stats& module::fifo_stats::operator=(const module::fifo_stats& s) {
 }
 
 module::fifo_stats::fifo_stats(const module::fifo_stats& s)
-    : in(s.in.load()), out(s.out.load()), overflows(s.overflows.load()),
-      dropped(s.dropped.load()), hw_overflows(s.hw_overflows.load()),
-      bandwidth(s.bandwidth.load()), max_bandwidth(s.max_bandwidth.load()),
-      min_bandwidth(s.min_bandwidth.load())
-{
-}
+    : in(s.in.load()), out(s.out.load()), overflows(s.overflows.load()), dropped(s.dropped.load()),
+      hw_overflows(s.hw_overflows.load()), bandwidth(s.bandwidth.load()),
+      max_bandwidth(s.max_bandwidth.load()), min_bandwidth(s.min_bandwidth.load()) {}
 
 void module::fifo_stats::clear() {
     in = 0;
@@ -278,19 +274,20 @@ module::module()
     : slot(0), number(-1), serial_num(0), revision(0), major_revision(0), minor_revision(0),
       num_channels(0), vmaddr(nullptr), eeprom_format(-1), run_task(hw::run::run_task::nop),
       control_task(hw::run::control_task::nop), fifo_buffers(default_fifo_buffers),
-      fifo_run_wait_usecs(default_fifo_run_wait_usec), fifo_idle_wait_usecs(default_fifo_idle_wait_usec),
-      fifo_hold_usecs(default_fifo_hold_usec), fifo_bandwidth(0), data_dma_in(0), crate_revision(-1),
-      board_revision(-1), reg_trace(false), bus_cycle_period(100), fifo_worker_running(false),
-      fifo_worker_finished(false), in_use(0), present_(false), online_(false), forced_offline_(false),
-      pause_fifo_worker(true), comms_fpga(false), fippi_fpga(false), have_hardware(false), vars_loaded(false),
+      fifo_run_wait_usecs(default_fifo_run_wait_usec),
+      fifo_idle_wait_usecs(default_fifo_idle_wait_usec), fifo_hold_usecs(default_fifo_hold_usec),
+      fifo_bandwidth(0), data_dma_in(0), crate_revision(-1), board_revision(-1), reg_trace(false),
+      bus_cycle_period(100), fifo_worker_running(false), fifo_worker_finished(false), in_use(0),
+      present_(false), online_(false), forced_offline_(false), pause_fifo_worker(true),
+      comms_fpga(false), fippi_fpga(false), have_hardware(false), vars_loaded(false),
       dsp_sets_dacs(true), dsp_has_all_adc_traces(true), cfg_ctrlcs(0xaaa),
       device(std::make_unique<pci_bus_handle>()), test_mode(test::off) {}
 
 module::module(module&& m)
     : slot(m.slot), number(m.number), serial_num(m.serial_num), revision(m.revision),
-      major_revision(0), minor_revision(0),
-      num_channels(m.num_channels), vmaddr(m.vmaddr), eeprom(m.eeprom),
-      eeprom_format(m.eeprom_format), module_var_descriptors(std::move(m.module_var_descriptors)),
+      major_revision(0), minor_revision(0), num_channels(m.num_channels), vmaddr(m.vmaddr),
+      eeprom(m.eeprom), eeprom_format(m.eeprom_format),
+      module_var_descriptors(std::move(m.module_var_descriptors)),
       module_vars(std::move(m.module_vars)),
       channel_var_descriptors(std::move(m.channel_var_descriptors)),
       channels(std::move(m.channels)), firmware(std::move(m.firmware)), run_task(m.run_task.load()),
@@ -300,13 +297,12 @@ module::module(module&& m)
       fifo_hold_usecs(m.fifo_hold_usecs.load()), fifo_bandwidth(m.fifo_bandwidth.load()),
       data_dma_in(m.data_dma_in.load()), data_stats(m.data_stats), run_stats(m.run_stats),
       crate_revision(m.crate_revision), board_revision(m.board_revision), reg_trace(m.reg_trace),
-      bus_cycle_period(100), fifo_worker_running(false),
-      fifo_worker_finished(false), in_use(0), present_(m.present_.load()),
-      online_(m.online_.load()), forced_offline_(m.forced_offline_.load()),
-      pause_fifo_worker(m.pause_fifo_worker.load()), comms_fpga(m.comms_fpga),
-      fippi_fpga(m.fippi_fpga), have_hardware(false), vars_loaded(false), dsp_sets_dacs(true),
-      dsp_has_all_adc_traces(true), cfg_ctrlcs(0xaaa), device(std::move(m.device)),
-      test_mode(m.test_mode.load()) {
+      bus_cycle_period(100), fifo_worker_running(false), fifo_worker_finished(false), in_use(0),
+      present_(m.present_.load()), online_(m.online_.load()),
+      forced_offline_(m.forced_offline_.load()), pause_fifo_worker(m.pause_fifo_worker.load()),
+      comms_fpga(m.comms_fpga), fippi_fpga(m.fippi_fpga), have_hardware(false), vars_loaded(false),
+      dsp_sets_dacs(true), dsp_has_all_adc_traces(true), cfg_ctrlcs(0xaaa),
+      device(std::move(m.device)), test_mode(m.test_mode.load()) {
     m.slot = 0;
     m.number = -1;
     m.serial_num = 0;
@@ -1204,9 +1200,8 @@ param::value_type module::read_var(param::module_var var, size_t offset, bool io
             value = module_vars[index].value[offset].value;
         }
     }
-    log(log::debug) << module_label(*this) << "read_var: module var=" << desc.name
-                    << " value[" << offset << "]=" << value
-                    << " (0x" << std::hex << value << ')';
+    log(log::debug) << module_label(*this) << "read_var: module var=" << desc.name << " value["
+                    << offset << "]=" << value << " (0x" << std::hex << value << ')';
     return value;
 }
 
@@ -1246,9 +1241,8 @@ param::value_type module::read_var(param::channel_var var, size_t channel, size_
             value = channels[channel].vars[index].value[offset].value;
         }
     }
-    log(log::debug) << module_label(*this) << "read_var: channel var=" << desc.name
-                    << " value[" << offset << "]=" << value
-                    << " (0x" << std::hex << value << ')';
+    log(log::debug) << module_label(*this) << "read_var: channel var=" << desc.name << " value["
+                    << offset << "]=" << value << " (0x" << std::hex << value << ')';
     return value;
 }
 
@@ -1275,9 +1269,8 @@ void module::write_var(param::module_var var, param::value_type value, size_t of
         throw error(number, slot, error::code::module_invalid_param, oss.str());
     }
     const auto& desc = module_var_descriptors[index];
-    log(log::debug) << module_label(*this) << "write_var: module var=" << desc.name
-                    << " value[" << offset << "]=" << value
-                    << " (0x" << std::hex << value << ')';
+    log(log::debug) << module_label(*this) << "write_var: module var=" << desc.name << " value["
+                    << offset << "]=" << value << " (0x" << std::hex << value << ')';
     if (desc.state == param::disable) {
         throw error(number, slot, error::code::module_param_disabled,
                     "module variable disabled: " + desc.name);
@@ -1424,8 +1417,7 @@ void module::sync_hw(const bool program_fippi, const bool program_dacs) {
             cfg_ctrlcs |= (1 << hw::bit::CPLDCSR_BPCONNECT);
         }
 
-        log(log::debug) << module_label(*this)
-                        << "write: cfg_ctrlcs=0x" << std::hex << cfg_ctrlcs;
+        log(log::debug) << module_label(*this) << "write: cfg_ctrlcs=0x" << std::hex << cfg_ctrlcs;
         write_word(hw::device::CFG_CTRLCS, cfg_ctrlcs);
 
         /*
@@ -1519,7 +1511,7 @@ void module::start_histograms(hw::run::run_mode mode) {
     lock_guard guard(lock_);
     if (run_task.load() != hw::run::run_task::nop) {
         throw error(number, slot, error::code::module_invalid_operation,
-                    "module already runinng a task");
+                    "module already running a task");
     }
     if (test_mode.load() != test::off) {
         throw error(number, slot, error::code::module_test_invalid,
@@ -1530,12 +1522,12 @@ void module::start_histograms(hw::run::run_mode mode) {
 }
 
 void module::start_listmode(hw::run::run_mode mode) {
-    log(log::info) << module_label(*this) << "start-listmode: mode=" << int(mode);
+    log(log::info) << module_label(*this) << "start-list-mode: mode=" << int(mode);
     online_check();
     lock_guard guard(lock_);
     if (run_task != hw::run::run_task::nop) {
         throw error(number, slot, error::code::module_invalid_operation,
-                    "module already runinng a task");
+                    "module already running a task");
     }
     if (test_mode.load() != test::off) {
         throw error(number, slot, error::code::module_test_invalid,
@@ -1658,8 +1650,7 @@ void module::select_port(const int port) {
     bus_guard guard(*this);
     cfg_ctrlcs &= ~(7 << 19);
     cfg_ctrlcs |= (port & 7) << 19;
-    log(log::debug) << module_label(*this)
-                    << "write: cfg_ctrlcs=0x" << std::hex << cfg_ctrlcs;
+    log(log::debug) << module_label(*this) << "write: cfg_ctrlcs=0x" << std::hex << cfg_ctrlcs;
     write_word(hw::device::CFG_CTRLCS, cfg_ctrlcs);
 }
 
@@ -1676,8 +1667,7 @@ std::string module::version_label() const {
     std::ostringstream oss;
     oss << static_cast<char>(revision + 55);
     if (revision_label() > 'F') {
-        oss << '-' << static_cast<char>(major_revision)
-            << '(' << minor_revision << ')';
+        oss << '-' << static_cast<char>(major_revision) << '(' << minor_revision << ')';
     }
     return oss.str();
 }
@@ -2088,8 +2078,7 @@ void module::fifo_worker() {
                  */
                 this_run_tsk = run_task.load();
                 if (this_run_tsk != hw::run::run_task::nop &&
-                    this_run_tsk != hw::run::run_task::run_stopping &&
-                    !hw::run::active(*this)) {
+                    this_run_tsk != hw::run::run_task::run_stopping && !hw::run::active(*this)) {
                     run_task = hw::run::run_task::nop;
                     log(log::info) << module_label(*this) << "FIFO worker: run not active";
                 }
@@ -2253,14 +2242,12 @@ void module::calc_bus_speed() {
 
 void module::log_stats(const char* label, const fifo_stats& stats) {
     auto word_size = sizeof(hw::word);
-    log(log::info) << module_label(*this)
-                   << label << ": bw=" << stats.bandwidth.load()
+    log(log::info) << module_label(*this) << label << ": bw=" << stats.bandwidth.load()
                    << "Mb/s max-bw=" << stats.max_bandwidth.load()
                    << "Mb/s min-bw=" << stats.min_bandwidth.load()
                    << "Mb/s in=" << stats.in.load() * word_size
                    << " out=" << stats.out.load() * word_size
-                   << " overflows=" << stats.overflows.load()
-                   << " dropped=" << stats.dropped.load()
+                   << " overflows=" << stats.overflows.load() << " dropped=" << stats.dropped.load()
                    << " hw-overflows=" << stats.hw_overflows.load();
 }
 
