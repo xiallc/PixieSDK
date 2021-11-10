@@ -342,6 +342,23 @@ void import_json(const std::string& filename, crate::crate& crate, module::numbe
                                 << module::module_label(module) << "channel var set: " << el.key()
                                 << ": " << el.value();
                             size_t vchannels = el.value().size() / desc.size;
+
+                            if (vchannels < module.num_channels) {
+                                log(log::warning)
+                                    << module::module_label(module) << el.key()
+                                    << " config has too few elements. "
+                                    << "vchannels= " << vchannels << " num_channels=" << module.num_channels;
+                            }
+
+                            log(log::warning)
+                                << module::module_label(module) << "extending " << el.key() << " to "
+                                << module.num_channels << " elements using value at index 0.";
+                            for (size_t idx = vchannels; idx < module.num_channels; idx++) {
+                                el.value().push_back(el.value()[0]);
+                            }
+
+                            vchannels = el.value().size() / desc.size;
+
                             for (size_t channel = 0;
                                  channel < module.num_channels && channel < vchannels &&
                                  channel * desc.size < el.value().size();
