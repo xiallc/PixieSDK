@@ -42,7 +42,7 @@ logging.basicConfig(stream=sys.stdout, datefmt="%Y-%m-%dT%H:%M:%S.000Z", level=l
 
 def calculate_subplot_dims(num_elements):
     """
-    Calculates the subplot dimentions based on the number of channels
+    Calculates the subplot dimensions based on the number of channels
     that we're going to be plotting.
     :param num_elements: The number of channels that need plotted.
     :return: A dictionary containing the calculated subplot dimensions
@@ -52,8 +52,8 @@ def calculate_subplot_dims(num_elements):
     if pad == 0:
         rows = square_dim
     else:
-        pad = pad - square_dim
-        rows = int((num_elements + pad) / square_dim)
+        pad = square_dim - pad
+        rows = round((num_elements + pad) / square_dim)
     return {
         "rows": rows,
         "cols": square_dim,
