@@ -175,9 +175,9 @@ static const std::vector<cmd_handler> cmd_handlers = {
     {"wait", wait},
 };
 
-static std::string adc_prefix = "adc-trace";
-static std::string histogram_prefix = "histo";
-static std::string baseline_prefix = "baselines";
+static std::string adc_prefix = "test-api-adc";
+static std::string histogram_prefix = "test-api-mca";
+static std::string baseline_prefix = "test-api-baseline";
 
 static bool check_number(const std::string& opt) {
     return std::regex_match(opt, std::regex(("((\\+|-)?[[:digit:]]+)(\\.(([[:digit:]]+)?))?")));
@@ -541,26 +541,31 @@ static void adc_save(xia::pixie::crate::crate& crate, options& cmd) {
     }
 
     std::vector<xia::pixie::hw::adc_trace> traces;
-    std::ostringstream name;
-    name << std::setfill('0') << adc_prefix << '-' << std::setw(2) << mod_num << ".csv";
-    std::ofstream out(name.str());
-    out << "bin,";
-
     for (auto channel : channels) {
         xia::pixie::hw::adc_trace adc_trace(length);
         crate[mod_num].read_adc(channel, adc_trace, false);
         traces.push_back(adc_trace);
-        out << "Chan" << channel << ",";
     }
 
-    out << std::endl;
+    std::ostringstream name;
+    name << std::setfill('0') << adc_prefix << '-' << std::setw(2) << mod_num << ".csv";
+    std::ofstream out(name.str());
+    out << "bin,";
+    for (size_t idx = 0; idx < channels.size(); idx++) {
+        if (idx != channels.size() - 1)
+            out << "Chan" << channels[idx] << ",";
+        else
+            out << "Chan" << channels[idx] << std::endl;
+    }
 
     for (unsigned int bin = 0; bin < length; bin++) {
         out << bin << ",";
-        for (auto trc : traces) {
-            out << trc[bin] << ",";
+        for (size_t idx = 0; idx < traces.size(); idx++) {
+            if (idx != traces.size() - 1)
+                out << traces[idx][bin] << ",";
+            else
+                out << traces[idx][bin] << std::endl;
         }
-        out << std::endl;
     }
 }
 
@@ -590,17 +595,21 @@ static void bl_save(xia::pixie::crate::crate& crate, options& cmd) {
         std::ofstream out(name.str());
         out << "sample, time,";
 
-        for (auto channel : channels) {
-            out << "Chan" << channel << ",";
+        for (size_t idx = 0; idx < channels.size(); idx++) {
+            if (idx != channels.size() - 1)
+                out << "Chan" << channels[idx] << ",";
+            else
+                out << "Chan" << channels[idx] << std::endl;
         }
-        out << std::endl;
 
         for (unsigned int sample = 0; sample < baselines.front().size(); sample++) {
             out << sample << "," << std::get<0>(baselines.front()[sample]) << ",";
-            for (auto chan : channels) {
-                out << std::get<1>(baselines[chan][sample]) << ",";
+            for (unsigned int idx = 0; idx < channels.size(); idx++) {
+                if (idx != channels.size() - 1)
+                    out << std::get<1>(baselines[channels[idx]][sample]) << ",";
+                else
+                    out << std::get<1>(baselines[channels[idx]][sample]) << std::endl;
             }
-            out << std::endl;
         }
     }
 }
@@ -654,26 +663,32 @@ static void hist_save(xia::pixie::crate::crate& crate, options& cmd) {
         xia::pixie::channel::range_set(channels);
     }
 
-    std::ostringstream name;
-    name << std::setfill('0') << histogram_prefix << '-' << std::setw(2) << mod_num << ".csv";
-    std::ofstream out(name.str());
-    out << "bin,";
-
     std::vector<xia::pixie::hw::words> histos;
     for (auto channel : channels) {
         xia::pixie::hw::words histogram(length);
         crate[mod_num].read_histogram(channel, histogram);
         histos.push_back(histogram);
-        out << "Chan" << channel << ",";
     }
-    out << std::endl;
+
+    std::ostringstream name;
+    name << std::setfill('0') << histogram_prefix << '-' << std::setw(2) << mod_num << ".csv";
+    std::ofstream out(name.str());
+    out << "bin,";
+    for (size_t idx = 0; idx < channels.size(); idx++) {
+        if (idx != channels.size() - 1)
+            out << "Chan" << channels[idx] << ",";
+        else
+            out << "Chan" << channels[idx] << std::endl;
+    }
 
     for (unsigned int bin = 0; bin < length; bin++) {
         out << bin << ",";
-        for (auto hist : histos) {
-            out << hist[bin] << ",";
+        for (size_t idx = 0; idx < histos.size(); idx++) {
+            if (idx != histos.size() - 1)
+                out << histos[idx][bin] << ",";
+            else
+                out << histos[idx][bin] << std::endl;
         }
-        out << std::endl;
     }
 }
 
