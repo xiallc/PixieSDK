@@ -43,6 +43,9 @@ struct userin_save {
     hw::word userin_1;
 
     userin_save(module::module& module);
+
+    void update(const hw::word& db_index, const hw::word& db_channel);
+
     ~userin_save();
 };
 
@@ -86,6 +89,11 @@ userin_save::userin_save(module::module& module) : dsp(module) {
     userin_1 = dsp.read(1, address);
 }
 
+void userin_save::update(const hw::word& db_index, const hw::word& db_channel) {
+    dsp.write(0, address, db_index);
+    dsp.write(1, address, db_channel);
+}
+
 userin_save::~userin_save() {
     dsp.write(0, address, userin_0);
     dsp.write(1, address, userin_1);
@@ -104,6 +112,7 @@ void db::acquire_adc() {
     module::module& module = get_module();
     {
         userin_save userins(module);
+        userins.update(number, offset);
         hw::run::control(module, hw::run::control_task::get_traces);
     }
     /*
