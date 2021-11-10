@@ -714,6 +714,12 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned
         std::string ell = env_log_level;
         if (ell == "DEBUG" || ell == "debug") {
             log_level = xia_log::debug;
+        } else if (ell == "INFO" || ell == "info") {
+            log_level = xia_log::info;
+        } else if (ell == "WARN" || ell == "warn") {
+            log_level = xia_log::warn;
+        } else if (ell == "ERROR" || ell == "error") {
+            log_level = xia_log::error;
         }
     }
     xia::logging::start("log", "Pixie16Msg.log", log_level, true);
