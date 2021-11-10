@@ -58,10 +58,10 @@ extern "C" {
  *
  * | PIXIE16_LOG_LEVEL | Description |
  * |---|---|
- * | DEBUG | All messages, including information only relevant to the developers at XIA |
- * | INFO  | All meesages except for debug messages |
- * | WARN  | All warning and error messages |
- * | ERROR | Only messages that cause a routine to end its execution early |
+ * | DEBUG   | All messages, including information only relevant to the developers at XIA |
+ * | INFO    | All meesages except for debug messages |
+ * | WARNING | All warning and error messages |
+ * | ERROR   | Only messages that cause a routine to end its execution early |
  *
  * ### Example
  * \snippet snippets/legacy_api_function_examples.c Pixie16InitSystem
