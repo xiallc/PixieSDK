@@ -95,7 +95,7 @@ static const json default_config = {
         {"CrateID", 0},
         {"FastFilterRange", 0},
         {"FastTrigBackplaneEna", 0},
-        {"HostIO", {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+        {"HostIO", {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
         {"HostRunTimePreset", 1092616192},
         {"InSynch", 1},
         {"MaxEvents", 0},
