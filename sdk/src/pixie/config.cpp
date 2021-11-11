@@ -351,6 +351,11 @@ void export_json(const std::string& filename, crate::crate& crate) {
     for (auto m : crate.modules) {
         module::module& mod = *m;
 
+        /*
+         * Refresh the vairables from the DSP before exporting
+         */
+        mod.sync_vars(module::module::sync_from_dsp);
+
         json metadata;
         char rv[2] = {mod.revision_label(), '\0'};
         metadata["number"] = mod.number;

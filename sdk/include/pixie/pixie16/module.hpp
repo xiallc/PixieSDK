@@ -100,6 +100,14 @@ class module {
 
 public:
     /**
+     * @brief Variable synchronising direction with the DSP
+     */
+    enum sync_var_mode {
+        sync_to_dsp,
+        sync_from_dsp
+    };
+
+    /**
      * @brief Provides a guard to prevent concurrent module access.
      */
     class guard {
@@ -431,10 +439,11 @@ public:
      * Synchronize dirty variables with the hardware and then sync the
      * hardware state.
      */
-    void sync_vars();
+    void sync_vars(const sync_var_mode sync_mode = sync_to_dsp);
 
     /**
-     * Sync the hardware after the variables have been sync'ed.
+     * Sync the hardware after the variables have been sync'ed with @ref sync_var and
+     * the mode sync mode is @ref sync_to_dsp.
      */
     void sync_hw(const bool program_fippi = true, const bool program_dacs = true);
 

@@ -1348,9 +1348,13 @@ void module::write_var(param::channel_var var, param::value_type value, size_t c
     }
 }
 
-void module::sync_vars() {
+void module::sync_vars(const sync_var_mode sync_mode) {
     online_check();
-    log(log::info) << module_label(*this) << "sync variables";
+    log(log::info) << module_label(*this) << "sync variables: mode: "
+                   << (char*) (sync_mode == sync_to_dsp ? "to dsp" : "from dsp");
+    if (!have_hardware) {
+        return;
+    }
     lock_guard guard(lock_);
     hw::memory::dsp dsp(*this);
     for (auto& var : module_vars) {
@@ -1358,14 +1362,16 @@ void module::sync_vars() {
         if (desc.state == param::enable && desc.mode != param::ro) {
             for (size_t v = 0; v < var.value.size(); ++v) {
                 auto& value = var.value[v];
-                if (value.dirty) {
-                    if (have_hardware) {
+                if (sync_mode == sync_to_dsp) {
+                    if (value.dirty) {
                         hw::word word;
                         hw::convert(value.value, word);
                         dsp.write(v, desc.address, word);
                     }
-                    value.dirty = false;
+                } else {
+                    hw::convert(dsp.read(v, desc.address), value.value);
                 }
+                value.dirty = false;
             }
         }
     }
@@ -1375,14 +1381,17 @@ void module::sync_vars() {
             if (desc.state == param::enable && desc.mode != param::ro) {
                 for (size_t v = 0; v < var.value.size(); ++v) {
                     auto& value = var.value[v];
-                    if (value.dirty) {
-                        if (have_hardware) {
+                    if (sync_mode == sync_to_dsp) {
+                        if (value.dirty) {
                             hw::word word;
                             hw::convert(value.value, word);
                             dsp.write(channel.number, v, desc.address, word);
-                            value.dirty = false;
                         }
+                    } else {
+                        hw::convert(dsp.read(channel.number, v, desc.address),
+                                    value.value);
                     }
+                    value.dirty = false;
                 }
             }
         }
