@@ -63,7 +63,7 @@ static const json default_config = {
         {"Log2Ebin", {4294967295}},
         {"MultiplicityMaskH", {0}},
         {"MultiplicityMaskL", {0}},
-        {"OffsetDAC", {25056}},
+        {"OffsetDAC", {34952}},
         {"PSAlength", {0}},
         {"PSAoffset", {0}},
         {"PeakSample", {42}},
