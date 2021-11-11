@@ -157,7 +157,7 @@ void control(module::module& module, control_task control_tsk, int wait_msecs) {
         hw::wait(1000);
     }
     std::ostringstream oss;
-    oss << "control task failed to start: " << int(control_tsk);
+    oss << "control task failed to end: " << int(control_tsk);
     throw error(error::code::module_task_timeout, oss.str());
 }
 
