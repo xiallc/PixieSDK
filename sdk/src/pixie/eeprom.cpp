@@ -351,7 +351,17 @@ void eeprom::process() {
 
 void eeprom::process_dbs()
 {
-    auto& desc = lookup(tag::db);
+    /*
+     * Loop looking for all daughter boards starting from `1` up to the
+     * number declared in the EEPROM.
+     *
+     * There is no ordering in the EEPROM as the position field defines the
+     * channel ordering not the location of the DB entry in the EEPROM.
+     *
+     * A `0` offset is returned when all the daughter boards have been
+     * found. Once all DBs have been found sort them based on position to get
+     * the channel offsets for the module.
+     */
     while (true) {
         size_t offset = find(tag::db, dbs.size() + 1, false);
         if (offset == 0) {
