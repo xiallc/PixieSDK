@@ -52,17 +52,6 @@ extern "C" {
  * This function must be called as the first step in the boot process. It makes the modules known
  * to the system and “opens” each module for communication.
  *
- * The log file "Pixie16Msg.log" will be opened for logging at the beginning of this function. Prior
- * to calling this function. The environment variable PIXIE16_LOG_LEVEL can be set to one of the
- * following logging levels. If PIXIE16_LOG_LEVEL is not set, default logging level is INFO.
- *
- * | PIXIE16_LOG_LEVEL | Description |
- * |---|---|
- * | DEBUG   | All messages, including information only relevant to the developers at XIA |
- * | INFO    | All meesages except for debug messages |
- * | WARNING | All warning and error messages |
- * | ERROR   | Only messages that cause a routine to end its execution early |
- *
  * ### Example
  * \snippet snippets/legacy_api_function_examples.c Pixie16InitSystem
  *
