@@ -127,6 +127,20 @@ public:
         void unlock();
     };
 
+    /**
+     * @brief Register Trace guard to restore the previous trace value.
+     */
+    class reg_trace_guard {
+        bool& reg_trace;
+        bool reg_trace_state;
+
+    public:
+        reg_trace_guard(module& mod);
+        ~reg_trace_guard();
+        void enable();
+        void disable();
+    };
+
     /*
      * Stats for the module or a run.
      */

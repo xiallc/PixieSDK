@@ -228,6 +228,21 @@ void module::bus_guard::unlock() {
     lock_.unlock();
 }
 
+module::reg_trace_guard::reg_trace_guard(module& mod)
+    : reg_trace(mod.reg_trace), reg_trace_state(mod.reg_trace) {}
+
+module::reg_trace_guard::~reg_trace_guard() {
+    reg_trace = reg_trace_state;
+}
+
+void module::reg_trace_guard::enable() {
+    reg_trace = true;
+}
+
+void module::reg_trace_guard::disable() {
+    reg_trace = false;
+}
+
 module::fifo_stats::fifo_stats() {
     clear();
 }
