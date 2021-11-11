@@ -351,7 +351,7 @@ module::~module() {
      */
     try {
         close();
-    } catch (error& e) {
+    } catch (pixie::error::error& e) {
         log(log::error) << e;
     }
     device.release();
@@ -692,7 +692,7 @@ void module::force_offline() {
     if (!forced_offline_.load()) {
         try {
             run_end();
-        } catch (error& e) {
+        } catch (pixie::error::error& e) {
             log(log::error) << "force offline: " << e;
         }
         stop_fifo_services();
@@ -2205,7 +2205,7 @@ void module::fifo_worker() {
             }
             hw::wait(10000);
         }
-    } catch (error& e) {
+    } catch (pixie::error::error& e) {
         log(log::error) << "FIFO worker: " << e;
     } catch (std::exception& e) {
         log(log::error) << "FIFO worker: error: " << e.what();
