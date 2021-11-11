@@ -31,7 +31,7 @@ namespace channel {
 struct channel;
 };
 namespace module {
-struct module;
+class module;
 };
 /**
  * @brief Collects Pixie-16 specific fixtures information.
