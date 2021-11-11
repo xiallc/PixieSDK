@@ -371,7 +371,7 @@ void eeprom::process_dbs()
 
 int eeprom::db_find(const int channel) const {
     int index = 0;
-    for (int db = 0; db < dbs.size(); ++db) {
+    for (auto db = 0; db < dbs.size(); ++db) {
         auto db_config = find_v2_config(dbs[db].index);
         if (channel < (index + db_config.channels)) {
             return db;
