@@ -248,11 +248,12 @@ bool execute_baseline_capture(const module_config& mod) {
     if (!verify_api_return_value(Pixie16AcquireBaselines(mod.number), "Pixie16AcquireBaselines"))
         return false;
 
-    double baselines[mod.number_of_channels][MAX_NUM_BASELINES];
+    std::vector<std::vector<double>> baselines(mod.number_of_channels,
+                                               std::vector<double>(MAX_NUM_BASELINES));
     double timestamps[MAX_NUM_BASELINES];
     for (unsigned int i = 0; i < mod.number_of_channels; i++) {
         std::cout << LOG("INFO") << "Acquiring baselines for Channel " << i << std::endl;
-        if (!verify_api_return_value(Pixie16ReadSglChanBaselines(baselines[i], timestamps,
+        if (!verify_api_return_value(Pixie16ReadSglChanBaselines(baselines[i].data(), timestamps,
                                                                  MAX_NUM_BASELINES, mod.number, i),
                                      "Pixie16ReadsglChanBaselines"))
             return false;
@@ -555,10 +556,11 @@ bool execute_trace_capture(const module_config& mod) {
     if (!verify_api_return_value(Pixie16AcquireADCTrace(mod.number), "Pixie16AcquireADCTrace"))
         return false;
 
-    unsigned short trace[mod.number_of_channels][MAX_ADC_TRACE_LEN];
+    std::vector<std::vector<unsigned short>> trace(mod.number_of_channels,
+                                                   std::vector<unsigned short>(MAX_ADC_TRACE_LEN));
     for (unsigned int i = 0; i < mod.number_of_channels; i++) {
         if (!verify_api_return_value(
-                Pixie16ReadSglChanADCTrace(trace[i], MAX_ADC_TRACE_LEN, mod.number, i),
+                Pixie16ReadSglChanADCTrace(trace[i].data(), MAX_ADC_TRACE_LEN, mod.number, i),
                 "Pixie16AcquireADCTrace", false))
             return false;
     }
