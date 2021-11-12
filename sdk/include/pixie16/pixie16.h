@@ -758,12 +758,14 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
  * @param[out] ModSerNum The serial number read from the on-board EEPROM
  * @param[out] ModADCBits The ADC bit resolution read from the on-board EEPROM
  * @param[out] ModADCMSPS The ADC sampling frequency read from the on-board EEPROM
+ * @param[out] num_channels The number of channels present on the module
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
  */
 PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned short* ModRev,
                                                  unsigned int* ModSerNum,
                                                  unsigned short* ModADCBits,
-                                                 unsigned short* ModADCMSPS);
+                                                 unsigned short* ModADCMSPS,
+                                                 unsigned short* num_channels = nullptr);
 
 /**
  * @ingroup PIXIE16_API

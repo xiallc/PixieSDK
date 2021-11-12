@@ -104,11 +104,13 @@ static int not_supported() {
 
 void load_settings_file(xia::pixie::module::module& module, const std::string& filename) {
     bool json_config = false;
-    xia::pixie::legacy::settings settings(module);
+    xia::pixie::legacy::settings* settings;
     try {
-        settings.load(filename);
+        settings = new xia::pixie::legacy::settings(module);
+        settings->load(filename);
     } catch (xia::pixie::error::error& err) {
-        if (err.type == xia::pixie::error::code::module_total_invalid) {
+        if (err.type == xia::pixie::error::code::module_total_invalid ||
+            err.type == xia::pixie::error::code::channel_number_invalid) {
             json_config = true;
             xia::pixie::module::number_slots modules;
             ///TODO: Not super efficient if we're calling module-by-module.
@@ -119,8 +121,8 @@ void load_settings_file(xia::pixie::module::module& module, const std::string& f
     }
 
     if (!json_config) {
-        settings.import(module);
-        settings.write(module);
+        settings->import(module);
+        settings->write(module);
         module.sync_vars();
     }
 }
@@ -583,8 +585,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16CopyDSPParameters(unsigned short BitMask,
                                                     unsigned short* DestinationMask) {
     xia_log(xia_log::debug) << "Pixie16CopyDSPParameters: Source Module=" << SourceModule
                             << " Source Channel=" << SourceChannel
-                            << "  Destination Mask=" << DestinationMask
-                            << " Bit Mask=" << BitMask;
+                            << "  Destination Mask=" << DestinationMask << " Bit Mask=" << BitMask;
 
     try {
         crate.ready();
@@ -854,14 +855,21 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
 PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned short* ModRev,
                                                  unsigned int* ModSerNum,
                                                  unsigned short* ModADCBits,
-                                                 unsigned short* ModADCMSPS) {
+                                                 unsigned short* ModADCMSPS,
+                                                 unsigned short* num_channels) {
     xia_log(xia_log::debug) << "Pixie16ReadModuleInfo: ModNum=" << ModNum;
 
     try {
-        *ModRev = crate.modules[ModNum]->revision;
-        *ModSerNum = crate.modules[ModNum]->serial_num;
-        *ModADCBits = crate.modules[ModNum]->eeprom.configs[0].adc_bits;
-        *ModADCMSPS = crate.modules[ModNum]->eeprom.configs[0].adc_msps;
+        if (ModRev)
+            *ModRev = crate.modules[ModNum]->revision;
+        if (ModSerNum)
+            *ModSerNum = crate.modules[ModNum]->serial_num;
+        if (ModADCBits)
+            *ModADCBits = crate.modules[ModNum]->eeprom.configs[0].adc_bits;
+        if (ModADCMSPS)
+            *ModADCMSPS = crate.modules[ModNum]->eeprom.configs[0].adc_msps;
+        if (num_channels)
+            *num_channels = crate.modules[ModNum]->num_channels;
     } catch (std::bad_alloc& e) {
         xia_log(xia_log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::api_result_bad_alloc_error();
