@@ -493,29 +493,26 @@ bool execute_mca_run(const module_config& mod, const double& runtime_in_seconds)
 }
 
 bool execute_parameter_read(args::ValueFlag<std::string>& parameter,
-                            args::ValueFlag<unsigned int>& crate,
-                            args::ValueFlag<unsigned int>& module,
+                            args::ValueFlag<unsigned int>& crate, const unsigned int module,
                             args::ValueFlag<unsigned int>& channel) {
     if (channel) {
         double result;
         std::cout << LOG("INFO") << "Pixie16ReadSglChanPar"
                   << " reading " << parameter.Get() << " from Crate " << crate.Get() << " Module "
-                  << module.Get() << " Channel " << channel.Get() << "." << std::endl;
-        if (!verify_api_return_value(Pixie16ReadSglChanPar(parameter.Get().c_str(), &result,
-                                                           module.Get(), channel.Get()),
-                                     "Pixie16ReadSglChanPar", false))
+                  << module << " Channel " << channel.Get() << "." << std::endl;
+        if (!verify_api_return_value(
+                Pixie16ReadSglChanPar(parameter.Get().c_str(), &result, module, channel.Get()),
+                "Pixie16ReadSglChanPar", false))
             return false;
-        std::cout << LOG("INFO") << result << std::endl;
+        std::cout << LOG("INFO") << parameter.Get() << "=" << result << std::endl;
     } else {
         unsigned int result;
         std::cout << LOG("INFO") << "Pixie16ReadSglModPar reading " << parameter.Get()
-                  << " from Crate " << crate.Get() << " Module " << module.Get() << "."
-                  << std::endl;
-        if (!verify_api_return_value(
-                Pixie16ReadSglModPar(parameter.Get().c_str(), &result, module.Get()),
-                "Pixie16ReadSglModPar", false))
+                  << " from Crate " << crate.Get() << " Module " << module << "." << std::endl;
+        if (!verify_api_return_value(Pixie16ReadSglModPar(parameter.Get().c_str(), &result, module),
+                                     "Pixie16ReadSglModPar", false))
             return false;
-        std::cout << LOG("INFO") << result << std::endl;
+        std::cout << LOG("INFO") << parameter.Get() << "=" << result << std::endl;
     }
     return true;
 }
@@ -523,6 +520,8 @@ bool execute_parameter_read(args::ValueFlag<std::string>& parameter,
 bool execute_parameter_write(args::ValueFlag<std::string>& parameter,
                              args::ValueFlag<double>& value, args::ValueFlag<unsigned int>& crate,
                              const module_config& module, args::ValueFlag<unsigned int>& channel) {
+    std::cout << LOG("INFO") << "Checking current value for " << parameter.Get() << std::endl;
+    execute_parameter_read(parameter, crate, module.number, channel);
     if (channel) {
         std::cout << LOG("INFO") << "Pixie16WriteSglChanPar setting " << parameter.Get() << " to "
                   << value.Get() << " for Crate " << crate.Get() << " Module " << module.number
@@ -540,6 +539,10 @@ bool execute_parameter_write(args::ValueFlag<std::string>& parameter,
                 "Pixie16WriteSglModPar"))
             return false;
     }
+
+    std::cout << LOG("INFO") << "Verifying written value for value for " << parameter.Get()
+              << std::endl;
+    execute_parameter_read(parameter, crate, module.number, channel);
 
     if (!save_dsp_pars(module.dsp_par))
         return false;
@@ -875,7 +878,7 @@ int main(int argc, char** argv) {
     }
 
     if (read) {
-        if (!execute_parameter_read(parameter, crate, module, channel))
+        if (!execute_parameter_read(parameter, crate, module.Get(), channel))
             return EXIT_FAILURE;
     }
 
