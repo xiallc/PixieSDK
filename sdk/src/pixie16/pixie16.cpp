@@ -716,7 +716,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned
             log_level = xia_log::debug;
         } else if (ell == "INFO" || ell == "info") {
             log_level = xia_log::info;
-        } else if (ell == "WARNING" || ell == "warning") {
+        } else if (ell == "WARNING" || ell == "warning" || ell == "WARN" || ell == "warn") {
             log_level = xia_log::warning;
         } else if (ell == "ERROR" || ell == "error") {
             log_level = xia_log::error;
