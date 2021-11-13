@@ -869,7 +869,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned
         if (ModADCMSPS)
             *ModADCMSPS = crate.modules[ModNum]->eeprom.configs[0].adc_msps;
         if (num_channels)
-            *num_channels = crate.modules[ModNum]->num_channels;
+            *num_channels = (unsigned short)crate.modules[ModNum]->num_channels;
     } catch (std::bad_alloc& e) {
         xia_log(xia_log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::api_result_bad_alloc_error();

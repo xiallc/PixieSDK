@@ -56,7 +56,7 @@ settings::settings(module::module& module) {
 }
 
 int settings::num_modules() const {
-    return dsp_mem.size() / N_DSP_PAR;
+    return (int)dsp_mem.size() / N_DSP_PAR;
 }
 
 void settings::load(const std::string& parfile) {
@@ -111,7 +111,7 @@ void settings::import(module::module& module) {
         if (desc.writeable()) {
             for (size_t channel = 0; channel < MAX_CHANNELS; ++channel) {
                 for (size_t offset = 0; offset < desc.size; ++offset) {
-                    auto value = read_var(desc.par, module.number, channel, offset);
+                    auto value = read_var(desc.par, module.number, (int)channel, offset);
                     module.write_var(desc.par, value, channel, offset, false);
                 }
             }
@@ -211,7 +211,7 @@ void settings::output(std::ostream& out) const {
             out << std::endl;
         }
         for (auto& desc : channel_var_descriptors) {
-            for (size_t channel = 0; channel < MAX_CHANNELS; ++channel) {
+            for (int channel = 0; channel < MAX_CHANNELS; ++channel) {
                 out << ' ' << std::setw(2) << module << ": word=" << std::setw(6)
                     << index(desc, module, channel) << " 0x" << std::hex << address(desc, channel)
                     << ' ' << desc.name << '[' << std::setw(2) << channel << "] = ";
