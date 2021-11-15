@@ -211,7 +211,7 @@ void settings::output(std::ostream& out) const {
             out << std::endl;
         }
         for (auto& desc : channel_var_descriptors) {
-            for (int channel = 0; channel < MAX_CHANNELS; ++channel) {
+            for (int channel = 0; channel < static_cast<int>(MAX_CHANNELS); ++channel) {
                 out << ' ' << std::setw(2) << module << ": word=" << std::setw(6)
                     << index(desc, module, channel) << " 0x" << std::hex << address(desc, channel)
                     << ' ' << desc.name << '[' << std::setw(2) << channel << "] = ";
