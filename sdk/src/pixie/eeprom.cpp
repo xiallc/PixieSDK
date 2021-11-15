@@ -381,7 +381,7 @@ void eeprom::process_dbs()
 
 int eeprom::db_find(const int channel) const {
     int index = 0;
-    for (auto db = 0; db < dbs.size(); ++db) {
+    for (unsigned int db = 0; db < dbs.size(); ++db) {
         auto db_config = find_v2_config(dbs[db].index);
         if (channel < (index + db_config.channels)) {
             return db;
@@ -401,7 +401,7 @@ std::string eeprom::db_find_label(const int index) const {
 
 int eeprom::db_channel_base(const int index) const {
     int base = -1;
-    if (index < dbs.size()) {
+    if (index < static_cast<int>(dbs.size())) {
         int db = 0;
         base = 0;
         while (db < index) {
