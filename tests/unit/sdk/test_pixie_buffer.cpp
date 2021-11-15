@@ -323,7 +323,7 @@ TEST_SUITE("xia::buffer") {
                 CHECK(buf->size() == 0);
                 CHECK(buf->capacity() == pool.size);
                 size_t size = pool.size;
-                buf->resize(size, (int)queue.count() + 1);
+                buf->resize(size, static_cast<int>(queue.count()) + 1);
                 total += size;
                 queue.push(buf);
             }
@@ -332,7 +332,7 @@ TEST_SUITE("xia::buffer") {
                 CHECK(buf->size() == 0);
                 CHECK(buf->capacity() == pool.size);
                 size_t size = pool.size / 4;
-                buf->resize(size, (int)queue.count() + 1);
+                buf->resize(size, static_cast<int>(queue.count()) + 1);
                 total += size;
                 queue.push(buf);
             }

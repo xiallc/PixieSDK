@@ -56,7 +56,7 @@ settings::settings(module::module& module) {
 }
 
 int settings::num_modules() const {
-    return (int)dsp_mem.size() / N_DSP_PAR;
+    return static_cast<int>(dsp_mem.size() / N_DSP_PAR);
 }
 
 void settings::load(const std::string& parfile) {
@@ -111,7 +111,7 @@ void settings::import(module::module& module) {
         if (desc.writeable()) {
             for (size_t channel = 0; channel < MAX_CHANNELS; ++channel) {
                 for (size_t offset = 0; offset < desc.size; ++offset) {
-                    auto value = read_var(desc.par, module.number, (int)channel, offset);
+                    auto value = read_var(desc.par, module.number, static_cast<int>(channel), offset);
                     module.write_var(desc.par, value, channel, offset, false);
                 }
             }

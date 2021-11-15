@@ -103,9 +103,9 @@ db::db(pixie::channel::channel& module_channel_, const hw::config& config_)
     : channel(module_channel_, config_) {
     module::module& mod = get_module();
     label = hw::get_module_fixture_label(config_.fixture);
-    number = mod.eeprom.db_find((int)module_channel.number);
+    number = mod.eeprom.db_find(static_cast<int>(module_channel.number));
     base =  mod.eeprom.db_channel_base(number);
-    offset = (int)module_channel.number - base;
+    offset = static_cast<int>(module_channel.number - base);
 }
 
 void db::acquire_adc() {

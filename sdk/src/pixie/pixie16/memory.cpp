@@ -58,7 +58,7 @@ word dsp::read(const address addr) {
 }
 
 word dsp::read(const size_t offset, const address addr) {
-    return read(hw::address(addr + offset));
+    return read(static_cast<hw::address>(addr + offset));
 }
 
 word dsp::read(const size_t channel, const size_t offset, const address addr) {
@@ -68,7 +68,7 @@ word dsp::read(const size_t channel, const size_t offset, const address addr) {
                     "dsp: invalid index: module=" + std::to_string(module.number) +
                         " channel=" + std::to_string(channel));
     }
-    return read(hw::address(addr + chan.fixture->config.index + offset));
+    return read(static_cast<hw::address>(addr + chan.fixture->config.index + offset));
 }
 
 void dsp::read(const address addr, word_ptr buffer, const size_t length) {
@@ -105,7 +105,7 @@ void dsp::write(const address addr, const word value) {
 }
 
 void dsp::write(const size_t offset, const address addr, const word value) {
-    write(hw::address(addr + offset), value);
+    write(static_cast<hw::address>(addr + offset), value);
 }
 
 void dsp::write(const size_t channel, const size_t offset, const address addr, const word value) {
@@ -115,7 +115,7 @@ void dsp::write(const size_t channel, const size_t offset, const address addr, c
                     "dsp: invalid index: module=" + std::to_string(module.number) +
                         " channel=" + std::to_string(channel));
     }
-    write(hw::address(addr + chan.fixture->config.index + offset), value);
+    write(static_cast<hw::address>(addr + chan.fixture->config.index + offset), value);
 }
 
 void dsp::write(const address addr, const words& values) {
@@ -166,7 +166,7 @@ void dsp::dma_read(const address addr, word_ptr buffer, const size_t length) {
 }
 
 void dsp::write(const size_t channel, const address addr, const words& values) {
-    write(hw::address(addr + (channel * sizeof(word))), values);
+    write(static_cast<hw::address>(addr + (channel * sizeof(word))), values);
 }
 
 mca::mca(module::module& module_) : bus(module_) {}
