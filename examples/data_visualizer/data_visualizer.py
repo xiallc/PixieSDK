@@ -1,5 +1,4 @@
 """ SPDX-License-Identifier: Apache-2.0 """
-import numpy
 
 """
 Copyright 2021 XIA LLC, All rights reserved.
