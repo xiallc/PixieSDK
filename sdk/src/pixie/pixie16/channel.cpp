@@ -613,8 +613,7 @@ void channel::voffset(double value) {
     }
 
     mod.write_var(param::channel_var::OffsetDAC, offset_dac, number);
-
-    mod.set_dacs();
+    fixture->set_dac();
 }
 
 double channel::xdt() {

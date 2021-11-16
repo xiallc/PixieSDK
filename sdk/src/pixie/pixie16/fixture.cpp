@@ -210,8 +210,7 @@ void channel::close() {
 }
 
 void channel::set_dac() {
-    throw error::error(error::code::internal_failure,
-                       "invalid fixture op: set DAC is using the DSP");
+    /* Do nothing */
 }
 
 void channel::acquire_adc() {
