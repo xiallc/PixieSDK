@@ -75,7 +75,7 @@ enum struct system_param {
  *
  * @remark All ranges are integer steps unless otherwise noted.
  * @note Order of entries in this enum must match with the definitions in
- * `module_params`.
+ * `module_params` and `module_param_var_map`.
  */
 enum struct module_param {
     /**
@@ -90,7 +90,7 @@ enum struct module_param {
     fast_filter_range,
     /**
      * @ref xia::pixie::param::module_var::FastTrigBackplaneEna <br>
-     * **Values**: [0, 1] 
+     * **Values**: [0, 1]
      */
     fasttrigbackplaneena,
     /**
@@ -100,7 +100,7 @@ enum struct module_param {
     host_rt_preset,
     /**
      * @ref xia::pixie::param::module_var::InSynch <br>
-     * **Values**: [0, 1] 
+     * **Values**: [0, 1]
      */
     in_synch,
     /**
@@ -141,12 +141,12 @@ enum struct module_param {
     slotid,
     /**
      * @ref xia::pixie::param::module_var::SlowFilterRange <br>
-     * **Values**: [1, 6] 
+     * **Values**: [1, 6]
      */
     slow_filter_range,
     /**
      * @ref xia::pixie::param::module_var::SynchWait <br>
-     * **Values**: [0, 1] 
+     * **Values**: [0, 1]
      */
     synch_wait,
     /**

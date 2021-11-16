@@ -999,12 +999,12 @@ double module::read(param::channel_param par, size_t channel) {
 }
 
 bool module::write(const std::string& par, param::value_type value) {
-    log(log::info) << module_label(*this) << "write: par=" << par << " value=" << value;
+    log(log::info) << module_label(*this) << "write: module par=" << par << " value=" << value;
     return write(param::lookup_module_param(par), value);
 }
 
 bool module::write(param::module_param par, param::value_type value) {
-    log(log::debug) << module_label(*this) << "write: par=" << int(par) << " value=" << value;
+    log(log::debug) << module_label(*this) << "write: module par=" << int(par) << " value=" << value;
     online_check();
     std::ostringstream oss;
     size_t offset = 0;
