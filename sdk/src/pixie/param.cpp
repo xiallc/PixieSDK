@@ -313,10 +313,10 @@ static const channel_var_descs channel_var_descriptors_default = {
     {channel_var::InSpecA, enable, ro, 1, "InSpecA"},
     {channel_var::InSpecB, enable, ro, 1, "InSpecB"},
     {channel_var::Integrator, disable, rw, 1, "Integrator"},
-    {channel_var::Log2Bweight, enable, rw, 1, "Log2Bweight"},
-    {channel_var::Log2Ebin, enable, rw, 1, "Log2Ebin"},
     {channel_var::LiveTimeA, enable, ro, 1, "LiveTimeA"},
     {channel_var::LiveTimeB, enable, ro, 1, "LiveTimeB"},
+    {channel_var::Log2Bweight, enable, rw, 1, "Log2Bweight"},
+    {channel_var::Log2Ebin, enable, rw, 1, "Log2Ebin"},
     {channel_var::MultiplicityMaskH, enable, rw, 1, "MultiplicityMaskH"},
     {channel_var::MultiplicityMaskL, enable, rw, 1, "MultiplicityMaskL"},
     {channel_var::OffsetDAC, enable, rw, 1, "OffsetDAC"},
@@ -346,9 +346,9 @@ static const channel_var_descs channel_var_descriptors_default = {
     {channel_var::U30, disable, ro, 11, "U30"},
     {channel_var::UnderflowA, enable, ro, 1, "UnderflowA"},
     {channel_var::UnderflowB, enable, ro, 1, "UnderflowB"},
+    {channel_var::VetoStretch, enable, rw, 1, "VetoStretch"},
     {channel_var::Xavg, disable, rw, 1, "Xavg"},
     {channel_var::Xwait, enable, rw, 1, "Xwait"},
-    {channel_var::VetoStretch, enable, rw, 1, "VetoStretch"},
 };
 
 static const module_var module_param_var_map[] = {

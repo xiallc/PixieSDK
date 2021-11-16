@@ -916,6 +916,24 @@ enum struct channel_var {
      */
     Integrator,
     /**
+     * @brief [OUTPUT] Upper 32-bits of the channel's live time as measured by
+     * the trigger/filter FPGA of that channel. It excludes times during which
+     * the input signal is out of the ADC’s voltage range, or when the run
+     * was stopped.
+     */
+    LiveTimeA,
+    /**
+     * @brief [OUTPUT] Lower 32-bits of the channel's live time as measured by
+     * the trigger/filter FPGA of that channel. It excludes times during which
+     * the input signal is out of the ADC’s voltage range, or when the run
+     * was stopped.
+     * | ADC Freq. (MHz) | Live Time calculation |
+     * |---|---|
+     * | 100/500 | (LiveTimeA * 2<sup>FastFilterRange</sup> + LiveTimeB) * 10 ns |
+     * | 250 | (LiveTimeA * 2<sup>FastFilterRange</sup> + LiveTimeB) * 8 ns |
+     */
+    LiveTimeB,
+    /**
      * @brief [INPUT] The PIXIE measures baselines continuously and effectively
      * extracts DC-offsets from these measurements. The DC-offset value is
      * needed to apply a correction to the computed energies. To reduce the
@@ -957,24 +975,6 @@ enum struct channel_var {
      * is indeed negative by replacing the stored value by -abs(Log2Ebin).
      */
     Log2Ebin,
-    /**
-     * @brief [OUTPUT] Upper 32-bits of the channel's live time as measured by
-     * the trigger/filter FPGA of that channel. It excludes times during which
-     * the input signal is out of the ADC’s voltage range, or when the run
-     * was stopped.
-     */
-    LiveTimeA,
-    /**
-     * @brief [OUTPUT] Lower 32-bits of the channel's live time as measured by
-     * the trigger/filter FPGA of that channel. It excludes times during which
-     * the input signal is out of the ADC’s voltage range, or when the run
-     * was stopped.
-     * | ADC Freq. (MHz) | Live Time calculation |
-     * |---|---|
-     * | 100/500 | (LiveTimeA * 2<sup>FastFilterRange</sup> + LiveTimeB) * 10 ns |
-     * | 250 | (LiveTimeA * 2<sup>FastFilterRange</sup> + LiveTimeB) * 8 ns |
-     */
-    LiveTimeB,
     /**
      * @brief [INPUT] Upper 32-bits of the bit patterns controlling the
      * coincidence logic. See user manual for details.
@@ -1148,6 +1148,11 @@ enum struct channel_var {
      */
     UnderflowB,
     /**
+     * @brief [INPUT] This parameter is used to stretch the veto pulse for
+     * this channel.
+     */
+    VetoStretch,
+    /**
      * @brief [INPUT] **Not implemented.**
      */
     Xavg,
@@ -1158,11 +1163,6 @@ enum struct channel_var {
      * The time between recorded samples is &Delta;T = XWAIT*10ns.
      */
     Xwait,
-    /**
-     * @brief [INPUT] This parameter is used to stretch the veto pulse for
-     * this channel.
-     */
-    VetoStretch,
     /**
      * @brief Size marker
      */
