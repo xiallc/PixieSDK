@@ -43,11 +43,11 @@ static const std::vector<module_fixture_rec> fixtures = {
     { "DB07", module_fixture::DB07 }
 };
 
-config::config(size_t histogram_length, size_t adc_trace_length,
-               int adc_bits_, int adc_msps_, int adc_clk_div_, int fpga_clk_mhz_)
-    : index(-1), fixture(module_fixture::mainboard), max_histogram_length(histogram_length),
-      max_adc_trace_length(adc_trace_length), adc_bits(adc_bits_), adc_msps(adc_msps_),
-      adc_clk_div(adc_clk_div_), fpga_clk_mhz(fpga_clk_mhz_) {}
+config::config(size_t histogram_length, size_t adc_trace_length, int adc_bits_, int adc_msps_,
+               int adc_clk_div_, int fpga_clk_mhz_)
+    : index(-1), fixture(module_fixture::mainboard), adc_bits(adc_bits_), adc_msps(adc_msps_),
+      adc_clk_div(adc_clk_div_), fpga_clk_mhz(fpga_clk_mhz_),
+      max_histogram_length(histogram_length), max_adc_trace_length(adc_trace_length) {}
 
 config::config() {
     clear();
