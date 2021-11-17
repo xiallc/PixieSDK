@@ -35,13 +35,9 @@ struct module_fixture_rec {
 };
 
 static const std::vector<module_fixture_rec> fixtures = {
-    { "mainboard", module_fixture::mainboard },
-    { "DB01", module_fixture::DB01 },
-    { "DB02", module_fixture::DB02 },
-    { "DB04", module_fixture::DB04 },
-    { "DB06", module_fixture::DB06 },
-    { "DB07", module_fixture::DB07 }
-};
+    {"mainboard", module_fixture::mainboard}, {"DB01", module_fixture::DB01},
+    {"DB02", module_fixture::DB02},           {"DB04", module_fixture::DB04},
+    {"DB06", module_fixture::DB06},           {"DB07", module_fixture::DB07}};
 
 config::config(size_t histogram_length, size_t adc_trace_length, int adc_bits_, int adc_msps_,
                int adc_clk_div_, int fpga_clk_mhz_)
@@ -78,8 +74,7 @@ module_fixture get_module_fixture(const std::string label) {
             return fixture.fixture_id;
         }
     }
-    throw error(error::code::module_invalid_operation,
-                "invalid fixture label: " + label);
+    throw error(error::code::module_invalid_operation, "invalid fixture label: " + label);
 }
 
 std::string get_module_fixture_label(const module_fixture fixture_id) {
