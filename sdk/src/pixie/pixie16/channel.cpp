@@ -245,7 +245,7 @@ channel& channel::operator=(const channel& c) {
 
 void channel::read_adc(hw::adc_word* buffer, size_t size) {
     const hw::address addr =
-        (hw::memory::IO_BUFFER_ADDR + (int(number) * (hw::max_adc_trace_length / 2)));
+        (hw::memory::IO_BUFFER_ADDR + (int(number) * (fixture->config.max_adc_trace_length / 2)));
 
     hw::memory::dsp dsp(module);
     hw::adc_trace_buffer adc_trace;
@@ -261,7 +261,7 @@ void channel::read_adc(hw::adc_word* buffer, size_t size) {
 void channel::read_histogram(hw::word_ptr values, const size_t size) {
     if (size != 0) {
         const hw::address addr =
-            (hw::memory::HISTOGRAM_MEMORY + (int(number) * hw::max_histogram_length));
+            (hw::memory::HISTOGRAM_MEMORY + (int(number) * fixture->config.max_histogram_length));
         hw::memory::mca mca(module);
         mca.read(addr, values, size);
     }

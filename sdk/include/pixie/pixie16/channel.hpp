@@ -153,7 +153,6 @@ struct channel {
      * all the trace data in the module's memory. Offload to here during the
      * acquire using the fixture.
      */
-
     hw::adc_trace adc_trace;
 
     /**

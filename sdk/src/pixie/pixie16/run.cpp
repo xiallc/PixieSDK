@@ -82,8 +82,8 @@ void start(module::module& module, run_mode mode, run_task run_tsk, control_task
     end(module);
 
     if (mode == run_mode::new_run && run_tsk != run_task::nop) {
-        static const size_t block_size = max_histogram_length * 4;
-        static const size_t mca_end = max_histogram_length * module.num_channels;
+        static const size_t block_size = hw::large_histogram_length * 4;
+        static const size_t mca_end = hw::large_histogram_length * module.num_channels;
         words zero(block_size);
         memory::mca mca(module);
         for (address addr = 0; addr < mca_end; addr += block_size) {

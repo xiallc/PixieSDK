@@ -641,7 +641,7 @@ static void hist_save(xia::pixie::crate::crate& crate, options& cmd) {
     auto mod_num = get_value<size_t>(cmd[1]);
     using namespace xia::pixie::hw::run;
     xia::pixie::channel::range channels;
-    size_t length = xia::pixie::hw::max_histogram_length;
+    size_t length = crate[mod_num].num_channels;
     if (cmd.size() == 3) {
         auto chans = get_values<size_t>(cmd[2], crate[mod_num].num_channels);
         if (chans.size() == 1 && chans[0] > crate[mod_num].num_channels) {

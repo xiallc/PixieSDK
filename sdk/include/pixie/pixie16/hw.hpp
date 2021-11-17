@@ -71,9 +71,13 @@ static const int max_channels = 32;
 static const size_t max_adc_trace_length = 8192;
 
 /**
- * Maximum histogram size.
+ * Histogram sizes.
+ *
+ * The depends on the revision of module and so the number of supported
+ * channels.
  */
-static const size_t max_histogram_length = 32768;
+static const size_t large_histogram_length = 32768;
+static const size_t small_histogram_length = 16384;
 
 /**
  * IO buffer length
@@ -201,7 +205,18 @@ struct config {
     int adc_clk_div;
     int fpga_clk_mhz;
 
-    config(int adc_bits, int adc_msps, int adc_clk_div, int fpga_clk_mhz);
+    /*
+     * Size of the histogram
+     */
+    size_t max_histogram_length;
+
+    /*
+     * Size of the ADC trace
+     */
+    size_t max_adc_trace_length;
+
+    config(size_t histogram_size, size_t adc_trace_length, int adc_bits,
+           int adc_msps, int adc_clk_div, int fpga_clk_mhz);
     config();
 
     bool operator==(const config& cfg);
