@@ -445,19 +445,37 @@ bool execute_mca_run(const module_config& mod, const double& runtime_in_seconds)
                                  "Pixie16StartHistogramRun"))
         return false;
 
-    std::chrono::steady_clock::time_point run_start_time = std::chrono::steady_clock::now();
-    while (std::chrono::duration_cast<std::chrono::duration<double>>(
-               std::chrono::steady_clock::now() - run_start_time)
-               .count() < runtime_in_seconds) {
-        //do nothing
+    auto run_start_time = std::chrono::steady_clock::now();
+    double current_run_time = 0;
+    double check_time = 0;
+    bool run_status = Pixie16CheckRunStatus(mod.number);
+    while (run_status != 0) {
+        current_run_time = std::chrono::duration_cast<std::chrono::duration<double>>(
+                               std::chrono::steady_clock::now() - run_start_time)
+                               .count();
+
+        if (current_run_time - check_time > 1) {
+            run_status = Pixie16CheckRunStatus(mod.number);
+            if (current_run_time < runtime_in_seconds)
+                std::cout << LOG("INFO")
+                          << "Remaining run time: " << runtime_in_seconds - current_run_time << " s"
+                          << std::endl;
+            check_time = current_run_time;
+        }
+
+        if (current_run_time > runtime_in_seconds + 5) {
+            std::cout << LOG("ERROR") << "MCA Run failed to stop in the module!" << std::endl;
+            std::cout << LOG("WARN") << "Forcing end of MCA run." << std::endl;
+            if (!verify_api_return_value(Pixie16EndRun(mod.number), "Pixie16EndRun"))
+                return false;
+        }
     }
-    std::cout << LOG("INFO") << "Stopping MCA data run after "
-              << std::chrono::duration_cast<std::chrono::duration<double>>(
-                     std::chrono::steady_clock::now() - run_start_time)
-                     .count()
-              << " s." << std::endl;
-    if (!verify_api_return_value(Pixie16EndRun(mod.number), "Pixie16EndRun"))
-        return false;
+
+    if (current_run_time < runtime_in_seconds)
+        std::cout << LOG("ERROR") << "MCA Run exited prematurely! Check log for more details."
+                  << std::endl;
+    else
+        std::cout << LOG("INFO") << "MCA Run finished!" << std::endl;
 
     std::string name = generate_filename(mod.number, "mca", "csv");
     std::ofstream out(name);
