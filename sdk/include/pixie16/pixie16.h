@@ -196,7 +196,7 @@ PIXIE_EXPORT unsigned int PIXIE_API Decimal2IEEEFloating(double DecimalNumber);
 
 /**
  * @ingroup PIXIE16_API
- * @brief Gets the statistics buffer size in words.
+ * @brief Gets the statistics buffer size in words (32-bit unsigned integers).
  * @see Pixie16ReadStatisticsFromModule
  * @returns The number of words needed to hold all the statistics data.
  */
