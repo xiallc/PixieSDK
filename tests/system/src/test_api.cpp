@@ -110,6 +110,7 @@ static void stats(xia::pixie::crate::crate& crate, options& cmd);
 static void import(xia::pixie::crate::crate& crate, options& cmd);
 static void export_(xia::pixie::crate::crate& crate, options& cmd);
 static void test(xia::pixie::crate::crate& crate, options& cmd);
+static void report(xia::pixie::crate::crate& crate, options& cmd);
 static void wait(xia::pixie::crate::crate& crate, options& cmd);
 
 static const std::map<std::string, command_def> command_defs = {
@@ -141,6 +142,7 @@ static const std::map<std::string, command_def> command_defs = {
     {"import", {{1}, "import a JSON configuration file"}},
     {"export", {{1}, "export a configuration to a JSON file"}},
     {"test", {{2}, "start a test"}},
+    {"report", {{1}, "report the crate's configuration"}},
     {"wait", {{1}, "wait a number of msecs"}}};
 
 static const std::vector<cmd_handler> cmd_handlers = {
@@ -172,6 +174,7 @@ static const std::vector<cmd_handler> cmd_handlers = {
     {"import", import},
     {"export", export_},
     {"test", test},
+    {"report", report},
     {"wait", wait},
 };
 
@@ -1087,6 +1090,16 @@ static void test(xia::pixie::crate::crate& crate, options& cmd) {
     std::cout << "Test: " << cmd[1] << " length=" << xia::util::humanize(bytes) << std::endl;
     module_threads(crate, mod_nums, tests, "fifo test error; see log");
     performance_stats(tests, true);
+}
+
+static void report(xia::pixie::crate::crate& crate, options& cmd) {
+    std::string output = cmd[1];
+    std::ofstream output_file(output);
+    if (!output_file) {
+        throw std::runtime_error(
+            std::string("opening report: " + output + ": " + std::strerror(errno)));
+    }
+    crate.report(output_file);
 }
 
 static void wait(xia::pixie::crate::crate&, options& cmd) {

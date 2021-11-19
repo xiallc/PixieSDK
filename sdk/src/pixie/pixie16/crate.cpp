@@ -298,6 +298,13 @@ void crate::output(std::ostream& out) const {
     }
 }
 
+void crate::report(std::ostream& out) const {
+    for (auto& mod : modules) {
+        mod->report(out);
+        out << std::endl;
+    }
+}
+
 void crate::assign(const module::number_slots& numbers, bool force_offline) {
     ready();
     lock_guard guard(lock_);

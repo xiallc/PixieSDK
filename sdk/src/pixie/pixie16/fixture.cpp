@@ -72,6 +72,8 @@ struct db : public channel {
     db(pixie::channel::channel& module_channel_, const hw::config& config_);
 
     virtual void acquire_adc() override;
+
+    virtual void report(std::ostream& out) const override;
 };
 
 /**
@@ -80,7 +82,7 @@ struct db : public channel {
 struct db04 : public db {
     db04(pixie::channel::channel& module_channel_, const hw::config& config_);
 
-    virtual void set_dac() override;
+    virtual void set_dac(param::value_type value) override;
 };
 
 userin_save::userin_save(module::module& module) : dsp(module) {
@@ -120,7 +122,7 @@ void db::acquire_adc() {
      * allocation is only done if the buffer is used and it cannot be released
      * because the user can ask to read it at any time.
      */
-    const size_t size = hw::max_adc_trace_length;
+    const size_t size = module_channel.fixture->config.max_adc_trace_length;
     if (module_channel.adc_trace.size() != size) {
         module_channel.adc_trace.resize(size);
     }
@@ -133,29 +135,41 @@ void db::acquire_adc() {
     }
 }
 
+void db::report(std::ostream& out) const {
+    channel::report(out);
+    out << "DB Number      : " << number << std::endl
+        << "DB Base        : " << base << std::endl
+        << "DB Offset      : " << offset << std::endl;
+}
+
 db04::db04(pixie::channel::channel& module_channel_, const hw::config& config_)
     : db(module_channel_, config_) {
 }
 
-void db04::set_dac() {
+void db04::set_dac(param::value_type value) {
     module::module& mod = get_module();
-    auto dac = mod.read_var(param::channel_var::OffsetDAC, module_channel.number);
-    if (dac > 65535) {
+    if (value > 65535) {
         throw error::error(error::code::invalid_value,
                            module::module_label(mod, "DB04") + "invalid DAC offset: channel=" +
                            std::to_string(module_channel.number));
     }
     /*
+     * Select the module port
+     */
+    mod.select_port(number + 1);
+    /*
      * Address bit 1 selects DAC for the upper 4 channels. Clear bit 0 and set
      * bit 1 if the DB channel offset is less than 4.
      */
-    hw::word dac_addr = 0x20 + ((offset < 4 ? 1 : 0) << 1);
+    hw::word dac_addr = 0x20 | ((offset < 4 ? 1 : 0) << 1);
     /*
+     * Compensate for PCB ADC swapping:
+     *
      * Channel offset DAC Output
-     *     0, 4           B
-     *     1, 5           C
-     *     2, 6           A
-     *     3, 7           D
+     *     0, 4           B (1)
+     *     1, 5           C (2)
+     *     2, 6           A (0)
+     *     3, 7           D (3)
      */
     hw::word dac_ctrl = 0x30;
     switch (offset) {
@@ -179,13 +193,17 @@ void db04::set_dac() {
         break;
     }
     /*
-     * Select the module port
-     */
-    mod.select_port(number + 1);
-    /*
      * CFG_DAC expacts [addr(8), ctrl(8), data(16)]
      */
-    mod.write_word(hw::device::CFG_DAC, (dac_addr << 24) | (dac_ctrl << 16) | dac);
+    const hw::word dac = (dac_addr << 24) | (dac_ctrl << 16) | value;
+    log(log::debug) << "fixture: db04: db=" << number
+                    << " db_channel=" << offset
+                    << std::hex
+                    << " dac_addr=0x" << dac_addr
+                    << " dac_ctrl=0x" << dac_ctrl
+                    << " dac_value=0x" << value
+                    << " write=0x" << dac;
+    mod.write_word(hw::device::CFG_DAC, dac);
      /*
      * It takes about 2ms to clock out the 32 bits
      */
@@ -209,13 +227,18 @@ void channel::close() {
     /* Do nothing */
 }
 
-void channel::set_dac() {
+void channel::set_dac(param::value_type ) {
     /* Do nothing */
 }
 
 void channel::acquire_adc() {
     throw error::error(error::code::internal_failure,
                        "invalid fixture op: ADC acquire is using the DSP");
+}
+
+void channel::report(std::ostream& out) const {
+    out << "Fixture        : " << label << std::endl;
+    config.report(out);
 }
 
 module::module& channel::get_module() {

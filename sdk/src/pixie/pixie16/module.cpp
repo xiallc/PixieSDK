@@ -630,6 +630,7 @@ void module::open(size_t device_number) {
         revision = eeprom.revision;
         major_revision = eeprom.major_revision;
         minor_revision = eeprom.minor_revision;
+        eeprom_format = eeprom.format;
 
         present_ = true;
 
@@ -1524,7 +1525,8 @@ void module::set_dacs() {
          * DAC setting is per channel
          */
         for (auto& channel : channels) {
-            channel.fixture->set_dac();
+            auto dac_offset = read_var(param::channel_var::OffsetDAC, channel.number);
+            channel.fixture->set_dac(dac_offset);
         }
     }
 }
@@ -1586,6 +1588,10 @@ void module::read_adc(size_t channel, hw::adc_word* buffer, size_t size, bool ru
 }
 
 void module::read_adc(size_t channel, hw::adc_trace& buffer, bool run) {
+    if (buffer.empty()) {
+        channel::channel& chan = channels[channel];
+        buffer.resize(chan.fixture->config.max_adc_trace_length);
+    }
     read_adc(channel, buffer.data(), buffer.size(), run);
 }
 
@@ -1699,6 +1705,92 @@ std::string module::version_label() const {
 char module::revision_label() const {
     return static_cast<char>(revision + 55);
 }
+
+void module::report(std::ostream& out) const {
+    util::ostream_guard flags(out);
+
+    out << std::fixed << std::setprecision(3);
+
+    std::ostringstream title;
+    title << "Module " << number << " (slot " << slot << ')';
+
+    out << title.str() << std::endl
+        << std::string(title.str().length(), '=') << std::endl
+        << std::endl
+        << "Serial Number  : " << serial_num << std::endl
+        << "Revision       : " << revision_label() << " (" << revision << ')'  << std::endl
+        << "Major Revision : " << major_revision << std::endl
+        << "Minor Revision : " << minor_revision << std::endl
+        << "Crate Revision : " << crate_revision << std::endl
+        << "Board Revision : " << board_revision << std::endl
+        << std::endl;
+    if (device) {
+        out << "PCI Bus        : " << device->bus() << std::endl
+            << "PCI_Slot       : " << device->slot() << std::endl
+            << std::endl;
+    }
+    out << "Num Channels   : " << num_channels << std::endl
+        << "Max Channels   : " << max_channels << std::endl
+        << std::endl
+        << "EEPROM Format  : " << eeprom_format << std::endl
+        << std::endl
+        << "FIFO Buffers   : " << fifo_buffers << std::endl
+        << "FIFO Run wait  : " << fifo_run_wait_usecs << " usecs" << std::endl
+        << "FIFO Idle wait : " << fifo_idle_wait_usecs << " usecs" << std::endl
+        << "FIFO Hold      : " << fifo_hold_usecs << " usecs" << std::endl
+        << "FIFO Bandwidth : ";
+    if (fifo_bandwidth == 0) {
+        out << "unlimited";
+    } else {
+        out << fifo_bandwidth << " Mbytes/sec";
+    }
+    out << std::endl
+        << std::endl
+        << "Bus cycle      : " << bus_cycle_period << " usecs" << std::endl
+        << std::endl;
+
+    if (online()) {
+        out << "Address Map" << std::endl
+            << "-----------" << std::endl;
+        param_addresses.output(out, true);
+        out << std::endl;
+
+        out << "Module Variables" << std::endl
+            << "----------------" << std::endl
+            << std::endl;
+        for (auto& var : module_vars) {
+            std::ostringstream vartitle;
+            vartitle << var.var.name;
+            out << vartitle.str() << std::endl
+                << std::string(vartitle.str().length(), '~') << std::endl
+                << "Mode           : " << param::label(var.var.mode) << std::endl
+                << "Access         : " << param::label(var.var.state) << std::endl
+                << std::hex << std::setfill('0')
+                << "Address        : 0x"<< std::setw(8) << var.var.address << std::endl
+                << std::dec << std::setfill(' ')
+                << "Size           : " << var.var.size << std::endl
+                << "Index          : " << int(var.var.par) << std::endl
+                << std::endl;
+        }
+
+        out << "Channels" << std::endl
+            << "--------" << std::endl
+            << std::endl;
+        for (int ch = 0; ch < num_channels; ++ch) {
+            const channel::channel& channel = channels[ch];
+            std::ostringstream channeltitle;
+            channeltitle << "Channel " << channel.number;
+            out << channeltitle.str() << std::endl
+                << std::string(channeltitle.str().length(), '~') << std::endl;
+            channel.report(out);
+            if (ch < (num_channels - 1)) {
+                out << std::endl;
+            }
+        }
+    }
+}
+
+
 
 void module::dma_read(const hw::address source, hw::words& values) {
     dma_read(source, values.data(), values.size());

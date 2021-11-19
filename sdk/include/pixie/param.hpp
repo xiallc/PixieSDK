@@ -1356,7 +1356,7 @@ struct address_map {
              const channel_var_descs& channel_descs);
     hw::address channel_base(const size_t channel);
 
-    void output(std::ostream& out) const;
+    void output(std::ostream& out, bool lines = false) const;
 
 private:
     void check_channel_gap(const size_t max_channels, const channel_var_descs& channel_descs,
@@ -1434,6 +1434,16 @@ void copy_parameters(const copy_filter& filter, const channel_variables& source,
  */
 void copy_parameters(const unsigned int filter_mask, const channel_variables& source,
                      channel_variables& dest);
+
+/**
+ * @brief Return the rwrowr label.
+ */
+std::string label(rwrowr mode);
+
+/**
+ * @brief Return the enabledisable label.
+ */
+std::string label(enabledisable state);
 
 };  // namespace param
 };  // namespace pixie

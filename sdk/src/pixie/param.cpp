@@ -474,21 +474,54 @@ void address_map::set(const size_t max_channels, const module_var_descs& module_
     full.set_size();
 }
 
-void address_map::output(std::ostream& out) const {
+void address_map::output(std::ostream& out, bool lines) const {
     out << "full=";
     full.output(out);
-    out << " mod=";
+    if (lines) {
+        out << std::endl;
+    } else {
+        out << ' ';
+    }
+    out << "mod=";
     module.output(out);
-    out << " mod-in=";
+    if (lines) {
+        out << std::endl;
+    } else {
+        out << ' ';
+    }
+    out << "mod-in=";
     module_in.output(out);
-    out << " mod-out=";
+    if (lines) {
+        out << std::endl;
+    } else {
+        out << ' ';
+    }
+    out << "mod-out=";
     module_out.output(out);
-    out << " chans=";
+    if (lines) {
+        out << std::endl;
+    } else {
+        out << ' ';
+    }
+    out << "chans=";
     channels.output(out);
-    out << " chans-in=";
+    if (lines) {
+        out << std::endl;
+    } else {
+        out << ' ';
+    }
+    out << "chans-in=";
     channels_in.output(out);
-    out << " chans-out=";
+    if (lines) {
+        out << std::endl;
+    } else {
+        out << ' ';
+    }
+    out << "chans-out=";
     channels_out.output(out);
+    if (lines) {
+        out << std::endl;
+    }
 }
 
 void address_map::check_channel_gap(const size_t max_channels,
@@ -777,6 +810,35 @@ void copy_parameters(const unsigned int filter_mask, const channel_variables& so
         }
         copy_parameters(all, source, dest);
     }
+}
+
+std::string label(rwrowr mode) {
+    std::string l;
+    switch (mode) {
+    case param::rw:
+        l = "read/write";
+        break;
+    case param::ro:
+        l = "read only";
+        break;
+    case param::wr:
+        l = "write only";
+        break;
+    }
+    return l;
+}
+
+std::string label(enabledisable state) {
+    std::string l;
+    switch (state) {
+    case param::enable:
+        l = "enabled";
+        break;
+    case param::disable:
+        l = "disabled";
+        break;
+    }
+    return l;
 }
 
 };  // namespace param

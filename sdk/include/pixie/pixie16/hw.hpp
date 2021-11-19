@@ -222,7 +222,15 @@ struct config {
     bool operator==(const config& cfg);
     bool operator!=(const config& cfg);
 
+    /**
+     * Clear the configuration
+     */
     void clear();
+
+    /**
+     * Report the fixture's details
+     */
+    void report(std::ostream& out) const;
 };
 
 typedef std::vector<config> configs;

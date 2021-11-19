@@ -613,7 +613,11 @@ void channel::voffset(double value) {
     }
 
     mod.write_var(param::channel_var::OffsetDAC, offset_dac, number);
-    fixture->set_dac();
+
+    /*
+     * Write to a channel's fixture if present and supported.
+     */
+    fixture->set_dac(offset_dac);
 }
 
 double channel::xdt() {
@@ -1301,6 +1305,26 @@ void channel::chan_trig_stretch(double value) {
     mod.write_var(param::channel_var::ChanTrigStretch, chantrigstretch, number);
 
     hw::run::control(mod, hw::run::control_task::program_fippi);
+}
+
+void channel::report(std::ostream& out) const {
+    out << "Number         : " << number << std::endl;
+    fixture->report(out);
+    out << std::endl;
+    for (auto& var : vars) {
+        std::ostringstream vartitle;
+        vartitle << var.var.name;
+        out << vartitle.str() << std::endl
+            << std::string(vartitle.str().length(), '-') << std::endl
+            << "Mode           : " << param::label(var.var.mode) << std::endl
+            << "Access         : " << param::label(var.var.state) << std::endl
+            << std::hex << std::setfill('0')
+            << "Address        : 0x"<< std::setw(8) << var.var.address << std::endl
+            << std::dec << std::setfill(' ')
+            << "Size           : " << var.var.size << std::endl
+            << "Index          : " << int(var.var.par) << std::endl
+            << std::endl;
+    }
 }
 
 }  // namespace channel

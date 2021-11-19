@@ -39,7 +39,7 @@ namespace util {
 /**
  * @brief Defines a type for a vector of strings.
  */
-typedef std::vector<std::string> strings;
+using strings = std::vector<std::string>;
 
 /**
  * @brief Split a string into a vector of strings.

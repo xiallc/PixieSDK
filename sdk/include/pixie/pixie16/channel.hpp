@@ -276,6 +276,11 @@ struct channel {
 
     double chan_trig_stretch();
     void chan_trig_stretch(double value);
+
+    /**
+     * A report
+     */
+    void report(std::ostream& out) const;
 };
 
 /**

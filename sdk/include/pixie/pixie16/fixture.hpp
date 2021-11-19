@@ -74,12 +74,17 @@ struct channel {
     /**
      * Per channel DAC set up.
      */
-    virtual void set_dac();
+    virtual void set_dac(param::value_type value);
 
     /**
      * Per channel ADC acquire.
      */
     virtual void acquire_adc();
+
+    /**
+     * Report the fixture's details
+     */
+    virtual void report(std::ostream& out) const;
 
     /**
      * Get the module.

@@ -526,6 +526,11 @@ public:
     char revision_label() const;
 
     /**
+     * A report
+     */
+    void report(std::ostream& out) const;
+
+    /**
      * Read a word.
      */
     hw::word read_word(int reg);

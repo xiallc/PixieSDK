@@ -235,6 +235,11 @@ public:
      */
     void output(std::ostream& out) const;
 
+    /**
+     * @brief Report the crate details.
+     */
+    void report(std::ostream& out) const;
+
 protected:
     virtual void add_module();
 
