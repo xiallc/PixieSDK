@@ -1776,14 +1776,14 @@ void module::report(std::ostream& out) const {
         out << "Channels" << std::endl
             << "--------" << std::endl
             << std::endl;
-        for (int ch = 0; ch < num_channels; ++ch) {
+        for (int ch = 0; ch < static_cast<int>(num_channels); ++ch) {
             const channel::channel& channel = channels[ch];
             std::ostringstream channeltitle;
             channeltitle << "Channel " << channel.number;
             out << channeltitle.str() << std::endl
                 << std::string(channeltitle.str().length(), '~') << std::endl;
             channel.report(out);
-            if (ch < (num_channels - 1)) {
+            if (ch < static_cast<int>(num_channels - 1)) {
                 out << std::endl;
             }
         }
