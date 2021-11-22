@@ -282,19 +282,20 @@ bool execute_baseline_capture(const module_config& mod) {
     return true;
 }
 
-bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_seconds) {
+bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_seconds,
+                           unsigned int synch_wait, unsigned int in_synch) {
     std::cout << LOG("INFO") << "Starting list mode data run for " << runtime_in_seconds << " s."
               << std::endl;
 
-    std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write SYNCH_WAIT = 1 in Module 0."
-              << std::endl;
-    if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", 1, 0),
+    std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write SYNCH_WAIT = " << synch_wait
+              << " in Module 0." << std::endl;
+    if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", synch_wait, 0),
                                  "Pixie16WriteSglModPar - SYNC_WAIT"))
         return false;
 
-    std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write IN_SYNCH  = 0 in Module 0."
-              << std::endl;
-    if (!verify_api_return_value(Pixie16WriteSglModPar("IN_SYNCH", 0, 0),
+    std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write IN_SYNCH  = " << in_synch
+              << " in Module 0." << std::endl;
+    if (!verify_api_return_value(Pixie16WriteSglModPar("IN_SYNCH", in_synch, 0),
                                  "Pixie16WriteSglModPar - IN_SYNC"))
         return false;
 
@@ -418,7 +419,8 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
     return true;
 }
 
-bool execute_mca_run(const module_config& mod, const double& runtime_in_seconds) {
+bool execute_mca_run(const module_config& mod, const double& runtime_in_seconds,
+                     unsigned int synch_wait, unsigned int in_synch) {
     std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write HOST_RT_PRESET to "
               << runtime_in_seconds << std::endl;
     if (!verify_api_return_value(Pixie16WriteSglModPar("HOST_RT_PRESET",
@@ -427,15 +429,15 @@ bool execute_mca_run(const module_config& mod, const double& runtime_in_seconds)
                                  "Pixie16WriteSglModPar - HOST_RT_PRESET"))
         return false;
 
-    std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write SYNCH_WAIT = 0 in Module 0."
-              << std::endl;
-    if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", 0, mod.number),
+    std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write SYNCH_WAIT = " << synch_wait
+              << " in Module 0." << std::endl;
+    if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", synch_wait, mod.number),
                                  "Pixie16WriteSglModPar - SYNC_WAIT"))
         return false;
 
-    std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write IN_SYNCH  = 1 in Module 0."
-              << std::endl;
-    if (!verify_api_return_value(Pixie16WriteSglModPar("IN_SYNCH", 1, mod.number),
+    std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write IN_SYNCH  = " << in_synch
+              << " in Module 0." << std::endl;
+    if (!verify_api_return_value(Pixie16WriteSglModPar("IN_SYNCH", in_synch, mod.number),
                                  "Pixie16WriteSglModPar - IN_SYNC"))
         return false;
 
@@ -725,6 +727,14 @@ int main(int argc, char** argv) {
     args::ValueFlag<unsigned int> module(arguments, "module", "The module to operate on.", {"mod"});
     args::ValueFlag<double> parameter_value(
         write, "parameter_value", "The value of the parameter we want to write.", {'v', "value"});
+    args::ValueFlag<unsigned int> synch_wait(
+        list_mode, "synch_wait",
+        "SynchWait = 0 to start/stop runs independently. (default)\nSynchWait = 1 to start/stop runs synchronously.",
+        {"synch_wait"}, static_cast<unsigned int>(0));
+    args::ValueFlag<unsigned int> in_synch(
+        list_mode, "in_synch",
+        "InSynch = 0 to reset clocks prior to starting a run. (default)\nInSynch = 1 to take no clock action.",
+        {"in_synch"}, static_cast<unsigned int>(1));
 
     adjust_offsets.Add(conf_flag);
     adjust_offsets.Add(boot_pattern_flag);
@@ -742,6 +752,8 @@ int main(int argc, char** argv) {
     dacs.Add(module);
     mca.Add(module);
     mca.Add(boot_pattern_flag);
+    mca.Add(synch_wait);
+    mca.Add(in_synch);
     read.Add(conf_flag);
     read.Add(crate);
     read.Add(module);
@@ -919,7 +931,7 @@ int main(int argc, char** argv) {
     }
 
     if (list_mode) {
-        if (!execute_list_mode_run(cfg, run_time.Get()))
+        if (!execute_list_mode_run(cfg, run_time.Get(), synch_wait.Get(), in_synch.Get()))
             return EXIT_FAILURE;
     }
 
@@ -934,7 +946,8 @@ int main(int argc, char** argv) {
     }
 
     if (mca) {
-        if (!execute_mca_run(cfg.modules[module.Get()], run_time.Get()))
+        if (!execute_mca_run(cfg.modules[module.Get()], run_time.Get(), synch_wait.Get(),
+                             in_synch.Get()))
             return EXIT_FAILURE;
     }
 
