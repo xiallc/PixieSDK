@@ -155,8 +155,9 @@ static void unsupported_op(const std::string what) {
 
 static void set_channel_voffset(pixie::module::module& mod, double voffset, int step) {
     for (int chan = 0; chan < mod.num_channels; chan += step) {
-        mod.write("VOFFSET", chan, voffset);
+        mod.channels[chan].voffset(voffset);
     }
+    mod.set_dacs();
 }
 
 static void analyze_channel_baselines(pixie::module::module& mod, channel_baselines& baselines) {
@@ -370,7 +371,7 @@ void db04::set_dac(param::value_type value) {
                     << " write=0x" << dac;
     mod.write_word(hw::device::CFG_DAC, dac);
      /*
-     * It takes about 2ms to clock out the 32 bits
+     * It takes about 4ms to clock out the 32 bits
      */
     hw::wait(6000);
 }

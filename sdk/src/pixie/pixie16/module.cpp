@@ -1122,6 +1122,7 @@ void module::write(param::channel_param par, size_t channel, double value) {
             break;
         case param::channel_param::voffset:
             channels[channel].voffset(value);
+            set_dacs();
             break;
         case param::channel_param::xdt:
             channels[channel].xdt(value);
