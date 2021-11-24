@@ -263,7 +263,9 @@ void db::acquire_adc() {
 
 void db::set(const std::string item, bool value) {
     if (item == "ADC_SWAP") {
-        adc_state = value ? adc_swapped : adc_unswapped;
+        if (adc_state == adc_boot_state) {
+            adc_state = value ? adc_swapped : adc_unswapped;
+        }
     } else {
         unsupported_op("db: set: unsupported item");
     }
@@ -471,6 +473,8 @@ void afe_dbs::online() {
             }
         }
     }
+
+    set_channel_voffset(module_, 0, 1);
 
     if (failed) {
         throw pixie::module::error(module_.number, module_.slot,
