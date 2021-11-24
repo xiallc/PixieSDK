@@ -634,6 +634,8 @@ void module::open(size_t device_number) {
 
         present_ = true;
 
+        fixtures = fixture::make(*this);
+
         /*
          * The ref H and later DSP does not support:
          *   - Setting DACs
@@ -645,6 +647,8 @@ void module::open(size_t device_number) {
         }
 
         start_fifo_services();
+
+        fixtures->open();
     }
 }
 
@@ -659,6 +663,11 @@ void module::close() {
         log(log::debug) << module_label(*this) << "close: device-number=" << device->device_number;
 
         force_offline();
+
+        if (fixtures) {
+            fixtures->close();
+        }
+
         log_stats("total", data_stats);
 
         ps_dma = ::PlxPci_DmaChannelClose(&device->handle, 0);
@@ -707,6 +716,9 @@ void module::force_offline() {
     lock_guard guard(lock_);
     if (!forced_offline_.load()) {
         try {
+            if (fixtures) {
+                fixtures->forced_offline();
+            }
             run_end();
         } catch (pixie::error::error& e) {
             log(log::error) << "force offline: " << e;
@@ -752,6 +764,10 @@ void module::probe() {
     }
 
     online_ = comms_fpga && fippi_fpga && dsp_online;
+
+    if (online_) {
+        fixtures->online();
+    }
 }
 
 void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
@@ -780,6 +796,9 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
         comms_fpga = false;
         comms.boot(fw->data);
         comms_fpga = comms.done();
+        if (comms_fpga) {
+            fixtures->fgpa_comms_loaded();
+        }
     }
 
     if (boot_fippi) {
@@ -795,6 +814,9 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
         fippi_fpga = false;
         fippi.boot(fw->data);
         fippi_fpga = fippi.done();
+        if (fippi_fpga) {
+            fixtures->fgpa_fippi_loaded();
+        }
     }
 
     if (boot_dsp) {
@@ -810,6 +832,9 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
         dsp_online = false;
         dsp.boot(fw->data);
         dsp_online = dsp.init_done();
+        if (dsp_online) {
+            fixtures->dsp_loaded();
+        }
     }
 
     if (fippi_fpga) {
@@ -822,9 +847,15 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
                    << " fippi-fpga=" << fippi_fpga << " dsp=" << dsp_online;
 
     online_ = comms_fpga && fippi_fpga && dsp_online;
+
+    if (online_) {
+        fixtures->online();
+    }
 }
 
-void module::initialize() {}
+void module::initialize() {
+    fixtures->initialize();
+}
 
 void module::add(firmware::module& fw) {
     lock_guard guard(lock_);
@@ -1397,6 +1428,7 @@ void module::sync_vars(const sync_var_mode sync_mode) {
             }
         }
     }
+    fixtures->sync_vars();
 }
 
 void module::sync_hw(const bool program_fippi, const bool program_dacs) {
@@ -1462,6 +1494,8 @@ void module::sync_hw(const bool program_fippi, const bool program_dacs) {
     if (*this == hw::rev_F) {
         hw::run::control(*this, hw::run::control_task::reset_adc);
     }
+
+    fixtures->sync_hw();
 }
 
 void module::run_end() {
@@ -1839,6 +1873,10 @@ void module::dma_read(const hw::address source, hw::word_ptr values, const size_
     log(log::debug) << module_label(*this) << "dma read: done, period=" << tp;
 }
 
+hw::rev_tag module::get_rev_tag() const {
+    return static_cast<hw::rev_tag>(revision);
+}
+
 bool module::operator==(const hw::rev_tag rev) const {
     return revision == int(rev);
 }
@@ -1962,7 +2000,6 @@ void module::init_values() {
         for (const auto& desc : channel_var_descriptors) {
             channels[channel].vars.push_back(param::channel_variable(desc));
         }
-        channels[channel].fixture = fixture::make(channels[channel], eeprom.configs[channel]);
     }
 }
 

@@ -227,6 +227,11 @@ public:
     eeprom::eeprom eeprom;
     int eeprom_format;
 
+    /**
+     * Module fixtures
+     */
+    fixture::module_ptr fixtures;
+
     /*
      * Module parameters
      */
@@ -550,6 +555,7 @@ public:
      * Revision tag operators to make comparisons of a version simpler to
      * code.
      */
+    hw::rev_tag get_rev_tag() const;
     bool operator==(const hw::rev_tag rev) const;
     bool operator!=(const hw::rev_tag rev) const;
     bool operator>=(const hw::rev_tag rev) const;

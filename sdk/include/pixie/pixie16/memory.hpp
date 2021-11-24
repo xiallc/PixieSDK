@@ -28,6 +28,7 @@
 #include <pixie/error.hpp>
 #include <pixie/fw.hpp>
 
+#include <pixie/pixie16/hbr.hpp>
 #include <pixie/pixie16/hw.hpp>
 #include <pixie/pixie16/module.hpp>
 
@@ -61,9 +62,15 @@ static const address HISTOGRAM_MEMORY = 0x00000000;
 struct bus {
     module::module& module;
 
-    bus(module::module& module);
+    bus(module::module& module,
+        const hw::hbr::host_bus_access access = hw::hbr::dsp_access);
 
 protected:
+    /*
+     * Type of access to the bus.
+     */
+    const hw::hbr::host_bus_access access;
+
     /*
      * Low level access.
      */
@@ -76,10 +83,10 @@ protected:
 };
 
 /**
- * @brief Defines the communications channel for the DSP.
+ * @brief Defines the communications channel for the host bus on a module.
  */
-struct dsp : public bus {
-    dsp(module::module& module);
+struct host_bus : public bus {
+    host_bus(module::module& module, const hw::hbr::host_bus_access access_);
 
     /*
      * Memory read.
@@ -118,12 +125,26 @@ private:
 };
 
 template<class B>
-inline void dsp::read(const address addr, B& values, const size_t length) {
+inline void host_bus::read(const address addr, B& values, const size_t length) {
     if (length > values.size()) {
         throw error(error::code::invalid_value, "dsp: read length greater than buffer size");
     }
     read(addr, values.data(), length != 0 ? length : values.size());
 }
+
+/**
+ * @brief Defines the communications channel for the DSP.
+ */
+struct dsp : public host_bus {
+    dsp(module::module& module);
+};
+
+/**
+ * @brief Defines the communications channel for the FIPPI devices.
+ */
+struct fippi : public host_bus {
+    fippi(module::module& module);
+};
 
 /**
  * @brief Defines the memory bus access for the MCA data.

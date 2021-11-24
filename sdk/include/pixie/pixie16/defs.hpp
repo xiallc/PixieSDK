@@ -65,6 +65,37 @@ struct device {
 };
 
 /**
+ * @brief Defines FIPPI  memory addresses used to access data
+ *          directly on the hardware.
+ *
+ * Addresses are per FIPPI device. Use @ref fippi_addr to get host bus address.
+ */
+struct fippi {
+    /*
+     * Device selection
+     */
+    static const address select_bit = 12;
+    static const address select_mask = 0xf;
+    /*
+     * Addresses
+     */
+    static const address CSRIN = 0x00800400;
+    static const address COINCPATTERN = 0x00800402;
+    static const address ADCCTRL = 0x00800404;
+    static const address HOSTCLR = 0x00800408;
+    static const address ADCSPI = 0x0080040a;
+    static const address BITSLIP = 0x0080040c;
+    static const address HDR_IDS = 0x00800412;
+    static const address ADCFIFOCTRL = 0x00800418;
+};
+/**
+ * @brief Return the host bus address for a FIPPI register given
+ *          the FIPPI device to address and the register.
+ */
+static inline address fippi_addr(int device, address reg) {
+    return reg | ((device & fippi::select_mask) << fippi::select_bit);
+}
+/**
  * @brief Defines various bit numbers used to decode/encode data from the hw.
  */
 struct bit {
@@ -77,9 +108,9 @@ struct bit {
      */
     static const size_t HDR_HBR = 0;
     /*
-     * DSP CS pin
+     * DSP CS pin, active low for the DSP to have the bus
      */
-    static const size_t HBR_DSP_CS = 1;
+    static const size_t HBR_DSP_nCS = 1;
     /*
      * Auto-increment after read
      */

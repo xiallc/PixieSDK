@@ -27,7 +27,6 @@
 
 #include <pixie/pixie16/csr.hpp>
 #include <pixie/pixie16/defs.hpp>
-#include <pixie/pixie16/hbr.hpp>
 #include <pixie/pixie16/memory.hpp>
 #include <pixie/pixie16/module.hpp>
 
@@ -45,23 +44,25 @@ namespace xia {
 namespace pixie {
 namespace hw {
 namespace memory {
-bus::bus(module::module& module_) : module(module_) {}
+bus::bus(module::module& module_, const hw::hbr::host_bus_access access_)
+    : module(module_), access(access_) {
+}
+host_bus::host_bus(module::module& module_, const hw::hbr::host_bus_access access_)
+    : bus(module_, access_) {}
 
-dsp::dsp(module::module& module_) : bus(module_) {}
-
-word dsp::read(const address addr) {
+word host_bus::read(const address addr) {
     module::module::bus_guard guard(module);
-    hbr::host_bus_request hbr(module);
+    hbr::host_bus_request hbr(module, access);
     bus_write(hw::device::EXT_MEM_TEST, addr);
     word value = bus_read(hw::device::WRT_DSP_MMA);
     return value;
 }
 
-word dsp::read(const size_t offset, const address addr) {
+word host_bus::read(const size_t offset, const address addr) {
     return read(static_cast<hw::address>(addr + offset));
 }
 
-word dsp::read(const size_t channel, const size_t offset, const address addr) {
+word host_bus::read(const size_t channel, const size_t offset, const address addr) {
     channel::channel& chan = module[channel];
     if ( chan.fixture->config.index < 0) {
         throw error(error::code::channel_invalid_index,
@@ -71,7 +72,7 @@ word dsp::read(const size_t channel, const size_t offset, const address addr) {
     return read(static_cast<hw::address>(addr + chan.fixture->config.index + offset));
 }
 
-void dsp::read(const address addr, word_ptr buffer, const size_t length) {
+void host_bus::read(const address addr, word_ptr buffer, const size_t length) {
     module::module::bus_guard guard(module);
 
     size_t size = length;
@@ -87,7 +88,7 @@ void dsp::read(const address addr, word_ptr buffer, const size_t length) {
         offset += block_size;
     }
     if (size > 0) {
-        hbr::host_bus_request hbr(module);
+        hbr::host_bus_request hbr(module, access);
         bus_write(hw::device::EXT_MEM_TEST, hw::word(addr + offset));
         buffer += offset;
         while (size-- > 0) {
@@ -97,18 +98,18 @@ void dsp::read(const address addr, word_ptr buffer, const size_t length) {
     }
 }
 
-void dsp::write(const address addr, const word value) {
+void host_bus::write(const address addr, const word value) {
     module::module::bus_guard guard(module);
-    hbr::host_bus_request hbr(module);
+    hbr::host_bus_request hbr(module, access);
     bus_write(hw::device::EXT_MEM_TEST, addr);
     bus_write(hw::device::WRT_DSP_MMA, value);
 }
 
-void dsp::write(const size_t offset, const address addr, const word value) {
+void host_bus::write(const size_t offset, const address addr, const word value) {
     write(static_cast<hw::address>(addr + offset), value);
 }
 
-void dsp::write(const size_t channel, const size_t offset, const address addr, const word value) {
+void host_bus::write(const size_t channel, const size_t offset, const address addr, const word value) {
     channel::channel& chan = module[channel];
     if (chan.fixture->config.index < 0) {
         throw error(error::code::channel_invalid_index,
@@ -118,16 +119,16 @@ void dsp::write(const size_t channel, const size_t offset, const address addr, c
     write(static_cast<hw::address>(addr + chan.fixture->config.index + offset), value);
 }
 
-void dsp::write(const address addr, const words& values) {
+void host_bus::write(const address addr, const words& values) {
     module::module::bus_guard guard(module);
-    hbr::host_bus_request hbr(module);
+    hbr::host_bus_request hbr(module, access);
     bus_write(hw::device::EXT_MEM_TEST, addr);
     for (auto value : values) {
         bus_write(hw::device::WRT_DSP_MMA, value);
     }
 }
 
-void dsp::dma_read(const address addr, word_ptr buffer, const size_t length) {
+void host_bus::dma_read(const address addr, word_ptr buffer, const size_t length) {
     log(log::debug) << module::module_label(module) << "dsp dma read: addr=0x" << std::hex << addr
                     << " length=" << std::dec << length;
 
@@ -135,7 +136,7 @@ void dsp::dma_read(const address addr, word_ptr buffer, const size_t length) {
      * The bus is held on entry.
      */
 
-    hbr::host_bus_request hbr(module);
+    hbr::host_bus_request hbr(module, access);
 
     bus_write(hw::device::EXT_MEM_TEST, DMASTAT);
     if ((bus_read(hw::device::WRT_DSP_MMA) & (1 << 11)) != 0) {
@@ -165,11 +166,18 @@ void dsp::dma_read(const address addr, word_ptr buffer, const size_t length) {
     bus_write(hw::device::WRT_DSP_DMAC11, 0x904);
 }
 
-void dsp::write(const size_t channel, const address addr, const words& values) {
+void host_bus::write(const size_t channel, const address addr, const words& values) {
     write(static_cast<hw::address>(addr + (channel * sizeof(word))), values);
 }
 
-mca::mca(module::module& module_) : bus(module_) {}
+dsp::dsp(module::module& module_)
+    : host_bus(module_, hw::hbr::dsp_access) {}
+
+fippi::fippi(module::module& module_)
+    : host_bus(module_, hw::hbr::fpga_access) {}
+
+mca::mca(module::module& module_)
+    : bus(module_) {}
 
 void mca::read(const address addr, words& values) {
     read(addr, values.data(), values.size());

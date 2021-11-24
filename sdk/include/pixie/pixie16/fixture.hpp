@@ -82,6 +82,24 @@ struct channel {
     virtual void acquire_adc();
 
     /**
+     * Set a value.
+     *
+     * Overload the types required
+     */
+    virtual void set(const std::string item, bool value);
+    virtual void set(const std::string item, int value);
+    virtual void set(const std::string item, hw::word value);
+
+    /**
+     * Get a value.
+     *
+     * Overload the types required
+     */
+    virtual void get(const std::string item, bool& value);
+    virtual void get(const std::string item, int& value);
+    virtual void get(const std::string item, hw::word& value);
+
+    /**
      * Report the fixture's details
      */
     virtual void report(std::ostream& out) const;
@@ -95,9 +113,92 @@ struct channel {
 using channel_ptr = std::shared_ptr<channel>;
 
 /**
+ * @brief The object to manage a module's fixtures.
+ *
+ * Fixtures may require module level management. The @ref module struct lets
+ * you hook various module events to handle fixture specific activities.
+ *
+ * The things you can do in each event handler will depend on the state of the
+ * module. For example you cannot use the DSP services in the @ref dsp_loaded
+ * handler because the module is still not formally online.
+ */
+struct module {
+    /**
+     * The module.
+     */
+    pixie::module::module& module_;
+
+    std::string label;
+
+    module(pixie::module::module& module_);
+    virtual ~module();
+
+    /*
+     * Open the fxitures. Called once the module is opened. Do not touch the
+     * hardware.
+     */
+    virtual void open();
+
+    /*
+     * Close the fxitures. Called before the module is forced offline and
+     * closed.
+     */
+    virtual void close();
+
+    /*
+     * Initialize the module.
+     */
+    virtual void initialize();
+
+    /*
+     * The module is online.
+     */
+    virtual void online();
+
+    /*
+     * The module has been forced offline.
+     */
+    virtual void forced_offline();
+
+    /*
+     * The COMMS FPGA has been loaded. Only this FPGA is loaded.
+     */
+    virtual void fgpa_comms_loaded();
+
+    /*
+     * The FIPPI FPGAs have been loaded. Only assume the COMMS and FIPPI FPGAs
+     * are loaded.
+     */
+    virtual void fgpa_fippi_loaded();
+
+    /*
+     * The DSP has been loaded and can be accessed. The COMMS and FIPPI FPGAs
+     * are also loaded.
+     */
+    virtual void dsp_loaded();
+
+    /*
+     * Hardware synchronisation
+     */
+    virtual void sync_hw();
+
+    /*
+     * Variable sychronisation
+     */
+    virtual void sync_vars();
+};
+
+using module_ptr = std::shared_ptr<module>;
+
+/**
  * Make a channel fixture given a hardware configuration
  */
 channel_ptr make(pixie::channel::channel& module_channel, const hw::config& config);
+
+/**
+ * Make a module fixtures given a hardware configuration
+ */
+module_ptr make(pixie::module::module& module_);
 
 }  // namespace fixture
 }  // namespace pixie

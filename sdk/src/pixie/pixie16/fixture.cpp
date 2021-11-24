@@ -20,8 +20,11 @@
  * @brief Implements per channel hardware specific support for the Pixie-16 modules.
  */
 
+#include <climits>
+
 #include <pixie/error.hpp>
 #include <pixie/log.hpp>
+#include <pixie/util.hpp>
 
 #include <pixie/pixie16/channel.hpp>
 #include <pixie/pixie16/defs.hpp>
@@ -42,7 +45,7 @@ struct userin_save {
     hw::word userin_0;
     hw::word userin_1;
 
-    userin_save(module::module& module);
+    userin_save(pixie::module::module& module);
 
     void update(const hw::word& db_index, const hw::word& db_channel);
 
@@ -50,9 +53,44 @@ struct userin_save {
 };
 
 /**
+ * ADC trace analyize
+ *
+ * This is a simple approach to detecting the average voltage.
+ */
+struct channel_baseline {
+    int channel;
+    int samples;
+    int baseline;
+    int minimum;
+    int maximum;
+
+    channel_baseline();
+
+    void start();
+    void end();
+
+    void update(hw::adc_word sample);
+
+    bool operator==(const channel_baseline& other) const;
+    bool operator!=(const channel_baseline& other) const;
+};
+
+using channel_baselines = std::vector<channel_baseline>;
+
+/**
  * The daughter board fixture
  */
 struct db : public channel {
+    /**
+     * ADC swapped state.
+     *
+     * If the DSP is not loaded the swap state is unknown.
+     */
+    enum adc_swap_state {
+        adc_boot_state,
+        adc_unswapped,
+        adc_swapped
+    };
     /**
      * The number is the position. The DBs are sorted by position so
      * asking for the index by channel returns the DB number.
@@ -69,9 +107,19 @@ struct db : public channel {
      */
     int offset;
 
+    /**
+     * Dual ADC swapped state. This is true if the data is being clock clocked
+     * on the wrong edge.
+     */
+    adc_swap_state adc_state;
+
     db(pixie::channel::channel& module_channel_, const hw::config& config_);
 
     virtual void acquire_adc() override;
+
+    virtual void set(const std::string item, bool value);
+    virtual void get(const std::string item, bool& value);
+    virtual void get(const std::string item, int& value);
 
     virtual void report(std::ostream& out) const override;
 };
@@ -85,7 +133,47 @@ struct db04 : public db {
     virtual void set_dac(param::value_type value) override;
 };
 
-userin_save::userin_save(module::module& module) : dsp(module) {
+/**
+ * Module has AFE DB fixtures
+ */
+struct afe_dbs : public module {
+    enum limits {
+        max_dbs = 4
+    };
+
+    std::array<hw::word, max_dbs> adcctrl;
+
+    afe_dbs(pixie::module::module& module_);
+
+    virtual void online() override;
+    virtual void fgpa_fippi_loaded() override;
+};
+
+static void unsupported_op(const std::string what) {
+    throw error::error(error::code::internal_failure, "invalid fixture op: " + what);
+}
+
+static void set_channel_voffset(pixie::module::module& mod, double voffset, int step) {
+    for (int chan = 0; chan < mod.num_channels; chan += step) {
+        mod.write("VOFFSET", chan, voffset);
+    }
+}
+
+static void analyze_channel_baselines(pixie::module::module& mod, channel_baselines& baselines) {
+    mod.get_traces();
+    for (int channel = 0; channel < mod.num_channels; ++channel) {
+        xia::pixie::hw::adc_trace trace;
+        mod.read_adc(channel, trace, false);
+        channel_baseline baseline;
+        for (auto sample : trace) {
+            baseline.update(sample);
+        }
+        baseline.end();
+        baselines.push_back(baseline);
+    }
+}
+
+userin_save::userin_save(pixie::module::module& module) : dsp(module) {
     address = module.module_var_descriptors[int(param::module_var::UserIn)].address;
     userin_0 = dsp.read(0, address);
     userin_1 = dsp.read(1, address);
@@ -101,17 +189,54 @@ userin_save::~userin_save() {
     dsp.write(1, address, userin_1);
 }
 
+channel_baseline::channel_baseline() {
+    start();
+}
+
+void channel_baseline::update(hw::adc_word sample) {
+    ++samples;
+    baseline += sample;
+    if (sample < minimum) {
+        minimum = sample;
+    }
+    if (sample > maximum) {
+        maximum = sample;
+    }
+}
+
+void channel_baseline::start() {
+    samples = 0;
+    baseline = 0;
+    minimum = INT_MAX;
+    maximum = INT_MIN;
+}
+
+void channel_baseline::end() {
+    baseline /= samples;
+}
+
+bool channel_baseline::operator==(const channel_baseline& other) const
+{
+    return baseline >= (other.baseline - 100) && baseline <= (other.baseline + 100);
+}
+
+bool channel_baseline::operator!=(const channel_baseline& other) const
+{
+    return !(*this == other);
+}
+
 db::db(pixie::channel::channel& module_channel_, const hw::config& config_)
     : channel(module_channel_, config_) {
-    module::module& mod = get_module();
+    pixie::module::module& mod = get_module();
     label = hw::get_module_fixture_label(config_.fixture);
     number = mod.eeprom.db_find(static_cast<int>(module_channel.number));
     base =  mod.eeprom.db_channel_base(number);
     offset = static_cast<int>(module_channel.number - base);
+    adc_state = adc_boot_state;
 }
 
 void db::acquire_adc() {
-    module::module& module = get_module();
+    pixie::module::module& module = get_module();
     {
         userin_save userins(module);
         userins.update(number, offset);
@@ -135,11 +260,50 @@ void db::acquire_adc() {
     }
 }
 
+void db::set(const std::string item, bool value) {
+    if (item == "ADC_SWAP") {
+        adc_state = value ? adc_swapped : adc_unswapped;
+    } else {
+        unsupported_op("db: set: unsupported item");
+    }
+}
+
+void db::get(const std::string item, bool& value) {
+    if (item == "ADC_SWAP") {
+        value = adc_swapped;
+    } else {
+        unsupported_op("db: get: unsupported item");
+    }
+}
+
+void db::get(const std::string item, int& value) {
+    if (item == "DB_NUMBER") {
+        value = number;
+    } else if (item == "DB_OFFSET") {
+        value = offset;
+    } else {
+        unsupported_op("db: get: unsupported item");
+    }
+}
+
 void db::report(std::ostream& out) const {
     channel::report(out);
     out << "DB Number      : " << number << std::endl
         << "DB Base        : " << base << std::endl
-        << "DB Offset      : " << offset << std::endl;
+        << "DB Offset      : " << offset << std::endl
+        << "ADC swap state : ";
+    switch (adc_state) {
+    case adc_boot_state:
+        out << "BOOT STATE";
+        break;
+    case adc_unswapped:
+        out << "not swapped";
+        break;
+    case adc_swapped:
+        out << "swapped";
+        break;
+    }
+    out << std::endl;
 }
 
 db04::db04(pixie::channel::channel& module_channel_, const hw::config& config_)
@@ -147,10 +311,10 @@ db04::db04(pixie::channel::channel& module_channel_, const hw::config& config_)
 }
 
 void db04::set_dac(param::value_type value) {
-    module::module& mod = get_module();
+    pixie::module::module& mod = get_module();
     if (value > 65535) {
         throw error::error(error::code::invalid_value,
-                           module::module_label(mod, "DB04") + "invalid DAC offset: channel=" +
+                           pixie::module::module_label(mod, "DB04") + "invalid DAC offset: channel=" +
                            std::to_string(module_channel.number));
     }
     /*
@@ -196,7 +360,8 @@ void db04::set_dac(param::value_type value) {
      * CFG_DAC expacts [addr(8), ctrl(8), data(16)]
      */
     const hw::word dac = (dac_addr << 24) | (dac_ctrl << 16) | value;
-    log(log::debug) << "fixture: db04: db=" << number
+    log(log::debug) << pixie::module::module_label(mod, "fixture: db04")
+                    << "db=" << number
                     << " db_channel=" << offset
                     << std::hex
                     << " dac_addr=0x" << dac_addr
@@ -208,6 +373,116 @@ void db04::set_dac(param::value_type value) {
      * It takes about 2ms to clock out the 32 bits
      */
     hw::wait(6000);
+}
+
+afe_dbs::afe_dbs(pixie::module::module& module__)
+    : module(module__), adcctrl { } {
+    log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")
+                    << "create";
+}
+
+void afe_dbs::online() {
+    log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")
+                    << "online";
+
+    /*
+     * Create the channel fixtures
+     */
+    for (int chan = 0; chan < module_.num_channels; ++chan) {
+        module_.channels[chan].fixture =
+            fixture::make(module_.channels[chan], module_.eeprom.configs[chan]);
+    }
+
+    util::timepoint tp(true);
+
+    /*
+     * Set the voffset for all channels to the low rail
+     */
+    channel_baselines bl_same;
+    set_channel_voffset(module_, -1.5, 1);
+    analyze_channel_baselines(module_, bl_same);
+
+    /*
+     * Move the voffset for the even channels to high rail
+     */
+    channel_baselines bl_moved;
+    set_channel_voffset(module_, 1.5, 2);
+    analyze_channel_baselines(module_, bl_moved);
+
+    /*
+     * Check all the channels and swap of the ADCs if required.
+     */
+    for (int chan = 0; chan < module_.num_channels; ++chan) {
+        bool swapped = false;
+        if ((chan % 2) == 0) {
+            if (bl_same[chan] == bl_moved[chan]) {
+                swapped = true;
+            }
+        } else {
+            if (bl_same[chan] != bl_moved[chan]) {
+                swapped = true;
+            }
+        }
+        module_.channels[chan].fixture->set("ADC_SWAP", swapped);
+        if (swapped) {
+            int chan_db;
+            int chan_offset;
+            module_.channels[chan].fixture->get("DB_NUMBER", chan_db);
+            module_.channels[chan].fixture->get("DB_OFFSET", chan_offset);
+            if (chan_db >= max_dbs) {
+                throw pixie::module::error(module_.number, module_.slot,
+                                           pixie::module::error::code::module_initialize_failure,
+                                           "invalid DB number for channel: " + std::to_string(chan));
+            }
+            hw::word last_adcctrl = adcctrl[chan_db];
+            adcctrl[chan_db] |= 1 << (chan_offset / 2);
+            log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")
+                            << "online: adc_swap: db="
+                            << chan_db << " offset=" << chan_offset
+                            << " adcctrl=0x" << std::hex << adcctrl[chan_db];
+            if (adcctrl[chan_db] != last_adcctrl) {
+                hw::memory::fippi fippi(module_);
+                pixie::module::module::reg_trace_guard reg_trace(module_);
+                reg_trace.enable();
+                fippi.write(hw::fippi_addr(chan_db, hw::fippi::ADCCTRL), adcctrl[chan_db]);
+            }
+        }
+    }
+
+    /*
+     * Verify.
+     */
+    bool failed = false;
+    channel_baselines bl_verify;
+    analyze_channel_baselines(module_, bl_verify);
+    for (int chan = 0; chan < module_.num_channels; ++chan) {
+        if ((chan % 2) == 0) {
+            if (bl_same[chan] == bl_verify[chan]) {
+                failed = true;
+                log(log::error) << pixie::module::module_label(module_, "fixture: afe_dbs")
+                                << "online: ADC swap failed: " << chan;
+            }
+        } else {
+            if (bl_same[chan] != bl_verify[chan]) {
+                failed = true;
+                log(log::error) << pixie::module::module_label(module_, "fixture: afe_dbs")
+                                << "online: ADC swap failed: " << chan;
+            }
+        }
+    }
+
+    if (failed) {
+        throw pixie::module::error(module_.number, module_.slot,
+                                   pixie::module::error::code::module_initialize_failure,
+                                   "DB AE ADC swap failure");
+    }
+
+    log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")
+                    << "online: duration=" << tp;
+}
+
+void afe_dbs::fgpa_fippi_loaded() {
+    adcctrl = { };
 }
 
 channel::channel(pixie::channel::channel& module_channel_, const hw::config& config_)
@@ -232,8 +507,7 @@ void channel::set_dac(param::value_type ) {
 }
 
 void channel::acquire_adc() {
-    throw error::error(error::code::internal_failure,
-                       "invalid fixture op: ADC acquire is using the DSP");
+    unsupported_op("ADC acquire is using the DSP");
 }
 
 void channel::report(std::ostream& out) const {
@@ -241,8 +515,81 @@ void channel::report(std::ostream& out) const {
     config.report(out);
 }
 
-module::module& channel::get_module() {
+void channel::set(const std::string item, bool ) {
+    unsupported_op("not set support: bool");
+}
+
+void channel::set(const std::string item, int value) {
+    unsupported_op("no set support: int");
+}
+
+void channel::set(const std::string item, hw::word value) {
+    unsupported_op("no set support: hw::word");
+}
+
+void channel::get(const std::string item, bool& value) {
+    unsupported_op("no get support: bool");
+}
+
+void channel::get(const std::string item, int& ) {
+    unsupported_op("no get support: int");
+}
+
+void channel::get(const std::string item, hw::word& ) {
+    unsupported_op("no get support: hw::word");
+}
+
+pixie::module::module& channel::get_module() {
     return module_channel.module;
+}
+
+module::module(pixie::module::module& module__)
+    : module_(module__), label("none") {
+    /* Do nothing */
+}
+
+module::~module() {
+    /* Do nothing */
+}
+
+void module::open() {
+    /* Do nothing */
+}
+
+void module::close() {
+    /* Do nothing */
+}
+
+void module::initialize() {
+    /* Do nothing */
+}
+
+void module::online() {
+    /* Do nothing */
+}
+
+void module::forced_offline() {
+    /* Do nothing */
+}
+
+void module::fgpa_comms_loaded() {
+    /* Do nothing */
+}
+
+void module::fgpa_fippi_loaded() {
+    /* Do nothing */
+}
+
+void module::dsp_loaded() {
+    /* Do nothing */
+}
+
+void module::sync_hw() {
+    /* Do nothing */
+}
+
+void module::sync_vars() {
+    /* Do nothing */
 }
 
 channel_ptr make(pixie::channel::channel& module_channel, const hw::config& config) {
@@ -257,6 +604,19 @@ channel_ptr make(pixie::channel::channel& module_channel, const hw::config& conf
     }
     chan_fixture->open();
     return chan_fixture;
+}
+
+module_ptr make(pixie::module::module& module_) {
+    module_ptr mod_fixtures;
+    switch (module_.get_rev_tag()) {
+    case hw::rev_tag::rev_H:
+        mod_fixtures = std::make_shared<afe_dbs>(module_);
+        break;
+    default:
+        mod_fixtures = std::make_shared<module>(module_);
+        break;
+    }
+    return mod_fixtures;
 }
 
 };  // namespace fixture

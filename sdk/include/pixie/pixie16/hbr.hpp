@@ -25,6 +25,9 @@
 
 #include <pixie/error.hpp>
 
+#include <pixie/pixie16/defs.hpp>
+#include <pixie/pixie16/hw.hpp>
+
 namespace xia {
 namespace pixie {
 namespace module {
@@ -35,6 +38,33 @@ namespace hw {
  * @brief Host Bus Request
  */
 namespace hbr {
+/**
+ * @brief HBR bus access.
+ *
+ * The HBR request value can effect the type of access to the host bus.
+ */
+struct host_bus_access {
+    hw::word request;
+    hw::word release;
+    host_bus_access(hw::word req, hw::word rel) : request(req), release(rel) {}
+    host_bus_access(const host_bus_access& a) : request(a.request), release(a.release) {}
+    host_bus_access& operator=(const host_bus_access& a) {
+        request = a.request;  release = a.release;
+        return *this;
+    }
+};
+/**
+ * @brief DSP HBR Access
+ *
+ * Use to access the DSP.
+ */
+extern const host_bus_access dsp_access;
+/**
+ * @brief FPGA HBR Access
+ *
+ * Use to access the DSP.
+ */
+extern const host_bus_access fpga_access;
 /**
  * @brief Host Bus Request
  *
@@ -48,13 +78,23 @@ namespace hbr {
  */
 struct host_bus_request {
     module::module& module;
+    const host_bus_access access;
     bool holding;
     /**
      * @brief Construct the HBR and optionally request the bus.
      * @param module_ The module's HBR to control
-     * @param hold Request and hold the bus when constructing
+     * @param hold Request and hold the bus when constructing, the default is true
+     * @param access_ The HBR access, the default is dsp_hbr
      */
-    host_bus_request(module::module& module_, bool hold = true);
+    host_bus_request(module::module& module_, bool hold = true,
+                     const host_bus_access access_ = dsp_access);
+    /**
+     * @brief Construct the HBR and optionally request the bus.
+     * @param module_ The module's HBR to control
+     * @param access_ The HBR access, the default is dsp_hbr
+     */
+    host_bus_request(module::module& module_,
+                     const host_bus_access access_ = dsp_access);
     /**
      * @brief Release the bus if held.
      */

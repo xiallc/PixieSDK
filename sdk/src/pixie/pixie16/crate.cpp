@@ -65,8 +65,8 @@ void crate::initialize(bool reg_trace) {
     log(log::info) << "crate: initialise";
 
     /*
-         * Set ready to true and if there is an issue return it to false.
-         */
+     * Set ready to true and if there is an issue return it to false.
+     */
     if (ready_.exchange(true)) {
         throw error(pixie::error::code::crate_already_open, "create already initialised");
     }
