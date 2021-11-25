@@ -232,6 +232,11 @@ public:
      */
     fixture::module_ptr fixtures;
 
+    /**
+     * Module run configuration
+     */
+    hw::run::module_config run_config;
+
     /*
      * Module parameters
      */
@@ -605,10 +610,16 @@ protected:
     virtual void load_vars();
 
     /*
-     * Initialise the values.
+     * Initialise abs rease the values.
      */
     virtual void erase_values();
     virtual void init_values();
+
+    /*
+     * Initialise and erase the channels.
+     */
+    virtual void erase_channels();
+    virtual void init_channels();
 
     /*
      * Module parameter handlers.
@@ -700,16 +711,6 @@ protected:
      * Vars loaded?
      */
     bool vars_loaded;
-
-    /*
-     * Set DACs using the DSP
-     */
-    bool dsp_sets_dacs;
-
-    /*
-     * ADC acquire holds the traces for all channels in the DSP memory.
-     */
-    bool dsp_has_all_adc_traces;
 
     /*
      * Control CS shadow, it is a write-only register

@@ -82,6 +82,11 @@ struct channel {
     virtual void acquire_adc();
 
     /**
+     * Per channel ADC acquire.
+     */
+    virtual void read_adc(hw::adc_word* buffer, size_t size);
+
+    /**
      * Set a value.
      *
      * Overload the types required
@@ -124,7 +129,7 @@ using channel_ptr = std::shared_ptr<channel>;
  */
 struct module {
     /**
-     * The module.
+     * The module that has the fixtures.
      */
     pixie::module::module& module_;
 
@@ -133,56 +138,81 @@ struct module {
     module(pixie::module::module& module_);
     virtual ~module();
 
-    /*
+    /**
      * Open the fxitures. Called once the module is opened. Do not touch the
-     * hardware.
+     * hardware. There are no channels and no variables.
      */
     virtual void open();
 
-    /*
+    /**
      * Close the fxitures. Called before the module is forced offline and
      * closed.
      */
     virtual void close();
 
-    /*
+    /**
      * Initialize the module.
      */
     virtual void initialize();
 
-    /*
+    /**
      * The module is online.
      */
     virtual void online();
 
-    /*
+    /**
      * The module has been forced offline.
      */
     virtual void forced_offline();
 
-    /*
+    /**
      * The COMMS FPGA has been loaded. Only this FPGA is loaded.
      */
     virtual void fgpa_comms_loaded();
 
-    /*
+    /**
      * The FIPPI FPGAs have been loaded. Only assume the COMMS and FIPPI FPGAs
      * are loaded.
      */
     virtual void fgpa_fippi_loaded();
 
-    /*
+    /**
      * The DSP has been loaded and can be accessed. The COMMS and FIPPI FPGAs
      * are also loaded.
      */
     virtual void dsp_loaded();
 
-    /*
+    /**
+     * The module have been booted and is online.
+     */
+    virtual void boot();
+
+    /**
+     * The module values will be erased
+     */
+    virtual void erase_values();
+
+    /**
+     * The module values have been initialized
+     */
+    virtual void init_values();
+
+    /**
+     * The module channels will be erased
+     */
+    virtual void erase_channels();
+
+    /**
+     * The module channels have been initialized
+     */
+    virtual void init_channels();
+
+    /**
      * Hardware synchronisation
      */
     virtual void sync_hw();
 
-    /*
+    /**
      * Variable sychronisation
      */
     virtual void sync_vars();

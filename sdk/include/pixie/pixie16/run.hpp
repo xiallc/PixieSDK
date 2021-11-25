@@ -209,6 +209,29 @@ enum struct control_task {
     nop = 100
 };
 
+/**
+ * @brief Module run and control task configuration
+ *
+ * The run and control tasks supported in the DSP vary between versions. This
+ * class defines the SDK overrides.
+ */
+struct module_config {
+    /**
+     * The DSP sets the DACs using a control task. This also effects the adjust
+     * offsets task.
+     */
+    bool dsp_sets_dacs;
+    /**
+     * A single channel's ADC trace per control task request
+     */
+    bool adc_trace_per_channel;
+};
+
+/**
+ * Get the module config for the given module hardware
+ */
+module_config make(module::module& module);
+
 /*
  * Run and control task management.
  */
@@ -224,6 +247,19 @@ bool active(module::module& module);
  *                    determined
  */
 void control(module::module& module, control_task control_tsk, int wait_msecs = 10000);
+
+/**
+ * @brief Execute a control task on the DSP.
+ *
+ * This call forces the control task to run on the DSP. This call requires detail
+ * knowledge of the DSP functionality.
+ *
+ * @param module The module to work with
+ * @param control_tsk The control task that we'll execute.
+ * @param wait_msecs how long we'll wait for the task to finish. This is generally empirically
+ *                    determined
+ */
+void control_run_on_dsp(module::module& module, control_task control_tsk, int wait_msecs = 10000);
 
 /**
  * @brief Executes a run task on the requested module

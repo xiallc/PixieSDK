@@ -21,6 +21,7 @@
  */
 
 #include <climits>
+#include <cstring>
 
 #include <pixie/error.hpp>
 #include <pixie/log.hpp>
@@ -116,6 +117,7 @@ struct db : public channel {
     db(pixie::channel::channel& module_channel_, const hw::config& config_);
 
     virtual void acquire_adc() override;
+    virtual void read_adc(hw::adc_word* buffer, size_t size);
 
     virtual void set(const std::string item, bool value);
     virtual void get(const std::string item, bool& value);
@@ -145,8 +147,9 @@ struct afe_dbs : public module {
 
     afe_dbs(pixie::module::module& module_);
 
-    virtual void online() override;
     virtual void fgpa_fippi_loaded() override;
+    virtual void boot() override;
+    virtual void init_channels() override;
 };
 
 static void unsupported_op(const std::string what) {
@@ -241,7 +244,7 @@ void db::acquire_adc() {
     {
         userin_save userins(module);
         userins.update(number, offset);
-        hw::run::control(module, hw::run::control_task::get_traces);
+        hw::run::control_run_on_dsp(module, hw::run::control_task::get_traces);
     }
     /*
      * Make sure the buffer is the maximum size a user can ask for. The
@@ -259,6 +262,13 @@ void db::acquire_adc() {
         module_channel.adc_trace[w * 2] = hw::adc_word(adc_trace[w] & 0xffff);
         module_channel.adc_trace[w * 2 + 1] = hw::adc_word((adc_trace[w] >> 16) & 0xffff);
     }
+}
+
+void db::read_adc(hw::adc_word* buffer, size_t size) {
+    const size_t copy_size =
+        (size < module_channel.adc_trace.size() ?
+         size : module_channel.adc_trace.size()) * sizeof(hw::adc_word);
+    memcpy(buffer, module_channel.adc_trace.data(), copy_size);
 }
 
 void db::set(const std::string item, bool value) {
@@ -297,7 +307,7 @@ void db::report(std::ostream& out) const {
         << "ADC swap state : ";
     switch (adc_state) {
     case adc_boot_state:
-        out << "BOOT STATE";
+        out << "boot state";
         break;
     case adc_unswapped:
         out << "not swapped";
@@ -384,17 +394,13 @@ afe_dbs::afe_dbs(pixie::module::module& module__)
                     << "create";
 }
 
-void afe_dbs::online() {
-    log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")
-                    << "online";
+void afe_dbs::fgpa_fippi_loaded() {
+    adcctrl = { };
+}
 
-    /*
-     * Create the channel fixtures
-     */
-    for (int chan = 0; chan < module_.num_channels; ++chan) {
-        module_.channels[chan].fixture =
-            fixture::make(module_.channels[chan], module_.eeprom.configs[chan]);
-    }
+void afe_dbs::boot() {
+    log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")
+                    << "boot";
 
     util::timepoint tp(true);
 
@@ -440,13 +446,11 @@ void afe_dbs::online() {
             hw::word last_adcctrl = adcctrl[chan_db];
             adcctrl[chan_db] |= 1 << (chan_offset / 2);
             log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")
-                            << "online: adc_swap: db="
+                            << "boot: adc_swap: db="
                             << chan_db << " offset=" << chan_offset
                             << " adcctrl=0x" << std::hex << adcctrl[chan_db];
             if (adcctrl[chan_db] != last_adcctrl) {
                 hw::memory::fippi fippi(module_);
-                pixie::module::module::reg_trace_guard reg_trace(module_);
-                reg_trace.enable();
                 fippi.write(hw::fippi_addr(chan_db, hw::fippi::ADCCTRL), adcctrl[chan_db]);
             }
         }
@@ -463,13 +467,13 @@ void afe_dbs::online() {
             if (bl_same[chan] == bl_verify[chan]) {
                 failed = true;
                 log(log::error) << pixie::module::module_label(module_, "fixture: afe_dbs")
-                                << "online: ADC swap failed: " << chan;
+                                << "boot: ADC swap failed: " << chan;
             }
         } else {
             if (bl_same[chan] != bl_verify[chan]) {
                 failed = true;
                 log(log::error) << pixie::module::module_label(module_, "fixture: afe_dbs")
-                                << "online: ADC swap failed: " << chan;
+                                << "boot: ADC swap failed: " << chan;
             }
         }
     }
@@ -483,11 +487,16 @@ void afe_dbs::online() {
     }
 
     log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")
-                    << "online: duration=" << tp;
+                    << "boot: duration=" << tp;
 }
 
-void afe_dbs::fgpa_fippi_loaded() {
-    adcctrl = { };
+void afe_dbs::init_channels() {
+    log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")
+                    << "init-channels: create channel fixtures";
+    for (int chan = 0; chan < module_.num_channels; ++chan) {
+        module_.channels[chan].fixture =
+            fixture::make(module_.channels[chan], module_.eeprom.configs[chan]);
+    }
 }
 
 channel::channel(pixie::channel::channel& module_channel_, const hw::config& config_)
@@ -513,6 +522,10 @@ void channel::set_dac(param::value_type ) {
 
 void channel::acquire_adc() {
     unsupported_op("ADC acquire is using the DSP");
+}
+
+void channel::read_adc(hw::adc_word* buffer, size_t size) {
+    unsupported_op("read ADC is using the DSP");
 }
 
 void channel::report(std::ostream& out) const {
@@ -586,6 +599,26 @@ void module::fgpa_fippi_loaded() {
 }
 
 void module::dsp_loaded() {
+    /* Do nothing */
+}
+
+void module::boot() {
+    /* Do nothing */
+}
+
+void module::erase_values() {
+    /* Do nothing */
+}
+
+void module::init_values() {
+    /* Do nothing */
+}
+
+void module::erase_channels() {
+    /* Do nothing */
+}
+
+void module::init_channels() {
     /* Do nothing */
 }
 

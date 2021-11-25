@@ -295,8 +295,7 @@ module::module()
       bus_cycle_period(100), fifo_worker_running(false), fifo_worker_finished(false), in_use(0),
       present_(false), online_(false), forced_offline_(false), pause_fifo_worker(true),
       comms_fpga(false), fippi_fpga(false), have_hardware(false), vars_loaded(false),
-      dsp_sets_dacs(true), dsp_has_all_adc_traces(true), cfg_ctrlcs(0xaaa),
-      device(std::make_unique<pci_bus_handle>()), test_mode(test::off) {}
+      cfg_ctrlcs(0xaaa), device(std::make_unique<pci_bus_handle>()), test_mode(test::off) {}
 
 module::module(module&& m)
     : slot(m.slot), number(m.number), serial_num(m.serial_num), revision(m.revision),
@@ -316,8 +315,7 @@ module::module(module&& m)
       present_(m.present_.load()), online_(m.online_.load()),
       forced_offline_(m.forced_offline_.load()), pause_fifo_worker(m.pause_fifo_worker.load()),
       comms_fpga(m.comms_fpga), fippi_fpga(m.fippi_fpga), have_hardware(false), vars_loaded(false),
-      dsp_sets_dacs(true), dsp_has_all_adc_traces(true), cfg_ctrlcs(0xaaa),
-      device(std::move(m.device)), test_mode(m.test_mode.load()) {
+      cfg_ctrlcs(0xaaa), device(std::move(m.device)), test_mode(m.test_mode.load()) {
     m.slot = 0;
     m.number = -1;
     m.serial_num = 0;
@@ -354,8 +352,6 @@ module::module(module&& m)
     m.fippi_fpga = false;
     m.have_hardware = false;
     m.vars_loaded = false;
-    m.dsp_sets_dacs = true;
-    m.dsp_has_all_adc_traces = true;
     m.cfg_ctrlcs = 0xaaa;
     m.test_mode = test::off;
 }
@@ -416,8 +412,6 @@ module& module::operator=(module&& m) {
     fippi_fpga = m.fippi_fpga;
     have_hardware = m.have_hardware;
     vars_loaded = m.vars_loaded;
-    dsp_sets_dacs = m.dsp_sets_dacs;
-    dsp_has_all_adc_traces = m.dsp_has_all_adc_traces;
     cfg_ctrlcs = m.cfg_ctrlcs;
     test_mode = m.test_mode.load();
 
@@ -455,8 +449,6 @@ module& module::operator=(module&& m) {
     m.fippi_fpga = false;
     m.have_hardware = false;
     m.vars_loaded = false;
-    m.dsp_sets_dacs = true;
-    m.dsp_has_all_adc_traces = true;
     m.cfg_ctrlcs = 0xaaa;
     m.test_mode = test::off;
 
@@ -481,7 +473,7 @@ void module::open(size_t device_number) {
                     "no module or channel variable descriptors");
     }
 
-    if (online()) {
+    if (present()) {
         throw error(number, slot, error::code::module_already_open, "module already open");
     }
 
@@ -634,17 +626,11 @@ void module::open(size_t device_number) {
 
         present_ = true;
 
-        fixtures = fixture::make(*this);
+        erase_values();
+        erase_channels();
 
-        /*
-         * The ref H and later DSP does not support:
-         *   - Setting DACs
-         *   - Holding all ADC traces
-         */
-        if (*this >= hw::rev_H) {
-            dsp_sets_dacs = false;
-            dsp_has_all_adc_traces = false;
-        }
+        fixtures = fixture::make(*this);
+        run_config = hw::run::make(*this);
 
         start_fifo_services();
 
@@ -662,11 +648,12 @@ void module::close() {
 
         log(log::debug) << module_label(*this) << "close: device-number=" << device->device_number;
 
-        force_offline();
-
         if (fixtures) {
             fixtures->close();
+            fixtures.reset();
         }
+
+        force_offline();
 
         log_stats("total", data_stats);
 
@@ -714,7 +701,7 @@ void module::close() {
 void module::force_offline() {
     log(log::info) << module_label(*this) << "set offline";
     lock_guard guard(lock_);
-    if (!forced_offline_.load()) {
+    if (present() && !forced_offline_.load()) {
         try {
             if (fixtures) {
                 fixtures->forced_offline();
@@ -739,11 +726,15 @@ void module::check_channel_num(T num) {
 void module::probe() {
     lock_guard guard(lock_);
 
+    if (!present()) {
+        throw error(number, slot, error::code::module_offline, "module not open");
+    }
+
     online_ = dsp_online = fippi_fpga = comms_fpga = false;
 
     load_vars();
-
     erase_values();
+    erase_channels();
 
     hw::fpga::comms comms(*this);
     comms_fpga = comms.done();
@@ -761,6 +752,7 @@ void module::probe() {
 
     if (fippi_fpga) {
         init_values();
+        init_channels();
     }
 
     online_ = comms_fpga && fippi_fpga && dsp_online;
@@ -772,6 +764,10 @@ void module::probe() {
 
 void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
     lock_guard guard(lock_);
+
+    if (!present()) {
+        throw error(number, slot, error::code::module_offline, "module not open");
+    }
 
     if (forced_offline_.load()) {
         log(log::warning) << "module forced offline";
@@ -839,6 +835,7 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
 
     if (fippi_fpga) {
         init_values();
+        init_channels();
     }
 
     start_fifo_services();
@@ -849,12 +846,15 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
     online_ = comms_fpga && fippi_fpga && dsp_online;
 
     if (online_) {
+        fixtures->boot();
         fixtures->online();
     }
 }
 
 void module::initialize() {
-    fixtures->initialize();
+    if (fixtures) {
+        fixtures->initialize();
+    }
 }
 
 void module::add(firmware::module& fw) {
@@ -1540,30 +1540,14 @@ void module::get_traces() {
     log(log::info) << module_label(*this) << "get-traces";
     online_check();
     lock_guard guard(lock_);
-    if (dsp_has_all_adc_traces) {
-        hw::run::control(*this, hw::run::control_task::get_traces);
-    } else {
-        for (auto& channel : channels) {
-            channel.fixture->acquire_adc();
-        }
-    }
+    hw::run::control(*this, hw::run::control_task::get_traces);
 }
 
 void module::set_dacs() {
     log(log::info) << module_label(*this) << "set-dacs";
     online_check();
     lock_guard guard(lock_);
-    if (dsp_sets_dacs) {
-        hw::run::control(*this, hw::run::control_task::set_dacs);
-    } else {
-        /*
-         * DAC setting is per channel
-         */
-        for (auto& channel : channels) {
-            auto dac_offset = read_var(param::channel_var::OffsetDAC, channel.number);
-            channel.fixture->set_dac(dac_offset);
-        }
-    }
+    hw::run::control(*this, hw::run::control_task::set_dacs);
 }
 
 void module::start_histograms(hw::run::run_mode mode) {
@@ -1613,13 +1597,7 @@ void module::read_adc(size_t channel, hw::adc_word* buffer, size_t size, bool ru
                     "control task not `get_traces`");
     }
     channel::channel& chan = channels[channel];
-    if (dsp_has_all_adc_traces) {
-        chan.read_adc(buffer, size);
-    } else {
-        const size_t copy_size =
-            (size < chan.adc_trace.size() ? size : chan.adc_trace.size()) * sizeof(hw::adc_word);
-        memcpy(buffer, chan.adc_trace.data(), copy_size);
-    }
+    chan.read_adc(buffer, size);
 }
 
 void module::read_adc(size_t channel, hw::adc_trace& buffer, bool run) {
@@ -1978,7 +1956,16 @@ void module::load_vars() {
 }
 
 void module::erase_values() {
+    if (fixtures) {
+        fixtures->erase_values();
+    }
     module_vars.clear();
+}
+
+void module::erase_channels() {
+    if (fixtures) {
+        fixtures->erase_channels();
+    }
     channels.clear();
 }
 
@@ -1990,17 +1977,33 @@ void module::init_values() {
         throw error(number, slot, error::code::internal_failure,
                     "invalid number of channels configurations");
     }
-
     erase_values();
     for (const auto& desc : module_var_descriptors) {
         module_vars.push_back(param::module_variable(desc));
     }
+    if (fixtures) {
+        fixtures->init_values();
+    }
+}
+
+void module::init_channels() {
+    if (num_channels == 0) {
+        throw error(number, slot, error::code::internal_failure, "number of channels is 0");
+    }
+    if (eeprom.configs.size() != num_channels) {
+        throw error(number, slot, error::code::internal_failure,
+                    "invalid number of channels configurations");
+    }
+    erase_channels();
     channels.resize(num_channels, channel::channel(*this));
     for (size_t channel = 0; channel < num_channels; ++channel) {
         channels[channel].number = channel;
         for (const auto& desc : channel_var_descriptors) {
             channels[channel].vars.push_back(param::channel_variable(desc));
         }
+    }
+    if (fixtures) {
+        fixtures->init_channels();
     }
 }
 

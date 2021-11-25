@@ -33,6 +33,33 @@ namespace xia {
 namespace pixie {
 namespace hw {
 namespace run {
+
+/**
+ * The default module run configuration
+ */
+static module_config run_config_default = {
+    .dsp_sets_dacs = true,
+    .adc_trace_per_channel = false
+};
+
+/**
+ * The AFE DB module run configuration
+ */
+static module_config run_config_afe_db = {
+    .dsp_sets_dacs = false,
+    .adc_trace_per_channel = true
+};
+
+module_config make(module::module& module) {
+    switch (module.get_rev_tag()) {
+    case hw::rev_H:
+        return run_config_afe_db;
+    default:
+        break;
+    }
+    return run_config_default;
+}
+
 static const char* control_task_labels(control_task control_tsk) {
     switch (control_tsk) {
         case control_task::set_dacs:
@@ -74,6 +101,7 @@ static const char* run_task_labels(run_task run_tsk) {
     }
     return "nop";
 }
+
 void start(module::module& module, run_mode mode, run_task run_tsk, control_task control_tsk) {
     log(log::debug) << module::module_label(module, "run") << "start: run-mode=" << int(mode)
                     << " run-tsk=" << std::hex << int(run_tsk) << std::dec
@@ -141,24 +169,82 @@ bool active(module::module& module) {
     return (csr::read(module) & ((1 << hw::bit::RUNENA) | (1 << hw::bit::RUNACTIVE))) != 0;
 }
 
+static void control_task_set_dacs(module::module& module) {
+    for (auto& channel : module.channels) {
+        auto dac_offset = module.read_var(param::channel_var::OffsetDAC, channel.number);
+        channel.fixture->set_dac(dac_offset);
+    }
+}
+
+static void control_task_get_traces(module::module& module) {
+    for (auto& channel : module.channels) {
+        channel.fixture->acquire_adc();
+    }
+}
+
+static bool control_task_prerun(module::module& module, control_task control_tsk, int ) {
+    switch (control_tsk) {
+    case control_task::set_dacs:
+        if (!module.run_config.dsp_sets_dacs) {
+            control_task_set_dacs(module);
+            return false;
+        }
+        break;
+    case control_task::get_traces:
+        if (module.run_config.adc_trace_per_channel) {
+            control_task_get_traces(module);
+            return false;
+        }
+        break;
+    default:
+        break;
+    }
+    return true;
+}
+
+static void control_task_postrun(module::module& module, control_task control_tsk, int ) {
+    switch (control_tsk) {
+    case control_task::adjust_offsets:
+        if (!module.run_config.dsp_sets_dacs) {
+            control_task_set_dacs(module);
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+void control_run_on_dsp(module::module& module, control_task control_tsk, int wait_msecs) {
+    log(log::debug) << module::module_label(module, "run on dsp")
+                    << "control=" << control_task_labels(control_tsk) << " wait=" << wait_msecs;
+    bool finished = false;
+    start(module, run_mode::new_run, run_task::nop, control_tsk);
+    for (int msecs = 0; !finished && msecs < wait_msecs; ++msecs) {
+        if (active(module)) {
+            hw::wait(1000);
+        } else {
+            finished = true;
+        }
+    }
+    if (!finished) {
+        std::ostringstream oss;
+        oss << "control task failed to end: " << int(control_tsk);
+        throw error(error::code::module_task_timeout, oss.str());
+    }
+}
+
 void control(module::module& module, control_task control_tsk, int wait_msecs) {
     log(log::debug) << module::module_label(module, "run")
                     << "control=" << control_task_labels(control_tsk) << " wait=" << wait_msecs;
     util::timepoint tp;
     tp.start();
-    start(module, run_mode::new_run, run_task::nop, control_tsk);
-    for (int msecs = 0; msecs < wait_msecs; ++msecs) {
-        if (!active(module)) {
-            tp.end();
-            log(log::debug) << module::module_label(module, "control")
-                            << "control=" << control_task_labels(control_tsk) << " duration=" << tp;
-            return;
-        }
-        hw::wait(1000);
+    if (control_task_prerun(module, control_tsk, wait_msecs)) {
+        control_run_on_dsp(module, control_tsk, wait_msecs);
     }
-    std::ostringstream oss;
-    oss << "control task failed to end: " << int(control_tsk);
-    throw error(error::code::module_task_timeout, oss.str());
+    control_task_postrun(module, control_tsk, wait_msecs);
+    tp.end();
+    log(log::debug) << module::module_label(module, "control")
+                    << "control=" << control_task_labels(control_tsk) << " duration=" << tp;
 }
 
 void run(module::module& module, run_mode mode, run_task run_tsk) {
