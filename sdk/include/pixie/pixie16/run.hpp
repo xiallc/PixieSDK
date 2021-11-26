@@ -225,6 +225,10 @@ struct module_config {
      * A single channel's ADC trace per control task request
      */
     bool adc_trace_per_channel;
+    /**
+     * The DSP supports ramping the offset DACs.
+     */
+    bool dsp_ramp_offsetdacs;
 };
 
 /**

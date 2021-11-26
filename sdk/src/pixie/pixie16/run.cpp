@@ -39,7 +39,8 @@ namespace run {
  */
 static module_config run_config_default = {
     .dsp_sets_dacs = true,
-    .adc_trace_per_channel = false
+    .adc_trace_per_channel = false,
+    .dsp_ramp_offsetdacs = true
 };
 
 /**
@@ -47,7 +48,8 @@ static module_config run_config_default = {
  */
 static module_config run_config_afe_db = {
     .dsp_sets_dacs = false,
-    .adc_trace_per_channel = true
+    .adc_trace_per_channel = true,
+    .dsp_ramp_offsetdacs = false
 };
 
 module_config make(module::module& module) {
@@ -194,6 +196,11 @@ static bool control_task_prerun(module::module& module, control_task control_tsk
         if (module.run_config.adc_trace_per_channel) {
             control_task_get_traces(module);
             return false;
+        }
+        break;
+    case control_task::ramp_offsetdacs:
+        if (!module.run_config.dsp_ramp_offsetdacs) {
+            throw error(error::code::module_invalid_operation, "not supported");
         }
         break;
     default:
