@@ -3,11 +3,11 @@ This script visualizes the CSV and list-mode data from our example codes.
 ## Usage
 ```shell
 usage: data_visualizer.py [-h] [-b] [-c CHAN] -f FILE [--freq FREQ] [-l] [-m]
-                          [-x XLIM] [--rev REV] [-s] [-t]
+                          [-x XLIM] [--rev REV] [-s] [-a]
 
 Optional app description
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -b, --baseline        Plots MCA spectra
   -c CHAN, --chan CHAN  The channel that you'd like to plot.
@@ -19,5 +19,5 @@ optional arguments:
   -x XLIM, --xlim XLIM  Comma separated range for X-axis limits. Ex. 10,400
   --rev REV             The firmware used to collect list-mode data. Ex. 30474
   -s, --stats           Processes a module's CSV statistics file.
-  -t, --trace           Plots traces
+  -a, --adc             Plots traces
 ```
