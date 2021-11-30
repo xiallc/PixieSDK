@@ -713,8 +713,10 @@ int main(int argc, char** argv) {
         {'t', "run-time"}, 10.);
     args::ValueFlag<std::string> parameter(
         arguments, "parameter", "The parameter we want to read from the system.", {'n', "name"});
-    args::ValueFlag<unsigned int> channel(arguments, "channel", "The channel to operate on.",
-                                          {"chan"});
+    args::ValueFlag<unsigned int> channel(
+        arguments, "channel",
+        "The channel to operate on. If set to the maximum number of channels in the module, then reads/writes execute for all channels.",
+        {"chan"});
     args::ValueFlag<unsigned int> crate(arguments, "crate", "The crate", {"crate"}, 0);
     args::ValueFlag<unsigned int> copy_mask(
         copy, "copy_mask", "An integer representing the set of parameters to copy", {"copy-mask"});
@@ -877,17 +879,17 @@ int main(int argc, char** argv) {
                    "and the destination mask to execute!"
                 << std::endl;
         }
-        std::vector<unsigned short> dest_mask;
+        std::vector<unsigned short> dest_masks;
         for (size_t mod = 0; mod < cfg.num_modules(); mod++) {
             for (size_t chan = 0; chan < cfg.modules[mod].number_of_channels; chan++) {
                 if (mod == dest_module.Get() && chan == dest_channel.Get())
-                    dest_mask.push_back(1);
+                    dest_masks.push_back(1);
                 else
-                    dest_mask.push_back(0);
+                    dest_masks.push_back(0);
             }
         }
         if (!verify_api_return_value(Pixie16CopyDSPParameters(copy_mask.Get(), module.Get(),
-                                                              channel.Get(), dest_mask.data()),
+                                                              channel.Get(), dest_masks.data()),
                                      "Pixie16CopyDSPParameters", true)) {
             return EXIT_FAILURE;
         }
@@ -910,14 +912,31 @@ int main(int argc, char** argv) {
     }
 
     if (read) {
-        if (!execute_parameter_read(parameter, crate, module.Get(), channel))
-            return EXIT_FAILURE;
+        auto mod = cfg.modules[module.Get()];
+        if (channel.Get() == mod.number_of_channels) {
+            for (unsigned int ch = 0; ch < mod.number_of_channels; ch++) {
+                channel.ParseValue(std::vector<std::string>(1, std::to_string(ch)));
+                if (!execute_parameter_read(parameter, crate, module.Get(), channel))
+                    return EXIT_FAILURE;
+            }
+        } else {
+            if (!execute_parameter_read(parameter, crate, module.Get(), channel))
+                return EXIT_FAILURE;
+        }
     }
 
     if (write) {
-        if (!execute_parameter_write(parameter, parameter_value, crate, cfg.modules[module.Get()],
-                                     channel))
-            return EXIT_FAILURE;
+        auto mod = cfg.modules[module.Get()];
+        if (channel.Get() == mod.number_of_channels) {
+            for (unsigned int ch = 0; ch < mod.number_of_channels; ch++) {
+                channel.ParseValue(std::vector<std::string>(1, std::to_string(ch)));
+                if (!execute_parameter_write(parameter, parameter_value, crate, mod, channel))
+                    return EXIT_FAILURE;
+            }
+        } else {
+            if (!execute_parameter_write(parameter, parameter_value, crate, mod, channel))
+                return EXIT_FAILURE;
+        }
     }
 
     if (adjust_offsets) {
