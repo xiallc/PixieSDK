@@ -157,7 +157,7 @@ static void unsupported_op(const std::string what) {
 }
 
 static void set_channel_voffset(pixie::module::module& mod, double voffset, int step) {
-    for (int chan = 0; chan < mod.num_channels; chan += step) {
+    for (int chan = 0; chan < static_cast<int>(mod.num_channels); chan += step) {
         mod.channels[chan].voffset(voffset);
     }
     mod.set_dacs();
@@ -165,7 +165,7 @@ static void set_channel_voffset(pixie::module::module& mod, double voffset, int 
 
 static void analyze_channel_baselines(pixie::module::module& mod, channel_baselines& baselines) {
     mod.get_traces();
-    for (int channel = 0; channel < mod.num_channels; ++channel) {
+    for (int channel = 0; channel < static_cast<int>(mod.num_channels); ++channel) {
         xia::pixie::hw::adc_trace trace;
         mod.read_adc(channel, trace, false);
         channel_baseline baseline;
@@ -421,7 +421,7 @@ void afe_dbs::boot() {
     /*
      * Check all the channels and swap of the ADCs if required.
      */
-    for (int chan = 0; chan < module_.num_channels; ++chan) {
+    for (int chan = 0; chan < static_cast<int>(module_.num_channels); ++chan) {
         bool swapped = false;
         if ((chan % 2) == 0) {
             if (bl_same[chan] == bl_moved[chan]) {
@@ -462,7 +462,7 @@ void afe_dbs::boot() {
     bool failed = false;
     channel_baselines bl_verify;
     analyze_channel_baselines(module_, bl_verify);
-    for (int chan = 0; chan < module_.num_channels; ++chan) {
+    for (int chan = 0; chan < static_cast<int>(module_.num_channels); ++chan) {
         if ((chan % 2) == 0) {
             if (bl_same[chan] == bl_verify[chan]) {
                 failed = true;
@@ -493,7 +493,7 @@ void afe_dbs::boot() {
 void afe_dbs::init_channels() {
     log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")
                     << "init-channels: create channel fixtures";
-    for (int chan = 0; chan < module_.num_channels; ++chan) {
+    for (int chan = 0; chan < static_cast<int>(module_.num_channels); ++chan) {
         module_.channels[chan].fixture =
             fixture::make(module_.channels[chan], module_.eeprom.configs[chan]);
     }
@@ -525,6 +525,8 @@ void channel::acquire_adc() {
 }
 
 void channel::read_adc(hw::adc_word* buffer, size_t size) {
+    (void) buffer;
+    (void) size;
     unsupported_op("read ADC is using the DSP");
 }
 
@@ -534,26 +536,35 @@ void channel::report(std::ostream& out) const {
 }
 
 void channel::set(const std::string item, bool ) {
+    (void) item;
     unsupported_op("not set support: bool");
 }
 
 void channel::set(const std::string item, int value) {
+    (void) item;
+    (void) value;
     unsupported_op("no set support: int");
 }
 
 void channel::set(const std::string item, hw::word value) {
+    (void) item;
+    (void) value;
     unsupported_op("no set support: hw::word");
 }
 
 void channel::get(const std::string item, bool& value) {
+    (void) item;
+    (void) value;
     unsupported_op("no get support: bool");
 }
 
 void channel::get(const std::string item, int& ) {
+    (void) item;
     unsupported_op("no get support: int");
 }
 
 void channel::get(const std::string item, hw::word& ) {
+    (void) item;
     unsupported_op("no get support: hw::word");
 }
 
