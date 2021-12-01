@@ -102,7 +102,7 @@ static int not_supported() {
     return xia::pixie::error::return_code(error);
 }
 
-void load_settings_file(xia::pixie::module::module& module, const std::string& filename) {
+static void load_settings_file(xia::pixie::module::module& module, const std::string& filename) {
     bool json_config = false;
     xia::pixie::legacy::settings* settings;
     try {
@@ -834,7 +834,27 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
     try {
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
-        module->read_histogram(ChanNum, Histogram, NumWords);
+        module->channel_check(ChanNum);
+        auto chan = module->channels[ChanNum];
+        auto read_words = NumWords;
+        if (read_words > chan.fixture->config.max_histogram_length) {
+            xia_log(xia_log::warning)
+                << "NumWords (" << NumWords << ") greater than the max_histogram_length ("
+                << chan.fixture->config.max_histogram_length << ") for Module " << ModNum
+                << " Channel " << ChanNum
+                << ". Truncating to the maximum length and filling with max bin values.";
+            read_words = chan.fixture->config.max_histogram_length;
+
+            for (unsigned int i = read_words; i < NumWords; i++)
+                Histogram[i] = std::numeric_limits<unsigned int>::max();
+        } else {
+            xia_log(xia_log::warning)
+                << "NumWords (" << NumWords << ") less than the max_histogram_length ("
+                << chan.fixture->config.max_histogram_length << ") for Module " << ModNum
+                << " Channel " << ChanNum
+                << ". You may not be capturing all the data.";
+        }
+        module->read_histogram(ChanNum, Histogram, read_words);
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
