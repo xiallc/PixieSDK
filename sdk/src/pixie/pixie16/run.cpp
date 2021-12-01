@@ -38,18 +38,18 @@ namespace run {
  * The default module run configuration
  */
 static module_config run_config_default = {
-    .dsp_sets_dacs = true,
-    .adc_trace_per_channel = false,
-    .dsp_ramp_offsetdacs = true
+    /* .dsp_sets_dacs */ true,
+    /* .adc_trace_per_channel */ false,
+    /* .dsp_ramp_offsetdac */ true
 };
 
 /**
  * The AFE DB module run configuration
  */
 static module_config run_config_afe_db = {
-    .dsp_sets_dacs = false,
-    .adc_trace_per_channel = true,
-    .dsp_ramp_offsetdacs = false
+    /* .dsp_sets_dacs */ false,
+    /* .adc_trace_per_channel */ true,
+    /* .dsp_ramp_offsetdac */ false
 };
 
 module_config make(module::module& module) {
