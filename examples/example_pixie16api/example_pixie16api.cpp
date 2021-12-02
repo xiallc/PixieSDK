@@ -587,31 +587,43 @@ bool execute_trace_capture(const module_config& mod) {
     if (!verify_api_return_value(Pixie16AcquireADCTrace(mod.number), "Pixie16AcquireADCTrace"))
         return false;
 
-    std::vector<std::vector<unsigned short>> trace(mod.number_of_channels,
-                                                   std::vector<unsigned short>(MAX_ADC_TRACE_LEN));
-    for (unsigned int i = 0; i < mod.number_of_channels; i++) {
-        if (!verify_api_return_value(
-                Pixie16ReadSglChanADCTrace(trace[i].data(), MAX_ADC_TRACE_LEN, mod.number, i),
-                "Pixie16AcquireADCTrace", false))
-            return false;
-    }
-
     std::ofstream ofstream1(generate_filename(mod.number, "adc", "csv"));
     ofstream1 << "bin,";
+
+    unsigned int max_trace_length = 0;
+    std::vector<std::vector<unsigned short>> traces;
     for (unsigned int i = 0; i < mod.number_of_channels; i++) {
+#ifndef LEGACY_EXAMPLE
+        std::vector<unsigned short> trace(GetTraceLength(mod.number, i), 0);
+#else
+        std::vector<unsigned short> trace(MAX_ADC_TRACE_LEN, 0);
+#endif
+        if (trace.size() > max_trace_length)
+            max_trace_length = trace.size();
+
+        if (!verify_api_return_value(
+                Pixie16ReadSglChanADCTrace(trace.data(), trace.size(), mod.number, i),
+                "Pixie16AcquireADCTrace", false))
+            return false;
+        traces.push_back(trace);
+
         if (i != static_cast<unsigned int>(mod.number_of_channels - 1))
             ofstream1 << "Chan" << i << ",";
         else
             ofstream1 << "Chan" << i;
     }
     ofstream1 << std::endl;
-    for (unsigned int i = 0; i < MAX_ADC_TRACE_LEN; i++) {
-        ofstream1 << i << ",";
-        for (unsigned int k = 0; k < mod.number_of_channels; k++) {
-            if (k != static_cast<unsigned int>(mod.number_of_channels - 1))
-                ofstream1 << trace[k][i] << ",";
+
+    for (unsigned int idx = 0; idx < max_trace_length; idx++) {
+        ofstream1 << idx << ",";
+        for (auto& trace : traces) {
+            std::string val = " ";
+            if (idx < trace.size())
+                val = std::to_string(trace[idx]);
+            if (&trace != &traces.back())
+                ofstream1 << val << ",";
             else
-                ofstream1 << trace[k][i];
+                ofstream1 << val;
         }
         ofstream1 << std::endl;
     }
