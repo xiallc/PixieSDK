@@ -103,27 +103,21 @@ static int not_supported() {
 }
 
 static void load_settings_file(xia::pixie::module::module& module, const std::string& filename) {
-    bool json_config = false;
-    xia::pixie::legacy::settings* settings;
     try {
-        settings = new xia::pixie::legacy::settings(module);
-        settings->load(filename);
+        xia::pixie::legacy::settings settings(module);
+        settings.load(filename);
+        settings.import(module);
+        settings.write(module);
+        module.sync_vars();
     } catch (xia::pixie::error::error& err) {
         if (err.type == xia::pixie::error::code::module_total_invalid ||
             err.type == xia::pixie::error::code::channel_number_invalid) {
-            json_config = true;
             xia::pixie::module::number_slots modules;
             ///TODO: Not super efficient if we're calling module-by-module.
             crate.import_config(filename, modules);
         } else {
             throw;
         }
-    }
-
-    if (!json_config) {
-        settings->import(module);
-        settings->write(module);
-        module.sync_vars();
     }
 }
 
