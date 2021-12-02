@@ -283,7 +283,7 @@ void db::set(const std::string item, bool value) {
 
 void db::get(const std::string item, bool& value) {
     if (item == "ADC_SWAP") {
-        value = adc_swapped;
+        value = (adc_state == adc_swapped);
     } else {
         unsupported_op("db: get: unsupported item");
     }
