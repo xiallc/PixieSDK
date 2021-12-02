@@ -186,6 +186,50 @@ PIXIE_EXPORT unsigned int PIXIE_API Pixie16GetStatisticsSize(void) {
     return sizeof(stats_legacy);
 }
 
+PIXIE_EXPORT unsigned int PIXIE_API GetHistogramLength(unsigned short mod_num,
+                                                       unsigned short chan_num) {
+    try {
+        crate.ready();
+        xia::pixie::crate::module_handle module(crate, mod_num);
+        module->channel_check(chan_num);
+        return module->channels[chan_num].fixture->config.max_histogram_length;
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::api_result_unknown_error();
+    } catch (...) {
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::api_result_unknown_error();
+    }
+}
+
+PIXIE_EXPORT unsigned int PIXIE_API GetTraceLength(unsigned short mod_num,
+                                                   unsigned short chan_num) {
+    try {
+        crate.ready();
+        xia::pixie::crate::module_handle module(crate, mod_num);
+        module->channel_check(chan_num);
+        return module->channels[chan_num].fixture->config.max_adc_trace_length;
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::api_result_bad_alloc_error();
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::api_result_unknown_error();
+    } catch (...) {
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::api_result_unknown_error();
+    }
+}
+
 PIXIE_EXPORT int PIXIE_API Pixie16AcquireADCTrace(unsigned short ModNum) {
     xia_log(xia_log::debug) << "Pixie16AcquireADCTrace: ModNum=" << ModNum;
 
@@ -851,8 +895,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
             xia_log(xia_log::warning)
                 << "NumWords (" << NumWords << ") less than the max_histogram_length ("
                 << chan.fixture->config.max_histogram_length << ") for Module " << ModNum
-                << " Channel " << ChanNum
-                << ". You may not be capturing all the data.";
+                << " Channel " << ChanNum << ". You may not be capturing all the data.";
         }
         module->read_histogram(ChanNum, Histogram, read_words);
     } catch (xia_error& e) {

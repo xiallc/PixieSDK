@@ -484,9 +484,17 @@ bool execute_mca_run(const module_config& mod, const double& runtime_in_seconds,
     out << "bin,";
 
     std::vector<std::vector<uint32_t>> hists;
+    unsigned int max_histogram_length = 0;
     for (unsigned int i = 0; i < mod.number_of_channels; i++) {
+#ifndef LEGACY_EXAMPLE
+        std::vector<uint32_t> hist(GetHistogramLength(mod.number, i), 0);
+#else
         std::vector<uint32_t> hist(MAX_HISTOGRAM_LENGTH, 0);
-        Pixie16ReadHistogramFromModule(hist.data(), MAX_HISTOGRAM_LENGTH, mod.number, i);
+#endif
+        if (hist.size() > max_histogram_length)
+            max_histogram_length = hist.size();
+
+        Pixie16ReadHistogramFromModule(hist.data(), hist.size(), mod.number, i);
         hists.push_back(hist);
         if (i < static_cast<unsigned int>(mod.number_of_channels - 1))
             out << "Chan" << i << ",";
@@ -495,13 +503,16 @@ bool execute_mca_run(const module_config& mod, const double& runtime_in_seconds,
     }
     out << std::endl;
 
-    for (unsigned int bin = 0; bin < MAX_HISTOGRAM_LENGTH; bin++) {
+    for (unsigned int bin = 0; bin < max_histogram_length; bin++) {
         out << bin << ",";
         for (auto& hist : hists) {
+            std::string val = " ";
+            if (bin < hist.size())
+                val = std::to_string(hist[bin]);
             if (&hist != &hists.back())
-                out << hist[bin] << ",";
+                out << val << ",";
             else
-                out << hist[bin];
+                out << val;
         }
         out << std::endl;
     }

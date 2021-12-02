@@ -204,6 +204,37 @@ PIXIE_EXPORT unsigned int PIXIE_API Pixie16GetStatisticsSize(void);
 
 /**
  * @ingroup PIXIE16_API
+ * @brief Gets the maximum histogram buffer size in words (32-bit unsigned integers).
+ *
+ * The histogram buffer size may vary based on the hardware's channel configuration
+ * This function allows users to determine the specific size of the
+ * histogram data block for the specific module/channel combination. This size
+ * can then be used to allocate vectors of the correct size for the histogram data.
+ *
+ * @param[in] mod_num The module that holds the channel we want the size for.
+ * @param[in] chan_num The channel that we want the histogram size for.
+ * @returns The number of words needed to hold all the histogram data.
+ */
+PIXIE_EXPORT unsigned int PIXIE_API GetHistogramLength(unsigned short mod_num,
+                                                       unsigned short chan_num);
+
+/**
+ * @ingroup PIXIE16_API
+ * @brief Gets the maximum trace buffer size in words (32-bit unsigned integers).
+ *
+ * The trace buffer size may vary based on the hardware's channel configuration
+ * This function allows users to determine the specific size of the
+ * histogram data block for the specific module/channel combination. This size
+ * can then be used to allocate vectors of the correct size for the histogram data.
+ *
+ * @param[in] mod_num The module that holds the channel we want the size for.
+ * @param[in] chan_num The channel that we want the histogram size for.
+ * @returns The number of words needed to hold all the trace data.
+ */
+PIXIE_EXPORT unsigned int PIXIE_API GetTraceLength(unsigned short mod_num, unsigned short chan_num);
+
+/**
+ * @ingroup PIXIE16_API
  * @brief Acquire ADC traces from a Pixie module.
  *
  * Use this function to acquire ADC traces from Pixie-16 modules. Specify the module using ModNum
