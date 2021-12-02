@@ -315,54 +315,73 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
 
     std::cout << LOG("INFO") << "Collecting data for " << runtime_in_seconds << " s." << std::endl;
     std::chrono::steady_clock::time_point run_start_time = std::chrono::steady_clock::now();
-    while (std::chrono::duration_cast<std::chrono::duration<double>>(
-               std::chrono::steady_clock::now() - run_start_time)
-               .count() < runtime_in_seconds) {
-        for (unsigned short mod_num = 0; mod_num < cfg.num_modules(); mod_num++) {
-            if (Pixie16CheckRunStatus(mod_num) == 1) {
-                if (!verify_api_return_value(
-                        Pixie16CheckExternalFIFOStatus(&num_fifo_words, mod_num),
-                        "Pixie16CheckExternalFIFOStatus", false))
-                    return false;
+    double current_run_time = 0;
+    double check_time = 0;
+    bool run_status = Pixie16CheckRunStatus(cfg.modules[0].number);
 
-                if (double(num_fifo_words) / EXTERNAL_FIFO_LENGTH > 0.2) {
-                    std::cout << LOG("INFO") << "External FIFO has " << num_fifo_words << " words."
-                              << std::endl;
-                    if (!verify_api_return_value(
-                            Pixie16ReadDataFromExternalFIFO(data.data(), num_fifo_words, mod_num),
-                            "Pixie16ReadDataFromExternalFIFO", false))
-                        return false;
-                    output_streams[mod_num]->write(reinterpret_cast<char*>(data.data()),
-                                                   num_fifo_words * sizeof(uint32_t));
-                } else {
-                    continue;
-                }
-            } else {
-                std::cout << LOG("INFO") << "Module " << mod_num << " has no active run!"
-                          << std::endl;
-            }
-        }
+    while (run_status != 0) {
+        current_run_time = std::chrono::duration_cast<std::chrono::duration<double>>(
+                               std::chrono::steady_clock::now() - run_start_time)
+                               .count();
 
-        /*
-         Check the run status of the Director module (module #0) to see if the run has been stopped.
-         This is possible in a multi-chassis system where modules in one chassis can stop the run
-         in all chassis.
-         */
-        if (Pixie16CheckRunStatus(0) == 0) {
+        if (current_run_time >= runtime_in_seconds) {
+            /*
+             * Stop run in the Director module (module #0) - a SYNC interrupt should be generated
+             *  to stop run in all modules simultaneously
+             */
+            std::cout << LOG("INFO") << "Stopping List Mode Run." << std::endl;
+            if (!verify_api_return_value(Pixie16EndRun(cfg.modules[0].number), "Pixie16EndRun"))
+                return false;
+
             std::cout << LOG("INFO")
                       << "Run was stopped by the director module. Stopping data collection."
                       << std::endl;
             break;
         }
+
+        if (current_run_time - check_time > 1) {
+            if (current_run_time < runtime_in_seconds)
+                std::cout << LOG("INFO") << "Remaining run time: "
+                          << std::round(runtime_in_seconds - current_run_time) << " s" << std::endl;
+            check_time = current_run_time;
+
+            for (unsigned short mod_num = 0; mod_num < cfg.num_modules(); mod_num++) {
+                if (Pixie16CheckRunStatus(mod_num) == 1) {
+                    if (!verify_api_return_value(
+                            Pixie16CheckExternalFIFOStatus(&num_fifo_words, mod_num),
+                            "Pixie16CheckExternalFIFOStatus", false))
+                        return false;
+
+                    if (double(num_fifo_words) / EXTERNAL_FIFO_LENGTH > 0.2) {
+                        std::cout << LOG("INFO") << "External FIFO has " << num_fifo_words
+                                  << " words." << std::endl;
+                        if (!verify_api_return_value(Pixie16ReadDataFromExternalFIFO(
+                                                         data.data(), num_fifo_words, mod_num),
+                                                     "Pixie16ReadDataFromExternalFIFO", false))
+                            return false;
+                        output_streams[mod_num]->write(reinterpret_cast<char*>(data.data()),
+                                                       num_fifo_words * sizeof(uint32_t));
+                    } else {
+                        continue;
+                    }
+                } else {
+                    std::cout << LOG("INFO") << "Module " << mod_num << " has no active run!"
+                              << std::endl;
+                }
+            }
+        }
+
+        /*
+         * Check the run status of the Director module (module #0) to see if the run has been stopped.
+         * This is possible in a multi-chassis system where modules in one chassis can stop the run
+         * in all chassis.
+         */
+        run_status = Pixie16CheckRunStatus(cfg.modules[0].number);
+
+        //Temper the thread so that we don't slam the module with run status requests.
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
-    /*
-     Stop run in the Director module (module #0) - a SYNC interrupt should be generated
-     to stop run in all modules simultaneously
-     */
-    std::cout << LOG("INFO") << "Stopping List Mode Run." << std::endl;
-    if (!verify_api_return_value(Pixie16EndRun(0), "Pixie16EndRun"))
-        return false;
 
     std::cout << LOG("INFO") << "Checking that the run is finalized in all the modules."
               << std::endl;
@@ -415,6 +434,9 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
             return false;
         }
     }
+
+    for (auto& stream: output_streams)
+        stream->close();
 
     return true;
 }
