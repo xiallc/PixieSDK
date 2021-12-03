@@ -918,16 +918,19 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned
     xia_log(xia_log::debug) << "Pixie16ReadModuleInfo: ModNum=" << ModNum;
 
     try {
+        crate.ready();
+        xia::pixie::crate::module_handle module(crate, ModNum);
+
         if (ModRev)
-            *ModRev = crate.modules[ModNum]->revision;
+            *ModRev = module->revision;
         if (ModSerNum)
-            *ModSerNum = crate.modules[ModNum]->serial_num;
+            *ModSerNum = module->serial_num;
         if (ModADCBits)
-            *ModADCBits = crate.modules[ModNum]->eeprom.configs[0].adc_bits;
+            *ModADCBits = module->eeprom.configs[0].adc_bits;
         if (ModADCMSPS)
-            *ModADCMSPS = crate.modules[ModNum]->eeprom.configs[0].adc_msps;
+            *ModADCMSPS = module->eeprom.configs[0].adc_msps;
         if (num_channels)
-            *num_channels = static_cast<unsigned short>(crate.modules[ModNum]->num_channels);
+            *num_channels = static_cast<unsigned short>(module->num_channels);
     } catch (std::bad_alloc& e) {
         xia_log(xia_log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::api_result_bad_alloc_error();
