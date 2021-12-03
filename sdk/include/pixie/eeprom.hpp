@@ -206,6 +206,9 @@ struct eeprom {
      * @returns int Return -1 if the channel does not have a DB
      */
     int db_find(const int channel) const;
+    template<typename T> int db_find(const T channel) const {
+        return db_find(static_cast<int>(channel));
+    }
 
     /**
      * Get the DB index for a given DB label. @note the index is not the index

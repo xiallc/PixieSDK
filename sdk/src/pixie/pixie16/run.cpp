@@ -38,24 +38,26 @@ namespace run {
  * The default module run configuration
  */
 static module_config run_config_default = {
-    /* .dsp_sets_dacs */ true,
-    /* .adc_trace_per_channel */ false,
-    /* .dsp_ramp_offsetdac */ true
+    true,  /* dsp_sets_dacs */
+    true,  /* dsp_get_traces */
+    true,  /* dsp_ramp_offsetdac */
+    true   /* dsp_adjust_offsetdacs */
 };
 
 /**
  * The AFE DB module run configuration
  */
-static module_config run_config_afe_db = {
-    /* .dsp_sets_dacs */ false,
-    /* .adc_trace_per_channel */ true,
-    /* .dsp_ramp_offsetdac */ false
+static module_config run_config_afe_dbs = {
+    false,  /* dsp_sets_dacs */
+    false,  /* dsp_get_traces */
+    false,  /* dsp_ramp_offsetdac */
+    false   /* dsp_adjust_offsetdacs */
 };
 
 module_config make(module::module& module) {
     switch (module.get_rev_tag()) {
     case hw::rev_H:
-        return run_config_afe_db;
+        return run_config_afe_dbs;
     default:
         break;
     }
@@ -171,36 +173,29 @@ bool active(module::module& module) {
     return (csr::read(module) & ((1 << hw::bit::RUNENA) | (1 << hw::bit::RUNACTIVE))) != 0;
 }
 
-static void control_task_set_dacs(module::module& module) {
-    for (auto& channel : module.channels) {
-        auto dac_offset = module.read_var(param::channel_var::OffsetDAC, channel.number);
-        channel.fixture->set_dac(dac_offset);
-    }
-}
-
-static void control_task_get_traces(module::module& module) {
-    for (auto& channel : module.channels) {
-        channel.fixture->acquire_adc();
-    }
-}
-
 static bool control_task_prerun(module::module& module, control_task control_tsk, int ) {
     switch (control_tsk) {
     case control_task::set_dacs:
         if (!module.run_config.dsp_sets_dacs) {
-            control_task_set_dacs(module);
-            return false;
-        }
-        break;
-    case control_task::get_traces:
-        if (module.run_config.adc_trace_per_channel) {
-            control_task_get_traces(module);
+            module.fixtures->set_dacs();
             return false;
         }
         break;
     case control_task::ramp_offsetdacs:
         if (!module.run_config.dsp_ramp_offsetdacs) {
             throw error(error::code::module_invalid_operation, "not supported");
+        }
+        break;
+    case control_task::get_traces:
+        if (!module.run_config.dsp_get_traces) {
+            module.fixtures->get_traces();
+            return false;
+        }
+        break;
+    case control_task::adjust_offsets:
+        if (!module.run_config.dsp_adjust_offsetdacs) {
+            module.fixtures->adjust_offsets();
+            return false;
         }
         break;
     default:
@@ -211,11 +206,6 @@ static bool control_task_prerun(module::module& module, control_task control_tsk
 
 static void control_task_postrun(module::module& module, control_task control_tsk, int ) {
     switch (control_tsk) {
-    case control_task::adjust_offsets:
-        if (!module.run_config.dsp_sets_dacs) {
-            control_task_set_dacs(module);
-        }
-        break;
     default:
         break;
     }

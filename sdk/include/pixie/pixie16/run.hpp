@@ -222,13 +222,17 @@ struct module_config {
      */
     bool dsp_sets_dacs;
     /**
-     * A single channel's ADC trace per control task request
+     * The DSP support getting ADC traces
      */
-    bool adc_trace_per_channel;
+    bool dsp_get_traces;
     /**
      * The DSP supports ramping the offset DACs.
      */
     bool dsp_ramp_offsetdacs;
+    /**
+     * The DSP supports adjusting the offset DACs
+     */
+    bool dsp_adjust_offsetdacs;
 };
 
 /**

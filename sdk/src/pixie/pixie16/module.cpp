@@ -846,6 +846,7 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
     online_ = comms_fpga && fippi_fpga && dsp_online;
 
     if (online_) {
+        hw::run::control(*this, hw::run::control_task::program_fippi);
         fixtures->boot();
         fixtures->online();
     }
@@ -1475,7 +1476,6 @@ void module::sync_hw(const bool program_fippi, const bool program_dacs) {
             cfg_ctrlcs |= (1 << hw::bit::CPLDCSR_BPCONNECT);
         }
 
-        log(log::debug) << module_label(*this) << "write: cfg_ctrlcs=0x" << std::hex << cfg_ctrlcs;
         write_word(hw::device::CFG_CTRLCS, cfg_ctrlcs);
 
         /*

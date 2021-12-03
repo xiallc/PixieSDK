@@ -77,6 +77,11 @@ struct channel {
     virtual void set_dac(param::value_type value);
 
     /**
+     * Per channel offsetdac adjust
+     */
+    virtual void adjust_offsetdac();
+
+    /**
      * Per channel ADC acquire.
      */
     virtual void acquire_adc();
@@ -93,6 +98,7 @@ struct channel {
      */
     virtual void set(const std::string item, bool value);
     virtual void set(const std::string item, int value);
+    virtual void set(const std::string item, double value);
     virtual void set(const std::string item, hw::word value);
 
     /**
@@ -102,6 +108,7 @@ struct channel {
      */
     virtual void get(const std::string item, bool& value);
     virtual void get(const std::string item, int& value);
+    virtual void get(const std::string item, double& value);
     virtual void get(const std::string item, hw::word& value);
 
     /**
@@ -216,6 +223,25 @@ struct module {
      * Variable sychronisation
      */
     virtual void sync_vars();
+
+    /*
+     * Module fixture control task support
+     */
+
+    /**
+     * Set DACs.
+     */
+    virtual void set_dacs();
+
+    /**
+     * Get ADC traces.
+     */
+    virtual void get_traces();
+
+    /**
+     * Adjust offsets
+     */
+    virtual void adjust_offsets();
 };
 
 using module_ptr = std::shared_ptr<module>;

@@ -245,9 +245,7 @@ channel& channel::operator=(const channel& c) {
 
 void channel::read_adc(hw::adc_word* buffer, size_t size) {
     module::module& mod = module.get();
-    if (mod.run_config.adc_trace_per_channel) {
-        fixture->read_adc(buffer, size);
-    } else {
+    if (mod.run_config.dsp_get_traces) {
         const hw::address addr =
            hw::memory::IO_BUFFER_ADDR + static_cast<hw::address>(number * (fixture->config.max_adc_trace_length / 2));
 
@@ -260,6 +258,8 @@ void channel::read_adc(hw::adc_word* buffer, size_t size) {
             buffer[w * 2] = hw::adc_word(adc_trace[w] & 0xffff);
             buffer[w * 2 + 1] = hw::adc_word((adc_trace[w] >> 16) & 0xffff);
         }
+    } else {
+        fixture->read_adc(buffer, size);
     }
 }
 
