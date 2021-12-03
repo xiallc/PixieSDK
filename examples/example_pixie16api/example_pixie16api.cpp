@@ -282,8 +282,9 @@ bool execute_baseline_capture(const module_config& mod) {
     return true;
 }
 
-bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_seconds,
-                           unsigned int synch_wait, unsigned int in_synch) {
+bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
+                           const double& runtime_in_seconds, unsigned int synch_wait,
+                           unsigned int in_synch) {
     std::cout << LOG("INFO") << "Starting list mode data run for " << runtime_in_seconds << " s."
               << std::endl;
 
@@ -306,8 +307,9 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
 
     std::vector<std::ofstream*> output_streams(cfg.num_modules());
     for (unsigned short i = 0; i < cfg.num_modules(); i++) {
-        output_streams[i] = new std::ofstream(generate_filename(i, "list-mode", "bin"),
-                                              std::ios::out | std::ios::binary);
+        output_streams[i] = new std::ofstream(
+            generate_filename(i, "list-mode-run" + std::to_string(run_num), "bin"),
+            std::ios::out | std::ios::binary);
     }
 
     std::vector<uint32_t> data(EXTERNAL_FIFO_LENGTH, 0);
@@ -430,18 +432,35 @@ bool execute_list_mode_run(const configuration& cfg, const double& runtime_in_se
             output_streams[mod_num]->write(reinterpret_cast<char*>(data.data()),
                                            num_fifo_words * sizeof(uint32_t));
         }
-        if (!output_statistics_data(cfg.modules[mod_num], "list-mode-stats")) {
+        if (!output_statistics_data(cfg.modules[mod_num],
+                                    "list-mode-stats-run" + std::to_string(run_num))) {
             return false;
         }
     }
 
-    for (auto& stream: output_streams)
+    for (auto& stream : output_streams)
         stream->close();
 
     return true;
 }
 
-bool execute_mca_run(const module_config& mod, const double& runtime_in_seconds,
+bool execute_list_mode_runs(const int num_runs, const configuration& cfg,
+                            const double& runtime_in_seconds, unsigned int synch_wait,
+                            unsigned int in_synch) {
+    for (int i = 0; i < num_runs; i++) {
+        std::cout << LOG("INFO") << "Starting list-mode run number " << i << std::endl;
+        if (!execute_list_mode_run(i, cfg, runtime_in_seconds, synch_wait, in_synch)) {
+            std::cout << LOG("INFO") << "List-mode data run " << i
+                      << "failed! See log for more details.";
+            return false;
+        }
+        std::cout << LOG("INFO") << "Finished list-mode run number " << i << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+    }
+    return true;
+}
+
+bool execute_mca_run(const int run_num, const module_config& mod, const double runtime_in_seconds,
                      unsigned int synch_wait, unsigned int in_synch) {
     std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write HOST_RT_PRESET to "
               << runtime_in_seconds << std::endl;
@@ -495,13 +514,17 @@ bool execute_mca_run(const module_config& mod, const double& runtime_in_seconds,
         }
     }
 
-    if (current_run_time < runtime_in_seconds)
+    if (current_run_time < runtime_in_seconds) {
         std::cout << LOG("ERROR") << "MCA Run exited prematurely! Check log for more details."
                   << std::endl;
-    else
+    } else {
+        //@todo We need to temporarily execute a manual end run until P16-440 is complete.
+        if (!verify_api_return_value(Pixie16EndRun(mod.number), "Pixie16EndRun"))
+            return false;
         std::cout << LOG("INFO") << "MCA Run finished!" << std::endl;
+    }
 
-    std::string name = generate_filename(mod.number, "mca", "csv");
+    std::string name = generate_filename(mod.number, "mca-run" + std::to_string(run_num), "csv");
     std::ofstream out(name);
     out << "bin,";
 
@@ -539,10 +562,25 @@ bool execute_mca_run(const module_config& mod, const double& runtime_in_seconds,
         out << std::endl;
     }
 
-    if (!output_statistics_data(mod, "mca-stats")) {
+    if (!output_statistics_data(mod, "mca-stats-run" + std::to_string(run_num))) {
         return false;
     }
 
+    return true;
+}
+
+bool execute_mca_runs(const int num_runs, const module_config& mod, const double runtime_in_seconds,
+                      unsigned int synch_wait, unsigned int in_synch) {
+    for (int i = 0; i < num_runs; i++) {
+        std::cout << LOG("INFO") << "Starting MCA run number " << i << std::endl;
+        if (!execute_mca_run(i, mod, runtime_in_seconds, synch_wait, in_synch)) {
+            std::cout << LOG("INFO") << "MCA data run " << i
+                      << " failed! See log for more details.";
+            return false;
+        }
+        std::cout << LOG("INFO") << "Finished MCA run number " << i << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+    }
     return true;
 }
 
@@ -772,6 +810,9 @@ int main(int argc, char** argv) {
     args::ValueFlag<unsigned int> dest_module(copy, "dest_module", "The module that we'll copy to.",
                                               {"dest-mod"});
     args::ValueFlag<unsigned int> module(arguments, "module", "The module to operate on.", {"mod"});
+    args::ValueFlag<unsigned int> num_runs(
+        arguments, "num-runs", "The number of runs to execute when taking list-mode or MCA data.",
+        {"num-runs"}, 1);
     args::ValueFlag<double> parameter_value(
         write, "parameter_value", "The value of the parameter we want to write.", {'v', "value"});
     args::ValueFlag<unsigned int> synch_wait(
@@ -797,10 +838,12 @@ int main(int argc, char** argv) {
     copy.Add(module);
     copy.Add(channel);
     dacs.Add(module);
+    list_mode.Add(num_runs);
     mca.Add(module);
     mca.Add(boot_pattern_flag);
     mca.Add(synch_wait);
     mca.Add(in_synch);
+    mca.Add(num_runs);
     read.Add(conf_flag);
     read.Add(crate);
     read.Add(module);
@@ -995,7 +1038,8 @@ int main(int argc, char** argv) {
     }
 
     if (list_mode) {
-        if (!execute_list_mode_run(cfg, run_time.Get(), synch_wait.Get(), in_synch.Get()))
+        if (!execute_list_mode_runs(num_runs.Get(), cfg, run_time.Get(), synch_wait.Get(),
+                                    in_synch.Get()))
             return EXIT_FAILURE;
     }
 
@@ -1010,8 +1054,8 @@ int main(int argc, char** argv) {
     }
 
     if (mca) {
-        if (!execute_mca_run(cfg.modules[module.Get()], run_time.Get(), synch_wait.Get(),
-                             in_synch.Get()))
+        if (!execute_mca_runs(num_runs.Get(), cfg.modules[module.Get()], run_time.Get(),
+                              synch_wait.Get(), in_synch.Get()))
             return EXIT_FAILURE;
     }
 
