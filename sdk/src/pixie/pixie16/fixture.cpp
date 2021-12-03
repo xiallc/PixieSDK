@@ -149,7 +149,6 @@ struct afe_dbs : public module {
 
     virtual void fgpa_fippi_loaded() override;
     virtual void boot() override;
-    virtual void init_channels() override;
 };
 
 static void unsupported_op(const std::string what) {
@@ -490,15 +489,6 @@ void afe_dbs::boot() {
                     << "boot: duration=" << tp;
 }
 
-void afe_dbs::init_channels() {
-    log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")
-                    << "init-channels: create channel fixtures";
-    for (int chan = 0; chan < static_cast<int>(module_.num_channels); ++chan) {
-        module_.channels[chan].fixture =
-            fixture::make(module_.channels[chan], module_.eeprom.configs[chan]);
-    }
-}
-
 channel::channel(pixie::channel::channel& module_channel_, const hw::config& config_)
     : module_channel(module_channel_), label("motherboard"),
       config(config_) {
@@ -630,7 +620,12 @@ void module::erase_channels() {
 }
 
 void module::init_channels() {
-    /* Do nothing */
+    log(log::debug) << pixie::module::module_label(module_, "fixture: module")
+                    << "init-channels: create channel fixtures";
+    for (auto chan = 0; chan < static_cast<int>(module_.num_channels); ++chan) {
+        module_.channels[chan].fixture =
+            fixture::make(module_.channels[chan], module_.eeprom.configs[chan]);
+    }
 }
 
 void module::sync_hw() {
