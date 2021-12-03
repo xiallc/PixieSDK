@@ -1275,6 +1275,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglChanPar(const char* ChanParName, doubl
     try {
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
+        module->channel_check(ChanNum);
         module->write(ChanParName, ChanNum, ChanParData);
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
