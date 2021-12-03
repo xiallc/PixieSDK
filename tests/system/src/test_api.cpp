@@ -130,7 +130,7 @@ static const std::map<std::string, command_def> command_defs = {
     {"hist-save", {{1, 2, 3}, "save a module's histogram to a file"}},
     {"list-start", {{1}, "start module list mode"}},
     {"list-resume", {{1}, "resume module list mode"}},
-    {"list-save", {{3}, "save a module's histogram to a file"}},
+    {"list-save", {{3}, "save a module's list-mode data to a file"}},
     {"par-read", {{2, 3}, "read module/channel parameter"}},
     {"par-write", {{3, 4}, "write module/channel parameter"}},
     {"var-read", {{2, 3, 4}, "read module/channel variable"}},
