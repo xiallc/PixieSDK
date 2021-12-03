@@ -128,7 +128,7 @@ int header::version() const {
     return int(control & 0xf);
 }
 
-db_assemble::db_assemble() : index(-1), position(0) {
+db_assemble::db_assemble() : index(-1), position(-1) {
 }
 
 eeprom::eeprom() {
