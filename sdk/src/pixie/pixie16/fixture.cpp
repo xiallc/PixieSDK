@@ -622,7 +622,7 @@ void module::erase_channels() {
 void module::init_channels() {
     log(log::debug) << pixie::module::module_label(module_, "fixture: module")
                     << "init-channels: create channel fixtures";
-    for (auto chan = 0; chan < static_cast<int>(module_.num_channels); ++chan) {
+    for (auto chan = 0; chan < module_.num_channels; ++chan) {
         module_.channels[chan].fixture =
             fixture::make(module_.channels[chan], module_.eeprom.configs[chan]);
     }
