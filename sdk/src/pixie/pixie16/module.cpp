@@ -2130,12 +2130,6 @@ void module::stop_fifo_services() {
 }
 
 void module::start_fifo_worker() {
-    /*
-     * @todo disable until LM FIFO burst support is added
-     */
-    if (*this == hw::rev_H) {
-        return;
-    }
     log(log::debug) << module_label(*this) << std::boolalpha
                     << "FIFO worker: starting: running=" << fifo_worker_running.load();
     if (!fifo_worker_running.load()) {
