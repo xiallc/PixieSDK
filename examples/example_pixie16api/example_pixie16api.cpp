@@ -958,7 +958,7 @@ int main(int argc, char** argv) {
 
     if (read) {
         auto mod = cfg.modules[module.Get()];
-        if (channel.Get() == mod.number_of_channels) {
+        if (channel.Get() >= mod.number_of_channels) {
             for (unsigned int ch = 0; ch < mod.number_of_channels; ch++) {
                 channel.ParseValue(std::vector<std::string>(1, std::to_string(ch)));
                 if (!execute_parameter_read(parameter, crate, module.Get(), channel))
@@ -972,7 +972,7 @@ int main(int argc, char** argv) {
 
     if (write) {
         auto mod = cfg.modules[module.Get()];
-        if (channel.Get() == mod.number_of_channels) {
+        if (channel.Get() >= mod.number_of_channels) {
             for (unsigned int ch = 0; ch < mod.number_of_channels; ch++) {
                 channel.ParseValue(std::vector<std::string>(1, std::to_string(ch)));
                 if (!execute_parameter_write(parameter, parameter_value, crate, mod, channel))
