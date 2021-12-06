@@ -732,10 +732,11 @@ void output_module_info(const configuration& cfg) {
     unsigned int serial_number;
     unsigned short adc_bits;
     unsigned short adc_msps;
+    unsigned short num_channels;
     for (const auto& mod : cfg.modules) {
-        if (!verify_api_return_value(
-                Pixie16ReadModuleInfo(mod.number, &rev, &serial_number, &adc_bits, &adc_msps),
-                "Pixie16ReadModuleInfo", false))
+        if (!verify_api_return_value(Pixie16ReadModuleInfo(mod.number, &rev, &serial_number,
+                                                           &adc_bits, &adc_msps, &num_channels),
+                                     "Pixie16ReadModuleInfo", false))
             throw std::runtime_error("Could not get module information for Module " +
                                      std::to_string(mod.number));
         std::cout << LOG("INFO") << "Begin module information for Module " << mod.number
@@ -744,6 +745,7 @@ void output_module_info(const configuration& cfg) {
         std::cout << LOG("INFO") << "Revision: " << rev << std::endl;
         std::cout << LOG("INFO") << "ADC Bits: " << adc_bits << std::endl;
         std::cout << LOG("INFO") << "ADC MSPS: " << adc_msps << std::endl;
+        std::cout << LOG("INFO") << "Num Channels: " << num_channels << std::endl;
         std::cout << LOG("INFO") << "End module information for Module " << mod.number << std::endl;
     }
 }
