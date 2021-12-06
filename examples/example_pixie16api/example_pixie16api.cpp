@@ -312,7 +312,6 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
             std::ios::out | std::ios::binary);
     }
 
-    std::vector<uint32_t> data(EXTERNAL_FIFO_LENGTH, 0);
     unsigned int num_fifo_words = 0;
 
     std::cout << LOG("INFO") << "Collecting data for " << runtime_in_seconds << " s." << std::endl;
@@ -357,6 +356,8 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
                     if (double(num_fifo_words) / EXTERNAL_FIFO_LENGTH > 0.2) {
                         std::cout << LOG("INFO") << "External FIFO has " << num_fifo_words
                                   << " words." << std::endl;
+
+                        std::vector<uint32_t> data(num_fifo_words, 0);
                         if (!verify_api_return_value(Pixie16ReadDataFromExternalFIFO(
                                                          data.data(), num_fifo_words, mod_num),
                                                      "Pixie16ReadDataFromExternalFIFO", false))
@@ -425,6 +426,7 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
         if (num_fifo_words > 0) {
             std::cout << LOG("INFO") << "External FIFO has " << num_fifo_words << " words."
                       << std::endl;
+            std::vector<uint32_t> data(num_fifo_words, 0);
             if (!verify_api_return_value(
                     Pixie16ReadDataFromExternalFIFO(data.data(), num_fifo_words, mod_num),
                     "Pixie16ReadDataFromExternalFIFO", false))
@@ -451,7 +453,7 @@ bool execute_list_mode_runs(const int num_runs, const configuration& cfg,
         std::cout << LOG("INFO") << "Starting list-mode run number " << i << std::endl;
         if (!execute_list_mode_run(i, cfg, runtime_in_seconds, synch_wait, in_synch)) {
             std::cout << LOG("INFO") << "List-mode data run " << i
-                      << "failed! See log for more details.";
+                      << "failed! See log for more details." << std::endl;
             return false;
         }
         std::cout << LOG("INFO") << "Finished list-mode run number " << i << std::endl;
