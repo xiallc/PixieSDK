@@ -911,9 +911,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned
     xia_log(xia_log::debug) << "Pixie16ReadModuleInfo: ModNum=" << ModNum;
 
     try {
-        crate.ready();
-        xia::pixie::crate::module_handle module(crate, ModNum);
-
+        ///todo: This needs updated so that the module gets locked. We'll need to update the handle functionality first.
+        auto module = crate.modules[ModNum];
         if (ModRev)
             *ModRev = module->revision;
         if (ModSerNum)
