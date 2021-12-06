@@ -60,7 +60,8 @@ struct average {
  */
 template<typename T>
 struct linear_fit {
-    std::vector<T> samples;
+    using sample = std::pair<T, T>;
+    std::vector<sample> samples;
 
     /*
      * Y = kX + c
@@ -78,6 +79,7 @@ struct linear_fit {
     linear_fit() : k(0), c(0), sum_x(0), sum_y(0), sum_xy(0), sum_x_sq(0), count(0) {}
 
     void update(T x, T y) {
+        samples.push_back(std::make_pair(x, y));
         sum_x += x;
         sum_y += y;
         sum_xy += x * y;
@@ -277,6 +279,7 @@ static void set_channel_voffset(pixie::module::module& mod, double voffset, int 
 
 static void analyze_channel_baselines(pixie::module::module& mod,
                                       channel_baselines& baselines,
+
                                       const int traces = 1) {
     baselines.resize(mod.num_channels);
     for (auto& channel : mod.channels) {
@@ -337,23 +340,43 @@ void channel_baseline::end() {
      * Find the bin with the most values, the signal spent the most time at
      * that voltage. Average a number of bins either side;
      */
-    auto max = std::max_element(bins.begin(), bins.end());
+    auto max = std::max_element(bins.begin() + noise_bins, bins.end() - noise_bins);
     int max_bin = std::distance(bins.begin(), max);
-    int from_bin = std::max(max_bin - noise_bins, 0);
-    int to_bin = std::min(max_bin + noise_bins, int(bins.size()));
+    int from_bin;
+    int to_bin;
+    if (bins[max_bin] != 0) {
+        from_bin = std::max(max_bin - noise_bins, 0);
+        to_bin = std::min(max_bin + noise_bins, int(bins.size()));
+    } else {
+        auto max_top = std::max_element(bins.end() - noise_bins, bins.end());
+        int max_top_bin = std::distance(bins.begin(), max_top);
+        auto max_bottom = std::max_element(bins.begin(), bins.begin() + noise_bins);
+        int max_bottom_bin = std::distance(bins.begin(), max_bottom);
+        if (bins[max_top_bin] > bins[max_bottom_bin]) {
+            from_bin = bins.size() - noise_bins;
+            to_bin = bins.size();
+        } else {
+            from_bin = 0;
+            to_bin = noise_bins;
+        }
+    }
     int sum = 0;
     int samples = 0;
     for (int b = from_bin; b < to_bin; ++b) {
         sum += b * bins[b];
         samples += bins[b];
     }
-    baseline = sum / samples;
+    if (samples > 0) {
+        baseline = sum / samples;
+    } else {
+        baseline = 0;
+    }
 }
 
 void channel_baseline::update(const hw::adc_trace& trace) {
     ++runs;
     for (auto sample : trace) {
-        if (sample > bins.size()) {
+        if (sample >= bins.size()) {
             sample = bins.size() - 1;
         }
         ++bins[sample];
@@ -694,12 +717,29 @@ void afe_dbs::get_traces() {
 }
 
 void afe_dbs::adjust_offsets() {
-    log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")
-                    << "adjust-offsets";
+    const std::string log_leader =
+        pixie::module::module_label(module_, "fixture: afe_dbs");
+    log(log::debug) << log_leader << "adjust-offsets";
 
+    /*
+     * Adjust the offset of the signal using the OffsetDAC. This is the VOFFSET
+     * channel parameter.
+     *
+     * The speed of this process is driven by:
+     *  - The speed we can capture ADC traces for all channels
+     *  - The settling time of the offset voltage circuit.
+     *
+     * The offset procedure is consists of 2 stages. The first moves the DAC a
+     * small amount measuring the baseline at each point and the least squares
+     * estimate. The second stage uses the least squares estimate to
+     * interpolate the target ADC baseline value to a DAC value. Repeat until
+     * the baseline converges to the taret ADC value.
+     */
     const double voffset_start_voltage = 0.0;
-    const int dac_slope_learn_steps = 200;
-    const int linear_fit_samples = 2;
+    const int dac_bits = 16;
+    const int dac_linear_fit_steps = 200;
+    const int dac_linear_fit_samples = 2;
+    const double baseline_noise_margin = 0.5; /* % */
     const int runs = 10;
 
     util::timepoint tp(true);
@@ -710,13 +750,13 @@ void afe_dbs::adjust_offsets() {
     set_channel_voffset(module_, voffset_start_voltage, 1);
 
     std::vector<double> bl_percents;
-    std::vector<int> offsetdacs;
-    std::vector<bool> has_offset_dacs
-        ;
+    std::vector<std::pair<int, int>> offsetdacs;
+    std::vector<bool> has_offset_dacs;
+
     for (auto& channel : module_.channels) {
         bl_percents.push_back(channel.baseline_percent());
         offsetdacs.push_back(
-            module_.read_var(param::channel_var::OffsetDAC, channel.number));
+            std::make_pair(module_.read_var(param::channel_var::OffsetDAC, channel.number), 0));
         bool has_offset_dac;
         channel.fixture->get("HAS_OFFSET_DAC", has_offset_dac);
         has_offset_dacs.push_back(has_offset_dac);
@@ -724,50 +764,95 @@ void afe_dbs::adjust_offsets() {
 
     using bl_linear_fit = linear_fit<int>;
     std::vector<bl_linear_fit> bl_fits(module_.num_channels);
+    std::vector<bool> inverted(module_.num_channels, false);
 
+    /*
+     * Run while the baseline of a channel is outside the percent+noise margin
+     */
     bool run_again = true;
     for (int run = 0; run_again && run < runs; ++run) {
-        log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")
-                        << "adjust-offsets: run=" << run;
+        log(log::debug) << log_leader << "adjust-offsets: run=" << run;
         run_again = false;
-        channel_baselines baselines;
+        channel_baselines baselines(baseline_noise_margin);
         analyze_channel_baselines(module_, baselines, 1);
         for (int chan = 0; chan < module_.num_channels; ++chan) {
             auto& channel = module_.channels[chan];
             if (has_offset_dacs[chan]) {
                 auto& bl = baselines[chan];
-                const int adc_target = int((1 << bl.adc_bits) * (bl_percents[chan] / 100));
-                int dac = offsetdacs[chan];
-                log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")
-                                << "adjust-offsets: channel=" << chan
-                                << " adc-target=" << adc_target
-                                << " bl=" << bl.baseline
-                                << " offset-dac=" << dac;
+                const int adc_bottom_rail = 0;
+                const int adc_top_rail = 1 << bl.adc_bits;
+                const int adc_target =
+                    int((adc_top_rail - adc_bottom_rail) * (bl_percents[chan] / 100));
+                auto& offsetdac = offsetdacs[chan];
+                int dac = std::get<0>(offsetdac);
                 /*
-                 * The compare includes the noise margin set in the baseline
+                 * The compare includes the noise margin that is set in the
+                 * baseline
                  */
                 if (bl != adc_target) {
+                    /*
+                     * If a rail has been been hit do not update the linear fit
+                     * because the ADC value is unknown, ie we cannot see past
+                     * the voltage rail we have hit. Half the step distance and
+                     * try again.
+                     */
+                    log(log::debug) << log_leader
+                                    << "adjust-offsets: channel=" << chan
+                                    << " adc-target=" << adc_target
+                                    << " bl=" << bl.baseline
+                                    << " offset-dac=" << dac;
                     bl_linear_fit& bl_fit = bl_fits[chan];
-                    bl_fit.update(bl.baseline, dac);
-                    if (bl_fit.count < linear_fit_samples) {
-                        if (adc_target > bl.baseline) {
-                            dac -= dac_slope_learn_steps;
-                        } else {
-                            dac += dac_slope_learn_steps;
-                        }
+                    const char* action = "none";
+                    if (bl.baseline == 0 || bl.baseline == adc_top_rail) {
+                        action = "rail hit";
+                        dac = std::get<1>(offsetdac) +
+                            ((std::get<0>(offsetdac) - std::get<1>(offsetdac)) / 2);
+                        log(log::debug) << log_leader
+                                        << "adjust-offsets: rail-hit: channel=" << chan
+                                        << " od<0>=" << std::get<0>(offsetdac)
+                                        << " od<1>=" << std::get<1>(offsetdac)
+                                        << " dac=" << dac;
+
                     } else {
-                        bl_fit.calc();
-                        log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")
-                                        << "adjust-offsets: update: channel=" << chan
-                                        << " " << bl_fit.k << "X + " << bl_fit.c;
-                        dac = bl_fit.y(adc_target);
+                        bl_fit.update(bl.baseline, dac);
+                        if (bl_fit.count == 2) {
+                            const int delta_adc =
+                                std::get<0>(bl_fit.samples[1]) - std::get<0>(bl_fit.samples[0]);
+                            const int delta_dac =
+                                std::get<1>(bl_fit.samples[1]) - std::get<1>(bl_fit.samples[0]);
+                            if ((delta_adc < 0) != (delta_dac < 0)) {
+                                inverted[chan] = true;
+                                log(log::info) << log_leader
+                                               << "adjust-offsets: channel=" << chan
+                                               << " input signal may be inverted";
+                            }
+                        }
+                        if (bl_fit.count < dac_linear_fit_samples) {
+                            action = "linear-fit";
+                            const int steps = dac_linear_fit_steps * (inverted[chan] ? 1 : -1);
+                            if (adc_target > bl.baseline) {
+                                dac += steps;
+                            } else {
+                                dac -= steps;
+                            }
+                        } else {
+                            action = "interpolate";
+                            bl_fit.calc();
+                            log(log::debug) << log_leader
+                                            << "adjust-offsets: update: channel=" << chan
+                                            << " " << bl_fit.k << "X + " << bl_fit.c;
+                            dac = bl_fit.y(adc_target);
+                        }
                     }
-                    log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")
+                    dac = std::max(0, dac);
+                    dac = std::min(1 << dac_bits, dac);
+                    log(log::debug) << log_leader
                                     << "adjust-offsets: update: channel=" << chan
-                                    << " adc-error=" << adc_target - bl.baseline
-                                    << " dac-error=" << offsetdacs[chan] - dac
+                                    << ' ' << action
+                                    << ": adc-error=" << adc_target - bl.baseline
+                                    << " dac-error=" << std::get<0>(offsetdac) - dac
                                     << " dac=" << dac;
-                    offsetdacs[chan] = dac;
+                    offsetdacs[chan] = std::make_pair(dac, std::get<0>(offsetdac));
                     channel.fixture->set_dac(dac);
                     run_again = true;
                 }
@@ -781,9 +866,10 @@ void afe_dbs::adjust_offsets() {
         }
     }
     for (int chan = 0; chan < module_.num_channels; ++chan) {
-        module_.write_var(param::channel_var::OffsetDAC, offsetdacs[chan], chan);
+        module_.write_var(
+            param::channel_var::OffsetDAC, std::get<0>(offsetdacs[chan]), chan);
     }
-    log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")
+    log(log::debug) << log_leader
                     << "adjust-offsets: duration=" << tp;
 }
 
