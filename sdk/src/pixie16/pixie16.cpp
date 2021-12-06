@@ -315,6 +315,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16BLcutFinder(unsigned short ModNum, unsigned sh
         }
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
+        module->channel_check(ChanNum);
+
         xia::pixie::channel::range channels = {size_t(ChanNum)};
         xia::pixie::param::values values;
         module->bl_find_cut(channels, values);
@@ -942,6 +944,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buff
 
     try {
         xia::pixie::crate::module_handle module(crate, ModNum);
+        module->channel_check(ChanNum);
         module->read_adc(ChanNum, Trace_Buffer, Trace_Length, false);
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
@@ -976,6 +979,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanBaselines(double* Baselines, double
         }
 
         xia::pixie::crate::module_handle module(crate, ModNum);
+        module->channel_check(ChanNum);
+
         xia::pixie::channel::range channels = {size_t(ChanNum)};
         xia::pixie::channel::baseline::channels_values values(1);
         module->bl_get(channels, values, false);
@@ -1008,6 +1013,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanPar(const char* ChanParName, double
 
     try {
         xia::pixie::crate::module_handle module(crate, ModNum);
+        module->channel_check(ChanNum);
+
         *ChanParData = module->read(ChanParName, ChanNum);
         xia_log(xia_log::debug) << "Pixie16ReadSglChanPar: ModNum=" << ModNum
                                 << " ChanNum=" << ChanNum << " ChanParName=" << ChanParName
