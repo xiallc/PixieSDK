@@ -183,6 +183,16 @@ std::string api_result_text(enum code type) {
     return text;
 }
 
+std::string api_result_text(int error_code) {
+    error_code = std::abs(error_code);
+    for (const auto& rc : result_codes) {
+        if (rc.second.result == error_code) {
+            return rc.second.text;
+        }
+    }
+    result_codes.at(code::bad_error_code).text;
+}
+
 int return_code(int result) {
     return 0 - result;
 }
