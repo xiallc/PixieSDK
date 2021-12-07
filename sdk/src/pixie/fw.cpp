@@ -32,7 +32,13 @@
 
 #include <pixie/error.hpp>
 #include <pixie/fw.hpp>
+#include <pixie/log.hpp>
 #include <pixie/util.hpp>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 namespace xia {
 namespace pixie {
@@ -41,6 +47,11 @@ namespace firmware {
  * Param errors
  */
 typedef pixie::error::error error;
+
+/*
+ * Amount of memory being used.
+ */
+static std::atomic_size_t total_image_size;
 
 reader::reader(const image& img_, const size_t default_word_size_)
     : img(img_), default_word_size(default_word_size_), offset(0) {}
@@ -104,27 +115,51 @@ std::string firmware::basename() const {
 }
 
 void firmware::load() {
-    std::ifstream file(filename, std::ios::binary);
-    if (!file) {
-        throw error(error::code::file_not_found,
-                    "firmware: image open: " + filename + ": " + std::strerror(errno));
+    if (data.empty()) {
+        util::timepoint load_time(true);
+        /*
+         * Use C and the standard file system interfaces. They are faster
+         * than the C++ stream interface
+         */
+        int fd = -1;
+        try {
+            fd = ::open(filename.c_str(), O_RDONLY);
+            if (fd < 0) {
+                throw error(error::code::file_not_found,
+                            "firmware: image open: " + tag + ": " + std::strerror(errno));
+            }
+            struct stat sb;
+            int r = ::fstat(fd, &sb);
+            if (r < 0) {
+                throw error(error::code::file_not_found,
+                            "firmware: image stat: " + tag + ": " + std::strerror(errno));
+            }
+            size_t size = size_t(sb.st_size);
+            data.resize(size);
+            r = ::read(fd, data.data(), size);
+            if (r < 0) {
+                throw error(error::code::file_not_found,
+                            "firmware: image read: " + tag + ": " + std::strerror(errno));
+            }
+            ::close(fd);
+            total_image_size += size;
+        } catch (...) {
+            if (fd >= 0) {
+                ::close(fd);
+            }
+            throw;
+        }
+        log(log::debug) << "firmware: load: tag=" << tag << " time=" << load_time
+                        << " total=" << total_image_size.load();
     }
-
-    file.unsetf(std::ios::skipws);
-    file.seekg(0, std::ios::end);
-    std::streampos file_size = file.tellg();
-    file.seekg(0, std::ios::beg);
-
-    size_t size = ((size_t(file_size) - 1) / sizeof(image_value_type)) + 1;
-
-    data.reserve(size * sizeof(image_value_type));
-
-    data.assign((std::istreambuf_iterator<char>(file)), (std::istreambuf_iterator<char>()));
 }
 
 void firmware::clear() {
-    data.clear();
-    data.shrink_to_fit();
+    if (!data.empty()) {
+        total_image_size -= data.size();
+        data.clear();
+        data.shrink_to_fit();
+    }
 }
 
 size_t firmware::words() const {

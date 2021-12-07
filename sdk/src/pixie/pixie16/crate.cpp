@@ -141,11 +141,9 @@ void crate::probe() {
     log(log::info) << "crate: probe";
     ready();
     lock_guard guard(lock_);
-    firmware::load(firmware);
     for (auto& module : modules) {
         module->probe();
     }
-    firmware::clear(firmware);
 }
 
 void crate::boot() {
@@ -153,7 +151,6 @@ void crate::boot() {
 
     ready();
     lock_guard guard(lock_);
-    firmware::load(firmware);
 
     typedef std::promise<error::code> promise_error;
     typedef std::future<error::code> future_error;
@@ -192,8 +189,6 @@ void crate::boot() {
         }
         threads[t].join();
     }
-
-    firmware::clear(firmware);
 
     if (first_error != error::code::success) {
         throw error(first_error, "crate boot error; see log");

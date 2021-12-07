@@ -790,6 +790,7 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
         firmware::firmware_ref fw = get("sys");
         hw::fpga::comms comms(*this);
         comms_fpga = false;
+        fw->load();
         comms.boot(fw->data);
         comms_fpga = comms.done();
         if (comms_fpga) {
@@ -808,6 +809,7 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
         firmware::firmware_ref fw = get("fippi");
         hw::fpga::fippi fippi(*this);
         fippi_fpga = false;
+        fw->load();
         fippi.boot(fw->data);
         fippi_fpga = fippi.done();
         if (fippi_fpga) {
@@ -826,6 +828,7 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
         firmware::firmware_ref fw = get("dsp");
         hw::dsp::dsp dsp(*this);
         dsp_online = false;
+        fw->load();
         dsp.boot(fw->data);
         dsp_online = dsp.init_done();
         if (dsp_online) {
@@ -1948,6 +1951,7 @@ void module::end_test() {
 void module::load_vars() {
     if (!vars_loaded) {
         firmware::firmware_ref vars = get("var");
+        vars->load();
         param::load(vars, module_var_descriptors, channel_var_descriptors);
         param_addresses.set(max_channels, module_var_descriptors, channel_var_descriptors);
         vars_loaded = true;

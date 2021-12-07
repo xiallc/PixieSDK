@@ -113,13 +113,14 @@ void control::load(const firmware::image& image, int retries) {
         /*
          * Load the data.
          */
-        size_t i = 0;
-        while (i < image.size()) {
+        const size_t size = image.size() / 4;
+        const uint8_t* bytes = image.data();
+        for (int i = 0; i < size; ++i) {
             firmware::image_value_type value;
-            value = image[i++];
-            value |= ((firmware::image_value_type) image[i++]) << 8;
-            value |= ((firmware::image_value_type) image[i++]) << 16;
-            value |= ((firmware::image_value_type) image[i++]) << 24;
+            value = *bytes++;
+            value |= ((firmware::image_value_type) *bytes++) << 8;
+            value |= ((firmware::image_value_type) *bytes++) << 16;
+            value |= ((firmware::image_value_type) *bytes++) << 24;
             bus_write(reg.DATACS, value);
         }
 

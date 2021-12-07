@@ -232,7 +232,7 @@ std::string tag(const int revision, const int adc_msps, const int adc_bits);
 void add(crate& firmwares, firmware& fw);
 
 /**
- * @brief Check is a firmware is already in the crate.
+ * @brief Check if a firmware is already in the crate.
  * @param firmwares The vector of firmwares in the crate
  * @param fw The firmware to look for
  * @return True if we found the firmware in the crate object.

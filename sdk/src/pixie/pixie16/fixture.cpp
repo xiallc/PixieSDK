@@ -227,7 +227,7 @@ struct afe_dbs : public module {
     /*
      * These are development modes.
      */
-    const bool adc_swap_verify = true;
+    const bool adc_swap_verify = false;
     const bool dac_adc_ratio = false;
 
     std::array<hw::word, max_dbs> adcctrl;
