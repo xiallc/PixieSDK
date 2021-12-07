@@ -729,25 +729,30 @@ double calculate_duration_in_seconds(const std::chrono::system_clock::time_point
     return std::chrono::duration<double>(end - start).count();
 }
 
-void output_module_info(const configuration& cfg) {
-    unsigned short rev;
-    unsigned int serial_number;
-    unsigned short adc_bits;
-    unsigned short adc_msps;
-    unsigned short num_channels;
-    for (const auto& mod : cfg.modules) {
-        if (!verify_api_return_value(Pixie16ReadModuleInfo(mod.number, &rev, &serial_number,
-                                                           &adc_bits, &adc_msps, &num_channels),
-                                     "Pixie16ReadModuleInfo", false))
+void output_module_info(configuration& cfg) {
+    for (auto& mod : cfg.modules) {
+        if (!verify_api_return_value(
+#ifndef LEGACY_EXAMPLE
+                Pixie16ReadModuleInfo(mod.number, &mod.revision, &mod.serial_number,
+                                      &mod.adc_bit_resolution, &mod.adc_sampling_frequency,
+                                      &mod.number_of_channels),
+#else
+                Pixie16ReadModuleInfo(mod.number, &mod.revision, &mod.serial_number,
+                                      &mod.adc_bit_resolution, &mod.adc_sampling_frequency),
+#endif
+                "Pixie16ReadModuleInfo", ""))
             throw std::runtime_error("Could not get module information for Module " +
                                      std::to_string(mod.number));
+#ifdef LEGACY_EXAMPLE
+        mod.number_of_channels = NUMBER_OF_CHANNELS;
+#endif
         std::cout << LOG("INFO") << "Begin module information for Module " << mod.number
                   << std::endl;
-        std::cout << LOG("INFO") << "Serial Number: " << serial_number << std::endl;
-        std::cout << LOG("INFO") << "Revision: " << rev << std::endl;
-        std::cout << LOG("INFO") << "ADC Bits: " << adc_bits << std::endl;
-        std::cout << LOG("INFO") << "ADC MSPS: " << adc_msps << std::endl;
-        std::cout << LOG("INFO") << "Num Channels: " << num_channels << std::endl;
+        std::cout << LOG("INFO") << "Serial Number: " << mod.serial_number << std::endl;
+        std::cout << LOG("INFO") << "Revision: " << mod.revision << std::endl;
+        std::cout << LOG("INFO") << "ADC Bits: " << mod.adc_bit_resolution << std::endl;
+        std::cout << LOG("INFO") << "ADC MSPS: " << mod.adc_sampling_frequency << std::endl;
+        std::cout << LOG("INFO") << "Num Channels: " << mod.number_of_channels << std::endl;
         std::cout << LOG("INFO") << "End module information for Module " << mod.number << std::endl;
     }
 }
@@ -933,22 +938,6 @@ int main(int argc, char** argv) {
         std::cout << LOG("INFO") << "Finished Pixie16BootModule for Module " << mod.number << " in "
                   << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
                   << std::endl;
-
-        if (!verify_api_return_value(
-#ifndef LEGACY_EXAMPLE
-                Pixie16ReadModuleInfo(mod.number, &mod.revision, &mod.serial_number,
-                                      &mod.adc_bit_resolution, &mod.adc_sampling_frequency,
-                                      &mod.number_of_channels),
-#else
-                Pixie16ReadModuleInfo(mod.number, &mod.revision, &mod.serial_number,
-                                      &mod.adc_bit_resolution, &mod.adc_sampling_frequency),
-#endif
-                "Pixie16ReadModuleInfo", ""))
-            return EXIT_FAILURE;
-
-#ifdef LEGACY_EXAMPLE
-        mod.number_of_channels = NUMBER_OF_CHANNELS;
-#endif
     }
 
     if (boot) {
