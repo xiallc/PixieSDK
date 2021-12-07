@@ -199,6 +199,17 @@ int api_result_not_supported() {
     return api_result(code::not_supported);
 }
 
+int return_code_bad_alloc_error() {
+    return return_code(api_result_bad_alloc_error());
+}
+
+int return_code_unknown_error() {
+    return return_code(api_result_unknown_error());
+}
+
+int return_code_not_supported() {
+    return return_code(api_result_not_supported());
+}
 }  // namespace error
 }  // namespace pixie
 }  // namespace xia

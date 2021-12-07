@@ -386,6 +386,21 @@ int api_result_unknown_error();
  * @brief Not supported helper.
  */
 int api_result_not_supported();
+
+/**
+ * @brief Bad allocation error helper.
+ */
+int return_code_bad_alloc_error();
+
+/**
+ * @brief Unknown error helper.
+ */
+int return_code_unknown_error();
+
+/**
+ * @brief Not supported helper.
+ */
+int return_code_not_supported();
 }  // namespace error
 }  // namespace pixie
 }  // namespace xia
