@@ -250,12 +250,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16AcquireBaselines(unsigned short ModNum) {
 
     try {
         if (ModNum == crate.num_modules) {
-            for (unsigned short mod_num = 0;
-                 mod_num < static_cast<unsigned short>(crate.num_modules); mod_num++) {
-                xia::pixie::crate::module_handle(crate, mod_num)->acquire_baselines();
+            for (auto mod_num = 0; mod_num < crate.num_modules; mod_num++) {
+                xia::pixie::crate::module_handle module(crate, mod_num);
+                module->acquire_baselines();
             }
         } else {
-            xia::pixie::crate::module_handle(crate, ModNum)->acquire_baselines();
+            xia::pixie::crate::module_handle module(crate, ModNum);
+            module->acquire_baselines();
         }
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
@@ -279,12 +280,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16AdjustOffsets(unsigned short ModNum) {
 
     try {
         if (ModNum == crate.num_modules) {
-            for (unsigned short mod_num = 0;
-                 mod_num < static_cast<unsigned short>(crate.num_modules); mod_num++) {
-                xia::pixie::crate::module_handle(crate, mod_num)->adjust_offsets();
+            for (auto mod_num = 0; mod_num < crate.num_modules; mod_num++) {
+                xia::pixie::crate::module_handle module(crate, mod_num);
+                module->adjust_offsets();
             }
         } else {
-            xia::pixie::crate::module_handle(crate, ModNum)->adjust_offsets();
+            xia::pixie::crate::module_handle module(crate, ModNum);
+            module->adjust_offsets();
         }
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
@@ -681,12 +683,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16EndRun(unsigned short ModNum) {
 
     try {
         if (ModNum == crate.num_modules) {
-            for (unsigned short mod_num = 0;
-                 mod_num < static_cast<unsigned short>(crate.num_modules); mod_num++) {
-                xia::pixie::crate::module_handle(crate, mod_num)->run_end();
+            for (auto mod_num = 0; mod_num < crate.num_modules; mod_num++) {
+                xia::pixie::crate::module_handle module(crate, mod_num);
+                module->run_end();
             }
         } else {
-            xia::pixie::crate::module_handle(crate, ModNum)->run_end();
+            xia::pixie::crate::module_handle module(crate, ModNum);
+            module->run_end();
         }
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
@@ -710,12 +713,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16ExitSystem(unsigned short ModNum) {
 
     try {
         if (ModNum == crate.num_modules) {
-            for (unsigned short mod_num = 0;
-                 mod_num < static_cast<unsigned short>(crate.num_modules); mod_num++) {
-                xia::pixie::crate::module_handle(crate, mod_num)->close();
+            for (auto mod_num = 0; mod_num < crate.num_modules; mod_num++) {
+                xia::pixie::crate::module_handle module(crate, mod_num);
+                module->close();
             }
         } else {
-            xia::pixie::crate::module_handle(crate, ModNum)->close();
+            xia::pixie::crate::module_handle module(crate, ModNum);
+            module->close();
         }
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
@@ -907,8 +911,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned
     xia_log(xia_log::debug) << "Pixie16ReadModuleInfo: ModNum=" << ModNum;
 
     try {
-        ///todo: This needs updated so that the module gets locked. We'll need to update the handle functionality first.
-        auto module = crate.modules[ModNum];
+        xia::pixie::crate::module_handle module(
+            crate, ModNum, xia::pixie::crate::module_handle::present);
         if (ModRev)
             *ModRev = module->revision;
         if (ModSerNum)
@@ -1121,12 +1125,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16SetDACs(unsigned short ModNum) {
 
     try {
         if (ModNum == crate.num_modules) {
-            for (unsigned short mod_num = 0;
-                 mod_num < static_cast<unsigned short>(crate.num_modules); mod_num++) {
-                xia::pixie::crate::module_handle(crate, mod_num)->set_dacs();
+            for (auto mod_num = 0; mod_num < crate.num_modules; mod_num++) {
+                xia::pixie::crate::module_handle module(crate, mod_num);
+                module->set_dacs();
             }
         } else {
-            xia::pixie::crate::module_handle(crate, ModNum)->set_dacs();
+            xia::pixie::crate::module_handle module(crate, ModNum);
+            module->set_dacs();
         }
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
@@ -1200,12 +1205,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsign
                 throw xia_error(xia_error::code::invalid_value, "invalid list-mode start run mode");
         }
         if (ModNum == crate.num_modules) {
-            for (unsigned short mod_num = 0;
-                 mod_num < static_cast<unsigned short>(crate.num_modules); mod_num++) {
-                xia::pixie::crate::module_handle(crate, mod_num)->start_listmode(run_mode);
+            for (auto mod_num = 0; mod_num < crate.num_modules; mod_num++) {
+                xia::pixie::crate::module_handle module(crate, mod_num);
+                module->start_listmode(run_mode);
             }
         } else {
-            xia::pixie::crate::module_handle(crate, ModNum)->start_listmode(run_mode);
+            xia::pixie::crate::module_handle module(crate, ModNum);
+            module->start_listmode(run_mode);
         }
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;

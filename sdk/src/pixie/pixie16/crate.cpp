@@ -425,22 +425,6 @@ void crate::check_revision() {
         }
     }
 }
-
-module_handle::module_handle(crate& crate_, size_t number)
-    : handle(crate_[number]), user(crate_), guard(handle) {
-    crate_.ready();
-    if (!handle.online()) {
-        throw error(pixie::error::code::module_offline, "module not online");
-    }
-}
-
-module_handle::module_handle(crate& crate_, unsigned short number)
-    : handle(crate_[number]), user(crate_), guard(handle) {
-    crate_.ready();
-    if (!handle.online()) {
-        throw error(pixie::error::code::module_offline, "module not online");
-    }
-}
 };  // namespace crate
 };  // namespace pixie
 };  // namespace xia

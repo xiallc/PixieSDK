@@ -273,13 +273,17 @@ private:
 /**
  * @brief A module handle prevents concurrent access to a module.
  *
- * This allows you to access a module during while operating
- * on it. The crate as a user register and the module is locked while this
- * object exists.
+ * This allows you to access a module during while operating on it. The crate
+ * has this user register and the module is locked while this object exists.
  */
 struct module_handle {
-    module_handle(crate& crate_, size_t number);
-    module_handle(crate& crate_, unsigned short number);
+    enum checks {
+        online,
+        present,
+        none
+    };
+    template<typename T> module_handle(crate& crate_, T number,
+                                       checks check = online);
     ~module_handle() = default;
 
     module::module& operator*() {
@@ -294,6 +298,28 @@ private:
     crate::user user;
     module::module::guard guard;
 };
+/**
+ * Support a range of indexing types.
+ */
+template<typename T>
+module_handle::module_handle(crate& crate_, T number, checks check)
+    : handle(crate_[number]), user(crate_), guard(handle) {
+    switch (check) {
+    case online:
+        crate_.ready();
+        if (!handle.online()) {
+            throw error(pixie::error::code::module_offline, "module not online");
+        }
+        break;
+    case present:
+        if (!handle.present()) {
+            throw error(pixie::error::code::module_offline, "module not present");
+        }
+        break;
+    defailt:
+        break;
+    }
+}
 }  // namespace crate
 }  // namespace pixie
 }  // namespace xia
