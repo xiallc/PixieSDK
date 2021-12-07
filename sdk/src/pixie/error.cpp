@@ -190,7 +190,7 @@ std::string api_result_text(int error_code) {
             return rc.second.text;
         }
     }
-    result_codes.at(code::bad_error_code).text;
+    return result_codes.at(code::bad_error_code).text;
 }
 
 int return_code(int result) {
