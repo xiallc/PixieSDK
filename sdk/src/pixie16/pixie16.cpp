@@ -21,6 +21,7 @@
  */
 
 #include <bitset>
+#include <cstring>
 
 #include <pixie16/pixie16.h>
 
@@ -221,6 +222,18 @@ PIXIE_EXPORT unsigned int PIXIE_API GetTraceLength(unsigned short mod_num,
         xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
+}
+
+PIXIE_EXPORT int PIXIE_API GetReturnCodeText(const int return_code, char* buf,
+                                             const size_t buf_size) {
+    std::string msg = xia::pixie::error::api_result_text(return_code);
+    if (buf_size < msg.size()) {
+        return xia::pixie::error::error(xia::pixie::error::code::invalid_value,
+                                        "buffer size not large enough")
+            .return_code();
+    }
+    strncpy(buf, msg.c_str(), msg.size());
+    return 0;
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16AcquireADCTrace(unsigned short ModNum) {

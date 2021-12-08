@@ -174,7 +174,11 @@ void read_config(const std::string& config_file_name, configuration& cfg) {
 bool verify_api_return_value(const int& val, const std::string& func_name,
                              const bool& print_success = true) {
     if (val < 0) {
-        std::cout << LOG("ERROR") << func_name << " failed with Error Code " << val << std::endl;
+        std::string msg;
+        msg.resize(1024);
+        GetReturnCodeText(val, &msg[0], msg.size());
+        std::cout << LOG("ERROR") << func_name << " failed with code " << val
+                  << " and message: " << msg << std::endl;
         return false;
     }
     if (print_success)

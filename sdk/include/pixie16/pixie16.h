@@ -204,6 +204,29 @@ PIXIE_EXPORT unsigned int PIXIE_API Pixie16GetStatisticsSize(void);
 
 /**
  * @ingroup PIXIE16_API
+ * @brief Gets the error string associated with the provided error code.
+ *
+ * Since exceptions are purely a C++ construct, we wrap all the SDK calls with
+ * exception handling. These wrappers catch the exception, transform its integer
+ * value to negative, and then return that as the function's exit code. This
+ * keeps us in line with previous functionality.
+ *
+ * This function allows users to obtain the return code's text by providing the
+ * return code and a buffer to hold the resulting message.
+ *
+ * This function will return an error status if the provided buffer isn't large
+ * enough to hold the resulting text.
+ *
+ * @param[in] return_code The return code that we'd like the error text for.
+ * @param[out] buf The char buffer that will hold the resultant text. It's
+ *     recommended that you provide a buffer of at least 1024. In practice, the
+ *     message are much shorter than this, but that may change in the future.
+ * @returns The value of the xia::pixie::error::code indicating the result of the operation
+ */
+PIXIE_EXPORT int PIXIE_API GetReturnCodeText(int return_code, char* buf, size_t buf_size);
+
+/**
+ * @ingroup PIXIE16_API
  * @brief Gets the maximum histogram buffer size in words (32-bit unsigned integers).
  *
  * The histogram buffer size may vary based on the hardware's channel configuration
