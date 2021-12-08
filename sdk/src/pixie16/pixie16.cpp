@@ -938,8 +938,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned
 
     try {
         crate.ready();
-        xia::pixie::crate::module_handle module(
-            crate, ModNum, xia::pixie::crate::module_handle::present);
+        xia::pixie::crate::module_handle module(crate, ModNum,
+                                                xia::pixie::crate::module_handle::present);
         if (ModRev)
             *ModRev = module->revision;
         if (ModSerNum)
