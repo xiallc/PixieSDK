@@ -141,7 +141,7 @@ void firmware::load() {
             }
             size_t size = size_t(sb.st_size);
             data.resize(size);
-            r = ::read(fd, data.data(), size);
+            r = ::read(fd, data.data(), static_cast<unsigned int>(size));
             if (r < 0) {
                 throw error(error::code::file_not_found,
                             "firmware: image read: " + tag + ": " + std::strerror(errno));

@@ -539,9 +539,10 @@ bool execute_mca_run(const int run_num, const module_config& mod, const double r
         std::vector<uint32_t> hist(MAX_HISTOGRAM_LENGTH, 0);
 #endif
         if (hist.size() > max_histogram_length)
-            max_histogram_length = hist.size();
+            max_histogram_length = static_cast<unsigned int>(hist.size());
 
-        Pixie16ReadHistogramFromModule(hist.data(), hist.size(), mod.number, i);
+        Pixie16ReadHistogramFromModule(hist.data(), static_cast<unsigned int>(hist.size()), 
+                                       mod.number, i);
         hists.push_back(hist);
         if (i < static_cast<unsigned int>(mod.number_of_channels - 1))
             out << "Chan" << i << ",";
@@ -661,10 +662,10 @@ bool execute_trace_capture(const module_config& mod) {
         std::vector<unsigned short> trace(MAX_ADC_TRACE_LEN, 0);
 #endif
         if (trace.size() > max_trace_length)
-            max_trace_length = trace.size();
+            max_trace_length = static_cast<unsigned int>(trace.size());
 
-        if (!verify_api_return_value(
-                Pixie16ReadSglChanADCTrace(trace.data(), trace.size(), mod.number, i),
+        if (!verify_api_return_value(Pixie16ReadSglChanADCTrace(trace.data(), 
+                static_cast<unsigned int>(trace.size()), mod.number, i),
                 "Pixie16AcquireADCTrace", false))
             return false;
         traces.push_back(trace);
