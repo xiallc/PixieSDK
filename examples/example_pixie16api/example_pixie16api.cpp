@@ -353,10 +353,18 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
                             "Pixie16CheckExternalFIFOStatus", false))
                         return false;
 
-                    if (double(num_fifo_words) / EXTERNAL_FIFO_LENGTH > 0.2) {
-                        std::cout << LOG("INFO") << "External FIFO has " << num_fifo_words
-                                  << " words." << std::endl;
 
+                    std::cout << LOG("INFO") << "FIFO has " << num_fifo_words << " words." << std::endl;
+                    /*
+                     * NOTE: The PixieSDK now uses threaded list-mode FIFO workers that live on the host machine. These
+                     * workers perform execute in parallel. They'll read the data from each module as needed to
+                     * ensure that the EXTERNAL_FIFO_LENGTH isn't exceeded. When calling
+                     * `Pixie16CheckExternalFIFOStatus`, you're actually checking the status of the FIFO workers for
+                     * that module.
+                     *
+                     * We've gated the reads in this example using one-second intervals, but you don't have to.
+                     */
+                    if (num_fifo_words > 0) {
                         std::vector<uint32_t> data(num_fifo_words, 0);
                         if (!verify_api_return_value(Pixie16ReadDataFromExternalFIFO(
                                                          data.data(), num_fifo_words, mod_num),
@@ -364,8 +372,6 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
                             return false;
                         output_streams[mod_num]->write(reinterpret_cast<char*>(data.data()),
                                                        num_fifo_words * sizeof(uint32_t));
-                    } else {
-                        continue;
                     }
                 } else {
                     std::cout << LOG("INFO") << "Module " << mod_num << " has no active run!"
