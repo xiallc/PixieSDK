@@ -253,7 +253,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16AcquireBaselines(unsigned short ModNum) {
     try {
         crate.ready();
         if (ModNum == crate.num_modules) {
-            for (auto mod_num = 0; mod_num < crate.num_modules; mod_num++) {
+            for (size_t mod_num = 0; mod_num < crate.num_modules; mod_num++) {
                 xia::pixie::crate::module_handle module(crate, mod_num);
                 module->acquire_baselines();
             }
@@ -284,7 +284,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16AdjustOffsets(unsigned short ModNum) {
     try {
         crate.ready();
         if (ModNum == crate.num_modules) {
-            for (auto mod_num = 0; mod_num < crate.num_modules; mod_num++) {
+            for (size_t mod_num = 0; mod_num < crate.num_modules; mod_num++) {
                 xia::pixie::crate::module_handle module(crate, mod_num);
                 module->adjust_offsets();
             }
@@ -693,7 +693,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16EndRun(unsigned short ModNum) {
     try {
         crate.ready();
         if (ModNum == crate.num_modules) {
-            for (auto mod_num = 0; mod_num < crate.num_modules; mod_num++) {
+            for (size_t mod_num = 0; mod_num < crate.num_modules; mod_num++) {
                 xia::pixie::crate::module_handle module(crate, mod_num);
                 module->run_end();
             }
@@ -724,7 +724,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ExitSystem(unsigned short ModNum) {
     try {
         crate.ready();
         if (ModNum == crate.num_modules) {
-            for (auto mod_num = 0; mod_num < crate.num_modules; mod_num++) {
+            for (size_t mod_num = 0; mod_num < crate.num_modules; mod_num++) {
                 xia::pixie::crate::module_handle module(crate, mod_num);
                 module->close();
             }
@@ -1148,7 +1148,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16SetDACs(unsigned short ModNum) {
     try {
         crate.ready();
         if (ModNum == crate.num_modules) {
-            for (auto mod_num = 0; mod_num < crate.num_modules; mod_num++) {
+            for (size_t mod_num = 0; mod_num < crate.num_modules; mod_num++) {
                 xia::pixie::crate::module_handle module(crate, mod_num);
                 module->set_dacs();
             }
@@ -1231,7 +1231,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsign
 
         crate.ready();
         if (ModNum == crate.num_modules) {
-            for (auto mod_num = 0; mod_num < crate.num_modules; mod_num++) {
+            for (size_t mod_num = 0; mod_num < crate.num_modules; mod_num++) {
                 xia::pixie::crate::module_handle module(crate, mod_num);
                 module->start_listmode(run_mode);
             }
