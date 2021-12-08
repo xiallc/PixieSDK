@@ -316,7 +316,7 @@ module_handle::module_handle(crate& crate_, T number, checks check)
             throw error(pixie::error::code::module_offline, "module not present");
         }
         break;
-    defailt:
+    default:
         break;
     }
 }
