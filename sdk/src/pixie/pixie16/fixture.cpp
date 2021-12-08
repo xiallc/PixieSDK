@@ -270,7 +270,7 @@ static void wait_dac_settle_period(pixie::module::module& mod) {
 }
 
 static void set_channel_voffset(pixie::module::module& mod, double voffset, int step) {
-    for (auto chan = 0; chan < mod.num_channels; chan += step) {
+    for (size_t chan = 0; chan < mod.num_channels; chan += step) {
         mod.channels[chan].voffset(voffset);
     }
     mod.set_dacs();
@@ -377,7 +377,7 @@ void channel_baseline::update(const hw::adc_trace& trace) {
     ++runs;
     for (auto sample : trace) {
         if (sample >= bins.size()) {
-            sample = bins.size() - 1;
+            sample = static_cast<unsigned short>(bins.size() - 1);
         }
         ++bins[sample];
     }
@@ -663,7 +663,7 @@ void afe_dbs::boot() {
     if (adc_swap_verify) {
         channel_baselines bl_verify;
         analyze_channel_baselines(module_, bl_verify);
-        for (int chan = 0; chan < module_.num_channels; ++chan) {
+        for (size_t chan = 0; chan < module_.num_channels; ++chan) {
             if ((chan % 2) == 0) {
                 if (bl_same[chan] == bl_verify[chan]) {
                     failed = true;
@@ -775,7 +775,7 @@ void afe_dbs::adjust_offsets() {
         run_again = false;
         channel_baselines baselines(baseline_noise_margin);
         analyze_channel_baselines(module_, baselines, 1);
-        for (int chan = 0; chan < module_.num_channels; ++chan) {
+        for (size_t chan = 0; chan < module_.num_channels; ++chan) {
             auto& channel = module_.channels[chan];
             if (has_offset_dacs[chan]) {
                 auto& bl = baselines[chan];
@@ -865,7 +865,7 @@ void afe_dbs::adjust_offsets() {
             wait_dac_settle_period(module_);
         }
     }
-    for (int chan = 0; chan < module_.num_channels; ++chan) {
+    for (size_t chan = 0; chan < module_.num_channels; ++chan) {
         module_.write_var(
             param::channel_var::OffsetDAC, std::get<0>(offsetdacs[chan]), chan);
     }
@@ -917,7 +917,7 @@ void afe_dbs::calc_dac_adc_ratio() {
         /*
          * Ignore DAC steps that have hit the rails.
          */
-        for (int chan = 0; chan < module_.num_channels; ++chan) {
+        for (size_t chan = 0; chan < module_.num_channels; ++chan) {
             for (int dac_step = 0; dac_step < dac_steps - 1; ++dac_step) {
                 auto bl_0 = channel_dac_steps[dac_step][chan].baseline;
                 auto bl_1 = channel_dac_steps[dac_step + 1][chan].baseline;
@@ -958,7 +958,7 @@ void afe_dbs::calc_dac_adc_ratio() {
         average bottom_rail_avg;
         average top_rail_avg;
 
-        for (int chan = 0; chan < module_.num_channels; ++chan) {
+        for (size_t chan = 0; chan < module_.num_channels; ++chan) {
             /*
              * Convert the rails to DAC values from the DAC steps we have used.
              */
@@ -1131,7 +1131,7 @@ void module::erase_channels() {
 void module::init_channels() {
     log(log::debug) << pixie::module::module_label(module_, "fixture: module")
                     << "init-channels: create channel fixtures";
-    for (auto chan = 0; chan < module_.num_channels; ++chan) {
+    for (size_t chan = 0; chan < module_.num_channels; ++chan) {
         module_.channels[chan].fixture =
             fixture::make(module_.channels[chan], module_.eeprom.configs[chan]);
     }

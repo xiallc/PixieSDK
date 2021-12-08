@@ -115,7 +115,7 @@ void control::load(const firmware::image& image, int retries) {
          */
         const size_t size = image.size() / 4;
         const uint8_t* bytes = image.data();
-        for (int i = 0; i < size; ++i) {
+        for (size_t i = 0; i < size; ++i) {
             firmware::image_value_type value;
             value = *bytes++;
             value |= ((firmware::image_value_type) *bytes++) << 8;
