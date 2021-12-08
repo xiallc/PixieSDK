@@ -354,7 +354,8 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
                         return false;
 
 
-                    std::cout << LOG("INFO") << "FIFO has " << num_fifo_words << " words." << std::endl;
+                    std::cout << LOG("INFO") << "FIFO has " << num_fifo_words << " words."
+                              << std::endl;
                     /*
                      * NOTE: The PixieSDK now uses threaded list-mode FIFO workers that live on the host machine. These
                      * workers perform execute in parallel. They'll read the data from each module as needed to
