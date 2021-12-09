@@ -309,16 +309,16 @@ private:
 template<typename T>
 module_handle::module_handle(crate& crate_, T number, checks check)
     : handle(crate_[number]), user(crate_), guard(handle) {
+    crate_.ready();
     switch (check) {
     case online:
-        crate_.ready();
         if (!handle.online()) {
             throw error(pixie::error::code::module_offline, "module-handle: module not online");
         }
         break;
     case present:
         if (!handle.present()) {
-            throw error(pixie::error::code::module_offline, "module not present");
+            throw error(pixie::error::code::module_offline, "module-handle: module not present");
         }
         break;
     default:
