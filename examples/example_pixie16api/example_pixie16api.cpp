@@ -175,8 +175,12 @@ bool verify_api_return_value(const int& val, const std::string& func_name,
                              const bool& print_success = true) {
     if (val < 0) {
         std::string msg;
+#ifndef LEGACY_EXAMPLE
         msg.resize(1024);
         PixieGetReturnCodeText(val, &msg[0], msg.size());
+#else
+        msg = "error message output not supported in legacy API.";
+#endif
         std::cout << LOG("ERROR") << func_name << " failed with code " << val
                   << " and message: " << msg << std::endl;
         return false;
