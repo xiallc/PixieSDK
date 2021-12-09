@@ -176,7 +176,7 @@ bool verify_api_return_value(const int& val, const std::string& func_name,
     if (val < 0) {
         std::string msg;
         msg.resize(1024);
-        GetReturnCodeText(val, &msg[0], msg.size());
+        //PixieGetReturnCodeText(val, &msg[0], msg.size());
         std::cout << LOG("ERROR") << func_name << " failed with code " << val
                   << " and message: " << msg << std::endl;
         return false;
@@ -545,15 +545,16 @@ bool execute_mca_run(const int run_num, const module_config& mod, const double r
     unsigned int max_histogram_length = 0;
     for (unsigned int i = 0; i < mod.number_of_channels; i++) {
 #ifndef LEGACY_EXAMPLE
-        std::vector<uint32_t> hist(GetHistogramLength(mod.number, i), 0);
+        unsigned int tmp = 0;
+        PixieGetHistogramLength(mod.number, i, &tmp);
+        std::vector<uint32_t> hist(tmp, 0);
 #else
         std::vector<uint32_t> hist(MAX_HISTOGRAM_LENGTH, 0);
 #endif
         if (hist.size() > max_histogram_length)
-            max_histogram_length = static_cast<unsigned int>(hist.size());
+            max_histogram_length = hist.size();
 
-        Pixie16ReadHistogramFromModule(hist.data(), static_cast<unsigned int>(hist.size()), 
-                                       mod.number, i);
+        Pixie16ReadHistogramFromModule(hist.data(), hist.size(), mod.number, i);
         hists.push_back(hist);
         if (i < static_cast<unsigned int>(mod.number_of_channels - 1))
             out << "Chan" << i << ",";
@@ -668,15 +669,17 @@ bool execute_trace_capture(const module_config& mod) {
     std::vector<std::vector<unsigned short>> traces;
     for (unsigned int i = 0; i < mod.number_of_channels; i++) {
 #ifndef LEGACY_EXAMPLE
-        std::vector<unsigned short> trace(GetTraceLength(mod.number, i), 0);
+        unsigned int tmp = 0;
+        PixieGetTraceLength(mod.number, i, &tmp);
+        std::vector<unsigned short> trace(tmp, 0);
 #else
         std::vector<unsigned short> trace(MAX_ADC_TRACE_LEN, 0);
 #endif
         if (trace.size() > max_trace_length)
-            max_trace_length = static_cast<unsigned int>(trace.size());
+            max_trace_length = trace.size();
 
-        if (!verify_api_return_value(Pixie16ReadSglChanADCTrace(trace.data(), 
-                static_cast<unsigned int>(trace.size()), mod.number, i),
+        if (!verify_api_return_value(
+                Pixie16ReadSglChanADCTrace(trace.data(), trace.size(), mod.number, i),
                 "Pixie16AcquireADCTrace", false))
             return false;
         traces.push_back(trace);

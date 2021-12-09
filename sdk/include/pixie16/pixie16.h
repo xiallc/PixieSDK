@@ -238,8 +238,8 @@ PIXIE_EXPORT int PIXIE_API GetReturnCodeText(int return_code, char* buf, size_t 
  * @param[in] chan_num The channel that we want the histogram size for.
  * @returns The number of words needed to hold all the histogram data.
  */
-PIXIE_EXPORT unsigned int PIXIE_API GetHistogramLength(unsigned short mod_num,
-                                                       unsigned short chan_num);
+PIXIE_EXPORT int PIXIE_API PixieGetHistogramLength(unsigned short mod_num, unsigned short chan_num,
+                                                   unsigned int* hist_length);
 
 /**
  * @ingroup PIXIE16_API
@@ -254,7 +254,8 @@ PIXIE_EXPORT unsigned int PIXIE_API GetHistogramLength(unsigned short mod_num,
  * @param[in] chan_num The channel that we want the histogram size for.
  * @returns The number of words needed to hold all the trace data.
  */
-PIXIE_EXPORT unsigned int PIXIE_API GetTraceLength(unsigned short mod_num, unsigned short chan_num);
+PIXIE_EXPORT int PIXIE_API PixieGetTraceLength(unsigned short mod_num, unsigned short chan_num,
+                                               unsigned int* trace_length);
 
 /**
  * @ingroup PIXIE16_API

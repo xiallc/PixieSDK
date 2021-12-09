@@ -180,13 +180,14 @@ PIXIE_EXPORT unsigned int PIXIE_API Pixie16GetStatisticsSize(void) {
     return sizeof(stats_legacy);
 }
 
-PIXIE_EXPORT unsigned int PIXIE_API GetHistogramLength(unsigned short mod_num,
-                                                       unsigned short chan_num) {
+PIXIE_EXPORT int PIXIE_API PixieGetHistogramLength(const unsigned short mod_num,
+                                                   const unsigned short chan_num,
+                                                   unsigned int* hist_length) {
     try {
         crate.ready();
         xia::pixie::crate::module_handle module(crate, mod_num);
         module->channel_check(chan_num);
-        return module->channels[chan_num].fixture->config.max_histogram_length;
+        *hist_length = module->channels[chan_num].fixture->config.max_histogram_length;
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
@@ -200,15 +201,17 @@ PIXIE_EXPORT unsigned int PIXIE_API GetHistogramLength(unsigned short mod_num,
         xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
+    return 0;
 }
 
-PIXIE_EXPORT unsigned int PIXIE_API GetTraceLength(unsigned short mod_num,
-                                                   unsigned short chan_num) {
+PIXIE_EXPORT int PIXIE_API PixieGetTraceLength(const unsigned short mod_num,
+                                               const unsigned short chan_num,
+                                               unsigned int* trace_length) {
     try {
         crate.ready();
         xia::pixie::crate::module_handle module(crate, mod_num);
         module->channel_check(chan_num);
-        return module->channels[chan_num].fixture->config.max_adc_trace_length;
+        *trace_length = module->channels[chan_num].fixture->config.max_adc_trace_length;
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
@@ -222,6 +225,7 @@ PIXIE_EXPORT unsigned int PIXIE_API GetTraceLength(unsigned short mod_num,
         xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
+    return 0;
 }
 
 PIXIE_EXPORT int PIXIE_API GetReturnCodeText(const int return_code, char* buf,
