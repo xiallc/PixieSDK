@@ -703,10 +703,15 @@ PIXIE_EXPORT int PIXIE_API Pixie16ExitSystem(unsigned short ModNum);
  *
  * OfflineMode is used to indicate to the API whether the system is running in OFFLINE mode (1) or
  * ONLINE mode (0). OFFLINE mode is useful for situations where no Pixie-16 modules are present but
- * users can still test their calls to the API functions in their application software.
+ * users can still test their calls to the API functions in their application software. Offline
+ * mode is not supported in the SDK.
  *
  * This function must be called as the first step in the boot process. It makes the modules known
  * to the system and "opens" each module for communication.
+ *
+ * Modules present in the crate but not listed in the slot map will left available for use by
+ * another process. Note, this call will hold a module not in the map until the slot assignment
+ * process closes the module.
  *
  * The log file "Pixie16Msg.log" will be opened for logging at the beginning of this function. Prior
  * to calling this function. The environment variable PIXIE16_LOG_LEVEL can be set to one of the
