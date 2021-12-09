@@ -706,7 +706,9 @@ void module::force_offline() {
             if (fixtures) {
                 fixtures->forced_offline();
             }
-            run_end();
+            if (online()) {
+                run_end();
+            }
         } catch (pixie::error::error& e) {
             log(log::error) << "force offline: " << e;
         }
