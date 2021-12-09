@@ -272,10 +272,20 @@ PIXIE_EXPORT int PIXIE_API Pixie16AcquireBaselines(unsigned short ModNum) {
         if (ModNum == crate.num_modules) {
             for (size_t mod_num = 0; mod_num < crate.num_modules; mod_num++) {
                 xia::pixie::crate::module_handle module(crate, mod_num);
+
+                if (module->revision == 17) {
+                    return not_supported();
+                }
+
                 module->acquire_baselines();
             }
         } else {
             xia::pixie::crate::module_handle module(crate, ModNum);
+
+            if (module->revision == 17) {
+                return not_supported();
+            }
+
             module->acquire_baselines();
         }
     } catch (xia_error& e) {
@@ -1313,6 +1323,11 @@ PIXIE_EXPORT int PIXIE_API Pixie16TauFinder(unsigned short ModNum, double* Tau) 
         ///todo: Fix this so that we get the lock the module during the operation.
         crate.ready();
         auto& mod = crate[ModNum];
+
+        if (mod.revision == 17) {
+            return not_supported();
+        }
+
         xia::pixie::hw::run::control(mod, xia::pixie::hw::run::control_task::tau_finder);
         std::vector<double> taus(mod.num_channels, -1);
         for (auto& chan : mod.channels) {
