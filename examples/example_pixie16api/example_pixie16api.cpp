@@ -176,7 +176,7 @@ bool verify_api_return_value(const int& val, const std::string& func_name,
     if (val < 0) {
         std::string msg;
         msg.resize(1024);
-        //PixieGetReturnCodeText(val, &msg[0], msg.size());
+        PixieGetReturnCodeText(val, &msg[0], msg.size());
         std::cout << LOG("ERROR") << func_name << " failed with code " << val
                   << " and message: " << msg << std::endl;
         return false;

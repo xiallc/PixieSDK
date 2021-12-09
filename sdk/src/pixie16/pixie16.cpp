@@ -228,13 +228,13 @@ PIXIE_EXPORT int PIXIE_API PixieGetTraceLength(const unsigned short mod_num,
     return 0;
 }
 
-PIXIE_EXPORT int PIXIE_API GetReturnCodeText(const int return_code, char* buf,
-                                             const size_t buf_size) {
+PIXIE_EXPORT int PIXIE_API PixieGetReturnCodeText(int return_code, char* buf,
+                                                  unsigned int buf_size) {
     std::string msg = xia::pixie::error::api_result_text(return_code);
     if (buf_size < msg.size()) {
-        return xia::pixie::error::error(xia::pixie::error::code::invalid_value,
-                                        "buffer size not large enough")
-            .return_code();
+        xia::pixie::error::error error(xia::pixie::error::code::invalid_value,
+                                       "buffer size not large enough");
+        return error.return_code();
     }
     strncpy(buf, msg.c_str(), msg.size());
     return 0;

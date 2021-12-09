@@ -221,9 +221,11 @@ PIXIE_EXPORT unsigned int PIXIE_API Pixie16GetStatisticsSize(void);
  * @param[out] buf The char buffer that will hold the resultant text. It's
  *     recommended that you provide a buffer of at least 1024. In practice, the
  *     message are much shorter than this, but that may change in the future.
+ * @param[in] buf_size The size of the data buffer to hold the return code text.
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
  */
-PIXIE_EXPORT int PIXIE_API GetReturnCodeText(int return_code, char* buf, size_t buf_size);
+PIXIE_EXPORT int PIXIE_API PixieGetReturnCodeText(int return_code, char* buf,
+                                                  unsigned int buf_size);
 
 /**
  * @ingroup PIXIE16_API
