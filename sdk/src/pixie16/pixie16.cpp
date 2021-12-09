@@ -749,11 +749,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16ExitSystem(unsigned short ModNum) {
         crate.ready();
         if (ModNum == crate.num_modules) {
             for (size_t mod_num = 0; mod_num < crate.num_modules; mod_num++) {
-                xia::pixie::crate::module_handle module(crate, mod_num);
+                xia::pixie::crate::module_handle module(crate, mod_num,
+                                                        xia::pixie::crate::module_handle::present);
                 module->close();
             }
         } else {
-            xia::pixie::crate::module_handle module(crate, ModNum);
+            xia::pixie::crate::module_handle module(crate, ModNum,
+                                                    xia::pixie::crate::module_handle::present);
             module->close();
         }
     } catch (xia_error& e) {
