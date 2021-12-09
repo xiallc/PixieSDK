@@ -464,7 +464,7 @@ bool execute_list_mode_runs(const int num_runs, const configuration& cfg,
         std::cout << LOG("INFO") << "Starting list-mode run number " << i << std::endl;
         if (!execute_list_mode_run(i, cfg, runtime_in_seconds, synch_wait, in_synch)) {
             std::cout << LOG("INFO") << "List-mode data run " << i
-                      << "failed! See log for more details." << std::endl;
+                      << " failed! See log for more details." << std::endl;
             return false;
         }
         std::cout << LOG("INFO") << "Finished list-mode run number " << i << std::endl;
