@@ -388,7 +388,8 @@ static void PixieBootModule(xia::pixie::module::module& module, const char* ComF
     crate.set_firmware();
     xia::pixie::firmware::load(crate.firmware);
 
-    auto pattern = std::bitset<std::numeric_limits<unsigned short>::digits>(BootPattern);
+    const auto num_bits = std::numeric_limits<unsigned short>::digits;
+    auto pattern = std::bitset<num_bits>(BootPattern);
 
     module.probe();
     module.boot(pattern.test(BOOTPATTERN_COMFPGA_BIT), pattern.test(BOOTPATTERN_SPFPGA_BIT),
@@ -418,6 +419,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
                            << " DSPParFile=" << DSPParFile;
     xia_log(xia_log::info) << "Pixie16BootModule: ModNum=" << ModNum
                            << " DSPVarFile=" << DSPVarFile;
+
+    const unsigned short device_boot_mask =
+        (1 << BOOTPATTERN_COMFPGA_BIT) | (1 << BOOTPATTERN_SPFPGA_BIT) |
+        (1 << BOOTPATTERN_DSPCODE_BIT);
+    const unsigned short devices_boot = BootPattern & device_boot_mask;
+
+    if (devices_boot != 0 && devices_boot != device_boot_mask) {
+        xia_log(xia_log::error) << "invalid value: must boot COMM, FPGA and DSP together";
+        return xia::pixie::error::return_code(xia::pixie::error::api_result(xia_error::code::invalid_value));
+    }
 
     ///todo: This needs to use the handle, but the handle won't work until this is complete!
     try {
