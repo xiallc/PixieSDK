@@ -1157,6 +1157,10 @@ void module::adjust_offsets() {
     unsupported_op("adjust offsets is using the DSP");
 }
 
+void module::tau_finder() {
+    unsupported_op("tau finder is using the DSP");
+}
+
 channel_ptr make(pixie::channel::channel& module_channel, const hw::config& config) {
     channel_ptr chan_fixture;
     switch (config.fixture) {

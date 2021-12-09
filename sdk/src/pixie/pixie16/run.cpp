@@ -41,7 +41,8 @@ static module_config run_config_default = {
     true,  /* dsp_sets_dacs */
     true,  /* dsp_get_traces */
     true,  /* dsp_ramp_offsetdac */
-    true   /* dsp_adjust_offsetdacs */
+    true,   /* dsp_adjust_offsetdacs */
+    true /* dsp_tau_finder */
 };
 
 /**
@@ -51,7 +52,8 @@ static module_config run_config_afe_dbs = {
     false,  /* dsp_sets_dacs */
     false,  /* dsp_get_traces */
     false,  /* dsp_ramp_offsetdac */
-    false   /* dsp_adjust_offsetdacs */
+    false,   /* dsp_adjust_offsetdacs */
+    true /* dsp_tau_finder */
 };
 
 module_config make(module::module& module) {
@@ -198,6 +200,11 @@ static bool control_task_prerun(module::module& module, control_task control_tsk
             return false;
         }
         break;
+    case control_task::tau_finder:
+        if (!module.run_config.dsp_tau_finder) {
+            module.fixtures->tau_finder();
+            return false;
+        }
     default:
         break;
     }
@@ -206,6 +213,13 @@ static bool control_task_prerun(module::module& module, control_task control_tsk
 
 static void control_task_postrun(module::module& module, control_task control_tsk, int ) {
     switch (control_tsk) {
+    case control_task::tau_finder:
+        /*
+         * TODO:
+         * Need to get the found TAUs (one for each channel) from DSP Memory address 0x4A43F,
+         * store them somewhere, and then get that information back to the API.
+         */
+        break;
     default:
         break;
     }

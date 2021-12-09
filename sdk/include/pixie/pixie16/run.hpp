@@ -233,6 +233,10 @@ struct module_config {
      * The DSP supports adjusting the offset DACs
      */
     bool dsp_adjust_offsetdacs;
+    /**
+     * The DSP supports the Tau Finder functionality.
+     */
+     bool dsp_tau_finder;
 };
 
 /**

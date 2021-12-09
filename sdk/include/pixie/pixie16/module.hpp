@@ -468,6 +468,7 @@ public:
      */
     void acquire_baselines();
     void adjust_offsets();
+    void find_tau();
     void get_traces();
     void set_dacs();
 

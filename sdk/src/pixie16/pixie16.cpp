@@ -1320,17 +1320,17 @@ PIXIE_EXPORT int PIXIE_API Pixie16TauFinder(unsigned short ModNum, double* Tau) 
     xia_log(xia_log::debug) << "Pixie16TauFinder: ModNum=" << ModNum;
 
     try {
-        ///todo: Fix this so that we get the lock the module during the operation.
         crate.ready();
-        auto& mod = crate[ModNum];
+        xia::pixie::crate::module_handle module(crate, ModNum);
 
-        if (mod.revision == 17) {
+        if (module->revision == 17) {
             return not_supported();
         }
 
-        xia::pixie::hw::run::control(mod, xia::pixie::hw::run::control_task::tau_finder);
-        std::vector<double> taus(mod.num_channels, -1);
-        for (auto& chan : mod.channels) {
+        module->find_tau();
+
+        std::vector<double> taus(module->num_channels, -1);
+        for (auto& chan : module->channels) {
             auto val = chan.tau();
             if (val >= 0) {
                 taus.at(chan.number) = chan.tau();

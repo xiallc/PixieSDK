@@ -242,6 +242,11 @@ struct module {
      * Adjust offsets
      */
     virtual void adjust_offsets();
+
+    /**
+     * Tau Finder
+     */
+    virtual void tau_finder();
 };
 
 using module_ptr = std::shared_ptr<module>;

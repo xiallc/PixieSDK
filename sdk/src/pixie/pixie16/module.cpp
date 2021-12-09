@@ -1541,6 +1541,13 @@ void module::adjust_offsets() {
     hw::run::control(*this, hw::run::control_task::adjust_offsets);
 }
 
+void module::find_tau() {
+    log(log::info) << module_label(*this) << "find-tau";
+    online_check();
+    lock_guard guard(lock_);
+    hw::run::control(*this, hw::run::control_task::tau_finder);
+}
+
 void module::get_traces() {
     log(log::info) << module_label(*this) << "get-traces";
     online_check();
