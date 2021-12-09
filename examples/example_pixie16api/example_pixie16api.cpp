@@ -726,13 +726,10 @@ bool execute_blcut(args::ValueFlag<unsigned int>& module, args::ValueFlag<unsign
     return true;
 }
 
-bool execute_set_dacs(args::ValueFlag<unsigned int>& module) {
-    if (!module)
-        return false;
-
-    std::cout << LOG("INFO") << "Executing Pixie16SetDACs for Module" << module.Get() << "."
+bool execute_set_dacs(const module_config& module) {
+    std::cout << LOG("INFO") << "Executing Pixie16SetDACs for Module" << module.number << "."
               << std::endl;
-    if (!verify_api_return_value(Pixie16SetDACs(module.Get()), "Pixie16SetDACs", false))
+    if (!verify_api_return_value(Pixie16SetDACs(module.number), "Pixie16SetDACs", false))
         return false;
     return true;
 }
@@ -854,10 +851,8 @@ int main(int argc, char** argv) {
 
     adjust_offsets.Add(conf_flag);
     adjust_offsets.Add(boot_pattern_flag);
-    adjust_offsets.Add(module);
     baseline.Add(is_fast_boot);
     baseline.Add(boot_pattern_flag);
-    baseline.Add(module);
     blcut.Add(module);
     blcut.Add(channel);
     boot.Add(conf_flag);
@@ -879,7 +874,6 @@ int main(int argc, char** argv) {
     read.Add(parameter);
     tau_finder.Add(module);
     trace.Add(conf_flag);
-    trace.Add(module);
     trace.Add(boot_pattern_flag);
     write.Add(conf_flag);
     write.Add(parameter);
@@ -1040,13 +1034,15 @@ int main(int argc, char** argv) {
     }
 
     if (adjust_offsets) {
-        if (!execute_adjust_offsets(cfg.modules[module.Get()]))
-            return EXIT_FAILURE;
+        for (auto& module : cfg.modules)
+            if (!execute_adjust_offsets(module))
+                return EXIT_FAILURE;
     }
 
     if (trace) {
-        if (!execute_trace_capture(cfg.modules[module.Get()]))
-            return EXIT_FAILURE;
+        for (auto& module : cfg.modules)
+            if (!execute_trace_capture(module))
+                return EXIT_FAILURE;
     }
 
     if (list_mode) {
@@ -1061,8 +1057,9 @@ int main(int argc, char** argv) {
     }
 
     if (baseline) {
-        if (!execute_baseline_capture(cfg.modules[module.Get()]))
-            return EXIT_FAILURE;
+        for (auto& module : cfg.modules)
+            if (!execute_baseline_capture(module))
+                return EXIT_FAILURE;
     }
 
     if (mca) {
@@ -1077,8 +1074,9 @@ int main(int argc, char** argv) {
     }
 
     if (dacs) {
-        if (!execute_set_dacs(module))
-            return EXIT_FAILURE;
+        for (auto& module : cfg.modules)
+            if (!execute_set_dacs(module))
+                return EXIT_FAILURE;
     }
 
     execute_close_module_connection(cfg.num_modules());
