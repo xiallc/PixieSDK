@@ -122,6 +122,24 @@ void crate::initialize(bool reg_trace) {
     }
 }
 
+void crate::shutdown() {
+    log(log::info) << "crate: shutdown";
+    lock_guard guard(lock_);
+    error::code first_error = error::code::success;
+    for (auto& module : modules) {
+        try {
+            module->close();
+        } catch (error& e) {
+            first_error = e.type;
+        }
+    }
+    modules.clear();
+    ready_ = false;
+    if (first_error != error::code::success) {
+        throw error(first_error, "crate shutdown error; see log");
+    }
+}
+
 void crate::set_offline(module::module_ptr module) {
     log(log::info) << "crate: set offline: slot=" << module->slot;
     lock_guard guard(lock_);
@@ -300,7 +318,7 @@ void crate::report(std::ostream& out) const {
     }
 }
 
-void crate::assign(const module::number_slots& numbers, bool force_offline) {
+void crate::assign(const module::number_slots& numbers, bool close) {
     ready();
     lock_guard guard(lock_);
     /*
@@ -309,15 +327,22 @@ void crate::assign(const module::number_slots& numbers, bool force_offline) {
     try {
         module::assign(modules, numbers);
         /*
-         * Force offline any module not in the map. The loop resets the
-         * iterator after any changes to modules.
+         * Close or force offline any module not in the map. The loop resets
+         * the iterator after any changes to modules vector.
          */
-        while (force_offline) {
-            force_offline = false;
-            for (auto mod : modules) {
+        bool unassigned_module = true;
+        while (unassigned_module) {
+            unassigned_module = false;
+            for (auto mi = modules.begin(); mi != modules.end(); ++mi) {
+                auto& mod = *mi;
                 if (mod->number == -1) {
-                    set_offline(mod);
-                    force_offline = true;
+                    if (close) {
+                        mod->close();
+                        modules.erase(mi);
+                    } else {
+                        set_offline(mod);
+                    }
+                    unassigned_module = true;
                     break;
                 }
             }

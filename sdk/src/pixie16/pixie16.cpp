@@ -794,9 +794,18 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned
     }
 
     try {
+        xia::pixie::module::number_slots numbers;
+        for (int i = 0; i < static_cast<int>(NumModules); ++i) {
+            using number_slot = xia::pixie::module::number_slot;
+            xia_log(xia_log::info)
+                << "Pixie16InitSystem: slot map: " << PXISlotMap[i] << " => " << i;
+            numbers.push_back(number_slot(i, PXISlotMap[i]));
+        }
+
         crate.initialize();
 
         if (crate.modules.size() == 0) {
+            crate.shutdown();
             throw xia_error(xia::pixie::error::code::module_total_invalid,
                             "Crate did not initialize with any modules.");
         }
@@ -807,20 +816,14 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned
          */
         if (NumModules > 0 && PXISlotMap != nullptr) {
             /*
-             * If the number of modules requested is greater than then number
+             * If the number of modules requested is greater than the number
              * of modules in the crate, then it is an error.
              */
             if (NumModules > crate.num_modules) {
+                crate.shutdown();
                 throw xia_error(xia_error::code::module_total_invalid,
                                 "module count does not match user supplied "
                                 "number of modules");
-            }
-            xia::pixie::module::number_slots numbers;
-            for (int i = 0; i < static_cast<int>(NumModules); ++i) {
-                typedef xia::pixie::module::number_slot number_slot;
-                xia_log(xia_log::info)
-                    << "Pixie16InitSystem: slot map: " << PXISlotMap[i] << " => " << i;
-                numbers.push_back(number_slot(i, PXISlotMap[i]));
             }
             crate.assign(numbers);
         }
@@ -834,15 +837,31 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned
             module->fifo_hold_usecs = fifo_hold_usecs;
         }
     } catch (xia_error& e) {
+        try {
+            crate.shutdown();
+        } catch (...) {
+        }
         xia_log(xia_log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
+        try {
+            crate.shutdown();
+        } catch (...) {
+        }
         xia_log(xia_log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
+        try {
+            crate.shutdown();
+        } catch (...) {
+        }
         xia_log(xia_log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
+        try {
+            crate.shutdown();
+        } catch (...) {
+        }
         xia_log(xia_log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }

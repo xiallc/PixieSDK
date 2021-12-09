@@ -168,6 +168,11 @@ public:
     void initialize(bool reg_trace = false);
 
     /**
+     * @brief Shutdown the crate and close all open modules.
+     */
+    void shutdown();
+
+    /**
      * @brief Mark a module as offline and move to the offline module list.
      *
      * This invalidates any iterators you may hold to the modules and offline
@@ -190,14 +195,14 @@ public:
     /**
      * @brief Assign numbers to the modules by slot.
      *
-     * Modules not in the map are forced offline. You can optionally stop
-     * this happening but the number for the modules not in the map will be
-     * invalid.
+     * Modules not in the map are closed or optionally forced offline. Modules
+     * not in the slot map by default will be closed and so available for use
+     * by another processes.
      *
      * @param numbers A list of slots that should be assigned.
-     * @param force_offline Forces slots not in the list to be offline. Default = True.
+     * @param close Close slots not in the listed else force offline. Default = True.
      */
-    void assign(const module::number_slots& numbers, bool force_offline = true);
+    void assign(const module::number_slots& numbers, bool close = true);
 
     /**
      * @brief Associates the firmware with modules in the crate.
@@ -308,7 +313,7 @@ module_handle::module_handle(crate& crate_, T number, checks check)
     case online:
         crate_.ready();
         if (!handle.online()) {
-            throw error(pixie::error::code::module_offline, "module not online");
+            throw error(pixie::error::code::module_offline, "module-handle: module not online");
         }
         break;
     case present:
