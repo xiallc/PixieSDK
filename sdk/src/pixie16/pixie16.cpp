@@ -424,14 +424,15 @@ PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
     xia_log(xia_log::info) << "Pixie16BootModule: ModNum=" << ModNum
                            << " DSPVarFile=" << DSPVarFile;
 
-    const unsigned short device_boot_mask =
-        (1 << BOOTPATTERN_COMFPGA_BIT) | (1 << BOOTPATTERN_SPFPGA_BIT) |
-        (1 << BOOTPATTERN_DSPCODE_BIT);
+    const unsigned short device_boot_mask = (1 << BOOTPATTERN_COMFPGA_BIT) |
+                                            (1 << BOOTPATTERN_SPFPGA_BIT) |
+                                            (1 << BOOTPATTERN_DSPCODE_BIT);
     const unsigned short devices_boot = BootPattern & device_boot_mask;
 
     if (devices_boot != 0 && devices_boot != device_boot_mask) {
         xia_log(xia_log::error) << "invalid value: must boot COMM, FPGA and DSP together";
-        return xia::pixie::error::return_code(xia::pixie::error::api_result(xia_error::code::invalid_value));
+        return xia::pixie::error::return_code(
+            xia::pixie::error::api_result(xia_error::code::invalid_value));
     }
 
     ///todo: This needs to use the handle, but the handle won't work until this is complete!
