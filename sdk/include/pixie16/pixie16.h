@@ -1291,10 +1291,8 @@ PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file);
  *
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
  */
-PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version,
-                                                 const unsigned int revision,
-                                                 const unsigned int adc_msps,
-                                                 const unsigned int adc_bits,
+PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version, const int revision,
+                                                 const int adc_msps, const int adc_bits,
                                                  const char* device,
                                                  const char* path,
                                                  unsigned short ModNum);

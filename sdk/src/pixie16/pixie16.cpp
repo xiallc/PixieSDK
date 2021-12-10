@@ -396,6 +396,7 @@ static void PixieBootModule(xia::pixie::module::module& module, const char* ComF
     xia::pixie::firmware::add(crate.firmware, dsp_var);
 
     crate.set_firmware();
+    xia::pixie::firmware::load(crate.firmware);
 
     const auto num_bits = std::numeric_limits<unsigned short>::digits;
     auto pattern = std::bitset<num_bits>(BootPattern);
@@ -806,6 +807,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned
     }
     xia::logging::start("log", "Pixie16Msg.log", log_level, true);
 
+    xia_log(xia_log::info) << "begin log";
     xia_log(xia_log::info) << "Pixie16InitSystem: NumModules=" << NumModules
                            << " PXISlotMap=" << PXISlotMap << " OfflineMode=" << OfflineMode;
 
@@ -1409,15 +1411,26 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglModPar(const char* ModParName, unsigne
 PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file) {
     xia_log(xia_log::debug) << "PixieBootCrate: settings_file=" << settings_file;
 
+    /*
+     * TODO: We need to add the boot flag handling here so that users can do a fast boot.
+     */
+
     try {
         if (settings_file == nullptr) {
             throw xia_error(xia_error::code::invalid_value, "settings file pointer is NULL");
         }
         crate.ready();
         crate.set_firmware();
+        xia::pixie::firmware::load(crate.firmware);
+        crate.probe();
         crate.boot();
         xia::pixie::module::number_slots loaded_slots;
         crate.import_config(settings_file, loaded_slots);
+
+        for (auto& module: crate.modules) {
+            xia::pixie::crate::module_handle handle(crate, module->number);
+            handle->sync_hw(true, true);
+        }
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();
@@ -1436,9 +1449,9 @@ PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file) {
 }
 
 PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version,
-                                                 const unsigned int revision,
-                                                 const unsigned int adc_msps,
-                                                 const unsigned int adc_bits,
+                                                 const int revision,
+                                                 const int adc_msps,
+                                                 const int adc_bits,
                                                  const char* device,
                                                  const char* path,
                                                  unsigned short ModNum) {
@@ -1454,14 +1467,14 @@ PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version,
 
     try {
         int slot = -1;
-        if (ModNum != 0) {
+        if (ModNum != 0xACE) {
             xia::pixie::crate::module_handle module(crate, ModNum,
                                                     xia::pixie::crate::module_handle::present);
             slot = module->slot;
         }
         std::string ver_s = std::to_string(version);
         std::string dev_s = device;
-        firmware fw(ver_s, int(revision), int(adc_msps), int(adc_bits), dev_s);
+        firmware fw(ver_s, revision, adc_msps, adc_bits, dev_s);
         fw.filename = path;
         if (slot > 0) {
             fw.slot.push_back(slot);
