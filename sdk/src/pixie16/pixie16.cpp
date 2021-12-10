@@ -400,7 +400,6 @@ static void PixieBootModule(xia::pixie::module::module& module, const char* ComF
     xia::pixie::firmware::add(crate.firmware, dsp_var);
 
     crate.set_firmware();
-    xia::pixie::firmware::load(crate.firmware);
 
     const auto num_bits = std::numeric_limits<unsigned short>::digits;
     auto pattern = std::bitset<num_bits>(BootPattern);
@@ -1402,6 +1401,84 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglModPar(const char* ModParName, unsigne
                 }
             }
         }
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::return_code_unknown_error();
+    } catch (...) {
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+
+    return 0;
+}
+
+PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file) {
+    xia_log(xia_log::debug) << "PixieBootCrate: settings_file=" << settings_file;
+
+    try {
+        if (settings_file == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "settings file pointer is NULL");
+        }
+        crate.ready();
+        crate.set_firmware();
+        crate.boot();
+        xia::pixie::module::number_slots loaded_slots;
+        crate.import_config(settings_file, loaded_slots);
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::return_code_unknown_error();
+    } catch (...) {
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+
+    return 0;
+}
+
+PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version,
+                                                 const unsigned int revision,
+                                                 const unsigned int adc_msps,
+                                                 const unsigned int adc_bits,
+                                                 const char* device,
+                                                 const char* path,
+                                                 unsigned short ModNum) {
+    xia_log(xia_log::debug) << "PixieRegisterFirmware: version=" << version
+                            << " revision=" << revision
+                            << " adc_msps=" << adc_msps
+                            << " adc_bits=" << adc_bits
+                            << " device=" << device
+                            << " path=" << path
+                            << " ModNum=" << ModNum;
+
+    using firmware = xia::pixie::firmware::firmware;
+
+    try {
+        int slot = -1;
+        if (ModNum != 0) {
+            xia::pixie::crate::module_handle module(crate, ModNum,
+                                                    xia::pixie::crate::module_handle::present);
+            slot = module->slot;
+        }
+        std::string ver_s = std::to_string(version);
+        std::string dev_s = device;
+        firmware fw(ver_s, int(revision), int(adc_msps), int(adc_bits), dev_s);
+        fw.filename = path;
+        if (slot > 0) {
+            fw.slot.push_back(slot);
+        }
+        xia::pixie::firmware::add(crate.firmware, fw);
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();

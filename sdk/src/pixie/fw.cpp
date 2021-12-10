@@ -205,10 +205,22 @@ std::string tag(const int revision, const int adc_msps, const int adc_bits) {
 }
 
 void add(crate& firmwares, firmware& fw) {
-    if (firmwares.find(fw.tag) == std::end(firmwares)) {
+    auto mi = firmwares.find(fw.tag);
+    if (mi == std::end(firmwares)) {
         firmwares[fw.tag] = module();
     }
-    firmwares[fw.tag].push_back(std::make_shared<firmware>(fw));
+    auto& module_fw = firmwares[fw.tag];
+    for (auto mfw : module_fw) {
+        if (mfw->filename == fw.filename) {
+            if (fw.slot.size() != 0) {
+                mfw->slot.insert(mfw->slot.end(), fw.slot.begin(), fw.slot.end());
+                auto last = std::unique(mfw->slot.begin(), mfw->slot.end());
+                mfw->slot.erase(last, mfw->slot.end());
+                return;
+            }
+        }
+    }
+    module_fw.push_back(std::make_shared<firmware>(fw));
 }
 
 bool check(const crate& firmwares, const firmware& fw) {

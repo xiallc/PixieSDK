@@ -1251,6 +1251,53 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglChanPar(const char* ChanParName, doubl
 PIXIE_EXPORT int PIXIE_API Pixie16WriteSglModPar(const char* ModParName, unsigned int ModParData,
                                                  unsigned short ModNum);
 
+/**
+ * @ingroup PIXIE_API
+ *
+ * These functions provide new API interfaces not provided in the Legacy API.
+ */
+
+/**
+ * @ingroup PIXIE_API
+ * @brief Boot a crate
+ *
+ * Boot a crate modules. This operation is faster than booting modules
+ * individually. Registered firmware sets are used to boot the modules. The
+ * COMM, FIPPI FPGA and DSP code and variable map files are loaded together.
+ *
+ * The provided settings file is loaded after the modules have been booted.
+ *
+ * @param[in] settings_file The path to a crate's settings file
+ *
+ * @returns The value of the xia::pixie::error::code indicating the result of the operation
+ */
+PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file);
+
+/**
+ * @ingroup PIXIE_API
+ * @brief Register a module's firmware set
+ *
+ * Registering a module firmware sets makes it available for use whem booting a
+ * crate. A module number can be optionally provided to specify a specific
+ * firmware set for that module. A @ref ModNum of 0 makes the firmware set
+ * available to all matching modules.
+ *
+ * @param[in] version The firmware version as an integer
+ * @param[in] revision The associated hardware revision as an integer. Ex. Rev F = 0xF, Rev H = 0x11
+ * @param[in] adc_msps The ADC sampling frequency associated with the firmware. Ex. 250
+ * @param[in] adc_bits The ADC bit resolution associated with the firmware. Ex. 14
+ * @param[in] path The absolute path to the firmware file on the host system.
+ * @param[in] device The device associated with the firmware. One of dsp, var, fippi, sys
+ *
+ * @returns The value of the xia::pixie::error::code indicating the result of the operation
+ */
+PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version,
+                                                 const unsigned int revision,
+                                                 const unsigned int adc_msps,
+                                                 const unsigned int adc_bits,
+                                                 const char* device,
+                                                 const char* path,
+                                                 unsigned short ModNum);
 #ifdef __cplusplus
 }
 #endif

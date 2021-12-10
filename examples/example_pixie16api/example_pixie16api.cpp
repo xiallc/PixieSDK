@@ -82,6 +82,15 @@ struct LOG {
     std::string datetime_;
 };
 
+struct firmware_spec {
+    unsigned int version;
+    unsigned int revision;
+    unsigned int adc_msps;
+    unsigned int adc_bits;
+
+    firmware_spec() : version(0), revision(0), adc_msps(0), adc_bits(0) {}
+};
+
 struct module_config {
     std::string com_fpga_config;
     std::string dsp_code;
@@ -95,6 +104,7 @@ struct module_config {
     unsigned short number_of_channels;
     unsigned short revision;
     unsigned short slot;
+    firmware_spec fw;
 };
 
 typedef std::vector<module_config> module_configs;
@@ -138,6 +148,13 @@ void verify_json_module(const nlohmann::json& mod) {
     if (!mod["fpga"].contains("fippi") || !mod["fpga"].contains("sys")) {
         throw std::invalid_argument("Missing fpga firmware definition (fippi or sys).");
     }
+
+    if (mod.contains("fw")) {
+        if (!mod["fw"].contains("version") || !mod["fw"].contains("revision") ||
+            !mod["fw"].contains("adc_msps") || !mod["fw"].contains("adc_bits")) {
+            throw std::invalid_argument("Missing firmware (fw) definition (version, revision, adc_msps or adc_bits).");
+        }
+    }
 }
 
 void read_config(const std::string& config_file_name, configuration& cfg) {
@@ -167,6 +184,12 @@ void read_config(const std::string& config_file_name, configuration& cfg) {
         mod_cfg.dsp_code = module["dsp"]["ldr"];
         mod_cfg.dsp_par = module["dsp"]["par"];
         mod_cfg.dsp_var = module["dsp"]["var"];
+        if (module.contains("fw")) {
+            mod_cfg.fw.version = module["fw"]["version"];
+            mod_cfg.fw.revision = module["fw"]["revision"];
+            mod_cfg.fw.adc_msps = module["fw"]["adc_msps"];
+            mod_cfg.fw.adc_bits = module["fw"]["adc_bits"];
+        }
         cfg.modules.push_back(mod_cfg);
     }
 }
@@ -936,19 +959,62 @@ int main(int argc, char** argv) {
     if (is_fast_boot || additional_cfg_flag)
         boot_pattern = 0x70;
 
+    bool crate_boot = false;
+    std::string par_file;
     for (auto& mod : cfg.modules) {
-        start = std::chrono::system_clock::now();
-        std::cout << LOG("INFO") << "Calling Pixie16BootModule for Module " << mod.number
-                  << " with boot pattern: " << std::showbase << std::hex << boot_pattern << std::dec
-                  << std::endl;
+        if (mod.fw.version != 0) {
+            std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
+                      << ": sys" << std::endl;
+            int rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps, mod.fw.adc_bits,
+                                           "sys", mod.com_fpga_config.c_str(), mod.number);
+            if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
+                return EXIT_FAILURE;
+            std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
+                      << ": fippi" << std::endl;
+            rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps, mod.fw.adc_bits,
+                                       "fippi", mod.sp_fpga_config.c_str(), mod.number);
+            if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
+                return EXIT_FAILURE;
+            std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
+                      << ": dsp" << std::endl;
+            rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps, mod.fw.adc_bits,
+                                       "dsp", mod.dsp_code.c_str(), mod.number);
+            if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
+                return EXIT_FAILURE;
+            std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
+                      << ": var" << std::endl;
+            rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps, mod.fw.adc_bits,
+                                       "var", mod.dsp_var.c_str(), mod.number);
+            if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
+                return EXIT_FAILURE;
+            par_file = mod.dsp_par;
+            crate_boot = true;
+        } else {
+            start = std::chrono::system_clock::now();
+            std::cout << LOG("INFO") << "Calling Pixie16BootModule for Module " << mod.number
+                      << " with boot pattern: " << std::showbase << std::hex << boot_pattern << std::dec
+                      << std::endl;
 
-        if (!verify_api_return_value(
-                Pixie16BootModule(mod.com_fpga_config.c_str(), mod.sp_fpga_config.c_str(), nullptr,
-                                  mod.dsp_code.c_str(), mod.dsp_par.c_str(), mod.dsp_var.c_str(),
-                                  mod.number, boot_pattern),
-                "Pixie16BootModule", "Finished booting!"))
+            if (!verify_api_return_value(
+                    Pixie16BootModule(mod.com_fpga_config.c_str(), mod.sp_fpga_config.c_str(), nullptr,
+                                      mod.dsp_code.c_str(), mod.dsp_par.c_str(), mod.dsp_var.c_str(),
+                                      mod.number, boot_pattern),
+                    "Pixie16BootModule", "Finished booting!"))
+                return EXIT_FAILURE;
+            std::cout << LOG("INFO") << "Finished Pixie16BootModule for Module " << mod.number << " in "
+                      << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
+                      << std::endl;
+        }
+    }
+
+    if (crate_boot) {
+        start = std::chrono::system_clock::now();
+        std::cout << LOG("INFO") << "Calling PixieBootCrate with settings: " << par_file
+                  << std::endl;
+        int rc = PixieBootCrate(par_file.c_str());
+        if (!verify_api_return_value(rc, "PixieBootCrate", false))
             return EXIT_FAILURE;
-        std::cout << LOG("INFO") << "Finished Pixie16BootModule for Module " << mod.number << " in "
+        std::cout << LOG("INFO") << "Finished PixieBootCrate in "
                   << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
                   << std::endl;
     }
