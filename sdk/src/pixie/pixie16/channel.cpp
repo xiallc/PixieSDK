@@ -498,6 +498,15 @@ void channel::energy_risetime_flattop(param::channel_param par, double value) {
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
 
+double channel::autotau() {
+    module::module& mod = module.get();
+    util::ieee_float auto_tau = mod.read_var(param::channel_var::AutoTau, number);
+    if (auto_tau == 0xFFFFFFFF) {
+        return -1.0;
+    }
+    return auto_tau;
+}
+
 double channel::tau() {
     module::module& mod = module.get();
     util::ieee_float preamp_tau = mod.read_var(param::channel_var::PreampTau, number);

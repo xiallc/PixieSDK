@@ -162,6 +162,11 @@ typedef std::vector<adc_word> adc_trace;
 typedef std::vector<adc_trace> adc_traces;
 
 /**
+ * @brief defines a type for a container of doubles
+ */
+typedef std::vector<double> doubles;
+
+/**
  * @brief Defines a type for Hardware errors
  */
 typedef error::error error;

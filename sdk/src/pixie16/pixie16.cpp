@@ -272,20 +272,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16AcquireBaselines(unsigned short ModNum) {
         if (ModNum == crate.num_modules) {
             for (size_t mod_num = 0; mod_num < crate.num_modules; mod_num++) {
                 xia::pixie::crate::module_handle module(crate, mod_num);
-
-                if (module->revision == 17) {
+                if (*module == xia::pixie::hw::rev_H) {
                     return not_supported();
                 }
-
                 module->acquire_baselines();
             }
         } else {
             xia::pixie::crate::module_handle module(crate, ModNum);
-
-            if (module->revision == 17) {
+            if (*module == xia::pixie::hw::rev_H) {
                 return not_supported();
             }
-
             module->acquire_baselines();
         }
     } catch (xia_error& e) {
@@ -1321,20 +1317,12 @@ PIXIE_EXPORT int PIXIE_API Pixie16TauFinder(unsigned short ModNum, double* Tau) 
     try {
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
-
-        if (module->revision == 17) {
+        if (*module == xia::pixie::hw::rev_H) {
             return not_supported();
         }
-
-        module->find_tau();
-
-        std::vector<double> taus(module->num_channels, -1);
-        for (auto& chan : module->channels) {
-            auto val = chan.tau();
-            if (val >= 0) {
-                taus.at(chan.number) = chan.tau();
-            }
-        }
+        module->tau_finder();
+        xia::pixie::hw::doubles taus;
+        module->read_autotau(taus);
         std::copy(taus.begin(), taus.end(), Tau);
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;

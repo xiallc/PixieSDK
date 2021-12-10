@@ -235,6 +235,10 @@ bool ieee_float::operator==(const double dec_num) const {
     return value == in(dec_num);
 }
 
+bool ieee_float::operator==(const value_type num) const {
+    return value == num;
+}
+
 ieee_float::operator double() const {
     return out();
 }

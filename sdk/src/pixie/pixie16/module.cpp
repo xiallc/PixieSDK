@@ -1541,8 +1541,8 @@ void module::adjust_offsets() {
     hw::run::control(*this, hw::run::control_task::adjust_offsets);
 }
 
-void module::find_tau() {
-    log(log::info) << module_label(*this) << "find-tau";
+void module::tau_finder() {
+    log(log::info) << module_label(*this) << "tau-finder";
     online_check();
     lock_guard guard(lock_);
     hw::run::control(*this, hw::run::control_task::tau_finder);
@@ -1699,6 +1699,16 @@ void module::read_stats(stats::stats& stats) {
     online_check();
     lock_guard guard(lock_);
     stats::read(*this, stats);
+}
+
+void module::read_autotau(hw::doubles& taus) {
+    log(log::info) << module_label(*this) << "read-autotau";
+    online_check();
+    lock_guard guard(lock_);
+    taus.resize(num_channels);
+    for (auto& chan : channels) {
+        taus[chan.number] = chan.autotau();
+    }
 }
 
 void module::select_port(const int port) {

@@ -202,6 +202,8 @@ struct channel {
     double energy_flattop();
     void energy_risetime_flattop(param::channel_param par, double value);
 
+    double autotau();
+
     double tau();
     void tau(double value);
 

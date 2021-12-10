@@ -41,8 +41,8 @@ static module_config run_config_default = {
     true,  /* dsp_sets_dacs */
     true,  /* dsp_get_traces */
     true,  /* dsp_ramp_offsetdac */
-    true,   /* dsp_adjust_offsetdacs */
-    true /* dsp_tau_finder */
+    true,  /* dsp_adjust_offsetdacs */
+    true   /* dsp_tau_finder */
 };
 
 /**
@@ -52,8 +52,8 @@ static module_config run_config_afe_dbs = {
     false,  /* dsp_sets_dacs */
     false,  /* dsp_get_traces */
     false,  /* dsp_ramp_offsetdac */
-    false,   /* dsp_adjust_offsetdacs */
-    true /* dsp_tau_finder */
+    false,  /* dsp_adjust_offsetdacs */
+    true    /* dsp_tau_finder */
 };
 
 module_config make(module::module& module) {

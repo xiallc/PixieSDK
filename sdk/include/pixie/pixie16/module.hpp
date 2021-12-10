@@ -468,7 +468,7 @@ public:
      */
     void acquire_baselines();
     void adjust_offsets();
-    void find_tau();
+    void tau_finder();
     void get_traces();
     void set_dacs();
 
@@ -523,6 +523,11 @@ public:
      * Read the stats
      */
     void read_stats(stats::stats& stats);
+
+    /**
+     * Read auto tau values
+     */
+    void read_autotau(hw::doubles& taus);
 
     /**
      * Select the module's port
