@@ -331,10 +331,19 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
                                  "Pixie16WriteSglModPar - IN_SYNC"))
         return false;
 
-    std::cout << LOG("INFO") << "Calling Pixie16StartListModeRun." << std::endl;
-    if (!verify_api_return_value(Pixie16StartListModeRun(cfg.num_modules(), LIST_MODE_RUN, NEW_RUN),
-                                 "Pixie16StartListModeRun"))
-        return false;
+    if (synch_wait == 0) {
+        std::cout << LOG("INFO") << "Starting list-mode run in individual modules." << std::endl;
+        if (!verify_api_return_value(
+                Pixie16StartListModeRun(cfg.num_modules(), LIST_MODE_RUN, NEW_RUN),
+                "Pixie16StartListModeRun"))
+            return false;
+    } else {
+        std::cout << LOG("INFO") << "Starting list-mode run with the director module." << std::endl;
+        if (!verify_api_return_value(
+                Pixie16StartListModeRun(cfg.modules[0].number, LIST_MODE_RUN, NEW_RUN),
+                "Pixie16StartListModeRun"))
+            return false;
+    }
 
     std::vector<std::ofstream*> output_streams(cfg.num_modules());
     for (unsigned short i = 0; i < cfg.num_modules(); i++) {
@@ -357,17 +366,21 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
                                .count();
 
         if (current_run_time >= runtime_in_seconds) {
-            /*
-             * Stop run in the Director module (module #0) - a SYNC interrupt should be generated
-             *  to stop run in all modules simultaneously
-             */
-            std::cout << LOG("INFO") << "Stopping List Mode Run." << std::endl;
-            if (!verify_api_return_value(Pixie16EndRun(cfg.modules[0].number), "Pixie16EndRun"))
-                return false;
+            if (synch_wait == 0) {
+                std::cout << LOG("INFO") << "Stopping list-mode run individually." << std::endl;
+                if (!verify_api_return_value(Pixie16EndRun(cfg.num_modules()), "Pixie16EndRun"))
+                    return false;
+            } else {
+                /*
+                 * Stop run in the Director module (module #0) - a SYNC interrupt should be generated
+                 *  to stop run in all modules simultaneously
+                 */
+                std::cout << LOG("INFO") << "Stopping list-mode run in director module."
+                          << std::endl;
+                if (!verify_api_return_value(Pixie16EndRun(cfg.modules[0].number), "Pixie16EndRun"))
+                    return false;
+            }
 
-            std::cout << LOG("INFO")
-                      << "Run was stopped by the director module. Stopping data collection."
-                      << std::endl;
             break;
         }
 
@@ -422,7 +435,6 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
         //Temper the thread so that we don't slam the module with run status requests.
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-
 
     std::cout << LOG("INFO") << "Checking that the run is finalized in all the modules."
               << std::endl;
