@@ -279,6 +279,9 @@ struct channel {
     double chan_trig_stretch();
     void chan_trig_stretch(double value);
 
+    double reset_delay();
+    void reset_delay(double value);
+
     /**
      * A report
      */

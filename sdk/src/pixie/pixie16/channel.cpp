@@ -1316,6 +1316,32 @@ void channel::chan_trig_stretch(double value) {
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
 
+double channel::reset_delay() {
+    module::module& mod = module.get();
+
+    param::value_type value = mod.read_var(param::channel_var::ResetDelay, number);
+
+    double result = double(value) / fixture->config.fpga_clk_mhz;
+
+    return result;
+}
+
+void channel::reset_delay(double value) {
+    ///@todo Need range checking here. Negative values get set to max.
+
+    module::module& mod = module.get();
+
+    param::value_type reset_delay = param::value_type(std::round(value * fixture->config.fpga_clk_mhz));
+
+    if (reset_delay > hw::limit::RESET_DELAY_MAX) {
+        reset_delay = hw::limit::RESET_DELAY_MAX;
+    }
+
+    mod.write_var(param::channel_var::ResetDelay, reset_delay, number);
+
+    hw::run::control(mod, hw::run::control_task::program_fippi);
+}
+
 void channel::report(std::ostream& out) const {
     out << "Number         : " << number << std::endl;
     fixture->report(out);

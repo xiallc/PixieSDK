@@ -272,6 +272,7 @@ struct limit {
     static const size_t FAST_THRESHOLD_MAX = 65535;
     static const size_t QDCLEN_MAX = 32767;
     static const size_t QDCLEN_MIN = 1;
+    static const size_t RESET_DELAY_MAX = 255;
     static const size_t SLOWFILTERRANGE_MAX = 6;
     static const size_t SLOWFILTERRANGE_MIN = 1;
     static const size_t SLOWFILTER_MAX_LEN = 127;

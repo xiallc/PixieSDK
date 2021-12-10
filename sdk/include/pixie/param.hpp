@@ -342,6 +342,11 @@ enum struct channel_param {
      */
     qdclen7,
     /**
+     * @ref xia::pixie::param::channel_var::ResetDelay <br>
+     * **Unit**: &mu;s
+     */
+    reset_delay,
+    /**
      * @ref xia::pixie::param::channel_var::PreampTau <br>
      * **Unit**: &mu;s
      */
@@ -1087,7 +1092,8 @@ enum struct channel_var {
      */
     QDCLen7,
     /**
-     * @brief [INPUT] **Not implemented.**
+     * @brief [INPUT]
+     * @remark Must be less than 255.
      */
     ResetDelay,
     /**

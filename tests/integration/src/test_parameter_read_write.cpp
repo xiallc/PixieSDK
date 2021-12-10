@@ -386,6 +386,24 @@ TEST_SUITE("Channel Parameter Reads and Writes") {
             CHECK(crate[1].read("QDCLen0", 0) == 131.068);
         }
     }
+    TEST_CASE("ResetDelay") {
+        SUBCASE("Happy Path - 250 MSPS") {
+            const double value = 0.3;
+            crate[1].write("RESET_DELAY", 0, value);
+            CHECK(crate[1].read_var("ResetDelay", 0, 0) == 38);
+            CHECK(doctest::Approx(crate[1].read("RESET_DELAY", 0)).epsilon(0.005) == value);
+        }
+        SUBCASE("Negative") {
+            crate[1].write("RESET_DELAY", 0, -1);
+            CHECK(crate[1].read_var("ResetDelay", 0, 0) == 255);
+            CHECK(crate[1].read("RESET_DELAY", 0) == 2.04);
+        }
+        SUBCASE("Too Big") {
+            crate[1].write("RESET_DELAY", 0, a_big_value);
+            CHECK(crate[1].read_var("ResetDelay", 0, 0) == 255);
+            CHECK(crate[1].read("RESET_DELAY", 0) == 2.04);
+        }
+    }
     TEST_CASE("TAU") {
         const double expected_par = 0.2;
         ///TODO: Remove this try/catch after we simulate get_baselines control task.

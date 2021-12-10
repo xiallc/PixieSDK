@@ -1030,6 +1030,9 @@ double module::read(param::channel_param par, size_t channel) {
         case param::channel_param::chantrigstretch:
             value = channels[channel].chan_trig_stretch();
             break;
+        case param::channel_param::reset_delay:
+            value = channels[channel].reset_delay();
+            break;
         default:
             throw error(number, slot, error::code::channel_invalid_param, "invalid read parameter");
     }
@@ -1199,6 +1202,9 @@ void module::write(param::channel_param par, size_t channel, double value) {
             break;
         case param::channel_param::chantrigstretch:
             channels[channel].chan_trig_stretch(value);
+            break;
+        case param::channel_param::reset_delay:
+            channels[channel].reset_delay(value);
             break;
         default:
             break;
