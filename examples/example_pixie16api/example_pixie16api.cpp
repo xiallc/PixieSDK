@@ -1023,7 +1023,7 @@ int main(int argc, char** argv) {
         start = std::chrono::system_clock::now();
         std::cout << LOG("INFO") << "Calling PixieBootCrate with settings: " << par_file
                   << std::endl;
-        int rc = PixieBootCrate(par_file.c_str());
+        int rc = PixieBootCrate(par_file.c_str(), is_fast_boot);
         if (!verify_api_return_value(rc, "PixieBootCrate", false))
             return EXIT_FAILURE;
         std::cout << LOG("INFO") << "Finished PixieBootCrate in "

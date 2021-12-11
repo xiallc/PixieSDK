@@ -1408,12 +1408,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglModPar(const char* ModParName, unsigne
     return 0;
 }
 
-PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file) {
+PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file, const bool fast_boot) {
     xia_log(xia_log::debug) << "PixieBootCrate: settings_file=" << settings_file;
-
-    /*
-     * TODO: We need to add the boot flag handling here so that users can do a fast boot.
-     */
 
     try {
         if (settings_file == nullptr) {
@@ -1421,16 +1417,19 @@ PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file) {
         }
         crate.ready();
         crate.set_firmware();
-        xia::pixie::firmware::load(crate.firmware);
-        crate.probe();
-        crate.boot();
+        bool online = false;
+        if (fast_boot) {
+            online = crate.probe();
+        }
+        if (!fast_boot || !online) {
+            /*
+             * Forcing a boot is not a fast boot
+             */
+            crate.boot(fast_boot == false);
+        }
         xia::pixie::module::number_slots loaded_slots;
         crate.import_config(settings_file, loaded_slots);
-
-        for (auto& module: crate.modules) {
-            xia::pixie::crate::module_handle handle(crate, module->number);
-            handle->sync_hw(true, true);
-        }
+        crate.initialize_afe();
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();

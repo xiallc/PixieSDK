@@ -1265,13 +1265,21 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglModPar(const char* ModParName, unsigne
  * individually. Registered firmware sets are used to boot the modules. The
  * COMM, FIPPI FPGA and DSP code and variable map files are loaded together.
  *
- * The provided settings file is loaded after the modules have been booted.
+ * The provided settings file is loaded after the modules have been booted
+ * online. This does not depend on state of @ref fast_boot.
+ *
+ * It @ref fast_boot is true only the modules that have not been booted are
+ * booted. If @ref fast_boot is false all modules are booted.
+ *
+ * A module is considered offline if the COMMS, FIPPI or DSP is not loaded and
+ * running.
  *
  * @param[in] settings_file The path to a crate's settings file
+ * @param[in] fast_boot If true only offline modules are booted
  *
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
  */
-PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file);
+PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file, const bool fast_boot);
 
 /**
  * @ingroup PIXIE_API

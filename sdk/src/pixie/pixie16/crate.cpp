@@ -155,17 +155,22 @@ void crate::set_offline(module::module_ptr module) {
     throw error(error::code::module_not_found, "module not seen as online");
 }
 
-void crate::probe() {
+bool crate::probe() {
     log(log::info) << "crate: probe";
     ready();
     lock_guard guard(lock_);
+    int online = 0;
     for (auto& module : modules) {
         module->probe();
+        if (module->online()) {
+          ++online;
+        }
     }
+    return online == num_modules;
 }
 
-void crate::boot() {
-    log(log::info) << "crate: boot";
+void crate::boot(const bool force) {
+  log(log::info) << "crate: boot: force" << std::boolalpha << force;
 
     ready();
     lock_guard guard(lock_);
@@ -179,7 +184,7 @@ void crate::boot() {
 
     for (size_t m = 0; m < modules.size(); ++m) {
         auto module = modules[m];
-        if (module->revision == 0) {
+        if (module->revision == 0 || (!force && module->online())) {
             continue;
         }
         futures.push_back(future_error(promises[m].get_future()));

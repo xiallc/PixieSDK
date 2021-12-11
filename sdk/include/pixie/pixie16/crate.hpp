@@ -183,14 +183,19 @@ public:
     void set_offline(module::module_ptr module);
 
     /**
-     * @brief Loads the firmware from disk and checks if the modules are online.
+     * @brief Checks if all the modules are online.
+     *
+     * @return True if all modules are online else false if a module is not online
      */
-    void probe();
+    bool probe();
 
     /**
      * @brief Boot all modules by loading the firmware onto the hardware.
+     *
+     * @param force If true (the default) boot or module else boot only the
+     *              modules offline.
      */
-    void boot();
+    void boot(const bool force = true);
 
     /**
      * @brief Assign numbers to the modules by slot.
