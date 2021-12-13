@@ -629,6 +629,70 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeProcessedEvents(unsigned int* Statis
     return not_supported();
 }
 
+PIXIE_EXPORT double PIXIE_API Pixie16ComputeRawInputCount(unsigned int* Statistics,
+                                                          unsigned short ModNum,
+                                                          unsigned short ChanNum) {
+    xia_log(xia_log::debug) << "Pixie16ComputeRawInputCount: ModNum=" << ModNum
+                            << " ChanNum=" << ChanNum;
+
+    double result = 0;
+
+    try {
+        if (Statistics == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "statistics pointer is NULL");
+        }
+        auto stats = reinterpret_cast<stats_legacy_ptr>(Statistics);
+        stats->validate();
+        if (ChanNum >= stats->num_channels) {
+            throw xia_error(xia_error::code::channel_number_invalid, "invalid channel number");
+        }
+        result = stats->channels[ChanNum].input_counts();
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+    } catch (...) {
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+    }
+
+    return result;
+}
+
+PIXIE_EXPORT double PIXIE_API Pixie16ComputeRawOutputCount(unsigned int* Statistics,
+                                                           unsigned short ModNum,
+                                                           unsigned short ChanNum) {
+    xia_log(xia_log::debug) << "Pixie16ComputeRawOutputCount: ModNum=" << ModNum
+                            << " ChanNum=" << ChanNum;
+
+    double result = 0;
+
+    try {
+        if (Statistics == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "statistics pointer is NULL");
+        }
+        auto stats = reinterpret_cast<stats_legacy_ptr>(Statistics);
+        stats->validate();
+        if (ChanNum >= stats->num_channels) {
+            throw xia_error(xia_error::code::channel_number_invalid, "invalid channel number");
+        }
+        result = stats->channels[ChanNum].output_counts();
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+    } catch (...) {
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+    }
+
+    return result;
+}
+
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeRealTime(unsigned int* Statistics,
                                                      unsigned short ModNum) {
     xia_log(xia_log::debug) << "Pixie16ComputeRealTime: ModNum=" << ModNum;
@@ -1447,19 +1511,13 @@ PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file, const bool 
     return 0;
 }
 
-PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version,
-                                                 const int revision,
-                                                 const int adc_msps,
-                                                 const int adc_bits,
-                                                 const char* device,
-                                                 const char* path,
+PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version, const int revision,
+                                                 const int adc_msps, const int adc_bits,
+                                                 const char* device, const char* path,
                                                  unsigned short ModNum) {
     xia_log(xia_log::debug) << "PixieRegisterFirmware: version=" << version
-                            << " revision=" << revision
-                            << " adc_msps=" << adc_msps
-                            << " adc_bits=" << adc_bits
-                            << " device=" << device
-                            << " path=" << path
+                            << " revision=" << revision << " adc_msps=" << adc_msps
+                            << " adc_bits=" << adc_bits << " device=" << device << " path=" << path
                             << " ModNum=" << ModNum;
 
     using firmware = xia::pixie::firmware::firmware;

@@ -577,6 +577,50 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeProcessedEvents(unsigned int* Statis
 
 /**
  * @ingroup PIXIE16_API
+ * @brief Compute the number of triggers seen by the FPGA's trigger filter.
+ *
+ * This function does not communicate with Pixie-16 modules.
+ * Before calling this function ::Pixie16ReadStatisticsFromModule should be
+ * called to read statistics data from the module.
+ *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16ComputeRawInputCount
+ *
+ * @param[in] Statistics A pointer to the statistics array returned by ::Pixie16ReadStatisticsFromModule
+ * @param[in] ModNum ModNum is the module number which starts counting at 0.
+ * @param[in] ChanNum ChanNum is the channel number which starts counting at 0.
+ * @return The raw number fast triggers that the channel observed.
+ */
+PIXIE_EXPORT double PIXIE_API Pixie16ComputeRawInputCount(unsigned int* Statistics,
+                                                          unsigned short ModNum,
+                                                          unsigned short ChanNum);
+
+/**
+ * @ingroup PIXIE16_API
+ * @brief Compute the number of channel events handled by the DSP.
+ *
+ * This differs from ::Pixie16ComputeRawInputCount in that these events may have
+ * additional validation applied. This number should always be equal to or
+ * less than the raw input counts.
+ *
+ * This function does not communicate with Pixie-16 modules.
+ * Before calling this function ::Pixie16ReadStatisticsFromModule should be
+ * called to read statistics data from the module.
+ *
+ * ### Example
+ * \snippet snippets/api_function_examples.c Pixie16ComputeRawOutputCount
+ *
+ * @param[in] Statistics A pointer to the statistics array returned by ::Pixie16ReadStatisticsFromModule
+ * @param[in] ModNum ModNum is the module number which starts counting at 0.
+ * @param[in] ChanNum ChanNum is the channel number which starts counting at 0.
+ * @return The raw number of events handled by the DSP.
+ */
+PIXIE_EXPORT double PIXIE_API Pixie16ComputeRawOutputCount(unsigned int* Statistics,
+                                                           unsigned short ModNum,
+                                                           unsigned short ChanNum);
+
+/**
+ * @ingroup PIXIE16_API
  * @brief Compute real time that a module accumulated in a run
  *
  * Use this function to calculate the real time that a Pixie-16 module has spent on data
@@ -1303,8 +1347,7 @@ PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file, const bool 
  */
 PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version, const int revision,
                                                  const int adc_msps, const int adc_bits,
-                                                 const char* device,
-                                                 const char* path,
+                                                 const char* device, const char* path,
                                                  unsigned short ModNum);
 #ifdef __cplusplus
 }

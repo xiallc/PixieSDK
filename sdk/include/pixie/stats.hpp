@@ -59,7 +59,9 @@ struct channel {
     channel(const hw::config& config);
     channel();
 
+    double input_counts() const;
     double input_count_rate() const;
+    double output_counts() const;
     double output_count_rate() const;
     double live_time() const;
 };

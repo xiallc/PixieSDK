@@ -230,8 +230,13 @@ bool output_statistics_data(const module_config& mod, const std::string& type) {
     bin_output.close();
 
     std::ofstream csv_output(generate_filename(mod.number, type, "csv"), std::ios::out);
+#ifndef LEGACY_EXAMPLE
+    csv_output
+        << "channel,real_time,live_time,input_counts,input_count_rate,output_counts,output_count_rate"
+        << std::endl;
+#else
     csv_output << "channel,real_time,live_time,input_count_rate,output_count_rate" << std::endl;
-
+#endif
     auto real_time = Pixie16ComputeRealTime(stats.data(), mod.number);
 
     std::cout << LOG("INFO") << "Begin Statistics for Module " << mod.number << std::endl;
@@ -246,8 +251,17 @@ bool output_statistics_data(const module_config& mod, const std::string& type) {
         std::cout << LOG("INFO") << "Channel " << chan << " Output Count Rate: " << ocr
                   << std::endl;
 
+#ifndef LEGACY_EXAMPLE
+        auto ic = Pixie16ComputeRawInputCount(stats.data(), mod.number, chan);
+        std::cout << LOG("INFO") << "Channel " << chan << " Input Counts: " << ic << std::endl;
+        auto oc = Pixie16ComputeRawOutputCount(stats.data(), mod.number, chan);
+        std::cout << LOG("INFO") << "Channel " << chan << " Output Counts: " << oc << std::endl;
+        csv_output << chan << "," << real_time << "," << live_time << "," << ic << "," << icr << ","
+                   << oc << "," << ocr << std::endl;
+#else
         csv_output << chan << "," << real_time << "," << live_time << "," << icr << "," << ocr
                    << std::endl;
+#endif
     }
     std::cout << LOG("INFO") << "End Statistics for Module " << mod.number << std::endl;
     csv_output.close();

@@ -46,6 +46,10 @@ channel::channel()
     : fast_peaks_a(0), fast_peaks_b(0), live_time_a(0), live_time_b(0), chan_events_a(0),
       chan_events_b(0), runtime_a(0), runtime_b(0) {}
 
+double channel::input_counts() const {
+    return make_u64_double(fast_peaks_a, fast_peaks_b);
+}
+
 double channel::input_count_rate() const {
     const double fast_peaks = make_u64_double(fast_peaks_a, fast_peaks_b);
     const double live_time = make_u64_double(live_time_a, live_time_b);
@@ -53,6 +57,10 @@ double channel::input_count_rate() const {
         return 0.0;
     }
     return fast_peaks / (live_time * config.adc_clk_div * (1.0e-6 / config.adc_msps));
+}
+
+double channel::output_counts() const {
+    return make_u64_double(chan_events_a, chan_events_b);
 }
 
 double channel::output_count_rate() const {
@@ -104,10 +112,10 @@ void read(pixie::module::module& module_, stats& stats_) {
         param::get_descriptor(chan_descs, param::channel_var::ChanEventsB).address,
     };
 
-    const hw::address addr_low = *std::min_element(addrs.begin(), addrs.end(),
-                                                   [](auto& a, auto& b) { return a < b; });
-    const hw::address addr_high = *std::max_element(addrs.begin(), addrs.end(),
-                                                    [](auto& a, auto& b) { return a < b; });
+    const hw::address addr_low =
+        *std::min_element(addrs.begin(), addrs.end(), [](auto& a, auto& b) { return a < b; });
+    const hw::address addr_high =
+        *std::max_element(addrs.begin(), addrs.end(), [](auto& a, auto& b) { return a < b; });
     const size_t words = addr_high - addr_low + module_.num_channels + 1;
 
     hw::memory::dsp dsp(module_);

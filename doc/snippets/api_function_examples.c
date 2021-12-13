@@ -120,6 +120,32 @@ unsigned short ChanNum = 0;
 double NumEvents = Pixie16ComputeProcessedEvents(stats.data(), ModNum);
 //! [Pixie16ComputeProcessedEvents]
 
+//! [Pixie16ComputeRawInputCount]
+std::vector<unsigned int> stats(Pixie16GetStatisticsSize(), 0);
+unsigned short ModNum = 0;
+// First call Pixie16ReadStatisticsFromModule to get the statistics data
+if (Pixie16ReadStatisticsFromModule(stats.data(), ModNum) < 0) {
+    // Error handling
+}
+
+unsigned short ChanNum = 0;
+// compute number of processed events
+double raw_input_count = Pixie16ComputeRawInputCount(stats.data(), ModNum);
+//! [Pixie16ComputeRawInputCount]
+
+//! [Pixie16ComputeRawOutputCount]
+std::vector<unsigned int> stats(Pixie16GetStatisticsSize(), 0);
+unsigned short ModNum = 0;
+// First call Pixie16ReadStatisticsFromModule to get the statistics data
+if (Pixie16ReadStatisticsFromModule(stats.data(), ModNum) < 0) {
+    // Error handling
+}
+
+unsigned short ChanNum = 0;
+// compute number of processed events
+double raw_output_count = Pixie16ComputeRawOutputCount(stats.data(), ModNum);
+//! [Pixie16ComputeRawOutputCount]
+
 //! [Pixie16ComputeRealTime]
 std::vector<unsigned int> stats(Pixie16GetStatisticsSize(), 0);
 unsigned short ModNum = 0;
