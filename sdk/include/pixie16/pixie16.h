@@ -497,13 +497,13 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeInputCountRate(unsigned int* Statist
  * @ingroup PIXIE16_API
  * @brief Compute live time that a channel accumulated in a run
  *
- * Use this function to calculate the live time that one channel of a Pixie-16 module has spent on
- * data acquisition. This function does not communicate with Pixie-16 modules. Before calling this
- * function, ::Pixie16ReadStatisticsFromModule should be called to read
- * statistics data from the module.
+ * Use this function to calculate the channel's live time as measured by the FPGA. This time
+ * excludes time during which the input signal was out of the ADC's voltage range or when the data
+ * run was stopped. This value should always be equal to, or less than, the Real time obtained
+ * from ::Pixie16ComputeRealTime.
  *
- * The Statistics array is filled with data from a Pixie-16 module after calling function,
- * ::Pixie16ReadStatisticsFromModule.
+ * This function does not communicate with Pixie-16 modules. The Statistics array is filled with
+ * data from a Pixie-16 module after calling function, ::Pixie16ReadStatisticsFromModule.
  *
  * ### Example
  * \snippet snippets/api_function_examples.c Pixie16ComputeLiveTime
