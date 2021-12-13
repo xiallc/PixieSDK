@@ -971,9 +971,12 @@ int main(int argc, char** argv) {
     if (is_fast_boot || additional_cfg_flag)
         boot_pattern = 0x70;
 
+#ifndef LEGACY_EXAMPLE
     bool crate_boot = false;
     std::string par_file;
+#endif
     for (auto& mod : cfg.modules) {
+#ifndef LEGACY_EXAMPLE
         if (mod.fw.version != 0) {
             std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
                       << ": sys" << std::endl;
@@ -1002,6 +1005,7 @@ int main(int argc, char** argv) {
             par_file = mod.dsp_par;
             crate_boot = true;
         } else {
+#endif
             start = std::chrono::system_clock::now();
             std::cout << LOG("INFO") << "Calling Pixie16BootModule for Module " << mod.number
                       << " with boot pattern: " << std::showbase << std::hex << boot_pattern << std::dec
@@ -1013,12 +1017,16 @@ int main(int argc, char** argv) {
                                       mod.number, boot_pattern),
                     "Pixie16BootModule", "Finished booting!"))
                 return EXIT_FAILURE;
-            std::cout << LOG("INFO") << "Finished Pixie16BootModule for Module " << mod.number << " in "
-                      << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
-                      << std::endl;
+            std::cout << LOG("INFO") << "Finished Pixie16BootModule for Module " << mod.number
+                      << " in "
+                      << calculate_duration_in_seconds(start, std::chrono::system_clock::now())
+                      << " s." << std::endl;
+#ifndef LEGACY_EXAMPLE
         }
+#endif
     }
 
+#ifndef LEGACY_EXAMPLE
     if (crate_boot) {
         start = std::chrono::system_clock::now();
         std::cout << LOG("INFO") << "Calling PixieBootCrate with settings: " << par_file
@@ -1030,6 +1038,7 @@ int main(int argc, char** argv) {
                   << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
                   << std::endl;
     }
+#endif
 
     if (boot) {
         execute_close_module_connection(cfg.num_modules());
