@@ -240,29 +240,33 @@ bool output_statistics_data(const module_config& mod, const std::string& type) {
     auto real_time = Pixie16ComputeRealTime(stats.data(), mod.number);
 
     std::cout << LOG("INFO") << "Begin Statistics for Module " << mod.number << std::endl;
-    std::cout << LOG("INFO") << "Real Time: " << real_time << std::endl;
     for (unsigned int chan = 0; chan < mod.number_of_channels; chan++) {
         auto live_time = Pixie16ComputeLiveTime(stats.data(), mod.number, chan);
         auto icr = Pixie16ComputeInputCountRate(stats.data(), mod.number, chan);
         auto ocr = Pixie16ComputeOutputCountRate(stats.data(), mod.number, chan);
 
-        std::cout << LOG("INFO") << "Channel " << chan << " LiveTime: " << live_time << std::endl;
-        std::cout << LOG("INFO") << "Channel " << chan << " Input Count Rate: " << icr << std::endl;
-        std::cout << LOG("INFO") << "Channel " << chan << " Output Count Rate: " << ocr
-                  << std::endl;
+        nlohmann::json json_stats = {
+            {"module", mod.number},   {"channel", chan}, {"real_time", real_time},
+            {"live_time", live_time}, {"icr", icr},      {"ocr", ocr},
+        };
 
 #ifndef LEGACY_EXAMPLE
         auto ic = Pixie16ComputeRawInputCount(stats.data(), mod.number, chan);
-        std::cout << LOG("INFO") << "Channel " << chan << " Input Counts: " << ic << std::endl;
         auto oc = Pixie16ComputeRawOutputCount(stats.data(), mod.number, chan);
-        std::cout << LOG("INFO") << "Channel " << chan << " Output Counts: " << oc << std::endl;
+
+        json_stats["raw_input_count"] = ic;
+        json_stats["raw_output_count"] = oc;
+
         csv_output << chan << "," << real_time << "," << live_time << "," << ic << "," << icr << ","
                    << oc << "," << ocr << std::endl;
 #else
         csv_output << chan << "," << real_time << "," << live_time << "," << icr << "," << ocr
                    << std::endl;
 #endif
+
+        std::cout << LOG("INFO") << json_stats << std::endl;
     }
+
     std::cout << LOG("INFO") << "End Statistics for Module " << mod.number << std::endl;
     csv_output.close();
     return true;
