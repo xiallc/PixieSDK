@@ -1092,7 +1092,16 @@ enum struct channel_var {
      */
     QDCLen7,
     /**
-     * @brief [INPUT]
+     * @brief [INPUT] Adjusts the delay between the fast trigger and the CFD
+     *     zero-crossing point search.
+     *
+     * For fast pulses, the fast trigger may arrive earlier than the time when
+     * the CFD computation is ready. In this situation, the system generates an
+     * erroneous CFD forced trigger and misses the true CFD trigger. The
+     * ResetDelay allows users to adjust the delay between the fast trigger and
+     * the CFD zero-crossing search on a per channel basis. This ensures that
+     * the CFD computation is ready when the fast trigger arms.
+     *
      * @remark Must be less than 255.
      */
     ResetDelay,
