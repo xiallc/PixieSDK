@@ -77,6 +77,9 @@ def process_list_mode_data_file(args):
     Processes an entire list-mode data file written by the example software.
     The file contains nothing but data buffers from the Pixie-16's
     external FIFO.
+
+    NOTE: This function will only process data containing the base 4 word header at this time.
+
     :param args: The argument list as received from the argument parser.
     :return: A pandas data frame containing the events.
     """
@@ -109,6 +112,8 @@ def plot_lmd(df, args):
     :param args: The arguments obtained from the argument parser
     :return: None
     """
+    logging.info(f"Starting to plot list-mode energy histograms.")
+
     channels = [float(x) for x in df.channel.unique()]
     channels.sort()
 
@@ -131,6 +136,8 @@ def plot_lmd(df, args):
         df[df['channel'] == channel].hist(column='energy', ax=ax, grid=False)
         ax.title.set_text(f'Chan {int(channel)}')
 
+        logging.info(f"Total events for channel {channel}: {df[df['channel'] == channel]['energy'].count()}")
+
     fig.supxlabel("Energy(arb)")
     fig.supylabel("Energy(arb) / bin")
     plt.xlim(args.xlim)
@@ -149,6 +156,7 @@ def plot_csv(plot_type, data, args):
     :param args: The arguments parsed by the argument parser.
     :return: None
     """
+    logging.info(f"Starting to plot {plot_type} data.")
     title = "Untitled"
     xlabel = "Sample"
     ylabel = "ADC (arb) / Sample"
@@ -221,22 +229,16 @@ if __name__ == '__main__':
         if not ARGS.freq or not ARGS.rev:
             PARSER.error("When requesting list-mode data you must provide us with the "
                          "hardware's sampling frequency and firmware revision.")
-        df = process_list_mode_data_file(ARGS)
+        plot_lmd(process_list_mode_data_file(ARGS), ARGS)
     else:
         if not ARGS.stats:
             df = pd.read_csv(ARGS.file, index_col='bin', keep_default_na=False)
+            if ARGS.adc:
+                plot_csv('adc', df, ARGS)
+            if ARGS.mca:
+                plot_csv('mca', df, ARGS)
+            if ARGS.baseline:
+                df.pop("timestamp")
+                plot_csv('baseline', df, ARGS)
         else:
-            df = pd.read_csv(ARGS.file, keep_default_na=False)
-
-    logging.info("Sending data for plotting.")
-    if ARGS.adc:
-        plot_csv('adc', df, ARGS)
-    if ARGS.mca:
-        plot_csv('mca', df, ARGS)
-    if ARGS.baseline:
-        df.pop("timestamp")
-        plot_csv('baseline', df, ARGS)
-    if ARGS.stats:
-        plot_csv('stats', df, ARGS)
-    if ARGS.lmd:
-        plot_lmd(df, ARGS)
+            plot_csv('stats', pd.read_csv(ARGS.file, keep_default_na=False), ARGS)
