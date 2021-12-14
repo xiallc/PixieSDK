@@ -871,7 +871,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned
     }
     xia::logging::start("log", "Pixie16Msg.log", log_level, true);
 
-    xia_log(xia_log::info) << "begin log";
     xia_log(xia_log::info) << "Pixie16InitSystem: NumModules=" << NumModules
                            << " PXISlotMap=" << PXISlotMap << " OfflineMode=" << OfflineMode;
 

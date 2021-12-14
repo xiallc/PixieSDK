@@ -84,9 +84,9 @@ struct LOG {
 
 struct firmware_spec {
     unsigned int version;
-    unsigned int revision;
-    unsigned int adc_msps;
-    unsigned int adc_bits;
+    int revision;
+    int adc_msps;
+    int adc_bits;
 
     firmware_spec() : version(0), revision(0), adc_msps(0), adc_bits(0) {}
 };
@@ -515,10 +515,10 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
     return true;
 }
 
-bool execute_list_mode_runs(const int num_runs, const configuration& cfg,
+bool execute_list_mode_runs(const unsigned int num_runs, const configuration& cfg,
                             const double& runtime_in_seconds, unsigned int synch_wait,
                             unsigned int in_synch) {
-    for (int i = 0; i < num_runs; i++) {
+    for (unsigned int i = 0; i < num_runs; i++) {
         std::cout << LOG("INFO") << "Starting list-mode run number " << i << std::endl;
         if (!execute_list_mode_run(i, cfg, runtime_in_seconds, synch_wait, in_synch)) {
             std::cout << LOG("INFO") << "List-mode data run " << i
@@ -642,9 +642,9 @@ bool execute_mca_run(const int run_num, const module_config& mod, const double r
     return true;
 }
 
-bool execute_mca_runs(const int num_runs, const module_config& mod, const double runtime_in_seconds,
+bool execute_mca_runs(const unsigned int num_runs, const module_config& mod, const double runtime_in_seconds,
                       unsigned int synch_wait, unsigned int in_synch) {
-    for (int i = 0; i < num_runs; i++) {
+    for (unsigned int i = 0; i < num_runs; i++) {
         std::cout << LOG("INFO") << "Starting MCA run number " << i << std::endl;
         if (!execute_mca_run(i, mod, runtime_in_seconds, synch_wait, in_synch)) {
             std::cout << LOG("INFO") << "MCA data run " << i
@@ -889,7 +889,7 @@ int main(int argc, char** argv) {
     args::ValueFlag<unsigned int> module(arguments, "module", "The module to operate on.", {"mod"});
     args::ValueFlag<unsigned int> num_runs(
         arguments, "num-runs", "The number of runs to execute when taking list-mode or MCA data.",
-        {"num-runs"}, 1);
+        {"num-runs"}, static_cast<unsigned int>(1));
     args::ValueFlag<double> parameter_value(
         write, "parameter_value", "The value of the parameter we want to write.", {'v', "value"});
     args::ValueFlag<unsigned int> synch_wait(
@@ -1153,14 +1153,14 @@ int main(int argc, char** argv) {
     }
 
     if (adjust_offsets) {
-        for (auto& module : cfg.modules)
-            if (!execute_adjust_offsets(module))
+        for (auto& mod : cfg.modules)
+            if (!execute_adjust_offsets(mod))
                 return EXIT_FAILURE;
     }
 
     if (trace) {
-        for (auto& module : cfg.modules)
-            if (!execute_trace_capture(module))
+        for (auto& mod : cfg.modules)
+            if (!execute_trace_capture(mod))
                 return EXIT_FAILURE;
     }
 
@@ -1176,15 +1176,23 @@ int main(int argc, char** argv) {
     }
 
     if (baseline) {
-        for (auto& module : cfg.modules)
-            if (!execute_baseline_capture(module))
+        for (auto& mod : cfg.modules)
+            if (!execute_baseline_capture(mod))
                 return EXIT_FAILURE;
     }
 
     if (mca) {
-        if (!execute_mca_runs(num_runs.Get(), cfg.modules[module.Get()], run_time.Get(),
-                              synch_wait.Get(), in_synch.Get()))
-            return EXIT_FAILURE;
+        if (module.Get() >= cfg.num_modules()) {
+            for (auto& mod : cfg.modules) {
+                if (!execute_mca_runs(num_runs.Get(), mod, run_time.Get(),
+                                      synch_wait.Get(), in_synch.Get()))
+                    return EXIT_FAILURE;
+            }
+        } else {
+            if (!execute_mca_runs(num_runs.Get(), cfg.modules[module.Get()], run_time.Get(),
+                                  synch_wait.Get(), in_synch.Get()))
+                return EXIT_FAILURE;
+        }
     }
 
     if (blcut) {
@@ -1193,8 +1201,8 @@ int main(int argc, char** argv) {
     }
 
     if (dacs) {
-        for (auto& module : cfg.modules)
-            if (!execute_set_dacs(module))
+        for (auto& mod : cfg.modules)
+            if (!execute_set_dacs(mod))
                 return EXIT_FAILURE;
     }
 
