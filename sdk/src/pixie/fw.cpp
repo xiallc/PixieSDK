@@ -106,6 +106,21 @@ firmware::firmware(const std::string version_, const int mod_revision_, const in
       mod_revision(mod_revision_), mod_adc_msps(mod_adc_msps_), mod_adc_bits(mod_adc_bits_),
       device(device_) {}
 
+firmware::firmware(const firmware& orig) :
+    tag(orig.tag), filename(orig.filename), version(orig.version), mod_revision(orig.mod_revision),
+    mod_adc_msps(orig.mod_adc_msps), mod_adc_bits(orig.mod_adc_bits), device(orig.device),
+    slot(orig.slot) {
+}
+
+firmware::firmware(firmware&& from)
+    : tag(from.tag), filename(from.filename), version(from.version), mod_revision(from.mod_revision),
+      mod_adc_msps(from.mod_adc_msps), mod_adc_bits(from.mod_adc_bits), device(from.device),
+      slot(from.slot) {
+    lock_guard guard(from.lock);
+    from.filename.clear();
+    from.data.clear();
+}
+
 std::string firmware::basename() const {
     auto pos = filename.find_last_of('/');
     if (pos == std::string::npos) {
@@ -120,6 +135,7 @@ std::string firmware::basename() const {
 }
 
 void firmware::load() {
+    lock_guard guard(lock);
     if (data.empty()) {
         util::timepoint load_time(true);
         /*
@@ -160,6 +176,7 @@ void firmware::load() {
 }
 
 void firmware::clear() {
+    lock_guard guard(lock);
     if (!data.empty()) {
         total_image_size -= data.size();
         data.clear();
@@ -167,7 +184,8 @@ void firmware::clear() {
     }
 }
 
-size_t firmware::words() const {
+size_t firmware::words() {
+    lock_guard guard(lock);
     /*
      * Size of the vector should be uint32_t aligned so rounding there
      * should be redundant, but it does not harm so lets keep it.

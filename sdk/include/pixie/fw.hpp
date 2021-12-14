@@ -26,6 +26,7 @@
 #include <map>
 #include <memory>
 #include <stdexcept>
+#include <mutex>
 #include <vector>
 
 #include <pixie/os_compat.hpp>
@@ -94,6 +95,12 @@ private:
  * @brief Data structure holding the firmware image and associated information.
  */
 struct firmware {
+    /*
+     * Firmware lock.
+     */
+    using lock_type = std::mutex;
+    using lock_guard = std::lock_guard<lock_type>;
+
     /**
      * @brief The firmware tag is the concatenation of the revision,
      *          ADC sampling frequency and ADC bit resolution.
@@ -167,6 +174,16 @@ struct firmware {
              const int mod_adc_bits, const std::string device);
 
     /**
+     * @brief Firmware copy constructor
+     */
+    firmware(const firmware& orig);
+
+    /**
+     * @brief Firmware move constructor
+     */
+    firmware(firmware&& from);
+
+    /**
      * @brief Load the firmware from its file.
      */
     void load();
@@ -179,7 +196,7 @@ struct firmware {
     /**
      * @brief The number of words of size `image_value_type` of data in the buffer.
      */
-    size_t words() const;
+    size_t words();
 
     /**
      * @brief We only compare the version, module revision and device.
@@ -197,6 +214,10 @@ struct firmware {
      */
     template<typename T>
     void output(T& out) const;
+
+private:
+
+    lock_type lock;
 };
 
 /**
