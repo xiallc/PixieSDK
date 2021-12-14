@@ -1472,28 +1472,49 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglModPar(const char* ModParName, unsigne
     return 0;
 }
 
-PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file, const bool fast_boot) {
-    xia_log(xia_log::debug) << "PixieBootCrate: settings_file=" << settings_file;
+PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file, const PIXIE_BOOT_MODE boot_mode) {
+    xia_log(xia_log::debug) << "PixieBootCrate: settings_file=" << settings_file
+                            << " boot-mode=" << boot_mode;
 
     try {
-        if (settings_file == nullptr) {
-            throw xia_error(xia_error::code::invalid_value, "settings file pointer is NULL");
-        }
         crate.ready();
         crate.set_firmware();
-        bool online = false;
-        if (fast_boot) {
-            online = crate.probe();
+
+        bool import_settings;
+        bool boot;
+        bool force;
+
+        switch (boot_mode) {
+        case PIXIE_BOOT_SETTINGS_LOAD:
+            if (settings_file == nullptr) {
+                throw xia_error(xia_error::code::invalid_value, "settings file pointer is NULL");
+            }
+            import_settings = true;
+            boot = false;
+            force = false;
+            break;
+        case PIXIE_BOOT_RESET_LOAD:
+            import_settings = settings_file != nullptr;
+            boot = true;
+            force = true;
+            crate.boot();
+            break;
+        default:
+            import_settings = false;
+            boot = !crate.probe();
+            force = false;
+            break;
         }
-        if (!fast_boot || !online) {
-            /*
-             * Forcing a boot is not a fast boot
-             */
-            crate.boot(fast_boot == false);
+
+        if (boot) {
+            crate.boot(force);
         }
-        xia::pixie::module::number_slots loaded_slots;
-        crate.import_config(settings_file, loaded_slots);
-        crate.initialize_afe();
+
+        if (import_settings) {
+            xia::pixie::module::number_slots loaded_slots;
+            crate.import_config(settings_file, loaded_slots);
+            crate.initialize_afe();
+        }
     } catch (xia_error& e) {
         xia_log(xia_log::error) << e;
         return e.return_code();

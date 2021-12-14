@@ -1305,6 +1305,34 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglModPar(const char* ModParName, unsigne
 
 /**
  * @ingroup PIXIE_API
+ * @brief Crate boot mode
+ *
+ * Control the way a crate can boot.
+ *
+ * - `PIXIE_BOOT_PROBE`
+ *
+ *    Probe the modules to see if they are online. No other action is
+ *    performed.
+ *
+ * - `PIXIE_BOOT_RESET_LOAD`
+ *
+ *    Reset the programmable devices on a module and load them. If
+ *    settings are provided import them and sycnhronize the settings
+ *    with the hardware.
+ *
+ * - `PIXIE_BOOT_SETTINGS_LOAD`
+ *
+ *    Import the the settings and sycnhronize the settings with the
+ *    hardware. The module must be online
+ */
+enum PIXIE_BOOT_MODE {
+    PIXIE_BOOT_PROBE,
+    PIXIE_BOOT_RESET_LOAD,
+    PIXIE_BOOT_SETTINGS_LOAD
+};
+
+/**
+ * @ingroup PIXIE_API
  * @brief Boot a crate
  *
  * Boot a crate modules. This operation is faster than booting modules
@@ -1314,18 +1342,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglModPar(const char* ModParName, unsigne
  * The provided settings file is loaded after the modules have been booted
  * online. This does not depend on state of @ref fast_boot.
  *
- * It @ref fast_boot is true only the modules that have not been booted are
- * booted. If @ref fast_boot is false all modules are booted.
- *
  * A module is considered offline if the COMMS, FIPPI or DSP is not loaded and
  * running.
  *
  * @param[in] settings_file The path to a crate's settings file
- * @param[in] fast_boot If true only offline modules are booted
+ * @param[in] boot_mode The mode to boot the module with
  *
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
  */
-PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file, const bool fast_boot);
+PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file,
+                                          const PIXIE_BOOT_MODE boot_mode);
 
 /**
  * @ingroup PIXIE_API
