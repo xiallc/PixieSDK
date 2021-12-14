@@ -1305,29 +1305,29 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglModPar(const char* ModParName, unsigne
 
 /**
  * @ingroup PIXIE_API
- * @brief Crate boot mode
+ * @brief An enum defining the various ways users can boot a crate.
  *
- * Control the way a crate can boot.
+ * This enumeration replaces the old boot flags. The previous flags allowed users
+ * to potentially put the system into a state that prevented proper operation.
+ * These flags now represent the most commonly used boot procedures in use.
  *
- * - `PIXIE_BOOT_PROBE`
- *
- *    Probe the modules to see if they are online. No other action is
- *    performed.
- *
- * - `PIXIE_BOOT_RESET_LOAD`
- *
- *    Reset the programmable devices on a module and load them. If
- *    settings are provided import them and sycnhronize the settings
- *    with the hardware.
- *
- * - `PIXIE_BOOT_SETTINGS_LOAD`
- *
- *    Import the the settings and sycnhronize the settings with the
- *    hardware. The module must be online
  */
 enum PIXIE_BOOT_MODE {
+    /**
+     * @brief Probe the modules to see if they are online. No other action is
+     *    performed.
+     */
     PIXIE_BOOT_PROBE,
+    /**
+     * @brief Reset the programmable devices on a module and load them. If
+     *    settings are provided import them and synchronize the settings
+     *    with the hardware.
+     */
     PIXIE_BOOT_RESET_LOAD,
+    /**
+     * @brief Import the settings and synchronize the settings with the
+     *    hardware. The module must be online.
+     */
     PIXIE_BOOT_SETTINGS_LOAD
 };
 

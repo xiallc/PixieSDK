@@ -863,8 +863,6 @@ int main(int argc, char** argv) {
     args::ValueFlag<std::string> additional_cfg_flag(
         arguments, "cfg", "The configuration file to load.", {"additional-config"});
     args::HelpFlag help_flag(arguments, "help", "Displays this message", {'h', "help"});
-    args::Flag is_fast_boot(boot, "fast-boot", "Performs a partial boot of the system.",
-                            {'f', "fast-boot"});
     args::Flag is_offline(arguments, "Offline Mode",
                           "Tells the API to use Offline mode when running.", {'o', "offline"});
     args::ValueFlag<std::string> boot_pattern_flag(arguments, "boot_pattern",
@@ -905,7 +903,6 @@ int main(int argc, char** argv) {
 
     adjust_offsets.Add(conf_flag);
     adjust_offsets.Add(boot_pattern_flag);
-    baseline.Add(is_fast_boot);
     baseline.Add(boot_pattern_flag);
     blcut.Add(module);
     blcut.Add(channel);
@@ -987,7 +984,7 @@ int main(int argc, char** argv) {
     }
 
     unsigned int boot_pattern = stoul(args::get(boot_pattern_flag), nullptr, 0);
-    if (is_fast_boot || additional_cfg_flag)
+    if (additional_cfg_flag)
         boot_pattern = 0x70;
 
 #ifndef LEGACY_EXAMPLE
@@ -1052,7 +1049,20 @@ int main(int argc, char** argv) {
         start = std::chrono::system_clock::now();
         std::cout << LOG("INFO") << "Calling PixieBootCrate with settings: " << par_file
                   << std::endl;
-        const PIXIE_BOOT_MODE boot_mode = is_fast_boot ? PIXIE_BOOT_PROBE : PIXIE_BOOT_RESET_LOAD;
+
+        PIXIE_BOOT_MODE boot_mode;
+        switch(boot_pattern) {
+            case 0x00:
+                boot_mode = PIXIE_BOOT_PROBE;
+                break;
+            case 0x70:
+                boot_mode = PIXIE_BOOT_SETTINGS_LOAD;
+                break;
+            case 0x7F:
+            default:
+                boot_mode = PIXIE_BOOT_RESET_LOAD;
+        }
+
         int rc = PixieBootCrate(par_file.c_str(), boot_mode);
         if (!verify_api_return_value(rc, "PixieBootCrate", false))
             return EXIT_FAILURE;
