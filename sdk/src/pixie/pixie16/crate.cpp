@@ -170,7 +170,7 @@ bool crate::probe() {
 }
 
 void crate::boot(const bool force) {
-  log(log::info) << "crate: boot: force" << std::boolalpha << force;
+  log(log::info) << "crate: boot: force=" << std::boolalpha << force;
 
     ready();
     lock_guard guard(lock_);
