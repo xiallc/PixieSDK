@@ -170,7 +170,7 @@ bool crate::probe() {
 }
 
 void crate::boot(const bool force) {
-  log(log::info) << "crate: boot: force=" << std::boolalpha << force;
+    log(log::info) << "crate: boot: force=" << std::boolalpha << force;
 
     ready();
     lock_guard guard(lock_);
@@ -254,12 +254,50 @@ void crate::import_config(const std::string json_file, module::number_slots& loa
 
 void crate::initialize_afe() {
     log(log::info) << "crate: initializing analog front-end";
+
     ready();
     lock_guard guard(lock_);
-    for (auto& module : modules) {
-        if (module->online()) {
-            module->sync_hw();
+
+    typedef std::promise<error::code> promise_error;
+    typedef std::future<error::code> future_error;
+
+    std::vector<promise_error> promises(modules.size());
+    std::vector<future_error> futures;
+    std::vector<std::thread> threads;
+
+    for (size_t m = 0; m < modules.size(); ++m) {
+        auto module = modules[m];
+        if (!module->online()) {
+            continue;
         }
+        futures.push_back(future_error(promises[m].get_future()));
+        threads.push_back(std::thread([m, &promises, module] {
+            try {
+                module->sync_hw();
+                promises[m].set_value(error::code::success);
+            } catch (pixie::error::error& e) {
+                promises[m].set_value(e.type);
+            } catch (...) {
+                try {
+                    promises[m].set_exception(std::current_exception());
+                } catch (...) {
+                }
+            }
+        }));
+    }
+
+    error::code first_error = error::code::success;
+
+    for (size_t t = 0; t < threads.size(); ++t) {
+        error::code e = futures[t].get();
+        if (first_error == error::code::success) {
+            first_error = e;
+        }
+        threads[t].join();
+    }
+
+    if (first_error != error::code::success) {
+        throw error(first_error, "crate AFE intialize error; see log");
     }
 }
 
