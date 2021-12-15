@@ -1,3 +1,4 @@
+add_subdirectory(data)
 add_subdirectory(pixie16)
 
 set(SDK_COMMON_SOURCES
