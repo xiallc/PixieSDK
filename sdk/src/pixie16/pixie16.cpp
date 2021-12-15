@@ -1497,7 +1497,6 @@ PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file, const PIXIE
             import_settings = settings_file != nullptr;
             boot = true;
             force = true;
-            crate.boot();
             break;
         default:
             import_settings = false;
