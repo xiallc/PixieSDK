@@ -34,6 +34,55 @@ namespace pixie {
 namespace sim {
 module_defs mod_defs;
 
+struct fixture : public xia::pixie::fixture::module {
+    fixture(xia::pixie::module::module& module_);
+    virtual ~fixture() override;
+    virtual void open() override;
+    virtual void close() override;
+    virtual void initialize() override;
+    virtual void online() override;
+    virtual void forced_offline() override;
+    virtual void fgpa_comms_loaded() override;
+    virtual void fgpa_fippi_loaded() override;
+    virtual void dsp_loaded() override;
+    virtual void boot() override;
+    virtual void erase_values() override;
+    virtual void init_values() override;
+    virtual void erase_channels() override;
+    virtual void init_channels() override;
+    virtual void sync_hw() override;
+    virtual void sync_vars() override;
+    virtual void set_dacs() override;
+    virtual void get_traces() override;
+    virtual void adjust_offsets() override;
+    virtual void tau_finder() override;
+};
+
+fixture::fixture(xia::pixie::module::module& module__)
+    : xia::pixie::fixture::module(module__) {
+    label = "sim";
+}
+fixture::~fixture() {}
+void fixture::open() {}
+void fixture::close() {}
+void fixture::initialize() {}
+void fixture::online() {}
+void fixture::forced_offline() {}
+void fixture::fgpa_comms_loaded() {}
+void fixture::fgpa_fippi_loaded() {}
+void fixture::dsp_loaded() {}
+void fixture::boot() {}
+void fixture::erase_values() {}
+void fixture::init_values() {}
+void fixture::erase_channels() {}
+void fixture::init_channels() { xia::pixie::fixture::module::init_channels(); }
+void fixture::sync_hw() {}
+void fixture::sync_vars() {}
+void fixture::set_dacs() {}
+void fixture::get_traces() {}
+void fixture::adjust_offsets() {}
+void fixture::tau_finder() {}
+
 module::~module() {}
 
 void module::open(size_t device_number) {
@@ -64,6 +113,8 @@ void module::open(size_t device_number) {
 
             var_defaults = mod_def.var_defaults;
 
+            fixtures = std::make_shared<fixture>(*this);
+
             present_ = true;
             return;
         }
@@ -81,21 +132,35 @@ void module::close() {
 
 void module::probe() {
     log(log::info) << "sim: module: probe";
-    online_ = dsp_online = fippi_fpga = comms_fpga = true;
+    online_ = dsp_online = fippi_fpga = comms_fpga = false;
+    load_vars();
+    erase_values();
+    erase_channels();
     init_values();
+    init_channels();
+    online_ = dsp_online = fippi_fpga = comms_fpga = true;
+    fixtures->online();
 }
 
 void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
     log(log::info) << "sim: module: boot";
+    online_ = false;
+    load_vars();
     if (boot_comms) {
         comms_fpga = true;
+        fixtures->fgpa_comms_loaded();
     }
     if (boot_fippi) {
         fippi_fpga = true;
+        fixtures->fgpa_fippi_loaded();
     }
     if (boot_dsp) {
         dsp_online = true;
+        fixtures->dsp_loaded();
     }
+    init_values();
+    init_channels();
+    online_ = comms_fpga && fippi_fpga && dsp_online;
 }
 
 void module::initialize() {}

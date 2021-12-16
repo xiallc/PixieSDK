@@ -71,6 +71,7 @@ void setup_simulation() {
 
     std::string firmware_file = tmpnam(nullptr);
     std::ofstream outfile(firmware_file, std::ios::binary | std::ios::out);
+    outfile << "0x00000000 AutoTau";
     outfile.close();
 
     for (auto& item : firmware_def_template) {
