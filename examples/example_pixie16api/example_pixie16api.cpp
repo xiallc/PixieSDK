@@ -668,8 +668,9 @@ bool execute_mca_run(const int run_num, const module_config& mod, const double r
     return true;
 }
 
-bool execute_mca_runs(const unsigned int num_runs, const module_config& mod, const double runtime_in_seconds,
-                      unsigned int synch_wait, unsigned int in_synch) {
+bool execute_mca_runs(const unsigned int num_runs, const module_config& mod,
+                      const double runtime_in_seconds, unsigned int synch_wait,
+                      unsigned int in_synch) {
     for (unsigned int i = 0; i < num_runs; i++) {
         std::cout << LOG("INFO") << "Starting MCA run number " << i << std::endl;
         if (!execute_mca_run(i, mod, runtime_in_seconds, synch_wait, in_synch)) {
@@ -1077,7 +1078,7 @@ int main(int argc, char** argv) {
                   << std::endl;
 
         PIXIE_BOOT_MODE boot_mode;
-        switch(boot_pattern) {
+        switch (boot_pattern) {
             case 0x00:
                 boot_mode = PIXIE_BOOT_PROBE;
                 break;
@@ -1210,8 +1211,8 @@ int main(int argc, char** argv) {
     if (mca) {
         if (module.Get() >= cfg.num_modules()) {
             for (auto& mod : cfg.modules) {
-                if (!execute_mca_runs(num_runs.Get(), mod, run_time.Get(),
-                                      synch_wait.Get(), in_synch.Get()))
+                if (!execute_mca_runs(num_runs.Get(), mod, run_time.Get(), synch_wait.Get(),
+                                      in_synch.Get()))
                     return EXIT_FAILURE;
             }
         } else {
