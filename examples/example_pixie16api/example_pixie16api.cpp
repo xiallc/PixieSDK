@@ -364,6 +364,19 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
             return false;
     }
 
+#ifdef LEGACY_EXAMPLE
+    /*
+     * Due to communication inefficiencies in the legacy API we need to pause program
+     * execution for a second to wait for the module to be able to report that the
+     * run has actually started. Without this pause the run_status will return 0
+     * despite the fact that we just started the run above.
+     *
+     * This is **not** necessary in the SDK because we have optimized the module
+     * communication.
+     */
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+#endif
+
     std::vector<std::ofstream*> output_streams(cfg.num_modules());
     for (unsigned short i = 0; i < cfg.num_modules(); i++) {
         output_streams[i] = new std::ofstream(
@@ -408,18 +421,19 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
                 std::cout << LOG("INFO") << "Remaining run time: "
                           << std::round(runtime_in_seconds - current_run_time) << " s" << std::endl;
             check_time = current_run_time;
+        }
 
-            for (unsigned short mod_num = 0; mod_num < cfg.num_modules(); mod_num++) {
-                if (Pixie16CheckRunStatus(mod_num) == 1) {
-                    if (!verify_api_return_value(
-                            Pixie16CheckExternalFIFOStatus(&num_fifo_words, mod_num),
-                            "Pixie16CheckExternalFIFOStatus", false))
-                        return false;
+        for (unsigned short mod_num = 0; mod_num < cfg.num_modules(); mod_num++) {
+            if (Pixie16CheckRunStatus(mod_num) == 1) {
+                if (!verify_api_return_value(
+                        Pixie16CheckExternalFIFOStatus(&num_fifo_words, mod_num),
+                        "Pixie16CheckExternalFIFOStatus", false))
+                    return false;
 
 
-                    std::cout << LOG("INFO") << "FIFO has " << num_fifo_words << " words."
-                              << std::endl;
-                    /*
+                std::cout << LOG("INFO") << "FIFO has " << num_fifo_words << " words."
+                          << std::endl;
+                /*
                      * NOTE: The PixieSDK now uses threaded list-mode FIFO workers that live on the host machine. These
                      * workers perform execute in parallel. They'll read the data from each module as needed to
                      * ensure that the EXTERNAL_FIFO_LENGTH isn't exceeded. When calling
@@ -428,19 +442,18 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
                      *
                      * We've gated the reads in this example using one-second intervals, but you don't have to.
                      */
-                    if (num_fifo_words > 0) {
-                        std::vector<uint32_t> data(num_fifo_words, 0);
-                        if (!verify_api_return_value(Pixie16ReadDataFromExternalFIFO(
-                                                         data.data(), num_fifo_words, mod_num),
-                                                     "Pixie16ReadDataFromExternalFIFO", false))
-                            return false;
-                        output_streams[mod_num]->write(reinterpret_cast<char*>(data.data()),
-                                                       num_fifo_words * sizeof(uint32_t));
-                    }
-                } else {
-                    std::cout << LOG("INFO") << "Module " << mod_num << " has no active run!"
-                              << std::endl;
+                if (num_fifo_words > 0) {
+                    std::vector<uint32_t> data(num_fifo_words, 0);
+                    if (!verify_api_return_value(Pixie16ReadDataFromExternalFIFO(
+                                                     data.data(), num_fifo_words, mod_num),
+                                                 "Pixie16ReadDataFromExternalFIFO", false))
+                        return false;
+                    output_streams[mod_num]->write(reinterpret_cast<char*>(data.data()),
+                                                   num_fifo_words * sizeof(uint32_t));
                 }
+            } else {
+                std::cout << LOG("INFO") << "Module " << mod_num << " has no active run!"
+                          << std::endl;
             }
         }
 
@@ -558,6 +571,19 @@ bool execute_mca_run(const int run_num, const module_config& mod, const double r
     if (!verify_api_return_value(Pixie16StartHistogramRun(mod.number, NEW_RUN),
                                  "Pixie16StartHistogramRun"))
         return false;
+
+#ifdef LEGACY_EXAMPLE
+    /*
+     * Due to communication inefficiencies in the legacy API we need to pause program
+     * execution for a second to wait for the module to be able to report that the
+     * run has actually started. Without this pause the run_status will return 0
+     * despite the fact that we just started the run above.
+     *
+     * This is **not** necessary in the SDK because we have optimized the module
+     * communication.
+     */
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+#endif
 
     auto run_start_time = std::chrono::steady_clock::now();
     double current_run_time = 0;

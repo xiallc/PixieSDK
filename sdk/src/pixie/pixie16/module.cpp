@@ -1669,7 +1669,11 @@ size_t module::read_list_mode_level() {
     if (!fifo_worker_running.load()) {
         log(log::debug) << module_label(*this) << "read-list-mode-level: FIFO worker not running";
     }
-    return fifo_data.size();
+    auto size = fifo_data.size();
+    if (size > 0) {
+        log(log::debug) << module_label(*this) << "read-list-mode-level: FIFO = " << size;
+    }
+    return size;
 }
 
 void module::read_list_mode(hw::words& values) {
@@ -2260,6 +2264,7 @@ void module::fifo_worker() {
                  * Read the level of the FIFI.
                  */
                 level = fifo.level();
+                log(log::debug) << "fifo worker: fifo-level = " << level;
                 if (level >= hw::fifo_size_words) {
                     if (!fifo_full_logged) {
                         fifo_full_logged = true;
