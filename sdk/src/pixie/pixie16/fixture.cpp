@@ -228,7 +228,6 @@ struct afe_dbs : public module {
      * These are development modes.
      */
     const bool adc_swap_verify = true;
-    const bool dac_adc_ratio = false;
 
     std::array<hw::word, max_dbs> adcctrl;
 
@@ -241,8 +240,6 @@ struct afe_dbs : public module {
     virtual void set_dacs() override;
     virtual void get_traces() override;
     virtual void adjust_offsets() override;
-
-    void calc_dac_adc_ratio();
 };
 
 static void unsupported_op(const std::string what) {
@@ -279,7 +276,6 @@ static void set_channel_voffset(pixie::module::module& mod, double voffset, int 
 
 static void analyze_channel_baselines(pixie::module::module& mod,
                                       channel_baselines& baselines,
-
                                       const int traces = 1) {
     baselines.resize(mod.num_channels);
     for (auto& channel : mod.channels) {
@@ -688,8 +684,6 @@ void afe_dbs::boot() {
                                    "DB AE ADC swap failure");
     }
 
-    calc_dac_adc_ratio();
-
     log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")
                     << "boot: duration=" << tp;
 }
@@ -729,11 +723,11 @@ void afe_dbs::adjust_offsets() {
      *  - The speed we can capture ADC traces for all channels
      *  - The settling time of the offset voltage circuit.
      *
-     * The offset procedure is consists of 2 stages. The first moves the DAC a
+     * The offset procedure consists of 2 stages. The first moves the DAC a
      * small amount measuring the baseline at each point and the least squares
      * estimate. The second stage uses the least squares estimate to
      * interpolate the target ADC baseline value to a DAC value. Repeat until
-     * the baseline converges to the taret ADC value.
+     * the baseline converges to the target ADC value.
      */
     const double voffset_start_voltage = 0.0;
     const int dac_bits = 16;
@@ -871,130 +865,6 @@ void afe_dbs::adjust_offsets() {
     }
     log(log::debug) << log_leader
                     << "adjust-offsets: duration=" << tp;
-}
-
-void afe_dbs::calc_dac_adc_ratio() {
-    if (dac_adc_ratio) {
-        log(log::warning) << pixie::module::module_label(module_, "fixture: afe_dbs")
-                          << "dac/adc ratio: delta mapping running";
-
-        const int dac_bits = 16;
-        const int dac_step_count = 256;
-        const int dac_steps = (1 << dac_bits) / dac_step_count;
-        const int dac_delta_threshold = 50;
-        const int adc_delta_threshold = 400;
-
-        /*
-         * Collect ADC baselines for a range of DAC steps across the DAC step
-         * range.
-         */
-        using dac_step_baselines = std::vector<channel_baselines>;
-        dac_step_baselines channel_dac_steps(dac_steps);
-
-        for (int dac_step = 0; dac_step < dac_steps; ++dac_step) {
-            const int dac = dac_step * dac_step_count;
-            log(log::warning) << pixie::module::module_label(module_, "fixture: afe_dbs")
-                              << "dac/adc ratio: dac=" << dac_step;
-            for (auto& channel : module_.channels) {
-                channel.fixture->set_dac(dac);
-            }
-            wait_dac_settle_period(module_);
-            analyze_channel_baselines(module_, channel_dac_steps[dac_step], 1);
-        }
-
-        /*
-         * Collect the delta or difference bteween the steps and the average of
-         * the steps will produce the ratio for a channel. Average the channels
-         * to get a module value.
-         */
-        using channel_deltas = std::vector<average>;
-        using rail = std::vector<int>;
-
-        channel_deltas deltas(module_.num_channels);
-        rail bottom_rail(module_.num_channels, 0);
-        rail top_rail(module_.num_channels, channel_dac_steps.size() - 1);
-
-        /*
-         * Ignore DAC steps that have hit the rails.
-         */
-        for (size_t chan = 0; chan < module_.num_channels; ++chan) {
-            for (int dac_step = 0; dac_step < dac_steps - 1; ++dac_step) {
-                auto bl_0 = channel_dac_steps[dac_step][chan].baseline;
-                auto bl_1 = channel_dac_steps[dac_step + 1][chan].baseline;
-                auto delta = bl_1 - bl_0;
-                if (delta > dac_delta_threshold) {
-                    bottom_rail[chan] = dac_step;
-                    break;
-                }
-            }
-            for (int dac_step = dac_steps - 2; dac_step >= 0; --dac_step) {
-                auto bl_0 = channel_dac_steps[dac_step][chan].baseline;
-                auto bl_1 = channel_dac_steps[dac_step + 1][chan].baseline;
-                auto delta = bl_1 - bl_0;
-                if (delta > dac_delta_threshold) {
-                    top_rail[chan] = dac_step;
-                    break;
-                }
-            }
-            log(log::warning) << pixie::module::module_label(module_, "fixture: afe_dbs")
-                              << "dac/adc ratio: adc rails: channel=" << chan
-                              << " bottom=" << bottom_rail[chan] * dac_steps
-                              << " top=" << top_rail[chan] * dac_steps;
-            for (int dac_step = bottom_rail[chan]; dac_step < top_rail[chan] - 1; ++dac_step) {
-                auto bl_0 = channel_dac_steps[dac_step][chan].baseline;
-                auto bl_1 = channel_dac_steps[dac_step + 1][chan].baseline;
-                auto delta = bl_1 - bl_0;
-                deltas[chan].update(delta);
-                log(log::warning) << pixie::module::module_label(module_, "fixture: afe_dbs")
-                                  << "dac/adc ratio: adc delta: channel=" << chan
-                                  << " dac=" << dac_step * dac_step_count
-                                  << " adc-bl=" << bl_0
-                                  << " delta=" << delta;
-            }
-            deltas[chan].calc();
-        }
-
-        average module_delta;
-        average bottom_rail_avg;
-        average top_rail_avg;
-
-        for (size_t chan = 0; chan < module_.num_channels; ++chan) {
-            /*
-             * Convert the rails to DAC values from the DAC steps we have used.
-             */
-            bottom_rail[chan] *= dac_step_count;
-            top_rail[chan] *= dac_step_count;
-            bottom_rail_avg.update(bottom_rail[chan]);
-            top_rail_avg.update(top_rail[chan]);
-            if (deltas[chan].max < adc_delta_threshold) {
-                module_delta.update(deltas[chan].avg);
-            }
-            log(log::warning) << pixie::module::module_label(module_, "fixture: afe_dbs")
-                              << "dac/adc ratio: adc delta: channel=" << chan
-                              << " avg=" << deltas[chan].avg << '/' << dac_step_count
-                              << " max=" << deltas[chan].max
-                              << " min=" << deltas[chan].min
-                              << " rails=[" << bottom_rail[chan] << ',' << top_rail[chan] << ']';
-        }
-        module_delta.calc();
-        bottom_rail_avg.calc();
-        top_rail_avg.calc();
-        log(log::warning) << pixie::module::module_label(module_, "fixture: afe_dbs")
-                          << "dac/adc ratio: adc delta: module: serial-num=" << module_.serial_num
-                          << " delta-adc: avg=" << module_delta.avg << '/' << dac_step_count
-                          << " max=" << module_delta.max
-                          << " min=" << module_delta.min;
-        log(log::warning) << pixie::module::module_label(module_, "fixture: afe_dbs")
-                          << "dac/adc ratio: adc delta: module: serial-num=" << module_.serial_num
-                          << " rail: bottom: avg=" << bottom_rail_avg.avg
-                          << " max=" << bottom_rail_avg.max
-                          << " min=" << bottom_rail_avg.min;
-        log(log::warning) << pixie::module::module_label(module_, "fixture: afe_dbs")
-                          << "dac/adc ratio: adc delta: module: serial-num=" << module_.serial_num
-                          << " rail: top: avg=" << top_rail_avg.avg
-                          << " max=" << top_rail_avg.max
-                          << " min=" << top_rail_avg.min;
-    }
 }
 
 channel::channel(pixie::channel::channel& module_channel_, const hw::config& config_)
