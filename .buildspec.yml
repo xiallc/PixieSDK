@@ -63,8 +63,8 @@ phases:
         test -e ./sdk/src/pixie16/libPixie16Api.so || exit 3;
         if [[ ${BUILD_OPTIONS} == *"BUILD_EXAMPLES=ON"* || ${BUILD_OPTIONS} == " " ]];
         then
-        echo Checking for example_pixie16_api;
-        test -e ./examples/example_pixie16api/example_pixie16_api || exit 4;
+        echo Checking for example_pixie16api;
+        test -e ./examples/example_pixie16api/example_pixie16api || exit 4;
         fi;
         if [[ ${BUILD_OPTIONS} == *"BUILD_TESTS=ON"* ]];
         then
@@ -81,8 +81,8 @@ phases:
         test -e ./sdk/src/legacy/libPixie16App.a || exit 20;
         if [[ ${BUILD_OPTIONS} == *"BUILD_EXAMPLES=ON"* ]];
         then
-        echo Checking for example_pixie16_legacy;
-        test -e ./examples/example_pixie16api/example_pixie16_legacy || exit 21;
+        echo Checking for example_pixie16app;
+        test -e ./examples/example_pixie16api/example_pixie16app || exit 21;
         fi;
         if [[ ${BUILD_OPTIONS} == *"BUILD_TESTS=ON"* ]];
         then
