@@ -80,6 +80,15 @@ static const size_t large_histogram_length = 32768;
 static const size_t small_histogram_length = 16384;
 
 /**
+ * @brief The maximum number of baselines collected by the get_baselines control task on Rev F.
+ */
+static const size_t max_large_num_baselines = 3640;
+/**
+ * @brief The maximum number of baselines collected by the get_baselines control task on Rev H.
+ */
+static const size_t max_small_num_baselines = 1820;
+
+/**
  * IO buffer length
  */
 static const size_t io_buffer_length = 65536;
@@ -220,8 +229,14 @@ struct config {
      */
     size_t max_adc_trace_length;
 
-    config(size_t histogram_size, size_t adc_trace_length, int adc_bits,
-           int adc_msps, int adc_clk_div, int fpga_clk_mhz);
+    /**
+     * @brief maximum number of baselines captured for this channel with the get_baselines
+     * control task.
+     */
+    size_t max_num_baselines;
+
+    config(size_t histogram_size, size_t adc_trace_length, size_t num_baselines,
+           int adc_bits, int adc_msps, int adc_clk_div, int fpga_clk_mhz);
     config();
 
     bool operator==(const config& cfg);

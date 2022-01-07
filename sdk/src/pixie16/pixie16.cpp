@@ -228,6 +228,30 @@ PIXIE_EXPORT int PIXIE_API PixieGetTraceLength(const unsigned short mod_num,
     return 0;
 }
 
+PIXIE_EXPORT int PIXIE_API PixieGetMaxNumBaselines(const unsigned short mod_num,
+                                                   const unsigned short chan_num,
+                                                   unsigned int* max_num_baselines) {
+    try {
+        crate.ready();
+        xia::pixie::crate::module_handle module(crate, mod_num);
+        module->channel_check(chan_num);
+        *max_num_baselines = module->channels[chan_num].fixture->config.max_num_baselines;
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (std::exception& e) {
+        xia_log(xia_log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::return_code_unknown_error();
+    } catch (...) {
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+    return 0;
+}
+
 PIXIE_EXPORT int PIXIE_API PixieGetReturnCodeText(int return_code, char* buf,
                                                   unsigned int buf_size) {
     std::string msg = xia::pixie::error::api_result_text(return_code);

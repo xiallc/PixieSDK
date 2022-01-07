@@ -298,15 +298,26 @@ bool execute_baseline_capture(const module_config& mod) {
     if (!verify_api_return_value(Pixie16AcquireBaselines(mod.number), "Pixie16AcquireBaselines"))
         return false;
 
-    std::vector<std::vector<double>> baselines(mod.number_of_channels,
-                                               std::vector<double>(MAX_NUM_BASELINES));
-    double timestamps[MAX_NUM_BASELINES];
+    std::vector<std::vector<double>> baselines;
+    std::vector<std::vector<double>> timestamps;
+    unsigned int max_num_baselines = 0;
     for (unsigned int i = 0; i < mod.number_of_channels; i++) {
-        std::cout << LOG("INFO") << "Acquiring baselines for Channel " << i << std::endl;
-        if (!verify_api_return_value(Pixie16ReadSglChanBaselines(baselines[i].data(), timestamps,
-                                                                 MAX_NUM_BASELINES, mod.number, i),
+#ifndef LEGACY_EXAMPLE
+        PixieGetMaxNumBaselines(mod.number, i, &max_num_baselines);
+#else
+        max_num_baselines = MAX_NUM_BASELINES;
+#endif
+        std::vector<double> baseline(max_num_baselines);
+        std::vector<double> timestamp(max_num_baselines);
+
+        std::cout << LOG("INFO") << "Acquiring " << max_num_baselines << " baselines for Channel "
+                  << i << std::endl;
+        if (!verify_api_return_value(Pixie16ReadSglChanBaselines(baseline.data(), timestamp.data(),
+                                                                 max_num_baselines, mod.number, i),
                                      "Pixie16ReadsglChanBaselines"))
             return false;
+        baselines.push_back(baseline);
+        timestamps.push_back(timestamp);
     }
 
     std::ofstream ofstream1(generate_filename(mod.number, "baselines", "csv"));
@@ -319,8 +330,8 @@ bool execute_baseline_capture(const module_config& mod) {
     }
     ofstream1 << std::endl;
 
-    for (unsigned int i = 0; i < MAX_NUM_BASELINES; i++) {
-        ofstream1 << i << "," << timestamps[i] << ",";
+    for (unsigned int i = 0; i < max_num_baselines; i++) {
+        ofstream1 << i << "," << timestamps[0][i] << ",";
         for (unsigned int k = 0; k < mod.number_of_channels; k++) {
             if (k != static_cast<unsigned int>(mod.number_of_channels - 1))
                 ofstream1 << baselines[k][i] << ",";

@@ -263,6 +263,25 @@ PIXIE_EXPORT int PIXIE_API PixieGetTraceLength(unsigned short mod_num, unsigned 
 
 /**
  * @ingroup PIXIE16_API
+ * @brief Gets the maximum number of baseline samples for a channel.
+ *
+ * The get_baselines control task always collects the maximum number of baselines for each
+ * channel. Users can then request fewer baselines than that, but upto the maximum provided
+ * by this function.
+ *
+ * @see Pixie16AcquireBaselines
+ * @see Pixie16ReadSglChanBaselines
+ *
+ * @param[in] mod_num The module that holds the channel we want the size for.
+ * @param[in] chan_num The channel that we want the histogram size for.
+ * @param[out] max_num_baselines The maximum number of baselines that we will collect
+ * @returns The value of the xia::pixie::error::code indicating the result of the operation
+ */
+PIXIE_EXPORT int PIXIE_API PixieGetMaxNumBaselines(unsigned short mod_num, unsigned short chan_num,
+                                                   unsigned int* max_num_baselines);
+
+/**
+ * @ingroup PIXIE16_API
  * @brief Acquire ADC traces from a Pixie module.
  *
  * Use this function to acquire ADC traces from Pixie-16 modules. Specify the module using ModNum
