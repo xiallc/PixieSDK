@@ -1036,7 +1036,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
 
             for (unsigned int i = read_words; i < NumWords; i++)
                 Histogram[i] = std::numeric_limits<unsigned int>::max();
-        } else {
+        }
+        if (read_words < chan.fixture->config.max_histogram_length) {
             xia_log(xia_log::warning)
                 << "NumWords (" << NumWords << ") less than the max_histogram_length ("
                 << chan.fixture->config.max_histogram_length << ") for Module " << ModNum
