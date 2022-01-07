@@ -1496,7 +1496,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglModPar(const char* ModParName, unsigne
     return 0;
 }
 
-PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file, const PIXIE_BOOT_MODE boot_mode) {
+PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file,
+                                          const PIXIE_BOOT_MODE boot_mode) {
     xia_log(xia_log::debug) << "PixieBootCrate: settings_file=" << settings_file
                             << " boot-mode=" << boot_mode;
 
@@ -1509,24 +1510,25 @@ PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file, const PIXIE
         bool force;
 
         switch (boot_mode) {
-        case PIXIE_BOOT_SETTINGS_LOAD:
-            if (settings_file == nullptr) {
-                throw xia_error(xia_error::code::invalid_value, "settings file pointer is NULL");
-            }
-            import_settings = true;
-            boot = false;
-            force = false;
-            break;
-        case PIXIE_BOOT_RESET_LOAD:
-            import_settings = settings_file != nullptr;
-            boot = true;
-            force = true;
-            break;
-        default:
-            import_settings = false;
-            boot = !crate.probe();
-            force = false;
-            break;
+            case PIXIE_BOOT_SETTINGS_LOAD:
+                if (settings_file == nullptr) {
+                    throw xia_error(xia_error::code::invalid_value,
+                                    "settings file pointer is NULL");
+                }
+                import_settings = true;
+                boot = false;
+                force = false;
+                break;
+            case PIXIE_BOOT_RESET_LOAD:
+                import_settings = settings_file != nullptr;
+                boot = true;
+                force = true;
+                break;
+            default:
+                import_settings = false;
+                boot = !crate.probe();
+                force = false;
+                break;
         }
 
         if (boot) {
