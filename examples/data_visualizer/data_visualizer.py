@@ -24,11 +24,9 @@ from argparse import ArgumentParser
 from io import BytesIO
 import logging
 import math
-import multiprocessing as mp
 import os
 import sys
 
-import dolosse.constants.data
 from dolosse.hardware.xia.pixie16.list_mode_data_mask import ListModeDataMask
 from dolosse.hardware.xia.pixie16.list_mode_data_decoder import decode_listmode_data
 import pandas as pd
@@ -60,46 +58,19 @@ def calculate_subplot_dims(num_elements):
     }
 
 
-def process_data_buffer(args):
-    """
-    Decodes a list-mode data buffer sent to a worker thread.
-    :param args: The argument list where the first element is the
-                 data buffer, and the second element is the data mask.
-    :return: The decoded data buffer as a dictionary.
-    """
-    buffer = args[0]
-    mask = args[1]
-    return decode_listmode_data(buffer, mask)[0]
-
-
 def process_list_mode_data_file(args):
     """
     Processes an entire list-mode data file written by the example software.
-    The file contains nothing but data buffers from the Pixie-16's
+    The file must contain nothing but data buffers from the Pixie-16's
     external FIFO.
 
-    NOTE: This function will only process data containing the base 4 word header at this time.
-
-    :param args: The argument list as received from the argument parser.
+    :param args: The arguments provided on the command line.
     :return: A pandas data frame containing the events.
     """
-    data_mask = ListModeDataMask(args.freq, args.rev)
-    data_buffer_list = list()
-    logging.info("Started reading data buffers into memory.")
-    with open(args.file, 'rb') as f:
-        while True:
-            chunk = f.read(dolosse.constants.data.WORD * 4)
-            if chunk:
-                data_buffer_list.append([BytesIO(chunk), data_mask])
-            else:
-                break
-    logging.info(f"Read {len(data_buffer_list)} data buffers from file.")
-
-    logging.info("Sending %s DATA buffers for decoding." % len(data_buffer_list))
-    logging.info("Aggregating triggers into single list.")
-    results = list()
-    for result in mp.Pool().imap(process_data_buffer, data_buffer_list):
-        results.append(result)
+    logging.info(f"Started to process {args.file}")
+    results = decode_listmode_data(BytesIO(open(args.file, 'rb').read()),
+                                   ListModeDataMask(args.freq, args.rev))
+    logging.info(f"Finished processing {args.file}")
     return pd.DataFrame(results)
 
 
@@ -136,7 +107,8 @@ def plot_lmd(df, args):
         df[df['channel'] == channel].hist(column='energy', ax=ax, grid=False)
         ax.title.set_text(f'Chan {int(channel)}')
 
-        logging.info(f"Total events for channel {channel}: {df[df['channel'] == channel]['energy'].count()}")
+        logging.info(
+            f"Total events for channel {channel}: {df[df['channel'] == channel]['energy'].count()}")
 
     fig.supxlabel("Energy(arb)")
     fig.supylabel("Energy(arb) / bin")
