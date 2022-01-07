@@ -1,7 +1,7 @@
 add_executable(pixie_sdk_unit_test_runner $<TARGET_OBJECTS:BaseTestRunnerObjLib>
         $<TARGET_OBJECTS:PixieSdkObjLib>
         $<TARGET_OBJECTS:Pixie16ApiObjLib>
-        $<TARGET_OBJECTS:Pixie16DataObjLib>
+        $<TARGET_OBJECTS:PixieDataObjLib>
         test_list_mode.cpp
         test_param.cpp
         test_pixie_buffer.cpp
