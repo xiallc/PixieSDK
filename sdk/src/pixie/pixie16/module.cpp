@@ -798,6 +798,8 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
         if (comms_fpga) {
             fixtures->fgpa_comms_loaded();
         }
+    } else {
+        comms_fpga = true;
     }
 
     if (boot_fippi) {
@@ -817,6 +819,8 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
         if (fippi_fpga) {
             fixtures->fgpa_fippi_loaded();
         }
+    } else {
+        fippi_fpga = true;
     }
 
     if (boot_dsp) {
@@ -836,6 +840,8 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
         if (dsp_online) {
             fixtures->dsp_loaded();
         }
+    } else {
+        dsp_online = true;
     }
 
     if (fippi_fpga) {

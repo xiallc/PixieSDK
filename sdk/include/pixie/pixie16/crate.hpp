@@ -194,8 +194,10 @@ public:
      *
      * @param force If true (the default) boot or module else boot only the
      *              modules offline.
+     * @param fast If true executes a fast boot of the modules by skipping the
+     *             firmware loads to the hardware.
      */
-    void boot(const bool force = true);
+    void boot(const bool force = true, const bool fast = false);
 
     /**
      * @brief Assign numbers to the modules by slot.
