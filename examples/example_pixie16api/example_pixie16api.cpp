@@ -442,8 +442,7 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
                     return false;
 
 
-                std::cout << LOG("INFO") << "FIFO has " << num_fifo_words << " words."
-                          << std::endl;
+                std::cout << LOG("INFO") << "FIFO has " << num_fifo_words << " words." << std::endl;
                 /*
                      * NOTE: The PixieSDK now uses threaded list-mode FIFO workers that live on the host machine. These
                      * workers perform execute in parallel. They'll read the data from each module as needed to
@@ -455,9 +454,9 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
                      */
                 if (num_fifo_words > 0) {
                     std::vector<uint32_t> data(num_fifo_words, 0);
-                    if (!verify_api_return_value(Pixie16ReadDataFromExternalFIFO(
-                                                     data.data(), num_fifo_words, mod_num),
-                                                 "Pixie16ReadDataFromExternalFIFO", false))
+                    if (!verify_api_return_value(
+                            Pixie16ReadDataFromExternalFIFO(data.data(), num_fifo_words, mod_num),
+                            "Pixie16ReadDataFromExternalFIFO", false))
                         return false;
                     output_streams[mod_num]->write(reinterpret_cast<char*>(data.data()),
                                                    num_fifo_words * sizeof(uint32_t));
