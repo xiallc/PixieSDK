@@ -219,13 +219,13 @@ struct config {
     int adc_clk_div;
     int fpga_clk_mhz;
 
-    /*
-     * Size of the histogram
+    /**
+     * @brief Maximum size of the histogram data for this channel in words.
      */
     size_t max_histogram_length;
 
-    /*
-     * Size of the ADC trace
+    /**
+     * @brief Maximum size of the ADC trace for this channel in words.
      */
     size_t max_adc_trace_length;
 
