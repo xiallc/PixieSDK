@@ -955,6 +955,7 @@ int main(int argc, char** argv) {
     mca.Add(synch_wait);
     mca.Add(in_synch);
     mca.Add(num_runs);
+    mca.Add(run_time);
     read.Add(conf_flag);
     read.Add(crate);
     read.Add(module);
