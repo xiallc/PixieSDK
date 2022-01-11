@@ -86,7 +86,7 @@ static const size_t max_large_num_baselines = 3640;
 /**
  * @brief The maximum number of baselines collected by the get_baselines control task on Rev H.
  */
-static const size_t max_small_num_baselines = 1820;
+static const size_t max_small_num_baselines = 1927;
 
 /**
  * IO buffer length
