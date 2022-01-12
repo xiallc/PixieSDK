@@ -79,6 +79,15 @@ static const std::map<code, result_code> result_codes = {
     {code::channel_param_readonly, {305, "channel parameter is readonly"}},
     {code::channel_param_writeonly, {306, "channel parameter is writeonly"}},
     /*
+     * Data
+     */
+    {code::invalid_header_length, {400, "invalid header length"}},
+    {code::invalid_revision, {401, "invalid firmware revision id"}},
+    {code::invalid_frequency, {402, "invalid firmware frequency"}},
+    {code::invalid_element, {403, "invalid element"}},
+    {code::invalid_buffer_length, {404, "invalid data length"}},
+    {code::invalid_event_length, {405, "invalid event length"}},
+    /*
      * Device
      */
     {code::device_load_failure, {500, "device failed to load"}},

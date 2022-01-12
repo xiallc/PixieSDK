@@ -179,6 +179,33 @@ enum struct code {
      */
     channel_param_writeonly,
     /*
+     * Data
+     */
+    /**
+     * @brief 400
+     */
+    invalid_header_length,
+    /**
+     * @brief 401
+     */
+    invalid_revision,
+    /**
+     * @brief 402
+     */
+    invalid_frequency,
+    /**
+     * @brief 403
+     */
+    invalid_element,
+    /**
+     * @brief 404
+     */
+    invalid_buffer_length,
+    /**
+     * @brief 405
+     */
+    invalid_event_length,
+    /*
      * Device
      */
     /**

@@ -26,10 +26,59 @@
 #include <string>
 #include <vector>
 
+#include <pixie/error.hpp>
+
 namespace xia {
 namespace pixie {
 namespace data {
 namespace list_mode {
+
+/*
+ * Local error
+ */
+typedef pixie::error::error error;
+
+/**
+ * @brief An enumeration providing all combinations of the list-mode data header.
+ * @note The trace is not considered part of the list-mode data header!
+ * The header size changes depending on the specific configuration of the
+ * channel's ::ChanCSRa variable.
+ */
+enum header_length {
+    /**
+     * @brief Basic 4 word header
+     */
+    header = 4,
+    /**
+     * @brief 4 word header + external time stamps
+     */
+    header_ets = 6,
+    /**
+     * @brief 4 word header + energy sums (3 + baseline)
+     */
+    header_esum = 8,
+    /**
+     * @brief 4 word header + energy sums + external time stamps
+     */
+    header_esum_ets = 10,
+    /**
+     * @brief 4 word header + QDC sums
+     */
+    header_qdc = 12,
+    /**
+     * @brief 4 word header + QDC sums + external time stamps
+     */
+    header_qdc_ets = 14,
+    /**
+     * @brief 4 word header + energy sums + QDC sums
+     */
+    header_esum_qdc = 16,
+    /**
+     * @brief 4 word header + energy sums + QDC sums + external time stamps
+     */
+    header_esum_qdc_ets = 18
+};
+
 /**
  * @brief A data structure for holding a single channel event decoded from a
  *     list-mode data stream.
@@ -98,7 +147,11 @@ public:
      * the local fast trigger point. If the CFD forced trigger bit is 1, the
      * CFD fractional time will be zero.
      */
-    bool cfd_forced_trigger{};
+    bool cfd_forced_trigger;
+    /**
+     * @brief  The time at which the CFD crossed the zero-point.
+     */
+    size_t cfd_fractional_time;
     /**
      * @brief Indicates when the CFD zero crossing occurred with respect to the FPGA.
      *
@@ -113,18 +166,19 @@ public:
      * program can then know exactly when the CFD zero crossing occurred and
      * the exact CFD fractional time can be known.
      */
-    bool cfd_trigger_source{};
+    size_t cfd_trigger_source;
     /**
-     * @brief  If true, then the signal was piled-up with another signal during
-     * processing.
+     * @brief  The channel number that recorded the event.
+     *
+     * This value starts counting at 0. For example a Pixie-16 Rev F module
+     * would range from [0, 15].
      */
-    bool finish_code{};
+    size_t channel_number;
     /**
-     * @brief  If true, then the recorded trace was out of range and the energy
-     * filter result should not be used.
+     * @brief The crate id for the crate that produced the event.
+     * @note The SDK does not support multi-crate systems so this will always be 0.
      */
-    bool trace_out_of_range{};
-
+    size_t crate_id;
     /**
      * @brief  The energy as recorded by the on-board energy (slow) filter.
      *
@@ -136,7 +190,40 @@ public:
      * If an event is a piled up event, or if the event’s trace out-of-range
      * flag is set to 1, the event’s energy will be defaulted to 0.
      */
-    double energy{};
+    double energy;
+    /**
+     * @brief Energy sums recorded by the module
+     *
+     * The list mode energy sums (leading, gap and trailing) are the 3 running
+     * sums of the digital trapezoidal filter implemented in the Pixie-16 for
+     * energy or pulse height measurement.
+     */
+    std::vector<size_t> energy_sums;
+    /**
+     * @brief The event length is the header length + trace length.
+     */
+    size_t event_length;
+    /**
+     * @brief  Upper 16 bits of the time recorded by the trigger filter.
+     */
+    size_t event_time_high;
+    /**
+     * @brief  Lower 32 bits of the time recorded by the trigger filter.
+     */
+    size_t event_time_low;
+    /**
+     * @brief Upper 16 bits of the external time stamp
+     */
+    size_t external_time_high;
+    /**
+     * @brief Lower 32 bits of the external time stamp
+     *
+     * The Pixie-16 is capable of accepting an external clock signal through
+     * one of its front panel connectors and then count such external clock
+     * signals before putting those external clock timestamps into the list-mode
+     * data event header.
+     */
+    size_t external_time_low;
     /**
      * @brief Baseline that was recorded with the energy sums
      *
@@ -148,65 +235,16 @@ public:
      * or it has more than one decay constants, the accuracy of the baseline
      * measurement will be compromised.
      */
-    double filter_baseline{};
+    double filter_baseline;
     /**
-     * @brief The arrival time of the event within the system.
-     *
-     * This value combines the low and high parts of the trigger filter time stamp
-     * with the CFD time if available.
+     * @brief  If true, then the signal was piled-up with another signal during
+     * processing.
      */
-    double time{};
-
+    bool finish_code;
     /**
-     * @brief  The time at which the CFD crossed the zero-point.
+     * @brief The length of the list-mode data header used for processing the data.
      */
-    size_t cfd_time{};
-    /**
-     * @brief  The channel number that recorded the event.
-     *
-     * This value starts counting at 0. For example a Pixie-16 Rev F module
-     * would range from [0, 15].
-     */
-    size_t channel_number{};
-    /**
-     * @brief The crate id for the crate that produced the event.
-     * @note The SDK does not support multi-crate systems so this will always be 0.
-     */
-    size_t crate_id{};
-    /**
-     * @brief  Upper 16 bits of the time recorded by the trigger filter.
-     */
-    size_t event_time_high{};
-    /**
-     * @brief  Lower 32 bits of the time recorded by the trigger filter.
-     */
-    size_t event_time_low{};
-    /**
-     * @brief Upper 16 bits of the external time stamp
-     */
-    size_t external_time_high{};
-    /**
-     * @brief Lower 32 bits of the external time stamp
-     *
-     * The Pixie-16 is capable of accepting an external clock signal through
-     * one of its front panel connectors and then count such external clock
-     * signals before putting those external clock timestamps into the list-mode
-     * data event header.
-     */
-    size_t external_time_low{};
-    /**
-     * @brief The module's physical slot in the crate this ranges from [2, 14].
-     */
-    size_t slot_id{};
-
-    /**
-     * @brief Energy sums recorded by the module
-     *
-     * The list mode energy sums (leading, gap and trailing) are the 3 running
-     * sums of the digital trapezoidal filter implemented in the Pixie-16 for
-     * energy or pulse height measurement.
-     */
-    std::vector<size_t> energy_sums;
+    size_t header_length;
     /**
      * @brief QDCs recorded by the module
      *
@@ -220,12 +258,32 @@ public:
      */
     std::vector<size_t> qdc;
     /**
+     * @brief The module's physical slot in the crate this ranges from [2, 14].
+     */
+    size_t slot_id;
+    /**
+     * @brief The arrival time of the event within the system.
+     *
+     * This value combines the low and high parts of the trigger filter time stamp
+     * with the CFD time if available.
+     */
+    double time;
+    /**
      * @brief  The ADC trace as recorded in the event.
      *
      * The length of the trace can vary depending on the specific settings
      * provided to the DSP by the user.
      */
     std::vector<size_t> trace;
+    /**
+     * @brief The length of the trace as recorded in the header.
+     */
+    size_t trace_length;
+    /**
+     * @brief  If true, then the recorded trace was out of range and the energy
+     * filter result should not be used.
+     */
+    bool trace_out_of_range;
 
     /**
      * @return The raw 48-bit time stamp excluding any CFD information.
@@ -241,11 +299,34 @@ public:
      * @param out the stream that we'll use for the output
      */
     void output(std::ostream& out) const;
-
-    std::string as_json() const;
 };
 
-typedef std::vector<event> events;
+std::string event_as_json(const event& evt);
+
+using events = std::vector<event>;
+
+/**
+ * @brief Describes the elements that need to be decoded out of a list-mode event
+ */
+enum element {
+    cfd_forced_trigger_bit,
+    cfd_fractional_time,
+    cfd_trigger_source_bit,
+    channel_number,
+    crate_id,
+    energy,
+    event_length,
+    event_time_high,
+    event_time_low,
+    finish_code,
+    header_length,
+    slot_id,
+    trace_length,
+    trace_out_of_range_flag,
+    END
+};
+
+events decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequency);
 
 }  // namespace list_mode
 }  // namespace data
