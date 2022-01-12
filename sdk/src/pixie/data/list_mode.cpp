@@ -426,18 +426,20 @@ static double cfd_multiplier(const size_t rev, const size_t freq) {
 
 events decode_data_block(uint32_t* data, const size_t len, const size_t revision,
                          const size_t frequency) {
-    events evts;
-    uint32_t* data_start = data;
-
-    if (revision < min_rev)
-        throw error(error::code::invalid_revision,
-                    "minimum supported firmware rev is " + std::to_string(min_rev));
-
+    if (!data) {
+        throw error(error::code::invalid_buffer, "buffer pointed to an invalid location");
+    }
     if (len < min_words) {
-        throw error(error::code::invalid_header_length,
+        throw error(error::code::invalid_buffer_length,
                     "minimum data buffer size is " + std::to_string(min_words));
     }
+    if (revision < min_rev) {
+        throw error(error::code::invalid_revision,
+                    "minimum supported firmware rev is " + std::to_string(min_rev));
+    }
 
+    events evts;
+    uint32_t* data_start = data;
     auto core_elements = find_element_set(revision, frequency);
 
     while (data < data_start + len) {

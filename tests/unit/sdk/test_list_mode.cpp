@@ -96,6 +96,17 @@ TEST_SUITE("xia::pixie::list_mode") {
         }
     }
     TEST_CASE("Data decoding") {
+        SUBCASE("Checks for data validity") {
+            CHECK_THROWS_WITH_AS(decode_data_block(nullptr, 0, 30474, 250),
+                                 "buffer pointed to an invalid location", xia::pixie::error::error);
+            std::vector<uint32_t> empty(2, 0);
+            CHECK_THROWS_WITH_AS(decode_data_block(empty.data(), empty.size(), 30474, 250),
+                                 "minimum data buffer size is 4", xia::pixie::error::error);
+            CHECK_THROWS_WITH_AS(decode_data_block(empty.data(), 4, 1, 250),
+                                 "minimum supported firmware rev is 17562",
+                                 xia::pixie::error::error);
+        }
+
         std::vector<uint32_t> data = {540717, 3735933136, 4077, 480};
         auto evts = decode_data_block(data.data(), data.size(), 30474, 250);
         CHECK(evts[0] == event("{"

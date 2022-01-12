@@ -205,6 +205,10 @@ enum struct code {
      * @brief 405
      */
     invalid_event_length,
+    /**
+     * @brief 406
+     */
+    invalid_buffer,
     /*
      * Device
      */
