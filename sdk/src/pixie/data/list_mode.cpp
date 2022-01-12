@@ -32,6 +32,8 @@ namespace pixie {
 namespace data {
 namespace list_mode {
 
+static const size_t min_rev = 17562;
+static const size_t min_words = 4;
 static const size_t num_qdc_words = 8;
 static const size_t num_esum_words = 4;
 static const size_t num_ext_ts_words = 2;
@@ -347,9 +349,6 @@ static const std::vector<element_desc> descriptors_34688_500 = {
     element_desc(element::trace_out_of_range_flag, 0x80000000, 31, 3)};
 
 static std::vector<element_desc> find_element_set(size_t rev, size_t freq) {
-    if (rev < 17562)
-        throw error(error::code::invalid_revision, "minimum supported firmware rev is 17562.");
-
     switch (freq) {
         case 100:
             if (rev >= 17562 && rev < 29432) {
@@ -430,8 +429,13 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
     events evts;
     uint32_t* data_start = data;
 
-    if (len < 4) {
-        throw error(error::code::invalid_header_length, "minimum data buffer size is 4");
+    if (revision < min_rev)
+        throw error(error::code::invalid_revision,
+                    "minimum supported firmware rev is " + std::to_string(min_rev));
+
+    if (len < min_words) {
+        throw error(error::code::invalid_header_length,
+                    "minimum data buffer size is " + std::to_string(min_words));
     }
 
     auto core_elements = find_element_set(revision, frequency);
