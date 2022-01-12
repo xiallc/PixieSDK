@@ -151,7 +151,7 @@ public:
     /**
      * @brief  The time at which the CFD crossed the zero-point.
      */
-    size_t cfd_fractional_time;
+    double cfd_fractional_time;
     /**
      * @brief Indicates when the CFD zero crossing occurred with respect to the FPGA.
      *

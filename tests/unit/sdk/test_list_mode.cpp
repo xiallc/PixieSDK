@@ -31,7 +31,7 @@ TEST_SUITE("xia::pixie::list_mode") {
     TEST_CASE("event class") {
         static const std::string json_str = "{"
                                             "\"cfd_forced_trigger\":false,"
-                                            "\"cfd_fractional_time\":0,"
+                                            "\"cfd_fractional_time\":0.0,"
                                             "\"cfd_trigger_source\":0,"
                                             "\"channel_number\":1,"
                                             "\"crate_id\":1,"
@@ -100,7 +100,7 @@ TEST_SUITE("xia::pixie::list_mode") {
         auto evts = decode_data_block(data.data(), data.size(), 30474, 250);
         CHECK(evts[0] == event("{"
                                "\"cfd_forced_trigger\":false,"
-                               "\"cfd_fractional_time\":0,"
+                               "\"cfd_fractional_time\":0.0,"
                                "\"cfd_trigger_source\":0,"
                                "\"channel_number\":13,"
                                "\"crate_id\":0,"

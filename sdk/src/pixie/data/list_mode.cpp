@@ -393,6 +393,38 @@ static std::vector<element_desc> find_element_set(size_t rev, size_t freq) {
     }
 }
 
+static double cfd_multiplier(const size_t rev, const size_t freq) {
+    switch (freq) {
+        case 100:
+            if (rev >= 17562 && rev < 30474) {
+                return 65536;
+            } else {
+                return 32768;
+            }
+        case 250:
+            if (rev < 20466) {
+                throw error(error::code::invalid_revision,
+                            "minimum supported firmware rev is 20466.");
+            } else if (rev >= 20466 && rev < 27361) {
+                return 65536;
+            } else if (rev >= 27361 && rev < 30474) {
+                return 32768;
+            } else {
+                return 16384;
+            }
+        case 500:
+            if (rev < 29432) {
+                throw error(error::code::invalid_revision,
+                            "minimum supported firmware rev is 29432.");
+            } else {
+                return 8192;
+            }
+        default:
+            throw error(error::code::invalid_frequency,
+                        "invalid frequency: " + std::to_string(freq));
+    }
+}
+
 events decode_data_block(uint32_t* data, const size_t len, const size_t revision,
                          const size_t frequency) {
     events evts;
@@ -414,7 +446,7 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
                     evt.cfd_forced_trigger = val != 0;
                     break;
                 case element::cfd_fractional_time:
-                    evt.cfd_fractional_time = val;
+                    evt.cfd_fractional_time = val / cfd_multiplier(revision, frequency);
                     break;
                 case element::cfd_trigger_source_bit:
                     evt.cfd_trigger_source = val;
