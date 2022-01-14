@@ -363,7 +363,7 @@ static std::vector<element_desc> find_element_set(size_t rev, size_t freq) {
         case 250:
             if (rev < 20466) {
                 throw error(error::code::invalid_revision,
-                            "minimum supported firmware rev is 20466.");
+                            "minimum supported firmware rev is 20466");
             } else if (rev >= 20466 && rev < 27361) {
                 return descriptors_20466_250;
             } else if (rev >= 27361 && rev < 29432) {
@@ -380,7 +380,7 @@ static std::vector<element_desc> find_element_set(size_t rev, size_t freq) {
         case 500:
             if (rev < 29432) {
                 throw error(error::code::invalid_revision,
-                            "minimum supported firmware rev is 29432.");
+                            "minimum supported firmware rev is 29432");
             } else if (rev >= 29432 && rev < 34688) {
                 return descriptors_29432_500;
             } else {
@@ -401,10 +401,7 @@ static double cfd_multiplier(const size_t rev, const size_t freq) {
                 return 32768;
             }
         case 250:
-            if (rev < 20466) {
-                throw error(error::code::invalid_revision,
-                            "minimum supported firmware rev is 20466.");
-            } else if (rev >= 20466 && rev < 27361) {
+            if (rev >= 20466 && rev < 27361) {
                 return 65536;
             } else if (rev >= 27361 && rev < 30474) {
                 return 32768;
@@ -412,12 +409,7 @@ static double cfd_multiplier(const size_t rev, const size_t freq) {
                 return 16384;
             }
         case 500:
-            if (rev < 29432) {
-                throw error(error::code::invalid_revision,
-                            "minimum supported firmware rev is 29432.");
-            } else {
-                return 8192;
-            }
+            return 8192;
         default:
             throw error(error::code::invalid_frequency,
                         "invalid frequency: " + std::to_string(freq));
@@ -452,7 +444,8 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
                     evt.cfd_forced_trigger = val != 0;
                     break;
                 case element::cfd_fractional_time:
-                    evt.cfd_fractional_time = val / cfd_multiplier(revision, frequency);
+                    evt.cfd_fractional_time =
+                        static_cast<double>(val) / cfd_multiplier(revision, frequency);
                     break;
                 case element::cfd_trigger_source_bit:
                     evt.cfd_trigger_source = val;
@@ -464,7 +457,7 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
                     evt.crate_id = val;
                     break;
                 case element::energy:
-                    evt.energy = val;
+                    evt.energy = static_cast<double>(val);
                     break;
                 case element::event_length:
                     evt.event_length = val;
@@ -491,18 +484,29 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
                     evt.trace_out_of_range = val != 0;
                     break;
                 default:
-                    throw error(error::code::invalid_element, "Unknown data element encountered.");
+                    throw error(error::code::invalid_element, "Unknown data element encountered");
             }
         }
 
         if (len < evt.event_length) {
             throw error(error::code::invalid_buffer_length,
-                        "buffer length is smaller than the reported event.");
+                        "buffer length is smaller than the reported event");
+        }
+
+        if (revision < 30980) {
+            switch (evt.header_length) {
+                case header_length::header_ets:
+                case header_length::header_esum_ets:
+                case header_length::header_qdc_ets:
+                case header_length::header_esum_qdc_ets:
+                    throw error(error::code::invalid_header_length,
+                                "external timestamps not introduced until revision 30980");
+            }
         }
 
         if (evt.event_length != evt.header_length + evt.trace_length / 2) {
             throw error(error::code::invalid_event_length,
-                        "Event length does not match header length plus 0.5 * trace_length.");
+                        "Event length does not match header length plus 0.5 * trace_length");
         }
 
         unsigned int ets_offset = evt.header_length - num_ext_ts_words;
@@ -517,10 +521,6 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
             case header_length::header_ets:
                 has_ets = true;
                 break;
-            case header_length::header_qdc:
-                has_qdc = true;
-                qdc_offset = evt.header_length - num_qdc_words;
-                break;
             case header_length::header_esum:
                 has_esums = true;
                 esums_offset = evt.header_length - num_esum_words;
@@ -528,6 +528,14 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
             case header_length::header_esum_ets:
                 has_ets = has_esums = true;
                 esums_offset = evt.header_length - num_esum_words - num_ext_ts_words;
+                break;
+            case header_length::header_qdc:
+                has_qdc = true;
+                qdc_offset = evt.header_length - num_qdc_words;
+                break;
+            case header_length::header_qdc_ets:
+                has_qdc = has_ets = true;
+                qdc_offset = evt.header_length - num_ext_ts_words - num_qdc_words;
                 break;
             case header_length::header_esum_qdc:
                 has_esums = has_qdc = true;
@@ -538,10 +546,6 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
                 has_esums = has_ets = has_qdc = true;
                 esums_offset =
                     evt.header_length - num_ext_ts_words - num_qdc_words - num_esum_words;
-                qdc_offset = evt.header_length - num_ext_ts_words - num_qdc_words;
-                break;
-            case header_length::header_qdc_ets:
-                has_qdc = has_ets = true;
                 qdc_offset = evt.header_length - num_ext_ts_words - num_qdc_words;
                 break;
             default:
