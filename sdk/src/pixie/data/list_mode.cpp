@@ -505,7 +505,7 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
                         "Event length does not match header length plus 0.5 * trace_length.");
         }
 
-        unsigned int ets_offset = 0;
+        unsigned int ets_offset = evt.header_length - num_ext_ts_words;
         unsigned int esums_offset = 0;
         unsigned int qdc_offset = 0;
         bool has_ets = false;
@@ -515,7 +515,6 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
             case header_length::header:
                 break;
             case header_length::header_ets:
-                ets_offset = evt.header_length - num_ext_ts_words;
                 has_ets = true;
                 break;
             case header_length::header_qdc:
@@ -557,8 +556,9 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
 
         if (has_esums) {
             for (unsigned int i = 0; i < num_esum_words; i++) {
-                evt.energy_sums.push_back(data[esums_offset + i]);
-                if (i == num_esum_words - 1) {
+                if (i != num_esum_words - 1) {
+                    evt.energy_sums.push_back(data[esums_offset + i]);
+                } else {
                     evt.filter_baseline = util::ieee_float(data[esums_offset + num_esum_words - 1]);
                 }
             }
