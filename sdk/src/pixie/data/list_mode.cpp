@@ -47,11 +47,9 @@ static void from_json(const nlohmann::json& j, event& evt) {
     j.at("energy").get_to(evt.energy);
     j.at("energy_sums").get_to(evt.energy_sums);
     j.at("event_length").get_to(evt.event_length);
-    j.at("event_time_high").get_to(evt.event_time_high);
-    j.at("event_time_low").get_to(evt.event_time_low);
-    j.at("external_time_high").get_to(evt.external_time_high);
-    j.at("external_time_low").get_to(evt.external_time_low);
+    j.at("external_time").get_to(evt.external_time);
     j.at("filter_baseline").get_to(evt.filter_baseline);
+    j.at("filter_time").get_to(evt.filter_time);
     j.at("finish_code").get_to(evt.finish_code);
     j.at("header_length").get_to(evt.header_length);
     j.at("qdc").get_to(evt.qdc);
@@ -63,15 +61,15 @@ static void from_json(const nlohmann::json& j, event& evt) {
 
 event::event()
     : cfd_forced_trigger(false), cfd_fractional_time(0), cfd_trigger_source(0), channel_number(0),
-      crate_id(0), energy(0), event_length(0), event_time_high(0), event_time_low(0),
-      external_time_high(0), external_time_low(0), filter_baseline(0), finish_code(false),
-      header_length(0), slot_id(0), time(0), trace_length(0), trace_out_of_range(false) {}
+      crate_id(0), energy(0), event_length(0), external_time(0), filter_baseline(0), filter_time(0),
+      finish_code(false), header_length(0), slot_id(0), time(0), trace_length(0),
+      trace_out_of_range(false) {}
 
 event::event(const std::string& json_string)
     : cfd_forced_trigger(false), cfd_fractional_time(0), cfd_trigger_source(0), channel_number(0),
-      crate_id(0), energy(0), event_length(0), event_time_high(0), event_time_low(0),
-      external_time_high(0), external_time_low(0), filter_baseline(0), finish_code(false),
-      header_length(0), slot_id(0), time(0), trace_length(0), trace_out_of_range(false) {
+      crate_id(0), energy(0), event_length(0), external_time(0), filter_baseline(0), filter_time(0),
+      finish_code(false), header_length(0), slot_id(0), time(0), trace_length(0),
+      trace_out_of_range(false) {
 
     try {
         nlohmann::json json = nlohmann::json::parse(json_string);
@@ -87,8 +85,7 @@ event::~event() = default;
 
 bool event::operator==(const event& rhs) const {
     return crate_id == rhs.crate_id && slot_id == rhs.slot_id &&
-           channel_number == rhs.channel_number && event_time_low == rhs.event_time_low &&
-           event_time_high == rhs.event_time_high && energy == rhs.energy;
+           channel_number == rhs.channel_number && time == rhs.time && energy == rhs.energy;
 }
 
 bool event::operator!=(const event& rhs) const {
@@ -96,25 +93,18 @@ bool event::operator!=(const event& rhs) const {
 }
 
 bool event::operator<(const event& rhs) const {
-    return raw_time() < rhs.raw_time();
+    return time < rhs.time;
 }
 
 bool event::operator>(const event& rhs) const {
     return !operator<(rhs);
 }
 
-uint64_t event::raw_time() const {
-    return (uint64_t(event_time_high) << 32) | uint64_t(event_time_low);
-}
-
-uint64_t event::external_time() const {
-    return (uint64_t(external_time_high) << 32) | uint64_t(external_time_low);
-}
-
 void event::output(std::ostream& out) const {
     util::ostream_guard flags(out);
     out << std::boolalpha << "crate: " << crate_id << " slot: " << slot_id
-        << " channel: " << channel_number << " time: " << raw_time() << " energy: " << energy;
+        << " channel: " << channel_number << " time: " << std::to_string(uint64_t(time))
+        << " energy: " << energy;
 }
 
 std::string event_as_json(const event& evt) {
@@ -126,11 +116,9 @@ std::string event_as_json(const event& evt) {
                            {"energy", evt.energy},
                            {"energy_sums", evt.energy_sums},
                            {"event_length", evt.event_length},
-                           {"event_time_high", evt.event_time_high},
-                           {"event_time_low", evt.event_time_low},
-                           {"external_time_high", evt.external_time_high},
-                           {"external_time_low", evt.external_time_high},
+                           {"external_time", evt.external_time},
                            {"filter_baseline", evt.filter_baseline},
+                           {"filter_time", evt.filter_time},
                            {"finish_code", evt.finish_code},
                            {"header_length", evt.header_length},
                            {"qdc", evt.qdc},
@@ -348,6 +336,35 @@ static const std::vector<element_desc> descriptors_34688_500 = {
     element_desc(element::trace_length, 0x7FFF0000, 16, 3),
     element_desc(element::trace_out_of_range_flag, 0x80000000, 31, 3)};
 
+static uint64_t make_u64(const uint32_t high, const uint32_t low) {
+    return (uint64_t(high) << 32) | uint64_t(low);
+}
+
+static double make_u64_double(const uint32_t high, const uint32_t low) {
+    return double(make_u64(high, low));
+}
+
+static void make_time(event& evt, const size_t freq, const uint32_t filter_low,
+                      const uint32_t filter_high) {
+    double filter_conv;
+    switch (freq) {
+        case 250:
+            filter_conv = 8e-9;
+            evt.cfd_fractional_time = (evt.cfd_fractional_time - cfd_trigger_source_bit) * 4e-9;
+            break;
+        case 500:
+            filter_conv = 10e-9;
+            evt.cfd_fractional_time = (evt.cfd_fractional_time - cfd_trigger_source_bit - 1) * 2e-9;
+            break;
+        default:
+            filter_conv = 10e-9;
+            evt.cfd_fractional_time = evt.cfd_fractional_time * 10e-9;
+            break;
+    }
+    evt.filter_time = make_u64_double(filter_high, filter_low) * filter_conv;
+    evt.time = evt.cfd_fractional_time + evt.filter_time;
+}
+
 static std::vector<element_desc> find_element_set(size_t rev, size_t freq) {
     switch (freq) {
         case 100:
@@ -436,7 +453,8 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
 
     while (data < data_start + len) {
         event evt;
-
+        uint32_t event_time_low;
+        uint32_t event_time_high;
         for (const auto& ele : core_elements) {
             auto val = (data[ele.header_index] & ele.value) >> ele.start_bit;
             switch (ele.type) {
@@ -463,10 +481,10 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
                     evt.event_length = val;
                     break;
                 case element::event_time_high:
-                    evt.event_time_high = val;
+                    event_time_high = val;
                     break;
                 case element::event_time_low:
-                    evt.event_time_low = val;
+                    event_time_low = val;
                     break;
                 case element::finish_code:
                     evt.finish_code = val != 0;
@@ -508,6 +526,19 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
             throw error(error::code::invalid_event_length,
                         "Event length does not match header length plus 0.5 * trace_length");
         }
+
+        /*
+         * TODO: I'm leaving this here as a note that we should check, but haven't decided if this should be hard or soft.
+         * We could treat this as not an error and just force the CFD time to be zero instead.
+         * The downside to that would be it masks issues in the firmware.
+         */
+        /*
+        if (evt.cfd_forced_trigger && evt.cfd_fractional_time != 0) {
+            throw error(error::code::invalid_cfd_time,
+                        "data corruption: cfd was forced but still recorded a time");
+        }
+         */
+        make_time(evt, frequency, event_time_low, event_time_high);
 
         unsigned int ets_offset = evt.header_length - num_ext_ts_words;
         unsigned int esums_offset = 0;
@@ -554,8 +585,7 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
         }
 
         if (has_ets) {
-            evt.external_time_low = data[ets_offset];
-            evt.external_time_high = data[ets_offset + 1];
+            evt.external_time = make_u64_double(data[ets_offset + 1], data[ets_offset]);
         }
 
         if (has_esums) {

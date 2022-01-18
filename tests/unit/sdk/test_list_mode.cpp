@@ -38,16 +38,14 @@ TEST_SUITE("xia::pixie::list_mode") {
                                             "\"energy\":1235.0,"
                                             "\"energy_sums\":[],"
                                             "\"event_length\":7,"
-                                            "\"event_time_high\":1111,"
-                                            "\"event_time_low\":1234,"
-                                            "\"external_time_high\":1111,"
-                                            "\"external_time_low\":1111,"
+                                            "\"external_time\":4771708667090.0,"
                                             "\"filter_baseline\":0.0,"
+                                            "\"filter_time\":0.0,"
                                             "\"finish_code\":false,"
                                             "\"header_length\":6,"
                                             "\"qdc\":[],"
                                             "\"slot_id\":1,"
-                                            "\"time\":0.0,"
+                                            "\"time\":4771708666967.0,"
                                             "\"trace\":[196080109],"
                                             "\"trace_out_of_range\":false}";
 
@@ -57,10 +55,8 @@ TEST_SUITE("xia::pixie::list_mode") {
         evt.channel_number = 1;
         evt.crate_id = 1;
         evt.event_length = 7;
-        evt.event_time_low = 1234;
-        evt.event_time_high = 1111;
-        evt.external_time_low = 1234;
-        evt.external_time_high = 1111;
+        evt.external_time = 4771708667090;
+        evt.time = 4771708666967;
         evt.header_length = 6;
         evt.trace = std::vector<size_t>(1, 0xBAFF1ED);
 
@@ -71,14 +67,9 @@ TEST_SUITE("xia::pixie::list_mode") {
             eventB.energy = 1234;
             CHECK(evt != eventB);
 
-            eventB.event_time_low = 1235;
+            eventB.time = 4771708666968;
             CHECK(evt < eventB);
             CHECK(eventB > evt);
-        }
-
-        SUBCASE("Verify 48-bit time calculations") {
-            CHECK(evt.raw_time() == 4771708667090);
-            CHECK(evt.external_time() == 4771708667090);
         }
 
         SUBCASE("Verify JSON output and input") {
@@ -92,7 +83,7 @@ TEST_SUITE("xia::pixie::list_mode") {
         SUBCASE("Verify streamed output") {
             std::ostringstream buf;
             buf << evt;
-            CHECK(buf.str() == "crate: 1 slot: 1 channel: 1 time: 4771708667090 energy: 1235");
+            CHECK(buf.str() == "crate: 1 slot: 1 channel: 1 time: 4771708666967 energy: 1235");
         }
     }
     TEST_CASE("Data Validity") {
@@ -129,13 +120,30 @@ TEST_SUITE("xia::pixie::list_mode") {
     /*
      * Testing data decoding and encoding requires tons of different data combinations.
      * We're going to define most of the building blocks below. These will then be used
-     * to construct all the various combinations that we'll need to perform our tests.
+     * to construct all combinations that we'll need to perform our tests.
      */
-    event init_event(double cfd_scale, size_t event_len, size_t header_len, size_t trig_source,
-                     bool cfd_force, bool ets, bool esum, bool qdc, bool trc) {
+    event init_event(size_t freq, double cfd_scale, size_t event_len, size_t header_len,
+                     size_t trig_source, bool cfd_force, bool ets, bool esum, bool qdc, bool trc) {
         event expected;
+        double filter_conv;
+        switch (freq) {
+            case 250:
+                filter_conv = 8e-9;
+                expected.cfd_fractional_time =
+                    ((3085.0 / cfd_scale) - cfd_trigger_source_bit) * 4e-9;
+                break;
+            case 500:
+                filter_conv = 10e-9;
+                expected.cfd_fractional_time =
+                    ((3085.0 / cfd_scale) - cfd_trigger_source_bit - 1) * 2e-9;
+                break;
+            default:
+                filter_conv = 10e-9;
+                expected.cfd_fractional_time = (3085.0 / cfd_scale) * 10e-9;
+                break;
+        }
+
         expected.cfd_forced_trigger = cfd_force;
-        expected.cfd_fractional_time = 3085.0 / cfd_scale;
         expected.cfd_trigger_source = trig_source;
         expected.channel_number = 10;
         expected.crate_id = 0;
@@ -145,14 +153,15 @@ TEST_SUITE("xia::pixie::list_mode") {
             expected.filter_baseline = 159.357;
         }
         expected.event_length = event_len;
-        expected.event_time_high = 4077;
-        expected.event_time_low = 3735933136;
+        expected.filter_time = 17514317598928 * filter_conv;
         expected.finish_code = true;
         expected.header_length = header_len;
         if (qdc) {
             expected.qdc = {147, 258, 369, 963, 852, 741, 159, 357};
         }
         expected.slot_id = 2;
+        expected.time =
+            expected.cfd_fractional_time + expected.filter_time;
         if (trc) {
             expected.trace = {29,  31,  28, 30, 27, 30, 30, 31, 28, 29, 29, 30, 36, 86, 270,
                               426, 268, 80, 34, 29, 27, 32, 28, 29, 31, 32, 27, 33, 28, 29};
@@ -160,8 +169,7 @@ TEST_SUITE("xia::pixie::list_mode") {
         expected.trace_length = expected.trace.size();
         expected.trace_out_of_range = true;
         if (ets) {
-            expected.external_time_low = 538060824;
-            expected.external_time_high = 33864;
+            expected.external_time = 145445310572568;
         }
         return expected;
     }
@@ -200,10 +208,8 @@ TEST_SUITE("xia::pixie::list_mode") {
         CHECK(result.energy == expected.energy);
         CHECK(result.energy_sums == expected.energy_sums);
         CHECK(result.event_length == expected.event_length);
-        CHECK(result.event_time_high == expected.event_time_high);
-        CHECK(result.event_time_low == expected.event_time_low);
-        CHECK(result.external_time_high == expected.external_time_high);
-        CHECK(result.external_time_low == expected.external_time_low);
+        CHECK(result.external_time == expected.external_time);
+        CHECK(result.filter_time == expected.filter_time);
         CHECK(doctest::Approx(result.filter_baseline).epsilon(0.00001) == expected.filter_baseline);
         CHECK(result.finish_code == expected.finish_code);
         CHECK(result.header_length == expected.header_length);
@@ -238,121 +244,129 @@ TEST_SUITE("xia::pixie::list_mode") {
                                  "unknown header length: 11", xia::pixie::error::error);
         }
         SUBCASE("Invalid revision for external timestamp") {
-            auto data = generate_data(2151882794, 123456789, 2349666285, 2149450208,
-                                      true, true, true, true);
+            auto data = generate_data(2151882794, 123456789, 2349666285, 2149450208, true, true,
+                                      true, true);
             CHECK_THROWS_WITH_AS(decode_data_block(data.data(), data.size(), 17562, 100),
-                                 "external timestamps not introduced until revision 30980", xia::pixie::error::error);
+                                 "external timestamps not introduced until revision 30980",
+                                 xia::pixie::error::error);
         }
+//        SUBCASE("CFD forced but still had a time") {
+//            auto data = generate_data(2151882794, 123456789, 2349666285, 2149450208, true, true,
+//                                      true, true);
+//            CHECK_THROWS_WITH_AS(decode_data_block(data.data(), data.size(), 30474, 100),
+//                                 "data corruption: cfd was forced but still recorded a time",
+//                                 xia::pixie::error::error);
+//        }
     }
 
     TEST_CASE("17562-100") {
-        auto evt = init_event(65536, 31, 16, 0, false, false, true, true, true);
-        auto data = generate_data(3225354282, uint32_t(evt.event_time_low), 202182637, 1966560,
-                                  false, true, true, true);
+        auto evt = init_event(100, 65536, 31, 16, 0, false, false, true, true, true);
+        auto data =
+            generate_data(3225354282, 3735933136, 202182637, 1966560, false, true, true, true);
         check_decoded_data(decode_data_block(data.data(), data.size(), 17562, 100)[0], evt);
     }
     TEST_CASE("29432-100") {
-        auto evt = init_event(65536, 31, 16, 0, false, false, true, true, true);
-        auto data = generate_data(2151612458, uint32_t(evt.event_time_low), 202182637, 1999328,
-                                  false, true, true, true);
+        auto evt = init_event(100, 65536, 31, 16, 0, false, false, true, true, true);
+        auto data =
+            generate_data(2151612458, 3735933136, 202182637, 1999328, false, true, true, true);
         check_decoded_data(decode_data_block(data.data(), data.size(), 29432, 100)[0], evt);
     }
     TEST_CASE("30474-100") {
-        auto evt = init_event(32768, 31, 16, 0, true, false, true, true, true);
-        auto data = generate_data(2151612458, uint32_t(evt.event_time_low), 2349666285, 1999328,
-                                  false, true, true, true);
+        auto evt = init_event(100, 32768, 31, 16, 0, true, false, true, true, true);
+        auto data =
+            generate_data(2151612458, 3735933136, 2349666285, 1999328, false, true, true, true);
         check_decoded_data(decode_data_block(data.data(), data.size(), 30474, 100)[0], evt);
     }
     TEST_CASE("34688-100") {
-        auto evt = init_event(32768, 33, 18, 0, true, true, true, true, true);
-        auto data = generate_data(2151882794, uint32_t(evt.event_time_low), 2349666285, 2149450208,
-                                  true, true, true, true);
+        auto evt = init_event(100, 32768, 33, 18, 0, true, true, true, true, true);
+        auto data =
+            generate_data(2151882794, 3735933136, 2349666285, 2149450208, true, true, true, true);
         check_decoded_data(decode_data_block(data.data(), data.size(), 34688, 100)[0], evt);
     }
     TEST_CASE("20466-250") {
-        auto evt = init_event(65536, 31, 16, 0, false, false, true, true, true);
-        auto data = generate_data(3225354282, uint32_t(evt.event_time_low), 202182637, 1966560,
-                                  false, true, true, true);
+        auto evt = init_event(250, 65536, 31, 16, 0, false, false, true, true, true);
+        auto data =
+            generate_data(3225354282, 3735933136, 202182637, 1966560, false, true, true, true);
         check_decoded_data(decode_data_block(data.data(), data.size(), 20466, 250)[0], evt);
     }
     TEST_CASE("27361-250") {
-        auto evt = init_event(32768, 31, 16, 1, false, false, true, true, true);
-        auto data = generate_data(3225354282, uint32_t(evt.event_time_low), 2349666285, 1966560,
-                                  false, true, true, true);
+        auto evt = init_event(250, 32768, 31, 16, 1, false, false, true, true, true);
+        auto data =
+            generate_data(3225354282, 3735933136, 2349666285, 1966560, false, true, true, true);
         check_decoded_data(decode_data_block(data.data(), data.size(), 27361, 250)[0], evt);
     }
     TEST_CASE("29432-250") {
-        auto evt = init_event(32768, 31, 16, 1, false, false, true, true, true);
-        auto data = generate_data(2151612458, uint32_t(evt.event_time_low), 2349666285, 1999328,
-                                  false, true, true, true);
+        auto evt = init_event(250, 32768, 31, 16, 1, false, false, true, true, true);
+        auto data =
+            generate_data(2151612458, 3735933136, 2349666285, 1999328, false, true, true, true);
         check_decoded_data(decode_data_block(data.data(), data.size(), 29432, 250)[0], evt);
     }
     TEST_CASE("30474-250") {
-        auto evt = init_event(16384, 31, 16, 1, true, false, true, true, true);
-        auto data = generate_data(2151612458, uint32_t(evt.event_time_low), 3423408109, 1999328,
-                                  false, true, true, true);
+        auto evt = init_event(250, 16384, 31, 16, 1, true, false, true, true, true);
+        auto data =
+            generate_data(2151612458, 3735933136, 3423408109, 1999328, false, true, true, true);
         check_decoded_data(decode_data_block(data.data(), data.size(), 30474, 250)[0], evt);
     }
     TEST_CASE("34688-250") {
         SUBCASE("header") {
-            auto evt = init_event(16384, 19, 4, 1, true, false, false, false, true);
-            auto data = generate_data(2149990442, uint32_t(evt.event_time_low), 3423408109,
-                                      2149450208, false, false, false, true);
+            auto evt = init_event(250, 16384, 19, 4, 1, true, false, false, false, true);
+            auto data = generate_data(2149990442, 3735933136, 3423408109, 2149450208, false, false,
+                                      false, true);
             check_decoded_data(decode_data_block(data.data(), data.size(), 34688, 250)[0], evt);
         }
         SUBCASE("header_ets") {
-            auto evt = init_event(16384, 21, 6, 1, true, true, false, false, true);
-            auto data = generate_data(2150260778, uint32_t(evt.event_time_low), 3423408109,
-                                      2149450208, true, false, false, true);
+            auto evt = init_event(250, 16384, 21, 6, 1, true, true, false, false, true);
+            auto data = generate_data(2150260778, 3735933136, 3423408109, 2149450208, true, false,
+                                      false, true);
             check_decoded_data(decode_data_block(data.data(), data.size(), 34688, 250)[0], evt);
         }
         SUBCASE("header_esum") {
-            auto evt = init_event(16384, 23, 8, 1, true, false, true, false, true);
-            auto data = generate_data(2150531114, uint32_t(evt.event_time_low), 3423408109,
-                                      2149450208, false, true, false, true);
+            auto evt = init_event(250, 16384, 23, 8, 1, true, false, true, false, true);
+            auto data = generate_data(2150531114, 3735933136, 3423408109, 2149450208, false, true,
+                                      false, true);
             check_decoded_data(decode_data_block(data.data(), data.size(), 34688, 250)[0], evt);
         }
         SUBCASE("header_esum_ets") {
-            auto evt = init_event(16384, 25, 10, 1, true, true, true, false, true);
-            auto data = generate_data(2150801450, uint32_t(evt.event_time_low), 3423408109,
-                                      2149450208, true, true, false, true);
+            auto evt = init_event(250, 16384, 25, 10, 1, true, true, true, false, true);
+            auto data = generate_data(2150801450, 3735933136, 3423408109, 2149450208, true, true,
+                                      false, true);
             check_decoded_data(decode_data_block(data.data(), data.size(), 34688, 250)[0], evt);
         }
         SUBCASE("header_qdc") {
-            auto evt = init_event(16384, 27, 12, 1, true, false, false, true, true);
-            auto data = generate_data(2151071786, uint32_t(evt.event_time_low), 3423408109,
-                                      2149450208, false, false, true, true);
+            auto evt = init_event(250, 16384, 27, 12, 1, true, false, false, true, true);
+            auto data = generate_data(2151071786, 3735933136, 3423408109, 2149450208, false, false,
+                                      true, true);
             check_decoded_data(decode_data_block(data.data(), data.size(), 34688, 250)[0], evt);
         }
         SUBCASE("header_qdc_ets") {
-            auto evt = init_event(16384, 29, 14, 1, true, true, false, true, true);
-            auto data = generate_data(2151342122, uint32_t(evt.event_time_low), 3423408109,
-                                      2149450208, true, false, true, true);
+            auto evt = init_event(250, 16384, 29, 14, 1, true, true, false, true, true);
+            auto data = generate_data(2151342122, 3735933136, 3423408109, 2149450208, true, false,
+                                      true, true);
             check_decoded_data(decode_data_block(data.data(), data.size(), 34688, 250)[0], evt);
         }
         SUBCASE("header_esum_qdc_ets") {
-            auto evt = init_event(16384, 33, 18, 1, true, true, true, true, true);
-            auto data = generate_data(2151882794, uint32_t(evt.event_time_low), 3423408109,
-                                      2149450208, true, true, true, true);
+            auto evt = init_event(250, 16384, 33, 18, 1, true, true, true, true, true);
+            auto data = generate_data(2151882794, 3735933136, 3423408109, 2149450208, true, true,
+                                      true, true);
             check_decoded_data(decode_data_block(data.data(), data.size(), 34688, 250)[0], evt);
         }
     }
     TEST_CASE("46540-250") {
-        auto evt = init_event(16384, 33, 18, 1, true, true, true, true, true);
-        auto data = generate_data(2151882890, uint32_t(evt.event_time_low), 3423408109, 2149450208,
-                                  true, true, true, true);
+        auto evt = init_event(250, 16384, 33, 18, 1, true, true, true, true, true);
+        auto data =
+            generate_data(2151882890, 3735933136, 3423408109, 2149450208, true, true, true, true);
         check_decoded_data(decode_data_block(data.data(), data.size(), 46540, 250)[0], evt);
     }
     TEST_CASE("29432-500") {
-        auto evt = init_event(8192, 31, 16, 6, false, false, true, true, true);
-        auto data = generate_data(2151612458, uint32_t(evt.event_time_low), 3423408109, 1999328,
-                                  false, true, true, true);
+        auto evt = init_event(500, 8192, 31, 16, 6, false, false, true, true, true);
+        auto data =
+            generate_data(2151612458, 3735933136, 3423408109, 1999328, false, true, true, true);
         check_decoded_data(decode_data_block(data.data(), data.size(), 29432, 500)[0], evt);
     }
     TEST_CASE("34688-500") {
-        auto evt = init_event(8192, 33, 18, 6, false, true, true, true, true);
-        auto data = generate_data(2151882794, uint32_t(evt.event_time_low), 3423408109, 2149450208,
-                                  true, true, true, true);
+        auto evt = init_event(500, 8192, 33, 18, 6, false, true, true, true, true);
+        auto data =
+            generate_data(2151882794, 3735933136, 3423408109, 2149450208, true, true, true, true);
         check_decoded_data(decode_data_block(data.data(), data.size(), 34688, 500)[0], evt);
     }
 }

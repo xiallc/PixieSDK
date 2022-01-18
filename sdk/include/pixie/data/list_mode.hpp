@@ -150,6 +150,7 @@ public:
     bool cfd_forced_trigger;
     /**
      * @brief  The time at which the CFD crossed the zero-point.
+     * @note Units of seconds
      */
     double cfd_fractional_time;
     /**
@@ -204,26 +205,19 @@ public:
      */
     size_t event_length;
     /**
-     * @brief  Upper 16 bits of the time recorded by the trigger filter.
-     */
-    size_t event_time_high;
-    /**
-     * @brief  Lower 32 bits of the time recorded by the trigger filter.
-     */
-    size_t event_time_low;
-    /**
-     * @brief Upper 16 bits of the external time stamp
-     */
-    size_t external_time_high;
-    /**
-     * @brief Lower 32 bits of the external time stamp
+     * @brief The external time input to the front panel of the system.
+     * @note Units of clock cycles
      *
      * The Pixie-16 is capable of accepting an external clock signal through
      * one of its front panel connectors and then count such external clock
      * signals before putting those external clock timestamps into the list-mode
      * data event header.
+     *
+     * We do not control the clock frequency, so are unable to convert this time
+     * into seconds like other time elements.
+     *
      */
-    size_t external_time_low;
+    double external_time;
     /**
      * @brief Baseline that was recorded with the energy sums
      *
@@ -236,6 +230,12 @@ public:
      * measurement will be compromised.
      */
     double filter_baseline;
+    /**
+     * @brief The time of arrival of the signal as measured by the on-board filter.
+     * @note This time does not include any CFD information.
+     * @note Units of seconds
+     */
+    double filter_time;
     /**
      * @brief  If true, then the signal was piled-up with another signal during
      * processing.
@@ -262,10 +262,10 @@ public:
      */
     size_t slot_id;
     /**
-     * @brief The arrival time of the event within the system.
+     * @brief The arrival time of the event within the system in seconds.
+     * @note Units of seconds
      *
-     * This value combines the low and high parts of the trigger filter time stamp
-     * with the CFD time if available.
+     * This value combines the filter time with the CFD information if available.
      */
     double time;
     /**
@@ -284,15 +284,6 @@ public:
      * filter result should not be used.
      */
     bool trace_out_of_range;
-
-    /**
-     * @return The raw 48-bit time stamp excluding any CFD information.
-     */
-    uint64_t raw_time() const;
-    /**
-     * @return The 48-bit external time stamp
-     */
-    uint64_t external_time() const;
 
     /**
      * @brief Provides streamed output for the class
