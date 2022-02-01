@@ -622,7 +622,7 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
 }  // namespace pixie
 }  // namespace xia
 
-std::ostream& operator<<(std::ostream& out, const xia::pixie::data::list_mode::event& event) {
+std::ostream& operator<<(std::ostream& out, xia::pixie::data::list_mode::event& event) {
     event.output(out);
     return out;
 }

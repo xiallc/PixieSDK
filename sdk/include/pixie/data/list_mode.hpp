@@ -324,7 +324,7 @@ events decode_data_block(uint32_t* data, size_t len, size_t revision, size_t fre
 }  // namespace pixie
 }  // namespace xia
 
-std::ostream& operator<<(std::ostream& out, const xia::pixie::data::list_mode::event& event);
+std::ostream& operator<<(std::ostream& out, xia::pixie::data::list_mode::event& event);
 
 
 #endif  //PIXIESDK_LIST_MODE_HPP
