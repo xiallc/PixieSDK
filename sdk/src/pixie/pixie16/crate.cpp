@@ -180,7 +180,7 @@ bool crate::probe() {
     return online == num_modules;
 }
 
-void crate::boot(const bool force, const bool fast) {
+void crate::boot(const bool force) {
     log(log::info) << "crate: boot: force=" << std::boolalpha << force;
 
     ready();
@@ -199,13 +199,9 @@ void crate::boot(const bool force, const bool fast) {
             continue;
         }
         futures.push_back(future_error(promises[m].get_future()));
-        threads.push_back(std::thread([m, &promises, module, &fast] {
+        threads.push_back(std::thread([m, &promises, module] {
             try {
-                if (!fast) {
-                    module->boot();
-                } else {
-                    module->boot(false, false, false);
-                }
+                module->boot();
                 promises[m].set_value(error::code::success);
             } catch (pixie::error::error& e) {
                 promises[m].set_value(e.type);

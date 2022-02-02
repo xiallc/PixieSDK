@@ -1508,7 +1508,6 @@ PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file,
         bool import_settings;
         bool boot;
         bool force;
-        bool fast;
 
         switch (boot_mode) {
             case PIXIE_BOOT_SETTINGS_LOAD:
@@ -1519,28 +1518,21 @@ PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file,
                 import_settings = true;
                 boot = false;
                 force = false;
-                fast = true;
                 break;
             case PIXIE_BOOT_RESET_LOAD:
                 import_settings = settings_file != nullptr;
                 boot = true;
                 force = true;
-                fast = false;
                 break;
             default:
                 import_settings = false;
                 boot = !crate.probe();
                 force = false;
-                fast = false;
                 break;
         }
 
         if (boot) {
             crate.boot(force);
-        }
-
-        if (fast) {
-            crate.boot(force, fast);
         }
 
         if (import_settings) {
