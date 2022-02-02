@@ -1518,6 +1518,10 @@ PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file,
                 import_settings = true;
                 boot = false;
                 force = false;
+                if (!crate.probe()) {
+                    throw xia_error(xia_error::code::module_offline,
+                                    "fast boot not available with offline modules");
+                }
                 break;
             case PIXIE_BOOT_RESET_LOAD:
                 import_settings = settings_file != nullptr;
