@@ -381,7 +381,7 @@ void channel_baseline::update(const hw::adc_trace& trace) {
 
 bool channel_baseline::operator==(const channel_baseline& other) const
 {
-    return baseline == other.baseline;
+    return *this == other.baseline;
 }
 
 bool channel_baseline::operator!=(const channel_baseline& other) const

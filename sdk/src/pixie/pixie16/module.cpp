@@ -285,11 +285,11 @@ void module::fifo_stats::set_bandwidth(const size_t bw) {
     }
 }
 
-module::module()
+module::module(backplane::backplane& backplane_)
     : slot(0), number(-1), serial_num(0), revision(0), major_revision(0), minor_revision(0),
-      num_channels(0), vmaddr(nullptr), eeprom_format(-1), run_task(hw::run::run_task::nop),
-      control_task(hw::run::control_task::nop), fifo_buffers(default_fifo_buffers),
-      fifo_run_wait_usecs(default_fifo_run_wait_usec),
+      num_channels(0), vmaddr(nullptr), backplane(backplane_), eeprom_format(-1),
+      run_task(hw::run::run_task::nop), control_task(hw::run::control_task::nop),
+      fifo_buffers(default_fifo_buffers), fifo_run_wait_usecs(default_fifo_run_wait_usec),
       fifo_idle_wait_usecs(default_fifo_idle_wait_usec), fifo_hold_usecs(default_fifo_hold_usec),
       fifo_bandwidth(0), data_dma_in(0), crate_revision(-1), board_revision(-1), reg_trace(false),
       bus_cycle_period(100), fifo_worker_running(false), fifo_worker_finished(false), in_use(0),
@@ -300,7 +300,7 @@ module::module()
 module::module(module&& m)
     : slot(m.slot), number(m.number), serial_num(m.serial_num), revision(m.revision),
       major_revision(0), minor_revision(0), num_channels(m.num_channels), vmaddr(m.vmaddr),
-      eeprom(m.eeprom), eeprom_format(m.eeprom_format),
+      backplane(m.backplane), eeprom(m.eeprom), eeprom_format(m.eeprom_format),
       module_var_descriptors(std::move(m.module_var_descriptors)),
       module_vars(std::move(m.module_vars)),
       channel_var_descriptors(std::move(m.channel_var_descriptors)),
@@ -1068,6 +1068,7 @@ bool module::write(param::module_param par, param::value_type value) {
             fast_filter_range(value);
             break;
         case param::module_param::synch_wait:
+            backplane.sync_wait(*this, value);
         case param::module_param::in_synch:
         case param::module_param::host_rt_preset:
             bcast = true;
@@ -1466,48 +1467,10 @@ void module::sync_hw(const bool program_fippi, const bool program_dacs) {
     }
 
     /*
-     * Get the current module CSRb parameter.
+     * Update the backplane with the module's current CSRb parameter value.
      */
-    param::value_type csrb = read(param::module_param::module_csrb);
-
-    {
-        bus_guard guard(*this);
-
-        /*
-         * Set pullups for the trigger lines on the backplane
-         *
-         * Also enable connections of PXI nearest neighbor lines (J2) onto
-         * the backplane if the module is a Rev-B or C module
-         */
-        if ((csrb & (1 << hw::bit::MODCSRB_CPLDPULLUP)) != 0) {
-            cfg_ctrlcs |= (1 << hw::bit::CPLDCSR_PULLUP);
-        } else {
-            cfg_ctrlcs &= ~(1 << hw::bit::CPLDCSR_PULLUP);
-        }
-
-        /*
-         * Enable connections of PXI nearest neighbor lines (J2) onto the
-         * backplane if the module is a rev B or C module
-         */
-        if (*this == hw::rev_B || *this == hw::rev_C) {
-            cfg_ctrlcs |= (1 << hw::bit::CPLDCSR_BPCONNECT);
-        }
-
-        write_word(hw::device::CFG_CTRLCS, cfg_ctrlcs);
-
-        /*
-         * Set pullups for the SYNCH lines on the backplane
-         */
-        hw::word csr = hw::csr::read(*this);
-
-        if ((csrb & (1 << hw::bit::MODCSRB_CHASSISMASTER)) != 0) {
-            csr |= (1 << hw::bit::PULLUP_CTRL);
-        } else {
-            csr &= ~(1 << hw::bit::PULLUP_CTRL);
-        }
-
-        hw::csr::write(*this, csr);
-    }
+    backplane_csrb(read(param::module_param::module_csrb));
+    sync_csrb();
 
     if (*this == hw::rev_F) {
         hw::run::control(*this, hw::run::control_task::reset_adc);
@@ -1586,6 +1549,12 @@ void module::start_histograms(hw::run::run_mode mode) {
         throw error(number, slot, error::code::module_test_invalid,
                     "test running; cannot start a run task");
     }
+    auto sync_waits = backplane.sync_waits.load();
+    if (sync_waits != 0 && sync_waits != backplane.sync_waiters.size()) {
+        throw error(number, slot, error::code::module_invalid_operation,
+                    "sync wait mode enabled and not all modules in sync wait state");
+    }
+    backplane.sync_wait_valid();
     hw::run::run(*this, mode, hw::run::run_task::histogram);
     run_interval.restart();
 }
@@ -1602,6 +1571,7 @@ void module::start_listmode(hw::run::run_mode mode) {
         throw error(number, slot, error::code::module_test_invalid,
                     "test running; cannot start a run task");
     }
+    backplane.sync_wait_valid();
     fifo_data.flush();
     hw::run::run(*this, mode, hw::run::run_task::list_mode);
     pause_fifo_worker = false;
@@ -2047,42 +2017,11 @@ void module::init_channels() {
 }
 
 void module::module_csrb(param::value_type value, size_t offset, bool io) {
+    backplane_csrb(value);
     write_var(param::module_var::ModCSRB, value, offset, io);
     if (io) {
         hw::run::control(*this, hw::run::control_task::program_fippi);
-
-        bus_guard guard(*this);
-
-        /*
-         * Set up Pull-up resistors
-         */
-        if ((value & (1 << hw::bit::MODCSRB_CPLDPULLUP)) != 0) {
-            cfg_ctrlcs |= 1 << hw::bit::MODCSRB_CPLDPULLUP;
-        } else {
-            cfg_ctrlcs &= ~(1 << hw::bit::MODCSRB_CPLDPULLUP);
-        }
-
-        /*
-         * Enable connections of PXI nearest neighbor lines (J2) onto the
-         * backplane if the module is a Rev-B or C module
-         */
-        if (*this == hw::rev_B || *this == hw::rev_C) {
-            cfg_ctrlcs |= 1 << hw::bit::CPLDCSR_BPCONNECT;
-        }
-
-        write_word(hw::device::CFG_CTRLCS, cfg_ctrlcs);
-
-        /*
-         * Set pullups for the SYNCH lines on the backplane
-         */
-        hw::word csr = hw::csr::read(*this);
-
-        if ((csr & (1 << hw::bit::MODCSRB_CHASSISMASTER)) != 0) {
-            csr |= 1 << hw::bit::PULLUP_CTRL;
-        } else {
-            csr &= ~(1 << hw::bit::PULLUP_CTRL);
-        }
-        hw::csr::write(*this, csr);
+        sync_csrb();
     }
 }
 
@@ -2144,6 +2083,84 @@ void module::fast_filter_range(param::value_type value, size_t offset, bool io) 
         }
 
         hw::run::control(*this, hw::run::control_task::program_fippi);
+    }
+}
+
+void module::sync_csrb() {
+    bus_guard guard(*this);
+
+    /*
+     * Set pullups for the trigger lines on the backplane
+     *
+     * Also enable connections of PXI nearest neighbor lines (J2) onto
+     * the backplane if the module is a Rev-B or C module
+     */
+    if (backplane.wired_or_triggers_pullup == *this) {
+        cfg_ctrlcs |= (1 << hw::bit::CPLDCSR_PULLUP);
+    } else {
+        cfg_ctrlcs &= ~(1 << hw::bit::CPLDCSR_PULLUP);
+    }
+
+    /*
+     * Enable connections of PXI nearest neighbor lines (J2) onto the
+     * backplane if the module is a rev B or C module
+     */
+    if (*this == hw::rev_B || *this == hw::rev_C) {
+        cfg_ctrlcs |= (1 << hw::bit::CPLDCSR_BPCONNECT);
+    }
+
+    write_word(hw::device::CFG_CTRLCS, cfg_ctrlcs);
+
+    /*
+     * Set pullups for the SYNCH lines on the backplane
+     */
+    hw::word csr = hw::csr::read(*this);
+
+    if (backplane.run == *this) {
+        csr |= (1 << hw::bit::PULLUP_CTRL);
+    } else {
+        csr &= ~(1 << hw::bit::PULLUP_CTRL);
+    }
+
+    hw::csr::write(*this, csr);
+}
+
+void module::backplane_csrb(const param::value_type csrb) {
+    /*
+     * Wired-or trigger pullup leader
+     */
+    if ((csrb & (1 << hw::bit::MODCSRB_CPLDPULLUP)) != 0) {
+        if (!backplane.wired_or_triggers_pullup.request(*this)) {
+            throw error(number, slot, error::code::module_invalid_param,
+                        "wired-or trigger pullups leader role already taken: " +
+                        std::to_string(backplane.wired_or_triggers_pullup.module()));
+        }
+    } else {
+        backplane.wired_or_triggers_pullup.release(*this);
+    }
+    /*
+     * Run leader
+     */
+    if ((csrb & (1 << hw::bit::MODCSRB_CHASSISMASTER)) != 0) {
+        if (!backplane.run.request(*this)) {
+            throw error(number, slot, error::code::module_invalid_param,
+                        "run leader role already taken: " +
+                        std::to_string(backplane.run.module()));
+        }
+    } else {
+        backplane.run.release(*this);
+    }
+    /*
+     * Director leader
+     */
+    if ((csrb & (1 << hw::bit::MODCSRB_DIRMOD)) != 0) {
+        if (!backplane.director.request(*this)) {
+            throw error(number, slot, error::code::module_invalid_param,
+                        "director leader role already taken: " +
+                        std::to_string(backplane.director.module()));
+        }
+    } else {
+        backplane.director.release(*this);
     }
 }
 

@@ -1,4 +1,5 @@
 set(SDK_PIXIE16_SOURCES
+        pixie16/backplane.cpp
         pixie16/channel.cpp
         pixie16/crate.cpp
         pixie16/csr.cpp

@@ -39,6 +39,7 @@
 #include <pixie/param.hpp>
 #include <pixie/stats.hpp>
 
+#include <pixie/pixie16/backplane.hpp>
 #include <pixie/pixie16/channel.hpp>
 #include <pixie/pixie16/hw.hpp>
 #include <pixie/pixie16/run.hpp>
@@ -222,6 +223,11 @@ public:
     void* vmaddr;
 
     /**
+     * Crate's backplane. Shared by all the modules.
+     */
+    backplane::backplane& backplane;
+
+    /**
      * EEPROM
      */
     eeprom::eeprom eeprom;
@@ -335,7 +341,7 @@ public:
     /**
      * Modules are created by the crate.
      */
-    module();
+    module(backplane::backplane& backplane);
     module(module&& m);
     virtual ~module();
     module& operator=(module&& mod);
@@ -633,6 +639,16 @@ protected:
     void module_csrb(param::value_type value, size_t offset = 0, bool io = true);
     void slow_filter_range(param::value_type value, size_t offset = 0, bool io = true);
     void fast_filter_range(param::value_type value, size_t offset = 0, bool io = true);
+
+    /*
+     * Synchronization support.
+     */
+    void sync_csrb();
+
+    /*
+     * Backplane filters.
+     */
+    void backplane_csrb(const param::value_type csrb);
 
     /*
      * Check if the FPGA devices are programmed and start the FIFO services

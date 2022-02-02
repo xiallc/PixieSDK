@@ -28,6 +28,7 @@
 #include <pixie/config.hpp>
 #include <pixie/log.hpp>
 
+#include <pixie/pixie16/backplane.hpp>
 #include <pixie/pixie16/crate.hpp>
 
 namespace xia {
@@ -110,6 +111,7 @@ void crate::initialize(bool reg_trace) {
         }
 
         num_modules = modules.size();
+        backplane.sync_waiters.resize(num_modules, false);
 
         check_revision();
         check_slots();
@@ -140,6 +142,13 @@ void crate::shutdown() {
     }
 }
 
+void crate::set_offline(const int module) {
+    log(log::info) << "crate: set offline: module=" << module;
+    lock_guard guard(lock_);
+    (*this)[module];
+    set_offline(modules[module]);
+}
+
 void crate::set_offline(module::module_ptr module) {
     log(log::info) << "crate: set offline: slot=" << module->slot;
     lock_guard guard(lock_);
@@ -148,6 +157,8 @@ void crate::set_offline(module::module_ptr module) {
             module->force_offline();
             std::move(mi, std::next(mi), std::back_inserter(offline));
             modules.erase(mi);
+            backplane.sync_waiters.erase(
+                backplane.sync_waiters.begin() + module->number);
             num_modules = modules.size();
             return;
         }
@@ -324,6 +335,8 @@ void crate::move_offlines() {
         for (auto mi = modules.begin(); mi != modules.end(); ++mi) {
             auto& module = *mi;
             if (!module->online()) {
+                backplane.sync_waiters.erase(
+                    backplane.sync_waiters.begin() + module->number);
                 std::move(mi, std::next(mi), std::back_inserter(offline));
                 modules.erase(mi);
                 have_moved = true;
@@ -369,7 +382,7 @@ void crate::assign(const module::number_slots& numbers, bool close) {
     ready();
     lock_guard guard(lock_);
     /*
-     * Any errors result in the crate being an unknown state.
+     * Any errors result in the crate being in an unknown state.
      */
     try {
         module::assign(modules, numbers);
@@ -384,6 +397,8 @@ void crate::assign(const module::number_slots& numbers, bool close) {
                 auto& mod = *mi;
                 if (mod->number == -1) {
                     if (close) {
+                        backplane.sync_waiters.erase(
+                            backplane.sync_waiters.begin() + mod->number);
                         mod->close();
                         modules.erase(mi);
                     } else {
@@ -404,9 +419,8 @@ void crate::assign(const module::number_slots& numbers, bool close) {
 }
 
 void crate::add_module() {
-    modules.push_back(std::make_unique<module::module>());
+    modules.push_back(std::make_unique<module::module>(backplane));
 }
-
 
 void crate::check_slots() {
     using duplicate = std::pair<module::module_ptr, module::module_ptr>;

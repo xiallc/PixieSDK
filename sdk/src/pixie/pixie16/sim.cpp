@@ -83,6 +83,8 @@ void fixture::get_traces() {}
 void fixture::adjust_offsets() {}
 void fixture::tau_finder() {}
 
+module::module(xia::pixie::backplane::backplane& backplane_) : xia::pixie::module::module(backplane_) {}
+
 module::~module() {}
 
 void module::open(size_t device_number) {
@@ -133,7 +135,6 @@ void module::close() {
 void module::probe() {
     log(log::info) << "sim: module: probe";
     online_ = dsp_online = fippi_fpga = comms_fpga = false;
-    load_vars();
     erase_values();
     erase_channels();
     init_values();
@@ -145,7 +146,6 @@ void module::probe() {
 void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
     log(log::info) << "sim: module: boot";
     online_ = false;
-    load_vars();
     if (boot_comms) {
         comms_fpga = true;
         fixtures->fgpa_comms_loaded();
@@ -221,7 +221,7 @@ void module::load_var_defaults(const std::string& file) {
 
 void crate::add_module() {
     log(log::info) << "sim: module: add";
-    modules.push_back(std::make_unique<module>());
+    modules.push_back(std::make_unique<module>(backplane));
 }
 
 module_def::module_def()

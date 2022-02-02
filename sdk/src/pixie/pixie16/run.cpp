@@ -108,6 +108,17 @@ static const char* run_task_labels(run_task run_tsk) {
     return "nop";
 }
 
+static bool run_ended(module::module& module) {
+    /*
+     * End the run if:
+     *  1. The run task is histogram or list mode, and
+     *  2. The module is not the leader
+     */
+    bool valid_task =
+        module.run_task == run_task::histogram || module.run_task == run_task::list_mode;
+    return valid_task && module.backplane.run.not_leader(module);
+}
+
 void start(module::module& module, run_mode mode, run_task run_tsk, control_task control_tsk) {
     log(log::debug) << module::module_label(module, "run") << "start: run-mode=" << int(mode)
                     << " run-tsk=" << std::hex << int(run_tsk) << std::dec
@@ -150,7 +161,7 @@ void end(module::module& module) {
                 csr::clear(module, 1 << hw::bit::RUNENA);
             }
             ++msecs;
-            if (!hw::run::active(module)) {
+            if (!hw::run::active(module) || run_ended(module)) {
                 tp.end();
                 log(log::debug) << module::module_label(module, "run") << "ended, duration=" << tp;
                 break;

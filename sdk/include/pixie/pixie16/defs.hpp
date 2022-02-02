@@ -160,6 +160,10 @@ struct bit {
      */
     static const size_t MODCSRB_CPLDPULLUP = 0;
     /**
+     * Control the director mode for multi-crate sync runs
+     */
+    static const size_t MODCSRB_DIRMOD = 4;
+    /**
      * Set this module as the Director module (1) or non-Director module (0)
      */
     static const size_t MODCSRB_CHASSISMASTER = 6;

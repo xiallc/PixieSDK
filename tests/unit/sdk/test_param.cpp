@@ -44,7 +44,7 @@ void initialize_vars() {
             item.value = destination_default;
 }
 
-void test_setup() {
+static void test_setup() {
     xia::logging::start("log", "stdout", xia::log::level::debug, false);
     for (auto& var : xia::pixie::param::get_channel_var_descriptors()) {
         source.push_back(var);
@@ -52,7 +52,7 @@ void test_setup() {
     }
 }
 
-void test_filter_mask(const int& mask) {
+static void test_filter_mask(const int& mask) {
     initialize_vars();
     xia::pixie::param::copy_parameters(mask, source, destination);
 }

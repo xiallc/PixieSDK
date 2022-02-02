@@ -29,9 +29,9 @@
 #include <pixie/fw.hpp>
 #include <pixie/os_compat.hpp>
 
+#include <pixie/pixie16/backplane.hpp>
 #include <pixie/pixie16/fpga.hpp>
 #include <pixie/pixie16/module.hpp>
-
 
 namespace xia {
 namespace pixie {
@@ -80,9 +80,20 @@ public:
         ~user();
     };
 
-    size_t num_modules; /*!< Number of modules present in the crate. */
+    /**
+     * Number of modules present in the crate.
+     */
+    size_t num_modules;
 
-    int revision; /*!< Crate revision */
+    /**
+     * Crate revision
+     */
+    int revision;
+
+    /**
+     * The backplane
+     */
+    backplane::backplane backplane;
 
     /**
      * A crate contains a number of modules in slots. These modules are
@@ -171,6 +182,16 @@ public:
      * @brief Shutdown the crate and close all open modules.
      */
     void shutdown();
+
+    /**
+     * @brief Mark a module as offline and move to the offline module list.
+     *
+     * This invalidates any iterators you may hold to the modules and offline
+     * containers.
+     *
+     * @param module Module number.
+     */
+    void set_offline(const int module);
 
     /**
      * @brief Mark a module as offline and move to the offline module list.

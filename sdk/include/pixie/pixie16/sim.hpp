@@ -47,6 +47,7 @@ public:
 
     typedef xia::pixie::module::error error;
 
+    module(backplane::backplane& backplane);
     ~module() override;
 
     void open(size_t device_number) override;
