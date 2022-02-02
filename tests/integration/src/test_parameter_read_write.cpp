@@ -20,6 +20,8 @@
  * @brief Functional tests for reading and writing parameters. ONLY testing non-trivial parameters.
  */
 
+#include <cstdio>
+#include <cstring>
 #include <fstream>
 #include <sstream>
 
@@ -59,25 +61,13 @@ static const double a_big_value = 1e6;
 static const double a_small_value = 1.e-6;
 
 void setup_simulation() {
-    std::string logname = tmpnam(nullptr);
-    std::cout << "Logging can be found in " << logname << std::endl;
-    xia::logging::start("log", logname, xia::log::level::debug, false);
+    xia::logging::start("log", "stdout", xia::log::level::debug, false);
     xia::log(xia::log::level::info) << "Logging for test_parameter_read_write integration tests.";
 
     std::stringstream def;
     for (const auto& mod_def : module_defs)
         def << mod_def << std::endl;
     xia::pixie::sim::load_module_defs(def);
-
-    std::string firmware_file = tmpnam(nullptr);
-    std::ofstream outfile(firmware_file, std::ios::binary | std::ios::out);
-    outfile << "0x00000000 AutoTau";
-    outfile.close();
-
-    for (auto& item : firmware_def_template) {
-        auto fw = xia::pixie::firmware::parse(item + firmware_file, ',');
-        xia::pixie::firmware::add(crate.firmware, fw);
-    }
 
     crate.initialize(false);
     crate.set_firmware();
