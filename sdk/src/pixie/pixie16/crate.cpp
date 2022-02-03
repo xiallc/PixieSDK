@@ -44,7 +44,7 @@ crate::user::~user() {
     --crate_.users_;
 }
 
-crate::crate() : num_modules(0), revision(-1), ready_(false) {}
+crate::crate() : num_modules(0), revision(-1), ready_(false), users_(0) {}
 
 crate::~crate() {}
 
