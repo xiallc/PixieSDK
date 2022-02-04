@@ -180,10 +180,25 @@ public:
     /*
      * Defaults
      */
-    static const size_t default_fifo_buffers = 100;
-    static const size_t default_fifo_run_wait_usec = 5000;
-    static const size_t default_fifo_idle_wait_usec = 150000;
-    static const size_t default_fifo_hold_usec = 100000;
+    static const size_t default_fifo_buffers;
+    static const size_t default_fifo_run_wait_usec;
+    static const size_t default_fifo_idle_wait_usec;
+    static const size_t default_fifo_hold_usec;
+    static const size_t default_fifo_dma_trigger_level;
+
+    /*
+     * Ranges
+     */
+    static const size_t min_fifo_buffers;
+    static const size_t max_fifo_buffers;
+    static const size_t min_fifo_run_wait_usec;
+    static const size_t max_fifo_run_wait_usec;
+    static const size_t min_fifo_idle_wait_usec;
+    static const size_t max_fifo_idle_wait_usec;
+    static const size_t min_fifo_hold_usec;
+    static const size_t max_fifo_hold_usec;
+    static const size_t min_fifo_dma_trigger_level;
+    static const size_t max_fifo_dma_trigger_level;
 
     /**
      * Slot in the crate.
@@ -274,6 +289,8 @@ public:
     /**
      * Number of buffers in the FIFO pool. The buffers are fixed to the
      * maximum DMA block size and allocated at the start of a run.
+     *
+     * Do not set this value directly, use @ref set_fifo_buffers.
      */
     size_t fifo_buffers;
 
@@ -281,15 +298,20 @@ public:
      * FIFO run wait poll period. This setting needs to be less than the
      * period of time it takes to full the FIFO device at the maxiumum data
      * rate. It is used when a run using the FIFO starts or data is detected
-     * in the FIFO.
+     * in the FIFO. If data is read from the FIFO while present and once
+     * empty this period is the wait time.
+     *
+     * Do not set this value directly, use @ref set_fifo_run_wait.
      */
     std::atomic_size_t fifo_run_wait_usecs;
 
     /**
-     * FIFO idle wait poll period. This setting is a back ground poll period
-     * used when there is not run active using the FIFO. When a run
-     * finishes the poll period increases by the power 2 every hold period
-     * until this value is reached.
+     * FIFO idle wait poll period. This setting is a back ground poll
+     * period used when no run active using the FIFO. When a run
+     * finishes the poll period increases by the power 2 every hold
+     * period until this value is reached.
+     *
+     * Do not set this value directly, use @ref set_fifo_idle_wait.
      */
     std::atomic_size_t fifo_idle_wait_usecs;
 
@@ -297,8 +319,20 @@ public:
      * FIFO hold time is the period data is held in the FIFO before being
      * read into a buffer. Slow data and long poll periods by the user can
      * use all the buffers. If buffers run low the queue is compacted.
+     *
+     * Do not set this value directly, use @ref set_fifo_hold.
      */
     std::atomic_size_t fifo_hold_usecs;
+
+    /**
+     * FIFO DMA transfer trigger level. This value is in FIFO words. A
+     * DMA transfer will happen when the FIFO level is higher than
+     * this trigger level or the hold time has been exceeded. This
+     * value effects the latency of data in the FIFO.
+     *
+     * Do not set this value directly, use @ref set_fifo_dma_trigger_level.
+     */
+    std::atomic_size_t fifo_dma_trigger_level;
 
     /**
      * Maximum bandwidth the module is to use. The value is Mbytes/secs. If
@@ -534,6 +568,16 @@ public:
      * Read auto tau values
      */
     void read_autotau(hw::doubles& taus);
+
+    /**
+     * FIFO worker controls. These range values.
+     */
+    void set_fifo_buffers(const size_t buffers);
+    void set_fifo_run_wait(const size_t run_wait);
+    void set_fifo_idle_wait(const size_t idle_wait);
+    void set_fifo_hold(const size_t hold);
+    void set_fifo_dma_trigger_level(const size_t dma_trigger_level);
+    void set_fifo_bandwidth(const size_t bandwidth);
 
     /**
      * Select the module's port

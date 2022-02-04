@@ -285,14 +285,34 @@ void module::fifo_stats::set_bandwidth(const size_t bw) {
     }
 }
 
+/*
+ * FIFO Worker settings
+ */
+const size_t module::default_fifo_buffers = 100;
+const size_t module::default_fifo_run_wait_usec = 5000;
+const size_t module::default_fifo_idle_wait_usec = 150000;
+const size_t module::default_fifo_hold_usec = 10000;
+const size_t module::default_fifo_dma_trigger_level = 1024;
+const size_t module::min_fifo_buffers = 10;
+const size_t module::max_fifo_buffers = 10000000;
+const size_t module::min_fifo_run_wait_usec = 500;
+const size_t module::max_fifo_run_wait_usec = 200000;
+const size_t module::min_fifo_idle_wait_usec = 10000;
+const size_t module::max_fifo_idle_wait_usec = 1000000;
+const size_t module::min_fifo_hold_usec = 1000;
+const size_t module::max_fifo_hold_usec = 100000;
+const size_t module::min_fifo_dma_trigger_level = 512;
+const size_t module::max_fifo_dma_trigger_level = hw::max_dma_block_size;
+
 module::module(backplane::backplane& backplane_)
     : slot(0), number(-1), serial_num(0), revision(0), major_revision(0), minor_revision(0),
       num_channels(0), vmaddr(nullptr), backplane(backplane_), eeprom_format(-1),
       run_task(hw::run::run_task::nop), control_task(hw::run::control_task::nop),
       fifo_buffers(default_fifo_buffers), fifo_run_wait_usecs(default_fifo_run_wait_usec),
       fifo_idle_wait_usecs(default_fifo_idle_wait_usec), fifo_hold_usecs(default_fifo_hold_usec),
-      fifo_bandwidth(0), data_dma_in(0), crate_revision(-1), board_revision(-1), reg_trace(false),
-      bus_cycle_period(100), fifo_worker_running(false), fifo_worker_finished(false), in_use(0),
+      fifo_dma_trigger_level(default_fifo_dma_trigger_level), fifo_bandwidth(0), data_dma_in(0),
+      crate_revision(-1), board_revision(-1), reg_trace(false), bus_cycle_period(100),
+      fifo_worker_running(false), fifo_worker_finished(false), in_use(0),
       present_(false), online_(false), forced_offline_(false), pause_fifo_worker(true),
       comms_fpga(false), fippi_fpga(false), have_hardware(false), vars_loaded(false),
       cfg_ctrlcs(0xaaa), device(std::make_unique<pci_bus_handle>()), test_mode(test::off) {}
@@ -309,9 +329,10 @@ module::module(module&& m)
       fifo_run_wait_usecs(m.fifo_run_wait_usecs.load()),
       fifo_idle_wait_usecs(m.fifo_idle_wait_usecs.load()),
       fifo_hold_usecs(m.fifo_hold_usecs.load()), fifo_bandwidth(m.fifo_bandwidth.load()),
-      data_dma_in(m.data_dma_in.load()), data_stats(m.data_stats), run_stats(m.run_stats),
-      crate_revision(m.crate_revision), board_revision(m.board_revision), reg_trace(m.reg_trace),
-      bus_cycle_period(100), fifo_worker_running(false), fifo_worker_finished(false), in_use(0),
+      fifo_dma_trigger_level(m.fifo_dma_trigger_level.load()), data_dma_in(m.data_dma_in.load()),
+      data_stats(m.data_stats), run_stats(m.run_stats), crate_revision(m.crate_revision),
+      board_revision(m.board_revision), reg_trace(m.reg_trace), bus_cycle_period(100),
+      fifo_worker_running(false), fifo_worker_finished(false), in_use(0),
       present_(m.present_.load()), online_(m.online_.load()),
       forced_offline_(m.forced_offline_.load()), pause_fifo_worker(m.pause_fifo_worker.load()),
       comms_fpga(m.comms_fpga), fippi_fpga(m.fippi_fpga), have_hardware(false), vars_loaded(false),
@@ -336,6 +357,7 @@ module::module(module&& m)
     m.fifo_run_wait_usecs = default_fifo_run_wait_usec;
     m.fifo_idle_wait_usecs = default_fifo_idle_wait_usec;
     m.fifo_hold_usecs = default_fifo_hold_usec;
+    m,fifo_dma_trigger_level = default_fifo_dma_trigger_level;
     m.fifo_bandwidth = 0;
     m.data_dma_in = 0;
     m.data_stats.clear();
@@ -396,6 +418,7 @@ module& module::operator=(module&& m) {
     fifo_run_wait_usecs = m.fifo_run_wait_usecs.load();
     fifo_idle_wait_usecs = m.fifo_idle_wait_usecs.load();
     fifo_hold_usecs = m.fifo_hold_usecs.load();
+    fifo_dma_trigger_level = m.fifo_dma_trigger_level.load();
     fifo_bandwidth = m.fifo_bandwidth.load();
     data_dma_in = m.data_dma_in.load();
     data_stats = m.data_stats;
@@ -433,6 +456,7 @@ module& module::operator=(module&& m) {
     m.fifo_run_wait_usecs = default_fifo_run_wait_usec;
     m.fifo_idle_wait_usecs = default_fifo_idle_wait_usec;
     m.fifo_hold_usecs = default_fifo_hold_usec;
+    m.fifo_dma_trigger_level = default_fifo_dma_trigger_level;
     m.fifo_bandwidth = 0;
     m.data_dma_in = 0;
     m.data_stats.clear();
@@ -1691,6 +1715,62 @@ void module::read_autotau(hw::doubles& taus) {
     }
 }
 
+void module::set_fifo_buffers(const size_t buffers) {
+    if (buffers < min_fifo_buffers || buffers > max_fifo_buffers) {
+        throw error(number, slot, error::code::module_invalid_var,
+                    "fifo: buffer value out of range");
+    }
+    log(log::debug) << module_label(*this) << "fifo: buffers=" << buffers;
+    fifo_buffers = buffers;
+}
+
+void module::set_fifo_run_wait(const size_t run_wait) {
+    if (run_wait < min_fifo_run_wait_usec || run_wait > max_fifo_run_wait_usec) {
+        throw error(number, slot, error::code::module_invalid_var,
+                    "fifo: run wait value out of range");
+    }
+    log(log::debug) << module_label(*this) << "fifo: run-wait=" << run_wait;
+    fifo_run_wait_usecs = run_wait;
+}
+
+void module::set_fifo_idle_wait(const size_t idle_wait) {
+    if (idle_wait < min_fifo_idle_wait_usec || idle_wait > max_fifo_idle_wait_usec) {
+        throw error(number, slot, error::code::module_invalid_var,
+                    "fifo: idle wait value out of range");
+    }
+    log(log::debug) << module_label(*this) << "fifo: idle-wait=" << idle_wait;
+    fifo_idle_wait_usecs = idle_wait;
+}
+
+void module::set_fifo_hold(const size_t hold) {
+    if (hold < min_fifo_hold_usec || hold > max_fifo_hold_usec) {
+        throw error(number, slot, error::code::module_invalid_var,
+                    "fifo: hold value out of range");
+    }
+    log(log::debug) << module_label(*this) << "fifo: hold=" << hold;
+    fifo_hold_usecs = hold;
+}
+
+void module::set_fifo_dma_trigger_level(const size_t dma_trigger_level) {
+    if (dma_trigger_level < min_fifo_dma_trigger_level ||
+        dma_trigger_level > max_fifo_dma_trigger_level) {
+        throw error(number, slot, error::code::module_invalid_var,
+                    "fifo: dma trigger level value out of range");
+    }
+    log(log::debug) << module_label(*this)
+                    << "fifo: dma-trigger-level=" << dma_trigger_level;
+    fifo_dma_trigger_level = dma_trigger_level;
+}
+
+void module::set_fifo_bandwidth(const size_t bandwidth) {
+    if (bandwidth > 100) {
+        throw error(number, slot, error::code::module_invalid_var,
+                    "fifo: bandwidth value out of range");
+    }
+    log(log::debug) << module_label(*this) << "fifo: bandwidth=" << bandwidth;
+    fifo_bandwidth = bandwidth;
+}
+
 void module::select_port(const int port) {
     bus_guard guard(*this);
     cfg_ctrlcs &= ~(7 << 19);
@@ -1753,6 +1833,7 @@ void module::report(std::ostream& out) const {
         << "FIFO Run wait  : " << fifo_run_wait_usecs << " usecs" << std::endl
         << "FIFO Idle wait : " << fifo_idle_wait_usecs << " usecs" << std::endl
         << "FIFO Hold      : " << fifo_hold_usecs << " usecs" << std::endl
+        << "FIFO DMA Trig  : " << fifo_dma_trigger_level << " words" << std::endl
         << "FIFO Bandwidth : ";
     if (fifo_bandwidth == 0) {
         out << "unlimited";
@@ -2291,7 +2372,7 @@ void module::fifo_worker() {
                     run_stats.hw_overflows++;
                 }
                 if (level == 0 ||
-                    (hold_time < fifo_hold_usecs.load() && level < hw::max_dma_block_size)) {
+                    (hold_time < fifo_hold_usecs.load() && level < fifo_dma_trigger_level.load())) {
                     break;
                 }
                 if (level == std::numeric_limits<hw::word>::max()) {

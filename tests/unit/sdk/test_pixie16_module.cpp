@@ -75,20 +75,101 @@ TEST_SUITE("Crate: modules") {
         sim::crate crate;
         CHECK_NOTHROW(crate.initialize());
         CHECK_NOTHROW(crate.probe());
-        CHECK_NOTHROW(crate.find(2));
-        CHECK_THROWS_WITH_AS(crate[-1], "module number out of range: -1",  crate_error);
-        CHECK_THROWS_WITH_AS(crate[20], "module number out of range: 20",  crate_error);
-        CHECK_THROWS_WITH_AS(crate.find(7), "module slot not found",  crate_error);
-        CHECK(crate.num_modules == test_modules);
-        CHECK(crate.modules.size() == test_modules);
-        CHECK(crate.offline.size() == hw::max_slots - test_modules);
-        CHECK(crate.backplane.sync_waiters.size() == crate.num_modules);
-        CHECK_THROWS_WITH_AS(crate.set_offline(7), "module number out of range: 7",  crate_error);
-        CHECK_NOTHROW(crate.set_offline(1));
-        CHECK(crate.num_modules == test_modules - 1);
-        CHECK(crate.modules.size() == test_modules - 1);
-        CHECK(crate.offline.size() == hw::max_slots - test_modules + 1);
-        CHECK(crate.backplane.sync_waiters.size() == crate.num_modules);
+        SUBCASE("Finding and offline") {
+            CHECK_NOTHROW(crate.find(2));
+            CHECK_THROWS_WITH_AS(crate[-1], "module number out of range: -1",  crate_error);
+            CHECK_THROWS_WITH_AS(crate[20], "module number out of range: 20",  crate_error);
+            CHECK_THROWS_WITH_AS(crate.find(7), "module slot not found",  crate_error);
+            CHECK(crate.num_modules == test_modules);
+            CHECK(crate.modules.size() == test_modules);
+            CHECK(crate.offline.size() == hw::max_slots - test_modules);
+            CHECK(crate.backplane.sync_waiters.size() == crate.num_modules);
+            CHECK_THROWS_WITH_AS(crate.set_offline(7), "module number out of range: 7",  crate_error);
+            CHECK_NOTHROW(crate.set_offline(1));
+            CHECK(crate.num_modules == test_modules - 1);
+            CHECK(crate.modules.size() == test_modules - 1);
+            CHECK(crate.offline.size() == hw::max_slots - test_modules + 1);
+            CHECK(crate.backplane.sync_waiters.size() == crate.num_modules);
+        }
+        using namespace xia::pixie::module;
+        SUBCASE("FIFO defaults") {
+            CHECK(crate[0].fifo_buffers == module::module::default_fifo_buffers);
+            CHECK(crate[0].fifo_run_wait_usecs == module::module::default_fifo_run_wait_usec);
+            CHECK(crate[0].fifo_idle_wait_usecs == module::module::default_fifo_idle_wait_usec);
+            CHECK(crate[0].fifo_hold_usecs == module::module::default_fifo_hold_usec);
+            CHECK(crate[0].fifo_dma_trigger_level == module::module::default_fifo_dma_trigger_level);
+            CHECK(crate[0].fifo_bandwidth == 0);
+        }
+        SUBCASE("FIFO bandwidth") {
+            CHECK_NOTHROW(crate[0].set_fifo_buffers(50));
+            CHECK(crate[0].fifo_buffers == 50);
+        }
+        SUBCASE("FIFO run wait") {
+            CHECK_NOTHROW(crate[0].set_fifo_run_wait(module::module::min_fifo_run_wait_usec));
+            CHECK(crate[0].fifo_run_wait_usecs == module::module::min_fifo_run_wait_usec);
+            CHECK_NOTHROW(crate[0].set_fifo_run_wait(module::module::max_fifo_run_wait_usec));
+            CHECK(crate[0].fifo_run_wait_usecs == module::module::max_fifo_run_wait_usec);
+            CHECK_THROWS_WITH_AS(
+                crate[0].set_fifo_run_wait(module::module::min_fifo_run_wait_usec - 1),
+                "module: num=0,slot=2: fifo: run wait value out of range",
+                crate_error);
+            CHECK_THROWS_WITH_AS(
+                crate[0].set_fifo_run_wait(module::module::max_fifo_run_wait_usec + 1),
+                "module: num=0,slot=2: fifo: run wait value out of range",
+                crate_error);
+        }
+        SUBCASE("FIFO idle wait") {
+            CHECK_NOTHROW(crate[0].set_fifo_idle_wait(module::module::min_fifo_idle_wait_usec));
+            CHECK(crate[0].fifo_idle_wait_usecs == module::module::min_fifo_idle_wait_usec);
+            CHECK_NOTHROW(crate[0].set_fifo_idle_wait(module::module::max_fifo_idle_wait_usec));
+            CHECK(crate[0].fifo_idle_wait_usecs == module::module::max_fifo_idle_wait_usec);
+            CHECK_THROWS_WITH_AS(
+                crate[0].set_fifo_idle_wait(module::module::min_fifo_idle_wait_usec - 1),
+                "module: num=0,slot=2: fifo: idle wait value out of range",
+                crate_error);
+            CHECK_THROWS_WITH_AS(
+                crate[0].set_fifo_idle_wait(module::module::max_fifo_idle_wait_usec + 1),
+                "module: num=0,slot=2: fifo: idle wait value out of range",
+                crate_error);
+        }
+        SUBCASE("FIFO hold") {
+            CHECK_NOTHROW(crate[0].set_fifo_hold(module::module::min_fifo_hold_usec));
+            CHECK(crate[0].fifo_hold_usecs == module::module::min_fifo_hold_usec);
+            CHECK_NOTHROW(crate[0].set_fifo_hold(module::module::max_fifo_hold_usec));
+            CHECK(crate[0].fifo_hold_usecs == module::module::max_fifo_hold_usec);
+            CHECK_THROWS_WITH_AS(
+                crate[0].set_fifo_hold(module::module::min_fifo_hold_usec - 1),
+                "module: num=0,slot=2: fifo: hold value out of range",
+                crate_error);
+            CHECK_THROWS_WITH_AS(
+                crate[0].set_fifo_hold(module::module::max_fifo_hold_usec + 1),
+                "module: num=0,slot=2: fifo: hold value out of range",
+                crate_error);
+        }
+        SUBCASE("FIFO DMA trigger level") {
+            CHECK_NOTHROW(crate[0].set_fifo_dma_trigger_level(module::module::min_fifo_dma_trigger_level));
+            CHECK(crate[0].fifo_dma_trigger_level == module::module::min_fifo_dma_trigger_level);
+            CHECK_NOTHROW(crate[0].set_fifo_dma_trigger_level(module::module::max_fifo_dma_trigger_level));
+            CHECK(crate[0].fifo_dma_trigger_level == module::module::max_fifo_dma_trigger_level);
+            CHECK_THROWS_WITH_AS(
+                crate[0].set_fifo_dma_trigger_level(module::module::min_fifo_dma_trigger_level - 1),
+                "module: num=0,slot=2: fifo: dma trigger level value out of range",
+                crate_error);
+            CHECK_THROWS_WITH_AS(
+                crate[0].set_fifo_dma_trigger_level(module::module::max_fifo_dma_trigger_level + 1),
+                "module: num=0,slot=2: fifo: dma trigger level value out of range",
+                crate_error);
+        }
+        SUBCASE("FIFO bandwidth") {
+            CHECK_NOTHROW(crate[0].set_fifo_bandwidth(0));
+            CHECK(crate[0].fifo_bandwidth == 0);
+            CHECK_NOTHROW(crate[0].set_fifo_bandwidth(100));
+            CHECK(crate[0].fifo_bandwidth == 100);
+            CHECK_THROWS_WITH_AS(
+                crate[0].set_fifo_bandwidth(101),
+                "module: num=0,slot=2: fifo: bandwidth value out of range",
+                crate_error);
+        }
     }
     TEST_CASE("assign slots") {
         using namespace xia::pixie;
