@@ -277,4 +277,7 @@ TEST_SUITE("xia::pixie::param") {
             }
         }
     }
+    TEST_CASE("TEARDOWN") {
+        xia::logging::stop("log");
+    }
 }
