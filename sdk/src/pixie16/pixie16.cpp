@@ -947,6 +947,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned
             module->fifo_buffers = fifo_buffers;
             module->fifo_run_wait_usecs = fifo_run_wait_usecs;
             module->fifo_hold_usecs = fifo_hold_usecs;
+            module->fifo_idle_wait_usecs = fifo_idle_wait_usecs;
         }
     } catch (xia_error& e) {
         try {
