@@ -90,7 +90,7 @@ TEST_SUITE("Crate: modules") {
             CHECK(crate.offline.size() == hw::max_slots - test_modules + 1);
             CHECK(crate.backplane.sync_waiters.size() == crate.num_modules);
         }
-        using namespace xia::pixie::module;
+        using namespace xia::pixie;
         SUBCASE("FIFO defaults") {
             CHECK(crate[0].fifo_buffers == module::module::default_fifo_buffers);
             CHECK(crate[0].fifo_run_wait_usecs == module::module::default_fifo_run_wait_usec);

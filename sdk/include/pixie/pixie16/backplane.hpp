@@ -32,7 +32,7 @@
 namespace xia {
 namespace pixie {
 namespace module {
-struct module;
+class module;
 }
 /**
  * @brief Defines functions and data structures related to handling a Pixie-16 crate.
