@@ -111,7 +111,7 @@ void crate::initialize(bool reg_trace) {
         }
 
         num_modules = modules.size();
-        backplane.sync_waiters.resize(num_modules, false);
+        backplane.init(num_modules);
 
         check_revision();
         check_slots();
@@ -157,8 +157,6 @@ void crate::set_offline(module::module_ptr module) {
             module->force_offline();
             std::move(mi, std::next(mi), std::back_inserter(offline));
             modules.erase(mi);
-            backplane.sync_waiters.erase(
-                backplane.sync_waiters.begin() + module->number);
             num_modules = modules.size();
             return;
         }
@@ -331,8 +329,7 @@ void crate::move_offlines() {
         for (auto mi = modules.begin(); mi != modules.end(); ++mi) {
             auto& module = *mi;
             if (!module->online()) {
-                backplane.sync_waiters.erase(
-                    backplane.sync_waiters.begin() + module->number);
+                backplane.offline(*module);
                 std::move(mi, std::next(mi), std::back_inserter(offline));
                 modules.erase(mi);
                 have_moved = true;
@@ -393,8 +390,6 @@ void crate::assign(const module::number_slots& numbers, bool close) {
                 auto& mod = *mi;
                 if (mod->number == -1) {
                     if (close) {
-                        backplane.sync_waiters.erase(
-                            backplane.sync_waiters.begin() + mod->number);
                         mod->close();
                         modules.erase(mi);
                     } else {
@@ -407,6 +402,7 @@ void crate::assign(const module::number_slots& numbers, bool close) {
         }
         num_modules = modules.size();
         module::order_by_number(modules);
+        backplane.reinit(modules);
     } catch (...) {
         num_modules = modules.size();
         module::set_number_by_slot(modules);

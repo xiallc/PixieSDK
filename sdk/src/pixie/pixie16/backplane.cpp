@@ -21,6 +21,7 @@
  */
 
 #include <pixie/log.hpp>
+#include <pixie/param.hpp>
 
 #include <pixie/pixie16/backplane.hpp>
 #include <pixie/pixie16/module.hpp>
@@ -68,7 +69,7 @@ backplane::backplane()
     : wired_or_triggers_pullup("wired-or-triggers"), run("run"), director("director"),
       sync_waits(0), sync_waiters({false}) {}
 
-void backplane::sync_wait(const module::module& mod, const param::value_type synch_wait) {
+void backplane::sync_wait(module::module& mod, const param::value_type synch_wait) {
     bool synch_wait_active = synch_wait == 1;
     if (synch_wait_active != sync_waiters[mod.number]) {
         if (synch_wait_active) {
@@ -92,6 +93,10 @@ void backplane::sync_wait(const module::module& mod, const param::value_type syn
     }
 }
 
+void backplane::sync_wait(module::module& mod) {
+    sync_wait(mod, mod.read(param::module_param::synch_wait));
+}
+
 void backplane::sync_wait_valid() const {
     auto waits = sync_waits.load();
     if (waits != 0 && waits != sync_waiters.size()) {
@@ -99,6 +104,21 @@ void backplane::sync_wait_valid() const {
                     "sync wait mode enabled and not all modules in the sync wait state");
     }
 }
+
+void backplane::init(const int num_modules) {
+    sync_waits = 0;
+    sync_waiters.resize(num_modules, false);
+}
+
+void backplane::offline(const module::module& module) {
+    if (module.number >= 0 && module.number < sync_waiters.size()) {
+        if (sync_waiters[module.number]) {
+            --sync_waits;
+        }
+        sync_waiters.erase(sync_waiters.begin() + module.number);
+    }
+}
+
 };  // namespace backplane
 };  // namespace pixie
 };  // namespace xia

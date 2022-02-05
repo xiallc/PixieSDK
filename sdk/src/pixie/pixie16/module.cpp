@@ -738,6 +738,7 @@ void module::force_offline() {
         }
         stop_fifo_services();
         forced_offline_ = true;
+        backplane.offline(*this);
     }
 }
 

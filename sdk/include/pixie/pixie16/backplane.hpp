@@ -146,7 +146,8 @@ struct backplane {
     /**
      * Update Sync wait
      */
-    void sync_wait(const module::module& mod, const param::value_type synch_wait);
+    void sync_wait(module::module& mod, const param::value_type synch_wait);
+    void sync_wait(module::module& mod);
 
     /**
      * Is synch_wait valid?
@@ -155,8 +156,29 @@ struct backplane {
      * modules must be synch waiters.
      */
     void sync_wait_valid() const;
+
+    /**
+     * Initialize
+     */
+    void init(const int num_modules);
+
+    /**
+     * Reinitialize. Use a template as a container forward decal.
+     */
+    template<typename T> void reinit(T& modules);
+
+    /**
+     * A module is taken offline. Update the backplane.
+     */
+    void offline(const module::module& module);
 };
 
+template<typename T> void backplane::reinit(T& modules) {
+    init(modules.size());
+    for (auto& mod : modules) {
+        sync_wait(*mod);
+    }
+}
 }  // namespace backplane
 }  // namespace pixie
 }  // namespace xia
