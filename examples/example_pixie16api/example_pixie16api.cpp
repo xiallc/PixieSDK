@@ -917,18 +917,18 @@ int main(int argc, char** argv) {
                                               {"dest-mod"});
     args::ValueFlag<unsigned int> module(arguments, "module", "The module to operate on.", {"mod"});
     args::ValueFlag<unsigned int> num_runs(
-        arguments, "num-runs", "The number of runs to execute when taking list-mode or MCA data.",
+        arguments, "num_runs", "The number of runs to execute when taking list-mode or MCA data.",
         {"num-runs"}, static_cast<unsigned int>(1));
     args::ValueFlag<double> parameter_value(
         write, "parameter_value", "The value of the parameter we want to write.", {'v', "value"});
     args::ValueFlag<unsigned int> synch_wait(
         list_mode, "synch_wait",
         "SynchWait = 0 to start/stop runs independently. (default)\nSynchWait = 1 to start/stop runs synchronously.",
-        {"synch_wait"}, static_cast<unsigned int>(0));
+        {"synch-wait"}, static_cast<unsigned int>(0));
     args::ValueFlag<unsigned int> in_synch(
         list_mode, "in_synch",
         "InSynch = 0 to reset clocks prior to starting a run. (default)\nInSynch = 1 to take no clock action.",
-        {"in_synch"}, static_cast<unsigned int>(1));
+        {"in-synch"}, static_cast<unsigned int>(1));
 
     adjust_offsets.Add(conf_flag);
     adjust_offsets.Add(boot_pattern_flag);
