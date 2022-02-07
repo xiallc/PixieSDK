@@ -898,7 +898,7 @@ int main(int argc, char** argv) {
                                                    "The boot pattern used for booting.",
                                                    {'b', "boot_pattern"}, "0x7F");
     args::ValueFlag<double> run_time(
-        list_mode, "time", "The amount of time that a list mode run will take in seconds.",
+        list_mode, "time", "The amount of time that a data run will take in seconds.",
         {'t', "run-time"}, 10.);
     args::ValueFlag<std::string> parameter(
         arguments, "parameter", "The parameter we want to read from the system.", {'n', "name"});
