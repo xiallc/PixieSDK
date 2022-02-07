@@ -361,19 +361,11 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
                                  "Pixie16WriteSglModPar - IN_SYNC"))
         return false;
 
-    if (synch_wait == 0) {
-        std::cout << LOG("INFO") << "Starting list-mode run in individual modules." << std::endl;
-        if (!verify_api_return_value(
-                Pixie16StartListModeRun(cfg.num_modules(), LIST_MODE_RUN, NEW_RUN),
-                "Pixie16StartListModeRun"))
-            return false;
-    } else {
-        std::cout << LOG("INFO") << "Starting list-mode run with the director module." << std::endl;
-        if (!verify_api_return_value(
-                Pixie16StartListModeRun(cfg.modules[0].number, LIST_MODE_RUN, NEW_RUN),
-                "Pixie16StartListModeRun"))
-            return false;
-    }
+    std::cout << LOG("INFO") << "Starting list-mode run." << std::endl;
+    if (!verify_api_return_value(
+            Pixie16StartListModeRun(cfg.num_modules(), LIST_MODE_RUN, NEW_RUN),
+            "Pixie16StartListModeRun"))
+        return false;
 
 #ifdef LEGACY_EXAMPLE
     /*

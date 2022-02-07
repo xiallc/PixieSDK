@@ -308,13 +308,9 @@ def list_mode(run_num, args, cfg, sdk):
                       sdk.Pixie16WriteSglModPar(ctypes.c_char_p(b"IN_SYNCH"), args.in_synch, 0),
                       "Pixie16WriteSglModPar")
 
-    if args.synch_wait == 0:
-        logging.info('Starting list-mode run in individual modules.')
-        check_return_code(sdk, sdk.Pixie16StartListModeRun(len(cfg), 0x100, 1),
-                          "Pixie16StartListModeRun")
-    else:
-        logging.info('Starting list-mode run with the director module.')
-        check_return_code(sdk, sdk.Pixie16StartListModeRun(0, 0x100, 1), "Pixie16StartListModeRun")
+    logging.info('Starting list-mode run in individual modules.')
+    check_return_code(sdk, sdk.Pixie16StartListModeRun(len(cfg), 0x100, 1),
+                      "Pixie16StartListModeRun")
 
     output = [open(generate_filename(mod, f"list-mode-run{run_num}", "lmd"), 'wb') for mod in
               range(len(cfg))]
