@@ -94,7 +94,9 @@ void backplane::sync_wait(module::module& mod, const param::value_type synch_wai
 }
 
 void backplane::sync_wait(module::module& mod) {
-    sync_wait(mod, mod.read(param::module_param::synch_wait));
+    if (mod.online()) {
+        sync_wait(mod, mod.read(param::module_param::synch_wait));
+    }
 }
 
 void backplane::sync_wait_valid() const {

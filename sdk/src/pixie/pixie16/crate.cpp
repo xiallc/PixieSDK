@@ -175,6 +175,7 @@ bool crate::probe() {
           ++online;
         }
     }
+    backplane.reinit(modules);
     return online == num_modules;
 }
 
@@ -225,6 +226,8 @@ void crate::boot(const bool force) {
     if (first_error != error::code::success) {
         throw error(first_error, "crate boot error; see log");
     }
+
+    backplane.reinit(modules);
 }
 
 void crate::set_firmware() {
@@ -259,6 +262,7 @@ void crate::import_config(const std::string json_file, module::number_slots& loa
             module->sync_vars();
         }
     }
+    backplane.reinit(modules);
 }
 
 void crate::initialize_afe() {
