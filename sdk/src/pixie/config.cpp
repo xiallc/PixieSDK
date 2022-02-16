@@ -37,6 +37,10 @@ static void throw_json_error(json::exception& e, const std::string& what) {
 }
 
 //@todo Need to make this more dynamic to take into account changes to the DSP vars.
+/*
+ * Default values maybe applied to all modules. Do not set values
+ * that can only reside in a single module.
+ */
 static const json default_config = {
     {"channel",
      {{"input",
@@ -100,7 +104,7 @@ static const json default_config = {
         {"InSynch", 1},
         {"MaxEvents", 0},
         {"ModCSRA", 0},
-        {"ModCSRB", 1},
+        {"ModCSRB", 0},
         {"ModFormat", 0},
         {"ModID", 0},
         {"ModNum", 0},
