@@ -932,11 +932,12 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buff
  *
  * Use this function to read baseline data from a Pixie-16 module. Before calling this function,
  * ::Pixie16AcquireBaselines should be called to fill the DSP internal memory first.
- * Also, the host code should allocate appropriate amount of memory to store the baseline data.
- * The number of baselines for each channel is 3640. In the DSP internal memory, each baseline is
- * a 32-bit IEEE floating point number. After being read out to the host, this function will
- * convert each baseline data to a decimal number. In addition to baseline values, timestamps
- * corresponding to each baseline are also returned after this function call.
+ * Users can use the ::PixieGetMaxNumBaselines function to ensure that they allocate enough
+ * memory to hold the baseline data.
+ * In the DSP internal memory, each baseline is a 32-bit IEEE floating point number. After being
+ * read out to the host, this function will convert each baseline data to a decimal number. In
+ * addition to baseline values, time stamps corresponding to each baseline are also returned after
+ * this function call.
  *
  * ### Example
  * \snippet snippets/api_function_examples.c Pixie16ReadSglChanBaselines
