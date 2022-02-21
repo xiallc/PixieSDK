@@ -928,7 +928,7 @@ int main(int argc, char** argv) {
     args::ValueFlag<unsigned int> in_synch(
         list_mode, "in_synch",
         "InSynch = 0 to reset clocks prior to starting a run. (default)\nInSynch = 1 to take no clock action.",
-        {"in-synch"}, static_cast<unsigned int>(1));
+        {"in-synch"}, static_cast<unsigned int>(0));
 
     adjust_offsets.Add(conf_flag);
     adjust_offsets.Add(boot_pattern_flag);
