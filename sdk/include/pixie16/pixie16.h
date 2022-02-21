@@ -104,6 +104,18 @@ extern "C" {
 #define SYS_MAX_NUM_MODULES 32
 
 /**
+ * @brief Defines a data structure used when working with the list-mode FIFO Worker
+ */
+struct fifo_worker_config {
+    size_t bandwidth_mb_per_sec;
+    size_t buffers;
+    size_t dma_trigger_level_bytes;
+    size_t run_wait_usecs;
+    size_t idle_wait_usecs;
+    size_t hold_usecs;
+};
+
+/**
  * @defgroup PIXIE_SDK PixieSDK
  * Documentation group for the PixieSDK functions/classes/macros.
  *

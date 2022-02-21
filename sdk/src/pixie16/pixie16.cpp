@@ -73,14 +73,6 @@ struct stats_legacy {
 typedef stats_legacy* stats_legacy_ptr;
 
 /*
- * Module FIFO realtime default settings.
- */
-static const size_t fifo_buffers = 100;
-static const size_t fifo_run_wait_usecs = 2000;
-static const size_t fifo_idle_wait_usecs = 150000;
-static const size_t fifo_hold_usecs = 50000;
-
-/*
  * The crate. We only handle a single crate with the legacy API.
  */
 static xia::pixie::crate::crate crate;
@@ -938,16 +930,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned
                                 "number of modules");
             }
             crate.assign(numbers);
-        }
-
-        /*
-         * Set the FIFO realtime settings.
-         */
-        for (auto& module : crate.modules) {
-            module->fifo_buffers = fifo_buffers;
-            module->fifo_run_wait_usecs = fifo_run_wait_usecs;
-            module->fifo_hold_usecs = fifo_hold_usecs;
-            module->fifo_idle_wait_usecs = fifo_idle_wait_usecs;
         }
     } catch (xia_error& e) {
         try {
