@@ -110,9 +110,9 @@ struct fifo_worker_config {
     size_t bandwidth_mb_per_sec;
     size_t buffers;
     size_t dma_trigger_level_bytes;
-    size_t run_wait_usecs;
-    size_t idle_wait_usecs;
     size_t hold_usecs;
+    size_t idle_wait_usecs;
+    size_t run_wait_usecs;
 };
 
 /**
@@ -1384,6 +1384,16 @@ enum PIXIE_BOOT_MODE {
  */
 PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file,
                                           const PIXIE_BOOT_MODE boot_mode);
+
+/**
+ * @ingroup PIXIE_API
+ * @brief Gets a worker configuration from the specified module
+ * @param mod_num The module number to get the configuration from.
+ * @param worker_config A pointer to the configuration object to fill with the information
+ * @return The value of the xia::pixie::error::code indicating the result of the operation
+ */
+PIXIE_EXPORT int PIXIE_API PixieGetWorkerConfiguration(unsigned short mod_num,
+                                                       fifo_worker_config* worker_config);
 
 /**
  * @ingroup PIXIE_API

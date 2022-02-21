@@ -761,13 +761,36 @@ double calculate_duration_in_seconds(const std::chrono::system_clock::time_point
     return std::chrono::duration<double>(end - start).count();
 }
 
+void output_module_worker_info(const size_t mod_num) {
+    fifo_worker_config worker_config;
+    if (!verify_api_return_value(PixieGetWorkerConfiguration(mod_num, &worker_config),
+                                 "PixieGetWorkerConfiguration", false))
+        throw std::runtime_error("Could not get worker information for Module " +
+                                 std::to_string(mod_num));
+    std::cout << LOG("INFO") << "Begin List-Mode FIFO worker information for Module " << mod_num
+              << std::endl;
+    std::cout << LOG("INFO") << "Bandwidth (MB/sec): " << worker_config.bandwidth_mb_per_sec
+              << std::endl;
+    std::cout << LOG("INFO") << "Buffers : " << worker_config.buffers << std::endl;
+    std::cout << LOG("INFO")
+              << "DMA Trigger Level (B): " << worker_config.dma_trigger_level_bytes
+              << std::endl;
+    std::cout << LOG("INFO") << "Hold (usec): " << worker_config.hold_usecs << std::endl;
+    std::cout << LOG("INFO") << "Idle wait (usec): " << worker_config.idle_wait_usecs
+              << std::endl;
+    std::cout << LOG("INFO") << "Run wait (usec): " << worker_config.run_wait_usecs
+              << std::endl;
+    std::cout << LOG("INFO") << "End List-Mode FIFO worker information for Module " << mod_num
+              << std::endl;
+}
+
 void output_module_info(configuration& cfg) {
     for (auto& mod : cfg.modules) {
         if (!verify_api_return_value(
                 Pixie16ReadModuleInfo(mod.number, &mod.revision, &mod.serial_number,
                                       &mod.adc_bit_resolution, &mod.adc_sampling_frequency,
                                       &mod.number_of_channels),
-                "Pixie16ReadModuleInfo", ""))
+                "Pixie16ReadModuleInfo", false))
             throw std::runtime_error("Could not get module information for Module " +
                                      std::to_string(mod.number));
         std::cout << LOG("INFO") << "Begin module information for Module " << mod.number
@@ -778,6 +801,7 @@ void output_module_info(configuration& cfg) {
         std::cout << LOG("INFO") << "ADC MSPS: " << mod.adc_sampling_frequency << std::endl;
         std::cout << LOG("INFO") << "Num Channels: " << mod.number_of_channels << std::endl;
         std::cout << LOG("INFO") << "End module information for Module " << mod.number << std::endl;
+        output_module_worker_info(mod.number);
     }
 }
 

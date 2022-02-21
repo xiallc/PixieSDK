@@ -1544,6 +1544,34 @@ PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file,
     return 0;
 }
 
+PIXIE_EXPORT int PIXIE_API PixieGetWorkerConfiguration(const unsigned short mod_num,
+                                                       fifo_worker_config* worker_config) {
+    xia_log(xia_log::debug) << "PixieGetWorkerConfiguration: Module=" << mod_num;
+
+    try {
+        crate.ready();
+        xia::pixie::crate::module_handle module(crate, mod_num,
+                                                xia::pixie::crate::module_handle::present);
+        worker_config->bandwidth_mb_per_sec = module->fifo_bandwidth;
+        worker_config->buffers = module->fifo_buffers;
+        worker_config->dma_trigger_level_bytes = module->fifo_dma_trigger_level;
+        worker_config->hold_usecs = module->fifo_hold_usecs;
+        worker_config->idle_wait_usecs = module->fifo_idle_wait_usecs;
+        worker_config->run_wait_usecs = module->fifo_run_wait_usecs;
+    } catch (xia_error& e) {
+        xia_log(xia_log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (...) {
+        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+    return 0;
+}
+
+
 PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version, const int revision,
                                                  const int adc_msps, const int adc_bits,
                                                  const char* device, const char* path,
