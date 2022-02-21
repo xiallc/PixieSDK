@@ -41,14 +41,7 @@
 #include <args/args.hxx>
 #include <nolhmann/json.hpp>
 
-#ifndef LEGACY_EXAMPLE
 #include <pixie16/pixie16.h>
-#else
-#include <pixie16app_defs.h>
-#include <pixie16app_export.h>
-#include <pixie16sys_defs.h>
-#include <pixie16sys_export.h>
-#endif
 
 #if defined(_WIN64) || defined(_WIN32)
 #include <windows.h>
@@ -119,12 +112,7 @@ struct configuration {
 
 std::string generate_filename(const unsigned int& module_number, const std::string& type,
                               const std::string& ext) {
-#ifndef LEGACY_EXAMPLE
-    static const std::string file_prefix = "pixie16api-module";
-#else
-    static const std::string file_prefix = "pixie16app-module";
-#endif
-    return file_prefix + std::to_string(module_number) + "-" + type + "." + ext;
+    return "pixie16api-module" + std::to_string(module_number) + "-" + type + "." + ext;
 }
 
 void verify_json_module(const nlohmann::json& mod) {
@@ -199,12 +187,8 @@ bool verify_api_return_value(const int& val, const std::string& func_name,
                              const bool& print_success = true) {
     if (val < 0) {
         std::string msg;
-#ifndef LEGACY_EXAMPLE
         msg.resize(1024);
         PixieGetReturnCodeText(val, &msg[0], msg.size());
-#else
-        msg = "error message output not supported in legacy API.";
-#endif
         std::cout << LOG("ERROR") << func_name << " failed with code " << val
                   << " and message: " << msg << std::endl;
         return false;
@@ -215,11 +199,7 @@ bool verify_api_return_value(const int& val, const std::string& func_name,
 }
 
 bool output_statistics_data(const module_config& mod, const std::string& type) {
-#ifndef LEGACY_EXAMPLE
     std::vector<unsigned int> stats(Pixie16GetStatisticsSize(), 0);
-#else
-    std::vector<unsigned int> stats(N_DSP_PAR - DSP_IO_BORDER, 0);
-#endif
     if (!verify_api_return_value(Pixie16ReadStatisticsFromModule(stats.data(), mod.number),
                                  "Pixie16ReadStatisticsFromModule", false))
         return false;
@@ -230,13 +210,9 @@ bool output_statistics_data(const module_config& mod, const std::string& type) {
     bin_output.close();
 
     std::ofstream csv_output(generate_filename(mod.number, type, "csv"), std::ios::out);
-#ifndef LEGACY_EXAMPLE
     csv_output
         << "channel,real_time,live_time,input_counts,input_count_rate,output_counts,output_count_rate"
         << std::endl;
-#else
-    csv_output << "channel,real_time,live_time,input_count_rate,output_count_rate" << std::endl;
-#endif
     auto real_time = Pixie16ComputeRealTime(stats.data(), mod.number);
 
     std::cout << LOG("INFO") << "Begin Statistics for Module " << mod.number << std::endl;
@@ -250,7 +226,6 @@ bool output_statistics_data(const module_config& mod, const std::string& type) {
             {"live_time", live_time}, {"icr", icr},      {"ocr", ocr},
         };
 
-#ifndef LEGACY_EXAMPLE
         auto ic = Pixie16ComputeRawInputCount(stats.data(), mod.number, chan);
         auto oc = Pixie16ComputeRawOutputCount(stats.data(), mod.number, chan);
 
@@ -259,10 +234,6 @@ bool output_statistics_data(const module_config& mod, const std::string& type) {
 
         csv_output << chan << "," << real_time << "," << live_time << "," << ic << "," << icr << ","
                    << oc << "," << ocr << std::endl;
-#else
-        csv_output << chan << "," << real_time << "," << live_time << "," << icr << "," << ocr
-                   << std::endl;
-#endif
 
         std::cout << LOG("INFO") << json_stats << std::endl;
     }
@@ -302,11 +273,7 @@ bool execute_baseline_capture(const module_config& mod) {
     std::vector<std::vector<double>> timestamps;
     unsigned int max_num_baselines = 0;
     for (unsigned int i = 0; i < mod.number_of_channels; i++) {
-#ifndef LEGACY_EXAMPLE
         PixieGetMaxNumBaselines(mod.number, i, &max_num_baselines);
-#else
-        max_num_baselines = MAX_NUM_BASELINES;
-#endif
         std::vector<double> baseline(max_num_baselines);
         std::vector<double> timestamp(max_num_baselines);
 
@@ -366,19 +333,6 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
             Pixie16StartListModeRun(cfg.num_modules(), LIST_MODE_RUN, NEW_RUN),
             "Pixie16StartListModeRun"))
         return false;
-
-#ifdef LEGACY_EXAMPLE
-    /*
-     * Due to communication inefficiencies in the legacy API we need to pause program
-     * execution for a second to wait for the module to be able to report that the
-     * run has actually started. Without this pause the run_status will return 0
-     * despite the fact that we just started the run above.
-     *
-     * This is **not** necessary in the SDK because we have optimized the module
-     * communication.
-     */
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-#endif
 
     std::vector<std::ofstream*> output_streams(cfg.num_modules());
     for (unsigned short i = 0; i < cfg.num_modules(); i++) {
@@ -574,19 +528,6 @@ bool execute_mca_run(const int run_num, const module_config& mod, const double r
                                  "Pixie16StartHistogramRun"))
         return false;
 
-#ifdef LEGACY_EXAMPLE
-    /*
-     * Due to communication inefficiencies in the legacy API we need to pause program
-     * execution for a second to wait for the module to be able to report that the
-     * run has actually started. Without this pause the run_status will return 0
-     * despite the fact that we just started the run above.
-     *
-     * This is **not** necessary in the SDK because we have optimized the module
-     * communication.
-     */
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-#endif
-
     auto run_start_time = std::chrono::steady_clock::now();
     double current_run_time = 0;
     double check_time = 0;
@@ -630,13 +571,9 @@ bool execute_mca_run(const int run_num, const module_config& mod, const double r
     std::vector<std::vector<uint32_t>> hists;
     unsigned int max_histogram_length = 0;
     for (unsigned int i = 0; i < mod.number_of_channels; i++) {
-#ifndef LEGACY_EXAMPLE
         unsigned int tmp = 0;
         PixieGetHistogramLength(mod.number, i, &tmp);
         std::vector<uint32_t> hist(tmp, 0);
-#else
-        std::vector<uint32_t> hist(MAX_HISTOGRAM_LENGTH, 0);
-#endif
         if (hist.size() > max_histogram_length)
             max_histogram_length = hist.size();
 
@@ -755,13 +692,9 @@ bool execute_trace_capture(const module_config& mod) {
     unsigned int max_trace_length = 0;
     std::vector<std::vector<unsigned short>> traces;
     for (unsigned int i = 0; i < mod.number_of_channels; i++) {
-#ifndef LEGACY_EXAMPLE
         unsigned int tmp = 0;
         PixieGetTraceLength(mod.number, i, &tmp);
         std::vector<unsigned short> trace(tmp, 0);
-#else
-        std::vector<unsigned short> trace(MAX_ADC_TRACE_LEN, 0);
-#endif
         if (trace.size() > max_trace_length)
             max_trace_length = trace.size();
 
@@ -831,20 +764,12 @@ double calculate_duration_in_seconds(const std::chrono::system_clock::time_point
 void output_module_info(configuration& cfg) {
     for (auto& mod : cfg.modules) {
         if (!verify_api_return_value(
-#ifndef LEGACY_EXAMPLE
                 Pixie16ReadModuleInfo(mod.number, &mod.revision, &mod.serial_number,
                                       &mod.adc_bit_resolution, &mod.adc_sampling_frequency,
                                       &mod.number_of_channels),
-#else
-                Pixie16ReadModuleInfo(mod.number, &mod.revision, &mod.serial_number,
-                                      &mod.adc_bit_resolution, &mod.adc_sampling_frequency),
-#endif
                 "Pixie16ReadModuleInfo", ""))
             throw std::runtime_error("Could not get module information for Module " +
                                      std::to_string(mod.number));
-#ifdef LEGACY_EXAMPLE
-        mod.number_of_channels = NUMBER_OF_CHANNELS;
-#endif
         std::cout << LOG("INFO") << "Begin module information for Module " << mod.number
                   << std::endl;
         std::cout << LOG("INFO") << "Serial Number: " << mod.serial_number << std::endl;
@@ -1017,12 +942,9 @@ int main(int argc, char** argv) {
     if (additional_cfg_flag)
         boot_pattern = 0x70;
 
-#ifndef LEGACY_EXAMPLE
     bool crate_boot = false;
     std::string par_file;
-#endif
     for (auto& mod : cfg.modules) {
-#ifndef LEGACY_EXAMPLE
         if (mod.fw.version != 0) {
             std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
                       << ": sys" << std::endl;
@@ -1053,7 +975,6 @@ int main(int argc, char** argv) {
             par_file = mod.dsp_par;
             crate_boot = true;
         } else {
-#endif
             start = std::chrono::system_clock::now();
             std::cout << LOG("INFO") << "Calling Pixie16BootModule for Module " << mod.number
                       << " with boot pattern: " << std::showbase << std::hex << boot_pattern
@@ -1069,12 +990,9 @@ int main(int argc, char** argv) {
                       << " in "
                       << calculate_duration_in_seconds(start, std::chrono::system_clock::now())
                       << " s." << std::endl;
-#ifndef LEGACY_EXAMPLE
         }
-#endif
     }
 
-#ifndef LEGACY_EXAMPLE
     if (crate_boot) {
         start = std::chrono::system_clock::now();
         std::cout << LOG("INFO") << "Calling PixieBootCrate with settings: " << par_file
@@ -1100,7 +1018,6 @@ int main(int argc, char** argv) {
                   << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
                   << std::endl;
     }
-#endif
 
     if (boot) {
         execute_close_module_connection(cfg.num_modules());
