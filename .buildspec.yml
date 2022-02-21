@@ -82,7 +82,7 @@ phases:
         if [[ ${BUILD_OPTIONS} == *"BUILD_EXAMPLES=ON"* ]];
         then
         echo Checking for example_pixie16app;
-        test -e ./examples/example_pixie16api/example_pixie16app || exit 21;
+        test -e ./examples/example_pixie16app/example_pixie16app || exit 21;
         fi;
         if [[ ${BUILD_OPTIONS} == *"BUILD_TESTS=ON"* ]];
         then
