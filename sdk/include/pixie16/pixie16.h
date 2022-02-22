@@ -104,14 +104,83 @@ extern "C" {
 #define SYS_MAX_NUM_MODULES 32
 
 /**
- * @brief Defines a data structure used when working with the list-mode FIFO Worker
+ * @ingroup PIXIE16_API
+ * @brief Defines a data structure used to configure the List-mode data FIFO worker
  */
 struct fifo_worker_config {
+    /**
+     * @brief Specifies the bandwidth that the worker can use.
+     *
+     * The maximum bandwidth available in a PCI bus is 100 MB / s. When using the default bandwidth
+     * value (0) the individual modules will use the maximum data rate available. This rate can
+     * vary depending on the type of crate (PCI vs PCIe) and the trigger rates in the module.
+     *
+     * By default, the system will balance the data rate approximately equally amongst all the
+     * modules in the system. One could use this value to adjust the bandwidth for a low-count
+     * rate module could be reduced to give preference to a module that's got a higher rate.
+     *
+     * @note A value of 0 indicates no limit on the bandwidth.
+     * | Units | Min | Max | Default |
+     * |---|---|---|---|
+     * | MB/s | 1 | 100 | 0 |
+     */
     size_t bandwidth_mb_per_sec;
+    /**
+     * @brief Defines how many buffers a worker can have.
+     *
+     * A buffer contains the data read from the on-board list-mode data FIFO. They are a fixed
+     * size of 64 MB. The worker will periodically attempt to compact the buffer pool to ensure that
+     * there is always a buffer available to read data from the hardware.
+     *
+     * | Units | Min | Max | Default |
+     * |---|---|---|---|
+     * | None | 10 | 10000000 | 100 |
+     */
     size_t buffers;
+    /**
+     * @brief The threshold that the on-board FIFO must reach before we execute a read.
+     *
+     * This value works in tandem with ::hold_usecs to ensure that we're reading data out of the
+     * module before it can overflow. Adjusting this value incorrectly may result
+     * in a loss of data.
+     *
+     * | Units | Min | Max | Default |
+     * |---|---|---|---|
+     * | bytes | 512 | 8192 | 1024 |
+     */
     size_t dma_trigger_level_bytes;
+    /**
+     * @brief The amount of time that data waits in the on-board fifo before being read out.
+     *
+     * The hold time is reset on every transfer from the FIFO no matter the run task state.
+     * If we are idle and reading data the hold time is reset so the waiting period only starts to
+     * decay once we do not see data.
+     *
+     * This value works in tandem with ::dma_trigger_level_bytes to ensure that we're reading
+     * data out of the module before it can overflow. Adjusting this value incorrectly may result
+     * in a loss of data.
+     *
+     * | Units | Min | Max | Default |
+     * |---|---|---|---|
+     * | microseconds | 1000 | 100000 | 10000 |
+     */
     size_t hold_usecs;
+    /**
+     * @brief The amount of time the worker will sit idle before checking the hardware for data.
+     * @note This value is ignored during list-mode data runs, see ::run_wait_usecs.
+     *
+     * | Units | Min | Max | Default |
+     * |---|---|---|---|
+     * | microseconds | 10000 | 1000000 | 150000 |
+     */
     size_t idle_wait_usecs;
+    /**
+     * @brief Specifies the amount of time that worker will wait after successfully reading data.
+     *
+     * | Units | Min | Max | Default |
+     * |---|---|---|---|
+     * | microseconds | 500 | 200000 | 5000 |
+     */
     size_t run_wait_usecs;
 };
 
