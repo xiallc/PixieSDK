@@ -1417,6 +1417,17 @@ PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version, con
                                                  const int adc_msps, const int adc_bits,
                                                  const char* device, const char* path,
                                                  unsigned short ModNum);
+
+/**
+ * @ingroup PIXIE_API
+ * @brief Sets a worker configuration in the specified module
+ * @param mod_num The module number to set the configuration.
+ * @param worker_config A pointer to the configuration object with the necessary information
+ * @return The value of the xia::pixie::error::code indicating the result of the operation
+ */
+PIXIE_EXPORT int PIXIE_API PixieSetWorkerConfiguration(unsigned short mod_num,
+                                                       fifo_worker_config* worker_config);
+
 #ifdef __cplusplus
 }
 #endif

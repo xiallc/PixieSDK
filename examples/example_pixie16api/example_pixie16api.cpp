@@ -98,6 +98,8 @@ struct module_config {
     unsigned short revision;
     unsigned short slot;
     firmware_spec fw;
+    unsigned short has_worker_cfg;
+    fifo_worker_config worker_config;
 };
 
 typedef std::vector<module_config> module_configs;
@@ -144,6 +146,17 @@ void verify_json_module(const nlohmann::json& mod) {
                 "Missing firmware (fw) definition (version, revision, adc_msps or adc_bits).");
         }
     }
+
+    if (mod.contains("worker")) {
+        if (!mod["worker"].contains("bandwidth_mb_per_sec") || !mod["worker"].contains("buffers") ||
+            !mod["worker"].contains("dma_trigger_level_bytes") ||
+            !mod["worker"].contains("hold_usecs") || !mod["worker"].contains("idle_wait_usecs") ||
+            !mod["worker"].contains("run_wait_usecs")) {
+            throw std::invalid_argument(
+                "Missing worker fifo (worker) definition (bandwidth_mb_per_sec, buffers, "
+                "dma_trigger_level_bytes, hold_usecs, idle_wait_usecs, run_wait_usecs).");
+        }
+    }
 }
 
 void read_config(const std::string& config_file_name, configuration& cfg) {
@@ -178,6 +191,18 @@ void read_config(const std::string& config_file_name, configuration& cfg) {
             mod_cfg.fw.revision = module["fw"]["revision"];
             mod_cfg.fw.adc_msps = module["fw"]["adc_msps"];
             mod_cfg.fw.adc_bits = module["fw"]["adc_bits"];
+        }
+        if (module.contains("worker")) {
+            mod_cfg.worker_config.bandwidth_mb_per_sec = module["worker"]["bandwidth_mb_per_sec"];
+            mod_cfg.worker_config.buffers = module["worker"]["buffers"];
+            mod_cfg.worker_config.dma_trigger_level_bytes =
+                module["worker"]["dma_trigger_level_bytes"];
+            mod_cfg.worker_config.hold_usecs = module["worker"]["hold_usecs"];
+            mod_cfg.worker_config.idle_wait_usecs = module["worker"]["idle_wait_usecs"];
+            mod_cfg.worker_config.run_wait_usecs = module["worker"]["run_wait_usecs"];
+            mod_cfg.has_worker_cfg = 1;
+        } else {
+            mod_cfg.has_worker_cfg = 0;
         }
         cfg.modules.push_back(mod_cfg);
     }
@@ -784,25 +809,21 @@ void output_module_worker_info(const size_t mod_num) {
               << std::endl;
 }
 
-void output_module_info(configuration& cfg) {
-    for (auto& mod : cfg.modules) {
-        if (!verify_api_return_value(
-                Pixie16ReadModuleInfo(mod.number, &mod.revision, &mod.serial_number,
-                                      &mod.adc_bit_resolution, &mod.adc_sampling_frequency,
-                                      &mod.number_of_channels),
-                "Pixie16ReadModuleInfo", false))
-            throw std::runtime_error("Could not get module information for Module " +
-                                     std::to_string(mod.number));
-        std::cout << LOG("INFO") << "Begin module information for Module " << mod.number
-                  << std::endl;
-        std::cout << LOG("INFO") << "Serial Number: " << mod.serial_number << std::endl;
-        std::cout << LOG("INFO") << "Revision: " << mod.revision << std::endl;
-        std::cout << LOG("INFO") << "ADC Bits: " << mod.adc_bit_resolution << std::endl;
-        std::cout << LOG("INFO") << "ADC MSPS: " << mod.adc_sampling_frequency << std::endl;
-        std::cout << LOG("INFO") << "Num Channels: " << mod.number_of_channels << std::endl;
-        std::cout << LOG("INFO") << "End module information for Module " << mod.number << std::endl;
-        output_module_worker_info(mod.number);
-    }
+void output_module_info(module_config& mod) {
+    if (!verify_api_return_value(Pixie16ReadModuleInfo(mod.number, &mod.revision,
+                                                       &mod.serial_number, &mod.adc_bit_resolution,
+                                                       &mod.adc_sampling_frequency,
+                                                       &mod.number_of_channels),
+                                 "Pixie16ReadModuleInfo", false))
+        throw std::runtime_error("Could not get module information for Module " +
+                                 std::to_string(mod.number));
+    std::cout << LOG("INFO") << "Begin module information for Module " << mod.number << std::endl;
+    std::cout << LOG("INFO") << "Serial Number: " << mod.serial_number << std::endl;
+    std::cout << LOG("INFO") << "Revision: " << mod.revision << std::endl;
+    std::cout << LOG("INFO") << "ADC Bits: " << mod.adc_bit_resolution << std::endl;
+    std::cout << LOG("INFO") << "ADC MSPS: " << mod.adc_sampling_frequency << std::endl;
+    std::cout << LOG("INFO") << "Num Channels: " << mod.number_of_channels << std::endl;
+    std::cout << LOG("INFO") << "End module information for Module " << mod.number << std::endl;
 }
 
 
@@ -951,7 +972,16 @@ int main(int argc, char** argv) {
               << std::endl;
 
     try {
-        output_module_info(cfg);
+        for (auto& mod : cfg.modules) {
+            output_module_info(mod);
+            if (mod.has_worker_cfg) {
+                if (!verify_api_return_value(
+                        PixieSetWorkerConfiguration(mod.number, &mod.worker_config),
+                        "PixieSetWorkerConfiguration", false))
+                    return EXIT_FAILURE;
+            }
+            output_module_worker_info(mod.number);
+        }
     } catch (std::runtime_error& error) {
         std::cout << LOG("ERROR") << error.what() << std::endl;
         return EXIT_FAILURE;
