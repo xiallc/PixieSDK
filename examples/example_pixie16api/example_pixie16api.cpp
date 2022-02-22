@@ -354,9 +354,8 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
         return false;
 
     std::cout << LOG("INFO") << "Starting list-mode run." << std::endl;
-    if (!verify_api_return_value(
-            Pixie16StartListModeRun(cfg.num_modules(), LIST_MODE_RUN, NEW_RUN),
-            "Pixie16StartListModeRun"))
+    if (!verify_api_return_value(Pixie16StartListModeRun(cfg.num_modules(), LIST_MODE_RUN, NEW_RUN),
+                                 "Pixie16StartListModeRun"))
         return false;
 
     std::vector<std::ofstream*> output_streams(cfg.num_modules());
@@ -797,14 +796,11 @@ void output_module_worker_info(const size_t mod_num) {
     std::cout << LOG("INFO") << "Bandwidth (MB/sec): " << worker_config.bandwidth_mb_per_sec
               << std::endl;
     std::cout << LOG("INFO") << "Buffers : " << worker_config.buffers << std::endl;
-    std::cout << LOG("INFO")
-              << "DMA Trigger Level (B): " << worker_config.dma_trigger_level_bytes
+    std::cout << LOG("INFO") << "DMA Trigger Level (B): " << worker_config.dma_trigger_level_bytes
               << std::endl;
     std::cout << LOG("INFO") << "Hold (usec): " << worker_config.hold_usecs << std::endl;
-    std::cout << LOG("INFO") << "Idle wait (usec): " << worker_config.idle_wait_usecs
-              << std::endl;
-    std::cout << LOG("INFO") << "Run wait (usec): " << worker_config.run_wait_usecs
-              << std::endl;
+    std::cout << LOG("INFO") << "Idle wait (usec): " << worker_config.idle_wait_usecs << std::endl;
+    std::cout << LOG("INFO") << "Run wait (usec): " << worker_config.run_wait_usecs << std::endl;
     std::cout << LOG("INFO") << "End List-Mode FIFO worker information for Module " << mod_num
               << std::endl;
 }
@@ -867,9 +863,9 @@ int main(int argc, char** argv) {
     args::ValueFlag<std::string> boot_pattern_flag(arguments, "boot_pattern",
                                                    "The boot pattern used for booting.",
                                                    {'b', "boot_pattern"}, "0x7F");
-    args::ValueFlag<double> run_time(
-        list_mode, "time", "The amount of time that a data run will take in seconds.",
-        {'t', "run-time"}, 10.);
+    args::ValueFlag<double> run_time(list_mode, "time",
+                                     "The amount of time that a data run will take in seconds.",
+                                     {'t', "run-time"}, 10.);
     args::ValueFlag<std::string> parameter(
         arguments, "parameter", "The parameter we want to read from the system.", {'n', "name"});
     args::ValueFlag<unsigned int> channel(
