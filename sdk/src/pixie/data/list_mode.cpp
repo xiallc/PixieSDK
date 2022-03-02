@@ -32,11 +32,11 @@ namespace pixie {
 namespace data {
 namespace list_mode {
 
-static const size_t min_rev = 17562;
-static const size_t min_words = 4;
-static const size_t num_qdc_words = 8;
-static const size_t num_esum_words = 4;
-static const size_t num_ext_ts_words = 2;
+static constexpr size_t min_rev = 17562;
+static constexpr size_t min_words = 4;
+static constexpr size_t num_qdc_words = 8;
+static constexpr size_t num_esum_words = 4;
+static constexpr size_t num_ext_ts_words = 2;
 
 using json = nlohmann::json;
 
