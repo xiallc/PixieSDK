@@ -38,96 +38,131 @@ static const size_t num_qdc_words = 8;
 static const size_t num_esum_words = 4;
 static const size_t num_ext_ts_words = 2;
 
-static void from_json(const nlohmann::json& j, event& evt) {
-    j.at("cfd_forced_trigger").get_to(evt.cfd_forced_trigger);
-    j.at("cfd_fractional_time").get_to(evt.cfd_fractional_time);
-    j.at("cfd_trigger_source").get_to(evt.cfd_trigger_source);
-    j.at("channel_number").get_to(evt.channel_number);
-    j.at("crate_id").get_to(evt.crate_id);
-    j.at("energy").get_to(evt.energy);
-    j.at("energy_sums").get_to(evt.energy_sums);
-    j.at("event_length").get_to(evt.event_length);
-    j.at("external_time").get_to(evt.external_time);
-    j.at("filter_baseline").get_to(evt.filter_baseline);
-    j.at("filter_time").get_to(evt.filter_time);
-    j.at("finish_code").get_to(evt.finish_code);
-    j.at("header_length").get_to(evt.header_length);
-    j.at("qdc").get_to(evt.qdc);
-    j.at("slot_id").get_to(evt.slot_id);
-    j.at("time").get_to(evt.time);
-    j.at("trace_out_of_range").get_to(evt.trace_out_of_range);
-    j.at("trace").get_to(evt.trace);
+using json = nlohmann::json;
+
+/**
+ * @brief Describes the elements that need to be decoded out of a list-mode event
+ */
+enum struct element {
+    cfd_forced_trigger_bit,
+    cfd_fractional_time,
+    cfd_trigger_source_bit,
+    channel_number,
+    crate_id,
+    energy,
+    event_length,
+    event_time_high,
+    event_time_low,
+    finish_code,
+    header_length,
+    slot_id,
+    trace_length,
+    trace_out_of_range_flag,
+    END
+};
+
+void json_to_record(const std::string& json_string, record& rec) {
+    /*
+     * We define a dummy double here because the JSON deseralizer can't get to
+     * the chrono type that we defined. Using the dummy also ensures that
+     * we don't have undefined behavior when missing an entry.
+     */
+    double dummy;
+    try {
+        json val = json::parse(json_string);
+        val.at("cfd_forced_trigger").get_to(rec.cfd_forced_trigger);
+
+        val.at("cfd_fractional_time").get_to(dummy);
+        rec.cfd_fractional_time = record::time_type(dummy);
+
+        val.at("cfd_trigger_source").get_to(rec.cfd_trigger_source);
+        val.at("channel_number").get_to(rec.channel_number);
+        val.at("crate_id").get_to(rec.crate_id);
+        val.at("energy").get_to(rec.energy);
+        val.at("energy_sums").get_to(rec.energy_sums);
+        val.at("event_length").get_to(rec.event_length);
+
+        val.at("external_time").get_to(dummy);
+        rec.external_time = record::time_type(dummy);
+
+        val.at("filter_baseline").get_to(rec.filter_baseline);
+
+        val.at("filter_time").get_to(dummy);
+        rec.filter_time = record::time_type(dummy);
+
+        val.at("finish_code").get_to(rec.finish_code);
+        val.at("header_length").get_to(rec.header_length);
+        val.at("qdc").get_to(rec.qdc);
+        val.at("slot_id").get_to(rec.slot_id);
+
+        val.at("time").get_to(dummy);
+        rec.time = record::time_type(dummy);
+
+        val.at("trace_out_of_range").get_to(rec.trace_out_of_range);
+        val.at("trace").get_to(rec.trace);
+    } catch (json::exception& ex) {
+        throw xia::pixie::error::error(xia::pixie::error::code::invalid_value,
+                                       "could not convert JSON string to record: " +
+                                           std::string(ex.what()));
+    }
 }
 
-event::event()
+std::string record_to_json(const record& evt) {
+    json val = {{"cfd_forced_trigger", evt.cfd_forced_trigger},
+                {"cfd_fractional_time", evt.cfd_fractional_time.count()},
+                {"cfd_trigger_source", evt.cfd_trigger_source},
+                {"channel_number", evt.channel_number},
+                {"crate_id", evt.crate_id},
+                {"energy", evt.energy},
+                {"energy_sums", evt.energy_sums},
+                {"event_length", evt.event_length},
+                {"external_time", evt.external_time.count()},
+                {"filter_baseline", evt.filter_baseline},
+                {"filter_time", evt.filter_time.count()},
+                {"finish_code", evt.finish_code},
+                {"header_length", evt.header_length},
+                {"qdc", evt.qdc},
+                {"slot_id", evt.slot_id},
+                {"time", evt.time.count()},
+                {"trace", evt.trace},
+                {"trace_out_of_range", evt.trace_out_of_range}};
+    return val.dump();
+}
+
+record::record()
     : cfd_forced_trigger(false), cfd_fractional_time(0), cfd_trigger_source(0), channel_number(0),
       crate_id(0), energy(0), event_length(0), external_time(0), filter_baseline(0), filter_time(0),
       finish_code(false), header_length(0), slot_id(0), time(0), trace_length(0),
       trace_out_of_range(false) {}
 
-event::event(const std::string& json_string)
-    : cfd_forced_trigger(false), cfd_fractional_time(0), cfd_trigger_source(0), channel_number(0),
-      crate_id(0), energy(0), event_length(0), external_time(0), filter_baseline(0), filter_time(0),
-      finish_code(false), header_length(0), slot_id(0), time(0), trace_length(0),
-      trace_out_of_range(false) {
-
-    try {
-        nlohmann::json json = nlohmann::json::parse(json_string);
-        from_json(json, *this);
-    } catch (nlohmann::json::exception& ex) {
-        throw xia::pixie::error::error(xia::pixie::error::code::invalid_value,
-                                       "event constructor from JSON string: " +
-                                           std::string(ex.what()));
-    }
-}
-
-event::~event() = default;
-
-bool event::operator==(const event& rhs) const {
+bool record::operator==(const record& rhs) const {
     return crate_id == rhs.crate_id && slot_id == rhs.slot_id &&
            channel_number == rhs.channel_number && time == rhs.time && energy == rhs.energy;
 }
 
-bool event::operator!=(const event& rhs) const {
+bool record::operator!=(const record& rhs) const {
     return !operator==(rhs);
 }
 
-bool event::operator<(const event& rhs) const {
+bool record::operator<(const record& rhs) const {
     return time < rhs.time;
 }
 
-bool event::operator>(const event& rhs) const {
+bool record::operator>(const record& rhs) const {
     return !operator<(rhs);
 }
 
-void event::output(std::ostream& out) const {
+void record::output(std::ostream& out) const {
     util::ostream_guard flags(out);
+    /*
+     * We add the to_string on the time to ensure that the double value is not
+     * truncated in the stream. See the "Verify streamed output" test case.
+     */
     out << std::boolalpha << "crate: " << crate_id << " slot: " << slot_id
-        << " channel: " << channel_number << " time: " << std::to_string(uint64_t(time))
+        << " channel: " << channel_number << " time: " << std::to_string(uint64_t(time.count()))
         << " energy: " << energy;
 }
 
-std::string event_as_json(const event& evt) {
-    nlohmann::json json = {{"cfd_forced_trigger", evt.cfd_forced_trigger},
-                           {"cfd_fractional_time", evt.cfd_fractional_time},
-                           {"cfd_trigger_source", evt.cfd_trigger_source},
-                           {"channel_number", evt.channel_number},
-                           {"crate_id", evt.crate_id},
-                           {"energy", evt.energy},
-                           {"energy_sums", evt.energy_sums},
-                           {"event_length", evt.event_length},
-                           {"external_time", evt.external_time},
-                           {"filter_baseline", evt.filter_baseline},
-                           {"filter_time", evt.filter_time},
-                           {"finish_code", evt.finish_code},
-                           {"header_length", evt.header_length},
-                           {"qdc", evt.qdc},
-                           {"slot_id", evt.slot_id},
-                           {"time", evt.time},
-                           {"trace", evt.trace},
-                           {"trace_out_of_range", evt.trace_out_of_range}};
-    return json.dump();
-}
 
 /**
  * @brief A structure defining the information regarding a data mask.
@@ -351,25 +386,27 @@ static double make_u64_double(const uint32_t high, const uint32_t low) {
     return double(make_u64(high, low));
 }
 
-static void make_time(event& evt, const size_t freq, const uint32_t filter_low,
-                      const uint32_t filter_high) {
+static void make_time(record& rec, const size_t freq, const uint32_t filter_low,
+                      const uint32_t filter_high, const double cfd_time) {
     double filter_conv;
     switch (freq) {
         case 250:
             filter_conv = 8e-9;
-            evt.cfd_fractional_time = (evt.cfd_fractional_time - cfd_trigger_source_bit) * 4e-9;
+            rec.cfd_fractional_time =
+                record::time_type((cfd_time - static_cast<double>(rec.cfd_trigger_source)) * 4e-9);
             break;
         case 500:
             filter_conv = 10e-9;
-            evt.cfd_fractional_time = (evt.cfd_fractional_time - cfd_trigger_source_bit - 1) * 2e-9;
+            rec.cfd_fractional_time = record::time_type(
+                (cfd_time - static_cast<double>(rec.cfd_trigger_source) - 1) * 2e-9);
             break;
         default:
             filter_conv = 10e-9;
-            evt.cfd_fractional_time = evt.cfd_fractional_time * 10e-9;
+            rec.cfd_fractional_time = record::time_type(cfd_time * 10e-9);
             break;
     }
-    evt.filter_time = make_u64_double(filter_high, filter_low) * filter_conv;
-    evt.time = evt.cfd_fractional_time + evt.filter_time;
+    rec.filter_time = record::time_type(make_u64_double(filter_high, filter_low) * filter_conv);
+    rec.time = rec.cfd_fractional_time + rec.filter_time;
 }
 
 static const descriptor_list& find_element_set(size_t rev, size_t freq) {
@@ -440,9 +477,9 @@ static double cfd_multiplier(const size_t rev, const size_t freq) {
     }
 }
 
-events decode_data_block(uint32_t* data, const size_t len, const size_t revision,
-                         const size_t frequency) {
-    if (!data) {
+void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequency, records& recs,
+                       buffer& leftovers) {
+    if (data == nullptr) {
         throw error(error::code::invalid_buffer, "buffer pointed to an invalid location");
     }
     if (len < min_words) {
@@ -454,14 +491,16 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
                     "minimum supported firmware rev is " + std::to_string(min_rev));
     }
 
-    events evts;
-    uint32_t* data_start = data;
-    auto core_elements = find_element_set(revision, frequency);
+    recs.clear();
+    auto* data_start = data;
+    auto* data_end = data_start + len;
+    auto& core_elements = find_element_set(revision, frequency);
 
-    while (data < data_start + len) {
-        event evt;
+    while (data < data_end) {
+        record evt;
         uint32_t event_time_low;
         uint32_t event_time_high;
+        double cfd_fractional_time;
         for (const auto& ele : core_elements) {
             auto val = (data[ele.header_index] & ele.value) >> ele.start_bit;
             switch (ele.type) {
@@ -503,7 +542,7 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
                     evt.cfd_forced_trigger = val != 0;
                     break;
                 case element::cfd_fractional_time:
-                    evt.cfd_fractional_time =
+                    cfd_fractional_time =
                         static_cast<double>(val) / cfd_multiplier(revision, frequency);
                     break;
                 case element::cfd_trigger_source_bit:
@@ -597,7 +636,8 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
         }
 
         if (has_ets) {
-            evt.external_time = make_u64_double(data[ets_offset + 1], data[ets_offset]);
+            evt.external_time =
+                record::time_type(make_u64_double(data[ets_offset + 1], data[ets_offset]));
         }
 
         if (has_esums) {
@@ -624,9 +664,8 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
         }
 
         data += evt.event_length;
-        evts.push_back(evt);
+        recs.push_back(evt);
     }
-    return evts;
 }
 
 }  // namespace list_mode
@@ -634,7 +673,7 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
 }  // namespace pixie
 }  // namespace xia
 
-std::ostream& operator<<(std::ostream& out, xia::pixie::data::list_mode::event& event) {
+std::ostream& operator<<(std::ostream& out, xia::pixie::data::list_mode::record& event) {
     event.output(out);
     return out;
 }

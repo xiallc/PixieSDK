@@ -23,6 +23,7 @@
 #ifndef PIXIESDK_LIST_MODE_HPP
 #define PIXIESDK_LIST_MODE_HPP
 
+#include <chrono>
 #include <string>
 #include <vector>
 
@@ -36,7 +37,7 @@ namespace list_mode {
 /*
  * Local error
  */
-typedef pixie::error::error error;
+using error = pixie::error::error;
 
 /**
  * @brief An enumeration providing all combinations of the list-mode data header.
@@ -85,23 +86,40 @@ enum header_length {
  *
  * The data present in a list-mode event may vary depending on the
  * firmware being used. This structure represents the totality of all values that
- * may exist within the various firmware. All values stored in this object have
- * been made independent of the specific firmware used to collect them.
+ * may exist within the firmware revisions. We set all values to appropriate
+ * defaults if they are not used. The set values will depend on your specific
+ * firmware revision. We recommend only using values that are present within your
+ * firmware specification.
  *
- * For example, the `time` has already combined the low and high parts of the
- * 48-bit time stamp with the CFD time if available.
+ * All values stored in this object have been made independent of the firmware
+ * used to collect them. For example, the `time` has already combined the low
+ * and high parts of the 48-bit time stamp with the CFD time.
  *
- * We've also attempted to ensure that any special number formats are converted
- * into standard types. The only example of this is the baseline included with
- * the energy sums. The Pixie-16 modules record this value in the IEEE 754
- * number format. We convert this to a double before saving within the data
- * structure.
+ * We've also converted any special number formats into standard types. The
+ * only example of this is the baseline included with the energy sums. The
+ * Pixie-16 modules record this value in the IEEE 754 number format. We convert
+ * this to a double before saving within the data structure.
  */
-class event {
-public:
-    event();
-    explicit event(const std::string& json_string);
-    ~event();
+struct record {
+    /**
+     * @brief Defines the type of object used for the energy sums data.
+     */
+    using energy_sums_type = std::vector<size_t>;
+    /**
+     * @brief Defines the type of object used for the trace
+     */
+    using trace_type = std::vector<size_t>;
+    /**
+     * @brief Defines the type of object used for the QDCs.
+     */
+    using qdc_type = std::vector<size_t>;
+    /**
+     * @brief Defines a time type that all the times in the object use.
+     */
+    using time_type = std::chrono::duration<double>;
+
+    record();
+    ~record() = default;
 
     /**
      * @brief Compares the objects to determine if they're equal.
@@ -117,26 +135,26 @@ public:
      * @param rhs The object that we're going to compare with.
      * @return True if the two objects compare as equal.
      */
-    bool operator==(const event& rhs) const;
+    bool operator==(const record& rhs) const;
     /**
      * @brief Conjugate of the equality operator
      * @param rhs The object that we want to compare
      * @return True if the two objects are not equal.
      */
-    bool operator!=(const event& rhs) const;
+    bool operator!=(const record& rhs) const;
     /**
      * @brief Uses the 48-bit timestamp to assess whether this event is less
      * than the provided event.
      * @param rhs The object we want to compare
      * @return True if this 48-bit time stamp is less than the one provided.
      */
-    bool operator<(const event& rhs) const;
+    bool operator<(const record& rhs) const;
     /**
      * @brief The conjugate of the less than operator
      * @param rhs The object that we're going to compare
      * @return True if the RHS is greater than the
      */
-    bool operator>(const event& rhs) const;
+    bool operator>(const record& rhs) const;
 
     /**
      * @brief True if the CFD was forced to trigger.
@@ -152,7 +170,7 @@ public:
      * @brief  The time at which the CFD crossed the zero-point.
      * @note Units of seconds
      */
-    double cfd_fractional_time;
+    time_type cfd_fractional_time;
     /**
      * @brief Indicates when the CFD zero crossing occurred with respect to the FPGA.
      *
@@ -199,7 +217,7 @@ public:
      * sums of the digital trapezoidal filter implemented in the Pixie-16 for
      * energy or pulse height measurement.
      */
-    std::vector<size_t> energy_sums;
+    energy_sums_type energy_sums;
     /**
      * @brief The event length is the header length + trace length.
      */
@@ -217,7 +235,7 @@ public:
      * into seconds like other time elements.
      *
      */
-    double external_time;
+    time_type external_time;
     /**
      * @brief Baseline that was recorded with the energy sums
      *
@@ -235,7 +253,7 @@ public:
      * @note This time does not include any CFD information.
      * @note Units of seconds
      */
-    double filter_time;
+    time_type filter_time;
     /**
      * @brief  If true, then the signal was piled-up with another signal during
      * processing.
@@ -256,7 +274,7 @@ public:
      * and maximum value). That implies that the 8 QDC sums can be arranged in
      * such ways that certain pulse shape analysis can be easily achieved.
      */
-    std::vector<size_t> qdc;
+    qdc_type qdc;
     /**
      * @brief The module's physical slot in the crate this ranges from [2, 14].
      */
@@ -267,14 +285,14 @@ public:
      *
      * This value combines the filter time with the CFD information if available.
      */
-    double time;
+    time_type time;
     /**
      * @brief  The ADC trace as recorded in the event.
      *
      * The length of the trace can vary depending on the specific settings
      * provided to the DSP by the user.
      */
-    std::vector<size_t> trace;
+    trace_type trace;
     /**
      * @brief The length of the trace as recorded in the header.
      */
@@ -292,39 +310,47 @@ public:
     void output(std::ostream& out) const;
 };
 
-std::string event_as_json(const event& evt);
-
-using events = std::vector<event>;
+/**
+ * @brief A type definition to define what a group of records.
+ */
+using records = std::vector<record>;
 
 /**
- * @brief Describes the elements that need to be decoded out of a list-mode event
+ * @brief Converts a record object into a JSON string.
+ * @param[in] rec The record that we want to convert into a string.
+ * @return The JSON string representation of the record object.
  */
-enum element {
-    cfd_forced_trigger_bit,
-    cfd_fractional_time,
-    cfd_trigger_source_bit,
-    channel_number,
-    crate_id,
-    energy,
-    event_length,
-    event_time_high,
-    event_time_low,
-    finish_code,
-    header_length,
-    slot_id,
-    trace_length,
-    trace_out_of_range_flag,
-    END
-};
+std::string record_to_json(const record& rec);
+/**
+ * @brief Converts a JSON string object into a record.
+ * @param[in] json_string The JSON string that we want converted to a record.
+ * @param[in, out] rec The record object to store the converted information.
+ * @throws xia::pixie::error::error if the string could not be converted to a record.
+ */
+void json_to_record(const std::string& json_string, record& rec);
 
-events decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequency);
+/**
+ * @brief A type definition to define an object that holds the binary data.
+ */
+using buffer = std::vector<uint32_t>;
+/**
+ * @brief
+ * @param data
+ * @param len
+ * @param revision
+ * @param frequency
+ * @param recs
+ * @param leftovers
+ */
+void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequency, records& recs,
+                       buffer& leftovers);
 
 }  // namespace list_mode
 }  // namespace data
 }  // namespace pixie
 }  // namespace xia
 
-std::ostream& operator<<(std::ostream& out, xia::pixie::data::list_mode::event& event);
+std::ostream& operator<<(std::ostream& out, xia::pixie::data::list_mode::record& event);
 
 
 #endif  //PIXIESDK_LIST_MODE_HPP
