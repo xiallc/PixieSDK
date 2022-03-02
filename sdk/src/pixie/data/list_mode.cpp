@@ -155,186 +155,193 @@ struct element_desc {
         : type(type_), value(value_), start_bit(bit_), header_index(header_index_) {}
 };
 
-static const std::vector<element_desc> descriptors_17562_100 = {
-    element_desc(element::cfd_fractional_time, 0xFFFF0000, 16, 2),
-    element_desc(element::channel_number, 0x0000000F, 0, 0),
-    element_desc(element::crate_id, 0x00000F00, 8, 0),
-    element_desc(element::energy, 0x0000FFFF, 0, 3),
-    element_desc(element::event_length, 0x3FFE0000, 17, 0),
-    element_desc(element::event_time_high, 0x0000FFFF, 0, 2),
-    element_desc(element::event_time_low, 0xFFFFFFFF, 0, 1),
-    element_desc(element::finish_code, 0x80000000, 31, 0),
-    element_desc(element::header_length, 0x0001F000, 12, 0),
-    element_desc(element::slot_id, 0x000000F0, 4, 0),
-    element_desc(element::trace_length, 0xFFFF0000, 16, 3),
-    element_desc(element::trace_out_of_range_flag, 0x40000000, 30, 0)};
+using descriptor_list = std::vector<element_desc>;
 
-static const std::vector<element_desc> descriptors_29432_100 = {
-    element_desc(element::cfd_fractional_time, 0xFFFF0000, 16, 2),
-    element_desc(element::channel_number, 0x0000000F, 0, 0),
-    element_desc(element::crate_id, 0x00000F00, 8, 0),
-    element_desc(element::energy, 0x00007FFF, 0, 3),
-    element_desc(element::event_length, 0x7FFE0000, 17, 0),
-    element_desc(element::event_time_high, 0x0000FFFF, 0, 2),
-    element_desc(element::event_time_low, 0xFFFFFFFF, 0, 1),
-    element_desc(element::finish_code, 0x80000000, 31, 0),
-    element_desc(element::header_length, 0x0001F000, 12, 0),
-    element_desc(element::slot_id, 0x000000F0, 4, 0),
-    element_desc(element::trace_length, 0xFFFF0000, 16, 3),
-    element_desc(element::trace_out_of_range_flag, 0x00008000, 15, 3)};
+/*
+ * NOTE: We put the event length, header length, and trace length first to ensure that we decode
+ * those data first and in that order. We need to perform checks on those data to ensure data
+ * validity. Everything else falls in alphabetical order to find them easier.
+ */
 
-static const std::vector<element_desc> descriptors_30474_100 = {
-    element_desc(element::cfd_forced_trigger_bit, 0x80000000, 31, 2),
-    element_desc(element::cfd_fractional_time, 0x7FFF0000, 16, 2),
-    element_desc(element::channel_number, 0x0000000F, 0, 0),
-    element_desc(element::crate_id, 0x00000F00, 8, 0),
-    element_desc(element::energy, 0x00007FFF, 0, 3),
-    element_desc(element::event_length, 0x7FFE0000, 17, 0),
-    element_desc(element::event_time_high, 0x0000FFFF, 0, 2),
-    element_desc(element::event_time_low, 0xFFFFFFFF, 0, 1),
-    element_desc(element::finish_code, 0x80000000, 31, 0),
-    element_desc(element::header_length, 0x0001F000, 12, 0),
-    element_desc(element::slot_id, 0x000000F0, 4, 0),
-    element_desc(element::trace_length, 0xFFFF0000, 16, 3),
-    element_desc(element::trace_out_of_range_flag, 0x00008000, 15, 3)};
+static const descriptor_list descriptors_17562_100 = {
+    {element::event_length, 0x3FFE0000, 17, 0},
+    {element::header_length, 0x0001F000, 12, 0},
+    {element::trace_length, 0xFFFF0000, 16, 3},
+    {element::cfd_fractional_time, 0xFFFF0000, 16, 2},
+    {element::channel_number, 0x0000000F, 0, 0},
+    {element::crate_id, 0x00000F00, 8, 0},
+    {element::energy, 0x0000FFFF, 0, 3},
+    {element::event_time_high, 0x0000FFFF, 0, 2},
+    {element::event_time_low, 0xFFFFFFFF, 0, 1},
+    {element::finish_code, 0x80000000, 31, 0},
+    {element::slot_id, 0x000000F0, 4, 0},
+    {element::trace_out_of_range_flag, 0x40000000, 30, 0}};
 
-static const std::vector<element_desc> descriptors_34688_100 = {
-    element_desc(element::cfd_forced_trigger_bit, 0x80000000, 31, 2),
-    element_desc(element::cfd_fractional_time, 0x7FFF0000, 16, 2),
-    element_desc(element::channel_number, 0x0000000F, 0, 0),
-    element_desc(element::crate_id, 0x00000F00, 8, 0),
-    element_desc(element::energy, 0x0000FFFF, 0, 3),
-    element_desc(element::event_length, 0x7FFE0000, 17, 0),
-    element_desc(element::event_time_high, 0x0000FFFF, 0, 2),
-    element_desc(element::event_time_low, 0xFFFFFFFF, 0, 1),
-    element_desc(element::finish_code, 0x80000000, 31, 0),
-    element_desc(element::header_length, 0x0001F000, 12, 0),
-    element_desc(element::slot_id, 0x000000F0, 4, 0),
-    element_desc(element::trace_length, 0x7FFF0000, 16, 3),
-    element_desc(element::trace_out_of_range_flag, 0x80000000, 31, 3)};
+static const descriptor_list descriptors_29432_100 = {
+    {element::event_length, 0x7FFE0000, 17, 0},
+    {element::header_length, 0x0001F000, 12, 0},
+    {element::trace_length, 0xFFFF0000, 16, 3},
+    {element::cfd_fractional_time, 0xFFFF0000, 16, 2},
+    {element::channel_number, 0x0000000F, 0, 0},
+    {element::crate_id, 0x00000F00, 8, 0},
+    {element::energy, 0x00007FFF, 0, 3},
+    {element::event_time_high, 0x0000FFFF, 0, 2},
+    {element::event_time_low, 0xFFFFFFFF, 0, 1},
+    {element::finish_code, 0x80000000, 31, 0},
+    {element::slot_id, 0x000000F0, 4, 0},
+    {element::trace_out_of_range_flag, 0x00008000, 15, 3}};
 
-static const std::vector<element_desc> descriptors_20466_250 = {
-    element_desc(element::cfd_fractional_time, 0xFFFF0000, 16, 2),
-    element_desc(element::channel_number, 0x0000000F, 0, 0),
-    element_desc(element::crate_id, 0x00000F00, 8, 0),
-    element_desc(element::energy, 0x0000FFFF, 0, 3),
-    element_desc(element::event_length, 0x3FFE0000, 17, 0),
-    element_desc(element::event_time_high, 0x0000FFFF, 0, 2),
-    element_desc(element::event_time_low, 0xFFFFFFFF, 0, 1),
-    element_desc(element::finish_code, 0x80000000, 31, 0),
-    element_desc(element::header_length, 0x0001F000, 12, 0),
-    element_desc(element::slot_id, 0x000000F0, 4, 0),
-    element_desc(element::trace_length, 0xFFFF0000, 16, 3),
-    element_desc(element::trace_out_of_range_flag, 0x40000000, 30, 0)};
+static const descriptor_list descriptors_30474_100 = {
+    {element::event_length, 0x7FFE0000, 17, 0},
+    {element::header_length, 0x0001F000, 12, 0},
+    {element::trace_length, 0xFFFF0000, 16, 3},
+    {element::cfd_forced_trigger_bit, 0x80000000, 31, 2},
+    {element::cfd_fractional_time, 0x7FFF0000, 16, 2},
+    {element::channel_number, 0x0000000F, 0, 0},
+    {element::crate_id, 0x00000F00, 8, 0},
+    {element::energy, 0x00007FFF, 0, 3},
+    {element::event_time_high, 0x0000FFFF, 0, 2},
+    {element::event_time_low, 0xFFFFFFFF, 0, 1},
+    {element::finish_code, 0x80000000, 31, 0},
+    {element::slot_id, 0x000000F0, 4, 0},
+    {element::trace_out_of_range_flag, 0x00008000, 15, 3}};
 
-static const std::vector<element_desc> descriptors_27361_250 = {
-    element_desc(element::cfd_fractional_time, 0x7FFF0000, 16, 2),
-    element_desc(element::cfd_trigger_source_bit, 0x80000000, 31, 2),
-    element_desc(element::channel_number, 0x0000000F, 0, 0),
-    element_desc(element::crate_id, 0x00000F00, 8, 0),
-    element_desc(element::energy, 0x0000FFFF, 0, 3),
-    element_desc(element::event_length, 0x3FFE0000, 17, 0),
-    element_desc(element::event_time_high, 0x0000FFFF, 0, 2),
-    element_desc(element::event_time_low, 0xFFFFFFFF, 0, 1),
-    element_desc(element::finish_code, 0x80000000, 31, 0),
-    element_desc(element::header_length, 0x0001F000, 12, 0),
-    element_desc(element::slot_id, 0x000000F0, 4, 0),
-    element_desc(element::trace_length, 0xFFFF0000, 16, 3),
-    element_desc(element::trace_out_of_range_flag, 0x40000000, 30, 0),
-};
+static const descriptor_list descriptors_34688_100 = {
+    {element::event_length, 0x7FFE0000, 17, 0},
+    {element::header_length, 0x0001F000, 12, 0},
+    {element::trace_length, 0x7FFF0000, 16, 3},
+    {element::cfd_forced_trigger_bit, 0x80000000, 31, 2},
+    {element::cfd_fractional_time, 0x7FFF0000, 16, 2},
+    {element::channel_number, 0x0000000F, 0, 0},
+    {element::crate_id, 0x00000F00, 8, 0},
+    {element::energy, 0x0000FFFF, 0, 3},
+    {element::event_time_high, 0x0000FFFF, 0, 2},
+    {element::event_time_low, 0xFFFFFFFF, 0, 1},
+    {element::finish_code, 0x80000000, 31, 0},
+    {element::slot_id, 0x000000F0, 4, 0},
+    {element::trace_out_of_range_flag, 0x80000000, 31, 3}};
 
-static const std::vector<element_desc> descriptors_29432_250 = {
-    element_desc(element::cfd_fractional_time, 0x7FFF0000, 16, 2),
-    element_desc(element::cfd_trigger_source_bit, 0x80000000, 31, 2),
-    element_desc(element::channel_number, 0x0000000F, 0, 0),
-    element_desc(element::crate_id, 0x00000F00, 8, 0),
-    element_desc(element::energy, 0x00007FFF, 0, 3),
-    element_desc(element::event_length, 0x7FFE0000, 17, 0),
-    element_desc(element::event_time_high, 0x0000FFFF, 0, 2),
-    element_desc(element::event_time_low, 0xFFFFFFFF, 0, 1),
-    element_desc(element::finish_code, 0x80000000, 31, 0),
-    element_desc(element::header_length, 0x0001F000, 12, 0),
-    element_desc(element::slot_id, 0x000000F0, 4, 0),
-    element_desc(element::trace_length, 0xFFFF0000, 16, 3),
-    element_desc(element::trace_out_of_range_flag, 0x00008000, 15, 3)};
+static const descriptor_list descriptors_20466_250 = {
+    {element::event_length, 0x3FFE0000, 17, 0},
+    {element::header_length, 0x0001F000, 12, 0},
+    {element::trace_length, 0xFFFF0000, 16, 3},
+    {element::cfd_fractional_time, 0xFFFF0000, 16, 2},
+    {element::channel_number, 0x0000000F, 0, 0},
+    {element::crate_id, 0x00000F00, 8, 0},
+    {element::energy, 0x0000FFFF, 0, 3},
+    {element::event_time_high, 0x0000FFFF, 0, 2},
+    {element::event_time_low, 0xFFFFFFFF, 0, 1},
+    {element::finish_code, 0x80000000, 31, 0},
+    {element::slot_id, 0x000000F0, 4, 0},
+    {element::trace_out_of_range_flag, 0x40000000, 30, 0}};
 
-static const std::vector<element_desc> descriptors_30474_250 = {
-    element_desc(element::cfd_forced_trigger_bit, 0x80000000, 31, 2),
-    element_desc(element::cfd_fractional_time, 0x3FFF0000, 16, 2),
-    element_desc(element::cfd_trigger_source_bit, 0x40000000, 30, 2),
-    element_desc(element::channel_number, 0x0000000F, 0, 0),
-    element_desc(element::crate_id, 0x00000F00, 8, 0),
-    element_desc(element::energy, 0x00007FFF, 0, 3),
-    element_desc(element::event_length, 0x7FFE0000, 17, 0),
-    element_desc(element::event_time_high, 0x0000FFFF, 0, 2),
-    element_desc(element::event_time_low, 0xFFFFFFFF, 0, 1),
-    element_desc(element::finish_code, 0x80000000, 31, 0),
-    element_desc(element::header_length, 0x0001F000, 12, 0),
-    element_desc(element::slot_id, 0x000000F0, 4, 0),
-    element_desc(element::trace_length, 0xFFFF0000, 16, 3),
-    element_desc(element::trace_out_of_range_flag, 0x00008000, 15, 3)};
+static const descriptor_list descriptors_27361_250 = {
+    {element::event_length, 0x3FFE0000, 17, 0},
+    {element::header_length, 0x0001F000, 12, 0},
+    {element::trace_length, 0xFFFF0000, 16, 3},
+    {element::cfd_fractional_time, 0x7FFF0000, 16, 2},
+    {element::cfd_trigger_source_bit, 0x80000000, 31, 2},
+    {element::channel_number, 0x0000000F, 0, 0},
+    {element::crate_id, 0x00000F00, 8, 0},
+    {element::energy, 0x0000FFFF, 0, 3},
+    {element::event_time_high, 0x0000FFFF, 0, 2},
+    {element::event_time_low, 0xFFFFFFFF, 0, 1},
+    {element::finish_code, 0x80000000, 31, 0},
+    {element::slot_id, 0x000000F0, 4, 0},
+    {element::trace_out_of_range_flag, 0x40000000, 30, 0}};
 
-static const std::vector<element_desc> descriptors_34688_250 = {
-    element_desc(element::cfd_forced_trigger_bit, 0x80000000, 31, 2),
-    element_desc(element::cfd_fractional_time, 0x3FFF0000, 16, 2),
-    element_desc(element::cfd_trigger_source_bit, 0x40000000, 30, 2),
-    element_desc(element::channel_number, 0x0000000F, 0, 0),
-    element_desc(element::crate_id, 0x00000F00, 8, 0),
-    element_desc(element::energy, 0x0000FFFF, 0, 3),
-    element_desc(element::event_length, 0x7FFE0000, 17, 0),
-    element_desc(element::event_time_high, 0x0000FFFF, 0, 2),
-    element_desc(element::event_time_low, 0xFFFFFFFF, 0, 1),
-    element_desc(element::finish_code, 0x80000000, 31, 0),
-    element_desc(element::header_length, 0x0001F000, 12, 0),
-    element_desc(element::slot_id, 0x000000F0, 4, 0),
-    element_desc(element::trace_length, 0x7FFF0000, 16, 3),
-    element_desc(element::trace_out_of_range_flag, 0x80000000, 31, 3)};
+static const descriptor_list descriptors_29432_250 = {
+    {element::event_length, 0x7FFE0000, 17, 0},
+    {element::header_length, 0x0001F000, 12, 0},
+    {element::trace_length, 0xFFFF0000, 16, 3},
+    {element::cfd_fractional_time, 0x7FFF0000, 16, 2},
+    {element::cfd_trigger_source_bit, 0x80000000, 31, 2},
+    {element::channel_number, 0x0000000F, 0, 0},
+    {element::crate_id, 0x00000F00, 8, 0},
+    {element::energy, 0x00007FFF, 0, 3},
+    {element::event_time_high, 0x0000FFFF, 0, 2},
+    {element::event_time_low, 0xFFFFFFFF, 0, 1},
+    {element::finish_code, 0x80000000, 31, 0},
+    {element::slot_id, 0x000000F0, 4, 0},
+    {element::trace_out_of_range_flag, 0x00008000, 15, 3}};
 
-static const std::vector<element_desc> descriptors_46540_250 = {
-    element_desc(element::cfd_forced_trigger_bit, 0x80000000, 31, 2),
-    element_desc(element::cfd_fractional_time, 0x3FFF0000, 16, 2),
-    element_desc(element::cfd_trigger_source_bit, 0x40000000, 30, 2),
-    element_desc(element::channel_number, 0x0000003F, 0, 0),
-    element_desc(element::crate_id, 0x00000C00, 10, 0),
-    element_desc(element::energy, 0x0000FFFF, 0, 3),
-    element_desc(element::event_length, 0x7FFE0000, 17, 0),
-    element_desc(element::event_time_high, 0x0000FFFF, 0, 2),
-    element_desc(element::event_time_low, 0xFFFFFFFF, 0, 1),
-    element_desc(element::finish_code, 0x80000000, 31, 0),
-    element_desc(element::header_length, 0x0001F000, 12, 0),
-    element_desc(element::slot_id, 0x000003C0, 6, 0),
-    element_desc(element::trace_length, 0x7FFF0000, 16, 3),
-    element_desc(element::trace_out_of_range_flag, 0x80000000, 31, 3)};
+static const descriptor_list descriptors_30474_250 = {
+    {element::event_length, 0x7FFE0000, 17, 0},
+    {element::header_length, 0x0001F000, 12, 0},
+    {element::trace_length, 0xFFFF0000, 16, 3},
+    {element::cfd_forced_trigger_bit, 0x80000000, 31, 2},
+    {element::cfd_fractional_time, 0x3FFF0000, 16, 2},
+    {element::cfd_trigger_source_bit, 0x40000000, 30, 2},
+    {element::channel_number, 0x0000000F, 0, 0},
+    {element::crate_id, 0x00000F00, 8, 0},
+    {element::energy, 0x00007FFF, 0, 3},
+    {element::event_time_high, 0x0000FFFF, 0, 2},
+    {element::event_time_low, 0xFFFFFFFF, 0, 1},
+    {element::finish_code, 0x80000000, 31, 0},
+    {element::slot_id, 0x000000F0, 4, 0},
+    {element::trace_out_of_range_flag, 0x00008000, 15, 3}};
 
-static const std::vector<element_desc> descriptors_29432_500 = {
-    element_desc(element::cfd_fractional_time, 0x1FFF0000, 16, 2),
-    element_desc(element::cfd_trigger_source_bit, 0xE0000000, 29, 2),
-    element_desc(element::channel_number, 0x0000000F, 0, 0),
-    element_desc(element::crate_id, 0x00000F00, 8, 0),
-    element_desc(element::energy, 0x00007FFF, 0, 3),
-    element_desc(element::event_length, 0x7FFE0000, 17, 0),
-    element_desc(element::event_time_high, 0x0000FFFF, 0, 2),
-    element_desc(element::event_time_low, 0xFFFFFFFF, 0, 1),
-    element_desc(element::finish_code, 0x80000000, 31, 0),
-    element_desc(element::header_length, 0x0001F000, 12, 0),
-    element_desc(element::slot_id, 0x000000F0, 4, 0),
-    element_desc(element::trace_length, 0xFFFF0000, 16, 3),
-    element_desc(element::trace_out_of_range_flag, 0x00008000, 15, 3)};
+static const descriptor_list descriptors_34688_250 = {
+    {element::event_length, 0x7FFE0000, 17, 0},
+    {element::header_length, 0x0001F000, 12, 0},
+    {element::trace_length, 0x7FFF0000, 16, 3},
+    {element::cfd_forced_trigger_bit, 0x80000000, 31, 2},
+    {element::cfd_fractional_time, 0x3FFF0000, 16, 2},
+    {element::cfd_trigger_source_bit, 0x40000000, 30, 2},
+    {element::channel_number, 0x0000000F, 0, 0},
+    {element::crate_id, 0x00000F00, 8, 0},
+    {element::energy, 0x0000FFFF, 0, 3},
+    {element::event_time_high, 0x0000FFFF, 0, 2},
+    {element::event_time_low, 0xFFFFFFFF, 0, 1},
+    {element::finish_code, 0x80000000, 31, 0},
+    {element::slot_id, 0x000000F0, 4, 0},
+    {element::trace_out_of_range_flag, 0x80000000, 31, 3}};
 
-static const std::vector<element_desc> descriptors_34688_500 = {
-    element_desc(element::cfd_fractional_time, 0x1FFF0000, 16, 2),
-    element_desc(element::cfd_trigger_source_bit, 0xE0000000, 29, 2),
-    element_desc(element::channel_number, 0x0000000F, 0, 0),
-    element_desc(element::crate_id, 0x00000F00, 8, 0),
-    element_desc(element::energy, 0x0000FFFF, 0, 3),
-    element_desc(element::event_length, 0x7FFE0000, 17, 0),
-    element_desc(element::event_time_high, 0x0000FFFF, 0, 2),
-    element_desc(element::event_time_low, 0xFFFFFFFF, 0, 1),
-    element_desc(element::finish_code, 0x80000000, 31, 0),
-    element_desc(element::header_length, 0x0001F000, 12, 0),
-    element_desc(element::slot_id, 0x000000F0, 4, 0),
-    element_desc(element::trace_length, 0x7FFF0000, 16, 3),
-    element_desc(element::trace_out_of_range_flag, 0x80000000, 31, 3)};
+static const descriptor_list descriptors_46540_250 = {
+    {element::event_length, 0x7FFE0000, 17, 0},
+    {element::header_length, 0x0001F000, 12, 0},
+    {element::trace_length, 0x7FFF0000, 16, 3},
+    {element::cfd_forced_trigger_bit, 0x80000000, 31, 2},
+    {element::cfd_fractional_time, 0x3FFF0000, 16, 2},
+    {element::cfd_trigger_source_bit, 0x40000000, 30, 2},
+    {element::channel_number, 0x0000003F, 0, 0},
+    {element::crate_id, 0x00000C00, 10, 0},
+    {element::energy, 0x0000FFFF, 0, 3},
+    {element::event_time_high, 0x0000FFFF, 0, 2},
+    {element::event_time_low, 0xFFFFFFFF, 0, 1},
+    {element::finish_code, 0x80000000, 31, 0},
+    {element::slot_id, 0x000003C0, 6, 0},
+    {element::trace_out_of_range_flag, 0x80000000, 31, 3}};
+
+static const descriptor_list descriptors_29432_500 = {
+    {element::event_length, 0x7FFE0000, 17, 0},
+    {element::header_length, 0x0001F000, 12, 0},
+    {element::trace_length, 0xFFFF0000, 16, 3},
+    {element::cfd_fractional_time, 0x1FFF0000, 16, 2},
+    {element::cfd_trigger_source_bit, 0xE0000000, 29, 2},
+    {element::channel_number, 0x0000000F, 0, 0},
+    {element::crate_id, 0x00000F00, 8, 0},
+    {element::energy, 0x00007FFF, 0, 3},
+    {element::event_time_high, 0x0000FFFF, 0, 2},
+    {element::event_time_low, 0xFFFFFFFF, 0, 1},
+    {element::finish_code, 0x80000000, 31, 0},
+    {element::slot_id, 0x000000F0, 4, 0},
+    {element::trace_out_of_range_flag, 0x00008000, 15, 3}};
+
+static const descriptor_list descriptors_34688_500 = {
+    {element::event_length, 0x7FFE0000, 17, 0},
+    {element::header_length, 0x0001F000, 12, 0},
+    {element::trace_length, 0x7FFF0000, 16, 3},
+    {element::cfd_fractional_time, 0x1FFF0000, 16, 2},
+    {element::cfd_trigger_source_bit, 0xE0000000, 29, 2},
+    {element::channel_number, 0x0000000F, 0, 0},
+    {element::crate_id, 0x00000F00, 8, 0},
+    {element::energy, 0x0000FFFF, 0, 3},
+    {element::event_time_high, 0x0000FFFF, 0, 2},
+    {element::event_time_low, 0xFFFFFFFF, 0, 1},
+    {element::finish_code, 0x80000000, 31, 0},
+    {element::slot_id, 0x000000F0, 4, 0},
+    {element::trace_out_of_range_flag, 0x80000000, 31, 3}};
 
 static uint64_t make_u64(const uint32_t high, const uint32_t low) {
     return (uint64_t(high) << 32) | uint64_t(low);
@@ -365,7 +372,7 @@ static void make_time(event& evt, const size_t freq, const uint32_t filter_low,
     evt.time = evt.cfd_fractional_time + evt.filter_time;
 }
 
-static std::vector<element_desc> find_element_set(size_t rev, size_t freq) {
+static const descriptor_list& find_element_set(size_t rev, size_t freq) {
     switch (freq) {
         case 100:
             if (rev >= 17562 && rev < 29432) {
@@ -458,6 +465,40 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
         for (const auto& ele : core_elements) {
             auto val = (data[ele.header_index] & ele.value) >> ele.start_bit;
             switch (ele.type) {
+                case element::event_length:
+                    if (len < val) {
+                        throw error(error::code::invalid_buffer_length,
+                                    "buffer length is smaller than the reported event");
+                    }
+                    evt.event_length = val;
+                    break;
+                case element::header_length:
+                    evt.header_length = val;
+                    if (revision < 30980) {
+                        switch (val) {
+                            case header_length::header_ets:
+                            case header_length::header_esum_ets:
+                            case header_length::header_qdc_ets:
+                            case header_length::header_esum_qdc_ets:
+                                throw error(error::code::invalid_header_length,
+                                            "external timestamps not introduced until revision 30980");
+                            default:
+                                break;
+                        }
+                    }
+                    break;
+                case element::trace_length:
+                    /*
+                     * The trace length is stored as the number of samples, so we need to
+                     * divide by two to when comparing with the event length, which is
+                     * provided as the number of 32-bit words.
+                     */
+                    if (evt.event_length != evt.header_length + val / 2) {
+                        throw error(error::code::invalid_event_length,
+                                    "Event length does not match header length plus 0.5 * trace_length");
+                    }
+                    evt.trace_length = val;
+                    break;
                 case element::cfd_forced_trigger_bit:
                     evt.cfd_forced_trigger = val != 0;
                     break;
@@ -477,9 +518,6 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
                 case element::energy:
                     evt.energy = static_cast<double>(val);
                     break;
-                case element::event_length:
-                    evt.event_length = val;
-                    break;
                 case element::event_time_high:
                     event_time_high = val;
                     break;
@@ -489,14 +527,9 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
                 case element::finish_code:
                     evt.finish_code = val != 0;
                     break;
-                case element::header_length:
-                    evt.header_length = val;
-                    break;
+
                 case element::slot_id:
                     evt.slot_id = val;
-                    break;
-                case element::trace_length:
-                    evt.trace_length = val;
                     break;
                 case element::trace_out_of_range_flag:
                     evt.trace_out_of_range = val != 0;
@@ -504,27 +537,6 @@ events decode_data_block(uint32_t* data, const size_t len, const size_t revision
                 default:
                     throw error(error::code::invalid_element, "Unknown data element encountered");
             }
-        }
-
-        if (len < evt.event_length) {
-            throw error(error::code::invalid_buffer_length,
-                        "buffer length is smaller than the reported event");
-        }
-
-        if (revision < 30980) {
-            switch (evt.header_length) {
-                case header_length::header_ets:
-                case header_length::header_esum_ets:
-                case header_length::header_qdc_ets:
-                case header_length::header_esum_qdc_ets:
-                    throw error(error::code::invalid_header_length,
-                                "external timestamps not introduced until revision 30980");
-            }
-        }
-
-        if (evt.event_length != evt.header_length + evt.trace_length / 2) {
-            throw error(error::code::invalid_event_length,
-                        "Event length does not match header length plus 0.5 * trace_length");
         }
 
         /*
