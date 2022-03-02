@@ -519,8 +519,9 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
                             case header_length::header_esum_ets:
                             case header_length::header_qdc_ets:
                             case header_length::header_esum_qdc_ets:
-                                throw error(error::code::invalid_header_length,
-                                            "external timestamps not introduced until revision 30980");
+                                throw error(
+                                    error::code::invalid_header_length,
+                                    "external timestamps not introduced until revision 30980");
                             default:
                                 break;
                         }
@@ -533,8 +534,9 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
                      * provided as the number of 32-bit words.
                      */
                     if (evt.event_length != evt.header_length + val / 2) {
-                        throw error(error::code::invalid_event_length,
-                                    "Event length does not match header length plus 0.5 * trace_length");
+                        throw error(
+                            error::code::invalid_event_length,
+                            "Event length does not match header length plus 0.5 * trace_length");
                     }
                     evt.trace_length = val;
                     break;

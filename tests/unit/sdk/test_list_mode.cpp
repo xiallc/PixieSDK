@@ -186,8 +186,8 @@ TEST_SUITE("xia::pixie::list_mode") {
         return expected;
     }
 
-    buffer generate_data(uint32_t word0, uint32_t word1, uint32_t word2,
-                                        uint32_t word3, bool ets, bool esum, bool qdc, bool trc) {
+    buffer generate_data(uint32_t word0, uint32_t word1, uint32_t word2, uint32_t word3, bool ets,
+                         bool esum, bool qdc, bool trc) {
         static const record::trace_type packed_trace = {
             2031645, 1966108, 1966107, 2031646, 1900572, 1966109, 5636132, 27918606,
             5243148, 1900578, 2097179, 1900572, 2097183, 2162715, 1900572};
