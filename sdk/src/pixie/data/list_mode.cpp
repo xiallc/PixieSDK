@@ -498,9 +498,9 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
 
     while (data < data_end) {
         record evt;
-        uint32_t event_time_low;
-        uint32_t event_time_high;
-        double cfd_fractional_time;
+        uint32_t event_time_low = 0;
+        uint32_t event_time_high = 0;
+        double cfd_fractional_time = 0;
         for (const auto& ele : core_elements) {
             auto val = (data[ele.header_index] & ele.value) >> ele.start_bit;
             switch (ele.type) {
@@ -542,6 +542,15 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
                     evt.cfd_forced_trigger = val != 0;
                     break;
                 case element::cfd_fractional_time:
+                    /*
+                     * We could treat this as not an error and just force the CFD time to be zero instead.
+                     * The downside to that would be it masks issues in the firmware. We've chosen to make it a
+                     * hard kill at this time.
+                     */
+                    if (evt.cfd_forced_trigger && val != 0) {
+                        throw error(error::code::invalid_cfd_time,
+                                    "data corruption: cfd was forced but still recorded a time");
+                    }
                     cfd_fractional_time =
                         static_cast<double>(val) / cfd_multiplier(revision, frequency);
                     break;
@@ -566,7 +575,6 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
                 case element::finish_code:
                     evt.finish_code = val != 0;
                     break;
-
                 case element::slot_id:
                     evt.slot_id = val;
                     break;
@@ -578,18 +586,7 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
             }
         }
 
-        /*
-         * TODO: I'm leaving this here as a note that we should check, but haven't decided if this should be hard or soft.
-         * We could treat this as not an error and just force the CFD time to be zero instead.
-         * The downside to that would be it masks issues in the firmware.
-         */
-        /*
-        if (evt.cfd_forced_trigger && evt.cfd_fractional_time != 0) {
-            throw error(error::code::invalid_cfd_time,
-                        "data corruption: cfd was forced but still recorded a time");
-        }
-         */
-        make_time(evt, frequency, event_time_low, event_time_high);
+        make_time(evt, frequency, event_time_low, event_time_high, cfd_fractional_time);
 
         unsigned int ets_offset = evt.header_length - num_ext_ts_words;
         unsigned int esums_offset = 0;

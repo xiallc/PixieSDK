@@ -88,6 +88,7 @@ static const std::map<code, result_code> result_codes = {
     {code::invalid_buffer_length, {404, "invalid data length"}},
     {code::invalid_event_length, {405, "invalid event length"}},
     {code::invalid_buffer, {406, "invalid buffer"}},
+    {code::invalid_cfd_time, {407, "invalid cfd fractional time"}},
     /*
      * Device
      */

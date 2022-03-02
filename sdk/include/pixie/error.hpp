@@ -209,6 +209,10 @@ enum struct code {
      * @brief 406
      */
     invalid_buffer,
+    /**
+     * @brief 407
+     */
+    invalid_cfd_time,
     /*
      * Device
      */
