@@ -88,6 +88,7 @@ TEST_SUITE("xia::pixie::list_mode") {
             CHECK(buf.str() == "crate: 1 slot: 1 channel: 1 time: 4771708666967 energy: 1235");
         }
     }
+
     TEST_CASE("Data Validity") {
         records recs;
         buffer leftover;
