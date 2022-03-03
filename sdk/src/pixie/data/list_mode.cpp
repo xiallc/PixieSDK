@@ -482,32 +482,52 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
     if (data == nullptr) {
         throw error(error::code::invalid_buffer, "buffer pointed to an invalid location");
     }
-    if (len < min_words) {
-        throw error(error::code::invalid_buffer_length,
-                    "minimum data buffer size is " + std::to_string(min_words));
+    if (len == 0) {
+        throw error(error::code::invalid_buffer_length, "minimum data buffer size is 1");
     }
     if (revision < min_rev) {
         throw error(error::code::invalid_revision,
                     "minimum supported firmware rev is " + std::to_string(min_rev));
     }
 
+    /*
+     * We check to see if the data buffer meets the minimum size requirement for a complete record.
+     * If it doesn't, we assume that we've been passed a partial buffer, and immediately prepare
+     * to fill the leftovers buffer.
+     */
+    bool has_leftovers = false;
+    if (len < min_words) {
+        has_leftovers = true;
+    }
+
     recs.clear();
+    leftovers.clear();
     auto* data_start = data;
     auto* data_end = data_start + len;
+    auto remaining_len = len;
     auto& core_elements = find_element_set(revision, frequency);
 
     while (data < data_end) {
+        if (has_leftovers) {
+            leftovers.push_back(*data);
+            data += 1;
+            continue;
+        }
+
         record evt;
         uint32_t event_time_low = 0;
         uint32_t event_time_high = 0;
         double cfd_fractional_time = 0;
+
         for (const auto& ele : core_elements) {
+            if (has_leftovers) {
+                break;
+            }
             auto val = (data[ele.header_index] & ele.value) >> ele.start_bit;
             switch (ele.type) {
                 case element::event_length:
-                    if (len < val) {
-                        throw error(error::code::invalid_buffer_length,
-                                    "buffer length is smaller than the reported event");
+                    if (remaining_len < val) {
+                        has_leftovers = true;
                     }
                     evt.event_length = val;
                     break;
@@ -588,6 +608,10 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
             }
         }
 
+        if (has_leftovers) {
+            continue;
+        }
+
         make_time(evt, frequency, event_time_low, event_time_high, cfd_fractional_time);
 
         unsigned int ets_offset = evt.header_length - num_ext_ts_words;
@@ -663,6 +687,7 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
         }
 
         data += evt.event_length;
+        remaining_len -= evt.event_length;
         recs.push_back(evt);
     }
 }

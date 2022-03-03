@@ -99,8 +99,8 @@ TEST_SUITE("xia::pixie::list_mode") {
 
         std::vector<uint32_t> empty(4, 0);
         SUBCASE("Verify minimum buffer size") {
-            CHECK_THROWS_WITH_AS(decode_data_block(empty.data(), 2, 30474, 250, recs, leftover),
-                                 "minimum data buffer size is 4", xia::pixie::error::error);
+            CHECK_THROWS_WITH_AS(decode_data_block(empty.data(), 0, 30474, 250, recs, leftover),
+                                 "minimum data buffer size is 1", xia::pixie::error::error);
         }
         SUBCASE("Verify valid frequency") {
             CHECK_THROWS_WITH_AS(
@@ -236,13 +236,6 @@ TEST_SUITE("xia::pixie::list_mode") {
     TEST_CASE("Decoding Failure Modes") {
         records recs;
         buffer leftover;
-        SUBCASE("Event length larger than buffer length") {
-            auto data =
-                generate_data(3292463146, 123456789, 202182637, 1966560, false, true, true, true);
-            CHECK_THROWS_WITH_AS(
-                decode_data_block(data.data(), data.size(), 17562, 100, recs, leftover),
-                "buffer length is smaller than the reported event", xia::pixie::error::error);
-        }
         SUBCASE("event length != header length + 0.5*trace length") {
             auto data =
                 generate_data(3223257130, 123456789, 202182637, 1966560, false, true, true, true);
@@ -273,6 +266,39 @@ TEST_SUITE("xia::pixie::list_mode") {
                 decode_data_block(data.data(), data.size(), 30474, 250, recs, leftover),
                 "data corruption: cfd was forced but still recorded a time",
                 xia::pixie::error::error);
+        }
+    }
+
+    TEST_CASE("Leftover handling") {
+        records recs;
+        buffer leftover;
+        SUBCASE("Missing core header words") {
+            buffer data = {2149990442, 3735933136};
+            decode_data_block(data.data(), data.size(), 34688, 250, recs, leftover);
+            CHECK(recs.size() == 0);
+            CHECK(leftover.size() == 2);
+            CHECK(leftover == data);
+        }
+        SUBCASE("Missing trace") {
+            buffer data = {2149990442, 3735933136, 1275924461, 2149450208};
+            decode_data_block(data.data(), data.size(), 34688, 250, recs, leftover);
+            CHECK(recs.size() == 0);
+            CHECK(leftover.size() == 4);
+            CHECK(leftover == data);
+        }
+        SUBCASE("A full record, with a partial") {
+            auto evt = init_event(250, 16384, 19, 4, 1, false, false, false, false, true);
+            auto data = generate_data(2149990442, 3735933136, 1275924461, 2149450208, false, false,
+                                      false, true);
+            std::vector<unsigned int> extra_data = {2149990442, 3735933136, 1275924461, 2149450208};
+            data.insert(data.end(), extra_data.begin(), extra_data.end());
+
+            decode_data_block(data.data(), data.size(), 34688, 250, recs, leftover);
+
+            CHECK(recs.size() == 1);
+            check_decoded_data(recs[0], evt);
+            CHECK(leftover.size() == 4);
+            CHECK(leftover == extra_data);
         }
     }
 
