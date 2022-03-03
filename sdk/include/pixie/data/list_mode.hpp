@@ -182,7 +182,7 @@ struct record {
      * the second 4 ns of the 8 ns interval (even cycle) (or in any of the 5
      * samples per cycle). The Pixie-16 outputs such “within-cycle” information
      * using the CFD trigger source bits in the event header. Offline analysis
-     * program can then know exactly when the CFD zero crossing occurred and
+     * programs can then know exactly when the CFD zero crossing occurred and
      * the exact CFD fractional time can be known.
      */
     size_t cfd_trigger_source;
@@ -206,20 +206,18 @@ struct record {
      * baseline and maximum sample of the pulse, but rather the result of the
      * energy filter corrected for the exponential decay of the signal.
      *
-     * If an event is a piled up event, or if the event’s trace out-of-range
-     * flag is set to 1, the event’s energy will be defaulted to 0.
      */
     double energy;
     /**
      * @brief Energy sums recorded by the module
      *
-     * The list mode energy sums (leading, gap and trailing) are the 3 running
+     * The list-mode energy sums (leading, gap and trailing) are the 3 running
      * sums of the digital trapezoidal filter implemented in the Pixie-16 for
      * energy or pulse height measurement.
      */
     energy_sums_type energy_sums;
     /**
-     * @brief The event length is the header length + trace length.
+     * @brief The number of 32-bit unsigned integers that this record was packed into.
      */
     size_t event_length;
     /**
