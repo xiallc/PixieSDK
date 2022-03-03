@@ -37,6 +37,8 @@ static constexpr size_t min_words = 4;
 static constexpr size_t num_qdc_words = 8;
 static constexpr size_t num_esum_words = 4;
 static constexpr size_t num_ext_ts_words = 2;
+static constexpr size_t min_slot_id = 2;
+static constexpr size_t max_slot_id = 14;
 
 using json = nlohmann::json;
 
@@ -526,9 +528,8 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
             auto val = (data[ele.header_index] & ele.value) >> ele.start_bit;
             switch (ele.type) {
                 case element::event_length:
-                    if(val == 0) {
-                        throw error(error::code::invalid_event_length,
-                                    "bad event length: 0");
+                    if (val == 0) {
+                        throw error(error::code::invalid_event_length, "bad event length: 0");
                     }
                     if (remaining_len < val) {
                         has_leftovers = true;
@@ -602,6 +603,10 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
                     evt.finish_code = val != 0;
                     break;
                 case element::slot_id:
+                    if (val < min_slot_id || val > max_slot_id) {
+                        throw error(error::code::invalid_slot_id,
+                                    "bad slot id: " + std::to_string(val));
+                    }
                     evt.slot_id = val;
                     break;
                 case element::trace_out_of_range_flag:

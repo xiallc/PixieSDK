@@ -258,6 +258,18 @@ TEST_SUITE("xia::pixie::list_mode") {
                 decode_data_block(data.data(), data.size(), 17562, 100, recs, leftover),
                 "unknown header length: 11", xia::pixie::error::error);
         }
+        SUBCASE("Invalid slot - too small") {
+            buffer data = {3221766154, 123456789, 202182637, 480};
+            CHECK_THROWS_WITH_AS(
+                decode_data_block(data.data(), data.size(), 17562, 100, recs, leftover),
+                "bad slot id: 0", xia::pixie::error::error);
+        }
+        SUBCASE("Invalid slot - too big") {
+            buffer data = {3221766394, 123456789, 202182637, 480};
+            CHECK_THROWS_WITH_AS(
+                decode_data_block(data.data(), data.size(), 17562, 100, recs, leftover),
+                "bad slot id: 15", xia::pixie::error::error);
+        }
         SUBCASE("Invalid revision for external timestamp") {
             auto data = generate_data(2151882794, 123456789, 2349666285, 2149450208, true, true,
                                       true, true);
