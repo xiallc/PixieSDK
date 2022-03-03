@@ -385,9 +385,9 @@ TEST_SUITE("xia::pixie::list_mode") {
         records recs;
         buffer leftover;
         SUBCASE("header") {
-            auto evt = init_event(250, 16384, 19, 4, 1, false, false, false, false, true);
-            auto data = generate_data(2149990442, 3735933136, 1275924461, 2149450208, false, false,
-                                      false, true);
+            auto evt = init_event(250, 16384, 4, 4, 1, false, false, false, false, false);
+            auto data = generate_data(2148024362, 3735933136, 1275924461, 2147484128, false, false,
+                                      false, false);
             decode_data_block(data.data(), data.size(), 34688, 250, recs, leftover);
             check_decoded_data(recs[0], evt);
         }
