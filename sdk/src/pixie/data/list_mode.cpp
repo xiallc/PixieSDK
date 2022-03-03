@@ -526,6 +526,10 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
             auto val = (data[ele.header_index] & ele.value) >> ele.start_bit;
             switch (ele.type) {
                 case element::event_length:
+                    if(val == 0) {
+                        throw error(error::code::invalid_event_length,
+                                    "bad event length: 0")
+                    }
                     if (remaining_len < val) {
                         has_leftovers = true;
                     }

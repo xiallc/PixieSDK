@@ -236,6 +236,12 @@ TEST_SUITE("xia::pixie::list_mode") {
     TEST_CASE("Decoding Failure Modes") {
         records recs;
         buffer leftover;
+        SUBCASE("Event Length = 0") {
+            buffer data = {3221270570, 123456789, 202182637, 1966560};
+            CHECK_THROWS_WITH_AS(
+                decode_data_block(data.data(), data.size(), 17562, 100, recs, leftover),
+                "bad event length: 0", xia::pixie::error::error);
+        }
         SUBCASE("event length != header length + 0.5*trace length") {
             auto data =
                 generate_data(3223257130, 123456789, 202182637, 1966560, false, true, true, true);
