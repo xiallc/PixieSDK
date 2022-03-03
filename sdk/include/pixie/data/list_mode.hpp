@@ -333,14 +333,38 @@ void json_to_record(const std::string& json_string, record& rec);
  * @brief A type definition to define an object that holds the binary data.
  */
 using buffer = std::vector<uint32_t>;
+
 /**
- * @brief
- * @param data
- * @param len
- * @param revision
- * @param frequency
- * @param recs
- * @param leftovers
+ * @brief Decodes a Pixie-16 list-mode data block.
+ *
+ * This function assumes that the first element of the array corresponds to the
+ * first word of a record.
+ *
+ * Any decoding errors result in hard failures. The function will attempt to fail
+ * early and fast because the data blocks do not contain marker information.
+ * If we encounter corrupted data, or values don't match with what we expect,
+ * then we have no way to recover, and we'll have to consider the whole buffer
+ * corrupted.
+ *
+ * @param data A pointer to the array containing the data read out of the module.
+ *  The data block does not have to be an integer number of records.
+ * @param len The length of the data array. The Pixie-16 list-mode record is
+ *  made up of a minimum of 4 32-bit integers. If this value is less than 4,
+ *  then we assume that we have a partial record, and put the entire data array
+ *  into the leftovers buffer.
+ * @param revision The firmware revision used to collect the data. This is
+ *  typically found with the DSP firmware.
+ * @param frequency The module's ADC sampling frequency that collected the data.
+ * @param recs A vector to hold the decoded records. The size of this vector may
+ *  be zero if we were unable to decode any complete records from the provided
+ *  information.
+ * @param leftovers A vector to hold any remaining words that could not be decoded.
+ *  These values should be prepended to the next data buffer before passing it
+ *  to this function.
+ *  If the decoded event length is greater than the remaining words in the
+ *  data buffer, then we fill the leftovers buffer with the remaining data. This
+ *  typically happens when you've passed in a partial record, or a data block
+ *  that contains a partial record at the end.
  */
 void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequency, records& recs,
                        buffer& leftovers);
