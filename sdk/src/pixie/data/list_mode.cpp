@@ -492,16 +492,6 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
                     "minimum supported firmware rev is " + std::to_string(min_rev));
     }
 
-    /*
-     * We check to see if the data buffer meets the minimum size requirement for a complete record.
-     * If it doesn't, we assume that we've been passed a partial buffer, and immediately prepare
-     * to fill the leftovers buffer.
-     */
-    bool has_leftovers = false;
-    if (len < min_words) {
-        has_leftovers = true;
-    }
-
     recs.clear();
     leftovers.clear();
     auto* data_start = data;
@@ -509,8 +499,18 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
     auto remaining_len = len;
     auto& core_elements = find_element_set(revision, frequency);
 
+    /*
+     * We check to see if the data buffer meets the minimum size requirement for a complete record.
+     * If it doesn't, we assume that we've been passed a partial buffer, and immediately prepare
+     * to fill the leftovers buffer. We only check the min_words here and not inside the loop as
+     * there is a case where we can meet the minimum word requirement, but still not have enough
+     * data for a complete record. For example, you have the 4 word header, but are missing the
+     * trace.
+     */
+    bool have_record = remaining_len >= min_words;
+
     while (data < data_end) {
-        if (has_leftovers) {
+        if (!have_record) {
             leftovers.push_back(*data);
             data += 1;
             continue;
@@ -522,7 +522,7 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
         double cfd_fractional_time = 0;
 
         for (const auto& ele : core_elements) {
-            if (has_leftovers) {
+            if (!have_record) {
                 break;
             }
             auto val = (data[ele.header_index] & ele.value) >> ele.start_bit;
@@ -532,7 +532,7 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
                         throw error(error::code::invalid_event_length, "bad event length: 0");
                     }
                     if (remaining_len < val) {
-                        has_leftovers = true;
+                        have_record = false;
                     }
                     evt.event_length = val;
                     break;
@@ -617,7 +617,7 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
             }
         }
 
-        if (has_leftovers) {
+        if (!have_record) {
             continue;
         }
 
