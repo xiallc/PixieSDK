@@ -195,14 +195,14 @@ struct element_desc {
 using descriptor_list = std::vector<element_desc>;
 
 /*
- * NOTE: We put the event length, header length, and trace length first to ensure that we decode
- * those data first and in that order. We need to perform checks on those data to ensure data
- * validity. Everything else falls in alphabetical order to find them easier.
+ * NOTE: We put the header length, event length, and trace length first to ensure that we decode
+ * those data first and **in that order**. This allows us to check that we have uncorrupted
+ * data before we try to decode the rest of the structure. Everything else falls in alphabetical
+ * order to find them easier.
  */
-
 static const descriptor_list descriptors_17562_100 = {
-    {element::event_length, 0x3FFE0000, 17, 0},
     {element::header_length, 0x0001F000, 12, 0},
+    {element::event_length, 0x3FFE0000, 17, 0},
     {element::trace_length, 0xFFFF0000, 16, 3},
     {element::cfd_fractional_time, 0xFFFF0000, 16, 2},
     {element::channel_number, 0x0000000F, 0, 0},
@@ -215,8 +215,8 @@ static const descriptor_list descriptors_17562_100 = {
     {element::trace_out_of_range_flag, 0x40000000, 30, 0}};
 
 static const descriptor_list descriptors_29432_100 = {
-    {element::event_length, 0x7FFE0000, 17, 0},
     {element::header_length, 0x0001F000, 12, 0},
+    {element::event_length, 0x7FFE0000, 17, 0},
     {element::trace_length, 0xFFFF0000, 16, 3},
     {element::cfd_fractional_time, 0xFFFF0000, 16, 2},
     {element::channel_number, 0x0000000F, 0, 0},
@@ -229,8 +229,8 @@ static const descriptor_list descriptors_29432_100 = {
     {element::trace_out_of_range_flag, 0x00008000, 15, 3}};
 
 static const descriptor_list descriptors_30474_100 = {
-    {element::event_length, 0x7FFE0000, 17, 0},
     {element::header_length, 0x0001F000, 12, 0},
+    {element::event_length, 0x7FFE0000, 17, 0},
     {element::trace_length, 0xFFFF0000, 16, 3},
     {element::cfd_forced_trigger_bit, 0x80000000, 31, 2},
     {element::cfd_fractional_time, 0x7FFF0000, 16, 2},
@@ -244,8 +244,8 @@ static const descriptor_list descriptors_30474_100 = {
     {element::trace_out_of_range_flag, 0x00008000, 15, 3}};
 
 static const descriptor_list descriptors_34688_100 = {
-    {element::event_length, 0x7FFE0000, 17, 0},
     {element::header_length, 0x0001F000, 12, 0},
+    {element::event_length, 0x7FFE0000, 17, 0},
     {element::trace_length, 0x7FFF0000, 16, 3},
     {element::cfd_forced_trigger_bit, 0x80000000, 31, 2},
     {element::cfd_fractional_time, 0x7FFF0000, 16, 2},
@@ -259,8 +259,8 @@ static const descriptor_list descriptors_34688_100 = {
     {element::trace_out_of_range_flag, 0x80000000, 31, 3}};
 
 static const descriptor_list descriptors_20466_250 = {
-    {element::event_length, 0x3FFE0000, 17, 0},
     {element::header_length, 0x0001F000, 12, 0},
+    {element::event_length, 0x3FFE0000, 17, 0},
     {element::trace_length, 0xFFFF0000, 16, 3},
     {element::cfd_fractional_time, 0xFFFF0000, 16, 2},
     {element::channel_number, 0x0000000F, 0, 0},
@@ -273,8 +273,8 @@ static const descriptor_list descriptors_20466_250 = {
     {element::trace_out_of_range_flag, 0x40000000, 30, 0}};
 
 static const descriptor_list descriptors_27361_250 = {
-    {element::event_length, 0x3FFE0000, 17, 0},
     {element::header_length, 0x0001F000, 12, 0},
+    {element::event_length, 0x3FFE0000, 17, 0},
     {element::trace_length, 0xFFFF0000, 16, 3},
     {element::cfd_fractional_time, 0x7FFF0000, 16, 2},
     {element::cfd_trigger_source_bit, 0x80000000, 31, 2},
@@ -288,8 +288,8 @@ static const descriptor_list descriptors_27361_250 = {
     {element::trace_out_of_range_flag, 0x40000000, 30, 0}};
 
 static const descriptor_list descriptors_29432_250 = {
-    {element::event_length, 0x7FFE0000, 17, 0},
     {element::header_length, 0x0001F000, 12, 0},
+    {element::event_length, 0x7FFE0000, 17, 0},
     {element::trace_length, 0xFFFF0000, 16, 3},
     {element::cfd_fractional_time, 0x7FFF0000, 16, 2},
     {element::cfd_trigger_source_bit, 0x80000000, 31, 2},
@@ -303,8 +303,8 @@ static const descriptor_list descriptors_29432_250 = {
     {element::trace_out_of_range_flag, 0x00008000, 15, 3}};
 
 static const descriptor_list descriptors_30474_250 = {
-    {element::event_length, 0x7FFE0000, 17, 0},
     {element::header_length, 0x0001F000, 12, 0},
+    {element::event_length, 0x7FFE0000, 17, 0},
     {element::trace_length, 0xFFFF0000, 16, 3},
     {element::cfd_forced_trigger_bit, 0x80000000, 31, 2},
     {element::cfd_fractional_time, 0x3FFF0000, 16, 2},
@@ -319,8 +319,8 @@ static const descriptor_list descriptors_30474_250 = {
     {element::trace_out_of_range_flag, 0x00008000, 15, 3}};
 
 static const descriptor_list descriptors_34688_250 = {
-    {element::event_length, 0x7FFE0000, 17, 0},
     {element::header_length, 0x0001F000, 12, 0},
+    {element::event_length, 0x7FFE0000, 17, 0},
     {element::trace_length, 0x7FFF0000, 16, 3},
     {element::cfd_forced_trigger_bit, 0x80000000, 31, 2},
     {element::cfd_fractional_time, 0x3FFF0000, 16, 2},
@@ -335,8 +335,8 @@ static const descriptor_list descriptors_34688_250 = {
     {element::trace_out_of_range_flag, 0x80000000, 31, 3}};
 
 static const descriptor_list descriptors_46540_250 = {
-    {element::event_length, 0x7FFE0000, 17, 0},
     {element::header_length, 0x0001F000, 12, 0},
+    {element::event_length, 0x7FFE0000, 17, 0},
     {element::trace_length, 0x7FFF0000, 16, 3},
     {element::cfd_forced_trigger_bit, 0x80000000, 31, 2},
     {element::cfd_fractional_time, 0x3FFF0000, 16, 2},
@@ -351,8 +351,8 @@ static const descriptor_list descriptors_46540_250 = {
     {element::trace_out_of_range_flag, 0x80000000, 31, 3}};
 
 static const descriptor_list descriptors_29432_500 = {
-    {element::event_length, 0x7FFE0000, 17, 0},
     {element::header_length, 0x0001F000, 12, 0},
+    {element::event_length, 0x7FFE0000, 17, 0},
     {element::trace_length, 0xFFFF0000, 16, 3},
     {element::cfd_fractional_time, 0x1FFF0000, 16, 2},
     {element::cfd_trigger_source_bit, 0xE0000000, 29, 2},
@@ -366,8 +366,8 @@ static const descriptor_list descriptors_29432_500 = {
     {element::trace_out_of_range_flag, 0x00008000, 15, 3}};
 
 static const descriptor_list descriptors_34688_500 = {
-    {element::event_length, 0x7FFE0000, 17, 0},
     {element::header_length, 0x0001F000, 12, 0},
+    {element::event_length, 0x7FFE0000, 17, 0},
     {element::trace_length, 0x7FFF0000, 16, 3},
     {element::cfd_fractional_time, 0x1FFF0000, 16, 2},
     {element::cfd_trigger_source_bit, 0xE0000000, 29, 2},
@@ -479,6 +479,81 @@ static double cfd_multiplier(const size_t rev, const size_t freq) {
     }
 }
 
+struct header_config {
+    header_config() {
+        ets_offset = 0;
+        esums_offset = 0;
+        qdc_offset = 0;
+        ets = false;
+        qdc = false;
+        esums = false;
+        valid = false;
+    }
+
+    void generate(size_t len, size_t rev, record& rec) {
+        if (rev < 30980) {
+            switch (len) {
+                case header_length::header_ets:
+                case header_length::header_esum_ets:
+                case header_length::header_qdc_ets:
+                case header_length::header_esum_qdc_ets:
+                    throw error(error::code::invalid_header_length,
+                                "external timestamps not introduced until revision 30980");
+                default:
+                    break;
+            }
+        }
+
+        ets_offset = len - num_ext_ts_words;
+        switch (len) {
+            case header_length::header:
+                break;
+            case header_length::header_ets:
+                ets = true;
+                break;
+            case header_length::header_esum:
+                esums = true;
+                esums_offset = len - num_esum_words;
+                break;
+            case header_length::header_esum_ets:
+                ets = esums = true;
+                esums_offset = len - num_esum_words - num_ext_ts_words;
+                break;
+            case header_length::header_qdc:
+                qdc = true;
+                qdc_offset = len - num_qdc_words;
+                break;
+            case header_length::header_qdc_ets:
+                qdc = ets = true;
+                qdc_offset = len - num_ext_ts_words - num_qdc_words;
+                break;
+            case header_length::header_esum_qdc:
+                esums = qdc = true;
+                esums_offset = len - num_esum_words - num_qdc_words;
+                qdc_offset = len - num_qdc_words;
+                break;
+            case header_length::header_esum_qdc_ets:
+                esums = ets = qdc = true;
+                esums_offset = len - num_ext_ts_words - num_qdc_words - num_esum_words;
+                qdc_offset = len - num_ext_ts_words - num_qdc_words;
+                break;
+            default:
+                throw error(error::code::invalid_header_length,
+                            "unknown header length: " + std::to_string(len));
+        }
+        valid = true;
+        rec.header_length = len;
+    }
+
+    unsigned int ets_offset;
+    unsigned int esums_offset;
+    unsigned int qdc_offset;
+    bool ets;
+    bool qdc;
+    bool esums;
+    bool valid;
+};
+
 void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequency, records& recs,
                        buffer& leftovers) {
     if (data == nullptr) {
@@ -520,13 +595,25 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
         uint32_t event_time_low = 0;
         uint32_t event_time_high = 0;
         double cfd_fractional_time = 0;
+        header_config header_config;
 
+        /*
+         * This for loops over the element tables above, which define the order in which we expect
+         * to parse the elements. This order is reflected in the switch case ordering to make it
+         * consistent with the definitions in the element descriptors. The order allows us to
+         * ensure that we fail on the first error we encounter. Subsequent steps (and case checks)
+         * depend upon having valid data. The order of header length, event length, then trace
+         * length must be maintained.
+         */
         for (const auto& ele : core_elements) {
             if (!have_record) {
                 break;
             }
             auto val = (data[ele.header_index] & ele.value) >> ele.start_bit;
             switch (ele.type) {
+                case element::header_length:
+                    header_config.generate(val, revision, evt);
+                    break;
                 case element::event_length:
                     if (val == 0) {
                         throw error(error::code::invalid_event_length, "bad event length: 0");
@@ -535,22 +622,6 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
                         have_record = false;
                     }
                     evt.event_length = val;
-                    break;
-                case element::header_length:
-                    evt.header_length = val;
-                    if (revision < 30980) {
-                        switch (val) {
-                            case header_length::header_ets:
-                            case header_length::header_esum_ets:
-                            case header_length::header_qdc_ets:
-                            case header_length::header_esum_qdc_ets:
-                                throw error(
-                                    error::code::invalid_header_length,
-                                    "external timestamps not introduced until revision 30980");
-                            default:
-                                break;
-                        }
-                    }
                     break;
                 case element::trace_length:
                     /*
@@ -623,68 +694,25 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
 
         make_time(evt, frequency, event_time_low, event_time_high, cfd_fractional_time);
 
-        unsigned int ets_offset = evt.header_length - num_ext_ts_words;
-        unsigned int esums_offset = 0;
-        unsigned int qdc_offset = 0;
-        bool has_ets = false;
-        bool has_qdc = false;
-        bool has_esums = false;
-        switch (evt.header_length) {
-            case header_length::header:
-                break;
-            case header_length::header_ets:
-                has_ets = true;
-                break;
-            case header_length::header_esum:
-                has_esums = true;
-                esums_offset = evt.header_length - num_esum_words;
-                break;
-            case header_length::header_esum_ets:
-                has_ets = has_esums = true;
-                esums_offset = evt.header_length - num_esum_words - num_ext_ts_words;
-                break;
-            case header_length::header_qdc:
-                has_qdc = true;
-                qdc_offset = evt.header_length - num_qdc_words;
-                break;
-            case header_length::header_qdc_ets:
-                has_qdc = has_ets = true;
-                qdc_offset = evt.header_length - num_ext_ts_words - num_qdc_words;
-                break;
-            case header_length::header_esum_qdc:
-                has_esums = has_qdc = true;
-                esums_offset = evt.header_length - num_esum_words - num_qdc_words;
-                qdc_offset = evt.header_length - num_qdc_words;
-                break;
-            case header_length::header_esum_qdc_ets:
-                has_esums = has_ets = has_qdc = true;
-                esums_offset =
-                    evt.header_length - num_ext_ts_words - num_qdc_words - num_esum_words;
-                qdc_offset = evt.header_length - num_ext_ts_words - num_qdc_words;
-                break;
-            default:
-                throw error(error::code::invalid_header_length,
-                            "unknown header length: " + std::to_string(evt.header_length));
+        if (header_config.ets) {
+            evt.external_time = record::time_type(make_u64_double(
+                data[header_config.ets_offset + 1], data[header_config.ets_offset]));
         }
 
-        if (has_ets) {
-            evt.external_time =
-                record::time_type(make_u64_double(data[ets_offset + 1], data[ets_offset]));
-        }
-
-        if (has_esums) {
+        if (header_config.esums) {
             for (unsigned int i = 0; i < num_esum_words; i++) {
                 if (i != num_esum_words - 1) {
-                    evt.energy_sums.push_back(data[esums_offset + i]);
+                    evt.energy_sums.push_back(data[header_config.esums_offset + i]);
                 } else {
-                    evt.filter_baseline = util::ieee_float(data[esums_offset + num_esum_words - 1]);
+                    evt.filter_baseline =
+                        util::ieee_float(data[header_config.esums_offset + num_esum_words - 1]);
                 }
             }
         }
 
-        if (has_qdc) {
+        if (header_config.qdc) {
             for (unsigned int i = 0; i < num_qdc_words; i++) {
-                evt.qdc.push_back(data[qdc_offset + i]);
+                evt.qdc.push_back(data[header_config.qdc_offset + i]);
             }
         }
 
