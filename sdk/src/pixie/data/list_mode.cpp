@@ -545,9 +545,9 @@ struct header_config {
         rec.header_length = len;
     }
 
-    unsigned int ets_offset;
-    unsigned int esums_offset;
-    unsigned int qdc_offset;
+    size_t ets_offset;
+    size_t esums_offset;
+    size_t qdc_offset;
     bool ets;
     bool qdc;
     bool esums;
@@ -665,10 +665,10 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
                     evt.energy = static_cast<double>(val);
                     break;
                 case element::event_time_high:
-                    event_time_high = val;
+                    event_time_high = static_cast<uint32_t>(val);
                     break;
                 case element::event_time_low:
-                    event_time_low = val;
+                    event_time_low = static_cast<uint32_t>(val);
                     break;
                 case element::finish_code:
                     evt.finish_code = val != 0;
