@@ -240,20 +240,20 @@ TEST_SUITE("xia::pixie::list_mode") {
         SUBCASE("Event Length = 0") {
             buffer data = {3221241898, 123456789, 202182637, 1966560};
             CHECK_THROWS_WITH_AS(
-                decode_data_block(data.data(), data.size(), 17562, 100, recs, leftover),
+                decode_data_block(data, 17562, 100, recs, leftover),
                 "bad event length: 0", xia::pixie::error::error);
         }
         SUBCASE("Random header") {
             buffer data = {3533011249, 3957994, 292194509, 84778};
             CHECK_THROWS_WITH_AS(
-                decode_data_block(data.data(), data.size(), 17562, 100, recs, leftover),
+                decode_data_block(data, 17562, 100, recs, leftover),
                 "unknown header length: 23", xia::pixie::error::error);
         }
         SUBCASE("event length != header length + 0.5*trace length") {
             auto data =
                 generate_data(3223257130, 123456789, 202182637, 1966560, false, true, true, true);
             CHECK_THROWS_WITH_AS(
-                decode_data_block(data.data(), data.size(), 17562, 100, recs, leftover),
+                decode_data_block(data, 17562, 100, recs, leftover),
                 "Event length does not match header length plus 0.5 * trace_length",
                 xia::pixie::error::error);
         }
@@ -261,26 +261,26 @@ TEST_SUITE("xia::pixie::list_mode") {
             auto data =
                 generate_data(3224678442, 123456789, 202182637, 1966560, false, true, true, true);
             CHECK_THROWS_WITH_AS(
-                decode_data_block(data.data(), data.size(), 17562, 100, recs, leftover),
+                decode_data_block(data, 17562, 100, recs, leftover),
                 "unknown header length: 11", xia::pixie::error::error);
         }
         SUBCASE("Invalid slot - too small") {
             buffer data = {3221766154, 123456789, 202182637, 480};
             CHECK_THROWS_WITH_AS(
-                decode_data_block(data.data(), data.size(), 17562, 100, recs, leftover),
+                decode_data_block(data, 17562, 100, recs, leftover),
                 "bad slot id: 0", xia::pixie::error::error);
         }
         SUBCASE("Invalid slot - too big") {
             buffer data = {3221766394, 123456789, 202182637, 480};
             CHECK_THROWS_WITH_AS(
-                decode_data_block(data.data(), data.size(), 17562, 100, recs, leftover),
+                decode_data_block(data, 17562, 100, recs, leftover),
                 "bad slot id: 15", xia::pixie::error::error);
         }
         SUBCASE("Invalid revision for external timestamp") {
             auto data = generate_data(2151882794, 123456789, 2349666285, 2149450208, true, true,
                                       true, true);
             CHECK_THROWS_WITH_AS(
-                decode_data_block(data.data(), data.size(), 17562, 100, recs, leftover),
+                decode_data_block(data, 17562, 100, recs, leftover),
                 "external timestamps not introduced until revision 30980",
                 xia::pixie::error::error);
         }
@@ -288,7 +288,7 @@ TEST_SUITE("xia::pixie::list_mode") {
             auto data =
                 generate_data(2148024362, 123456789, 2164195328, 480, false, false, false, false);
             CHECK_THROWS_WITH_AS(
-                decode_data_block(data.data(), data.size(), 30474, 250, recs, leftover),
+                decode_data_block(data, 30474, 250, recs, leftover),
                 "data corruption: cfd was forced but still recorded a time",
                 xia::pixie::error::error);
         }
@@ -299,14 +299,14 @@ TEST_SUITE("xia::pixie::list_mode") {
         buffer leftover;
         SUBCASE("Missing core header words") {
             buffer data = {2149990442, 3735933136};
-            decode_data_block(data.data(), data.size(), 34688, 250, recs, leftover);
+            decode_data_block(data, 34688, 250, recs, leftover);
             CHECK(recs.size() == 0);
             CHECK(leftover.size() == 2);
             CHECK(leftover == data);
         }
         SUBCASE("Missing trace") {
             buffer data = {2149990442, 3735933136, 1275924461, 2149450208};
-            decode_data_block(data.data(), data.size(), 34688, 250, recs, leftover);
+            decode_data_block(data, 34688, 250, recs, leftover);
             CHECK(recs.size() == 0);
             CHECK(leftover.size() == 4);
             CHECK(leftover == data);
@@ -318,7 +318,7 @@ TEST_SUITE("xia::pixie::list_mode") {
             std::vector<unsigned int> extra_data = {2149990442, 3735933136, 1275924461, 2149450208};
             data.insert(data.end(), extra_data.begin(), extra_data.end());
 
-            decode_data_block(data.data(), data.size(), 34688, 250, recs, leftover);
+            decode_data_block(data, 34688, 250, recs, leftover);
 
             CHECK(recs.size() == 1);
             check_decoded_data(recs[0], evt);
@@ -333,7 +333,7 @@ TEST_SUITE("xia::pixie::list_mode") {
         auto evt = init_event(100, 65536, 31, 16, 0, false, false, true, true, true);
         auto data =
             generate_data(3225354282, 3735933136, 202182637, 1966560, false, true, true, true);
-        decode_data_block(data.data(), data.size(), 17562, 100, recs, leftover);
+        decode_data_block(data, 17562, 100, recs, leftover);
         check_decoded_data(recs[0], evt);
     }
     TEST_CASE("29432-100") {
@@ -342,7 +342,7 @@ TEST_SUITE("xia::pixie::list_mode") {
         auto evt = init_event(100, 65536, 31, 16, 0, false, false, true, true, true);
         auto data =
             generate_data(2151612458, 3735933136, 202182637, 1999328, false, true, true, true);
-        decode_data_block(data.data(), data.size(), 29432, 100, recs, leftover);
+        decode_data_block(data, 29432, 100, recs, leftover);
         check_decoded_data(recs[0], evt);
     }
     TEST_CASE("30474-100") {
@@ -351,7 +351,7 @@ TEST_SUITE("xia::pixie::list_mode") {
         auto evt = init_event(100, 32768, 31, 16, 0, false, false, true, true, true);
         auto data =
             generate_data(2151612458, 3735933136, 202182637, 1999328, false, true, true, true);
-        decode_data_block(data.data(), data.size(), 30474, 100, recs, leftover);
+        decode_data_block(data, 30474, 100, recs, leftover);
         check_decoded_data(recs[0], evt);
     }
     TEST_CASE("34688-100") {
@@ -360,7 +360,7 @@ TEST_SUITE("xia::pixie::list_mode") {
         auto evt = init_event(100, 32768, 33, 18, 0, false, true, true, true, true);
         auto data =
             generate_data(2151882794, 3735933136, 202182637, 2149450208, true, true, true, true);
-        decode_data_block(data.data(), data.size(), 34688, 100, recs, leftover);
+        decode_data_block(data, 34688, 100, recs, leftover);
         check_decoded_data(recs[0], evt);
     }
     TEST_CASE("20466-250") {
@@ -369,7 +369,7 @@ TEST_SUITE("xia::pixie::list_mode") {
         auto evt = init_event(250, 65536, 31, 16, 0, false, false, true, true, true);
         auto data =
             generate_data(3225354282, 3735933136, 202182637, 1966560, false, true, true, true);
-        decode_data_block(data.data(), data.size(), 20466, 250, recs, leftover);
+        decode_data_block(data, 20466, 250, recs, leftover);
         check_decoded_data(recs[0], evt);
     }
     TEST_CASE("27361-250") {
@@ -378,7 +378,7 @@ TEST_SUITE("xia::pixie::list_mode") {
         auto evt = init_event(250, 32768, 31, 16, 1, false, false, true, true, true);
         auto data =
             generate_data(3225354282, 3735933136, 2349666285, 1966560, false, true, true, true);
-        decode_data_block(data.data(), data.size(), 27361, 250, recs, leftover);
+        decode_data_block(data, 27361, 250, recs, leftover);
         check_decoded_data(recs[0], evt);
     }
     TEST_CASE("29432-250") {
@@ -387,7 +387,7 @@ TEST_SUITE("xia::pixie::list_mode") {
         auto evt = init_event(250, 32768, 31, 16, 1, false, false, true, true, true);
         auto data =
             generate_data(2151612458, 3735933136, 2349666285, 1999328, false, true, true, true);
-        decode_data_block(data.data(), data.size(), 29432, 250, recs, leftover);
+        decode_data_block(data, 29432, 250, recs, leftover);
         check_decoded_data(recs[0], evt);
     }
     TEST_CASE("30474-250") {
@@ -396,7 +396,7 @@ TEST_SUITE("xia::pixie::list_mode") {
         auto evt = init_event(250, 16384, 31, 16, 1, false, false, true, true, true);
         auto data =
             generate_data(2151612458, 3735933136, 1275924461, 1999328, false, true, true, true);
-        decode_data_block(data.data(), data.size(), 30474, 250, recs, leftover);
+        decode_data_block(data, 30474, 250, recs, leftover);
         check_decoded_data(recs[0], evt);
     }
     TEST_CASE("34688-250") {
@@ -406,56 +406,56 @@ TEST_SUITE("xia::pixie::list_mode") {
             auto evt = init_event(250, 16384, 4, 4, 1, false, false, false, false, false);
             auto data = generate_data(2148024362, 3735933136, 1275924461, 2147484128, false, false,
                                       false, false);
-            decode_data_block(data.data(), data.size(), 34688, 250, recs, leftover);
+            decode_data_block(data, 34688, 250, recs, leftover);
             check_decoded_data(recs[0], evt);
         }
         SUBCASE("header - forced cfd") {
             auto evt = init_event(250, 16384, 19, 4, 1, true, false, false, false, true);
             auto data = generate_data(2149990442, 3735933136, 3221229549, 2149450208, false, false,
                                       false, true);
-            decode_data_block(data.data(), data.size(), 34688, 250, recs, leftover);
+            decode_data_block(data, 34688, 250, recs, leftover);
             check_decoded_data(recs[0], evt);
         }
         SUBCASE("header_ets") {
             auto evt = init_event(250, 16384, 21, 6, 1, false, true, false, false, true);
             auto data = generate_data(2150260778, 3735933136, 1275924461, 2149450208, true, false,
                                       false, true);
-            decode_data_block(data.data(), data.size(), 34688, 250, recs, leftover);
+            decode_data_block(data, 34688, 250, recs, leftover);
             check_decoded_data(recs[0], evt);
         }
         SUBCASE("header_esum") {
             auto evt = init_event(250, 16384, 23, 8, 1, false, false, true, false, true);
             auto data = generate_data(2150531114, 3735933136, 1275924461, 2149450208, false, true,
                                       false, true);
-            decode_data_block(data.data(), data.size(), 34688, 250, recs, leftover);
+            decode_data_block(data, 34688, 250, recs, leftover);
             check_decoded_data(recs[0], evt);
         }
         SUBCASE("header_esum_ets") {
             auto evt = init_event(250, 16384, 25, 10, 1, false, true, true, false, true);
             auto data = generate_data(2150801450, 3735933136, 1275924461, 2149450208, true, true,
                                       false, true);
-            decode_data_block(data.data(), data.size(), 34688, 250, recs, leftover);
+            decode_data_block(data, 34688, 250, recs, leftover);
             check_decoded_data(recs[0], evt);
         }
         SUBCASE("header_qdc") {
             auto evt = init_event(250, 16384, 27, 12, 1, false, false, false, true, true);
             auto data = generate_data(2151071786, 3735933136, 1275924461, 2149450208, false, false,
                                       true, true);
-            decode_data_block(data.data(), data.size(), 34688, 250, recs, leftover);
+            decode_data_block(data, 34688, 250, recs, leftover);
             check_decoded_data(recs[0], evt);
         }
         SUBCASE("header_qdc_ets") {
             auto evt = init_event(250, 16384, 29, 14, 1, false, true, false, true, true);
             auto data = generate_data(2151342122, 3735933136, 1275924461, 2149450208, true, false,
                                       true, true);
-            decode_data_block(data.data(), data.size(), 34688, 250, recs, leftover);
+            decode_data_block(data, 34688, 250, recs, leftover);
             check_decoded_data(recs[0], evt);
         }
         SUBCASE("header_esum_qdc_ets") {
             auto evt = init_event(250, 16384, 33, 18, 1, false, true, true, true, true);
             auto data = generate_data(2151882794, 3735933136, 1275924461, 2149450208, true, true,
                                       true, true);
-            decode_data_block(data.data(), data.size(), 34688, 250, recs, leftover);
+            decode_data_block(data, 34688, 250, recs, leftover);
             check_decoded_data(recs[0], evt);
         }
     }
@@ -465,7 +465,7 @@ TEST_SUITE("xia::pixie::list_mode") {
         auto evt = init_event(250, 16384, 33, 18, 1, false, true, true, true, true);
         auto data =
             generate_data(2151882890, 3735933136, 1275924461, 2149450208, true, true, true, true);
-        decode_data_block(data.data(), data.size(), 46540, 250, recs, leftover);
+        decode_data_block(data, 46540, 250, recs, leftover);
         check_decoded_data(recs[0], evt);
     }
     TEST_CASE("29432-500") {
@@ -474,7 +474,7 @@ TEST_SUITE("xia::pixie::list_mode") {
         auto evt = init_event(500, 8192, 31, 16, 6, false, false, true, true, true);
         auto data =
             generate_data(2151612458, 3735933136, 3423408109, 1999328, false, true, true, true);
-        decode_data_block(data.data(), data.size(), 29432, 500, recs, leftover);
+        decode_data_block(data, 29432, 500, recs, leftover);
         check_decoded_data(recs[0], evt);
     }
     TEST_CASE("34688-500") {
@@ -483,7 +483,7 @@ TEST_SUITE("xia::pixie::list_mode") {
         auto evt = init_event(500, 8192, 33, 18, 6, false, true, true, true, true);
         auto data =
             generate_data(2151882794, 3735933136, 3423408109, 2149450208, true, true, true, true);
-        decode_data_block(data.data(), data.size(), 34688, 500, recs, leftover);
+        decode_data_block(data, 34688, 500, recs, leftover);
         check_decoded_data(recs[0], evt);
     }
 }

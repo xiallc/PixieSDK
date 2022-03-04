@@ -729,6 +729,11 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
     }
 }
 
+void decode_data_block(buffer data, size_t revision, size_t frequency, records& recs,
+                       buffer& leftovers) {
+    decode_data_block(data.data(), data.size(), revision, frequency, recs, leftovers);
+}
+
 }  // namespace list_mode
 }  // namespace data
 }  // namespace pixie
