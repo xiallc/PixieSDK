@@ -400,7 +400,7 @@ static void make_time(record& rec, const size_t freq, const uint32_t filter_low,
         case 500:
             filter_conv = 10e-9;
             rec.cfd_fractional_time = record::time_type(
-                (cfd_time - static_cast<double>(rec.cfd_trigger_source) - 1) * 2e-9);
+                (cfd_time + static_cast<double>(rec.cfd_trigger_source) - 1) * 2e-9);
             break;
         default:
             filter_conv = 10e-9;

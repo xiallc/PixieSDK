@@ -148,7 +148,7 @@ TEST_SUITE("xia::pixie::list_mode") {
             case 500:
                 filter_conv = 10e-9;
                 expected.cfd_fractional_time = record::time_type(
-                    ((cfd_frac_time / cfd_scale) - static_cast<double>(trig_source) - 1) * 2e-9);
+                    ((cfd_frac_time / cfd_scale) + static_cast<double>(trig_source) - 1) * 2e-9);
                 break;
             default:
                 filter_conv = 10e-9;
