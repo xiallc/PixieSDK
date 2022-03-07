@@ -545,6 +545,7 @@ enum struct module_var {
     HostRunTimePreset,
     /**
      * @brief [INPUT] Controls clock behavior at the start of data runs.
+     * @note This value is only checked as part of a synchronous run.
      *
      * It is used in multi-Pixie systems in which the modules are driven by a
      * common clock. When InSynch is 1, the module assumes it is in synch with
