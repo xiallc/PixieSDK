@@ -423,7 +423,7 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
                      * We've gated the reads in this example using one-second intervals, but you don't have to.
                      */
                 if (num_fifo_words > 0) {
-                    std::vector<uint32_t> data(num_fifo_words, 0);
+                    std::vector<uint32_t> data(num_fifo_words, 0xDEADBEEF);
                     if (!verify_api_return_value(
                             Pixie16ReadDataFromExternalFIFO(data.data(), num_fifo_words, mod_num),
                             "Pixie16ReadDataFromExternalFIFO", false))
@@ -488,7 +488,7 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
         if (num_fifo_words > 0) {
             std::cout << LOG("INFO") << "External FIFO has " << num_fifo_words << " words."
                       << std::endl;
-            std::vector<uint32_t> data(num_fifo_words, 0);
+            std::vector<uint32_t> data(num_fifo_words, 0xDEADBEEF);
             if (!verify_api_return_value(
                     Pixie16ReadDataFromExternalFIFO(data.data(), num_fifo_words, mod_num),
                     "Pixie16ReadDataFromExternalFIFO", false))

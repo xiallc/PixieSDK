@@ -2418,6 +2418,7 @@ void module::fifo_worker() {
                         run_stats.dropped += level;
                     }
                     buf->resize(level);
+                    ::memset(buf->data(), 0x3F, level * sizeof(hw::word));
                     fifo.read(*buf, level);
                     data_dma_in += level;
                     if (queue_buf) {
