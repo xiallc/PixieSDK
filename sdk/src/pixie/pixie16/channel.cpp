@@ -520,9 +520,11 @@ void channel::tau(double value) {
 
     mod.write_var(param::channel_var::PreampTau, preamp_tau, number);
 
-    range chans = {number};
-    baseline bl(mod, chans);
-    bl.find_cut();
+    if (mod.get_rev_tag() != hw::rev_tag::rev_H) {
+        range chans = {number};
+        baseline bl(mod, chans);
+        bl.find_cut();
+    }
 }
 
 double channel::trace_length() {
