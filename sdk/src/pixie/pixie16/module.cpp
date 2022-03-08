@@ -357,7 +357,7 @@ module::module(module&& m)
     m.fifo_run_wait_usecs = default_fifo_run_wait_usec;
     m.fifo_idle_wait_usecs = default_fifo_idle_wait_usec;
     m.fifo_hold_usecs = default_fifo_hold_usec;
-    m,fifo_dma_trigger_level = default_fifo_dma_trigger_level;
+    m.fifo_dma_trigger_level = default_fifo_dma_trigger_level;
     m.fifo_bandwidth = 0;
     m.data_dma_in = 0;
     m.data_stats.clear();
