@@ -272,6 +272,42 @@ bool save_dsp_pars(const std::string& filename) {
     return true;
 }
 
+void output_histogram(const module_config& mod, const std::string filename) {
+    std::ofstream out(filename);
+    out << "bin,";
+    std::vector<std::vector<uint32_t>> hists;
+    unsigned int max_histogram_length = 0;
+    for (unsigned int i = 0; i < mod.number_of_channels; i++) {
+        unsigned int tmp = 0;
+        PixieGetHistogramLength(mod.number, i, &tmp);
+        std::vector<uint32_t> hist(tmp, 0);
+        if (hist.size() > max_histogram_length)
+            max_histogram_length = hist.size();
+
+        Pixie16ReadHistogramFromModule(hist.data(), hist.size(), mod.number, i);
+        hists.push_back(hist);
+        if (i < static_cast<unsigned int>(mod.number_of_channels - 1))
+            out << "Chan" << i << ",";
+        else
+            out << "Chan" << i;
+    }
+    out << std::endl;
+
+    for (unsigned int bin = 0; bin < max_histogram_length; bin++) {
+        out << bin << ",";
+        for (auto& hist : hists) {
+            std::string val = " ";
+            if (bin < hist.size())
+                val = std::to_string(hist[bin]);
+            if (&hist != &hists.back())
+                out << val << ",";
+            else
+                out << val;
+        }
+        out << std::endl;
+    }
+}
+
 bool execute_adjust_offsets(const module_config& module) {
     std::cout << LOG("INFO") << "Adjusting baseline offset for Module " << module.number << "."
               << std::endl;
@@ -356,7 +392,7 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
     std::vector<std::ofstream*> output_streams(cfg.num_modules());
     for (unsigned short i = 0; i < cfg.num_modules(); i++) {
         output_streams[i] = new std::ofstream(
-            generate_filename(i, "list-mode-run" + std::to_string(run_num), "bin"),
+            generate_filename(i, "list-mode-run" + std::to_string(run_num) + "-recs", "bin"),
             std::ios::out | std::ios::binary);
     }
 
@@ -492,9 +528,13 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
                                            num_fifo_words * sizeof(uint32_t));
         }
         if (!output_statistics_data(cfg.modules[mod_num],
-                                    "list-mode-stats-run" + std::to_string(run_num))) {
+                                    "list-mode-run" + std::to_string(run_num) + "-stats")) {
             return false;
         }
+
+        std::string name =
+            generate_filename(mod_num, "list-mode-run" + std::to_string(run_num) + "-mca", "csv");
+        output_histogram(cfg.modules[mod_num], name);
     }
 
     for (auto& stream : output_streams)
@@ -584,42 +624,9 @@ bool execute_mca_run(const int run_num, const module_config& mod, const double r
     }
 
     std::string name = generate_filename(mod.number, "mca-run" + std::to_string(run_num), "csv");
-    std::ofstream out(name);
-    out << "bin,";
+    output_histogram(mod, name);
 
-    std::vector<std::vector<uint32_t>> hists;
-    unsigned int max_histogram_length = 0;
-    for (unsigned int i = 0; i < mod.number_of_channels; i++) {
-        unsigned int tmp = 0;
-        PixieGetHistogramLength(mod.number, i, &tmp);
-        std::vector<uint32_t> hist(tmp, 0);
-        if (hist.size() > max_histogram_length)
-            max_histogram_length = hist.size();
-
-        Pixie16ReadHistogramFromModule(hist.data(), hist.size(), mod.number, i);
-        hists.push_back(hist);
-        if (i < static_cast<unsigned int>(mod.number_of_channels - 1))
-            out << "Chan" << i << ",";
-        else
-            out << "Chan" << i;
-    }
-    out << std::endl;
-
-    for (unsigned int bin = 0; bin < max_histogram_length; bin++) {
-        out << bin << ",";
-        for (auto& hist : hists) {
-            std::string val = " ";
-            if (bin < hist.size())
-                val = std::to_string(hist[bin]);
-            if (&hist != &hists.back())
-                out << val << ",";
-            else
-                out << val;
-        }
-        out << std::endl;
-    }
-
-    if (!output_statistics_data(mod, "mca-stats-run" + std::to_string(run_num))) {
+    if (!output_statistics_data(mod, "mca-run" + std::to_string(run_num) + "-stats")) {
         return false;
     }
 
