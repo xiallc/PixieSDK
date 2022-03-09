@@ -205,11 +205,6 @@ bool output_statistics_data(const module_config& mod, const std::string& type) {
                                  "Pixie16ReadStatisticsFromModule", false))
         return false;
 
-    std::ofstream bin_output(generate_filename(mod.number, type, "bin"),
-                             std::ios::binary | std::ios::out);
-    bin_output.write(reinterpret_cast<char*>(stats.data()), sizeof(unsigned int) * stats.size());
-    bin_output.close();
-
     std::ofstream csv_output(generate_filename(mod.number, type, "csv"), std::ios::out);
     csv_output << "channel,real_time,live_time,input_count_rate,output_count_rate" << std::endl;
     auto real_time = Pixie16ComputeRealTime(stats.data(), mod.number);
