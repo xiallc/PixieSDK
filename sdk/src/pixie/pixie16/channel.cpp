@@ -551,6 +551,7 @@ void channel::trace_length(double value) {
     /*
      * Adjust the length to suit the FPGA requirements
      */
+    ///TODO: This implementation rounds down, we should be rounding up.
     switch (fixture->config.adc_msps) {
         case 500:
             trace_length = (trace_length / 10) * 10;
@@ -563,6 +564,7 @@ void channel::trace_length(double value) {
             break;
     }
 
+    //TODO : Add the check for rev and round up to 32 for rev H
     if (trace_length > fifo_length) {
         trace_length = fifo_length;
     }

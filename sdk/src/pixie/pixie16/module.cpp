@@ -312,10 +312,10 @@ module::module(backplane::backplane& backplane_)
       fifo_idle_wait_usecs(default_fifo_idle_wait_usec), fifo_hold_usecs(default_fifo_hold_usec),
       fifo_dma_trigger_level(default_fifo_dma_trigger_level), fifo_bandwidth(0), data_dma_in(0),
       crate_revision(-1), board_revision(-1), reg_trace(false), bus_cycle_period(100),
-      fifo_worker_running(false), fifo_worker_finished(false), in_use(0),
-      present_(false), online_(false), forced_offline_(false), pause_fifo_worker(true),
-      comms_fpga(false), fippi_fpga(false), have_hardware(false), vars_loaded(false),
-      cfg_ctrlcs(0xaaa), device(std::make_unique<pci_bus_handle>()), test_mode(test::off) {}
+      fifo_worker_running(false), fifo_worker_finished(false), in_use(0), present_(false),
+      online_(false), forced_offline_(false), pause_fifo_worker(true), comms_fpga(false),
+      fippi_fpga(false), have_hardware(false), vars_loaded(false), cfg_ctrlcs(0xaaa),
+      device(std::make_unique<pci_bus_handle>()), test_mode(test::off) {}
 
 module::module(module&& m)
     : slot(m.slot), number(m.number), serial_num(m.serial_num), revision(m.revision),
@@ -1070,7 +1070,8 @@ bool module::write(const std::string& par, param::value_type value) {
 }
 
 bool module::write(param::module_param par, param::value_type value) {
-    log(log::debug) << module_label(*this) << "write: module par=" << int(par) << " value=" << value;
+    log(log::debug) << module_label(*this) << "write: module par=" << int(par)
+                    << " value=" << value;
     online_check();
     std::ostringstream oss;
     size_t offset = 0;
@@ -1459,8 +1460,7 @@ void module::sync_vars(const sync_var_mode sync_mode) {
                             dsp.write(channel.number, v, desc.address, word);
                         }
                     } else {
-                        hw::convert(dsp.read(channel.number, v, desc.address),
-                                    value.value);
+                        hw::convert(dsp.read(channel.number, v, desc.address), value.value);
                     }
                     value.dirty = false;
                 }
@@ -1745,8 +1745,7 @@ void module::set_fifo_idle_wait(const size_t idle_wait) {
 
 void module::set_fifo_hold(const size_t hold) {
     if (hold < min_fifo_hold_usec || hold > max_fifo_hold_usec) {
-        throw error(number, slot, error::code::module_invalid_var,
-                    "fifo: hold value out of range");
+        throw error(number, slot, error::code::module_invalid_var, "fifo: hold value out of range");
     }
     log(log::debug) << module_label(*this) << "fifo: hold=" << hold;
     fifo_hold_usecs = hold;
@@ -1758,8 +1757,7 @@ void module::set_fifo_dma_trigger_level(const size_t dma_trigger_level) {
         throw error(number, slot, error::code::module_invalid_var,
                     "fifo: dma trigger level value out of range");
     }
-    log(log::debug) << module_label(*this)
-                    << "fifo: dma-trigger-level=" << dma_trigger_level;
+    log(log::debug) << module_label(*this) << "fifo: dma-trigger-level=" << dma_trigger_level;
     fifo_dma_trigger_level = dma_trigger_level;
 }
 
@@ -1814,7 +1812,7 @@ void module::report(std::ostream& out) const {
         << std::string(title.str().length(), '=') << std::endl
         << std::endl
         << "Serial Number  : " << serial_num << std::endl
-        << "Revision       : " << revision_label() << " (" << revision << ')'  << std::endl
+        << "Revision       : " << revision_label() << " (" << revision << ')' << std::endl
         << "Major Revision : " << major_revision << std::endl
         << "Minor Revision : " << minor_revision << std::endl
         << "Crate Revision : " << crate_revision << std::endl
@@ -1847,14 +1845,11 @@ void module::report(std::ostream& out) const {
         << std::endl;
 
     if (online()) {
-        out << "Address Map" << std::endl
-            << "-----------" << std::endl;
+        out << "Address Map" << std::endl << "-----------" << std::endl;
         param_addresses.output(out, true);
         out << std::endl;
 
-        out << "Module Variables" << std::endl
-            << "----------------" << std::endl
-            << std::endl;
+        out << "Module Variables" << std::endl << "----------------" << std::endl << std::endl;
         for (auto& var : module_vars) {
             std::ostringstream vartitle;
             vartitle << var.var.name;
@@ -1862,17 +1857,14 @@ void module::report(std::ostream& out) const {
                 << std::string(vartitle.str().length(), '~') << std::endl
                 << "Mode           : " << param::label(var.var.mode) << std::endl
                 << "Access         : " << param::label(var.var.state) << std::endl
-                << std::hex << std::setfill('0')
-                << "Address        : 0x"<< std::setw(8) << var.var.address << std::endl
-                << std::dec << std::setfill(' ')
-                << "Size           : " << var.var.size << std::endl
+                << std::hex << std::setfill('0') << "Address        : 0x" << std::setw(8)
+                << var.var.address << std::endl
+                << std::dec << std::setfill(' ') << "Size           : " << var.var.size << std::endl
                 << "Index          : " << int(var.var.par) << std::endl
                 << std::endl;
         }
 
-        out << "Channels" << std::endl
-            << "--------" << std::endl
-            << std::endl;
+        out << "Channels" << std::endl << "--------" << std::endl << std::endl;
         for (int ch = 0; ch < static_cast<int>(num_channels); ++ch) {
             const channel::channel& channel = channels[ch];
             std::ostringstream channeltitle;
@@ -1886,8 +1878,6 @@ void module::report(std::ostream& out) const {
         }
     }
 }
-
-
 
 void module::dma_read(const hw::address source, hw::words& values) {
     dma_read(source, values.data(), values.size());
@@ -2209,7 +2199,7 @@ void module::backplane_csrb(const param::value_type csrb) {
         if (!backplane.wired_or_triggers_pullup.request(*this)) {
             throw error(number, slot, error::code::module_invalid_param,
                         "wired-or trigger pullups leader role already taken: " +
-                        std::to_string(backplane.wired_or_triggers_pullup.module()));
+                            std::to_string(backplane.wired_or_triggers_pullup.module()));
         }
     } else {
         backplane.wired_or_triggers_pullup.release(*this);
@@ -2220,8 +2210,7 @@ void module::backplane_csrb(const param::value_type csrb) {
     if ((csrb & (1 << hw::bit::MODCSRB_CHASSISMASTER)) != 0) {
         if (!backplane.run.request(*this)) {
             throw error(number, slot, error::code::module_invalid_param,
-                        "run leader role already taken: " +
-                        std::to_string(backplane.run.module()));
+                        "run leader role already taken: " + std::to_string(backplane.run.module()));
         }
     } else {
         backplane.run.release(*this);
@@ -2233,7 +2222,7 @@ void module::backplane_csrb(const param::value_type csrb) {
         if (!backplane.director.request(*this)) {
             throw error(number, slot, error::code::module_invalid_param,
                         "director leader role already taken: " +
-                        std::to_string(backplane.director.module()));
+                            std::to_string(backplane.director.module()));
         }
     } else {
         backplane.director.release(*this);
