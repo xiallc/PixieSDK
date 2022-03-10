@@ -272,7 +272,7 @@ bool save_dsp_pars(const std::string& filename) {
     return true;
 }
 
-void output_histogram(const module_config& mod, const std::string filename) {
+void export_mca_memory(const module_config& mod, const std::string& filename) {
     std::ofstream out(filename);
     out << "bin,";
     std::vector<std::vector<uint32_t>> hists;
@@ -534,7 +534,7 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
 
         std::string name =
             generate_filename(mod_num, "list-mode-run" + std::to_string(run_num) + "-mca", "csv");
-        output_histogram(cfg.modules[mod_num], name);
+        export_mca_memory(cfg.modules[mod_num], name);
     }
 
     for (auto& stream : output_streams)
@@ -624,7 +624,7 @@ bool execute_mca_run(const int run_num, const module_config& mod, const double r
     }
 
     std::string name = generate_filename(mod.number, "mca-run" + std::to_string(run_num), "csv");
-    output_histogram(mod, name);
+    export_mca_memory(mod, name);
 
     if (!output_statistics_data(mod, "mca-run" + std::to_string(run_num) + "-stats")) {
         return false;
@@ -837,7 +837,7 @@ int main(int argc, char** argv) {
     args::Command export_settings(
         commands, "export-settings",
         "Boots the system and dumps the settings to the file defined in the config.");
-    args::Command histogram(commands, "histogram", "Save histograms from the module.");
+    args::Command mca_export(commands, "mca-export", "Exports histograms from the module without executing a run.");
     args::Command init(commands, "init", "Initializes the system without going any farther.");
     args::Command list_mode(commands, "list-mode", "Starts a list mode data run");
     args::Command read(commands, "read", "Read a parameter from the module.");
@@ -916,6 +916,7 @@ int main(int argc, char** argv) {
     mca.Add(in_synch);
     mca.Add(num_runs);
     mca.Add(run_time);
+    mca_export.Add(module);
     read.Add(conf_flag);
     read.Add(crate);
     read.Add(module);
@@ -1081,6 +1082,13 @@ int main(int argc, char** argv) {
                 Pixie16LoadDSPParametersFromFile(additional_cfg_flag.Get().c_str()),
                 "Pixie16LoadDSPParametersFromFile", true))
             return EXIT_FAILURE;
+    }
+
+    if (mca_export) {
+        for (const auto& mod : cfg.modules) {
+            std::string name = generate_filename(mod.number, "mca-export", "csv");
+            export_mca_memory(mod, name);
+        }
     }
 
     if (copy) {
