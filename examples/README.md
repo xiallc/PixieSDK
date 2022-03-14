@@ -6,5 +6,5 @@ do not encompass the full functionality of the API. They are **not recommended f
 ## Examples
 
 * [example_pixie16api](example_pixie16api/README.md) - Provides an example of how to use the Pixie16Api library
-* [example_pixie16app](example_pixie16api/README.md) - Provides an example of how to use the Legacy C API (Pixie16App)
+* [example_pixie16app](example_pixie16app/README.md) - Provides an example of how to use the Legacy C API (Pixie16App)
 * [data_visualizer](data_visualizer/README.md) - Visualizes data provided by the example software

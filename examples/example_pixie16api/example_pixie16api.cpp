@@ -19,14 +19,11 @@
 /** @file example_pixie16api.cpp
  * @brief Demonstrates how to use the Pixie16Api functions to communicate with Pixie-16 modules.
  *
- * We demonstrate both the PixieSDK implementation using `Pixie16Api.so` and the Legacy C
- * implementation using `Pixie16App.so`. The only difference between using one library over the
- * other is in the header definitions.
+ * We demonstrate both the PixieSDK implementation using `Pixie16Api.so`.
  *
  * The `Pixie16Api.so` includes all the goodness that comes with using the C++ implementation
  * just with a convenient C wrapper. Users don't have as much control over the nitty-gritty details
- * of the PixieSDK. We've intentionally limited this to prevent this backward compatible API from
- * growing out of hand. We **really** recommend that you link your code directly with `PixieSDK.a`.
+ * of the PixieSDK. We've intentionally limited this to prevent this API from growing out of hand.
  */
 
 #include <chrono>

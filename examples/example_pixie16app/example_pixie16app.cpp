@@ -17,16 +17,12 @@
  */
 
 /** @file example_pixie16api.cpp
- * @brief Demonstrates how to use the Pixie16Api functions to communicate with Pixie-16 modules.
+ * @brief Demonstrates how to use the Pixie16App functions to communicate with Pixie-16 modules.
+ * @note The Legacy C API is now deprecated and will no longer receive support outside critical bug
+ * fixes. **We will remove the legacy C API on July 31, 2023**.
  *
- * We demonstrate both the PixieSDK implementation using `Pixie16Api.so` and the Legacy C
- * implementation using `Pixie16App.so`. The only difference between using one library over the
- * other is in the header definitions.
- *
- * The `Pixie16Api.so` includes all the goodness that comes with using the C++ implementation
- * just with a convenient C wrapper. Users don't have as much control over the nitty-gritty details
- * of the PixieSDK. We've intentionally limited this to prevent this backward compatible API from
- * growing out of hand. We **really** recommend that you link your code directly with `PixieSDK.a`.
+ * We demonstrate the Legacy C implementation using `Pixie16App.so`. We **really** recommend that
+ * you link your code directly with `Pixie16Api.so`.
  */
 
 #include <chrono>
