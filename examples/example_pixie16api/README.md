@@ -83,7 +83,7 @@ These instructions assume that you've built and installed PixieSDK into the defa
    ```
 2. Copy the sample configuration file from the repo
    ```shell script
-   cp /usr/local/xia/PixieSdk/share/config/example_config.json .
+   cp /usr/local/xia/PixieSDK/share/config/example_config.json .
    ```
 3. Update the configuration file. You can name it whatever you want.
 4. Execute the program to boot the modules
