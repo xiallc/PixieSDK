@@ -574,6 +574,51 @@ def write(args, cfg, sdk):
     export_settings(cfg, sdk)
 
 
+def check_node(level, nodes, expected, errors):
+    """
+    Checks a list of nodes against the expected set of entries. Updates
+    the error dictionary with the problematic entries.
+    :param level: The node level that we're currently working with.
+    :param nodes: The set of nodes found at this level
+    :param expected: The expected set of nodes to be at this level
+    :param errors: The dictionary containing the found errors.
+    :return: None
+    """
+    missing = expected.difference(nodes)
+    if missing:
+        errors[level] = f"Missing node(s): {', '.join(missing)}."
+
+
+def validate_config(cfg):
+    """
+    Validates the configuration file to make sure that we have all the expected nodes before
+    proceeding.
+    :param cfg: The list of dictionary objects to validate.
+    :return: None
+    """
+    cfg_errors = {}
+    expected_nodes = {
+        'root': {'slot', 'dsp', 'fpga', 'fw'},
+        'dsp': {'ldr', 'par', 'var'},
+        'fpga': {'fippi', 'sys'},
+        'fw': {'version', 'revision', 'adc_msps', 'adc_bits'},
+        'worker': {"bandwidth_mb_per_sec", "buffers", "dma_trigger_level_bytes", "hold_usecs",
+                   "idle_wait_usecs", "run_wait_usecs"}
+    }
+    for idx, item in enumerate(cfg):
+        node_errors = dict()
+        check_node("root", item.keys(), expected_nodes['root'], node_errors)
+
+        for key in [x for x in item.keys() if x != 'slot']:
+            check_node(key, item[key].keys(), expected_nodes[key], node_errors)
+
+        if node_errors:
+            cfg_errors[f"Element {idx}"] = node_errors
+
+    if cfg_errors:
+        raise ValueError(cfg_errors)
+
+
 def example_pixie16api(args, cfg):
     """
     The entry point for all work with the API.
@@ -745,8 +790,9 @@ if __name__ == '__main__':
         with open(ARGS.cfg) as f:
             CFG = json.load(f)
 
+        validate_config(CFG)
         example_pixie16api(ARGS, CFG)
-    except (LookupError, RuntimeError) as err:
+    except (LookupError, RuntimeError, ValueError) as err:
         logging.error(err)
     except KeyboardInterrupt:
         logging.info("Received interrupt!")
