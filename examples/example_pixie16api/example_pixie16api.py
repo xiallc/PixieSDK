@@ -713,7 +713,7 @@ def example_pixie16api(args, cfg):
 
 if __name__ == '__main__':
     try:
-        PARSER = ArgumentParser(description='Example using the Pixie16 API using python.')
+        PARSER = ArgumentParser(description='A python example using the Pixie16 API library.')
 
         parent_parser = ArgumentParser(add_help=True)
         parent_parser.add_argument('-c', '--cfg', type=str, required=True,

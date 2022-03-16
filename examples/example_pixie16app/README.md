@@ -1,23 +1,53 @@
 # example_pixie16app
+
 `example_pixie16app` compiles and links against the Legacy C implementation. Most users will be
-familiar with this implementation. 
+familiar with this implementation.
 
 ## Deprecation notice
+
 The Legacy C API is now deprecated and will no longer receive support outside critical bug fixes.
 **We will remove the legacy C API on July 31, 2023**.
 
-## Configuration file format
+## Configuration file
 
-The configuration file format is a JSON file. The file contains a single array element, where each
-element represents a module in the configuration. The software will automatically determine the
-number of modules in the system according to the number of objects in the file. The order of the
-objects defines the slot to module number mapping. For example, Slot 2 will map to Module 0.
-On Windows environments the `\` in file paths should be escaped, see the example below.
+### File Format
+
+The configuration file uses [JSON](https://www.json.org/json-en.html). This file format is ideal as
+it provides us a semi-structured format that allows expansion without impacting older versions.
+
+### Slot Definition Order
+
+The software will automatically determine the number of requested modules in the system according to
+the number of objects in the array. Note that this is separate from the process that the SDK uses to
+identify the PLX 9054 devices present. The order of the objects defines the slot to module number
+mapping. For example, Slot 2 will map to Module 0.
+
+### Module definitions
+
+Each requested module must have a JSON array element. These elements contain the information
+necessary for the SDK to fully initialize and boot the hardware.
+
+| Name | Description | Elements | Required? |
+|---|---|---|---|
+| slot | Defines the physical slot this module occupies | N/A | Yes |
+| dsp | Defines the DSP firmware and settings file to load to the hardware. | ldr, var, par | Yes |
+| fpga | Defines the FPGA firmware to load to the hardware. | fippi, sys | Yes |
+
+### Example config
+
+The same configuration file is used on both Linux and Windows systems. Please note that on Windows
+that `\` characters in paths need to be escaped. For example
 
 ```
+"C:\\Program Files (x86)\\XIA\\Pixie16_VB 2.3.1\\DSP\\Pixie16DSP_revfgeneral_16b250m_r35921.ldr"
+```
+
+#### Base format
+
+```json
 [
   {
-    "slot": <slot number>,
+    "slot": "<slot number>",
     "dsp": {
       "ldr": "<absolute or relative path to DSP LDR file>",
       "par": "<absolute or relative path to binary settings file>",
@@ -25,16 +55,13 @@ On Windows environments the `\` in file paths should be escaped, see the example
     },
     "fpga": {
       "fippi": "<absolute or relative path to FPGA FIPPI settings file>",
-      "sys": "<absolute or relative path to FPGA SYS settings file>",
+      "sys": "<absolute or relative path to FPGA SYS settings file>"
     }
-  },
-  <repeat above object with next module configruation>
+  }
 ]
 ```
 
-### Example config
-
-#### Linux
+#### Single module configuration
 
 ```json
 [
@@ -42,7 +69,7 @@ On Windows environments the `\` in file paths should be escaped, see the example
     "slot": 2,
     "dsp": {
       "ldr": "/usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/dsp/Pixie16DSP_revfgeneral_16b250m_r35921.ldr",
-      "par": "pixie.set",
+      "par": "pixie.json",
       "var": "/usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/dsp/Pixie16DSP_revfgeneral_16b250m_r35921.var"
     },
     "fpga": {
@@ -53,21 +80,32 @@ On Windows environments the `\` in file paths should be escaped, see the example
 ]
 ```
 
-#### Windows
+#### Multi-module configuration w/ parallel boot
 
 ```json
 [
   {
     "slot": 2,
     "dsp": {
-      "ldr": "C:\\Program Files (x86)\\XIA\\Pixie16_VB 2.3.1\\DSP\\Pixie16DSP_revfgeneral_16b250m_r35921.ldr",
-      "par": "pixie.set",
-      "var": "C:\\Program Files (x86)\\XIA\\Pixie16_VB 2.3.1\\DSP\\Pixie16DSP_revfgeneral_16b250m_r35921.var"
+      "ldr": "/usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/dsp/Pixie16DSP_revfgeneral_16b250m_r35921.ldr",
+      "par": "pixie.json",
+      "var": "/usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/dsp/Pixie16DSP_revfgeneral_16b250m_r35921.var"
     },
     "fpga": {
-      "fippi": "C:\\Program Files (x86)\\XIA\\Pixie16_VB 2.3.1\\Firmware\\fippixie16_revfgeneral_16b250m_r36563.bin",
-      "sys": "C:\\Program Files (x86)\\XIA\\Pixie16_VB 2.3.1\\Firmware\\syspixie16_revfgeneral_adc250mhz_r33339.bin",
-      "trig": "FPGATrig"
+      "fippi": "/usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/firmware/fippixie16_revfgeneral_16b250m_r36563.bin",
+      "sys": "/usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin"
+    }
+  },
+  {
+    "slot": 4,
+    "dsp": {
+      "ldr": "/usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/dsp/Pixie16DSP_revfgeneral_16b250m_r35921.ldr",
+      "par": "pixie.json",
+      "var": "/usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/dsp/Pixie16DSP_revfgeneral_16b250m_r35921.var"
+    },
+    "fpga": {
+      "fippi": "/usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/firmware/fippixie16_revfgeneral_16b250m_r36563.bin",
+      "sys": "/usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin"
     }
   }
 ]
