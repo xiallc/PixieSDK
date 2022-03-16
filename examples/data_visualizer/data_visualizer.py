@@ -1,4 +1,15 @@
 """ SPDX-License-Identifier: Apache-2.0 """
+from argparse import ArgumentParser
+from io import BytesIO
+import logging
+import math
+import os
+import sys
+
+from dolosse.hardware.xia.pixie16.list_mode_data_mask import ListModeDataMask
+from dolosse.hardware.xia.pixie16.list_mode_data_decoder import decode_listmode_data
+import pandas as pd
+import matplotlib.pyplot as plt
 
 """
 Copyright 2021 XIA LLC, All rights reserved.
@@ -19,19 +30,6 @@ limitations under the License.
 """ data_visualizer.py visualizes CSV and list-mode energies from the example software. 
 
 """
-
-from argparse import ArgumentParser
-from io import BytesIO
-import logging
-import math
-import os
-import sys
-
-from dolosse.hardware.xia.pixie16.list_mode_data_mask import ListModeDataMask
-from dolosse.hardware.xia.pixie16.list_mode_data_decoder import decode_listmode_data
-import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
 
 logging.basicConfig(stream=sys.stdout, datefmt="%Y-%m-%dT%H:%M:%S.000Z", level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
@@ -85,37 +83,12 @@ def plot_lmd(df, args):
     """
     logging.info(f"Starting to plot list-mode energy histograms.")
 
-    channels = [float(x) for x in df.channel.unique()]
-    channels.sort()
-
-    if len(channels) < 4:
-        fig, axes = plt.subplots(nrows=len(channels), ncols=1, sharex='all',
-                                 sharey='all')
-    else:
-        subplot_cfg = calculate_subplot_dims(len(channels))
-
-        if subplot_cfg['pad'] != 0:
-            channels = np.pad(channels, (0, subplot_cfg['pad']), mode='constant',
-                              constant_values=np.nan)
-
-        fig, axes = plt.subplots(nrows=subplot_cfg['rows'], ncols=subplot_cfg['cols'], sharex='col',
-                                 sharey='row')
-
-    for channel, ax in np.column_stack((channels, fig.axes)):
-        if np.isnan(channel):
-            continue
-        df[df['channel'] == channel].hist(column='energy', ax=ax, grid=False)
-        ax.title.set_text(f'Chan {int(channel)}')
-
-        logging.info(
-            f"Total events for channel {channel}: {df[df['channel'] == channel]['energy'].count()}")
-
-    fig.supxlabel("Energy(arb)")
-    fig.supylabel("Energy(arb) / bin")
+    ax = df.hist('energy', by='channel', sharey=True, sharex=True)
+    ax.item(0).get_figure().supxlabel("Energy(arb)")
+    ax.item(0).get_figure().supylabel("Energy(arb) / bin")
     plt.xlim(args.xlim)
     plt.suptitle("List-Mode Energy Histograms")
     plt.tight_layout()
-
     plt.savefig(f"{os.path.splitext(args.file)[0]}.png", format='png')
     plt.show()
 
