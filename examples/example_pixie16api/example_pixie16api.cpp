@@ -221,6 +221,7 @@ bool verify_api_return_value(const int& val, const std::string& func_name,
 }
 
 bool output_statistics_data(const module_config& mod, const std::string& type) {
+    std::cout << LOG("INFO") << "Requesting run statistics from module." << std::endl;
     std::vector<unsigned int> stats(Pixie16GetStatisticsSize(), 0);
     if (!verify_api_return_value(Pixie16ReadStatisticsFromModule(stats.data(), mod.number),
                                  "Pixie16ReadStatisticsFromModule", false))
@@ -270,6 +271,7 @@ bool save_dsp_pars(const std::string& filename) {
 }
 
 void export_mca_memory(const module_config& mod, const std::string& filename) {
+    std::cout << LOG("INFO") << "Reading out on-board MCA collected during list-mode run." << std::endl;
     std::ofstream out(filename);
     out << "bin,";
     std::vector<std::vector<uint32_t>> hists;
