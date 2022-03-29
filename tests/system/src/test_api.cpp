@@ -1047,6 +1047,7 @@ test_fifo_worker::test_fifo_worker() : length(0) {}
 
 void test_fifo_worker::worker(xia::pixie::module::module& module) {
     try {
+        std::ofstream out("test-api-control-task-11.bin", std::ios::out | std::ios::binary);
         module.start_test(xia::pixie::module::module::test::lm_fifo);
         const size_t poll_period_usecs = 10 * 1000;
         period.start();
@@ -1056,6 +1057,7 @@ void test_fifo_worker::worker(xia::pixie::module::module& module) {
                 xia::pixie::hw::words lm;
                 module.read_list_mode(lm);
                 total += lm.size();
+                out.write(reinterpret_cast<char*>(lm.data()), lm.size() * sizeof(uint32_t));
             }
             if (data_available == 0) {
                 xia::pixie::hw::wait(poll_period_usecs);
@@ -1063,6 +1065,7 @@ void test_fifo_worker::worker(xia::pixie::module::module& module) {
         }
         period.end();
         module.end_test();
+        out.close();
     } catch (...) {
         period.end();
         has_error = true;
