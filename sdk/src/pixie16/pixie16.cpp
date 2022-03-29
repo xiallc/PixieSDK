@@ -975,8 +975,14 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO
         xia::pixie::crate::module_handle module(crate, ModNum);
 
         xia::pixie::hw::words data(nFIFOWords);
-        module->read_list_mode(data);
-        for (size_t i = 0; i < nFIFOWords; i++) {
+        auto copied = module->read_list_mode(data);
+        if (copied != nFIFOWords) {
+            xia_log(xia_log::error)
+                << "Failed to read FIFO words, requested nFIFOWords (" << nFIFOWords
+                << "), copied " << copied << " for Module " << ModNum
+                << ". Remaining values filled with zero.";
+        }
+        for (size_t i = 0; i < copied; i++) {
             ExtFIFO_Data[i] = data[i];
         }
     } catch (xia_error& e) {

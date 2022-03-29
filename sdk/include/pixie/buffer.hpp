@@ -132,33 +132,27 @@ struct queue {
     void push(handle buf);
     handle pop();
 
-    void copy(buffer& to);
-    void copy(buffer_value_ptr to, const size_t count);
+    size_t copy(buffer& to);
+    size_t copy(buffer_value_ptr to, const size_t count);
 
     void compact();
 
-    bool empty() const {
-        return count_.load() == 0;
-    }
+    bool empty();
 
-    size_t size() const {
-        return size_.load();
-    }
-    size_t count() const {
-        return count_.load();
-    }
+    size_t size();
+    size_t count();
 
     void flush();
 
     void output(std::ostream& out);
 
 private:
-    void copy_unprotected(buffer_value_ptr to, const size_t count);
+    size_t copy_unprotected(buffer_value_ptr to, const size_t count);
 
     handles buffers;
     lock_type lock;
-    std::atomic_size_t size_;
-    std::atomic_size_t count_;
+    size_t size_;
+    size_t count_;
 };
 
 }  // namespace buffer

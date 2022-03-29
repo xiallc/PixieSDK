@@ -128,26 +128,26 @@ handle queue::pop() {
     return buf;
 }
 
-void queue::copy(buffer& to) {
+size_t queue::copy(buffer& to) {
     lock_guard guard(lock);
     /*
      * If the `to` size is 0 copy all the available data
      */
     size_t count = to.size();
     if (count == 0) {
-        count = size_.load();
+        count = size_;
         to.resize(count);
     }
-    copy_unprotected(to.data(), count);
+    return copy_unprotected(to.data(), count);
 }
 
-void queue::copy(buffer_value_ptr to, const size_t count) {
+size_t queue::copy(buffer_value_ptr to, const size_t count) {
     lock_guard guard(lock);
-    copy_unprotected(to, count);
+    return copy_unprotected(to, count);
 }
 
-void queue::copy_unprotected(buffer_value_ptr to, const size_t count) {
-    if (count > size_.load()) {
+size_t queue::copy_unprotected(buffer_value_ptr to, const size_t count) {
+    if (count > size_) {
         throw error(error::code::buffer_pool_not_enough, "not enough data in queue");
     }
     auto to_move = count;
@@ -161,19 +161,20 @@ void queue::copy_unprotected(buffer_value_ptr to, const size_t count) {
             size_ -= from->size();
             count_--;
             from->clear();
+            from_bi++;
         } else {
             std::memcpy(to, from->data(), to_move);
             std::move(from->begin() + to_move, from->end(), from->begin());
             from->resize(from->size() - to_move);
-            to += from->size();
-            to_move = 0;
+            to += to_move;
             size_ -= to_move;
+            to_move = 0;
         }
-        from_bi++;
     }
     if (from_bi != buffers.begin()) {
         buffers.erase(buffers.begin(), from_bi);
     }
+    return count - to_move;
 }
 
 void queue::compact() {
@@ -222,6 +223,21 @@ void queue::compact() {
             to_bi++;
         }
     }
+}
+
+bool queue::empty() {
+    lock_guard guard(lock);
+    return count_ == 0;
+}
+
+size_t queue::size() {
+    lock_guard guard(lock);
+    return size_;
+    }
+
+size_t queue::count() {
+    lock_guard guard(lock);
+    return count_;
 }
 
 void queue::flush() {

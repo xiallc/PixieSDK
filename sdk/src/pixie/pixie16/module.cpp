@@ -1671,32 +1671,34 @@ size_t module::read_list_mode_level() {
     return size;
 }
 
-void module::read_list_mode(hw::words& values) {
+size_t module::read_list_mode(hw::words& values) {
     log(log::debug) << module_label(*this) << "read-list-mode: length=" << values.size()
                     << " fifo-size=" << fifo_data.size();
     online_check();
     if (!fifo_worker_running.load()) {
         log(log::warning) << module_label(*this) << "read-list-mode: FIFO worker not running";
     }
-    if (!fifo_data.empty()) {
-        lock_guard guard(lock_);
-        fifo_data.copy(values);
-        auto out = values.size();
-        data_stats.out += out;
-        run_stats.out += out;
-        log(log::debug) << module_label(*this) << "read-list-mode: values=" << values.size()
-                        << " fifo-size=" << fifo_data.size();
+    if (fifo_data.empty()) {
+        return 0;
     }
+    lock_guard guard(lock_);
+    auto out = fifo_data.copy(values);
+    data_stats.out += out;
+    run_stats.out += out;
+    log(log::debug) << module_label(*this) << "read-list-mode: values=" << values.size()
+                    << " out=" << out << " fifo-size=" << fifo_data.size();
+    return out;
 }
 
-void module::read_list_mode(hw::word_ptr values, const size_t size) {
+size_t module::read_list_mode(hw::word_ptr values, const size_t size) {
     log(log::info) << module_label(*this) << "read-list-mode: length=" << size
                    << " fifo-size=" << fifo_data.size();
     online_check();
-    if (!fifo_data.empty()) {
-        lock_guard guard(lock_);
-        fifo_data.copy(values, size);
+    if (fifo_data.empty()) {
+        return 0;
     }
+    lock_guard guard(lock_);
+    return fifo_data.copy(values, size);
 }
 
 void module::read_stats(stats::stats& stats) {

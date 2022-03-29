@@ -556,8 +556,8 @@ public:
      * Read the module's list mode
      */
     size_t read_list_mode_level();
-    void read_list_mode(hw::words& words);
-    void read_list_mode(hw::word_ptr values, const size_t size);
+    size_t read_list_mode(hw::words& words);
+    size_t read_list_mode(hw::word_ptr values, const size_t size);
 
     /**
      * Read the stats
