@@ -133,7 +133,7 @@ struct queue {
     handle pop();
 
     size_t copy(buffer& to);
-    size_t copy(buffer_value_ptr to, const size_t count);
+    size_t copy(buffer_value_ptr to, const size_t to_move);
 
     void compact();
 
@@ -147,12 +147,13 @@ struct queue {
     void output(std::ostream& out);
 
 private:
-    size_t copy_unprotected(buffer_value_ptr to, const size_t count);
+    size_t copy_unprotected(buffer_value_ptr to, size_t to_move);
+
+    void check(const char* label);
 
     handles buffers;
     lock_type lock;
     size_t size_;
-    size_t count_;
 };
 
 }  // namespace buffer
