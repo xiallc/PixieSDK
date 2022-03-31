@@ -38,6 +38,7 @@
 #include <pixie/log.hpp>
 #include <pixie/param.hpp>
 #include <pixie/stats.hpp>
+#include <pixie/sync.hpp>
 
 #include <pixie/pixie16/backplane.hpp>
 #include <pixie/pixie16/channel.hpp>
@@ -722,6 +723,9 @@ protected:
 
     std::atomic_bool fifo_worker_running;
     std::atomic_bool fifo_worker_finished;
+    sync::variable::lock_type fifo_worker_working;
+    sync::variable fifo_worker_req;
+    sync::variable fifo_worker_resp;
 
     buffer::pool fifo_pool;
     buffer::queue fifo_data;

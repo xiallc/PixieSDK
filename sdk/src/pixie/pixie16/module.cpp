@@ -312,9 +312,10 @@ module::module(backplane::backplane& backplane_)
       fifo_idle_wait_usecs(default_fifo_idle_wait_usec), fifo_hold_usecs(default_fifo_hold_usec),
       fifo_dma_trigger_level(default_fifo_dma_trigger_level), fifo_bandwidth(0), data_dma_in(0),
       crate_revision(-1), board_revision(-1), reg_trace(false), bus_cycle_period(100),
-      fifo_worker_running(false), fifo_worker_finished(false), in_use(0), present_(false),
-      online_(false), forced_offline_(false), pause_fifo_worker(true), comms_fpga(false),
-      fippi_fpga(false), have_hardware(false), vars_loaded(false), cfg_ctrlcs(0xaaa),
+      fifo_worker_running(false), fifo_worker_finished(false), fifo_worker_req(fifo_worker_working),
+      fifo_worker_resp(fifo_worker_working), in_use(0), present_(false), online_(false),
+      forced_offline_(false), pause_fifo_worker(true), comms_fpga(false), fippi_fpga(false),
+      have_hardware(false), vars_loaded(false), cfg_ctrlcs(0xaaa),
       device(std::make_unique<pci_bus_handle>()), test_mode(test::off) {}
 
 module::module(module&& m)
@@ -332,10 +333,11 @@ module::module(module&& m)
       fifo_dma_trigger_level(m.fifo_dma_trigger_level.load()), data_dma_in(m.data_dma_in.load()),
       data_stats(m.data_stats), run_stats(m.run_stats), crate_revision(m.crate_revision),
       board_revision(m.board_revision), reg_trace(m.reg_trace), bus_cycle_period(100),
-      fifo_worker_running(false), fifo_worker_finished(false), in_use(0),
-      present_(m.present_.load()), online_(m.online_.load()),
-      forced_offline_(m.forced_offline_.load()), pause_fifo_worker(m.pause_fifo_worker.load()),
-      comms_fpga(m.comms_fpga), fippi_fpga(m.fippi_fpga), have_hardware(false), vars_loaded(false),
+      fifo_worker_running(false), fifo_worker_finished(false), fifo_worker_req(fifo_worker_working),
+      fifo_worker_resp(fifo_worker_working), in_use(0), present_(m.present_.load()),
+      online_(m.online_.load()), forced_offline_(m.forced_offline_.load()),
+      pause_fifo_worker(m.pause_fifo_worker.load()), comms_fpga(m.comms_fpga),
+      fippi_fpga(m.fippi_fpga), have_hardware(false), vars_loaded(false),
       cfg_ctrlcs(0xaaa), device(std::move(m.device)), test_mode(m.test_mode.load()) {
     m.slot = 0;
     m.number = -1;
@@ -1509,9 +1511,21 @@ void module::run_end() {
     }
     hw::run::end(*this);
     run_interval.end();
-    pause_fifo_worker = true;
     if (running) {
+        if (!pause_fifo_worker.load()) {
+            log(log::debug) << module_label(*this) << "run-end: request worker to run";
+            sync::variable::lock_guard guard(fifo_worker_working);
+            fifo_worker_req.notify();
+            if (fifo_worker_resp.wait(1000 * 1000)) {
+                log(log::error) << module_label(*this) << "run-end: worker never responded";
+            } else {
+                log(log::debug) << module_label(*this) << "run-end: worker responded";
+            }
+            pause_fifo_worker = true;
+        }
         log_stats("run", run_stats);
+    } else {
+        pause_fifo_worker = true;
     }
 }
 
@@ -2280,18 +2294,30 @@ void module::fifo_worker() {
 
     log(log::info) << module_label(*this) << "FIFO worker: running, level=" << level;
 
+    /*
+     * The worker must not hold the module's lock. That lock is for
+     * front facing user calls only. The worker can only use atomics
+     * or other other locks, ie the buffer pool and FIFO data queue.
+     */
+
     try {
         size_t wait_time = fifo_run_wait_usecs.load();
         size_t hold_time = 0;
+
+        bool requester_waiting = false;
 
         bool pool_empty_logged = false;
         bool fifo_full_logged = false;
         size_t last_dma_in = 0;
         util::timepoint bw_interval(true);
 
+        sync::variable::lock_guard guard(fifo_worker_working);
+
         while (fifo_worker_running.load()) {
             if (!online()) {
-                hw::wait(250 * 1000);
+                if (!fifo_worker_req.wait(100 * 1000)) {
+                    fifo_worker_resp.notify();
+                }
                 bw_interval.restart();
                 continue;
             }
@@ -2455,8 +2481,26 @@ void module::fifo_worker() {
                 }
             }
 
-            hw::wait(wait_time);
+            /*
+             * Wait for a request to run. If run has been requested
+             * respond so the requester is notified the work has been
+             * completed. If the request time's out it is a normal
+             * run.
+             */
+            if (requester_waiting) {
+                log(log::warning) << module_label(*this) << "FIFO worker: respond to request";
+                requester_waiting = false;
+                fifo_worker_resp.notify();
+            }
 
+            if (!fifo_worker_req.wait(wait_time)) {
+                log(log::warning) << module_label(*this) << "FIFO worker: run requested";
+                requester_waiting = true;
+            }
+
+            /*
+             * Bound the lower timeout so this thread does not spin.
+             */
             if (hold_time < fifo_hold_usecs.load()) {
                 hold_time += wait_time;
             }
