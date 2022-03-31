@@ -719,6 +719,17 @@ protected:
      */
     void log_stats(const char* label, const fifo_stats& stats);
 
+    /*
+     * Request the worker to run and wait for to respond it has
+     * completed the run.
+     */
+    bool fifo_worker_run(size_t timeout_usecs);
+
+    /*
+     * Synchronous worker run
+     */
+    void sync_worker_run(bool forced = false);
+
     std::thread fifo_thread;
 
     std::atomic_bool fifo_worker_running;

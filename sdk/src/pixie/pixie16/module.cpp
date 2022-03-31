@@ -1509,23 +1509,24 @@ void module::run_end() {
         log(log::warning) << module_label(*this) << "run-end: no run active";
         running = false;
     }
+    /*
+     * End the run. The DSP will clear the run enable bit, signal the
+     * FIPPIs to stop generating events then read any remaining data
+     * from the FIPPIs pushing it to the external FIFO. Once all data
+     * has been written to the FIFO by the DSP it will clear the
+     * active bit signaling the run has ended.
+     *
+     * Once the DSP has ended the run force the worker to run
+     * synchronously to read the remaining records into the data
+     * buffers. This is the only place we run the worker synchronously
+     * when in asynchronous mode.
+     */
     hw::run::end(*this);
     run_interval.end();
+    sync_worker_run(true);
+    pause_fifo_worker = true;
     if (running) {
-        if (!pause_fifo_worker.load()) {
-            log(log::debug) << module_label(*this) << "run-end: request worker to run";
-            sync::variable::lock_guard guard(fifo_worker_working);
-            fifo_worker_req.notify();
-            if (fifo_worker_resp.wait(1000 * 1000)) {
-                log(log::error) << module_label(*this) << "run-end: worker never responded";
-            } else {
-                log(log::debug) << module_label(*this) << "run-end: worker responded";
-            }
-            pause_fifo_worker = true;
-        }
         log_stats("run", run_stats);
-    } else {
-        pause_fifo_worker = true;
     }
 }
 
@@ -1678,6 +1679,8 @@ size_t module::read_list_mode_level() {
     if (!fifo_worker_running.load()) {
         log(log::debug) << module_label(*this) << "read-list-mode-level: FIFO worker not running";
     }
+    lock_guard guard(lock_);
+    sync_worker_run();
     auto size = fifo_data.size();
     if (size > 0) {
         log(log::debug) << module_label(*this) << "read-list-mode-level: FIFO = " << size;
@@ -1692,10 +1695,11 @@ size_t module::read_list_mode(hw::words& values) {
     if (!fifo_worker_running.load()) {
         log(log::warning) << module_label(*this) << "read-list-mode: FIFO worker not running";
     }
+    lock_guard guard(lock_);
+    sync_worker_run();
     if (fifo_data.empty()) {
         return 0;
     }
-    lock_guard guard(lock_);
     auto out = fifo_data.copy(values);
     data_stats.out += out;
     run_stats.out += out;
@@ -1742,11 +1746,18 @@ void module::set_fifo_buffers(const size_t buffers) {
 }
 
 void module::set_fifo_run_wait(const size_t run_wait) {
-    if (run_wait < min_fifo_run_wait_usec || run_wait > max_fifo_run_wait_usec) {
+    if ((run_wait != 0 && run_wait < min_fifo_run_wait_usec) ||
+        run_wait > max_fifo_run_wait_usec) {
         throw error(number, slot, error::code::module_invalid_var,
                     "fifo: run wait value out of range");
     }
     log(log::debug) << module_label(*this) << "fifo: run-wait=" << run_wait;
+    if (run_wait == 0) {
+        log(log::warning) << module_label(*this)
+                          << "fifo: setting run-wait to zero is not recommended, it may result in data loss";
+        log(log::warning) << module_label(*this)
+                          << "fifo: setting run-wait to zero may be deprecated in future versions";
+    }
     fifo_run_wait_usecs = run_wait;
 }
 
@@ -2273,7 +2284,6 @@ void module::start_fifo_worker() {
         pause_fifo_worker = true;
         fifo_worker_finished = false;
         fifo_worker_running = true;
-        ;
         fifo_thread = std::thread(&module::fifo_worker, this);
     }
 }
@@ -2282,6 +2292,10 @@ void module::stop_fifo_worker() {
     log(log::debug) << module_label(*this) << std::boolalpha
                     << "FIFO worker: stopping: running=" << fifo_worker_running.load();
     fifo_worker_running = false;
+    {
+        sync::variable::lock_guard guard(fifo_worker_working);
+        fifo_worker_req.notify();
+    }
     if (fifo_thread.joinable()) {
         fifo_thread.join();
     }
@@ -2299,7 +2313,6 @@ void module::fifo_worker() {
      * front facing user calls only. The worker can only use atomics
      * or other other locks, ie the buffer pool and FIFO data queue.
      */
-
     try {
         size_t wait_time = fifo_run_wait_usecs.load();
         size_t hold_time = 0;
@@ -2325,36 +2338,57 @@ void module::fifo_worker() {
             hw::run::run_task this_run_tsk = run_task.load();
 
             /*
+             * If the run wait time is set to the 0 the worker is
+             * synchronous to the user's calls and there is no wait
+             * time.
+             *
              * If list mode is running the wait period is the currently
              * configured run period.
              *
              * If fill ext FIFO mode is running check the FIFO level
              * and refill when we drop below a threadhold.
              *
-             * Any other mode will decay the wait period every hold period
-             * until capped at the idle wait period.
+             * Any other mode will decay the wait period every hold
+             * period until capped at the idle wait period.
              */
-            if (this_run_tsk == hw::run::run_task::list_mode) {
-                wait_time = fifo_run_wait_usecs.load();
-            }
-            if (test_mode.load() != test::off) {
-                wait_time = fifo_run_wait_usecs.load();
-            } else {
-                const size_t idle_wait_time = fifo_idle_wait_usecs.load();
-                /*
-                 * WHen the wait time is equal to the idle period nothing
-                 * further happens. The hold time should also be 0 which
-                 * means any new data will be held for the hold period.
-                 */
-                if (wait_time > idle_wait_time) {
-                    wait_time = idle_wait_time;
-                } else if (wait_time < idle_wait_time && hold_time >= fifo_hold_usecs.load()) {
-                    wait_time <<= 1;
+            auto run_wait = fifo_run_wait_usecs.load();
+            /*
+             * If the run wait time is 0 the user has requested we
+             * operate in a fully synchronous mode.
+             */
+            bool mode_asynchronous = run_wait != 0;
+
+            if (mode_asynchronous) {
+                if (this_run_tsk == hw::run::run_task::list_mode) {
+                    wait_time = run_wait;
+                }
+                if (test_mode.load() != test::off) {
+                    wait_time = run_wait;
+                } else {
+                    const size_t idle_wait_time = fifo_idle_wait_usecs.load();
+                    /*
+                     * WHen the wait time is equal to the idle period nothing
+                     * further happens. The hold time should also be 0 which
+                     * means any new data will be held for the hold period.
+                     */
                     if (wait_time > idle_wait_time) {
                         wait_time = idle_wait_time;
+                    } else if (wait_time < idle_wait_time &&
+                               hold_time >= fifo_hold_usecs.load()) {
+                        wait_time <<= 1;
+                        if (wait_time > idle_wait_time) {
+                            wait_time = idle_wait_time;
+                        }
+                        hold_time = 0;
                     }
-                    hold_time = 0;
                 }
+            } else {
+                /*
+                 * The level is read only once when the mode is
+                 * synchronous.
+                 */
+                level = fifo.level();
+                log(log::debug) << "fifo worker: fifo-level = " << level;
             }
 
             /*
@@ -2377,10 +2411,13 @@ void module::fifo_worker() {
                     log(log::info) << module_label(*this) << "FIFO worker: run not active";
                 }
                 /*
-                 * Read the level of the FIFI.
+                 * Read the level of the FIFO every loop when the mode
+                 * is asynchronous.
                  */
-                level = fifo.level();
-                log(log::debug) << "fifo worker: fifo-level = " << level;
+                if (mode_asynchronous) {
+                    level = fifo.level();
+                    log(log::debug) << "fifo worker: fifo-level = " << level;
+                }
                 if (level >= hw::fifo_size_words) {
                     if (!fifo_full_logged) {
                         fifo_full_logged = true;
@@ -2390,7 +2427,9 @@ void module::fifo_worker() {
                     run_stats.hw_overflows++;
                 }
                 if (level == 0 ||
-                    (hold_time < fifo_hold_usecs.load() && level < fifo_dma_trigger_level.load())) {
+                    (run_wait != 0 &&
+                     hold_time < fifo_hold_usecs.load() &&
+                     level < fifo_dma_trigger_level.load())) {
                     break;
                 }
                 if (level == std::numeric_limits<hw::word>::max()) {
@@ -2422,29 +2461,35 @@ void module::fifo_worker() {
                  * letting the FIFO fill.
                  */
                 if (!fifo_pool.empty()) {
-                    buffer::handle buf;
-                    log(log::debug) << module_label(*this) << "FIFO read, level=" << level;
-                    buf = fifo_pool.request();
-                    if (level > buf->capacity()) {
-                        level = buf->capacity();
+                    buffer::handle buf = fifo_pool.request();
+                    auto read_words = level;
+                    if (read_words > buf->capacity()) {
+                        read_words = buf->capacity();
                     }
+                    log(log::debug) << module_label(*this)
+                                    << "FIFO read, level=" << level
+                                    << " read-word=" << read_words;
                     if (fifo_pool.empty()) {
                         data_stats.overflows++;
-                        data_stats.dropped += level;
+                        data_stats.dropped += read_words;
                         run_stats.overflows++;
-                        run_stats.dropped += level;
+                        run_stats.dropped += read_words;
                     }
-                    buf->resize(level);
-                    fifo.read(*buf, level);
-                    data_dma_in += level;
+                    buf->resize(read_words);
+                    fifo.read(*buf, read_words);
+                    data_dma_in += read_words;
                     if (queue_buf) {
-                        data_stats.in += level;
-                        run_stats.in += level;
+                        data_stats.in += read_words;
+                        run_stats.in += read_words;
                         fifo_data.push(buf);
                     }
                     hold_time = 0;
                     pool_empty_logged = false;
                     fifo_full_logged = false;
+                    /*
+                     * Update the level for synchronous mode.
+                     */
+                    level -= read_words;
                 } else {
                     if (!pool_empty_logged) {
                         log(log::warning) << module_label(*this) << "FIFO worker: pool empty";
@@ -2464,19 +2509,23 @@ void module::fifo_worker() {
                 }
                 data_stats.set_bandwidth(data_in_bw);
                 run_stats.set_bandwidth(data_in_bw);
-                /*
-                 * Allocated bandwidth used?
-                 */
-                auto bandwidth = fifo_bandwidth.load();
-                if (bandwidth > 0) {
-                    if (data_in_bw >= bandwidth) {
-                        last_dma_in = dma_in;
-                        size_t slice = (1000 - ((1000 * bandwidth) / hw::pci_bus_datarate)) * 1000;
-                        if (wait_time < slice) {
-                            wait_time = slice;
+
+                if (mode_asynchronous) {
+                    /*
+                     * Allocated bandwidth used?
+                     */
+                    auto bandwidth = fifo_bandwidth.load();
+                    if (bandwidth > 0) {
+                        if (data_in_bw >= bandwidth) {
+                            last_dma_in = dma_in;
+                            size_t slice =
+                                (1000 - ((1000 * bandwidth) / hw::pci_bus_datarate)) * 1000;
+                            if (wait_time < slice) {
+                                wait_time = slice;
+                            }
+                            log(log::debug) << "BW limiter: data in:: " << data_in_bw << "MB";
+                            break;
                         }
-                        log(log::debug) << "BW limiter: data in:: " << data_in_bw << "MB";
-                        break;
                     }
                 }
             }
@@ -2488,13 +2537,13 @@ void module::fifo_worker() {
              * run.
              */
             if (requester_waiting) {
-                log(log::warning) << module_label(*this) << "FIFO worker: respond to request";
+                log(log::debug) << module_label(*this) << "FIFO worker: respond to request";
                 requester_waiting = false;
                 fifo_worker_resp.notify();
             }
 
-            if (!fifo_worker_req.wait(wait_time)) {
-                log(log::warning) << module_label(*this) << "FIFO worker: run requested";
+            if (!fifo_worker_req.wait(mode_asynchronous ? wait_time : 0)) {
+                log(log::debug) << module_label(*this) << "FIFO worker: run requested";
                 requester_waiting = true;
             }
 
@@ -2562,6 +2611,21 @@ void module::log_stats(const char* label, const fifo_stats& stats) {
                    << " out=" << stats.out.load() * word_size
                    << " overflows=" << stats.overflows.load() << " dropped=" << stats.dropped.load()
                    << " hw-overflows=" << stats.hw_overflows.load();
+}
+
+bool module::fifo_worker_run(size_t timeout_usecs) {
+    sync::variable::lock_guard guard(fifo_worker_working);
+    fifo_worker_req.notify();
+    return fifo_worker_resp.wait(timeout_usecs);
+}
+
+void module::sync_worker_run(bool forced) {
+    /*
+     * Run the worker if forced or the mode is synchronous.
+     */
+    if (forced || fifo_run_wait_usecs.load() == 0) {
+        fifo_worker_run(250 * 1000);
+    }
 }
 
 void assign(modules& modules_, const number_slots& numbers) {

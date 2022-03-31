@@ -106,6 +106,8 @@ extern "C" {
 /**
  * @ingroup PIXIE16_API
  * @brief Defines a data structure used to configure the List-mode data FIFO worker
+ *
+ * Xia recommends asynchronous mode and the XIA list mode decoder for optimal system performance.
  */
 struct fifo_worker_config {
     /**
@@ -180,6 +182,17 @@ struct fifo_worker_config {
      * | Units | Min | Max | Default |
      * |---|---|---|---|
      * | microseconds | 500 | 200000 | 5000 |
+     *
+     * A value of 0 enables synchronous FIFO reading. When set to 0 a request for the FIFO status
+     * will read any data in the external FIFO memory into the buffers ready for reading. Warning,
+     * this mode is not recommended and may be removed in the future. Enabling this mode means the
+     * rate your application's reads a module's FIFO memory determines effective throughput
+     * of the system and that may not reflect XIA's performance figures. If your application is not
+     * able to meeting the required timing list mode data may be lost as the external FIFO memory
+     * may overflow. The transfer process from the FIPPI through the DSP. the external FIFO
+     * memory to the PC's memory is asychronous by the nature of the hardware design and any apparent
+     * data alignment is purely coincidental. XIA recommends list mode data be treated as a stream
+     * and the XIA decoder API be used to ensure smooth and fast decoding of the read buffers.
      */
     size_t run_wait_usecs;
 };
