@@ -630,9 +630,13 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
                      * provided as the number of 32-bit words.
                      */
                     if (evt.event_length != evt.header_length + val / 2) {
-                        throw error(
-                            error::code::invalid_event_length,
-                            "Event length does not match header length plus 0.5 * trace_length");
+                        std::stringstream msg;
+                        msg << "crate=" << evt.crate_id << ", slot=" << evt.slot_id
+                            << ", chan=" << evt.channel_number
+                            << ", event_length=" << evt.event_length
+                            << ", header_length=" << evt.header_length
+                            << ", trace_length=" << evt.trace_length;
+                        throw error(error::code::invalid_event_length, msg.str());
                     }
                     evt.trace_length = val;
                     break;
