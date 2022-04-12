@@ -1,0 +1,3 @@
+add_executable(list_mode_file_parser list_mode_file_stats.cpp)
+target_include_directories(list_mode_file_parser PUBLIC ${PROJECT_SOURCE_DIR}/sdk/include ${PROJECT_SOURCE_DIR}/externals/)
+xia_configure_target(TARGET list_mode_file_parser USE_PLX LIBS PixieData)
