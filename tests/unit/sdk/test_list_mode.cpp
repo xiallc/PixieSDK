@@ -254,7 +254,7 @@ TEST_SUITE("xia::pixie::list_mode") {
                 generate_data(3223257130, 123456789, 202182637, 1966560, false, true, true, true);
             CHECK_THROWS_WITH_AS(
                 decode_data_block(data, 17562, 100, recs, leftover),
-                "Event length does not match header length plus 0.5 * trace_length",
+                "event does not match header and trace: crate=0, slot=0, chan=0, event_length=15, header_length=16, trace_length=0",
                 xia::pixie::error::error);
         }
         SUBCASE("Invalid Header Length") {

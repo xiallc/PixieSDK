@@ -631,7 +631,9 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
                      */
                     if (evt.event_length != evt.header_length + val / 2) {
                         std::stringstream msg;
-                        msg << "crate=" << evt.crate_id << ", slot=" << evt.slot_id
+                        msg << "event does not match header and trace: "
+                            << "crate=" << evt.crate_id
+                            << ", slot=" << evt.slot_id
                             << ", chan=" << evt.channel_number
                             << ", event_length=" << evt.event_length
                             << ", header_length=" << evt.header_length
