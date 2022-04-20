@@ -28,6 +28,7 @@
 #include <vector>
 
 #include <pixie/error.hpp>
+#include <pixie/os_compat.hpp>
 
 namespace xia {
 namespace pixie {
@@ -364,8 +365,8 @@ using buffer = std::vector<uint32_t>;
  *  typically happens when you've passed in a partial record, or a data block
  *  that contains a partial record at the end.
  */
-void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequency, records& recs,
-                       buffer& leftovers);
+PIXIE_EXPORT void PIXIE_API decode_data_block(uint32_t* data, size_t len, size_t revision,
+                                              size_t frequency, records& recs, buffer& leftovers);
 
 /**
  * @brief Decodes a Pixie-16 list-mode data block.
@@ -399,8 +400,8 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
  *  typically happens when you've passed in a partial record, or a data block
  *  that contains a partial record at the end.
  */
-void decode_data_block(buffer data, size_t revision, size_t frequency, records& recs,
-                       buffer& leftovers);
+PIXIE_EXPORT void PIXIE_API decode_data_block(buffer data, size_t revision, size_t frequency,
+                                              records& recs, buffer& leftovers);
 }  // namespace list_mode
 }  // namespace data
 }  // namespace pixie
