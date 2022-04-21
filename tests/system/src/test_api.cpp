@@ -97,6 +97,7 @@ static void hist_save(xia::pixie::crate::crate& crate, options& cmd);
 static void list_start(xia::pixie::crate::crate& crate, options& cmd);
 static void list_resume(xia::pixie::crate::crate& crate, options& cmd);
 static void list_save(xia::pixie::crate::crate& crate, options& cmd);
+static void list_mode(xia::pixie::crate::crate& crate, options& cmd);
 static void run_active(xia::pixie::crate::crate& crate, options& cmd);
 static void run_end(xia::pixie::crate::crate& crate, options& cmd);
 static void par_write(xia::pixie::crate::crate& crate, options& cmd);
@@ -131,6 +132,7 @@ static const std::map<std::string, command_def> command_defs = {
     {"list-start", {{1}, "start module list mode"}},
     {"list-resume", {{1}, "resume module list mode"}},
     {"list-save", {{3}, "save a module's list-mode data to a file"}},
+    {"list-mode", {{3}, "run list mode saving the data to a file"}},
     {"par-read", {{2, 3}, "read module/channel parameter"}},
     {"par-write", {{3, 4}, "write module/channel parameter"}},
     {"var-read", {{2, 3, 4}, "read module/channel variable"}},
@@ -161,6 +163,7 @@ static const std::vector<cmd_handler> cmd_handlers = {
     {"list-start", list_start},
     {"list-resume", list_resume},
     {"list-save", list_save},
+    {"list-mode", list_mode},
     {"run-active", run_active},
     {"run-end", run_end},
     {"par-write", par_write},
@@ -714,6 +717,7 @@ static void list_resume(xia::pixie::crate::crate& crate, options& cmd) {
 struct list_save_worker : public module_thread_worker {
     std::string name;
     size_t seconds;
+    bool run_task;
 
     list_save_worker();
     void worker(xia::pixie::module::module& module);
@@ -728,40 +732,69 @@ void list_save_worker::worker(xia::pixie::module::module& module) {
         throw std::runtime_error(std::string("list mode file open: ") + name + ": " +
                                  std::strerror(errno));
     }
+    using namespace xia::pixie::hw::run;
+    if (run_task) {
+        module.start_listmode(run_mode::new_run);
+    }
+    xia::pixie::hw::words lm;
     const size_t poll_period_usecs = 100 * 1000;
     total = 0;
     period.start();
     while (period.secs() < seconds) {
-        size_t data_available = module.read_list_mode_level();
-        if (data_available > 0) {
-            xia::pixie::hw::words lm;
-            module.read_list_mode(lm);
+        lm.clear();
+        if (module.read_list_mode(lm) > 0) {
+            total += lm.size();
+            out.write(reinterpret_cast<char*>(lm.data()), lm.size() * sizeof(xia::pixie::hw::word));
+        } else {
+            xia::pixie::hw::wait(poll_period_usecs);
+        }
+    }
+    if (run_task) {
+        module.run_end();
+        lm.clear();
+        if (module.read_list_mode(lm) > 0) {
             total += lm.size();
             out.write(reinterpret_cast<char*>(lm.data()), lm.size() * sizeof(xia::pixie::hw::word));
         }
-        if (data_available == 0) {
-            xia::pixie::hw::wait(poll_period_usecs);
+        std::cout << "list-mode: " << module.number << ": " << module.run_stats.output() << std::endl;
+        if (module.run_stats.hw_overflows != 0) {
+            throw std::runtime_error("list mode: EXT FIFO overflow (check workflow config)");
+        }
+        if (module.run_stats.overflows != 0) {
+            throw std::runtime_error("list mode: data FIFO overflow (check buffer sizes)");
+        }
+        if (module.run_stats.in != module.run_stats.out) {
+            throw std::runtime_error("list mode: data left in data FIFO");
         }
     }
     period.end();
 }
 
-static void list_save(xia::pixie::crate::crate& crate, options& cmd) {
+static void list_mode_cmd(xia::pixie::crate::crate& crate, options& cmd, bool run_task) {
     auto mod_nums = get_values<size_t>(cmd[1], crate.num_modules);
     auto secs = get_value<size_t>(cmd[2]);
     auto name = cmd[3];
     module_check(crate, mod_nums);
     if (secs == 0) {
-        throw std::runtime_error(std::string("list mode save period is 0"));
+        throw std::runtime_error(std::string("list mode run/save period is 0"));
     }
     auto saves = std::vector<list_save_worker>(mod_nums.size());
     set_num_slot(crate, mod_nums, saves);
     for (auto& s : saves) {
         s.name = name;
         s.seconds = secs;
+        s.run_task = run_task;
     };
-    module_threads(crate, mod_nums, saves, "list mode save error; see log");
+    module_threads(crate, mod_nums, saves, "list mode command error; see log");
     performance_stats(saves);
+}
+
+static void list_save(xia::pixie::crate::crate& crate, options& cmd) {
+    list_mode_cmd(crate, cmd, false);
+}
+
+static void list_mode(xia::pixie::crate::crate& crate, options& cmd) {
+    list_mode_cmd(crate, cmd, true);
 }
 
 static void run_end(xia::pixie::crate::crate& crate, options& cmd) {

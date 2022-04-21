@@ -157,6 +157,7 @@ public:
     struct fifo_stats {
         std::atomic_size_t in; /* Data into the fifo queue */
         std::atomic_size_t out; /* Data read from the fifo queue */
+        std::atomic_size_t dma_in; /* DMA data in */
         std::atomic_size_t overflows; /* Fifo queue overflows */
         std::atomic_size_t dropped; /* Fifo queue data dropped */
         std::atomic_size_t hw_overflows; /* Fifo HW overflows */
@@ -171,6 +172,8 @@ public:
 
         void clear();
         void set_bandwidth(const size_t bw);
+
+        std::string output() const;
     };
 
     /**
@@ -344,7 +347,6 @@ public:
     /*
      * Dataflow stats
      */
-    std::atomic_size_t data_dma_in; /* DMA data in */
     fifo_stats data_stats;
 
     /*

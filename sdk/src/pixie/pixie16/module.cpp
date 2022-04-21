@@ -250,6 +250,7 @@ module::fifo_stats::fifo_stats() {
 module::fifo_stats& module::fifo_stats::operator=(const module::fifo_stats& s) {
     in = s.in.load();
     out = s.out.load();
+    dma_in = s.dma_in.load();
     overflows = s.overflows.load();
     dropped = s.dropped.load();
     hw_overflows = s.hw_overflows.load();
@@ -260,13 +261,16 @@ module::fifo_stats& module::fifo_stats::operator=(const module::fifo_stats& s) {
 }
 
 module::fifo_stats::fifo_stats(const module::fifo_stats& s)
-    : in(s.in.load()), out(s.out.load()), overflows(s.overflows.load()), dropped(s.dropped.load()),
+    : in(s.in.load()), out(s.out.load()), dma_in(s.dma_in.load()),
+      overflows(s.overflows.load()), dropped(s.dropped.load()),
       hw_overflows(s.hw_overflows.load()), bandwidth(s.bandwidth.load()),
-      max_bandwidth(s.max_bandwidth.load()), min_bandwidth(s.min_bandwidth.load()) {}
+      max_bandwidth(s.max_bandwidth.load()), min_bandwidth(s.min_bandwidth.load()) {
+}
 
 void module::fifo_stats::clear() {
     in = 0;
     out = 0;
+    dma_in = 0;
     overflows = 0;
     dropped = 0;
     hw_overflows = 0;
@@ -283,6 +287,20 @@ void module::fifo_stats::set_bandwidth(const size_t bw) {
     if (min_bandwidth == 0 || bw < min_bandwidth.load()) {
         min_bandwidth = bw;
     }
+}
+
+std::string module::fifo_stats::output() const {
+    constexpr auto word_size = sizeof(hw::word);
+    std::ostringstream oss;
+    oss << "bw=" << bandwidth.load()
+        << "Mb/s max-bw=" << max_bandwidth.load()
+        << "Mb/s min-bw=" << min_bandwidth.load()
+        << "Mb/s in=" << in.load() * word_size
+        << " out=" << out.load() * word_size
+        << " dma-in=" << dma_in.load() * word_size
+        << " overflows=" << overflows.load() << " dropped=" << dropped.load()
+        << " hw-overflows=" << hw_overflows.load();
+    return oss.str();
 }
 
 /*
@@ -310,7 +328,7 @@ module::module(backplane::backplane& backplane_)
       run_task(hw::run::run_task::nop), control_task(hw::run::control_task::nop),
       fifo_buffers(default_fifo_buffers), fifo_run_wait_usecs(default_fifo_run_wait_usec),
       fifo_idle_wait_usecs(default_fifo_idle_wait_usec), fifo_hold_usecs(default_fifo_hold_usec),
-      fifo_dma_trigger_level(default_fifo_dma_trigger_level), fifo_bandwidth(0), data_dma_in(0),
+      fifo_dma_trigger_level(default_fifo_dma_trigger_level), fifo_bandwidth(0),
       crate_revision(-1), board_revision(-1), reg_trace(false), bus_cycle_period(100),
       fifo_worker_running(false), fifo_worker_finished(false), fifo_worker_req(fifo_worker_working),
       fifo_worker_resp(fifo_worker_working), in_use(0), present_(false), online_(false),
@@ -330,7 +348,7 @@ module::module(module&& m)
       fifo_run_wait_usecs(m.fifo_run_wait_usecs.load()),
       fifo_idle_wait_usecs(m.fifo_idle_wait_usecs.load()),
       fifo_hold_usecs(m.fifo_hold_usecs.load()), fifo_bandwidth(m.fifo_bandwidth.load()),
-      fifo_dma_trigger_level(m.fifo_dma_trigger_level.load()), data_dma_in(m.data_dma_in.load()),
+      fifo_dma_trigger_level(m.fifo_dma_trigger_level.load()),
       data_stats(m.data_stats), run_stats(m.run_stats), crate_revision(m.crate_revision),
       board_revision(m.board_revision), reg_trace(m.reg_trace), bus_cycle_period(100),
       fifo_worker_running(false), fifo_worker_finished(false), fifo_worker_req(fifo_worker_working),
@@ -361,7 +379,6 @@ module::module(module&& m)
     m.fifo_hold_usecs = default_fifo_hold_usec;
     m.fifo_dma_trigger_level = default_fifo_dma_trigger_level;
     m.fifo_bandwidth = 0;
-    m.data_dma_in = 0;
     m.data_stats.clear();
     m.run_stats.clear();
     m.crate_revision = -1;
@@ -422,7 +439,6 @@ module& module::operator=(module&& m) {
     fifo_hold_usecs = m.fifo_hold_usecs.load();
     fifo_dma_trigger_level = m.fifo_dma_trigger_level.load();
     fifo_bandwidth = m.fifo_bandwidth.load();
-    data_dma_in = m.data_dma_in.load();
     data_stats = m.data_stats;
     run_stats = m.run_stats;
     crate_revision = m.crate_revision;
@@ -460,7 +476,6 @@ module& module::operator=(module&& m) {
     m.fifo_hold_usecs = default_fifo_hold_usec;
     m.fifo_dma_trigger_level = default_fifo_dma_trigger_level;
     m.fifo_bandwidth = 0;
-    m.data_dma_in = 0;
     m.data_stats.clear();
     m.run_stats.clear();
     m.crate_revision = -1;
@@ -1606,9 +1621,10 @@ void module::start_listmode(hw::run::run_mode mode) {
                     "test running; cannot start a run task");
     }
     backplane.sync_wait_valid();
+    run_stats.clear();
     fifo_data.flush();
-    hw::run::run(*this, mode, hw::run::run_task::list_mode);
     pause_fifo_worker = false;
+    hw::run::run(*this, mode, hw::run::run_task::list_mode);
     run_interval.restart();
 }
 
@@ -1716,7 +1732,12 @@ size_t module::read_list_mode(hw::word_ptr values, const size_t size) {
         return 0;
     }
     lock_guard guard(lock_);
-    return fifo_data.copy(values, size);
+    auto out = fifo_data.copy(values, size);
+    data_stats.out += size;
+    run_stats.out += size;
+    log(log::debug) << module_label(*this) << "read-list-mode: values=" << size
+                    << " out=" << out << " fifo-size=" << fifo_data.size();
+    return out;
 }
 
 void module::read_stats(stats::stats& stats) {
@@ -2324,6 +2345,8 @@ void module::fifo_worker() {
         size_t last_dma_in = 0;
         util::timepoint bw_interval(true);
 
+        int requested_wait_loops = 0;
+
         sync::variable::lock_guard guard(fifo_worker_working);
 
         while (fifo_worker_running.load()) {
@@ -2426,8 +2449,17 @@ void module::fifo_worker() {
                     data_stats.hw_overflows++;
                     run_stats.hw_overflows++;
                 }
+                /*
+                 * Nothing further to do if:
+                 *   - the FIFO level is 0
+                 *  or
+                 *   - the mode is asychronous AND
+                 *   - there is no requester waiting AND
+                 *   - we have not reached the wait hold time AND
+                 *   - the FIFO level has not reached the trigger level
+                 */
                 if (level == 0 ||
-                    (run_wait != 0 &&
+                    (mode_asynchronous && !requester_waiting &&
                      hold_time < fifo_hold_usecs.load() &&
                      level < fifo_dma_trigger_level.load())) {
                     break;
@@ -2450,12 +2482,11 @@ void module::fifo_worker() {
                     fifo_data.compact();
                 }
                 /*
-                 * Only queue the buffer if it is not the last and there is a
-                 * valid run tasking or we are testing,
+                 * Queue the buffer if there is more than one
+                 * remaining in the pool and the worker has not been
+                 * paused.
                  */
-                bool queue_buf =
-                    fifo_pool_count > 1 &&
-                    (this_run_tsk == hw::run::run_task::list_mode || test_mode.load() != test::off);
+                bool queue_buf = fifo_pool_count > 1 && !pause_fifo_worker.load();
                 /*
                  * If the pool is still empty after compacting wait
                  * letting the FIFO fill.
@@ -2466,23 +2497,27 @@ void module::fifo_worker() {
                     if (read_words > buf->capacity()) {
                         read_words = buf->capacity();
                     }
-                    log(log::debug) << module_label(*this)
-                                    << "FIFO read, level=" << level
-                                    << " read-word=" << read_words;
-                    if (fifo_pool.empty()) {
-                        data_stats.overflows++;
-                        data_stats.dropped += read_words;
-                        run_stats.overflows++;
-                        run_stats.dropped += read_words;
-                    }
                     buf->resize(read_words);
                     fifo.read(*buf, read_words);
-                    data_dma_in += read_words;
+                    data_stats.dma_in += read_words;
+                    run_stats.dma_in += read_words;
                     if (queue_buf) {
                         data_stats.in += read_words;
                         run_stats.in += read_words;
                         fifo_data.push(buf);
+                    } else {
+                        data_stats.dropped += read_words;
+                        run_stats.dropped += read_words;
+                        log(log::debug) << module_label(*this)
+                                        << std::boolalpha
+                                        << "buffer drop: fifo_pool_count=" << (fifo_pool_count > 1)
+                                        << " fifo-worker-paused=" << pause_fifo_worker.load();
                     }
+                    log(log::debug) << module_label(*this)
+                                    << "FIFO read, level=" << level
+                                    << " read-words=" << read_words
+                                    << " data-fifo-words=" << fifo_data.count()
+                                    << std::boolalpha << " queue-buf=" << queue_buf;
                     hold_time = 0;
                     pool_empty_logged = false;
                     fifo_full_logged = false;
@@ -2501,7 +2536,7 @@ void module::fifo_worker() {
                 /*
                  * Bandwidth of PCI transfers.
                  */
-                auto dma_in = data_dma_in.load();
+                auto dma_in = data_stats.dma_in.load();
                 auto data_delta = (dma_in - last_dma_in) * sizeof(hw::word);
                 size_t data_in_bw = data_delta / 1000000;
                 if (data_in_bw == 0 && data_delta != 0) {
@@ -2537,14 +2572,23 @@ void module::fifo_worker() {
              * run.
              */
             if (requester_waiting) {
-                log(log::debug) << module_label(*this) << "FIFO worker: respond to request";
-                requester_waiting = false;
-                fifo_worker_resp.notify();
+                if (requested_wait_loops == 0) {
+                    log(log::debug) << module_label(*this) << "FIFO worker: respond to request";
+                    requester_waiting = false;
+                    fifo_worker_resp.notify();
+                } else {
+                    --requested_wait_loops;
+                }
             }
 
             if (!fifo_worker_req.wait(mode_asynchronous ? wait_time : 0)) {
                 log(log::debug) << module_label(*this) << "FIFO worker: run requested";
                 requester_waiting = true;
+                if (mode_asynchronous) {
+                    requested_wait_loops = 5;
+                } else {
+                    requested_wait_loops = 0;
+                }
             }
 
             /*
@@ -2603,14 +2647,7 @@ void module::calc_bus_speed() {
 }
 
 void module::log_stats(const char* label, const fifo_stats& stats) {
-    auto word_size = sizeof(hw::word);
-    log(log::info) << module_label(*this) << label << ": bw=" << stats.bandwidth.load()
-                   << "Mb/s max-bw=" << stats.max_bandwidth.load()
-                   << "Mb/s min-bw=" << stats.min_bandwidth.load()
-                   << "Mb/s in=" << stats.in.load() * word_size
-                   << " out=" << stats.out.load() * word_size
-                   << " overflows=" << stats.overflows.load() << " dropped=" << stats.dropped.load()
-                   << " hw-overflows=" << stats.hw_overflows.load();
+    log(log::info) << module_label(*this) << label << ": " << stats.output();
 }
 
 bool module::fifo_worker_run(size_t timeout_usecs) {
