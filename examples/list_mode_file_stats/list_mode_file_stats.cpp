@@ -181,6 +181,8 @@ int main(int argc, char** argv) {
     std::cout << LOG("INFO") << "Starting to parse " << input_flag.Get() << std::endl;
 
     std::ifstream input(input_flag.Get(), std::ios::in | std::ios::binary | std::ios::ate);
+    xia::pixie::data::list_mode::records records;
+    xia::pixie::data::list_mode::buffer remainder;
     try {
         if (input.fail()) {
             throw std::ios_base::failure("open: " + input_flag.Get() + ": " + std::strerror(errno));
@@ -196,68 +198,65 @@ int main(int argc, char** argv) {
         input.read(reinterpret_cast<char*>(&data.data()[0]), size);
         input.close();
 
-        xia::pixie::data::list_mode::records records;
-        xia::pixie::data::list_mode::buffer remainder;
-
         xia::pixie::data::list_mode::decode_data_block(data, cfgs[0].revision, cfgs[0].frequency,
                                                        records, remainder);
-
-        std::cout << LOG("INFO") << "Total records processed : " << records.size() << std::endl;
-
-        channel_stats stats;
-        for (const auto& record : records) {
-            auto stat_rec = stats.find(record.channel_number);
-            if (stat_rec == stats.end()) {
-                stats[record.channel_number] = {record.channel_number,
-                                                1,
-                                                record.energy,
-                                                record.energy,
-                                                record.energy,
-                                                static_cast<double>(record.event_length),
-                                                static_cast<double>(record.header_length),
-                                                record.time.count(),
-                                                record.time.count(),
-                                                static_cast<double>(record.trace_length)};
-            } else {
-                auto ch = &stat_rec->second;
-                ch->count++;
-                ch->energy_ave += record.energy;
-                ch->trace_length_ave += record.trace_length;
-                ch->header_length_ave += record.header_length;
-                ch->event_length_ave += record.event_length;
-
-                if (record.energy > ch->energy_max) {
-                    ch->energy_max = record.energy;
-                }
-                if (record.energy < ch->energy_min) {
-                    ch->energy_min = record.energy;
-                }
-                if (record.time.count() > ch->time_max) {
-                    ch->time_max = record.time.count();
-                }
-                if (record.time.count() < ch->time_min) {
-                    ch->time_min = record.time.count();
-                }
-            }
-        }
-
-        for (auto& stat : stats) {
-            auto ch = &stat.second;
-            ch->energy_ave /= ch->count;
-            ch->header_length_ave /= ch->count;
-            ch->trace_length_ave /= ch->count;
-            ch->event_length_ave /= ch->count;
-            nlohmann::json j = *ch;
-            std::cout << LOG("INFO") << j.dump() << std::endl;
-        }
-
-        if (!remainder.empty()) {
-            std::cout << LOG("WARN") << "Leftover Words: " << remainder.size() << std::endl;
-        }
     } catch (std::ios_base::failure& failure) {
         std::cout << LOG("ERROR") << failure.what() << std::endl;
     } catch (xia::pixie::error::error& sdkerr) {
         std::cout << LOG("ERROR") << sdkerr.what() << std::endl;
+    }
+
+    std::cout << LOG("INFO") << "Total records processed : " << records.size() << std::endl;
+
+    channel_stats stats;
+    for (const auto& record : records) {
+        auto stat_rec = stats.find(record.channel_number);
+        if (stat_rec == stats.end()) {
+            stats[record.channel_number] = {record.channel_number,
+                                            1,
+                                            record.energy,
+                                            record.energy,
+                                            record.energy,
+                                            static_cast<double>(record.event_length),
+                                            static_cast<double>(record.header_length),
+                                            record.time.count(),
+                                            record.time.count(),
+                                            static_cast<double>(record.trace_length)};
+        } else {
+            auto ch = &stat_rec->second;
+            ch->count++;
+            ch->energy_ave += record.energy;
+            ch->trace_length_ave += record.trace_length;
+            ch->header_length_ave += record.header_length;
+            ch->event_length_ave += record.event_length;
+
+            if (record.energy > ch->energy_max) {
+                ch->energy_max = record.energy;
+            }
+            if (record.energy < ch->energy_min) {
+                ch->energy_min = record.energy;
+            }
+            if (record.time.count() > ch->time_max) {
+                ch->time_max = record.time.count();
+            }
+            if (record.time.count() < ch->time_min) {
+                ch->time_min = record.time.count();
+            }
+        }
+    }
+
+    for (auto& stat : stats) {
+        auto ch = &stat.second;
+        ch->energy_ave /= ch->count;
+        ch->header_length_ave /= ch->count;
+        ch->trace_length_ave /= ch->count;
+        ch->event_length_ave /= ch->count;
+        nlohmann::json j = *ch;
+        std::cout << LOG("INFO") << j.dump() << std::endl;
+    }
+
+    if (!remainder.empty()) {
+        std::cout << LOG("WARN") << "Leftover Words: " << remainder.size() << std::endl;
     }
 
     std::cout << LOG("INFO") << "Finished execution in "
