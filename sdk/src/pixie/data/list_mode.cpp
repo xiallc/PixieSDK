@@ -554,6 +554,13 @@ struct header_config {
     bool valid;
 };
 
+void fill_remainder(uint32_t* data, uint32_t* data_end, buffer& leftovers) {
+    while (data < data_end) {
+        leftovers.push_back(*data);
+        data += 1;
+    }
+}
+
 void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequency, records& recs,
                        buffer& leftovers) {
     if (data == nullptr) {
@@ -586,9 +593,8 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
 
     while (data < data_end) {
         if (!have_record) {
-            leftovers.push_back(*data);
-            data += 1;
-            continue;
+            fill_remainder(data, data_end, leftovers);
+            break;
         }
 
         record evt;
@@ -616,6 +622,7 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
                     break;
                 case element::event_length:
                     if (val == 0) {
+                        fill_remainder(data, data_end, leftovers);
                         throw error(error::code::invalid_event_length, "bad event length: 0");
                     }
                     if (remaining_len < val) {
@@ -630,10 +637,10 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
                      * provided as the number of 32-bit words.
                      */
                     if (evt.event_length != evt.header_length + val / 2) {
+                        fill_remainder(data, data_end, leftovers);
                         std::stringstream msg;
                         msg << "event does not match header and trace: "
-                            << "crate=" << evt.crate_id
-                            << ", slot=" << evt.slot_id
+                            << "crate=" << evt.crate_id << ", slot=" << evt.slot_id
                             << ", chan=" << evt.channel_number
                             << ", event_length=" << evt.event_length
                             << ", header_length=" << evt.header_length
@@ -652,6 +659,7 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
                      * hard kill at this time.
                      */
                     if (evt.cfd_forced_trigger && val != 0) {
+                        fill_remainder(data, data_end, leftovers);
                         throw error(error::code::invalid_cfd_time,
                                     "data corruption: cfd was forced but still recorded a time");
                     }
@@ -681,6 +689,7 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
                     break;
                 case element::slot_id:
                     if (val < min_slot_id || val > max_slot_id) {
+                        fill_remainder(data, data_end, leftovers);
                         throw error(error::code::invalid_slot_id,
                                     "bad slot id: " + std::to_string(val));
                     }
@@ -690,6 +699,7 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
                     evt.trace_out_of_range = val != 0;
                     break;
                 default:
+                    fill_remainder(data, data_end, leftovers);
                     throw error(error::code::invalid_element, "Unknown data element encountered");
             }
         }
