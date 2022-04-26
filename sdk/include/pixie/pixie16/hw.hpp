@@ -183,7 +183,7 @@ typedef error::error error;
 /**
  * @brief Type of fixtures modules support.
  *
- * A module with no fixtures uses @ref mainboard.
+ * A module with no fixtures uses mainboard.
  */
 enum struct module_fixture {
     mainboard,

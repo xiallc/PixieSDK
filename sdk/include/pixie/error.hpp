@@ -405,7 +405,7 @@ int api_result(enum code type);
 std::string api_result_text(enum code type);
 /**
  * @brief Get the description text for a returned error code.
- * @param type The error code to lookup. Can be negative or positive.
+ * @param error_code The error code to lookup. Can be negative or positive.
  * @return The description text string associated with the error code.
  */
 std::string api_result_text(int error_code);

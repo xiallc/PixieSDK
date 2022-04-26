@@ -1490,8 +1490,9 @@ PIXIE_EXPORT int PIXIE_API PixieGetWorkerConfiguration(unsigned short mod_num,
  * @param[in] revision The associated hardware revision as an integer. Ex. Rev F = 0xF, Rev H = 0x11
  * @param[in] adc_msps The ADC sampling frequency associated with the firmware. Ex. 250
  * @param[in] adc_bits The ADC bit resolution associated with the firmware. Ex. 14
- * @param[in] path The absolute path to the firmware file on the host system.
  * @param[in] device The device associated with the firmware. One of dsp, var, fippi, sys
+ * @param[in] path The absolute path to the firmware file on the host system.
+ * @param[in] ModNum The module that will be registered with this firmware.
  *
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
  */

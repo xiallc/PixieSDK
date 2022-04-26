@@ -382,10 +382,6 @@ PIXIE_EXPORT void PIXIE_API decode_data_block(uint32_t* data, size_t len, size_t
  *
  * @param data A vector containing the data read out of the module.
  *  The data block does not have to be an integer number of records.
- * @param len The length of the data array. The Pixie-16 list-mode record is
- *  made up of a minimum of 4 32-bit integers. If this value is less than 4,
- *  then we assume that we have a partial record, and put the entire data array
- *  into the leftovers buffer.
  * @param revision The firmware revision used to collect the data. This is
  *  typically found with the DSP firmware.
  * @param frequency The module's ADC sampling frequency that collected the data.
