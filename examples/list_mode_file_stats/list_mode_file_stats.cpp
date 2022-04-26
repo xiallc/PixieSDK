@@ -73,6 +73,7 @@ using configs = std::vector<config>;
 struct channel_info {
     size_t id;
     size_t count;
+    double cps;
     double energy_ave;
     double energy_min;
     double energy_max;
@@ -87,6 +88,7 @@ void to_json(nlohmann::json& j, const channel_info& ch) {
     j = nlohmann::json{
         {"id", ch.id},
         {"count", ch.count},
+        {"count_per_second", ch.cps},
         {"energy", {{"max", ch.energy_max}, {"min", ch.energy_min}, {"ave", ch.energy_ave}}},
         {"time", {{"max", ch.time_max}, {"min", ch.time_min}}},
         {"event_length", ch.event_length_ave},
@@ -214,6 +216,7 @@ int main(int argc, char** argv) {
         if (stat_rec == stats.end()) {
             stats[record.channel_number] = {record.channel_number,
                                             1,
+                                            0,
                                             record.energy,
                                             record.energy,
                                             record.energy,
@@ -248,6 +251,7 @@ int main(int argc, char** argv) {
     for (auto& stat : stats) {
         auto ch = &stat.second;
         ch->energy_ave /= ch->count;
+        ch->cps = ch->count / (ch->time_max - ch->time_min);
         ch->header_length_ave /= ch->count;
         ch->trace_length_ave /= ch->count;
         ch->event_length_ave /= ch->count;
