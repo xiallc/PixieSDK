@@ -133,14 +133,14 @@ void import_json(const std::string& filename, crate::crate& crate, module::numbe
     }
 
     if (config.size() > crate.num_modules) {
-        log(log::warning) << "too many module configs (" << config.size() << "), crate only has "
-                          << crate.num_modules << " modules ";
+        xia_log(log::warning) << "too many module configs (" << config.size() << "), crate only has "
+                              << crate.num_modules << " modules ";
     }
 
     if (config.size() < crate.num_modules) {
-        log(log::warning) << "too few module configs (" << config.size() << "), crate has "
-                          << crate.num_modules
-                          << " modules. Using default config for missing modules";
+        xia_log(log::warning) << "too few module configs (" << config.size() << "), crate has "
+                              << crate.num_modules
+                              << " modules. Using default config for missing modules";
         while (config.size() < crate.num_modules) {
             config.push_back(default_config);
         }
@@ -153,7 +153,7 @@ void import_json(const std::string& filename, crate::crate& crate, module::numbe
         auto& module = crate[mod];
 
         if (!module.online()) {
-            log(log::warning) << "module " << mod << " not online, skipping";
+            xia_log(log::warning) << "module " << mod << " not online, skipping";
         } else {
             auto& settings = *ci;
 
@@ -184,8 +184,8 @@ void import_json(const std::string& filename, crate::crate& crate, module::numbe
             try {
                 auto rev = metadata["hardware_revision"].get<std::string>();
                 if (rev[0] != module.revision_label()) {
-                    log(log::warning) << "config module " << mod << " (rev " << rev
-                                      << ") loading on to " << module.revision_label();
+                    xia_log(log::warning) << "config module " << mod << " (rev " << rev
+                                          << ") loading on to " << module.revision_label();
                 }
             } catch (json::exception& e) {
                 throw_json_error(e, "config rev");
@@ -194,8 +194,8 @@ void import_json(const std::string& filename, crate::crate& crate, module::numbe
             try {
                 auto slot = metadata["slot"];
                 if (slot != module.slot) {
-                    log(log::warning) << "config module " << mod << " (slot " << slot
-                                      << ") has moved to slot " << module.slot;
+                    xia_log(log::warning) << "config module " << mod << " (slot " << slot
+                                          << ") has moved to slot " << module.slot;
                 }
             } catch (json::exception& e) {
                 throw_json_error(e, "config slot-id");
@@ -216,10 +216,10 @@ void import_json(const std::string& filename, crate::crate& crate, module::numbe
                     auto& desc = module.module_var_descriptors[int(var)];
                     if (desc.writeable()) {
                         if (desc.size != el.value().size()) {
-                            log(log::warning) << module::module_label(module)
-                                              << "size does not match: " << el.key();
+                            xia_log(log::warning) << module::module_label(module)
+                                                  << "size does not match: " << el.key();
                         } else {
-                            log(log::debug)
+                            xia_log(log::debug)
                                 << module::module_label(module) << "module var set: " << el.key();
                             if (desc.size > 1) {
                                 for (size_t v = 0; v < desc.size; ++v) {
@@ -250,8 +250,8 @@ void import_json(const std::string& filename, crate::crate& crate, module::numbe
                     /*
                      * If not a parameter (ignore those) log a message
                      */
-                    log(log::warning) << "config module " << mod << " (slot " << module.slot
-                                      << "): invalid variable: " << el.key();
+                    xia_log(log::warning) << "config module " << mod << " (slot " << module.slot
+                                          << "): invalid variable: " << el.key();
                 }
             }
 
@@ -270,25 +270,25 @@ void import_json(const std::string& filename, crate::crate& crate, module::numbe
                     auto& desc = module.channel_var_descriptors[int(var)];
                     if (desc.writeable()) {
                         if ((el.value().size() % desc.size) != 0) {
-                            log(log::warning) << module::module_label(module)
-                                              << "size does not match config: " << el.key();
+                            xia_log(log::warning) << module::module_label(module)
+                                                  << "size does not match config: " << el.key();
                         } else {
-                            log(log::debug)
+                            xia_log(log::debug)
                                 << module::module_label(module) << "channel var set: " << el.key()
                                 << ": " << el.value();
                             size_t vchannels = el.value().size() / desc.size;
 
                             if (vchannels < module.num_channels) {
                                 if (metadata["hardware_revision"].get<std::string>() != "DEFAULT") {
-                                    log(log::warning) << module::module_label(module) << el.key()
-                                                      << " config has too few elements. "
-                                                      << "vchannels= " << vchannels
-                                                      << " num_channels=" << module.num_channels;
+                                    xia_log(log::warning) << module::module_label(module) << el.key()
+                                                          << " config has too few elements. "
+                                                          << "vchannels= " << vchannels
+                                                          << " num_channels=" << module.num_channels;
                                 }
 
-                                log(log::debug) << module::module_label(module) << "extending "
-                                                << el.key() << " to " << module.num_channels
-                                                << " elements using value at index 0.";
+                                xia_log(log::debug) << module::module_label(module) << "extending "
+                                                    << el.key() << " to " << module.num_channels
+                                                    << " elements using value at index 0.";
                                 for (size_t idx = vchannels; idx < module.num_channels; idx++) {
                                     el.value().push_back(el.value()[0]);
                                 }
@@ -318,8 +318,8 @@ void import_json(const std::string& filename, crate::crate& crate, module::numbe
                     /*
                      * If not a parameter (ignore those) log a message
                      */
-                    log(log::warning) << "config module " << mod << " (slot " << module.slot
-                                      << "): invalid variable: " << el.key();
+                    xia_log(log::warning) << "config module " << mod << " (slot " << module.slot
+                                          << "): invalid variable: " << el.key();
                 }
             }
 

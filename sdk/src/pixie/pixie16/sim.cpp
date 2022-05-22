@@ -94,7 +94,7 @@ void module::open(size_t device_number) {
 
     for (auto& mod_def : mod_defs) {
         if (mod_def.num_channels != 0 && device_number == mod_def.device_number) {
-            log(log::info) << "sim: module: open: device=" << device_number;
+            xia_log(log::info) << "sim: module: open: device=" << device_number;
 
             pci_memory = std::make_unique<uint8_t[]>(pci_addr_space_size);
             vmaddr = pci_memory.get();
@@ -126,14 +126,14 @@ void module::open(size_t device_number) {
 }
 
 void module::close() {
-    log(log::info) << "sim: module: close";
+    xia_log(log::info) << "sim: module: close";
     present_ = false;
     vmaddr = nullptr;
     pci_memory.release();
 }
 
 void module::probe() {
-    log(log::info) << "sim: module: probe";
+    xia_log(log::info) << "sim: module: probe";
     online_ = dsp_online = fippi_fpga = comms_fpga = false;
     erase_values();
     erase_channels();
@@ -144,7 +144,7 @@ void module::probe() {
 }
 
 void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
-    log(log::info) << "sim: module: boot";
+    xia_log(log::info) << "sim: module: boot";
     online_ = false;
     if (boot_comms) {
         comms_fpga = true;
@@ -187,7 +187,7 @@ void module::load_var_defaults(std::istream& input) {
                     param::value_type value = std::stoul(label_value[1]);
                     module_vars[index].value[0].value = value;
                     module_vars[index].value[0].dirty = true;
-                    log(log::debug)
+                    xia_log(log::debug)
                         << "sim: module: mod var: " << label_value[0] << '=' << label_value[1];
                 } else if (param::is_channel_var(label_value[0])) {
                     param::channel_var var = param::lookup_channel_var(label_value[0]);
@@ -197,7 +197,7 @@ void module::load_var_defaults(std::istream& input) {
                         channels[channel].vars[index].value[0].value = value;
                         channels[channel].vars[index].value[0].dirty = true;
                     }
-                    log(log::debug)
+                    xia_log(log::debug)
                         << "sim: module: chan var: " << label_value[0] << '=' << label_value[1];
                 }
             }
@@ -206,7 +206,7 @@ void module::load_var_defaults(std::istream& input) {
 }
 
 void module::load_var_defaults(const std::string& file) {
-    log(log::info) << "sim: module: load var defaults: " << file;
+    xia_log(log::info) << "sim: module: load var defaults: " << file;
 
     std::ifstream input(file, std::ios::in | std::ios::binary);
     if (!input) {
@@ -220,7 +220,7 @@ void module::load_var_defaults(const std::string& file) {
 }
 
 void crate::add_module() {
-    log(log::info) << "sim: module: add";
+    xia_log(log::info) << "sim: module: add";
     modules.push_back(std::make_unique<module>(backplane));
 }
 
@@ -229,7 +229,7 @@ module_def::module_def()
       adc_bits(0), adc_msps(0), adc_clk_div(0) {}
 
 void load_module_defs(const std::string mod_def_file) {
-    log(log::info) << "sim: load module defs: " << mod_def_file;
+    xia_log(log::info) << "sim: load module defs: " << mod_def_file;
     std::ifstream input(mod_def_file, std::ios::in | std::ios::binary);
     if (!input) {
         throw error(error::code::file_read_failure, std::string("module def file open: ") +
@@ -237,7 +237,7 @@ void load_module_defs(const std::string mod_def_file) {
     }
     load_module_defs(input);
     input.close();
-    log(log::info) << "sim: module defs: " << mod_defs.size();
+    xia_log(log::info) << "sim: module defs: " << mod_defs.size();
 }
 
 void load_module_defs(std::istream& input) {
@@ -293,7 +293,7 @@ void add_module_def(const std::string mod_desc, const char delimiter) {
         }
     }
 
-    log(log::info) << "sim: module desc: add: " << mod_desc;
+    xia_log(log::info) << "sim: module desc: add: " << mod_desc;
 
     mod_defs.push_back(mod_def);
 }

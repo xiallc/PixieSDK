@@ -50,6 +50,9 @@ static outputters_ptr outputs_ptr = make_outputters();
  *
  * This class lives in the pixie namespace to make the references in the code
  * simpler.
+ *
+ * The macro xia_log provides conditional use of log instances. This improves
+ * runtime performance.
  */
 class log {
     friend logging::outputter;
@@ -85,22 +88,21 @@ namespace logging {
 /*
   * Start and stop a log output stream.
   */
-void start(const std::string name, const std::string file, log::level level = log::warning,
-           bool append = true);
+void start(const std::string name, const std::string file, bool append = true);
 void stop(const std::string name);
 
 /*
  * Output control.
  */
-void set_level(const std::string name, log::level level);
+void set_level(log::level level);
 void set_level_stamp(const std::string name, bool level);
 void set_datetime_stamp(const std::string name, bool datetime);
 void set_line_numbers(const std::string name, bool line_numbers);
 
 /*
- * Level active
+ * Check the currently active logging level
  */
-bool level_logging(const std::string name, log::level level);
+bool level_logging(log::level level);
 
 /**
  * @brief Outputs a memory segment as hex values.
@@ -117,5 +119,11 @@ void memdump(log::level level, const std::string label, const void* addr, size_t
              size_t size = 1, size_t line_length = 16, size_t offset = 0);
 }  // namespace logging
 }  // namespace xia
+
+/*
+ * Use the following macro to control logging via the preprocessor.
+ */
+#define xia_log(_level) \
+          if (xia::logging::level_logging(_level)) xia::log(_level)
 
 #endif  // PIXIE_LOG_H

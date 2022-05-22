@@ -32,7 +32,8 @@
 #include <pixie/pixie16/memory.hpp>
 
 int main() {
-    xia::logging::start("log", "stdout", xia::log::level::info, false);
+    xia::logging::start("log", "stdout", false);
+    xia::logging::set_level(xia::log::level::info);
 
     xia::pixie::crate::crate crate;
 
@@ -82,8 +83,8 @@ int main() {
         xia::util::timepoint fifo_change_time;
         while (fifo_change_time.secs() < fifo_change_timeout) {
             auto level = fifo.level();
-            xia::log(xia::log::level::info) << "On-board FIFO level: " << level;
-            xia::log(xia::log::level::info)
+            xia_log(xia::log::level::info) << "On-board FIFO level: " << level;
+            xia_log(xia::log::level::info)
                 << "Worker FIFO level: " << module->read_list_mode_level();
 
             if (level == last_fifo_val)
@@ -94,15 +95,15 @@ int main() {
         }
         fifo_change_time.stop();
 
-        xia::log(xia::log::level::info) << "On-board FIFO level: " << fifo.level();
-        xia::log(xia::log::level::info) << "Worker FIFO level: " << module->read_list_mode_level();
-        xia::log(xia::log::level::info) << "On-board FIFO level hasn't changed in " << fifo_change_time << ". It's filled up!";
+        xia_log(xia::log::level::info) << "On-board FIFO level: " << fifo.level();
+        xia_log(xia::log::level::info) << "Worker FIFO level: " << module->read_list_mode_level();
+        xia_log(xia::log::level::info) << "On-board FIFO level hasn't changed in " << fifo_change_time << ". It's filled up!";
 
         static const size_t wait_in_seconds = 120;
         xia::util::timepoint timepoint;
         timepoint.start();
         while (timepoint.secs() < wait_in_seconds) {
-            xia::log(xia::log::level::info)
+            xia_log(xia::log::level::info)
                 << "Sleeping for " << wait_in_seconds - timepoint.secs() << " more seconds.";
             std::this_thread::sleep_for(std::chrono::seconds(5));
         }

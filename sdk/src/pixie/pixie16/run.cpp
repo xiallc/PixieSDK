@@ -120,9 +120,9 @@ static bool run_ended(module::module& module) {
 }
 
 void start(module::module& module, run_mode mode, run_task run_tsk, control_task control_tsk) {
-    log(log::debug) << module::module_label(module, "run") << "start: run-mode=" << int(mode)
-                    << " run-tsk=" << std::hex << int(run_tsk) << std::dec
-                    << " control-tsk=" << int(control_tsk);
+    xia_log(log::debug) << module::module_label(module, "run") << "start: run-mode=" << int(mode)
+                        << " run-tsk=" << std::hex << int(run_tsk) << std::dec
+                        << " control-tsk=" << int(control_tsk);
 
     end(module);
 
@@ -149,7 +149,7 @@ void start(module::module& module, run_mode mode, run_task run_tsk, control_task
 
 void end(module::module& module) {
     if (active(module)) {
-        log(log::debug) << module::module_label(module, "run") << "ending";
+        xia_log(log::debug) << module::module_label(module, "run") << "ending";
         util::timepoint tp;
         int wait_msecs = 1000;
         int msecs = 0;
@@ -163,7 +163,7 @@ void end(module::module& module) {
             ++msecs;
             if (!hw::run::active(module) || run_ended(module)) {
                 tp.end();
-                log(log::debug) << module::module_label(module, "run") << "ended, duration=" << tp;
+                xia_log(log::debug) << module::module_label(module, "run") << "ended, duration=" << tp;
                 break;
             }
             hw::wait(1000);
@@ -171,8 +171,8 @@ void end(module::module& module) {
         if (msecs >= wait_msecs) {
             module.run_task = run_task::nop;
             module.control_task = control_task::nop;
-            log(log::error) << module::module_label(module, "run")
-                            << "failed to end task; module reboot required";
+            xia_log(log::error) << module::module_label(module, "run")
+                                << "failed to end task; module reboot required";
             throw error(error::code::module_task_timeout,
                         "failed to end active run task; module reboot required");
         }
@@ -237,8 +237,8 @@ static void control_task_postrun(module::module& module, control_task control_ts
 }
 
 void control_run_on_dsp(module::module& module, control_task control_tsk, int wait_msecs) {
-    log(log::debug) << module::module_label(module, "run on dsp")
-                    << "control=" << control_task_labels(control_tsk) << " wait=" << wait_msecs;
+    xia_log(log::debug) << module::module_label(module, "run on dsp")
+                        << "control=" << control_task_labels(control_tsk) << " wait=" << wait_msecs;
     bool finished = false;
     start(module, run_mode::new_run, run_task::nop, control_tsk);
     for (int msecs = 0; !finished && msecs < wait_msecs; ++msecs) {
@@ -256,8 +256,8 @@ void control_run_on_dsp(module::module& module, control_task control_tsk, int wa
 }
 
 void control(module::module& module, control_task control_tsk, int wait_msecs) {
-    log(log::debug) << module::module_label(module, "run")
-                    << "control=" << control_task_labels(control_tsk) << " wait=" << wait_msecs;
+    xia_log(log::debug) << module::module_label(module, "run")
+                        << "control=" << control_task_labels(control_tsk) << " wait=" << wait_msecs;
     util::timepoint tp;
     tp.start();
     if (control_task_prerun(module, control_tsk, wait_msecs)) {
@@ -265,13 +265,13 @@ void control(module::module& module, control_task control_tsk, int wait_msecs) {
     }
     control_task_postrun(module, control_tsk, wait_msecs);
     tp.end();
-    log(log::debug) << module::module_label(module, "control")
-                    << "control=" << control_task_labels(control_tsk) << " duration=" << tp;
+    xia_log(log::debug) << module::module_label(module, "control")
+                        << "control=" << control_task_labels(control_tsk) << " duration=" << tp;
 }
 
 void run(module::module& module, run_mode mode, run_task run_tsk) {
-    log(log::debug) << module::module_label(module, "run") << "mode=" << run_mode_labels[int(mode)]
-                    << " run=" << run_task_labels(run_tsk);
+    xia_log(log::debug) << module::module_label(module, "run") << "mode=" << run_mode_labels[int(mode)]
+                        << " run=" << run_task_labels(run_tsk);
     start(module, mode, run_tsk, control_task::nop);
 }
 }  // namespace run

@@ -39,8 +39,7 @@
 /*
  * Local types for convenience.
  */
-typedef xia::log xia_log;
-typedef xia::pixie::error::error xia_error;
+using xia_error = xia::pixie::error::error;
 
 /*
  * Boot patterns
@@ -121,7 +120,7 @@ T set_bit(const std::string& name, unsigned short& bit, T value, const bool& bit
         value_bits.set(bit, bit_status);
         return (T) value_bits.to_ulong();
     } catch (std::out_of_range& out_of_range) {
-        xia_log(xia_log::warning) << name << ": bit out of range - " << out_of_range.what();
+        xia_log(xia::log::warning) << name << ": bit out of range - " << out_of_range.what();
     }
     return local_val;
 }
@@ -131,7 +130,7 @@ T test_bit(const std::string& name, unsigned short& bit, T value) {
     try {
         return std::bitset<std::numeric_limits<T>::digits>(value).test(bit);
     } catch (std::out_of_range& out_of_range) {
-        xia_log(xia_log::warning) << name << ": bit out of range - " << out_of_range.what();
+        xia_log(xia::log::warning) << name << ": bit out of range - " << out_of_range.what();
     }
     return false;
 }
@@ -181,16 +180,16 @@ PIXIE_EXPORT int PIXIE_API PixieGetHistogramLength(const unsigned short mod_num,
         module->channel_check(chan_num);
         *hist_length = module->channels[chan_num].fixture->config.max_histogram_length;
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
     return 0;
@@ -205,16 +204,16 @@ PIXIE_EXPORT int PIXIE_API PixieGetTraceLength(const unsigned short mod_num,
         module->channel_check(chan_num);
         *trace_length = module->channels[chan_num].fixture->config.max_adc_trace_length;
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
     return 0;
@@ -229,16 +228,16 @@ PIXIE_EXPORT int PIXIE_API PixieGetMaxNumBaselines(const unsigned short mod_num,
         module->channel_check(chan_num);
         *max_num_baselines = module->channels[chan_num].fixture->config.max_num_baselines;
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
     return 0;
@@ -257,23 +256,23 @@ PIXIE_EXPORT int PIXIE_API PixieGetReturnCodeText(int return_code, char* buf,
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16AcquireADCTrace(unsigned short ModNum) {
-    xia_log(xia_log::debug) << "Pixie16AcquireADCTrace: ModNum=" << ModNum;
+    xia_log(xia::log::debug) << "Pixie16AcquireADCTrace: ModNum=" << ModNum;
 
     try {
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
         module->get_traces();
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -281,7 +280,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16AcquireADCTrace(unsigned short ModNum) {
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16AcquireBaselines(unsigned short ModNum) {
-    xia_log(xia_log::debug) << "Pixie16AcquireBaselines: ModNum=" << ModNum;
+    xia_log(xia::log::debug) << "Pixie16AcquireBaselines: ModNum=" << ModNum;
 
     try {
         crate.ready();
@@ -301,16 +300,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16AcquireBaselines(unsigned short ModNum) {
             module->acquire_baselines();
         }
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -318,7 +317,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16AcquireBaselines(unsigned short ModNum) {
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16AdjustOffsets(unsigned short ModNum) {
-    xia_log(xia_log::debug) << "Pixie16AdjustOffsets: ModNum=" << ModNum;
+    xia_log(xia::log::debug) << "Pixie16AdjustOffsets: ModNum=" << ModNum;
 
     try {
         crate.ready();
@@ -332,16 +331,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16AdjustOffsets(unsigned short ModNum) {
             module->adjust_offsets();
         }
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -350,7 +349,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16AdjustOffsets(unsigned short ModNum) {
 
 PIXIE_EXPORT int PIXIE_API Pixie16BLcutFinder(unsigned short ModNum, unsigned short ChanNum,
                                               unsigned int* BLcut) {
-    xia_log(xia_log::debug) << "Pixie16BLcutFinder: ModNum=" << ModNum << " ChanNum=" << ChanNum;
+    xia_log(xia::log::debug) << "Pixie16BLcutFinder: ModNum=" << ModNum << " ChanNum=" << ChanNum;
 
     try {
         if (BLcut == nullptr) {
@@ -365,16 +364,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16BLcutFinder(unsigned short ModNum, unsigned sh
         module->bl_find_cut(channels, values);
         *BLcut = values[0];
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -433,17 +432,17 @@ PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
                                              const char* DSPCodeFile, const char* DSPParFile,
                                              const char* DSPVarFile, unsigned short ModNum,
                                              unsigned short BootPattern) {
-    xia_log(xia_log::info) << "Pixie16BootModule: ModNum=" << ModNum << std::hex
+    xia_log(xia::log::info) << "Pixie16BootModule: ModNum=" << ModNum << std::hex
                            << " BootPattern=0x" << BootPattern;
-    xia_log(xia_log::info) << "Pixie16BootModule: ModNum=" << ModNum
+    xia_log(xia::log::info) << "Pixie16BootModule: ModNum=" << ModNum
                            << " ComFPGAConfigFile=" << ComFPGAConfigFile;
-    xia_log(xia_log::info) << "Pixie16BootModule: ModNum=" << ModNum
+    xia_log(xia::log::info) << "Pixie16BootModule: ModNum=" << ModNum
                            << " SPFPGAConfigFile=" << SPFPGAConfigFile;
-    xia_log(xia_log::info) << "Pixie16BootModule: ModNum=" << ModNum
+    xia_log(xia::log::info) << "Pixie16BootModule: ModNum=" << ModNum
                            << " DSPCodeFile=" << DSPCodeFile;
-    xia_log(xia_log::info) << "Pixie16BootModule: ModNum=" << ModNum
+    xia_log(xia::log::info) << "Pixie16BootModule: ModNum=" << ModNum
                            << " DSPParFile=" << DSPParFile;
-    xia_log(xia_log::info) << "Pixie16BootModule: ModNum=" << ModNum
+    xia_log(xia::log::info) << "Pixie16BootModule: ModNum=" << ModNum
                            << " DSPVarFile=" << DSPVarFile;
 
     const unsigned short device_boot_mask = (1 << BOOTPATTERN_COMFPGA_BIT) |
@@ -452,7 +451,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
     const unsigned short devices_boot = BootPattern & device_boot_mask;
 
     if (devices_boot != 0 && devices_boot != device_boot_mask) {
-        xia_log(xia_log::error) << "invalid value: must boot COMM, FPGA and DSP together";
+        xia_log(xia::log::error) << "invalid value: must boot COMM, FPGA and DSP together";
         return xia::pixie::error::return_code(
             xia::pixie::error::api_result(xia_error::code::invalid_value));
     }
@@ -470,16 +469,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
                             DSPCodeFile, DSPParFile, DSPVarFile, BootPattern);
         }
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -488,7 +487,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
 
 PIXIE_EXPORT int PIXIE_API Pixie16CheckExternalFIFOStatus(unsigned int* nFIFOWords,
                                                           unsigned short ModNum) {
-    xia_log(xia_log::debug) << "Pixie16CheckExternalFIFOStatus: ModNum=" << ModNum;
+    xia_log(xia::log::debug) << "Pixie16CheckExternalFIFOStatus: ModNum=" << ModNum;
 
     int result = 0;
 
@@ -497,16 +496,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckExternalFIFOStatus(unsigned int* nFIFOWor
         xia::pixie::crate::module_handle module(crate, ModNum);
         *nFIFOWords = static_cast<unsigned int>(module->read_list_mode_level());
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -514,7 +513,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckExternalFIFOStatus(unsigned int* nFIFOWor
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16CheckRunStatus(unsigned short ModNum) {
-    xia_log(xia_log::debug) << "Pixie16CheckRunStatus: ModNum=" << ModNum;
+    xia_log(xia::log::debug) << "Pixie16CheckRunStatus: ModNum=" << ModNum;
 
     int result = 0;
 
@@ -525,16 +524,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckRunStatus(unsigned short ModNum) {
             result = 1;
         }
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -544,7 +543,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckRunStatus(unsigned short ModNum) {
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeInputCountRate(unsigned int* Statistics,
                                                            unsigned short ModNum,
                                                            unsigned short ChanNum) {
-    xia_log(xia_log::debug) << "Pixie16ComputeInputCountRate: ModNum=" << ModNum
+    xia_log(xia::log::debug) << "Pixie16ComputeInputCountRate: ModNum=" << ModNum
                             << " ChanNum=" << ChanNum;
 
     double result = 0;
@@ -560,14 +559,14 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeInputCountRate(unsigned int* Statist
         }
         result = stats->channels[ChanNum].input_count_rate();
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
     }
 
     return result;
@@ -576,7 +575,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeInputCountRate(unsigned int* Statist
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeLiveTime(unsigned int* Statistics,
                                                      unsigned short ModNum,
                                                      unsigned short ChanNum) {
-    xia_log(xia_log::debug) << "Pixie16ComputeLiveTime: ModNum=" << ModNum
+    xia_log(xia::log::debug) << "Pixie16ComputeLiveTime: ModNum=" << ModNum
                             << " ChanNum=" << ChanNum;
 
     double result = 0;
@@ -592,14 +591,14 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeLiveTime(unsigned int* Statistics,
         }
         result = stats->channels[ChanNum].live_time();
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
     }
 
     return result;
@@ -608,7 +607,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeLiveTime(unsigned int* Statistics,
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeOutputCountRate(unsigned int* Statistics,
                                                             unsigned short ModNum,
                                                             unsigned short ChanNum) {
-    xia_log(xia_log::debug) << "Pixie16ComputeOutputCountRate: ModNum=" << ModNum
+    xia_log(xia::log::debug) << "Pixie16ComputeOutputCountRate: ModNum=" << ModNum
                             << " ChanNum=" << ChanNum;
 
     double result = 0;
@@ -624,14 +623,14 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeOutputCountRate(unsigned int* Statis
         }
         result = stats->channels[ChanNum].output_count_rate();
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
     }
 
     return result;
@@ -639,7 +638,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeOutputCountRate(unsigned int* Statis
 
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeProcessedEvents(unsigned int* Statistics,
                                                             unsigned short ModNum) {
-    xia_log(xia_log::debug) << "Pixie16ComputeProcessedEvents: ModNum=" << ModNum;
+    xia_log(xia::log::debug) << "Pixie16ComputeProcessedEvents: ModNum=" << ModNum;
     (void) Statistics;
     (void) ModNum;
     return not_supported();
@@ -648,7 +647,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeProcessedEvents(unsigned int* Statis
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeRawInputCount(unsigned int* Statistics,
                                                           unsigned short ModNum,
                                                           unsigned short ChanNum) {
-    xia_log(xia_log::debug) << "Pixie16ComputeRawInputCount: ModNum=" << ModNum
+    xia_log(xia::log::debug) << "Pixie16ComputeRawInputCount: ModNum=" << ModNum
                             << " ChanNum=" << ChanNum;
 
     double result = 0;
@@ -664,14 +663,14 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeRawInputCount(unsigned int* Statisti
         }
         result = stats->channels[ChanNum].input_counts();
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
     }
 
     return result;
@@ -680,7 +679,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeRawInputCount(unsigned int* Statisti
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeRawOutputCount(unsigned int* Statistics,
                                                            unsigned short ModNum,
                                                            unsigned short ChanNum) {
-    xia_log(xia_log::debug) << "Pixie16ComputeRawOutputCount: ModNum=" << ModNum
+    xia_log(xia::log::debug) << "Pixie16ComputeRawOutputCount: ModNum=" << ModNum
                             << " ChanNum=" << ChanNum;
 
     double result = 0;
@@ -696,14 +695,14 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeRawOutputCount(unsigned int* Statist
         }
         result = stats->channels[ChanNum].output_counts();
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
     }
 
     return result;
@@ -711,7 +710,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeRawOutputCount(unsigned int* Statist
 
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeRealTime(unsigned int* Statistics,
                                                      unsigned short ModNum) {
-    xia_log(xia_log::debug) << "Pixie16ComputeRealTime: ModNum=" << ModNum;
+    xia_log(xia::log::debug) << "Pixie16ComputeRealTime: ModNum=" << ModNum;
 
     double result = 0;
 
@@ -723,14 +722,14 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeRealTime(unsigned int* Statistics,
         stats->validate();
         result = double(stats->module.real_time());
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
     }
 
     return result;
@@ -740,7 +739,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16CopyDSPParameters(unsigned short BitMask,
                                                     unsigned short SourceModule,
                                                     unsigned short SourceChannel,
                                                     unsigned short* DestinationMask) {
-    xia_log(xia_log::debug) << "Pixie16CopyDSPParameters: Source Module=" << SourceModule
+    xia_log(xia::log::debug) << "Pixie16CopyDSPParameters: Source Module=" << SourceModule
                             << " Source Channel=" << SourceChannel
                             << "  Destination Mask=" << DestinationMask << " Bit Mask=" << BitMask;
 
@@ -760,16 +759,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16CopyDSPParameters(unsigned short BitMask,
             }
         }
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -777,7 +776,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16CopyDSPParameters(unsigned short BitMask,
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16LoadDSPParametersFromFile(const char* FileName) {
-    xia_log(xia_log::debug) << "Pixie16LoadDSPParametersFromFile: FileName=" << FileName;
+    xia_log(xia::log::debug) << "Pixie16LoadDSPParametersFromFile: FileName=" << FileName;
 
     try {
         crate.ready();
@@ -788,22 +787,22 @@ PIXIE_EXPORT int PIXIE_API Pixie16LoadDSPParametersFromFile(const char* FileName
             module->set_dacs();
         }
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
     }
 
     return 0;
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16EndRun(unsigned short ModNum) {
-    xia_log(xia_log::debug) << "Pixie16EndRun: ModNum=" << ModNum;
+    xia_log(xia::log::debug) << "Pixie16EndRun: ModNum=" << ModNum;
 
     try {
         crate.ready();
@@ -817,16 +816,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16EndRun(unsigned short ModNum) {
             module->run_end();
         }
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -834,7 +833,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16EndRun(unsigned short ModNum) {
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16ExitSystem(unsigned short ModNum) {
-    xia_log(xia_log::debug) << "Pixie16ExitSystem: ModNum=" << ModNum;
+    xia_log(xia::log::debug) << "Pixie16ExitSystem: ModNum=" << ModNum;
 
     try {
         crate.ready();
@@ -850,16 +849,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16ExitSystem(unsigned short ModNum) {
             module->close();
         }
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -871,23 +870,24 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned
     /*
      * Create a log file. The environment can change the level of logging.
      */
-    xia_log::level log_level = xia_log::info;
+    xia::log::level log_level = xia::log::info;
     const char* env_log_level = std::getenv("PIXIE16_LOG_LEVEL");
     if (env_log_level != nullptr) {
         std::string ell = env_log_level;
         if (ell == "DEBUG" || ell == "debug") {
-            log_level = xia_log::debug;
+            log_level = xia::log::debug;
         } else if (ell == "INFO" || ell == "info") {
-            log_level = xia_log::info;
+            log_level = xia::log::info;
         } else if (ell == "WARNING" || ell == "warning" || ell == "WARN" || ell == "warn") {
-            log_level = xia_log::warning;
+            log_level = xia::log::warning;
         } else if (ell == "ERROR" || ell == "error") {
-            log_level = xia_log::error;
+            log_level = xia::log::error;
         }
     }
-    xia::logging::start("log", "Pixie16Msg.log", log_level, true);
+    xia::logging::start("log", "Pixie16Msg.log", true);
+    xia::logging::set_level(log_level);
 
-    xia_log(xia_log::info) << "Pixie16InitSystem: NumModules=" << NumModules
+    xia_log(xia::log::info) << "Pixie16InitSystem: NumModules=" << NumModules
                            << " PXISlotMap=" << PXISlotMap << " OfflineMode=" << OfflineMode;
 
     /*
@@ -901,7 +901,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned
         xia::pixie::module::number_slots numbers;
         for (int i = 0; i < static_cast<int>(NumModules); ++i) {
             using number_slot = xia::pixie::module::number_slot;
-            xia_log(xia_log::info)
+            xia_log(xia::log::info)
                 << "Pixie16InitSystem: slot map: " << PXISlotMap[i] << " => " << i;
             numbers.push_back(number_slot(i, PXISlotMap[i]));
         }
@@ -936,28 +936,28 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned
             crate.shutdown();
         } catch (...) {
         }
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
         try {
             crate.shutdown();
         } catch (...) {
         }
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
         try {
             crate.shutdown();
         } catch (...) {
         }
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
         try {
             crate.shutdown();
         } catch (...) {
         }
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -967,7 +967,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned
 PIXIE_EXPORT int PIXIE_API Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO_Data,
                                                            unsigned int nFIFOWords,
                                                            unsigned short ModNum) {
-    xia_log(xia_log::debug) << "Pixie16ReadDataFromExternalFIFO: ModNum=" << ModNum
+    xia_log(xia::log::debug) << "Pixie16ReadDataFromExternalFIFO: ModNum=" << ModNum
                             << " nFIFOWords=" << nFIFOWords;
 
     try {
@@ -977,7 +977,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO
         xia::pixie::hw::words data(nFIFOWords);
         auto copied = module->read_list_mode(data);
         if (copied != nFIFOWords) {
-            xia_log(xia_log::error)
+            xia_log(xia::log::error)
                 << "Failed to read FIFO words, requested nFIFOWords (" << nFIFOWords
                 << "), copied " << copied << " for Module " << ModNum
                 << ". Remaining values filled with zero.";
@@ -986,16 +986,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO
             ExtFIFO_Data[i] = data[i];
         }
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -1006,7 +1006,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
                                                           unsigned int NumWords,
                                                           unsigned short ModNum,
                                                           unsigned short ChanNum) {
-    xia_log(xia_log::debug) << "Pixie16ReadHistogramFromModule: ModNum=" << ModNum
+    xia_log(xia::log::debug) << "Pixie16ReadHistogramFromModule: ModNum=" << ModNum
                             << " ChanNum=" << ChanNum << " NumWords=" << NumWords;
 
     try {
@@ -1016,7 +1016,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
         auto chan = module->channels[ChanNum];
         auto read_words = NumWords;
         if (read_words > chan.fixture->config.max_histogram_length) {
-            xia_log(xia_log::warning)
+            xia_log(xia::log::warning)
                 << "NumWords (" << NumWords << ") greater than the max_histogram_length ("
                 << chan.fixture->config.max_histogram_length << ") for Module " << ModNum
                 << " Channel " << ChanNum
@@ -1027,23 +1027,23 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
                 Histogram[i] = std::numeric_limits<unsigned int>::max();
         }
         if (read_words < chan.fixture->config.max_histogram_length) {
-            xia_log(xia_log::warning)
+            xia_log(xia::log::warning)
                 << "NumWords (" << NumWords << ") less than the max_histogram_length ("
                 << chan.fixture->config.max_histogram_length << ") for Module " << ModNum
                 << " Channel " << ChanNum << ". You may not be capturing all the data.";
         }
         module->read_histogram(ChanNum, Histogram, read_words);
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -1055,7 +1055,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned
                                                  unsigned short* ModADCBits,
                                                  unsigned short* ModADCMSPS,
                                                  unsigned short* num_channels) {
-    xia_log(xia_log::debug) << "Pixie16ReadModuleInfo: ModNum=" << ModNum;
+    xia_log(xia::log::debug) << "Pixie16ReadModuleInfo: ModNum=" << ModNum;
 
     try {
         crate.ready();
@@ -1072,13 +1072,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned
         if (num_channels)
             *num_channels = static_cast<unsigned short>(module->num_channels);
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -1089,7 +1089,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buff
                                                       unsigned int Trace_Length,
                                                       unsigned short ModNum,
                                                       unsigned short ChanNum) {
-    xia_log(xia_log::debug) << "Pixie16ReadSglChanADCTrace: ModNum=" << ModNum
+    xia_log(xia::log::debug) << "Pixie16ReadSglChanADCTrace: ModNum=" << ModNum
                             << " ChanNum=" << ChanNum << " Trace_Length=" << Trace_Length;
 
     try {
@@ -1098,16 +1098,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buff
         module->channel_check(ChanNum);
         module->read_adc(ChanNum, Trace_Buffer, Trace_Length, false);
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -1118,7 +1118,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanBaselines(double* Baselines, double
                                                        unsigned short NumBases,
                                                        unsigned short ModNum,
                                                        unsigned short ChanNum) {
-    xia_log(xia_log::debug) << "Pixie16ReadSglChanBaselines: ModNum=" << ModNum
+    xia_log(xia::log::debug) << "Pixie16ReadSglChanBaselines: ModNum=" << ModNum
                             << " ChanNum=" << ChanNum << " NumBases=" << NumBases;
 
     try {
@@ -1142,16 +1142,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanBaselines(double* Baselines, double
             Baselines[v] = std::get<1>(cv[v]);
         }
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -1160,7 +1160,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanBaselines(double* Baselines, double
 
 PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanPar(const char* ChanParName, double* ChanParData,
                                                  unsigned short ModNum, unsigned short ChanNum) {
-    xia_log(xia_log::debug) << "Pixie16ReadSglChanPar: ModNum=" << ModNum << " ChanNum=" << ChanNum
+    xia_log(xia::log::debug) << "Pixie16ReadSglChanPar: ModNum=" << ModNum << " ChanNum=" << ChanNum
                             << " ChanParName=" << ChanParName;
 
     try {
@@ -1169,20 +1169,20 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanPar(const char* ChanParName, double
         module->channel_check(ChanNum);
 
         *ChanParData = module->read(ChanParName, ChanNum);
-        xia_log(xia_log::debug) << "Pixie16ReadSglChanPar: ModNum=" << ModNum
+        xia_log(xia::log::debug) << "Pixie16ReadSglChanPar: ModNum=" << ModNum
                                 << " ChanNum=" << ChanNum << " ChanParName=" << ChanParName
                                 << " ChanParData=" << *ChanParData;
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -1191,26 +1191,26 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanPar(const char* ChanParName, double
 
 PIXIE_EXPORT int PIXIE_API Pixie16ReadSglModPar(const char* ModParName, unsigned int* ModParData,
                                                 unsigned short ModNum) {
-    xia_log(xia_log::debug) << "Pixie16ReadSglModPar: ModNum=" << ModNum
+    xia_log(xia::log::debug) << "Pixie16ReadSglModPar: ModNum=" << ModNum
                             << " ModParName=" << ModParName;
 
     try {
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
         *ModParData = module->read(ModParName);
-        xia_log(xia_log::debug) << "Pixie16ReadSglModPar: ModNum=" << ModNum
+        xia_log(xia::log::debug) << "Pixie16ReadSglModPar: ModNum=" << ModNum
                                 << " ModParName=" << ModParName << " ModParData=" << *ModParData;
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -1219,7 +1219,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglModPar(const char* ModParName, unsigned
 
 PIXIE_EXPORT int PIXIE_API Pixie16ReadStatisticsFromModule(unsigned int* Statistics,
                                                            unsigned short ModNum) {
-    xia_log(xia_log::debug) << "Pixie16ReadStatisticsFromModule: ModNum=" << ModNum;
+    xia_log(xia::log::debug) << "Pixie16ReadStatisticsFromModule: ModNum=" << ModNum;
 
     try {
         if (Statistics == nullptr) {
@@ -1237,47 +1237,47 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadStatisticsFromModule(unsigned int* Statist
             legacy_stats->channels[channel] = stats.chans[channel];
         }
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
     }
 
     return 0;
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16SaveDSPParametersToFile(const char* FileName) {
-    xia_log(xia_log::debug) << "Pixie16SaveDSPParametersToFile: FileName=" << FileName;
+    xia_log(xia::log::debug) << "Pixie16SaveDSPParametersToFile: FileName=" << FileName;
 
     try {
         xia::pixie::config::export_json(FileName, crate);
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
     }
 
     return 0;
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16SaveHistogramToFile(const char* FileName, unsigned short ModNum) {
-    xia_log(xia_log::debug) << "Pixie16SaveHistogramToFile: ModNum=" << ModNum
+    xia_log(xia::log::debug) << "Pixie16SaveHistogramToFile: ModNum=" << ModNum
                             << " FileName=" << FileName;
 
     return not_supported();
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16SetDACs(unsigned short ModNum) {
-    xia_log(xia_log::debug) << "Pixie16SetDACs: ModNum=" << ModNum;
+    xia_log(xia::log::debug) << "Pixie16SetDACs: ModNum=" << ModNum;
 
     try {
         crate.ready();
@@ -1291,16 +1291,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16SetDACs(unsigned short ModNum) {
             module->set_dacs();
         }
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -1308,7 +1308,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16SetDACs(unsigned short ModNum) {
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16StartHistogramRun(unsigned short ModNum, unsigned short mode) {
-    xia_log(xia_log::debug) << "Pixie16StartHistogramRun: ModNum=" << ModNum << " mode=" << mode;
+    xia_log(xia::log::debug) << "Pixie16StartHistogramRun: ModNum=" << ModNum << " mode=" << mode;
 
     try {
         xia::pixie::hw::run::run_mode run_mode;
@@ -1325,16 +1325,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartHistogramRun(unsigned short ModNum, unsig
         crate.ready();
         xia::pixie::crate::module_handle(crate, ModNum)->start_histograms(run_mode);
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -1343,7 +1343,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartHistogramRun(unsigned short ModNum, unsig
 
 PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsigned short RunType,
                                                    unsigned short mode) {
-    xia_log(xia_log::debug) << "Pixie16StartListModeRun: ModNum=" << ModNum
+    xia_log(xia::log::debug) << "Pixie16StartListModeRun: ModNum=" << ModNum
                             << " RunType=" << RunType << " mode=" << mode;
 
     try {
@@ -1374,16 +1374,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsign
             module->start_listmode(run_mode);
         }
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -1391,7 +1391,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsign
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16TauFinder(unsigned short ModNum, double* Tau) {
-    xia_log(xia_log::debug) << "Pixie16TauFinder: ModNum=" << ModNum;
+    xia_log(xia::log::debug) << "Pixie16TauFinder: ModNum=" << ModNum;
 
     try {
         crate.ready();
@@ -1404,16 +1404,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16TauFinder(unsigned short ModNum, double* Tau) 
         module->read_autotau(taus);
         std::copy(taus.begin(), taus.end(), Tau);
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
     return 0;
@@ -1421,7 +1421,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16TauFinder(unsigned short ModNum, double* Tau) 
 
 PIXIE_EXPORT int PIXIE_API Pixie16WriteSglChanPar(const char* ChanParName, double ChanParData,
                                                   unsigned short ModNum, unsigned short ChanNum) {
-    xia_log(xia_log::debug) << "Pixie16WriteSglChanPar: ModNum=" << ModNum << " ChanNum=" << ChanNum
+    xia_log(xia::log::debug) << "Pixie16WriteSglChanPar: ModNum=" << ModNum << " ChanNum=" << ChanNum
                             << " ChanParName=" << ChanParName << " ChanParData=" << ChanParData;
 
     try {
@@ -1430,16 +1430,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglChanPar(const char* ChanParName, doubl
         module->channel_check(ChanNum);
         module->write(ChanParName, ChanNum, ChanParData);
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -1448,7 +1448,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglChanPar(const char* ChanParName, doubl
 
 PIXIE_EXPORT int PIXIE_API Pixie16WriteSglModPar(const char* ModParName, unsigned int ModParData,
                                                  unsigned short ModNum) {
-    xia_log(xia_log::debug) << "Pixie16WriteSglModPar: ModNum=" << ModNum
+    xia_log(xia::log::debug) << "Pixie16WriteSglModPar: ModNum=" << ModNum
                             << " ModParName=" << ModParName << " ModParData=" << ModParData;
 
     try {
@@ -1469,16 +1469,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglModPar(const char* ModParName, unsigne
             }
         }
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -1487,7 +1487,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglModPar(const char* ModParName, unsigne
 
 PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file,
                                           const PIXIE_BOOT_MODE boot_mode) {
-    xia_log(xia_log::debug) << "PixieBootCrate: settings_file=" << settings_file
+    xia_log(xia::log::debug) << "PixieBootCrate: settings_file=" << settings_file
                             << " boot-mode=" << boot_mode;
 
     try {
@@ -1534,16 +1534,16 @@ PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file,
             crate.initialize_afe();
         }
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -1552,7 +1552,7 @@ PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file,
 
 PIXIE_EXPORT int PIXIE_API PixieGetWorkerConfiguration(const unsigned short mod_num,
                                                        fifo_worker_config* worker_config) {
-    xia_log(xia_log::debug) << "PixieGetWorkerConfiguration: Module=" << mod_num;
+    xia_log(xia::log::debug) << "PixieGetWorkerConfiguration: Module=" << mod_num;
 
     try {
         crate.ready();
@@ -1565,13 +1565,13 @@ PIXIE_EXPORT int PIXIE_API PixieGetWorkerConfiguration(const unsigned short mod_
         worker_config->idle_wait_usecs = module->fifo_idle_wait_usecs;
         worker_config->run_wait_usecs = module->fifo_run_wait_usecs;
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
     return 0;
@@ -1582,7 +1582,7 @@ PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version, con
                                                  const int adc_msps, const int adc_bits,
                                                  const char* device, const char* path,
                                                  unsigned short ModNum) {
-    xia_log(xia_log::debug) << "PixieRegisterFirmware: version=" << version
+    xia_log(xia::log::debug) << "PixieRegisterFirmware: version=" << version
                             << " revision=" << revision << " adc_msps=" << adc_msps
                             << " adc_bits=" << adc_bits << " device=" << device << " path=" << path
                             << " ModNum=" << ModNum;
@@ -1605,16 +1605,16 @@ PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version, con
         }
         xia::pixie::firmware::add(crate.firmware, fw);
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
 
@@ -1623,7 +1623,7 @@ PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version, con
 
 PIXIE_EXPORT int PIXIE_API PixieSetWorkerConfiguration(const unsigned short mod_num,
                                                        fifo_worker_config* worker_config) {
-    xia_log(xia_log::debug) << "PixieGetWorkerConfiguration: Module=" << mod_num;
+    xia_log(xia::log::debug) << "PixieGetWorkerConfiguration: Module=" << mod_num;
 
     try {
         crate.ready();
@@ -1636,13 +1636,13 @@ PIXIE_EXPORT int PIXIE_API PixieSetWorkerConfiguration(const unsigned short mod_
         module->set_fifo_idle_wait(worker_config->idle_wait_usecs);
         module->set_fifo_run_wait(worker_config->run_wait_usecs);
     } catch (xia_error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         return e.return_code();
     } catch (std::bad_alloc& e) {
-        xia_log(xia_log::error) << "bad allocation: " << e.what();
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (...) {
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }
     return 0;

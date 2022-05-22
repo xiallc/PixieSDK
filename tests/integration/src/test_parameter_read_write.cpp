@@ -61,8 +61,9 @@ static const double a_big_value = 1e6;
 static const double a_small_value = 1.e-6;
 
 void setup_simulation() {
-    xia::logging::start("log", "stdout", xia::log::level::debug, false);
-    xia::log(xia::log::level::info) << "Logging for test_parameter_read_write integration tests.";
+    xia::logging::start("log", "stdout", false);
+    xia::logging::set_level(xia::log::level::debug);
+    xia_log(xia::log::level::info) << "Logging for test_parameter_read_write integration tests.";
 
     std::stringstream def;
     for (const auto& mod_def : module_defs)

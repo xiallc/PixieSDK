@@ -682,22 +682,22 @@ void load(firmware::firmware_ref& firmware, module_var_descs& module_var_descrip
      */
     for (size_t d = 0; d < module_var_descriptors_default.size(); ++d) {
         if (d != size_t(module_var_descriptors_default[d].par)) {
-            log(log::error) << "module desc: index=" << d
-                            << " enum=" << int(module_var_descriptors_default[d].par);
+            xia_log(log::error) << "module desc: index=" << d
+                                << " enum=" << int(module_var_descriptors_default[d].par);
             throw error(error::code::internal_failure,
                         "module descriptor table does not match enum ordering");
         }
     }
     for (size_t d = 0; d < channel_var_descriptors_default.size(); ++d) {
         if (d != size_t(channel_var_descriptors_default[d].par)) {
-            log(log::error) << "channel desc: index=" << d
-                            << " enum=" << int(channel_var_descriptors_default[d].par);
+            xia_log(log::error) << "channel desc: index=" << d
+                                << " enum=" << int(channel_var_descriptors_default[d].par);
             throw error(error::code::internal_failure,
                         "channel descriptor table does not match enum ordering");
         }
     }
 
-    log(log::info) << "firmware: load vars: " << *firmware;
+    xia_log(log::info) << "firmware: load vars: " << *firmware;
 
     if (firmware->device != "var") {
         throw error(error::code::device_image_failure, "invalid image type");
@@ -744,8 +744,8 @@ void load(std::istream& input, module_var_descs& module_var_descriptors,
         }
     }
 
-    log(log::info) << "firmware: var descriptions loaded: module=" << module_var_descriptors.size()
-                   << " channel=" << channel_var_descriptors.size();
+    xia_log(log::info) << "firmware: var descriptions loaded: module=" << module_var_descriptors.size()
+                       << " channel=" << channel_var_descriptors.size();
 }
 
 void copy_parameters(const copy_filter& filter, const channel_variables& source,

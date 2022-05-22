@@ -292,10 +292,10 @@ void eeprom::process() {
     /*
      * Log the configuration
      */
-    log(log::info) << "eeprom: format=" << format << " snum=" << serial_num
-                   << " revision=" << revision << " major-revision=" << major_revision
-                   << " minor-revision=" << minor_revision
-                   << " mod-strike=" << mod_strike << " num-channels=" << num_channels;
+    xia_log(log::info) << "eeprom: format=" << format << " snum=" << serial_num
+                       << " revision=" << revision << " major-revision=" << major_revision
+                       << " minor-revision=" << minor_revision
+                       << " mod-strike=" << mod_strike << " num-channels=" << num_channels;
     if (num_channels != 0) {
         int found_configs = 0;
         while (true) {
@@ -342,11 +342,11 @@ void eeprom::process() {
                 }
                 channels += std::to_string(start) + '-' + std::to_string(end);
             }
-            log(log::info) << "eeprom: channels: " << channels
-                           << ": adc-bits=" << config.adc_bits
-                           << " adc-msps=" << config.adc_msps
-                           << " adc-clk-div=" << config.adc_clk_div
-                           << " fpga-clk=" << config.fpga_clk_mhz << "Mhz";
+            xia_log(log::info) << "eeprom: channels: " << channels
+                               << ": adc-bits=" << config.adc_bits
+                               << " adc-msps=" << config.adc_msps
+                               << " adc-clk-div=" << config.adc_clk_div
+                               << " fpga-clk=" << config.fpga_clk_mhz << "Mhz";
         }
     }
 }

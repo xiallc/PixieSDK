@@ -819,16 +819,16 @@ inline hw::word module::read_word(int reg) {
         value = 0;
     }
     if (reg_trace) {
-        log(log::debug) << "M r " << std::setfill('0') << std::hex << vmaddr << ':' << std::setw(2)
-                        << reg << " => " << std::setw(8) << value;
+        xia_log(log::debug) << "M r " << std::setfill('0') << std::hex << vmaddr << ':' << std::setw(2)
+                            << reg << " => " << std::setw(8) << value;
     }
     return value;
 }
 
 inline void module::write_word(int reg, const hw::word value) {
     if (reg_trace) {
-        log(log::debug) << "M w " << std::setfill('0') << std::hex << vmaddr << ':' << std::setw(2)
-                        << reg << " <= " << std::setw(8) << value;
+        xia_log(log::debug) << "M w " << std::setfill('0') << std::hex << vmaddr << ':' << std::setw(2)
+                            << reg << " <= " << std::setw(8) << value;
     }
     if (have_hardware) {
         hw::write_word(vmaddr, reg, value);

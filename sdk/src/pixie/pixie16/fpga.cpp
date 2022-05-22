@@ -49,11 +49,11 @@ control::control(module::module& module_, const std::string name_, const control
       trace(trace_) {}
 
 void control::load(const firmware::image& image, int retries) {
-    log(log::info) << "fpga-" << name << " [slot " << module.slot
-                   << "] load: length=" << image.size() << " retries=" << retries << std::hex
-                   << " clear-controls: clear=0x" << clear_ctrl.clear << ",set=0x" << clear_ctrl.set
-                   << ",done=0x" << clear_ctrl.done << " load-controls: clear=0x" << load_ctrl.clear
-                   << ",set=0x" << load_ctrl.set << ",done=0x" << load_ctrl.done;
+    xia_log(log::info) << "fpga-" << name << " [slot " << module.slot
+                       << "] load: length=" << image.size() << " retries=" << retries << std::hex
+                       << " clear-controls: clear=0x" << clear_ctrl.clear << ",set=0x" << clear_ctrl.set
+                       << ",done=0x" << clear_ctrl.done << " load-controls: clear=0x" << load_ctrl.clear
+                       << ",set=0x" << load_ctrl.set << ",done=0x" << load_ctrl.done;
 
     if (image.empty()) {
         throw error(error::code::device_image_failure, "no image loaded");
@@ -68,8 +68,8 @@ void control::load(const firmware::image& image, int retries) {
         int timeout_msec = 25;
 
         while (!cleared) {
-            log(log::debug) << "fpga-" << name << " [slot " << module.slot
-                            << "] clearing retries=" << retries;
+            xia_log(log::debug) << "fpga-" << name << " [slot " << module.slot
+                                << "] clearing retries=" << retries;
 
             /*
              * Clear the FPGA(s)
@@ -108,7 +108,7 @@ void control::load(const firmware::image& image, int retries) {
             }
         }
 
-        log(log::debug) << "fpga-" << name << " [slot " << module.slot << "] programming";
+        xia_log(log::debug) << "fpga-" << name << " [slot " << module.slot << "] programming";
 
         /*
          * Load the data.
@@ -124,7 +124,7 @@ void control::load(const firmware::image& image, int retries) {
             bus_write(reg.DATACS, value);
         }
 
-        log(log::debug) << "fpga-" << name << " [slot " << module.slot << "] waiting for done";
+        xia_log(log::debug) << "fpga-" << name << " [slot " << module.slot << "] waiting for done";
 
         timeout_msec = 25;
 
@@ -149,7 +149,7 @@ void control::load(const firmware::image& image, int retries) {
         }
     }
 
-    log(log::debug) << "fpga-" << name << " [slot " << module.slot << "] done";
+    xia_log(log::debug) << "fpga-" << name << " [slot " << module.slot << "] done";
 }
 
 bool control::done() {

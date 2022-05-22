@@ -45,7 +45,8 @@ void initialize_vars() {
 }
 
 static void test_setup() {
-    xia::logging::start("log", "stdout", xia::log::level::debug, false);
+    xia::logging::start("log", "stdout", false);
+    xia::logging::set_level(xia::log::level::debug);
     for (auto& var : xia::pixie::param::get_channel_var_descriptors()) {
         source.push_back(var);
         destination.push_back(var);

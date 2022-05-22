@@ -63,7 +63,7 @@ int crate::users() const {
 }
 
 void crate::initialize(bool reg_trace) {
-    log(log::info) << "crate: initialise";
+    xia_log(log::info) << "crate: initialise";
 
     /*
      * Set ready to true and if there is an issue return it to false.
@@ -92,19 +92,19 @@ void crate::initialize(bool reg_trace) {
                 module.open(device_number);
             } catch (pixie::error::error& e) {
                 last_module_found = e.type == module::error::code::not_supported;
-                log(log::error) << "module: device " << device_number << ": error: " << e.what();
+                xia_log(log::error) << "module: device " << device_number << ": error: " << e.what();
             }
 
             if (module.present()) {
-                log(log::info) << "module: device " << device_number << ": slot:" << module.slot
-                               << " serial-number:" << module.serial_num
-                               << " version:" << module.version_label();
+                xia_log(log::info) << "module: device " << device_number << ": slot:" << module.slot
+                                   << " serial-number:" << module.serial_num
+                                   << " version:" << module.version_label();
             } else {
                 if (last_module_found) {
                     modules.pop_back();
                     break;
                 }
-                log(log::info) << "module offline: device " << device_number;
+                xia_log(log::info) << "module offline: device " << device_number;
                 std::move(std::prev(modules.end()), modules.end(), std::back_inserter(offline));
                 modules.pop_back();
             }
@@ -125,7 +125,7 @@ void crate::initialize(bool reg_trace) {
 }
 
 void crate::shutdown() {
-    log(log::info) << "crate: shutdown";
+    xia_log(log::info) << "crate: shutdown";
     lock_guard guard(lock_);
     error::code first_error = error::code::success;
     for (auto& module : modules) {
@@ -143,14 +143,14 @@ void crate::shutdown() {
 }
 
 void crate::set_offline(const int module) {
-    log(log::info) << "crate: set offline: module=" << module;
+    xia_log(log::info) << "crate: set offline: module=" << module;
     lock_guard guard(lock_);
     (*this)[module];
     set_offline(modules[module]);
 }
 
 void crate::set_offline(module::module_ptr module) {
-    log(log::info) << "crate: set offline: slot=" << module->slot;
+    xia_log(log::info) << "crate: set offline: slot=" << module->slot;
     lock_guard guard(lock_);
     for (auto mi = modules.begin(); mi != modules.end(); ++mi) {
         if (module == *mi) {
@@ -165,7 +165,7 @@ void crate::set_offline(module::module_ptr module) {
 }
 
 bool crate::probe() {
-    log(log::info) << "crate: probe";
+    xia_log(log::info) << "crate: probe";
     ready();
     lock_guard guard(lock_);
     int online = 0;
@@ -180,7 +180,7 @@ bool crate::probe() {
 }
 
 void crate::boot(const bool force) {
-    log(log::info) << "crate: boot: force=" << std::boolalpha << force;
+    xia_log(log::info) << "crate: boot: force=" << std::boolalpha << force;
 
     ready();
     lock_guard guard(lock_);
@@ -231,7 +231,7 @@ void crate::boot(const bool force) {
 }
 
 void crate::set_firmware() {
-    log(log::info) << "crate: set firmware";
+    xia_log(log::info) << "crate: set firmware";
     ready();
     lock_guard guard(lock_);
     for (auto& module : modules) {
@@ -241,18 +241,18 @@ void crate::set_firmware() {
             if (mod_fw != firmware.end()) {
                 module->add(firmware[tag]);
             } else {
-                log(log::warning) << module::module_label(*module)
-                                  << "crate: module firmware not found: " << tag;
+                xia_log(log::warning) << module::module_label(*module)
+                                      << "crate: module firmware not found: " << tag;
             }
         }
         if (module->firmware.size() == 0) {
-            log(log::warning) << module::module_label(*module) << "no firmware set";
+            xia_log(log::warning) << module::module_label(*module) << "no firmware set";
         }
     }
 }
 
 void crate::import_config(const std::string json_file, module::number_slots& loaded) {
-    log(log::info) << "crate: import configuration";
+    xia_log(log::info) << "crate: import configuration";
     ready();
     lock_guard guard(lock_);
     loaded.clear();
@@ -266,7 +266,7 @@ void crate::import_config(const std::string json_file, module::number_slots& loa
 }
 
 void crate::initialize_afe() {
-    log(log::info) << "crate: initializing analog front-end";
+    xia_log(log::info) << "crate: initializing analog front-end";
 
     ready();
     lock_guard guard(lock_);
@@ -315,7 +315,7 @@ void crate::initialize_afe() {
 }
 
 void crate::export_config(const std::string json_file) {
-    log(log::info) << "crate: export configuration";
+    xia_log(log::info) << "crate: export configuration";
     lock_guard guard(lock_);
     config::export_json(json_file, *this);
 }
@@ -325,7 +325,7 @@ void crate::move_offlines() {
      * Move any modules in the online list that are offline to the offline
      * list.
      */
-    log(log::info) << "crate: move offline modules";
+    xia_log(log::info) << "crate: move offline modules";
     lock_guard guard(lock_);
     bool have_moved = true;
     while (have_moved) {
@@ -470,9 +470,9 @@ void crate::check_slots() {
             }
         }
         if (mod1->slot == mod2->slot) {
-            log(log::error) << "crate: duplicate slot: " << mod1->slot
-                            << " 1:pci=" << mod1->pci_bus() << ':' << mod1->pci_slot()
-                            << " 2:pci=" << mod2->pci_bus() << ':' << mod2->pci_slot();
+            xia_log(log::error) << "crate: duplicate slot: " << mod1->slot
+                                << " 1:pci=" << mod1->pci_bus() << ':' << mod1->pci_slot()
+                                << " 2:pci=" << mod2->pci_bus() << ':' << mod2->pci_slot();
         }
     }
 }
@@ -483,10 +483,10 @@ void crate::check_revision() {
         if (module->present()) {
             if (revision < 0) {
                 revision = module->crate_revision;
-                log(log::info) << "crate: crate revision: " << revision;
+                xia_log(log::info) << "crate: crate revision: " << revision;
             } else if (revision != module->crate_revision) {
-                log(log::warning) << "crate: crate revision mismatch: " << module->crate_revision
-                                  << " module slot=" << module->slot;
+                xia_log(log::warning) << "crate: crate revision mismatch: " << module->crate_revision
+                                      << " module slot=" << module->slot;
             }
         }
     }
@@ -494,10 +494,10 @@ void crate::check_revision() {
         if (module->present()) {
             if (revision < 0) {
                 revision = module->crate_revision;
-                log(log::info) << "crate: crate revision: " << revision;
+                xia_log(log::info) << "crate: crate revision: " << revision;
             } else if (revision != module->crate_revision) {
-                log(log::warning) << "crate: crate revision mismatch: " << module->crate_revision
-                                  << " module slot=" << module->slot;
+                xia_log(log::warning) << "crate: crate revision mismatch: " << module->crate_revision
+                                      << " module slot=" << module->slot;
             }
         }
     }

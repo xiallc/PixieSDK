@@ -259,8 +259,8 @@ static void wait_dac_settle_period(pixie::module::module& mod) {
         channel.fixture->get("DAC_SETTLE_PERIOD", channel_settle_period);
         settle_period = std::max(settle_period, channel_settle_period);
     }
-    log(log::debug) << pixie::module::module_label(mod, "afe-dbs: dac-settle-wait")
-                    << "period=" << settle_period << " msecs";
+    xia_log(log::debug) << pixie::module::module_label(mod, "afe-dbs: dac-settle-wait")
+                        << "period=" << settle_period << " msecs";
     if (settle_period > 0) {
         hw::wait(settle_period * 1000);
     }

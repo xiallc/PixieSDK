@@ -84,7 +84,7 @@ baseline::baseline(module::module& module, range& channels_)
 }
 
 void baseline::find_cut(size_t num) {
-    log(log::info) << module::module_label(module) << "find bl cut: num=" << num;
+    xia_log(log::info) << module::module_label(module) << "find bl cut: num=" << num;
 
     if (num > max_num) {
         throw module::error(module.number, module.slot, error::code::invalid_value,
@@ -114,8 +114,8 @@ void baseline::find_cut(size_t num) {
         compute_cut(num);
         for (size_t idx = 0; idx < channels.size(); idx++) {
             module.write_var(param::channel_var::BLcut, cuts[idx], channels[idx]);
-            log(log::info) << module::module_label(module) << "channel=" << channels[idx]
-                           << " bl cut=" << cuts[idx];
+            xia_log(log::info) << module::module_label(module) << "channel=" << channels[idx]
+                               << " bl cut=" << cuts[idx];
         }
     } catch (...) {
         try {
@@ -131,13 +131,13 @@ void baseline::find_cut(size_t num) {
 
     for (size_t idx = 0; idx < channels.size(); idx++) {
         module.write_var(param::channel_var::Log2Bweight, log2_bweight[idx], channels[idx]);
-        log(log::info) << module::module_label(module) << "channel=" << channels[idx]
-                       << "find bl cut: cut=" << cuts[idx];
+        xia_log(log::info) << module::module_label(module) << "channel=" << channels[idx]
+                           << "find bl cut: cut=" << cuts[idx];
     }
 
     tp.end();
 
-    log(log::info) << module::module_label(module) << "find bl cut: duration=" << tp;
+    xia_log(log::info) << module::module_label(module) << "find bl cut: duration=" << tp;
 }
 
 double baseline::time(hw::word time_word0, hw::word time_word1) {
@@ -152,8 +152,8 @@ void baseline::get(baseline::channels_values& chan_values, bool run) {
     hw::memory::dsp dsp(module);
     hw::io_buffer buffer;
 
-    log(log::debug) << module::module_label(module) << "baseline get: channels=" << channels.size()
-                    << " chan-values=" << chan_values.size();
+    xia_log(log::debug) << module::module_label(module) << "baseline get: channels=" << channels.size()
+                        << " chan-values=" << chan_values.size();
 
     /*
      * A baseline is returned in words as:
@@ -228,8 +228,8 @@ void baseline::compute_cut(size_t num) {
                 cuts[idx] = 0;
             }
 
-            log(log::debug) << module::module_label(module) << " idxnel=" << channels[idx]
-                            << " computed cut=" << cuts[idx];
+            xia_log(log::debug) << module::module_label(module) << " idxnel=" << channels[idx]
+                                << " computed cut=" << cuts[idx];
         }
     }
 }
@@ -277,7 +277,7 @@ void channel::read_histogram(hw::words& values) {
 }
 
 void channel::update_fifo(param::value_type trace_delay) {
-    log(log::debug) << channel_label(*this) << "fifo update: trace-delay=" << trace_delay;
+    xia_log(log::debug) << channel_label(*this) << "fifo update: trace-delay=" << trace_delay;
 
     module::module& mod = module.get();
 

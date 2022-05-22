@@ -145,15 +145,15 @@ bool check_code_match() {
 
 error::error(const code type_, const std::ostringstream& what)
     : runtime_error(what.str()), type(type_) {
-    log(log::error) << "error(except): " << what.str();
+    xia_log(log::error) << "error(except): " << what.str();
 }
 
 error::error(const code type_, const std::string& what) : runtime_error(what), type(type_) {
-    log(log::error) << "error(except): " << what;
+    xia_log(log::error) << "error(except): " << what;
 }
 
 error::error(const code type_, const char* what) : runtime_error(what), type(type_) {
-    log(log::error) << "error(except): " << what;
+    xia_log(log::error) << "error(except): " << what;
 }
 
 void error::output(std::ostream& out) {

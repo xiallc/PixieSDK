@@ -30,7 +30,6 @@
 #include <pixie/pixie16/sim.hpp>
 
 using crate_error = xia::pixie::crate::error;
-using xia_log = xia::log;
 
 static const std::vector<std::string> module_def = {
     "device-number=0 slot=2 revision=15 eeprom-format=1 serial-num=1034 num-channels=16 "
@@ -43,7 +42,8 @@ static const std::vector<std::string> module_def = {
 static const size_t test_modules = module_def.size();
 
 static void test_setup() {
-    xia::logging::start("log", "stdout", xia::log::level::off, false);
+    xia::logging::start("log", "stdout", false);
+    xia::logging::set_level(xia::log::level::off);
     for (auto& def : module_def) {
         xia::pixie::sim::add_module_def(def);
     }

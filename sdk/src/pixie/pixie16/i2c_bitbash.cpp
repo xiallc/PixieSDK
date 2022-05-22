@@ -49,7 +49,7 @@ bitbash::~bitbash() {
 
 void bitbash::start() {
     if (trace) {
-        log(log::debug) << "i2c-bb: start";
+        xia_log(log::debug) << "i2c-bb: start";
     }
 
     /*
@@ -65,7 +65,7 @@ void bitbash::stop() {
     uint32_t pins = bus_read() & (SDA | SCL | CTRL);
 
     if (trace) {
-        log(log::debug) << "i2c-bb: stop " << std::hex << pins;
+        xia_log(log::debug) << "i2c-bb: stop " << std::hex << pins;
     }
 
     /*
@@ -79,7 +79,7 @@ void bitbash::stop() {
 
 void bitbash::write_ack(uint8_t data, const char* what) {
     if (trace) {
-        log(log::debug) << "i2c-bb: write_ack";
+        xia_log(log::debug) << "i2c-bb: write_ack";
     }
 
     bool acked = false;
@@ -93,8 +93,8 @@ void bitbash::write_ack(uint8_t data, const char* what) {
         }
         ++access_multiplier;
         if (trace) {
-            log(log::debug) << "i2c-bb: write_ack: access-multiplier="
-                            << access_multiplier;
+            xia_log(log::debug) << "i2c-bb: write_ack: access-multiplier="
+                                << access_multiplier;
         }
     }
 
@@ -106,7 +106,7 @@ void bitbash::write_ack(uint8_t data, const char* what) {
 
 uint8_t bitbash::read_ack(bool ack) {
     if (trace) {
-        log(log::debug) << "i2c-bb: read_ack " << ack;
+        xia_log(log::debug) << "i2c-bb: read_ack " << ack;
     }
 
     uint8_t data = read();
@@ -120,7 +120,7 @@ uint8_t bitbash::read_ack(bool ack) {
 
 void bitbash::write(uint8_t data) {
     if (trace) {
-        log(log::info) << "i2c-bb: write " << std::hex << (int) data;
+        xia_log(log::info) << "i2c-bb: write " << std::hex << (int) data;
     }
 
     uint32_t data_bit = 0;
@@ -159,7 +159,7 @@ void bitbash::write(uint8_t data) {
 
 uint8_t bitbash::read() {
     if (trace) {
-        log(log::debug) << "i2c-bb: read";
+        xia_log(log::debug) << "i2c-bb: read";
     }
 
     uint32_t data_bit = 0;
@@ -186,7 +186,7 @@ uint8_t bitbash::read() {
     }
 
     if (trace) {
-        log(log::debug) << "i2c-bb: read " << std::hex << (int) data;
+        xia_log(log::debug) << "i2c-bb: read " << std::hex << (int) data;
     }
 
     return data;
@@ -194,7 +194,7 @@ uint8_t bitbash::read() {
 
 bool bitbash::get_ack() {
     if (trace) {
-        log(log::debug) << "i2c-bb: get_ack";
+        xia_log(log::debug) << "i2c-bb: get_ack";
     }
 
     uint32_t data;
@@ -215,7 +215,7 @@ bool bitbash::get_ack() {
     bus_write(0);
 
     if (trace) {
-        log(log::debug) << std::boolalpha << "i2c-bb: get_ack " << ((data & SDA) == 0);
+        xia_log(log::debug) << std::boolalpha << "i2c-bb: get_ack " << ((data & SDA) == 0);
     }
 
     return (data & SDA) == 0;
@@ -223,7 +223,7 @@ bool bitbash::get_ack() {
 
 void bitbash::send_ack() {
     if (trace) {
-        log(log::debug) << "i2c-bb: send_ack";
+        xia_log(log::debug) << "i2c-bb: send_ack";
     }
 
     /*
@@ -244,7 +244,7 @@ void bitbash::send_ack() {
 
 void bitbash::send_nack() {
     if (trace) {
-        log(log::debug) << "i2c-bb: send_nack";
+        xia_log(log::debug) << "i2c-bb: send_nack";
     }
 
     /*

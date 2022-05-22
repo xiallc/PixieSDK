@@ -37,7 +37,7 @@ bool backplane::role::request(const module::module& mod) {
     const bool requested = leader.compare_exchange_strong(
         expected, desired, std::memory_order_release, std::memory_order_relaxed);
     if (requested) {
-        log(log::info) << "backplane: " << label << ": leader: module=" << mod.number;
+        xia_log(log::info) << "backplane: " << label << ": leader: module=" << mod.number;
     }
     return requested;
 }
@@ -48,7 +48,7 @@ bool backplane::role::release(const module::module& mod) {
     const bool released_ = leader.compare_exchange_strong(
         expected, desired, std::memory_order_release, std::memory_order_relaxed);
     if (released_) {
-        log(log::info) << "backplane: " << label << ": released: module=" << mod.number;
+        xia_log(log::info) << "backplane: " << label << ": released: module=" << mod.number;
     }
     return released_;
 }

@@ -129,8 +129,8 @@ void host_bus::write(const address addr, const words& values) {
 }
 
 void host_bus::dma_read(const address addr, word_ptr buffer, const size_t length) {
-    log(log::debug) << module::module_label(module) << "dsp dma read: addr=0x" << std::hex << addr
-                    << " length=" << std::dec << length;
+    xia_log(log::debug) << module::module_label(module) << "dsp dma read: addr=0x" << std::hex << addr
+                        << " length=" << std::dec << length;
 
     /*
      * The bus is held on entry.

@@ -55,7 +55,7 @@ pool::~pool() {
 }
 
 void pool::create(const size_t number_, const size_t size_) {
-    log(log::info) << "pool create: num=" << number_ << " size=" << size_;
+    xia_log(log::info) << "pool create: num=" << number_ << " size=" << size_;
     lock_guard guard(lock);
     if (valid()) {
         throw error(error::code::buffer_pool_not_empty, "pool is already created");
@@ -73,7 +73,7 @@ void pool::create(const size_t number_, const size_t size_) {
 void pool::destroy() {
     lock_guard guard(lock);
     if (number > 0) {
-        log(log::info) << "pool destroy";
+        xia_log(log::info) << "pool destroy";
         if (count_.load() != number) {
             throw error(error::code::buffer_pool_busy, "pool destroy made while busy");
         }
@@ -118,9 +118,9 @@ void queue::push(handle buf) {
         buffers.push_back(buf);
         size_ += buf->size();
         if (queue_trace) {
-            log(log::debug) << "queue::push: buffers=" << buffers.size()
-                            << " buf=" << buf->size()
-                            << " size=" << size_;
+            xia_log(log::debug) << "queue::push: buffers=" << buffers.size()
+                                << " buf=" << buf->size()
+                                << " size=" << size_;
             check("push");
         }
     }
@@ -132,9 +132,9 @@ handle queue::pop() {
     buffers.pop_front();
     size_ -= buf->size();
     if (queue_trace) {
-        log(log::debug) << "queue::pop: buffers=" << buffers.size()
-                        << " buf=" << buf->size()
-                        << " size=" << size_;
+        xia_log(log::debug) << "queue::pop: buffers=" << buffers.size()
+                            << " buf=" << buf->size()
+                            << " size=" << size_;
         check("pop");
     }
     return buf;
@@ -163,9 +163,9 @@ size_t queue::copy_unprotected(buffer_value_ptr to, size_t to_move) {
         throw error(error::code::buffer_pool_not_enough, "not enough data in queue");
     }
     if (queue_trace) {
-        log(log::debug) << "queue::copy: buffers=" << buffers.size()
-                        << " size_=" << size_
-                        << " to-move=" << to_move;
+        xia_log(log::debug) << "queue::copy: buffers=" << buffers.size()
+                            << " size_=" << size_
+                            << " to-move=" << to_move;
         check("copy start");
     }
     auto copied = to_move;
@@ -175,9 +175,9 @@ size_t queue::copy_unprotected(buffer_value_ptr to, size_t to_move) {
         auto from = *from_bi;
         if (to_move >= from->size()) {
             if (queue_trace) {
-                log(log::debug) << "queue::copy: from-all: to_move=" << to_move
-                                << " from=" << from->size()
-                                << " size_=" << size_;
+                xia_log(log::debug) << "queue::copy: from-all: to_move=" << to_move
+                                    << " from=" << from->size()
+                                    << " size_=" << size_;
             }
             std::memcpy(to, from->data(), from->size() * sizeof(*to));
             to += from->size();
@@ -187,10 +187,10 @@ size_t queue::copy_unprotected(buffer_value_ptr to, size_t to_move) {
         } else {
             auto remaining = from->size() - to_move;
             if (queue_trace) {
-                log(log::debug) << "queue::copy: from-some: to_move=" << to_move
-                                << " from=" << from->size()
-                                << " remaining=" << remaining
-                                << " size_=" << size_;
+                xia_log(log::debug) << "queue::copy: from-some: to_move=" << to_move
+                                    << " from=" << from->size()
+                                    << " remaining=" << remaining
+                                    << " size_=" << size_;
             }
             std::memcpy(to, from->data(), to_move * sizeof(*to));
             std::memmove(
@@ -208,9 +208,9 @@ size_t queue::copy_unprotected(buffer_value_ptr to, size_t to_move) {
     }
     if (queue_trace) {
         check("copy end");
-        log(log::debug) << "queue::copy: finished: buffers=" << buffers.size()
-                        << " copied=" << copied
-                        << " size_=" << size_;
+        xia_log(log::debug) << "queue::copy: finished: buffers=" << buffers.size()
+                            << " copied=" << copied
+                            << " size_=" << size_;
     }
     return copied;
 }
@@ -229,7 +229,7 @@ void queue::compact() {
     while (rerun) {
         rerun = false;
         if (queue_trace) {
-            log(log::debug) << "compact: buffers=" << buffers.size();
+            xia_log(log::debug) << "compact: buffers=" << buffers.size();
         }
         auto to_bi = buffers.begin();
         while (to_bi != buffers.end()) {
@@ -242,9 +242,9 @@ void queue::compact() {
                 while (to_move > 0 && from_bi != buffers.end()) {
                     auto from = *from_bi;
                     if (queue_trace) {
-                        log(log::debug) << "compact: move=" << to_move
-                                        << " to=" << to->data() << '/' << to->size()
-                                        << " from=" << from->data() << '/' << from->size();
+                        xia_log(log::debug) << "compact: move=" << to_move
+                                            << " to=" << to->data() << '/' << to->size()
+                                            << " from=" << from->data() << '/' << from->size();
                     }
                     if (to_move >= from->size()) {
                         to->insert(to->end(), from->begin(), from->end());
@@ -261,9 +261,9 @@ void queue::compact() {
                         to_move = 0;
                     }
                     if (queue_trace) {
-                        log(log::debug) << "compact: moved:    "
-                                        << " to=" << to->data() << '/' << to->size()
-                                        << " from=" << from->data() << '/' << from->size();
+                        xia_log(log::debug) << "compact: moved:    "
+                                            << " to=" << to->data() << '/' << to->size()
+                                            << " from=" << from->data() << '/' << from->size();
                     }
                 }
                 if (erase_from != buffers.end()) {
@@ -318,8 +318,8 @@ void queue::check(const char* label) {
             prev = ptr[i];
         }
     }
-    log(log::debug) << "queue::check: " << label << ": found=" << csize << " has=" << size_
-                    << " buffers=" << buffers.size() << " zero-pairs=" << zero_pairs;
+    xia_log(log::debug) << "queue::check: " << label << ": found=" << csize << " has=" << size_
+                        << " buffers=" << buffers.size() << " zero-pairs=" << zero_pairs;
 }
 }  // namespace buffer
 }  // namespace xia

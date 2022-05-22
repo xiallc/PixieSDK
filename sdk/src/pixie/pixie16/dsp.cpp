@@ -87,8 +87,8 @@ dsp& dsp::operator=(dsp&& d) {
 }
 
 void dsp::boot(const firmware::image& image, int retries) {
-    log(log::info) << "dsp [slot " << module.slot << "] load: length=" << image.size()
-                   << " retries=" << retries;
+    xia_log(log::info) << "dsp [slot " << module.slot << "] load: length=" << image.size()
+                       << " retries=" << retries;
 
     bool running = false;
 
@@ -229,12 +229,12 @@ void dsp::boot(const firmware::image& image, int retries) {
             if (retries == 0) {
                 throw;
             }
-            log(log::error) << "dsp [slot " << module.slot << "] retries: " << retries << ": "
-                            << e.what();
+            xia_log(log::error) << "dsp [slot " << module.slot << "] retries: " << retries << ": "
+                                << e.what();
         }
     }
 
-    log(log::info) << "dsp [slot " << module.slot << "] running";
+    xia_log(log::info) << "dsp [slot " << module.slot << "] running";
 
     online = true;
 }

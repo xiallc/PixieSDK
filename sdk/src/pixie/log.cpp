@@ -40,7 +40,12 @@ namespace logging {
 /*
  * Local error type
  */
-typedef xia::pixie::error::error error;
+using error = xia::pixie::error::error;
+
+/*
+ * A single logging level.
+ */
+static std::atomic<log::level> log_level(xia::log::warning);
 
 /*
  * Synchronous outputter.
@@ -53,7 +58,6 @@ struct outputter {
     const std::string name;
     const std::string filename;
 
-    std::atomic<log::level> level;
     std::mutex lock;
     int counter;
 
@@ -75,7 +79,7 @@ struct outputter {
      */
     int count_length;
 
-    outputter(const std::string& name, const std::string& filename, log::level level, bool append);
+    outputter(const std::string& name, const std::string& filename, bool append);
     outputter(outputter&& op);
     ~outputter();
 
@@ -99,9 +103,8 @@ PIXIE_EXPORT outputters_ptr PIXIE_API make_outputters() {
 static const char* level_label[log::max_level] = {"[OFF  ] ", "[ERROR] ", "[WARN ] ", "[INFO ] ",
                                                   "[DEBUG] "};
 
-outputter::outputter(const std::string& name_, const std::string& filename_, log::level level_,
-                     bool append)
-    : name(name_), filename(filename_), level(level_), counter(0), linefeed(true), flush(false),
+outputter::outputter(const std::string& name_, const std::string& filename_, bool append)
+    : name(name_), filename(filename_), counter(0), linefeed(true), flush(false),
       show_level(true), show_counts(false), show_datetime(true), count_length(5), out(nullptr) {
     if (filename.empty() || filename == "stdout") {
         out.rdbuf(std::cout.rdbuf());
@@ -128,7 +131,7 @@ outputter::outputter(const std::string& name_, const std::string& filename_, log
 }
 
 outputter::outputter(outputter&& op)
-    : name(op.name), filename(op.filename), level(op.level.load()), counter(op.counter),
+    : name(op.name), filename(op.filename), counter(op.counter),
       linefeed(op.linefeed), flush(op.flush), show_level(op.show_level),
       show_counts(op.show_counts), show_datetime(op.show_datetime), count_length(op.count_length),
       outfile(op.outfile), out(op.out.rdbuf()) {
@@ -146,7 +149,7 @@ outputter::~outputter() {
 }
 
 void outputter::write(const log& entry) {
-    log::level current_level = level.load();
+    log::level current_level = log_level.load();
     log::level entry_level = entry.get_level();
     if (current_level != log::off && current_level >= entry_level) {
         write(entry_level, entry.output.str());
@@ -155,9 +158,11 @@ void outputter::write(const log& entry) {
 
 void outputter::write(const log::level entry_level, const std::string& entry) {
     std::lock_guard<lock_type> guard(lock);
+    log::level current_level = log_level.load();
 
-    if (entry_level == log::level::off)
+    if (entry_level == log::level::off || current_level < entry_level) {
         return;
+    }
 
     ++counter;
 
@@ -203,7 +208,7 @@ static void write(const log::level entry_level, const std::string& entry) {
     }
 }
 
-void start(const std::string name, const std::string file, log::level level, bool append) {
+void start(const std::string name, const std::string file, bool append) {
     /*
      * If the log exists quietly return. Could be the API init call is
      * called again.
@@ -213,7 +218,7 @@ void start(const std::string name, const std::string file, log::level level, boo
             return;
         }
     }
-    outputs->push_back(outputter(name, file, level, append));
+    outputs->push_back(outputter(name, file, append));
 }
 
 void stop(const std::string name) {
@@ -226,14 +231,8 @@ void stop(const std::string name) {
     throw error(error::code::internal_failure, "invalid log output name in stop");
 }
 
-void set_level(const std::string name, log::level level) {
-    for (auto& output : *outputs) {
-        if (output.name == name) {
-            output.level = level;
-            return;
-        }
-    }
-    throw error(error::code::internal_failure, "invalid log output name in set level");
+void set_level(log::level level) {
+    log_level = level;
 }
 
 void set_level_stamp(const std::string name, bool level) {
@@ -266,24 +265,18 @@ void set_line_numbers(const std::string name, bool line_numbers) {
     throw error(error::code::internal_failure, "invalid log output name in set line numbers");
 }
 
-bool level_logging(const std::string name, log::level level) {
-    for (auto& output : *outputs) {
-        if (output.name != name && !name.empty()) {
-            continue;
-        }
-
-        log::level outputter_level = output.level.load();
-        if ((outputter_level != log::off && outputter_level >= level) ||
-            (outputter_level == log::off && level == log::off)) {
-            return true;
-        }
+bool level_logging(log::level level) {
+    log::level current_level = log_level.load();
+    if ((current_level != log::off && current_level >= level) ||
+        (current_level == log::off && level == log::off)) {
+        return true;
     }
     return false;
 }
 
 void memdump(log::level level, const std::string label, const void* addr, size_t length,
              size_t size, size_t line_length, size_t offset) {
-    if (level_logging("", level) && length > 0) {
+    if (level_logging(level) && length > 0) {
         const uint8_t* addr8 = static_cast<const uint8_t*>(addr);
         std::ostringstream out;
         size_t b = 0;

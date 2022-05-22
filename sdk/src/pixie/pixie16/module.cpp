@@ -404,7 +404,7 @@ module::~module() {
     try {
         close();
     } catch (pixie::error::error& e) {
-        log(log::error) << e;
+        xia_log(log::error) << e;
     }
     device.release();
 }
@@ -505,7 +505,7 @@ bool module::online() const {
 }
 
 void module::open(size_t device_number) {
-    log(log::debug) << "module: open: device-number=" << device_number;
+    xia_log(log::debug) << "module: open: device-number=" << device_number;
 
     lock_guard guard(lock_);
 
@@ -552,8 +552,8 @@ void module::open(size_t device_number) {
             throw error(number, slot, error::code::module_initialize_failure, oss);
         }
 
-        log(log::info) << "module: PLX: driver: version=" << int(drv_major) << '.' << int(drv_minor)
-                       << '.' << int(drv_rev);
+        xia_log(log::info) << "module: PLX: driver: version=" << int(drv_major) << '.' << int(drv_minor)
+                           << '.' << int(drv_rev);
 
         U16 chip_type;
         U8 chip_rev;
@@ -564,8 +564,8 @@ void module::open(size_t device_number) {
             throw error(number, slot, error::code::module_initialize_failure, oss);
         }
 
-        log(log::info) << "module: PLX: device: type=" << std::hex << chip_type
-                       << " rev=" << std::dec << int(chip_rev);
+        xia_log(log::info) << "module: PLX: device: type=" << std::hex << chip_type
+                           << " rev=" << std::dec << int(chip_rev);
 
         /*
          * For PLX 9054, Space 0 is at PCI BAR 2.
@@ -577,9 +577,9 @@ void module::open(size_t device_number) {
             throw error(number, slot, error::code::module_initialize_failure, oss);
         }
 
-        log(log::info) << "module: PLX: pci: device-number=" << device_number
-                       << " domain=" << device->domain() << " bus=" << device->bus()
-                       << " slot=" << device->slot();
+        xia_log(log::info) << "module: PLX: pci: device-number=" << device_number
+                           << " domain=" << device->domain() << " bus=" << device->bus()
+                           << " slot=" << device->slot();
 
         /*
          * DMA channel for block transfers.
@@ -638,8 +638,8 @@ void module::open(size_t device_number) {
         const uint32_t cfg_rdver = read_word(0xc);
         board_revision = cfg_rdver & 0xffff;
 
-        log(log::debug) << module_label(*this) << "crate version: " << crate_revision
-                        << ", board version: " << std::hex << board_revision;
+        xia_log(log::debug) << module_label(*this) << "crate version: " << crate_revision
+                            << ", board version: " << std::hex << board_revision;
 
         hw::i2c::i2cm24c64 i2cm24c64(*this, hw::device::I2CM24C64, i2c_SDA, i2c_SCL, i2c_CTRL);
         i2cm24c64.read(0, hw::eeprom_block_size, eeprom.data);
@@ -687,7 +687,7 @@ void module::close() {
         PLX_STATUS ps_unmap_bar = PLX_STATUS_OK;
         PLX_STATUS ps_close;
 
-        log(log::debug) << module_label(*this) << "close: device-number=" << device->device_number;
+        xia_log(log::debug) << module_label(*this) << "close: device-number=" << device->device_number;
 
         if (fixtures) {
             fixtures->close();
@@ -700,7 +700,7 @@ void module::close() {
 
         ps_dma = ::PlxPci_DmaChannelClose(&device->handle, 0);
         if (ps_dma != PLX_STATUS_OK) {
-            log(log::debug) << module_label(*this) << "DMA close: " << pci_error_text(ps_dma);
+            xia_log(log::debug) << module_label(*this) << "DMA close: " << pci_error_text(ps_dma);
             if (ps_dma == PLX_STATUS_IN_PROGRESS) {
                 ::PlxPci_DeviceReset(&device->handle);
                 ::PlxPci_DmaChannelClose(&device->handle, 0);
@@ -740,7 +740,7 @@ void module::close() {
 }
 
 void module::force_offline() {
-    log(log::info) << module_label(*this) << "set offline";
+    xia_log(log::info) << module_label(*this) << "set offline";
     lock_guard guard(lock_);
     if (present() && !forced_offline_.load()) {
         try {
@@ -751,7 +751,7 @@ void module::force_offline() {
                 run_end();
             }
         } catch (pixie::error::error& e) {
-            log(log::error) << "force offline: " << e;
+            xia_log(log::error) << "force offline: " << e;
         }
         stop_fifo_services();
         forced_offline_ = true;
@@ -791,8 +791,8 @@ void module::probe() {
         dsp_online = dsp.init_done();
     }
 
-    log(log::info) << std::boolalpha << module_label(*this) << "probe: sys=" << comms_fpga
-                   << " fippi=" << fippi_fpga << " dsp=" << dsp_online;
+    xia_log(log::info) << std::boolalpha << module_label(*this) << "probe: sys=" << comms_fpga
+                       << " fippi=" << fippi_fpga << " dsp=" << dsp_online;
 
     if (fippi_fpga) {
         init_values();
@@ -814,11 +814,11 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
     }
 
     if (forced_offline_.load()) {
-        log(log::warning) << "module forced offline";
+        xia_log(log::warning) << "module forced offline";
     }
 
     if (online()) {
-        log(log::warning) << "booting online module";
+        xia_log(log::warning) << "booting online module";
     }
 
     online_ = false;
@@ -829,7 +829,7 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
 
     if (boot_comms) {
         if (comms_fpga) {
-            log(log::info) << module_label(*this) << "comms already loaded";
+            xia_log(log::info) << module_label(*this) << "comms already loaded";
         }
         firmware::firmware_ref fw = get("sys");
         hw::fpga::comms comms(*this);
@@ -844,7 +844,7 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
 
     if (boot_fippi) {
         if (fippi_fpga) {
-            log(log::info) << module_label(*this) << "fippi already loaded";
+            xia_log(log::info) << module_label(*this) << "fippi already loaded";
         }
         if (!comms_fpga) {
             throw error(number, slot, error::code::module_initialize_failure,
@@ -863,7 +863,7 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
 
     if (boot_dsp) {
         if (dsp_online) {
-            log(log::info) << module_label(*this) << "dsp already running";
+            xia_log(log::info) << module_label(*this) << "dsp already running";
         }
         if (!comms_fpga || !fippi_fpga) {
             throw error(number, slot, error::code::module_initialize_failure,
@@ -887,8 +887,8 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
 
     start_fifo_services();
 
-    log(log::info) << module_label(*this) << std::boolalpha << "boot: sys-fpga=" << comms_fpga
-                   << " fippi-fpga=" << fippi_fpga << " dsp=" << dsp_online;
+    xia_log(log::info) << module_label(*this) << std::boolalpha << "boot: sys-fpga=" << comms_fpga
+                       << " fippi-fpga=" << fippi_fpga << " dsp=" << dsp_online;
 
     online_ = comms_fpga && fippi_fpga && dsp_online;
 
@@ -908,8 +908,8 @@ void module::initialize() {
 void module::add(firmware::module& fw) {
     lock_guard guard(lock_);
     if (online()) {
-        log(log::warning) << module_label(*this)
-                          << "module already online, do not need to add firmware";
+        xia_log(log::warning) << module_label(*this)
+                              << "module already online, do not need to add firmware";
     } else {
         for (auto fp : fw) {
             bool found = false;
@@ -920,8 +920,8 @@ void module::add(firmware::module& fw) {
                 }
             }
             if (!found) {
-                log(log::debug) << module_label(*this) << "add module firmware: " << fp->tag
-                                << " device: " << fp->device;
+                xia_log(log::debug) << module_label(*this) << "add module firmware: " << fp->tag
+                                    << " device: " << fp->device;
                 firmware.push_back(fp);
             }
         }
@@ -946,12 +946,12 @@ firmware::firmware_ref module::get(const std::string device) {
 }
 
 param::value_type module::read(const std::string& par) {
-    log(log::info) << module_label(*this) << "read: par=" << par;
+    xia_log(log::info) << module_label(*this) << "read: par=" << par;
     return read(param::lookup_module_param(par));
 }
 
 param::value_type module::read(param::module_param par) {
-    log(log::debug) << module_label(*this) << "read: par=" << int(par);
+    xia_log(log::debug) << module_label(*this) << "read: par=" << int(par);
     online_check();
     const param::module_var var = param::map_module_param(par);
     size_t offset;
@@ -964,12 +964,12 @@ param::value_type module::read(param::module_param par) {
 }
 
 double module::read(const std::string& par, size_t channel) {
-    log(log::info) << module_label(*this) << "read: par=" << par;
+    xia_log(log::info) << module_label(*this) << "read: par=" << par;
     return read(param::lookup_channel_param(par), channel);
 }
 
 double module::read(param::channel_param par, size_t channel) {
-    log(log::debug) << module_label(*this) << "read: par=" << int(par);
+    xia_log(log::debug) << module_label(*this) << "read: par=" << int(par);
     online_check();
     channel_check(channel);
     lock_guard guard(lock_);
@@ -1082,13 +1082,13 @@ double module::read(param::channel_param par, size_t channel) {
 }
 
 bool module::write(const std::string& par, param::value_type value) {
-    log(log::info) << module_label(*this) << "write: module par=" << par << " value=" << value;
+    xia_log(log::info) << module_label(*this) << "write: module par=" << par << " value=" << value;
     return write(param::lookup_module_param(par), value);
 }
 
 bool module::write(param::module_param par, param::value_type value) {
-    log(log::debug) << module_label(*this) << "write: module par=" << int(par)
-                    << " value=" << value;
+    xia_log(log::debug) << module_label(*this) << "write: module par=" << int(par)
+                        << " value=" << value;
     online_check();
     std::ostringstream oss;
     size_t offset = 0;
@@ -1138,14 +1138,14 @@ bool module::write(param::module_param par, param::value_type value) {
 }
 
 void module::write(const std::string& par, size_t channel, double value) {
-    log(log::info) << module_label(*this) << "write: par=" << par << " channel=" << channel
-                   << " value=" << value;
+    xia_log(log::info) << module_label(*this) << "write: par=" << par << " channel=" << channel
+                       << " value=" << value;
     write(param::lookup_channel_param(par), channel, value);
 }
 
 void module::write(param::channel_param par, size_t channel, double value) {
-    log(log::debug) << module_label(*this) << "write: par=" << int(par) << " channel=" << channel
-                    << " value=" << value;
+    xia_log(log::debug) << module_label(*this) << "write: par=" << int(par) << " channel=" << channel
+                        << " value=" << value;
     online_check();
     channel_check(channel);
     std::ostringstream oss;
@@ -1256,8 +1256,8 @@ void module::write(param::channel_param par, size_t channel, double value) {
 }
 
 param::value_type module::read_var(const std::string& var, size_t channel, size_t offset, bool io) {
-    log(log::info) << module_label(*this) << "read: var=" << var << " channel=" << channel
-                   << " offset=" << offset << " io=" << io;
+    xia_log(log::info) << module_label(*this) << "read: var=" << var << " channel=" << channel
+                       << " offset=" << offset << " io=" << io;
     try {
         return read_var(param::lookup_module_var(var), offset, io);
     } catch (pixie::error::error& e) {
@@ -1277,8 +1277,8 @@ param::value_type module::read_var(param::module_var var, size_t offset, bool io
         throw error(number, slot, error::code::module_invalid_param, oss.str());
     }
     const auto& desc = module_var_descriptors[index];
-    log(log::debug) << module_label(*this) << "read_var: module var=" << desc.name
-                    << " offset=" << offset;
+    xia_log(log::debug) << module_label(*this) << "read_var: module var=" << desc.name
+                        << " offset=" << offset;
     if (desc.state == param::disable) {
         throw error(number, slot, error::code::module_param_disabled,
                     "module variable disabled: " + desc.name);
@@ -1304,8 +1304,8 @@ param::value_type module::read_var(param::module_var var, size_t offset, bool io
             value = module_vars[index].value[offset].value;
         }
     }
-    log(log::debug) << module_label(*this) << "read_var: module var=" << desc.name << " value["
-                    << offset << "]=" << value << " (0x" << std::hex << value << ')';
+    xia_log(log::debug) << module_label(*this) << "read_var: module var=" << desc.name << " value["
+                        << offset << "]=" << value << " (0x" << std::hex << value << ')';
     return value;
 }
 
@@ -1319,8 +1319,8 @@ param::value_type module::read_var(param::channel_var var, size_t channel, size_
         throw error(number, slot, error::code::channel_invalid_param, oss.str());
     }
     const auto& desc = channel_var_descriptors[index];
-    log(log::debug) << module_label(*this) << "read_var: channel var=" << desc.name
-                    << " channel=" << channel << " offset=" << offset << " io=" << io;
+    xia_log(log::debug) << module_label(*this) << "read_var: channel var=" << desc.name
+                        << " channel=" << channel << " offset=" << offset << " io=" << io;
     if (desc.state == param::disable) {
         throw error(number, slot, error::code::channel_param_disabled,
                     "channel variable disabled: " + desc.name);
@@ -1345,15 +1345,15 @@ param::value_type module::read_var(param::channel_var var, size_t channel, size_
             value = channels[channel].vars[index].value[offset].value;
         }
     }
-    log(log::debug) << module_label(*this) << "read_var: channel var=" << desc.name << " value["
-                    << offset << "]=" << value << " (0x" << std::hex << value << ')';
+    xia_log(log::debug) << module_label(*this) << "read_var: channel var=" << desc.name << " value["
+                        << offset << "]=" << value << " (0x" << std::hex << value << ')';
     return value;
 }
 
 void module::write_var(const std::string& var, param::value_type value, size_t channel,
                        size_t offset, bool io) {
-    log(log::info) << module_label(*this) << "write: var=" << var << " channel=" << channel
-                   << " value[" << offset << "]=" << value << " (0x" << std::hex << value << ')';
+    xia_log(log::info) << module_label(*this) << "write: var=" << var << " channel=" << channel
+                       << " value[" << offset << "]=" << value << " (0x" << std::hex << value << ')';
     try {
         write_var(param::lookup_module_var(var), value, offset, io);
     } catch (pixie::error::error& e) {
@@ -1373,8 +1373,8 @@ void module::write_var(param::module_var var, param::value_type value, size_t of
         throw error(number, slot, error::code::module_invalid_param, oss.str());
     }
     const auto& desc = module_var_descriptors[index];
-    log(log::debug) << module_label(*this) << "write_var: module var=" << desc.name << " value["
-                    << offset << "]=" << value << " (0x" << std::hex << value << ')';
+    xia_log(log::debug) << module_label(*this) << "write_var: module var=" << desc.name << " value["
+                        << offset << "]=" << value << " (0x" << std::hex << value << ')';
     if (desc.state == param::disable) {
         throw error(number, slot, error::code::module_param_disabled,
                     "module variable disabled: " + desc.name);
@@ -1410,9 +1410,9 @@ void module::write_var(param::channel_var var, param::value_type value, size_t c
         throw error(number, slot, error::code::channel_invalid_param, oss.str());
     }
     const auto& desc = channel_var_descriptors[index];
-    log(log::debug) << module_label(*this) << "write_var: channel var=" << desc.name
-                    << " channel=" << channel << " value[" << offset << "]=" << value << " (0x"
-                    << std::hex << value << ')';
+    xia_log(log::debug) << module_label(*this) << "write_var: channel var=" << desc.name
+                        << " channel=" << channel << " value[" << offset << "]=" << value << " (0x"
+                        << std::hex << value << ')';
     if (desc.state == param::disable) {
         throw error(number, slot, error::code::channel_param_disabled,
                     "channel variable disabled: " + desc.name);
@@ -1439,8 +1439,8 @@ void module::write_var(param::channel_var var, param::value_type value, size_t c
 
 void module::sync_vars(const sync_var_mode sync_mode) {
     online_check();
-    log(log::info) << module_label(*this) << "sync variables: mode: "
-                   << (char*) (sync_mode == sync_to_dsp ? "to dsp" : "from dsp");
+    xia_log(log::info) << module_label(*this) << "sync variables: mode: "
+                       << (char*) (sync_mode == sync_to_dsp ? "to dsp" : "from dsp");
     if (!have_hardware) {
         return;
     }
@@ -1489,8 +1489,8 @@ void module::sync_vars(const sync_var_mode sync_mode) {
 
 void module::sync_hw(const bool program_fippi, const bool program_dacs) {
     online_check();
-    log(log::info) << module_label(*this) << std::boolalpha << "sync hardware: "
-                   << "program_fippi=" << program_fippi << " program_dacs=" << program_dacs;
+    xia_log(log::info) << module_label(*this) << std::boolalpha << "sync hardware: "
+                       << "program_fippi=" << program_fippi << " program_dacs=" << program_dacs;
 
     lock_guard guard(lock_);
 
@@ -1519,9 +1519,9 @@ void module::run_end() {
     online_check();
     lock_guard guard(lock_);
     bool running = true;
-    log(log::info) << module_label(*this) << "run_end: attempting to stop run";
+    xia_log(log::info) << module_label(*this) << "run_end: attempting to stop run";
     if (run_task == hw::run::run_task::nop) {
-        log(log::warning) << module_label(*this) << "run-end: no run active";
+        xia_log(log::warning) << module_label(*this) << "run-end: no run active";
         running = false;
     }
     /*
@@ -1552,42 +1552,42 @@ bool module::run_active() {
 }
 
 void module::acquire_baselines() {
-    log(log::info) << module_label(*this) << "acquire-baselines";
+    xia_log(log::info) << module_label(*this) << "acquire-baselines";
     online_check();
     lock_guard guard(lock_);
     hw::run::control(*this, hw::run::control_task::get_baselines);
 }
 
 void module::adjust_offsets() {
-    log(log::info) << module_label(*this) << "adjust-offsets";
+    xia_log(log::info) << module_label(*this) << "adjust-offsets";
     online_check();
     lock_guard guard(lock_);
     hw::run::control(*this, hw::run::control_task::adjust_offsets);
 }
 
 void module::tau_finder() {
-    log(log::info) << module_label(*this) << "tau-finder";
+    xia_log(log::info) << module_label(*this) << "tau-finder";
     online_check();
     lock_guard guard(lock_);
     hw::run::control(*this, hw::run::control_task::tau_finder);
 }
 
 void module::get_traces() {
-    log(log::info) << module_label(*this) << "get-traces";
+    xia_log(log::info) << module_label(*this) << "get-traces";
     online_check();
     lock_guard guard(lock_);
     hw::run::control(*this, hw::run::control_task::get_traces);
 }
 
 void module::set_dacs() {
-    log(log::info) << module_label(*this) << "set-dacs";
+    xia_log(log::info) << module_label(*this) << "set-dacs";
     online_check();
     lock_guard guard(lock_);
     hw::run::control(*this, hw::run::control_task::set_dacs);
 }
 
 void module::start_histograms(hw::run::run_mode mode) {
-    log(log::info) << module_label(*this) << "start-histograms: mode=" << int(mode);
+    xia_log(log::info) << module_label(*this) << "start-histograms: mode=" << int(mode);
     online_check();
     lock_guard guard(lock_);
     if (run_task.load() != hw::run::run_task::nop) {
@@ -1609,7 +1609,7 @@ void module::start_histograms(hw::run::run_mode mode) {
 }
 
 void module::start_listmode(hw::run::run_mode mode) {
-    log(log::info) << module_label(*this) << "start-list-mode: mode=" << int(mode);
+    xia_log(log::info) << module_label(*this) << "start-list-mode: mode=" << int(mode);
     online_check();
     lock_guard guard(lock_);
     if (run_task != hw::run::run_task::nop) {
@@ -1629,8 +1629,8 @@ void module::start_listmode(hw::run::run_mode mode) {
 }
 
 void module::read_adc(size_t channel, hw::adc_word* buffer, size_t size, bool run) {
-    log(log::info) << module_label(*this) << "read-adc: channel=" << channel << " size=" << size
-                   << " run=" << std::boolalpha << run;
+    xia_log(log::info) << module_label(*this) << "read-adc: channel=" << channel << " size=" << size
+                       << " run=" << std::boolalpha << run;
     online_check();
     lock_guard guard(lock_);
     if (run) {
@@ -1653,7 +1653,7 @@ void module::read_adc(size_t channel, hw::adc_trace& buffer, bool run) {
 }
 
 void module::bl_find_cut(channel::range& channels_, param::values& cuts) {
-    log(log::info) << module_label(*this) << "bl-find-cut: channels=" << channels.size();
+    xia_log(log::info) << module_label(*this) << "bl-find-cut: channels=" << channels.size();
     cuts.clear();
     channel::baseline bl(*this, channels_);
     lock_guard guard(lock_);
@@ -1663,7 +1663,7 @@ void module::bl_find_cut(channel::range& channels_, param::values& cuts) {
 
 void module::bl_get(channel::range& channels_, channel::baseline::channels_values& values,
                     bool run) {
-    log(log::info) << module_label(*this) << "bl-get: channels=" << channels.size();
+    xia_log(log::info) << module_label(*this) << "bl-get: channels=" << channels.size();
     channel::baseline bl(*this, channels_);
     lock_guard guard(lock_);
     if (control_task != hw::run::control_task::get_baselines) {
@@ -1674,42 +1674,42 @@ void module::bl_get(channel::range& channels_, channel::baseline::channels_value
 }
 
 void module::read_histogram(size_t channel, hw::words& values) {
-    log(log::info) << module_label(*this) << "read-histogram: channel=" << channel
-                   << " length=" << values.size();
+    xia_log(log::info) << module_label(*this) << "read-histogram: channel=" << channel
+                       << " length=" << values.size();
     online_check();
     lock_guard guard(lock_);
     channels[channel].read_histogram(values);
 }
 
 void module::read_histogram(size_t channel, hw::word_ptr values, const size_t size) {
-    log(log::info) << module_label(*this) << "read-histogram: channel=" << channel
-                   << " length=" << size;
+    xia_log(log::info) << module_label(*this) << "read-histogram: channel=" << channel
+                       << " length=" << size;
     online_check();
     lock_guard guard(lock_);
     channels[channel].read_histogram(values, size);
 }
 
 size_t module::read_list_mode_level() {
-    log(log::debug) << module_label(*this) << "read-list-mode-level";
+    xia_log(log::debug) << module_label(*this) << "read-list-mode-level";
     online_check();
     if (!fifo_worker_running.load()) {
-        log(log::debug) << module_label(*this) << "read-list-mode-level: FIFO worker not running";
+        xia_log(log::debug) << module_label(*this) << "read-list-mode-level: FIFO worker not running";
     }
     lock_guard guard(lock_);
     sync_worker_run();
     auto size = fifo_data.size();
     if (size > 0) {
-        log(log::debug) << module_label(*this) << "read-list-mode-level: FIFO = " << size;
+        xia_log(log::debug) << module_label(*this) << "read-list-mode-level: FIFO = " << size;
     }
     return size;
 }
 
 size_t module::read_list_mode(hw::words& values) {
-    log(log::debug) << module_label(*this) << "read-list-mode: length=" << values.size()
-                    << " fifo-size=" << fifo_data.size();
+    xia_log(log::debug) << module_label(*this) << "read-list-mode: length=" << values.size()
+                        << " fifo-size=" << fifo_data.size();
     online_check();
     if (!fifo_worker_running.load()) {
-        log(log::warning) << module_label(*this) << "read-list-mode: FIFO worker not running";
+        xia_log(log::warning) << module_label(*this) << "read-list-mode: FIFO worker not running";
     }
     lock_guard guard(lock_);
     sync_worker_run();
@@ -1719,14 +1719,14 @@ size_t module::read_list_mode(hw::words& values) {
     auto out = fifo_data.copy(values);
     data_stats.out += out;
     run_stats.out += out;
-    log(log::debug) << module_label(*this) << "read-list-mode: values=" << values.size()
-                    << " out=" << out << " fifo-size=" << fifo_data.size();
+    xia_log(log::debug) << module_label(*this) << "read-list-mode: values=" << values.size()
+                        << " out=" << out << " fifo-size=" << fifo_data.size();
     return out;
 }
 
 size_t module::read_list_mode(hw::word_ptr values, const size_t size) {
-    log(log::info) << module_label(*this) << "read-list-mode: length=" << size
-                   << " fifo-size=" << fifo_data.size();
+    xia_log(log::info) << module_label(*this) << "read-list-mode: length=" << size
+                       << " fifo-size=" << fifo_data.size();
     online_check();
     if (fifo_data.empty()) {
         return 0;
@@ -1735,20 +1735,20 @@ size_t module::read_list_mode(hw::word_ptr values, const size_t size) {
     auto out = fifo_data.copy(values, size);
     data_stats.out += size;
     run_stats.out += size;
-    log(log::debug) << module_label(*this) << "read-list-mode: values=" << size
-                    << " out=" << out << " fifo-size=" << fifo_data.size();
+    xia_log(log::debug) << module_label(*this) << "read-list-mode: values=" << size
+                        << " out=" << out << " fifo-size=" << fifo_data.size();
     return out;
 }
 
 void module::read_stats(stats::stats& stats) {
-    log(log::info) << module_label(*this) << "read-stats: channels=" << channels.size();
+    xia_log(log::info) << module_label(*this) << "read-stats: channels=" << channels.size();
     online_check();
     lock_guard guard(lock_);
     stats::read(*this, stats);
 }
 
 void module::read_autotau(hw::doubles& taus) {
-    log(log::info) << module_label(*this) << "read-autotau";
+    xia_log(log::info) << module_label(*this) << "read-autotau";
     online_check();
     lock_guard guard(lock_);
     taus.resize(num_channels);
@@ -1762,7 +1762,7 @@ void module::set_fifo_buffers(const size_t buffers) {
         throw error(number, slot, error::code::module_invalid_var,
                     "fifo: buffer value out of range");
     }
-    log(log::debug) << module_label(*this) << "fifo: buffers=" << buffers;
+    xia_log(log::debug) << module_label(*this) << "fifo: buffers=" << buffers;
     fifo_buffers = buffers;
 }
 
@@ -1772,12 +1772,12 @@ void module::set_fifo_run_wait(const size_t run_wait) {
         throw error(number, slot, error::code::module_invalid_var,
                     "fifo: run wait value out of range");
     }
-    log(log::debug) << module_label(*this) << "fifo: run-wait=" << run_wait;
+    xia_log(log::debug) << module_label(*this) << "fifo: run-wait=" << run_wait;
     if (run_wait == 0) {
-        log(log::warning) << module_label(*this)
-                          << "fifo: setting run-wait to zero is not recommended, it may result in data loss";
-        log(log::warning) << module_label(*this)
-                          << "fifo: setting run-wait to zero may be deprecated in future versions";
+        xia_log(log::warning) << module_label(*this)
+                              << "fifo: setting run-wait to zero is not recommended, it may result in data loss";
+        xia_log(log::warning) << module_label(*this)
+                              << "fifo: setting run-wait to zero may be deprecated in future versions";
     }
     fifo_run_wait_usecs = run_wait;
 }
@@ -1787,7 +1787,7 @@ void module::set_fifo_idle_wait(const size_t idle_wait) {
         throw error(number, slot, error::code::module_invalid_var,
                     "fifo: idle wait value out of range");
     }
-    log(log::debug) << module_label(*this) << "fifo: idle-wait=" << idle_wait;
+    xia_log(log::debug) << module_label(*this) << "fifo: idle-wait=" << idle_wait;
     fifo_idle_wait_usecs = idle_wait;
 }
 
@@ -1795,7 +1795,7 @@ void module::set_fifo_hold(const size_t hold) {
     if (hold < min_fifo_hold_usec || hold > max_fifo_hold_usec) {
         throw error(number, slot, error::code::module_invalid_var, "fifo: hold value out of range");
     }
-    log(log::debug) << module_label(*this) << "fifo: hold=" << hold;
+    xia_log(log::debug) << module_label(*this) << "fifo: hold=" << hold;
     fifo_hold_usecs = hold;
 }
 
@@ -1805,7 +1805,7 @@ void module::set_fifo_dma_trigger_level(const size_t dma_trigger_level) {
         throw error(number, slot, error::code::module_invalid_var,
                     "fifo: dma trigger level value out of range");
     }
-    log(log::debug) << module_label(*this) << "fifo: dma-trigger-level=" << dma_trigger_level;
+    xia_log(log::debug) << module_label(*this) << "fifo: dma-trigger-level=" << dma_trigger_level;
     fifo_dma_trigger_level = dma_trigger_level;
 }
 
@@ -1814,7 +1814,7 @@ void module::set_fifo_bandwidth(const size_t bandwidth) {
         throw error(number, slot, error::code::module_invalid_var,
                     "fifo: bandwidth value out of range");
     }
-    log(log::debug) << module_label(*this) << "fifo: bandwidth=" << bandwidth;
+    xia_log(log::debug) << module_label(*this) << "fifo: bandwidth=" << bandwidth;
     fifo_bandwidth = bandwidth;
 }
 
@@ -1822,7 +1822,7 @@ void module::select_port(const int port) {
     bus_guard guard(*this);
     cfg_ctrlcs &= ~(7 << 19);
     cfg_ctrlcs |= (port & 7) << 19;
-    log(log::debug) << module_label(*this) << "write: cfg_ctrlcs=0x" << std::hex << cfg_ctrlcs;
+    xia_log(log::debug) << module_label(*this) << "write: cfg_ctrlcs=0x" << std::hex << cfg_ctrlcs;
     write_word(hw::device::CFG_CTRLCS, cfg_ctrlcs);
 }
 
@@ -1932,8 +1932,8 @@ void module::dma_read(const hw::address source, hw::words& values) {
 }
 
 void module::dma_read(const hw::address source, hw::word_ptr values, const size_t size) {
-    log(log::debug) << module_label(*this) << "dma read: addr=0x" << std::hex << source
-                    << " length=" << std::dec << size;
+    xia_log(log::debug) << module_label(*this) << "dma read: addr=0x" << std::hex << source
+                        << " length=" << std::dec << size;
 
     online_check();
 
@@ -1971,7 +1971,7 @@ void module::dma_read(const hw::address source, hw::word_ptr values, const size_
 
     tp.end();
 
-    log(log::debug) << module_label(*this) << "dma read: done, period=" << tp;
+    xia_log(log::debug) << module_label(*this) << "dma read: done, period=" << tp;
 }
 
 hw::rev_tag module::get_rev_tag() const {
@@ -2035,7 +2035,7 @@ int module::pci_slot() {
 }
 
 void module::start_test(const test mode) {
-    log(log::info) << module_label(*this) << "start-test: mode=" << int(mode);
+    xia_log(log::info) << module_label(*this) << "start-test: mode=" << int(mode);
     online_check();
     lock_guard guard(lock_);
     if (test_mode.load() != test::off) {
@@ -2047,12 +2047,12 @@ void module::start_test(const test mode) {
     }
     switch (mode) {
         case test::lm_fifo:
-            log(log::debug) << "pause the FIFO worker";
+            xia_log(log::debug) << "pause the FIFO worker";
             test_mode = mode;
             run_stats.clear();
             hw::run::start(*this, hw::run::run_mode::new_run, hw::run::run_task::nop,
                            hw::run::control_task::fill_ext_fifo);
-            log(log::debug) << "unpause the FIFO worker";
+            xia_log(log::debug) << "unpause the FIFO worker";
             pause_fifo_worker = false;
             break;
         default:
@@ -2074,7 +2074,7 @@ void module::load_vars() {
         param::load(vars, module_var_descriptors, channel_var_descriptors);
         param_addresses.set(max_channels, module_var_descriptors, channel_var_descriptors);
         vars_loaded = true;
-        log(log::info) << module_label(*this) << "address map: " << param_addresses;
+        xia_log(log::info) << module_label(*this) << "address map: " << param_addresses;
     }
 }
 
@@ -2175,12 +2175,12 @@ void module::slow_filter_range(param::value_type value, size_t offset, bool io) 
 void module::fast_filter_range(param::value_type value, size_t offset, bool io) {
     if (value > hw::limit::FASTFILTERRANGE_MAX) {
         value = hw::limit::FASTFILTERRANGE_MAX;
-        log(log::warning) << "setting FAST_FILTER_RANGE to max: " << hw::limit::FASTFILTERRANGE_MAX;
+        xia_log(log::warning) << "setting FAST_FILTER_RANGE to max: " << hw::limit::FASTFILTERRANGE_MAX;
     }
 
     if (int(value) < int(hw::limit::FASTFILTERRANGE_MIN)) {
         value = hw::limit::FASTFILTERRANGE_MIN;
-        log(log::warning) << "setting FAST_FILTER_RANGE to min: " << hw::limit::FASTFILTERRANGE_MIN;
+        xia_log(log::warning) << "setting FAST_FILTER_RANGE to min: " << hw::limit::FASTFILTERRANGE_MIN;
     }
 
     write_var(param::module_var::FastFilterRange, value, offset, io);
@@ -2299,8 +2299,8 @@ void module::stop_fifo_services() {
 }
 
 void module::start_fifo_worker() {
-    log(log::debug) << module_label(*this) << std::boolalpha
-                    << "FIFO worker: starting: running=" << fifo_worker_running.load();
+    xia_log(log::debug) << module_label(*this) << std::boolalpha
+                        << "FIFO worker: starting: running=" << fifo_worker_running.load();
     if (!fifo_worker_running.load()) {
         pause_fifo_worker = true;
         fifo_worker_finished = false;
@@ -2310,8 +2310,8 @@ void module::start_fifo_worker() {
 }
 
 void module::stop_fifo_worker() {
-    log(log::debug) << module_label(*this) << std::boolalpha
-                    << "FIFO worker: stopping: running=" << fifo_worker_running.load();
+    xia_log(log::debug) << module_label(*this) << std::boolalpha
+                        << "FIFO worker: stopping: running=" << fifo_worker_running.load();
     fifo_worker_running = false;
     {
         sync::variable::lock_guard guard(fifo_worker_working);
@@ -2327,7 +2327,7 @@ void module::fifo_worker() {
 
     size_t level = fifo.level();
 
-    log(log::info) << module_label(*this) << "FIFO worker: running, level=" << level;
+    xia_log(log::info) << module_label(*this) << "FIFO worker: running, level=" << level;
 
     /*
      * The worker must not hold the module's lock. That lock is for
@@ -2411,7 +2411,7 @@ void module::fifo_worker() {
                  * synchronous.
                  */
                 level = fifo.level();
-                log(log::debug) << "fifo worker: fifo-level = " << level;
+                xia_log(log::debug) << "fifo worker: fifo-level = " << level;
             }
 
             /*
@@ -2431,7 +2431,7 @@ void module::fifo_worker() {
                 if (this_run_tsk != hw::run::run_task::nop &&
                     this_run_tsk != hw::run::run_task::run_stopping && !hw::run::active(*this)) {
                     run_task = hw::run::run_task::nop;
-                    log(log::info) << module_label(*this) << "FIFO worker: run not active";
+                    xia_log(log::info) << module_label(*this) << "FIFO worker: run not active";
                 }
                 /*
                  * Read the level of the FIFO every loop when the mode
@@ -2439,12 +2439,12 @@ void module::fifo_worker() {
                  */
                 if (mode_asynchronous) {
                     level = fifo.level();
-                    log(log::debug) << "fifo worker: fifo-level = " << level;
+                    xia_log(log::debug) << "fifo worker: fifo-level = " << level;
                 }
                 if (level >= hw::fifo_size_words) {
                     if (!fifo_full_logged) {
                         fifo_full_logged = true;
-                        log(log::warning) << module_label(*this) << "FIFO worker: FIFO full";
+                        xia_log(log::warning) << module_label(*this) << "FIFO worker: FIFO full";
                     }
                     data_stats.hw_overflows++;
                     run_stats.hw_overflows++;
@@ -2466,8 +2466,8 @@ void module::fifo_worker() {
                 }
                 if (level == std::numeric_limits<hw::word>::max()) {
                     auto level2 = fifo.level();
-                    log(log::debug) << module_label(*this) << "invalid FIFO level: " << level
-                                    << " repeat read: " << level2;
+                    xia_log(log::debug) << module_label(*this) << "invalid FIFO level: " << level
+                                        << " repeat read: " << level2;
                     break;
                 }
                 /*
@@ -2476,8 +2476,8 @@ void module::fifo_worker() {
                 const size_t fifo_pool_count = fifo_pool.count();
                 if (fifo_pool_count < 4 && fifo_pool_count > 1) {
                     if (!pool_empty_logged) {
-                        log(log::warning) << module_label(*this) << "FIFO worker: pool empty,"
-                                          << " compacting queue ...";
+                        xia_log(log::warning) << module_label(*this) << "FIFO worker: pool empty,"
+                                              << " compacting queue ...";
                     }
                     fifo_data.compact();
                 }
@@ -2508,16 +2508,16 @@ void module::fifo_worker() {
                     } else {
                         data_stats.dropped += read_words;
                         run_stats.dropped += read_words;
-                        log(log::debug) << module_label(*this)
-                                        << std::boolalpha
-                                        << "buffer drop: fifo_pool_count=" << (fifo_pool_count > 1)
-                                        << " fifo-worker-paused=" << pause_fifo_worker.load();
+                        xia_log(log::debug) << module_label(*this)
+                                            << std::boolalpha
+                                            << "buffer drop: fifo_pool_count=" << (fifo_pool_count > 1)
+                                            << " fifo-worker-paused=" << pause_fifo_worker.load();
                     }
-                    log(log::debug) << module_label(*this)
-                                    << "FIFO read, level=" << level
-                                    << " read-words=" << read_words
-                                    << " data-fifo-words=" << fifo_data.count()
-                                    << std::boolalpha << " queue-buf=" << queue_buf;
+                    xia_log(log::debug) << module_label(*this)
+                                        << "FIFO read, level=" << level
+                                        << " read-words=" << read_words
+                                        << " data-fifo-words=" << fifo_data.count()
+                                        << std::boolalpha << " queue-buf=" << queue_buf;
                     hold_time = 0;
                     pool_empty_logged = false;
                     fifo_full_logged = false;
@@ -2527,7 +2527,7 @@ void module::fifo_worker() {
                     level -= read_words;
                 } else {
                     if (!pool_empty_logged) {
-                        log(log::warning) << module_label(*this) << "FIFO worker: pool empty";
+                        xia_log(log::warning) << module_label(*this) << "FIFO worker: pool empty";
                         pool_empty_logged = true;
                     }
                     break;
@@ -2558,7 +2558,7 @@ void module::fifo_worker() {
                             if (wait_time < slice) {
                                 wait_time = slice;
                             }
-                            log(log::debug) << "BW limiter: data in:: " << data_in_bw << "MB";
+                            xia_log(log::debug) << "BW limiter: data in:: " << data_in_bw << "MB";
                             break;
                         }
                     }
@@ -2573,7 +2573,7 @@ void module::fifo_worker() {
              */
             if (requester_waiting) {
                 if (requested_wait_loops == 0) {
-                    log(log::debug) << module_label(*this) << "FIFO worker: respond to request";
+                    xia_log(log::debug) << module_label(*this) << "FIFO worker: respond to request";
                     requester_waiting = false;
                     fifo_worker_resp.notify();
                 } else {
@@ -2582,7 +2582,7 @@ void module::fifo_worker() {
             }
 
             if (!fifo_worker_req.wait(mode_asynchronous ? wait_time : 0)) {
-                log(log::debug) << module_label(*this) << "FIFO worker: run requested";
+                xia_log(log::debug) << module_label(*this) << "FIFO worker: run requested";
                 requester_waiting = true;
                 if (mode_asynchronous) {
                     requested_wait_loops = 5;
@@ -2612,15 +2612,15 @@ void module::fifo_worker() {
             hw::wait(10000);
         }
     } catch (pixie::error::error& e) {
-        log(log::error) << "FIFO worker: " << e;
+        xia_log(log::error) << "FIFO worker: " << e;
     } catch (std::exception& e) {
-        log(log::error) << "FIFO worker: error: " << e.what();
+        xia_log(log::error) << "FIFO worker: error: " << e.what();
     } catch (...) {
-        log(log::error) << "FIFO worker: unhandled exception";
+        xia_log(log::error) << "FIFO worker: unhandled exception";
     }
 
     level = fifo.level();
-    log(log::info) << module_label(*this) << "FIFO worker: finishing, level=" << level;
+    xia_log(log::info) << module_label(*this) << "FIFO worker: finishing, level=" << level;
 
     fifo_worker_running = false;
     fifo_worker_finished = true;
@@ -2642,12 +2642,12 @@ void module::calc_bus_speed() {
     }
     double usecs = static_cast<double>(tp.usecs());
     bus_cycle_period = usecs / count;
-    log(log::debug) << "module: PCI bus-cycle-speed=" << bus_cycle_period
-                    << "usec sample-period=" << usecs << "usec";
+    xia_log(log::debug) << "module: PCI bus-cycle-speed=" << bus_cycle_period
+                        << "usec sample-period=" << usecs << "usec";
 }
 
 void module::log_stats(const char* label, const fifo_stats& stats) {
-    log(log::info) << module_label(*this) << label << ": " << stats.output();
+    xia_log(log::info) << module_label(*this) << label << ": " << stats.output();
 }
 
 bool module::fifo_worker_run(size_t timeout_usecs) {
@@ -2670,7 +2670,7 @@ void assign(modules& modules_, const number_slots& numbers) {
     for (auto& number_slot : numbers) {
         oss << number_slot.second << "->" << number_slot.first << ' ';
     }
-    log(log::info) << "assign slot map: " << oss.str();
+    xia_log(log::info) << "assign slot map: " << oss.str();
     for (auto& mod : modules_) {
         mod->number = -1;
     }
@@ -2684,7 +2684,7 @@ void assign(modules& modules_, const number_slots& numbers) {
     }
     for (auto& mod : modules_) {
         if (mod->number == -1) {
-            log(log::warning) << "module not found in slot map: " << mod->slot;
+            xia_log(log::warning) << "module not found in slot map: " << mod->slot;
         }
     }
 }

@@ -170,8 +170,8 @@ void firmware::load() {
             }
             throw;
         }
-        log(log::debug) << "firmware: load: tag=" << tag << " time=" << load_time
-                        << " total=" << total_image_size.load();
+        xia_log(log::debug) << "firmware: load: tag=" << tag << " time=" << load_time
+                            << " total=" << total_image_size.load();
     }
 }
 

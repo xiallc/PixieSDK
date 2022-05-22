@@ -43,7 +43,6 @@
 /*
  * Localize the log and error
  */
-using xia_log = xia::log;
 using error = xia::pixie::error::error;
 
 /*
@@ -411,7 +410,7 @@ void module_threads(xia::pixie::crate::crate& crate, std::vector<size_t>& mod_nu
                         << xia::util::humanize(rate) << " bytes/sec pci: bus=" << w.pci_bus
                         << " slot=" << w.pci_slot;
                     std::cout << oss.str() << std::endl;
-                    xia_log(xia_log::info) << oss.str();
+                    xia_log(xia::log::info) << oss.str();
                 } else {
                     std::cout << ' ' << std::setw(2) << w.number << ": not running" << std::endl;
                 }
@@ -422,7 +421,7 @@ void module_threads(xia::pixie::crate::crate& crate, std::vector<size_t>& mod_nu
                 << " rate: " << std::setw(8)
                 << xia::util::humanize(double(all_total) / duration.secs()) << " bytes/sec";
             std::cout << oss.str() << std::endl;
-            xia_log(xia_log::info) << oss.str();
+            xia_log(xia::log::info) << oss.str();
         }
     }
     if (first_error != error::code::success) {
@@ -462,7 +461,7 @@ void performance_stats(std::vector<W>& workers, bool show_workers = false) {
                 he_oss << "module: num:" << std::setw(2) << w.number << " slot:" << std::setw(2)
                        << w.slot << ": has an error; check the log";
                 std::cout << he_oss.str() << std::endl;
-                xia_log(xia_log::info) << he_oss.str();
+                xia_log(xia::log::info) << he_oss.str();
             }
             std::stringstream dr_oss;
             auto bytes = w.total * sizeof(xia::pixie::hw::word);
@@ -473,7 +472,7 @@ void performance_stats(std::vector<W>& workers, bool show_workers = false) {
                    << xia::util::humanize(rate) << " bytes/sec pci: bus=" << w.pci_bus
                    << " slot=" << w.pci_slot;
             std::cout << dr_oss.str() << std::endl;
-            xia_log(xia_log::info) << dr_oss.str();
+            xia_log(xia::log::info) << dr_oss.str();
         }
     }
     total *= sizeof(xia::pixie::hw::word);
@@ -481,7 +480,7 @@ void performance_stats(std::vector<W>& workers, bool show_workers = false) {
     oss << "data received: " << xia::util::humanize(total) << " bytes (" << total
         << "), rate: " << xia::util::humanize(double(total) / secs, " bytes/sec");
     std::cout << oss.str() << std::endl;
-    xia_log(xia_log::info) << oss.str();
+    xia_log(xia::log::info) << oss.str();
 }
 
 static void help(xia::pixie::crate::crate&, options&) {
@@ -1155,7 +1154,7 @@ static void initialize(xia::pixie::crate::crate& crate, bool reg_trace) {
 
 static bool process_command_sets(xia::pixie::crate::crate& crate, commands& cmds) {
     for (auto& cmd : cmds) {
-        xia_log(xia_log::info) << "test: cmd: " << xia::util::join<options>(cmd);
+        xia_log(xia::log::info) << "test: cmd: " << xia::util::join<options>(cmd);
         for (const auto& handler : cmd_handlers) {
             if (handler.cmd == cmd[0]) {
                 handler.func(crate, cmd);
@@ -1254,11 +1253,12 @@ int main(int argc, char* argv[]) {
             log = "test-api-log.txt";
         }
 
-        auto log_level = xia_log::info;
+        auto log_level = xia::log::info;
         if (args::get(debug_flag)) {
-            log_level = xia_log::debug;
+            log_level = xia::log::debug;
         }
-        xia::logging::start("log", log, log_level, false);
+        xia::logging::start("log", log, false);
+        xia::logging::set_level(log_level);
 
         size_t num_modules = args::get(num_modules_flag);
 
@@ -1271,7 +1271,7 @@ int main(int argc, char* argv[]) {
             if (!module_defs) {
                 throw std::runtime_error("simulation requires a module definition");
             }
-            xia_log(xia_log::info) << "simulation: " << args::get(module_defs);
+            xia_log(xia::log::info) << "simulation: " << args::get(module_defs);
             xia::pixie::sim::load_module_defs(args::get(module_defs));
             crate_selection = &crate_sim;
         }
@@ -1341,18 +1341,18 @@ int main(int argc, char* argv[]) {
         run.end();
         std::cout << "run time=" << run << std::endl;
     } catch (xia::pixie::error::error& e) {
-        xia_log(xia_log::error) << e;
+        xia_log(xia::log::error) << e;
         std::cerr << e << std::endl;
         return e.return_code();
     } catch (std::exception& e) {
-        xia_log(xia_log::error) << "unknown error: " << e.what();
+        xia_log(xia::log::error) << "unknown error: " << e.what();
         std::cerr << "error: unknown error: " << e.what() << std::endl;
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
         if (args::get(throw_unhandled_flag)) {
             throw;
         }
-        xia_log(xia_log::error) << "unknown error: unhandled exception";
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
         std::cerr << "error: unknown error: unhandled exception" << std::endl;
         return xia::pixie::error::api_result_unknown_error();
     }
