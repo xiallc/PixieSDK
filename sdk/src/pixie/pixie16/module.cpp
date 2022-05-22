@@ -2513,10 +2513,20 @@ void module::fifo_worker() {
                                             << "buffer drop: fifo_pool_count=" << (fifo_pool_count > 1)
                                             << " fifo-worker-paused=" << pause_fifo_worker.load();
                     }
+                    /*
+                     * If the logging level is `debug` compute the CRC32 of the data
+                     * queued. This can be used to verify the data received by the
+                     * user API.
+                     */
+                    util::crc32 crc;
+                    if (logging::level_logging(log::debug)) {
+                        crc.update(*buf);
+                    }
                     xia_log(log::debug) << module_label(*this)
                                         << "FIFO read, level=" << level
                                         << " read-words=" << read_words
                                         << " data-fifo-words=" << fifo_data.count()
+                                        << " crc=0x" << std::hex << crc.value
                                         << std::boolalpha << " queue-buf=" << queue_buf;
                     hold_time = 0;
                     pool_empty_logged = false;
