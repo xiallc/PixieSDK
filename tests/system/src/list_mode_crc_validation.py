@@ -1,8 +1,8 @@
 """ SPDX-License-Identifier: Apache-2.0 """
 import argparse
-import csv
 import logging
 import os
+import re
 import sys
 import zlib
 
@@ -24,35 +24,42 @@ limitations under the License.
 
 """ list-mode-crc-validation.py validates the data contained within a 
 list-mode binary data file produced with the PixieSDK examples 
-against a CSV containing DMA reads and CRC-32 values.
+against the DMA CRC-32 checksums in the Pixie16Msg.log
 
-At the moment the CSV file must be manually produced as this process is still
-in its early stages. Assuming that you have a log file containing just the 
-debug log for the run of interest, you can generate the CSV using the following
-bash command: 
-
-```bash
-CSV_FILE="list-mode-crc.csv"; echo "len,crc" > ${CSV_FILE}; \
-grep "crc=0x" Pixie16Msg.log | awk '{print $8 " " $10}' \
-| awk '{gsub("=", " ", $0); print $2,",",$4} ' >> ${CSV_FILE}
-```
+**NOTE**: We expect that the only data run within the log file is the one that
+we are checking against! 
 """
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, datefmt="%Y-%m-%dT%H:%M:%S",
                     format='%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s')
 
+DEBUG_PATTERN = re.compile('^\[DEBUG\]')
+DMA_PATTERN = re.compile('read-words=(\d+)')
+CRC_PATTERN = re.compile('crc=(0x[A-Fa-f0-9]+)')
+
+
+def process_log(file):
+    log_data = []
+    with open(file, mode='r', newline='') as logfile:
+        for line in logfile.readlines():
+            if re.match(DEBUG_PATTERN, line):
+                dma = re.findall(DMA_PATTERN, line)
+                crc = re.findall(CRC_PATTERN, line)
+                if dma and crc:
+                    log_data.append({
+                        'len': int(dma[0], 10),
+                        'crc': int(crc[0], 16)
+                    })
+    return log_data
+
 
 def main(cfg):
+    logging.info(f'Parsing log file: {cfg.log}')
+    log_data = process_log(cfg.log)
+    logging.info(f'Found {len(log_data)} DMA transfers and checksums.')
+    logging.info(f'Finished parsing log file: {cfg.log}')
+
     logging.info(f"Starting to process {cfg.file}")
-
-    log_data = []
-    with open(cfg.input, mode='r', newline='') as csv_log:
-        entries = csv.DictReader(csv_log)
-        for entry in entries:
-            entry['len'] = int(entry['len'], 10)
-            entry['crc'] = int(entry['crc'], 16)
-            log_data.append(entry)
-
     file_size_words = os.path.getsize(cfg.file) / cfg.bpw
     total_dma_words = sum([x['len'] for x in log_data])
     logging.info(f"DMA Word Total: {total_dma_words}")
@@ -78,7 +85,7 @@ if __name__ == '__main__':
         parser = argparse.ArgumentParser(description='Compares DMA CRCs to Files written to disk.')
         parser.add_argument('-b', '--bytes-per-word', type=int, dest='bpw', default=4,
                             help="The number of bytes per data word for the list-mode file.")
-        parser.add_argument('-i', '--input', type=str, dest="input",
+        parser.add_argument('-l', '--log', type=str, dest="log",
                             required=True, help="The CSV file containing the read lengths and CRC.")
         parser.add_argument('-f', '--file', dest='file',
                             help="The binary data file containing the list-mode data.")
