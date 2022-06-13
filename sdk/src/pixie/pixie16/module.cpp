@@ -1696,8 +1696,11 @@ size_t module::read_list_mode_level() {
         xia_log(log::debug) << module_label(*this) << "read-list-mode-level: FIFO worker not running";
     }
     lock_guard guard(lock_);
-    sync_worker_run();
     auto size = fifo_data.size();
+    if (fifo_run_wait_usecs.load() == 0) {
+        hw::memory::fifo fifo(*this);
+        size += fifo.level();
+    }
     if (size > 0) {
         xia_log(log::debug) << module_label(*this) << "read-list-mode-level: FIFO = " << size;
     }
