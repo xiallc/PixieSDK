@@ -173,6 +173,7 @@ size_t queue::copy_unprotected(buffer_value_ptr to, size_t to_move) {
     auto from_bi = buffers.begin();
     while (to_move > 0 && from_bi != buffers.end()) {
         auto from = *from_bi;
+        ++from_bi;
         if (to_move >= from->size()) {
             if (queue_trace) {
                 xia_log(log::debug) << "queue::copy: from-all: to_move=" << to_move
@@ -183,7 +184,6 @@ size_t queue::copy_unprotected(buffer_value_ptr to, size_t to_move) {
             to += from->size();
             to_move -= from->size();
             size_ -= from->size();
-            ++from_bi;
         } else {
             auto remaining = from->size() - to_move;
             if (queue_trace) {

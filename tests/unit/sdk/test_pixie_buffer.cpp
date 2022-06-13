@@ -366,6 +366,29 @@ TEST_SUITE("xia::buffer") {
             }
             CHECK(matched);
             delete[] bufp;
+            /* partial reads from a queue */
+            total = 0;
+            for (size_t b = 0; b < 2; ++b) {
+                xia::buffer::handle buf = pool.request();
+                buf->resize(10);
+                xia::buffer::buffer_value_ptr bp = buf->data();
+                for (size_t c = 0; c < 10; ++c) {
+                    *bp = total;
+                    ++bp;
+                    ++total;
+                }
+                queue.push(buf);
+            }
+            bufp = new xia::buffer::buffer_value[100];
+            total = 0;
+            while (total < 2 * 10) {
+                queue.copy(bufp + total, 4);
+                total += 4;
+            }
+            for (size_t c = 0; c < 2 * 10; ++c) {
+                CHECK(bufp[c] == c);
+            }
+            delete[] bufp;
         }
         pool.destroy();
     }
