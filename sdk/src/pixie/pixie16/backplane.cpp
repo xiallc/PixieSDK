@@ -75,7 +75,15 @@ void backplane::sync_wait(module::module& mod, const param::value_type synch_wai
         if (synch_wait_active) {
             ++sync_waits;
         } else {
-            --sync_waits;
+            /*
+             * P16-556
+             *  The default setting for the sync_waiters is false so
+             *  if a module sets the synch_wait with 0 and there is no
+             *  leader the sync_waits will underroll.
+             */
+            if (sync_waits.load() > 0) {
+                --sync_waits;
+            }
         }
         sync_waiters[mod.number] = synch_wait_active;
         /*
@@ -85,7 +93,7 @@ void backplane::sync_wait(module::module& mod, const param::value_type synch_wai
          * number of slots a crate has. Out of range is bug.
          */
         auto sw = sync_waits.load();
-        if (sw < 0 || sw > sync_waiters.size()) {
+        if (sw > sync_waiters.size()) {
             throw error(error::code::internal_failure,
                         "module: " + std::to_string(mod.number) +
                         ": invalid backplane sync_wait value: " + std::to_string(sw));
