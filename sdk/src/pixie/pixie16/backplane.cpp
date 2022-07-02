@@ -118,6 +118,7 @@ void backplane::sync_wait_valid() const {
 void backplane::init(const int num_modules) {
     sync_waits = 0;
     sync_waiters.resize(num_modules, false);
+    std::fill(sync_waiters.begin(), sync_waiters.end(), false);
 }
 
 void backplane::offline(const module::module& module) {
