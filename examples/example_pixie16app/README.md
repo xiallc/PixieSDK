@@ -69,7 +69,7 @@ that `\` characters in paths need to be escaped. For example
     "slot": 2,
     "dsp": {
       "ldr": "/usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/dsp/Pixie16DSP_revfgeneral_16b250m_r35921.ldr",
-      "par": "pixie.json",
+      "par": "pixie.set",
       "var": "/usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/dsp/Pixie16DSP_revfgeneral_16b250m_r35921.var"
     },
     "fpga": {
@@ -88,7 +88,7 @@ that `\` characters in paths need to be escaped. For example
     "slot": 2,
     "dsp": {
       "ldr": "/usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/dsp/Pixie16DSP_revfgeneral_16b250m_r35921.ldr",
-      "par": "pixie.json",
+      "par": "pixie.set",
       "var": "/usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/dsp/Pixie16DSP_revfgeneral_16b250m_r35921.var"
     },
     "fpga": {
@@ -100,7 +100,7 @@ that `\` characters in paths need to be escaped. For example
     "slot": 4,
     "dsp": {
       "ldr": "/usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/dsp/Pixie16DSP_revfgeneral_16b250m_r35921.ldr",
-      "par": "pixie.json",
+      "par": "pixie.set",
       "var": "/usr/local/xia/pixie/firmware/revf_general_16b250m_r35921/dsp/Pixie16DSP_revfgeneral_16b250m_r35921.var"
     },
     "fpga": {
