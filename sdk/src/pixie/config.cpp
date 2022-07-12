@@ -112,7 +112,7 @@ static const json default_config = {
         {"RunTask", 0},
         {"SlotID", 5},
         {"SlowFilterRange", 3},
-        {"SynchWait", 1},
+        {"SynchWait", 0},
         {"TrigConfig", {0, 0, 0, 0}},
         {"U00", {0, 0, 0, 0, 0, 0, 0}},
         {"UserIn", {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}}}}}};
