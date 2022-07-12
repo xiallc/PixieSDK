@@ -271,7 +271,7 @@ bool save_dsp_pars(const std::string& filename) {
 }
 
 void export_mca_memory(const module_config& mod, const std::string& filename) {
-    std::cout << LOG("INFO") << "Reading out on-board MCA collected during list-mode run." << std::endl;
+    std::cout << LOG("INFO") << "Reading out on-board MCA memory." << std::endl;
     std::ofstream out(filename);
     out << "bin,";
     std::vector<std::vector<uint32_t>> hists;
