@@ -103,6 +103,7 @@ static void load_settings_file(xia::pixie::module::module& module, const std::st
     } catch (xia::pixie::error::error& err) {
         if (err.type == xia::pixie::error::code::module_total_invalid ||
             err.type == xia::pixie::error::code::channel_number_invalid) {
+            xia_log(xia::log::info) << "Settings file binary format not recognized. Will try JSON fallback.";
             xia::pixie::module::number_slots modules;
             ///TODO: Not super efficient if we're calling module-by-module.
             crate.import_config(filename, modules);
