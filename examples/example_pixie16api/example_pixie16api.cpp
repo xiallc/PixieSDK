@@ -81,25 +81,14 @@ struct firmware_spec {
     firmware_spec() : version(0), revision(0), adc_msps(0), adc_bits(0) {}
 };
 
-struct module_config {
-    std::string com_fpga_config;
-    std::string dsp_code;
-    std::string dsp_par;
-    std::string dsp_var;
-    std::string sp_fpga_config;
-    unsigned int serial_number;
-    unsigned short adc_bit_resolution;
-    unsigned short adc_sampling_frequency;
-    unsigned short number;
-    unsigned short number_of_channels;
-    unsigned short revision;
-    unsigned short slot;
+struct mod_cfg: module_config {
     firmware_spec fw;
-    unsigned short has_worker_cfg;
+    std::string dsp_par;
     fifo_worker_config worker_config;
+    bool has_worker_cfg;
 };
 
-typedef std::vector<module_config> module_configs;
+typedef std::vector<mod_cfg> module_configs;
 
 struct configuration {
     module_configs modules;
@@ -175,11 +164,11 @@ void read_config(const std::string& config_file_name, configuration& cfg) {
 
         cfg.slot_def.push_back(module["slot"]);
 
-        module_config mod_cfg;
+        mod_cfg mod_cfg;
         mod_cfg.slot = module["slot"];
         mod_cfg.number = static_cast<unsigned short>(cfg.slot_def.size() - 1);
-        mod_cfg.com_fpga_config = module["fpga"]["sys"];
-        mod_cfg.sp_fpga_config = module["fpga"]["fippi"];
+        mod_cfg.sys_fpga = module["fpga"]["sys"];
+        mod_cfg.sp_fpga = module["fpga"]["fippi"];
         mod_cfg.dsp_code = module["dsp"]["ldr"];
         mod_cfg.dsp_par = module["dsp"]["par"];
         mod_cfg.dsp_var = module["dsp"]["var"];
@@ -197,9 +186,9 @@ void read_config(const std::string& config_file_name, configuration& cfg) {
             mod_cfg.worker_config.hold_usecs = module["worker"]["hold_usecs"];
             mod_cfg.worker_config.idle_wait_usecs = module["worker"]["idle_wait_usecs"];
             mod_cfg.worker_config.run_wait_usecs = module["worker"]["run_wait_usecs"];
-            mod_cfg.has_worker_cfg = 1;
+            mod_cfg.has_worker_cfg = true;
         } else {
-            mod_cfg.has_worker_cfg = 0;
+            mod_cfg.has_worker_cfg = false;
         }
         cfg.modules.push_back(mod_cfg);
     }
@@ -220,7 +209,7 @@ bool verify_api_return_value(const int& val, const std::string& func_name,
     return true;
 }
 
-bool output_statistics_data(const module_config& mod, const std::string& type) {
+bool output_statistics_data(const mod_cfg& mod, const std::string& type) {
     std::cout << LOG("INFO") << "Requesting run statistics from module." << std::endl;
     std::vector<unsigned int> stats(Pixie16GetStatisticsSize(), 0);
     if (!verify_api_return_value(Pixie16ReadStatisticsFromModule(stats.data(), mod.number),
@@ -270,7 +259,7 @@ bool save_dsp_pars(const std::string& filename) {
     return true;
 }
 
-void export_mca_memory(const module_config& mod, const std::string& filename) {
+void export_mca_memory(const mod_cfg& mod, const std::string& filename) {
     std::cout << LOG("INFO") << "Reading out on-board MCA memory." << std::endl;
     std::ofstream out(filename);
     out << "bin,";
@@ -307,7 +296,7 @@ void export_mca_memory(const module_config& mod, const std::string& filename) {
     }
 }
 
-bool execute_adjust_offsets(const module_config& module) {
+bool execute_adjust_offsets(const mod_cfg& module) {
     std::cout << LOG("INFO") << "Adjusting baseline offset for Module " << module.number << "."
               << std::endl;
     if (!verify_api_return_value(Pixie16AdjustOffsets(module.number),
@@ -319,7 +308,7 @@ bool execute_adjust_offsets(const module_config& module) {
     return true;
 }
 
-bool execute_baseline_capture(const module_config& mod) {
+bool execute_baseline_capture(const mod_cfg& mod) {
     std::cout << LOG("INFO") << "Starting baseline capture for Module " << mod.number << std::endl;
     if (!verify_api_return_value(Pixie16AcquireBaselines(mod.number), "Pixie16AcquireBaselines"))
         return false;
@@ -703,7 +692,7 @@ bool execute_parameter_read(args::ValueFlag<std::string>& parameter,
 
 bool execute_parameter_write(args::ValueFlag<std::string>& parameter,
                              args::ValueFlag<double>& value, args::ValueFlag<unsigned int>& crate,
-                             const module_config& module, args::ValueFlag<unsigned int>& channel) {
+                             const mod_cfg& module, args::ValueFlag<unsigned int>& channel) {
     std::cout << LOG("INFO") << "Checking current value for " << parameter.Get() << std::endl;
     execute_parameter_read(parameter, crate, module.number, channel);
     if (channel) {
@@ -733,7 +722,7 @@ bool execute_parameter_write(args::ValueFlag<std::string>& parameter,
     return true;
 }
 
-bool execute_trace_capture(const module_config& mod) {
+bool execute_trace_capture(const mod_cfg& mod) {
     std::cout << LOG("INFO") << "Pixie16AcquireADCTrace acquiring traces for Module " << mod.number
               << "." << std::endl;
     if (!verify_api_return_value(Pixie16AcquireADCTrace(mod.number), "Pixie16AcquireADCTrace"))
@@ -795,7 +784,7 @@ bool execute_blcut(args::ValueFlag<unsigned int>& module, args::ValueFlag<unsign
     return true;
 }
 
-bool execute_set_dacs(const module_config& module) {
+bool execute_set_dacs(const mod_cfg& module) {
     std::cout << LOG("INFO") << "Executing Pixie16SetDACs for Module" << module.number << "."
               << std::endl;
     if (!verify_api_return_value(Pixie16SetDACs(module.number), "Pixie16SetDACs", false))
@@ -834,12 +823,9 @@ void output_module_worker_info(const size_t mod_num) {
               << std::endl;
 }
 
-void output_module_info(module_config& mod) {
-    if (!verify_api_return_value(Pixie16ReadModuleInfo(mod.number, &mod.revision,
-                                                       &mod.serial_number, &mod.adc_bit_resolution,
-                                                       &mod.adc_sampling_frequency,
-                                                       &mod.number_of_channels),
-                                 "Pixie16ReadModuleInfo", false))
+void output_module_info(mod_cfg& mod) {
+    if (!verify_api_return_value(PixieGetModuleInfo(mod.number, dynamic_cast<module_config*>(&mod)),
+                                 "PixieGetModuleInfo", false))
         throw std::runtime_error("Could not get module information for Module " +
                                  std::to_string(mod.number));
     std::cout << LOG("INFO") << "Begin module information for Module " << mod.number << std::endl;
@@ -1000,13 +986,13 @@ int main(int argc, char** argv) {
 
     try {
         for (auto& mod : cfg.modules) {
-            output_module_info(mod);
             if (mod.has_worker_cfg) {
                 if (!verify_api_return_value(
                         PixieSetWorkerConfiguration(mod.number, &mod.worker_config),
                         "PixieSetWorkerConfiguration", false))
                     return EXIT_FAILURE;
             }
+            output_module_info(mod);
             output_module_worker_info(mod.number);
         }
     } catch (std::runtime_error& error) {
@@ -1030,14 +1016,14 @@ int main(int argc, char** argv) {
             std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
                       << ": sys" << std::endl;
             int rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps,
-                                           mod.fw.adc_bits, "sys", mod.com_fpga_config.c_str(),
+                                           mod.fw.adc_bits, "sys", mod.sys_fpga.c_str(),
                                            mod.number);
             if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
                 return EXIT_FAILURE;
             std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
                       << ": fippi" << std::endl;
             rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps,
-                                       mod.fw.adc_bits, "fippi", mod.sp_fpga_config.c_str(),
+                                       mod.fw.adc_bits, "fippi", mod.sp_fpga.c_str(),
                                        mod.number);
             if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
                 return EXIT_FAILURE;
@@ -1062,7 +1048,7 @@ int main(int argc, char** argv) {
                       << std::dec << std::endl;
 
             if (!verify_api_return_value(
-                    Pixie16BootModule(mod.com_fpga_config.c_str(), mod.sp_fpga_config.c_str(),
+                    Pixie16BootModule(mod.sys_fpga.c_str(), mod.sp_fpga.c_str(),
                                       nullptr, mod.dsp_code.c_str(), mod.dsp_par.c_str(),
                                       mod.dsp_var.c_str(), mod.number, boot_pattern),
                     "Pixie16BootModule", "Finished booting!"))

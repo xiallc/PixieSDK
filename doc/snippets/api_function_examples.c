@@ -1,3 +1,12 @@
+//! [PixieGetModuleInfo]
+unsigned short mod_num = 0;
+module_config cfg;
+int retval = PixieGetModuleInfo(mod_num, &cfg);
+if (retval < 0) {
+    // error handling
+}
+//! [PixieGetModuleInfo]
+
 //! [Pixie16AcquireADCTrace]
 unsigned short module_number = 0;
 int retval = Pixie16AcquireADCTrace(module_number);

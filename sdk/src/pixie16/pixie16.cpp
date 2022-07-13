@@ -1086,6 +1086,55 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned
     return 0;
 }
 
+PIXIE_EXPORT int PIXIE_API PixieGetModuleInfo(unsigned short mod_num, module_config* cfg) {
+    xia_log(xia::log::debug) << "PixieReadModuleInfo: ModNum=" << mod_num;
+
+    try {
+        if (!cfg) {
+            throw xia::pixie::error::error(
+                xia::pixie::error::code::module_info_failure,
+                "Module configuration object was null. Please provide a structure to populate.");
+        }
+
+        crate.ready();
+        xia::pixie::crate::module_handle module(crate, mod_num,
+                                                xia::pixie::crate::module_handle::present);
+
+        cfg->adc_bit_resolution = module->eeprom.configs[0].adc_bits;
+        cfg->adc_sampling_frequency = module->eeprom.configs[0].adc_msps;
+        cfg->number = module->number;
+        cfg->number_of_channels = static_cast<unsigned short>(module->num_channels);
+        cfg->revision = module->revision;
+        cfg->serial_number = module->serial_num;
+        cfg->slot = module->slot;
+        for (const auto& fw: module->firmware) {
+            if (fw->device == "sys") {
+                cfg->sys_fpga = fw->filename;
+            }
+            if (fw->device == "fippi") {
+                cfg->sp_fpga = fw->filename;
+            }
+            if (fw->device == "dsp") {
+                cfg->dsp_code = fw->filename;
+            }
+            if (fw->device == "var") {
+                cfg->dsp_var = fw->filename;
+            }
+        }
+    } catch (xia_error& e) {
+        xia_log(xia::log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (...) {
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+
+    return 0;
+}
+
 PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buffer,
                                                       unsigned int Trace_Length,
                                                       unsigned short ModNum,
@@ -1592,9 +1641,9 @@ PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version, con
                                                  const char* device, const char* path,
                                                  unsigned short ModNum) {
     xia_log(xia::log::debug) << "PixieRegisterFirmware: version=" << version
-                            << " revision=" << revision << " adc_msps=" << adc_msps
-                            << " adc_bits=" << adc_bits << " device=" << device << " path=" << path
-                            << " ModNum=" << ModNum;
+                             << " revision=" << revision << " adc_msps=" << adc_msps
+                             << " adc_bits=" << adc_bits << " device=" << device << " path=" << path
+                             << " ModNum=" << ModNum;
 
     using firmware = xia::pixie::firmware::firmware;
 

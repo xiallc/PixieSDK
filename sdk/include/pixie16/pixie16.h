@@ -198,6 +198,24 @@ struct fifo_worker_config {
 };
 
 /**
+ * @ingroup PIXIE16_API
+ * @brief Defines a data structure used to provide users information about the module.
+ */
+struct module_config {
+    unsigned short adc_bit_resolution;
+    unsigned short adc_sampling_frequency;
+    std::string sys_fpga;
+    std::string dsp_code;
+    std::string dsp_var;
+    unsigned short number;
+    unsigned short number_of_channels;
+    unsigned short revision;
+    unsigned int serial_number;
+    unsigned short slot;
+    std::string sp_fpga;
+};
+
+/**
  * @defgroup PIXIE_SDK PixieSDK
  * Documentation group for the PixieSDK functions/classes/macros.
  *
@@ -971,6 +989,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
  * Information from the module can be used to select the appropriate firmware, DSP, and
  * configuration parameters files before booting the module.
  *
+ * @warning This function cannot be used to retrieve the module's channel count. @see PixieGetModuleInfo
+ *
  * ### Example
  * \snippet snippets/api_function_examples.c Pixie16ReadModuleInfo
  *
@@ -979,14 +999,32 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
  * @param[out] ModSerNum The serial number read from the on-board EEPROM
  * @param[out] ModADCBits The ADC bit resolution read from the on-board EEPROM
  * @param[out] ModADCMSPS The ADC sampling frequency read from the on-board EEPROM
- * @param[out] num_channels The number of channels present on the module
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
  */
 PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned short* ModRev,
                                                  unsigned int* ModSerNum,
                                                  unsigned short* ModADCBits,
-                                                 unsigned short* ModADCMSPS,
-                                                 unsigned short* num_channels = nullptr);
+                                                 unsigned short* ModADCMSPS);
+
+/**
+ * @ingroup PIXIE16_API
+ * @brief Read information about each module.
+ *
+ * Use this function to read configuration information about the requested module.
+ * This should be done after initializing the PCI communication. If this function is called before
+ * booting the module, then the firmware information will be unpopulated.
+ *
+ * Information from the module can be used to select the appropriate firmware, DSP, and
+ * configuration parameters files before booting the module.
+ *
+ * ### Example
+ * \snippet snippets/api_function_examples.c PixieGetModuleInfo
+ *
+ * @param[in] mod_num The module number (counts from 0) that we'll read information
+ * @param[out] cfg A pointer to the module_config object that will store the retrieved data.
+ * @returns The value of the xia::pixie::error::code indicating the result of the operation
+ */
+PIXIE_EXPORT int PIXIE_API PixieGetModuleInfo(unsigned short mod_num, module_config* cfg);
 
 /**
  * @ingroup PIXIE16_API
