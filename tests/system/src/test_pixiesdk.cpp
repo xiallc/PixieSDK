@@ -40,6 +40,9 @@
 
 #include <args/args.hxx>
 
+#include <sys/types.h>
+#include <dirent.h>
+
 /*
  * Localize the log and error
  */
@@ -63,6 +66,38 @@ struct module_thread_worker {
     module_thread_worker();
 
     virtual void worker(xia::pixie::module::module& module) = 0;
+};
+
+using slot_range = std::vector<int>;
+using module_range = std::vector<size_t>;
+using files = std::vector<std::string>;
+
+struct firmware {
+    std::string filename;
+    std::string date;
+    int version;
+    int mod_revision;
+    int mod_adc_msps;
+    int mod_adc_bits;
+    std::string device;
+
+    firmware(
+        const std::string& name, const std::string& dev,
+        const std::string& fname);
+
+    std::string spec() const;
+};
+
+using firmwares = std::vector<firmware>;
+
+struct process_command_options {
+    int num_modules;
+    slot_range slots;
+    std::string firmware_host_path;
+    files firmware_crate_files;
+    files firmware_files;
+    bool reg_trace;
+    bool verbose;
 };
 
 /*
@@ -112,7 +147,7 @@ static const command adc_acq_cmd = {
     {},
     "init,probe",
     "Acquire a module's ADC trace",
-    "adc-acq [modules(s)]"
+    "adc-acq modules(s)"
 };
 
 command_handler_decl(adc_save);
@@ -121,7 +156,7 @@ static const command adc_save_cmd = {
     {},
     "init,probe",
     "Save a module's ADC trace to a file",
-    "adc-save [modules(s) [channel(s) [length]]]"
+    "adc-save modules(s) [channel(s) [length]]"
 };
 
 command_handler_decl(adj_off);
@@ -130,7 +165,7 @@ static const command adj_off_cmd = {
     {},
     "init,probe",
     "Adjust the module's offsets",
-    "adj-off [modules(s)]"
+    "adj-off modules(s)"
 };
 
 command_handler_decl(bl_acq);
@@ -139,7 +174,7 @@ static const command bl_acq_cmd = {
     {},
     "init,probe",
     "Acquire module baselines",
-    "bl-acq [module(s)]"
+    "bl-acq module(s)"
 };
 
 command_handler_decl(bl_save);
@@ -148,7 +183,7 @@ static const command bl_save_cmd = {
     {},
     "init,probe",
     "Save the module's baselines",
-    "bl-save [module(s) [channel(s)]]"
+    "bl-save module(s) [channel(s)]"
 };
 
 command_handler_decl(boot);
@@ -182,8 +217,8 @@ command_handler_decl(help);
 static const command help_cmd = {
     "help", help,
     {},
-    "init,probe",
-    "Command specific help",
+    "none",
+    "Command specific help or add '-l' to list all commands",
     "help [command]"
 };
 
@@ -193,7 +228,7 @@ static const command hist_resume_cmd = {
     {"hr"},
     "init,probe",
     "Resume module histograms",
-    "hist-resume [module(s)]"
+    "hist-resume module(s)"
 };
 
 command_handler_decl(hist_save);
@@ -202,7 +237,7 @@ static const command hist_save_cmd = {
     {"hv"},
     "init,probe",
     "Save a module's histogram to a file",
-    "hist-save [-b bins] [module(s) [channel(s)]]"
+    "hist-save [-b bins] module(s) [channel(s)]"
 };
 
 command_handler_decl(hist_start);
@@ -211,7 +246,7 @@ static const command hist_start_cmd = {
     {"hs"},
     "init,probe",
     "Start module histograms",
-    "hist-start [module(s)]"
+    "hist-start module(s)"
 };
 
 command_handler_decl(import);
@@ -238,7 +273,7 @@ static const command list_resume_cmd = {
     {"lr"},
     "init,probe",
     "Resume module list mode",
-    "list-resume [module(s)]"
+    "list-resume module(s)"
 };
 
 command_handler_decl(list_save);
@@ -256,7 +291,7 @@ static const command list_start_cmd = {
     {},
     "init,probe",
     "Start module list mode",
-    "list-start [module(s)]"
+    "list-start module(s)"
 };
 
 command_handler_decl(lset_import);
@@ -319,7 +354,7 @@ static const command run_active_cmd = {
     {"ra"},
     "init,probe",
     "Does the module have an active run?",
-    "run-active [module(s)]"
+    "run-active module(s)"
 };
 
 command_handler_decl(run_end);
@@ -328,7 +363,7 @@ static const command run_end_cmd = {
     {"re"},
     "init,probe",
     "End module run's",
-    "run-end [module(s)]"
+    "run-end module(s)"
 };
 
 command_handler_decl(set_dacs);
@@ -337,9 +372,8 @@ static const command set_dacs_cmd = {
     {},
     "init,probe",
     "Set the module's DACs",
-    "set-dacs [modules(s)]"
+    "set-dacs modules(s)"
 };
-
 
 command_handler_decl(stats);
 static const command stats_cmd = {
@@ -347,7 +381,7 @@ static const command stats_cmd = {
     {"st"},
     "init,probe",
     "Module/channel stats",
-    "stats [-s stat (pe/ocr/rt/lt)] [module(s) [channel(s)]]"
+    "stats [-s stat (pe/ocr/rt/lt)] module(s) [channel(s)]"
 };
 
 command_handler_decl(test);
@@ -356,7 +390,7 @@ static const command test_cmd = {
     {},
     "init,probe",
     "Test control, default mode is 'off'",
-    "test [-m mode (off/lmfifo)] [module(s)]"
+    "test [-m mode (off/lmfifo)] module(s)"
 };
 
 command_handler_decl(var_read);
@@ -425,39 +459,6 @@ static const command_map commands = {
 static std::string adc_prefix = "p16-test-adc";
 static std::string histogram_prefix = "p16-test-mca";
 static std::string baseline_prefix = "p16-test-baseline";
-
-static void initialize(
-    xia::pixie::crate::crate& crate, size_t num_modules,
-    xia::pixie::module::number_slots& slot_map, bool reg_trace, bool verbose) {
-    xia::util::timepoint tp;
-    if (verbose) {
-        std::cout << "crate: initialize" << std::endl;
-        tp.start();
-    }
-    crate.initialize(reg_trace);
-    if (verbose) {
-        tp.end();
-        std::cout << "modules: detected=" << crate.modules.size()
-                  << " time=" << tp << std::endl;
-    }
-    if (num_modules != 0 && crate.num_modules != num_modules) {
-        throw std::runtime_error("invalid number of modules detected: "
-                                 "found " +
-                                 std::to_string(crate.num_modules));
-    }
-    if (!slot_map.empty()) {
-        crate.assign(slot_map);
-    }
-}
-
-static void probe(xia::pixie::crate::crate& crate, bool verbose) {
-    if (verbose) {
-        std::cout << "modules: online=" << crate.modules.size()
-                  << " offline=" << crate.offline.size() << std::endl;
-    }
-    crate.set_firmware();
-    crate.probe();
-}
 
 static bool starts_with(const std::string& s1, const std::string& s2) {
     return s2.size () <= s1.size () && s1.compare (0, s2.size (), s2) == 0;
@@ -607,7 +608,6 @@ static void channels_option(
     }
 }
 
-using module_range = std::vector<size_t>;
 static void modules_option(
     module_range& modules, const args_command& opt, size_t num_modules) {
     if (opt.empty()) {
@@ -618,9 +618,250 @@ static void modules_option(
     }
 }
 
+static const std::string basename(const std::string& name) {
+    size_t b = name.find_last_of('/');
+    if (b != std::string::npos) {
+        return name.substr(b + 1);
+    }
+    return name;
+}
+
+static const std::string dirname(const std::string& name) {
+    size_t b = name.find_last_of('/');
+    if (b != std::string::npos) {
+        return name.substr(0, b);
+    }
+    return name;
+}
+
+static void find_files(
+    const std::string path, files& files_, const std::string& ext, size_t depth = 0) {
+    if (depth > 100) {
+        throw std::runtime_error("file find path too deep: " + path);
+    }
+    if (depth == 0) {
+        files_.clear();
+    }
+    DIR* dir = nullptr;
+    try {
+        dir = ::opendir(path.c_str());
+        if (dir == nullptr) {
+            throw std::runtime_error(
+              "file find path: " + path + ": " + std::strerror(errno));
+        }
+        while (true) {
+            struct dirent* ent = ::readdir(dir);
+            if (ent == nullptr) {
+                break;
+            }
+            std::string name = ent->d_name;
+            if (ent->d_type == DT_REG) {
+                if (name.size() > ext.size() && name.compare(
+                        name.size() - ext.size(), ext.size(), ext) == 0) {
+                    files_.push_back(path + '/' + name);
+                }
+            } else if (ent->d_type == DT_DIR && name != "." && name != "..") {
+                std::string child = path + '/' + name;
+                find_files(child, files_, ext, depth + 1);
+            }
+        }
+        ::closedir(dir);
+    } catch (...) {
+        if (dir != nullptr) {
+            ::closedir(dir);
+        }
+        throw;
+    }
+}
+
+firmware::firmware(
+    const std::string& name, const std::string& dev, const std::string& fname) {
+    xia::util::strings ns;
+    xia::util::split(ns, name, '_');
+    if (ns.size() != 6) {
+        throw std::runtime_error("invalid firmware name: " + name);
+    }
+    filename = fname;
+    date = ns[5];
+    auto mr = ns[1][3];
+    if (mr >= 'a' && mr <= 'z') {
+        mr -= 'a' - 10;
+    }
+    version = std::atoi(ns[4].c_str());
+    mod_revision = int(mr);
+    auto b = ns[3].find_first_of('b');
+    mod_adc_msps = std::atoi(ns[3].substr(b + 1, ns[3].size() - b - 1).c_str());
+    mod_adc_bits = std::atoi(ns[3].substr(0, b).c_str());
+    device = dev;
+}
+
+std::string firmware::spec() const {
+    std::ostringstream oss;
+    oss << "version=" << version << ", "
+        << "revision=" << mod_revision << ", "
+        << "adc-msps=" << mod_adc_msps << ", "
+        << "adc-bits=" << mod_adc_bits << ", "
+        << "device=" << device << ", "
+        << "file=" << filename;
+    return oss.str();
+}
+
+static void find_firmwares(const std::string basepath, firmwares& fws) {
+    files files_;
+    find_files(basepath, files_, ".yaml");
+    for (auto& f : files_) {
+        std::string bname = basename(f);
+        std::string dir = dirname(f);
+        auto name = bname.substr(0, bname.size() - 5);
+        files rev_files;
+        find_files(dir, rev_files, ".ldr");
+        if (rev_files.size() != 1) {
+            throw std::runtime_error("fimrware has too many LDR files: " + name);
+        }
+        fws.emplace_back(name, "dsp", rev_files[0]);
+        find_files(dir, rev_files, ".var");
+        if (rev_files.size() != 1) {
+            throw std::runtime_error("fimrware has too many VAR files: " + name);
+        }
+        fws.emplace_back(name, "var", rev_files[0]);
+        find_files(dir, rev_files, ".bin");
+        if (rev_files.size() != 2) {
+            throw std::runtime_error("fimrware has too many BIN files: " + name);
+        }
+        for (auto bin : rev_files) {
+            if (bin.find("fip") != std::string::npos) {
+                fws.emplace_back(name, "fippi", bin);
+            } else if (bin.find("sys") != std::string::npos) {
+                fws.emplace_back(name, "sys", bin);
+            }
+        }
+    }
+}
+
+static void load_host_firmwares(
+    const std::string& basepath, xia::pixie::firmware::crate& fws) {
+    firmwares all;
+    firmwares latest;
+    find_firmwares(basepath, all);
+    /*
+     * Sort the firmwares found into the latest for each type of
+     * module.
+     */
+    for (auto& fw : all) {
+        auto mod_match = [&fw](auto& b) {
+            return
+                fw.device == b.device &&
+                fw.mod_revision == b.mod_revision &&
+                fw.mod_adc_msps == b.mod_adc_msps &&
+                fw.mod_adc_bits == b.mod_adc_bits;
+        };
+        auto lfi =
+            std::find_if(std::begin(latest), std::end(latest), mod_match);
+        if (lfi == std::end(latest)) {
+            latest.push_back(fw);
+        } else {
+            auto& lfw = *lfi;
+            bool swap = false;
+            if (lfw.date == fw.date) {
+                swap = lfw.version < fw.version;
+            } else {
+                swap = lfw.date < fw.date;
+            }
+            if (swap) {
+                *lfi = fw;
+            }
+        }
+    }
+    for (auto& lfw : latest) {
+        auto fw = xia::pixie::firmware::parse(lfw.spec(), ',');
+        if (!xia::pixie::firmware::check(fws, fw)) {
+            xia::pixie::firmware::add(fws, fw);
+        }
+    }
+}
+
+void load_crate_firmwares(
+    const std::string& file, xia::pixie::firmware::crate& fws) {
+    std::ifstream input(file, std::ios::in | std::ios::binary);
+    if (!input) {
+        throw std::runtime_error(std::string("crate firmware file open: ") + file + ": " +
+                                 std::strerror(errno));
+    }
+    for (std::string line; std::getline(input, line);) {
+        if (!line.empty()) {
+            auto fw = xia::pixie::firmware::parse(line, ',');
+            if (xia::pixie::firmware::check(fws, fw)) {
+                std::string what("duplicate firmware option: ");
+                what += line;
+                throw std::runtime_error(what);
+            }
+            xia::pixie::firmware::add(fws, fw);
+        }
+    }
+}
+
+static void firmware_load(
+    xia::pixie::crate::crate& crate, process_command_options& process_opts) {
+    /*
+     * Load command line first, then crate files and then fill in any
+     * gaps with the host files.
+     */
+    for (auto& fwfile : process_opts.firmware_files) {
+        auto fw = xia::pixie::firmware::parse(fwfile, ':');
+        if (xia::pixie::firmware::check(crate.firmware, fw)) {
+            std::string what("duplicate firmware on command line: ");
+            what += fwfile;
+            throw std::runtime_error(what);
+        }
+        xia::pixie::firmware::add(crate.firmware, fw);
+    }
+    for (auto& fwfile : process_opts.firmware_crate_files) {
+        load_crate_firmwares(fwfile, crate.firmware);
+    }
+    load_host_firmwares(process_opts.firmware_host_path, crate.firmware);
+}
+
+static void initialize(
+    xia::pixie::crate::crate& crate, process_command_options& process_opts) {
+    xia::util::timepoint tp;
+    if (process_opts.verbose) {
+        std::cout << "crate: initialize" << std::endl;
+        tp.start();
+    }
+    crate.initialize(process_opts.reg_trace);
+    if (process_opts.verbose) {
+        tp.end();
+        std::cout << "modules: detected=" << crate.modules.size()
+                  << " time=" << tp << std::endl;
+    }
+    if (process_opts.num_modules != 0 &&
+        crate.num_modules != process_opts.num_modules) {
+        throw std::runtime_error("invalid number of modules detected: "
+                                 "found " +
+                                 std::to_string(crate.num_modules));
+    }
+    if (!process_opts.slots.empty()) {
+        xia::pixie::module::number_slots slot_map;
+        for (auto s : process_opts.slots) {
+            slot_map.emplace_back(std::make_pair(int(slot_map.size()), s));
+        }
+        crate.assign(slot_map);
+    }
+}
+
+static void probe(
+    xia::pixie::crate::crate& crate, process_command_options& process_opts) {
+    if (process_opts.verbose) {
+        std::cout << "modules: online=" << crate.modules.size()
+                  << " offline=" << crate.offline.size() << std::endl;
+    }
+    crate.set_firmware();
+    crate.probe();
+}
+
 static void process_commands(
-    xia::pixie::crate::crate& crate, args_commands& opts, size_t num_modules,
-    xia::pixie::module::number_slots& slot_map, bool reg_trace, bool verbose) {
+    xia::pixie::crate::crate& crate, process_command_options& process_opts,
+    args_commands& opts) {
     bool init_done = false;
     bool probe_done = false;
     auto ci = opts.begin();
@@ -631,14 +872,15 @@ static void process_commands(
         if (valid_command(fci)) {
             const command& cmd = std::get<1>(*fci);
             if (!init_done && cmd.boot.find("init") != std::string::npos) {
-                initialize(crate, num_modules, slot_map, reg_trace, verbose);
+                initialize(crate, process_opts);
                 init_done = true;
             }
-            if (!init_done && cmd.boot.find("probe") != std::string::npos) {
-                probe(crate, verbose);
+            if (!probe_done && cmd.boot.find("probe") != std::string::npos) {
+                firmware_load(crate, process_opts);
+                probe(crate, process_opts);
                 probe_done = true;
             }
-            cmd.call(crate, ci, ce, verbose);
+            cmd.call(crate, ci, ce, process_opts.verbose);
         } else {
             throw std::runtime_error("invalid command: " + opt);
         }
@@ -831,10 +1073,10 @@ void performance_stats(std::vector<W>& workers, bool show_workers = false) {
 static void adc_acq(
     xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
     bool verbose) {
-    args_command mod_nums_opt;
-    if (valid_option(ci, ce, 1)) {
-        mod_nums_opt = *ci++;
+    if (!valid_option(ci, ce, 1)) {
+        throw std::runtime_error("adj-acq: not enough options");
     }
+    auto mod_nums_opt = *ci++;
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -845,12 +1087,12 @@ static void adc_acq(
 static void adc_save(
     xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
     bool verbose) {
-    args_command mod_nums_opt;
+    if (!valid_option(ci, ce, 1)) {
+        throw std::runtime_error("adj-save: not enough options");
+    }
+    auto mod_nums_opt = *ci++;
     args_command chans_opt;
     args_command len_opt;
-    if (valid_option(ci, ce, 1)) {
-        mod_nums_opt = *ci++;
-    }
     if (valid_option(ci, ce, 1)) {
         chans_opt = *ci++;
     }
@@ -859,13 +1101,13 @@ static void adc_save(
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
+    size_t length = xia::pixie::hw::max_adc_trace_length;
+    if (!len_opt.empty()) {
+        length = get_value<size_t>(len_opt);
+    }
     for (auto mod_num : mod_nums) {
         xia::pixie::channel::range channels;
         channels_option(channels, chans_opt, crate[mod_num].num_channels);
-        size_t length = xia::pixie::hw::max_adc_trace_length;
-        if (!len_opt.empty()) {
-            length = get_value<size_t>(len_opt);
-        }
         std::vector<xia::pixie::hw::adc_trace> traces;
         for (auto channel : channels) {
             xia::pixie::hw::adc_trace adc_trace(length);
@@ -898,10 +1140,10 @@ static void adc_save(
 static void adj_off(
     xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
     bool verbose) {
-    args_command mod_nums_opt;
-    if (valid_option(ci, ce, 1)) {
-        mod_nums_opt = *ci++;
+    if (!valid_option(ci, ce, 1)) {
+        throw std::runtime_error("adj-off: not enough options");
     }
+    auto mod_nums_opt = *ci++;
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -912,10 +1154,10 @@ static void adj_off(
 static void bl_acq(
     xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
     bool verbose) {
-    args_command mod_nums_opt;
-    if (valid_option(ci, ce, 1)) {
-        mod_nums_opt = *ci++;
+    if (!valid_option(ci, ce, 1)) {
+        throw std::runtime_error("bl-acq: not enough options");
     }
+    auto mod_nums_opt = *ci++;
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -926,11 +1168,11 @@ static void bl_acq(
 static void bl_save(
     xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
     bool verbose) {
-    args_command mod_nums_opt;
-    args_command chans_opt;
-    if (valid_option(ci, ce, 1)) {
-        mod_nums_opt = *ci++;
+    if (!valid_option(ci, ce, 1)) {
+        throw std::runtime_error("bl-save: not enough options");
     }
+    auto mod_nums_opt = *ci++;
+    args_command chans_opt;
     if (valid_option(ci, ce, 1)) {
         chans_opt = *ci++;
     }
@@ -1003,7 +1245,9 @@ static void help(
     xia::pixie::crate::crate& , args_commands_iter& ci, args_commands_iter& ce,
     bool verbose) {
     auto long_opt = switch_option("-l", ci, ce, false);
-    std::cout << "Command help:" << std::endl;
+    std::cout << "Command help:" << std::endl
+              << " 'modules(s)' and 'channel(s)' can be a number or series:" << std::endl
+              << "   eg '0' or '3,4,6' or '3,4-5,10,20-22'" << std::endl;
     args_command help_opt;
     if (args_count(ci, ce) >= 1) {
         help_opt = *ci++;
@@ -1042,10 +1286,10 @@ static void help(
 static void hist_resume(
     xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
     bool verbose) {
-    args_command mod_nums_opt;
-    if (valid_option(ci, ce, 1)) {
-        mod_nums_opt = *ci++;
+    if (!valid_option(ci, ce, 1)) {
+        throw std::runtime_error("hist-resume: not enough options");
     }
+    auto mod_nums_opt = *ci++;
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1058,11 +1302,11 @@ static void hist_save(
     xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
     bool verbose) {
     auto bins_opt = switch_option("-b", ci, ce);
-    args_command mod_nums_opt;
-    args_command chans_opt;
-    if (valid_option(ci, ce, 1)) {
-        mod_nums_opt = *ci++;
+    if (!valid_option(ci, ce, 1)) {
+        throw std::runtime_error("hist-save: not enough options");
     }
+    auto mod_nums_opt = *ci++;
+    args_command chans_opt;
     if (valid_option(ci, ce, 1)) {
         chans_opt = *ci++;
     }
@@ -1107,10 +1351,10 @@ static void hist_save(
 static void hist_start(
     xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
     bool verbose) {
-    args_command mod_nums_opt;
-    if (valid_option(ci, ce, 1)) {
-        mod_nums_opt = *ci++;
+    if (!valid_option(ci, ce, 1)) {
+        throw std::runtime_error("hist-start: not enough options");
     }
+    auto mod_nums_opt = *ci++;
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1514,7 +1758,10 @@ static void stats(
     xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
     bool verbose) {
     auto stat_opt = switch_option("-s", ci, ce);
-    args_command mod_nums_opt;
+    if (!valid_option(ci, ce, 1)) {
+        throw std::runtime_error("stats: not enough options");
+    }
+    auto mod_nums_opt = *ci++;
     args_command chans_opt;
     if (valid_option(ci, ce, 1)) {
         mod_nums_opt = *ci++;
@@ -1617,10 +1864,10 @@ static void test(
     xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
     bool verbose) {
     auto mode_opt = switch_option("-m", ci, ce);
-    args_command mod_nums_opt = "off";
-    if (valid_option(ci, ce, 1)) {
-        mod_nums_opt = *ci++;
+    if (!valid_option(ci, ce, 1)) {
+        throw std::runtime_error("test: not enough options");
     }
+    auto mod_nums_opt = *ci++;
     xia::pixie::module::module::test mode = xia::pixie::module::module::test::off;
     if (!mode_opt.empty()) {
         if (mode_opt == "lmfifo") {
@@ -1797,25 +2044,6 @@ static void wait(
     xia::pixie::hw::wait(msecs * 1000);
 }
 
-void load_crate_firmware(const std::string& file, xia::pixie::firmware::crate& firmwares) {
-    std::ifstream input(file, std::ios::in | std::ios::binary);
-    if (!input) {
-        throw std::runtime_error(std::string("crate firmware file open: ") + file + ": " +
-                                 std::strerror(errno));
-    }
-    for (std::string line; std::getline(input, line);) {
-        if (!line.empty()) {
-            auto fw = xia::pixie::firmware::parse(line, ',');
-            if (xia::pixie::firmware::check(firmwares, fw)) {
-                std::string what("duplicate firmware option: ");
-                what += line;
-                throw std::runtime_error(what);
-            }
-            xia::pixie::firmware::add(firmwares, fw);
-        }
-    }
-}
-
 int main(int argc, char* argv[]) {
     args_parser parser("Pixie16 Test");
 
@@ -1826,6 +2054,9 @@ int main(int argc, char* argv[]) {
     args_help_flag help(option_group, "help", "Display this help menu", {'h', "help"});
     args_flag debug_flag(
         option_group, "debug_flag", "Enable debug log level", {'d', "debug"},
+        false);
+    args_flag quiet_flag(
+        option_group, "quiet_flag", "Quiet output", {'q', "quiet"},
         false);
     args_flag throw_unhandled_flag(
         option_group, "throw_unhandled_flag",
@@ -1840,17 +2071,21 @@ int main(int argc, char* argv[]) {
     args_size_flag num_modules_flag(
         option_group, "num_modules_flag",
         "Number of modules to report", {'n', "num-modules"}, 0);
+    args_string_flag module_defs(
+        option_group, "module_file_flag",
+        "Crate simulation module definition file to load. "
+        "The file contains the module to simulate.",
+        {'M', "modules"});
+    args_string_flag fw_host_path_flag(
+        option_group, "fw_host_path_flag",
+        "Path to the host installed firmware.",
+        {'H', "hostpath"});
     args_strings_flag fw_file_flag(
         option_group, "fw_file_flag",
         "Firmware file(s) to load. Can be repeated. "
         "Takes the form rev:mod-rev-num:type:name"
         "Ex. r33339:15:sys:syspixie16_revfgeneral_adc250mhz_r33339.bin",
         {'F', "firmware"});
-    args_string_flag module_defs(
-        option_group, "module_file_flag",
-            "Crate simulation module definition file to load. "
-        "The file contains the module to simulate.",
-        {'M', "modules"});
     args_strings_flag crate_file_flag(
         option_group, "crate_file_flag",
         "Crate firmware file to load. "
@@ -1904,8 +2139,11 @@ int main(int argc, char* argv[]) {
         xia::logging::start("log", log, false);
         xia::logging::set_level(log_level);
 
-        bool verbose = true;
-        size_t num_modules = args::get(num_modules_flag);
+        process_command_options process_opts;
+
+        process_opts.verbose = !args::get(quiet_flag);
+        process_opts.reg_trace = args::get(reg_trace);
+        process_opts.num_modules = args::get(num_modules_flag);
 
         xia::pixie::crate::crate crate_hw;
         xia::pixie::sim::crate crate_sim;
@@ -1924,37 +2162,41 @@ int main(int argc, char* argv[]) {
         xia::pixie::crate::crate& crate = *crate_selection;
 
         if (fw_file_flag) {
-            for (const auto& firmware : args::get(fw_file_flag)) {
-                auto fw = xia::pixie::firmware::parse(firmware, ':');
-                if (xia::pixie::firmware::check(crate.firmware, fw)) {
-                    std::string what("duplicate firmware: ");
-                    what += firmware;
-                    throw std::runtime_error(what);
-                }
-                xia::pixie::firmware::add(crate.firmware, fw);
+            for (const auto& fw : args::get(fw_file_flag)) {
+                process_opts.firmware_files.push_back(fw);
             }
         }
 
         if (crate_file_flag) {
-            for (const auto& firmware : args::get(crate_file_flag)) {
-                load_crate_firmware(firmware, crate.firmware);
+            for (const auto& fw : args::get(crate_file_flag)) {
+                process_opts.firmware_crate_files.push_back(fw);
             }
         }
 
-        xia::pixie::module::number_slots slot_map;
         if (slot_map_flag) {
             for (const auto& slot : args::get(slot_map_flag)) {
-                std::vector<int> slots = get_values<int>(slot, crate.num_modules);
-                for (auto s : slots) {
-                    slot_map.emplace_back(std::make_pair(int(slot_map.size()), s));
-                }
+                slot_range ss = get_values<int>(slot, xia::pixie::hw::max_slots);
+                process_opts.slots.insert(
+                    std::end(process_opts.slots), std::begin(ss), std::end(ss));
             }
         }
 
-        process_commands(crate, cmds, num_modules, slot_map, reg_trace, verbose);
+        if (fw_host_path_flag) {
+            process_opts.firmware_host_path = args::get(fw_host_path_flag);
+        } else {
+#if WIN32
+            process_opts.firmware_host_path = "c:/xia/pixie/firmware";
+#else
+            process_opts.firmware_host_path = "/usr/local/xia/pixie/firmware";
+#endif
+        }
+
+        process_commands(crate, process_opts, cmds);
 
         run.end();
-        std::cout << "run time=" << run << std::endl;
+        if (process_opts.verbose) {
+            std::cout << "run time=" << run << std::endl;
+        }
     } catch (xia::pixie::error::error& e) {
         xia_log(xia::log::error) << e;
         std::cerr << e << std::endl;
