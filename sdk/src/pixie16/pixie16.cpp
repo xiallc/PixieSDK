@@ -1324,7 +1324,15 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartHistogramRun(unsigned short ModNum, unsig
                 throw xia_error(xia_error::code::invalid_value, "invalid histogram start run mode");
         }
         crate.ready();
-        xia::pixie::crate::module_handle(crate, ModNum)->start_histograms(run_mode);
+        if (ModNum == crate.num_modules) {
+            for (size_t mod_num = 0; mod_num < crate.num_modules; mod_num++) {
+                xia::pixie::crate::module_handle module(crate, mod_num);
+                module->start_histograms(run_mode);
+            }
+        } else {
+            xia::pixie::crate::module_handle module(crate, ModNum);
+            module->start_histograms(run_mode);
+        }
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
         return e.return_code();

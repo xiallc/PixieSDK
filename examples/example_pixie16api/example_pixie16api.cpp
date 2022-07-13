@@ -563,57 +563,54 @@ bool execute_list_mode_runs(const unsigned int num_runs, const configuration& cf
     return true;
 }
 
-bool execute_mca_run(const int run_num, const module_config& mod, const double runtime_in_seconds,
-                     unsigned int synch_wait, unsigned int in_synch) {
-    std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write HOST_RT_PRESET to "
-              << runtime_in_seconds << std::endl;
-    if (!verify_api_return_value(Pixie16WriteSglModPar("HOST_RT_PRESET",
-                                                       Decimal2IEEEFloating(runtime_in_seconds),
-                                                       mod.number),
-                                 "Pixie16WriteSglModPar - HOST_RT_PRESET"))
-        return false;
+bool execute_mca_run(unsigned int run_num, const configuration& cfg,
+                     const double& runtime_in_seconds, unsigned int synch_wait,
+                     unsigned int in_synch) {
 
     std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write SYNCH_WAIT = " << synch_wait
               << " in Module 0." << std::endl;
-    if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", synch_wait, mod.number),
+    if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", synch_wait, 0),
                                  "Pixie16WriteSglModPar - SYNC_WAIT"))
         return false;
 
     std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write IN_SYNCH  = " << in_synch
               << " in Module 0." << std::endl;
-    if (!verify_api_return_value(Pixie16WriteSglModPar("IN_SYNCH", in_synch, mod.number),
+    if (!verify_api_return_value(Pixie16WriteSglModPar("IN_SYNCH", in_synch, 0),
                                  "Pixie16WriteSglModPar - IN_SYNC"))
         return false;
 
+    std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write HOST_RT_PRESET to "
+              << runtime_in_seconds << std::endl;
+    for (unsigned short i = 0; i < cfg.num_modules(); i++) {
+        if (!verify_api_return_value(Pixie16WriteSglModPar("HOST_RT_PRESET",
+                                                           Decimal2IEEEFloating(runtime_in_seconds),
+                                                           i),
+                                     "Pixie16WriteSglModPar - HOST_RT_PRESET"))
+            return false;
+    }
+
     std::cout << LOG("INFO") << "Starting MCA data run for " << runtime_in_seconds << " s."
               << std::endl;
-    if (!verify_api_return_value(Pixie16StartHistogramRun(mod.number, NEW_RUN),
+    if (!verify_api_return_value(Pixie16StartHistogramRun(cfg.num_modules(), NEW_RUN),
                                  "Pixie16StartHistogramRun"))
         return false;
 
     auto run_start_time = std::chrono::steady_clock::now();
     double current_run_time = 0;
     double check_time = 0;
-    bool run_status = Pixie16CheckRunStatus(mod.number);
+    bool run_status = Pixie16CheckRunStatus(0);
     while (run_status != 0) {
         current_run_time = std::chrono::duration_cast<std::chrono::duration<double>>(
                                std::chrono::steady_clock::now() - run_start_time)
                                .count();
 
         if (current_run_time - check_time > 1) {
-            run_status = Pixie16CheckRunStatus(mod.number);
+            run_status = Pixie16CheckRunStatus(0);
             if (current_run_time < runtime_in_seconds)
                 std::cout << LOG("INFO")
                           << "Remaining run time: " << runtime_in_seconds - current_run_time << " s"
                           << std::endl;
             check_time = current_run_time;
-        }
-
-        if (current_run_time > runtime_in_seconds + 5) {
-            std::cout << LOG("ERROR") << "MCA Run failed to stop in the module!" << std::endl;
-            std::cout << LOG("WARN") << "Forcing end of MCA run." << std::endl;
-            if (!verify_api_return_value(Pixie16EndRun(mod.number), "Pixie16EndRun"))
-                return false;
         }
     }
 
@@ -622,27 +619,53 @@ bool execute_mca_run(const int run_num, const module_config& mod, const double r
                   << std::endl;
     } else {
         //@todo We need to temporarily execute a manual end run until P16-440 is complete.
-        if (!verify_api_return_value(Pixie16EndRun(mod.number), "Pixie16EndRun"))
+        if (!verify_api_return_value(Pixie16EndRun(cfg.num_modules()), "Pixie16EndRun"))
             return false;
+    }
+
+    std::cout << LOG("INFO") << "Checking that the run is finalized in all the modules."
+              << std::endl;
+    bool all_modules_finished = false;
+    const unsigned int max_finalize_attempts = 50;
+    for (unsigned int counter = 0; counter < max_finalize_attempts; counter++) {
+        for (unsigned short k = 0; k < cfg.num_modules(); k++) {
+            if (Pixie16CheckRunStatus(k) == 1) {
+                all_modules_finished = false;
+            } else {
+                all_modules_finished = true;
+            }
+        }
+        if (all_modules_finished) {
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    if (!all_modules_finished) {
+        std::cout << LOG("ERROR") << "All modules did not stop their runs properly!" << std::endl;
+        return false;
+    } else {
         std::cout << LOG("INFO") << "MCA Run finished!" << std::endl;
     }
 
-    std::string name = generate_filename(mod.number, "mca-run" + std::to_string(run_num), "csv");
-    export_mca_memory(mod, name);
+    for (unsigned short i = 0; i < cfg.num_modules(); i++) {
+        std::string name = generate_filename(i, "mca-run" + std::to_string(run_num), "csv");
+        export_mca_memory(cfg.modules[i], name);
 
-    if (!output_statistics_data(mod, "mca-run" + std::to_string(run_num) + "-stats")) {
-        return false;
+        if (!output_statistics_data(cfg.modules[i], "mca-run" + std::to_string(run_num) + "-stats")) {
+            return false;
+        }
     }
 
     return true;
 }
 
-bool execute_mca_runs(const unsigned int num_runs, const module_config& mod,
-                      const double runtime_in_seconds, unsigned int synch_wait,
+bool execute_mca_runs(const unsigned int num_runs, const configuration& cfg,
+                      const double& runtime_in_seconds, unsigned int synch_wait,
                       unsigned int in_synch) {
     for (unsigned int i = 0; i < num_runs; i++) {
         std::cout << LOG("INFO") << "Starting MCA run number " << i << std::endl;
-        if (!execute_mca_run(i, mod, runtime_in_seconds, synch_wait, in_synch)) {
+        if (!execute_mca_run(i, cfg, runtime_in_seconds, synch_wait, in_synch)) {
             std::cout << LOG("INFO") << "MCA data run " << i
                       << " failed! See log for more details.";
             return false;
@@ -841,7 +864,8 @@ int main(int argc, char** argv) {
     args::Command export_settings(
         commands, "export-settings",
         "Boots the system and dumps the settings to the file defined in the config.");
-    args::Command mca_export(commands, "mca-export", "Exports histograms from the module without executing a run.");
+    args::Command mca_export(commands, "mca-export",
+                             "Exports histograms from the module without executing a run.");
     args::Command init(commands, "init", "Initializes the system without going any farther.");
     args::Command list_mode(commands, "list-mode", "Starts a list mode data run");
     args::Command read(commands, "read", "Read a parameter from the module.");
@@ -1193,17 +1217,9 @@ int main(int argc, char** argv) {
     }
 
     if (mca) {
-        if (module.Get() >= cfg.num_modules()) {
-            for (auto& mod : cfg.modules) {
-                if (!execute_mca_runs(num_runs.Get(), mod, run_time.Get(), synch_wait.Get(),
-                                      in_synch.Get()))
-                    return EXIT_FAILURE;
-            }
-        } else {
-            if (!execute_mca_runs(num_runs.Get(), cfg.modules[module.Get()], run_time.Get(),
-                                  synch_wait.Get(), in_synch.Get()))
-                return EXIT_FAILURE;
-        }
+        if (!execute_mca_runs(num_runs.Get(), cfg, run_time.Get(), synch_wait.Get(),
+                                    in_synch.Get()))
+            return EXIT_FAILURE;
     }
 
     if (blcut) {
