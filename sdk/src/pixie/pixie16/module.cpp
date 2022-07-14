@@ -939,6 +939,11 @@ firmware::firmware_ref module::get(const std::string device) {
             return fwr;
         }
     }
+    if (firmware.empty()) {
+        throw error(
+            number, slot, error::code::module_invalid_firmware,
+            "crate has no firmware");
+    }
     std::ostringstream oss;
     oss << "firmware not found: slot=" << slot << ": device=" << device
         << " firmwares=" << firmware.size();
