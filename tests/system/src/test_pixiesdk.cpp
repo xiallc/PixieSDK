@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-/** @file test_api.cpp
- * @brief A C++ test interface to the PixieSDK.
+/**
+ * @brief A C++ Tool for Pixie16
  */
 
 #include <algorithm>
@@ -39,6 +39,7 @@
 #include <pixie/pixie16/sim.hpp>
 
 #include <args/args.hxx>
+#include <nolhmann/json.hpp>
 
 #include <sys/types.h>
 #include <dirent.h>
@@ -47,6 +48,11 @@
  * Localize the log and error
  */
 using error = xia::pixie::error::error;
+
+/*
+ * JSON support
+ */
+using json = nlohmann::json;
 
 /*
  * Module threading worker base
@@ -349,6 +355,15 @@ static const command report_cmd = {
     "report file"
 };
 
+command_handler_decl(reg_read);
+static const command reg_read_cmd = {
+    "reg-read", reg_read,
+    {"rr"},
+    "init",
+    "Read a register from a module or slot",
+    "reg-read -s module/slot [address] [name] [bus:name] value"
+};
+
 command_handler_decl(run_active);
 static const command run_active_cmd = {
     "run-active", run_active,
@@ -446,6 +461,7 @@ static const command_map commands = {
     {"lset-report", lset_report_cmd},
     {"par-read", par_read_cmd},
     {"par-write", par_write_cmd},
+    {"reg-read", reg_read_cmd},
     {"report", report_cmd},
     {"run-active", run_active_cmd},
     {"run-end", run_end_cmd},
@@ -460,6 +476,81 @@ static const command_map commands = {
 static std::string adc_prefix = "p16-test-adc";
 static std::string histogram_prefix = "p16-test-mca";
 static std::string baseline_prefix = "p16-test-baseline";
+
+static const json hardware = {
+    {"bus",
+     {{"sys",
+       {{"cfg_datacs", 0x00},
+        {"cfg_ctrlcs", 0x04},
+        {"cfg_rdcs", 0x08},
+        {"i2cm24c64", 0x10},
+        {"pcf8574", 0x10},
+        {"cfg_dcmrst", 0x14},
+        {"cfg_dac", 0x18},
+        {"csr", 0x48},
+        {"request_hbr", 0x80},
+        {"hbr_done", 0x84},
+        {"wrt_ext_mem", 0xc0},
+        {"ext_mem_test", 0xc4},
+        {"wrt_dsp_mma", 0xc8},
+        {"set_ext_fifo", 0xcc},
+        {"wrt_dsp_dmac11", 0xd0},
+        {"wrt_dsp_ii11", 0xd4},
+        {"wrt_clr_extmem", 0xd8},
+        {"wrt_dsp_c11", 0xdc},
+        {"wrt_dsp_im11", 0xe0},
+        {"wrt_dsp_ec11", 0xe4},
+        {"rd_wrt_fifo_wml", 0xe8},
+        {"set_exmem_fifo", 0xec},
+        {"set_int_fifo", 0xf0},
+        {"wrt_reset_rfcnt", 0xf4}}},
+      {"fippi",
+       {{"csrin", 0x00800400},
+        {"coincpattern", 0x00800402},
+        {"adcctrl", 0x00800404},
+        {"hostclr", 0x00800408},
+        {"adcspi", 0x0080040a},
+        {"bitslip", 0x0080040c},
+        {"hdr_ids", 0x00800412},
+        {"adcfifoctrl", 0x00800418}}},
+      {"host", {}}}},
+    {"bits",
+     {{"hbr",
+       {{"hdr_hbr", 0},
+        {"hbr_dsp_ncs", 1},
+        {"hbr_auto_inc", 2},
+        {"hbr_read_again_read", 3}}},
+      {"csr",
+       {{"runena", 0},
+        {"dspdownload", 1},
+        {"pciactive", 2},
+        {"pullup_ctrl", 3},
+        {"dspreset", 4},
+        {"extfifo_wml", 6},
+        {"runactive", 13},
+        {"clrextmem_active", 15},
+        {"modcsrb_cpldpullup", 0},
+        {"modcsrb_dirmod", 4},
+        {"modcsrb_chassismaster", 6},
+        {"cpldcsr_bpconnect", 12},
+        {"cpldcsr_pullup", 13}}},
+      {"cgancsra",
+       {{"ccsra_ftrigsel", 0},
+        {"ccsra_exttrigsel", 1},
+        {"ccsra_good", 2},
+        {"ccsra_chantrigsel", 3},
+        {"ccsra_syncdataacq", 4},
+        {"ccsra_polarity", 5},
+        {"ccsra_vetoena", 6},
+        {"ccsra_histoe", 7},
+        {"ccsra_traceena", 8},
+        {"ccsra_qdcena", 9},
+        {"ccsra_cfdmode", 10},
+        {"ccsra_globtrig", 11},
+        {"ccsra_esumsena", 12},
+        {"ccsra_chantrig", 13},
+        {"ccsra_enarelay", 14}}}}}
+};
 
 static bool starts_with(const std::string& s1, const std::string& s2) {
     return s2.size () <= s1.size () && s1.compare (0, s2.size (), s2) == 0;
@@ -476,6 +567,12 @@ static void string_replace(
     }
 }
 
+static void tolower(std::string& s) {
+    std::transform(
+        s.cbegin(), s.cend(), s.begin(),
+        [](unsigned char c) { return std::tolower(c); });
+}
+
 static bool check_number(const std::string& opt) {
     return std::regex_match(
         opt, std::regex(("((\\+|-)?[[:digit:]]+)(\\.(([[:digit:]]+)?))?")));
@@ -483,12 +580,14 @@ static bool check_number(const std::string& opt) {
 
 template<typename T>
 static T get_value(const std::string& opt) {
-    if (!check_number(opt)) {
+    T value = 0;
+    try {
+        value = std::stoul(opt, nullptr, 0);
+    } catch (std::invalid_argument e) {
         throw std::runtime_error("invalid number: " + opt);
+    } catch (std::out_of_range e) {
+        throw std::runtime_error("number out of range: " + opt);
     }
-    std::istringstream iss(opt);
-    T value;
-    iss >> value;
     return value;
 }
 
@@ -879,7 +978,7 @@ static void process_commands(
     auto ci = opts.begin();
     auto ce = opts.end();
     while (ci != ce) {
-        auto opt = *ci++;
+        auto& opt = *ci++;
         auto fci = find_command(opt);
         if (valid_command(fci)) {
             const command& cmd = std::get<1>(*fci);
@@ -1636,6 +1735,81 @@ static void lset_report(
     }
 }
 
+static void get_bus_reg(
+    const std::string& bus_reg, std::string& bus, std::string& reg, const std::string& label) {
+    bus = "sys";
+    reg = bus_reg;
+    tolower(reg);
+    auto has_bus = reg.find(':') != std::string::npos;
+    const auto& buses = hardware["bus"];
+    if (has_bus) {
+        xia::util::strings rs;
+        xia::util::split(rs, reg, ':');
+        if (rs.size() != 2) {
+            throw std::runtime_error(
+                label + ": invalid reg format: " + reg);
+        }
+        if (!buses.contains(rs[0])) {
+            throw std::runtime_error(
+                label + ": invalid reg bus: " + rs[0]);
+        }
+        bus = rs[0];
+        reg = rs[1];
+    }
+}
+
+static xia::pixie::hw::address get_address(
+    const std::string& bus, std::string reg, const std::string& label) {
+    tolower(reg);
+    xia::pixie::hw::address address = 0;
+    bool number = true;
+    try {
+        address = std::stoul(reg, nullptr, 0);
+    } catch (std::invalid_argument e) {
+        number = false;
+    } catch (std::out_of_range e) {
+        throw std::runtime_error(label + ": reg value of range: " + reg);
+    }
+    const auto& buses = hardware["bus"];
+    if (!buses.contains(bus)) {
+        throw std::runtime_error(
+            label + ": invalid reg bus: " + bus);
+    }
+    if (!number) {
+        const auto& bus_regs = buses[bus];
+        bool found = false;
+        for (auto r = bus_regs.begin(); r != bus_regs.end(); ++r) {
+            if (reg == r.key()) {
+                address = *r;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            throw std::runtime_error(label + ": reg not found: " + reg);
+        }
+    }
+    return address;
+}
+
+static void reg_read(
+    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
+    bool verbose) {
+    auto slot_opt = switch_option("-s", ci, ce, false);
+    if (!valid_option(ci, ce, 3)) {
+        throw std::runtime_error("reg-read: not enough options");
+    }
+    auto mod_slot_opt = *ci++;
+    auto reg_opt = *ci++;
+    auto value_opt = *ci++;
+    size_t mod_slot = get_value<size_t>(mod_slot_opt);
+    std::string bus;
+    std::string reg;
+    get_bus_reg(reg_opt, bus, reg, "reg-read");
+    xia::pixie::hw::address address = get_address(bus, reg, "reg-read");
+    std::cout << "] bus=" << bus << " reg=" << reg << " addr=" << address << std::endl;
+}
+
 static void par_read(
     xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
     bool verbose) {
@@ -2246,8 +2420,8 @@ int main(int argc, char* argv[]) {
         std::cerr << e << std::endl;
         return e.return_code();
     } catch (std::exception& e) {
-        xia_log(xia::log::error) << "unknown error: " << e.what();
-        std::cerr << "error: unknown error: " << e.what() << std::endl;
+        xia_log(xia::log::error) << e.what();
+        std::cerr << "error: " << e.what() << std::endl;
         return xia::pixie::error::api_result_unknown_error();
     } catch (...) {
         if (args::get(throw_unhandled_flag)) {
