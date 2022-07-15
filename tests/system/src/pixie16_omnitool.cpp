@@ -473,9 +473,10 @@ static const command_map commands = {
     {"wait", wait_cmd}
 };
 
-static std::string adc_prefix = "p16-test-adc";
-static std::string histogram_prefix = "p16-test-mca";
-static std::string baseline_prefix = "p16-test-baseline";
+static std::string adc_prefix = "pixie16-omnitool-adc";
+static std::string histogram_prefix = "pixie16-omnitool-mca";
+static std::string baseline_prefix = "pixie16-omnitool-baseline";
+static std::string list_mode_prefix = "pixie16-omnitool-list-mode";
 
 static const json hardware = {
     {"bus",
@@ -2039,7 +2040,7 @@ test_fifo_worker::test_fifo_worker() : length(0) {}
 
 void test_fifo_worker::worker(xia::pixie::module::module& module) {
     try {
-        std::ofstream out("test-api-control-task-11.bin", std::ios::out | std::ios::binary);
+        std::ofstream out(list_mode_prefix + "-control-task-11.lmd", std::ios::out | std::ios::binary);
         module.start_test(xia::pixie::module::module::test::lm_fifo);
         const size_t poll_period_usecs = 10 * 1000;
         period.start();
@@ -2251,7 +2252,7 @@ static void wait(
 }
 
 int main(int argc, char* argv[]) {
-    args_parser parser("Pixie16 Test");
+    args_parser parser("Pixie-16 OmniTool ");
 
     parser.helpParams.addDefault = true;
     parser.helpParams.addChoices = true;
@@ -2337,7 +2338,7 @@ int main(int argc, char* argv[]) {
         if (log_file_flag) {
             log = args::get(log_file_flag);
         } else {
-            log = "pixie16-test-log.txt";
+            log = "pixie16-omnitool.log";
         }
 
         auto log_level = xia::log::info;

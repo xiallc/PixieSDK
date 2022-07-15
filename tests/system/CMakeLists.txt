@@ -5,9 +5,9 @@ if (BUILD_LEGACY)
 endif ()
 
 if (BUILD_SDK)
-    add_executable(test_pixiesdk src/test_pixiesdk.cpp $<TARGET_OBJECTS:PixieSdkObjLib>)
-    target_include_directories(test_pixiesdk PUBLIC ${PROJECT_SOURCE_DIR}/sdk/include ${PROJECT_SOURCE_DIR}/externals/)
-    xia_configure_target(TARGET test_pixiesdk USE_PLX)
+    add_executable(pixie16_omnitool src/pixie16_omnitool.cpp $<TARGET_OBJECTS:PixieSdkObjLib>)
+    target_include_directories(pixie16_omnitool PUBLIC ${PROJECT_SOURCE_DIR}/sdk/include ${PROJECT_SOURCE_DIR}/externals/)
+    xia_configure_target(TARGET pixie16_omnitool USE_PLX)
 
     if (BUILD_PIXIE16_API)
         add_executable(p16_246 src/p16_246.cpp)
