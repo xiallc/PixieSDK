@@ -112,7 +112,8 @@ using args_size_flag = args::ValueFlag<size_t>;
 using args_string_flag = args::ValueFlag<std::string>;
 using args_strings_flag = args::ValueFlagList<std::string>;
 using args_command = std::string;
-using args_commands = args::PositionalList<args_command>;
+using args_positional_list = args::PositionalList<args_command>;
+using args_commands = std::vector<args_command>;
 using args_commands_iter = args_commands::iterator;
 
 struct command {
@@ -218,7 +219,7 @@ static const command help_cmd = {
     "help", help,
     {},
     "none",
-    "Command specific help or add '-l' to list all commands",
+    "Command specific help. Add '-l' to list all commands",
     "help [command]"
 };
 
@@ -464,6 +465,17 @@ static bool starts_with(const std::string& s1, const std::string& s2) {
     return s2.size () <= s1.size () && s1.compare (0, s2.size (), s2) == 0;
 }
 
+static void string_replace(
+    std::string& target, const char find, const char replace) {
+    while (true) {
+        auto pos = target.find_first_of(find);
+        if (pos == std::string::npos) {
+            break;
+        }
+        target.replace(pos, 1, 1, replace);
+    }
+}
+
 static bool check_number(const std::string& opt) {
     return std::regex_match(
         opt, std::regex(("((\\+|-)?[[:digit:]]+)(\\.(([[:digit:]]+)?))?")));
@@ -485,8 +497,8 @@ static std::vector<T> get_values(
     const std::string& opt, const size_t max_count = 0, bool no_error = false) {
     std::vector<T> values;
     if (opt == "all") {
-        if (max_count) {
-            throw std::runtime_error("range `all` invalid, no max count is unknown");
+        if (max_count == 0) {
+            throw std::runtime_error("range `all` invalid, max count is unknown");
         }
         values.resize(max_count);
         std::iota(values.begin(), values.end(), 0);
@@ -887,10 +899,30 @@ static void process_commands(
     }
 }
 
+static void load_commands(const std::string& name, args_commands& cmds) {
+    std::ifstream in(name);
+    if (!in) {
+        throw std::runtime_error(
+            std::string("command file open: ") + name + ": " +
+            std::strerror(errno));
+    }
+    std::string line;
+    while (getline(in, line)) {
+        string_replace(line, '\r', ' ');
+        string_replace(line, '\t', ' ');
+        xia::util::strings sc;
+        xia::util::split(sc, line);
+        if (!sc.empty()) {
+            cmds.insert(std::end(cmds), std::begin(sc), std::end(sc));
+        }
+    }
+}
+
 static void help_output(std::ostream& out) {
     out << "  COMMANDS:" << std::endl;
     const command& cmd = std::get<1>(*find_command("help"));
     out << "      " << cmd.name << " - " << cmd.help << std::endl
+        << "        eg '-- help -l'" << std::endl
         << std::endl;
 }
 
@@ -2096,17 +2128,18 @@ int main(int argc, char* argv[]) {
         "Log file. Use `stdout` for the console.", {'l', "log"});
     args_strings_flag slot_map_flag(
         option_group, "slot_map_flag",
-        "A list of slots used to define the slot to index mapping.",
+        "A list of slots used to define the slot to index mapping. "
+        " Use this option to limit slots available to use.",
         {'s', "slot_map"});
-    args_string_flag cmd_file_flag(
+    args_strings_flag cmd_file_flag(
         option_group, "cmd_file_flag",
-        "Command file to execue.", {'c', "cmd"});
+        "File of commands to execute.", {'c', "cmd"});
 
     args_group command_group(parser, "Commands");
-    args_commands cmds(
+    args_positional_list args_cmds(
         command_group, "commands",
-        "Commands to be performed in order. "
-        "The command `help` lists available command.");
+        "Commands to be performed in order. Prefix with '--'. "
+        "The command 'help' lists the available commands.");
 
     try {
         parser.ParseCLI(argc, argv);
@@ -2118,6 +2151,7 @@ int main(int argc, char* argv[]) {
     } catch (args::Error& e) {
         std::cout << e.what() << std::endl;
         std::cout << parser;
+        help_output(std::cout);
         return EXIT_FAILURE;
     }
 
@@ -2189,6 +2223,16 @@ int main(int argc, char* argv[]) {
 #else
             process_opts.firmware_host_path = "/usr/local/xia/pixie/firmware";
 #endif
+        }
+
+        args_commands cmds;
+        for (auto& cmd : args_cmds) {
+            cmds.push_back(cmd);
+        }
+        if (cmd_file_flag) {
+            for (const auto& name : args::get(cmd_file_flag)) {
+                load_commands(name, cmds);
+            }
         }
 
         process_commands(crate, process_opts, cmds);
