@@ -298,6 +298,7 @@ size_t queue::count() {
 void queue::flush() {
     lock_guard guard(lock);
     buffers.clear();
+    size_ = 0;
 }
 
 void queue::output(std::ostream& out) {

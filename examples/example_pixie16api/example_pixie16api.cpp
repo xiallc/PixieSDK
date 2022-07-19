@@ -500,7 +500,7 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
               << "Reading the final words from the External FIFO and the run statistics."
               << std::endl;
     for (unsigned short mod_num = 0; mod_num < cfg.num_modules(); mod_num++) {
-        while (num_fifo_words != 0) {
+        while (true) {
             if (!verify_api_return_value(Pixie16CheckExternalFIFOStatus(&num_fifo_words, mod_num),
                                          "Pixie16CheckExternalFIFOStatus", false))
                 return false;
