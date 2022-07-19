@@ -36,6 +36,7 @@
 
 #include <pixie/pixie16/crate.hpp>
 #include <pixie/pixie16/legacy.hpp>
+#include <pixie/pixie16/memory.hpp>
 #include <pixie/pixie16/sim.hpp>
 
 #include <args/args.hxx>
@@ -360,8 +361,8 @@ static const command reg_read_cmd = {
     "reg-read", reg_read,
     {"rr"},
     "init",
-    "Read a register from a module or slot",
-    "reg-read -s module/slot [address] [name] [bus:name] value"
+    "Read a register from a module or slot memory address",
+    "reg-read -s module/slot [address] [name] [memory:name] value"
 };
 
 command_handler_decl(run_active);
@@ -479,7 +480,7 @@ static std::string baseline_prefix = "pixie16-omnitool-baseline";
 static std::string list_mode_prefix = "pixie16-omnitool-list-mode";
 
 static const json hardware = {
-    {"bus",
+    {"memory",
      {{"sys",
        {{"cfg_datacs", 0x00},
         {"cfg_ctrlcs", 0x04},
@@ -514,7 +515,9 @@ static const json hardware = {
         {"bitslip", 0x0080040c},
         {"hdr_ids", 0x00800412},
         {"adcfifoctrl", 0x00800418}}},
-      {"host", {}}}},
+      {"dsp", {}},
+      {"mca", {}},
+      {"fifo", {}}}},
     {"bits",
      {{"hbr",
        {{"hdr_hbr", 0},
@@ -1736,32 +1739,33 @@ static void lset_report(
     }
 }
 
-static void get_bus_reg(
-    const std::string& bus_reg, std::string& bus, std::string& reg, const std::string& label) {
-    bus = "sys";
-    reg = bus_reg;
+static void get_memory_reg(
+    const std::string& mem_reg, std::string& mem, std::string& reg,
+    const std::string& label) {
+    reg = mem_reg;
     tolower(reg);
-    auto has_bus = reg.find(':') != std::string::npos;
-    const auto& buses = hardware["bus"];
-    if (has_bus) {
-        xia::util::strings rs;
-        xia::util::split(rs, reg, ':');
-        if (rs.size() != 2) {
+    auto has_mem_field = mem_reg.find(':') != std::string::npos;
+    if (has_mem_field) {
+        xia::util::strings mr;
+        xia::util::split(mr, mem_reg, ':');
+        if (mr.size() != 2) {
             throw std::runtime_error(
-                label + ": invalid reg format: " + reg);
+                label + ": invalid reg format: " + mem_reg);
         }
-        if (!buses.contains(rs[0])) {
+        const auto& mems = hardware["memory"];
+        if (!mems.contains(mr[0])) {
             throw std::runtime_error(
-                label + ": invalid reg bus: " + rs[0]);
+                label + ": invalid memory: " + mr[0]);
         }
-        bus = rs[0];
-        reg = rs[1];
+        mem = mr[0];
+        reg = mr[1];
+    } else {
+        mem = "sys";
     }
 }
 
 static xia::pixie::hw::address get_address(
-    const std::string& bus, std::string reg, const std::string& label) {
-    tolower(reg);
+    const std::string& mem, const std::string& reg, const std::string& label) {
     xia::pixie::hw::address address = 0;
     bool number = true;
     try {
@@ -1771,24 +1775,17 @@ static xia::pixie::hw::address get_address(
     } catch (std::out_of_range e) {
         throw std::runtime_error(label + ": reg value of range: " + reg);
     }
-    const auto& buses = hardware["bus"];
-    if (!buses.contains(bus)) {
+    const auto& mems = hardware["memory"];
+    if (!mems.contains(mem)) {
         throw std::runtime_error(
-            label + ": invalid reg bus: " + bus);
+            label + ": invalid memory type: " + mem);
     }
     if (!number) {
-        const auto& bus_regs = buses[bus];
-        bool found = false;
-        for (auto r = bus_regs.begin(); r != bus_regs.end(); ++r) {
-            if (reg == r.key()) {
-                address = *r;
-                found = true;
-                break;
-            }
+        const auto& mem_regs = mems[mem];
+        if (!mem_regs.contains(reg)) {
+            throw std::runtime_error(label + ": " + mem + " reg not found: " + reg);
         }
-        if (!found) {
-            throw std::runtime_error(label + ": reg not found: " + reg);
-        }
+        address = mem_regs[reg];
     }
     return address;
 }
@@ -1796,19 +1793,42 @@ static xia::pixie::hw::address get_address(
 static void reg_read(
     xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
     bool verbose) {
+    const std::string label = "reg-read";
     auto slot_opt = switch_option("-s", ci, ce, false);
-    if (!valid_option(ci, ce, 3)) {
+    auto hex_opt = switch_option("-x", ci, ce, false);
+    if (!valid_option(ci, ce, 2)) {
         throw std::runtime_error("reg-read: not enough options");
     }
     auto mod_slot_opt = *ci++;
     auto reg_opt = *ci++;
     auto value_opt = *ci++;
     size_t mod_slot = get_value<size_t>(mod_slot_opt);
-    std::string bus;
+    std::string mem;
     std::string reg;
-    get_bus_reg(reg_opt, bus, reg, "reg-read");
-    xia::pixie::hw::address address = get_address(bus, reg, "reg-read");
-    std::cout << "] bus=" << bus << " reg=" << reg << " addr=" << address << std::endl;
+    get_memory_reg(reg_opt, mem, reg, label);
+    xia::pixie::hw::address address = get_address(mem, reg, label);
+    if (slot_opt == "true") {
+        auto mod = crate.find(mod_slot);
+        mod_slot = mod->number;
+    }
+    auto& mod = crate[mod_slot];
+    xia::pixie::hw::word value;
+    if (mem == "sys") {
+        value =  mod.read_word(address);
+    } else if (mem == "fippi") {
+        auto fippi = xia::pixie::hw::memory::fippi(mod);
+        value = fippi.read(address);
+    } else if (mem == "dsp") {
+        auto dsp = xia::pixie::hw::memory::dsp(mod);
+        value = dsp.read(address);
+    }
+    if (hex_opt == "true") {
+        std::cout << std::hex;
+    }
+    std::cout << value << std::endl;
+    if (hex_opt == "true") {
+        std::cout << std::dec;
+    }
 }
 
 static void par_read(
