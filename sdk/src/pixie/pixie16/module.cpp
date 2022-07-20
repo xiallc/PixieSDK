@@ -292,9 +292,9 @@ void module::fifo_stats::set_bandwidth(const size_t bw) {
 std::string module::fifo_stats::output() const {
     constexpr auto word_size = sizeof(hw::word);
     std::ostringstream oss;
-    oss << "bw=" << bandwidth.load()
-        << "Mb/s max-bw=" << max_bandwidth.load()
-        << "Mb/s min-bw=" << min_bandwidth.load()
+    oss << "bw=" << bandwidth.load() / 10.0
+        << "Mb/s max-bw=" << max_bandwidth.load() / 10.0
+        << "Mb/s min-bw=" << min_bandwidth.load() / 10.0
         << "Mb/s in=" << in.load() * word_size
         << " out=" << out.load() * word_size
         << " dma-in=" << dma_in.load() * word_size
