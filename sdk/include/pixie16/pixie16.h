@@ -229,9 +229,9 @@ struct module_fifo_stats {
     size_t overflows; /** FIFO queue overflows */
     size_t dropped; /** FIFO queue data dropped */
     size_t hw_overflows; /** Estimate of HW FIFO overflows */
-    size_t bandwidth; /** Current bandwidth */
-    size_t max_bandwidth; /** Maximum bandwidth */
-    size_t min_bandwidth; /** Minimum bandwidth */
+    double bandwidth; /** Current bandwidth */
+    double max_bandwidth; /** Maximum bandwidth */
+    double min_bandwidth; /** Minimum bandwidth */
 };
 
 /**
