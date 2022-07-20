@@ -431,7 +431,8 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
                     return false;
 
 
-                std::cout << LOG("INFO") << "FIFO has " << num_fifo_words << " words." << std::endl;
+                std::cout << LOG("INFO") << "Module " << mod_num << " FIFO has " << num_fifo_words
+                          << " words." << std::endl;
                 /*
                      * NOTE: The PixieSDK now uses threaded list-mode FIFO workers that live on the host machine. These
                      * workers perform execute in parallel. They'll read the data from each module as needed to
@@ -641,7 +642,8 @@ bool execute_mca_run(unsigned int run_num, const configuration& cfg,
         std::string name = generate_filename(i, "mca-run" + std::to_string(run_num), "csv");
         export_mca_memory(cfg.modules[i], name);
 
-        if (!output_statistics_data(cfg.modules[i], "mca-run" + std::to_string(run_num) + "-stats")) {
+        if (!output_statistics_data(cfg.modules[i],
+                                    "mca-run" + std::to_string(run_num) + "-stats")) {
             return false;
         }
     }
@@ -825,8 +827,8 @@ void output_module_worker_info(const size_t mod_num) {
 
 void output_module_info(mod_cfg& mod) {
     ::module_config mcfg;
-    if (!verify_api_return_value(PixieGetModuleInfo(mod.number, &mcfg),
-        "PixieGetModuleInfo", false)) {
+    if (!verify_api_return_value(PixieGetModuleInfo(mod.number, &mcfg), "PixieGetModuleInfo",
+                                 false)) {
         throw std::runtime_error("Could not get module information for Module " +
                                  std::to_string(mod.number));
     }
@@ -1212,7 +1214,7 @@ int main(int argc, char** argv) {
 
     if (mca) {
         if (!execute_mca_runs(num_runs.Get(), cfg, run_time.Get(), synch_wait.Get(),
-                                    in_synch.Get()))
+                              in_synch.Get()))
             return EXIT_FAILURE;
     }
 
