@@ -1054,8 +1054,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
 PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned short* ModRev,
                                                  unsigned int* ModSerNum,
                                                  unsigned short* ModADCBits,
-                                                 unsigned short* ModADCMSPS,
-                                                 unsigned short* num_channels) {
+                                                 unsigned short* ModADCMSPS) {
     xia_log(xia::log::debug) << "Pixie16ReadModuleInfo: ModNum=" << ModNum;
 
     try {
@@ -1070,8 +1069,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned
             *ModADCBits = module->eeprom.configs[0].adc_bits;
         if (ModADCMSPS)
             *ModADCMSPS = module->eeprom.configs[0].adc_msps;
-        if (num_channels)
-            *num_channels = static_cast<unsigned short>(module->num_channels);
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
         return e.return_code();
