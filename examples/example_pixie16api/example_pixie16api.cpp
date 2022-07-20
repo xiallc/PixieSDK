@@ -81,9 +81,20 @@ struct firmware_spec {
     firmware_spec() : version(0), revision(0), adc_msps(0), adc_bits(0) {}
 };
 
-struct mod_cfg: module_config {
+struct mod_cfg {
     firmware_spec fw;
+    unsigned short adc_bit_resolution;
+    unsigned short adc_sampling_frequency;
+    std::string sys_fpga;
+    std::string dsp_code;
+    std::string dsp_var;
     std::string dsp_par;
+    std::string sp_fpga;
+    unsigned short number;
+    unsigned short number_of_channels;
+    unsigned short revision;
+    unsigned int serial_number;
+    unsigned short slot;
     fifo_worker_config worker_config;
     bool has_worker_cfg;
 };
@@ -164,33 +175,33 @@ void read_config(const std::string& config_file_name, configuration& cfg) {
 
         cfg.slot_def.push_back(module["slot"]);
 
-        mod_cfg mod_cfg;
-        mod_cfg.slot = module["slot"];
-        mod_cfg.number = static_cast<unsigned short>(cfg.slot_def.size() - 1);
-        mod_cfg.sys_fpga = module["fpga"]["sys"];
-        mod_cfg.sp_fpga = module["fpga"]["fippi"];
-        mod_cfg.dsp_code = module["dsp"]["ldr"];
-        mod_cfg.dsp_par = module["dsp"]["par"];
-        mod_cfg.dsp_var = module["dsp"]["var"];
+        mod_cfg mcfg;
+        mcfg.slot = module["slot"];
+        mcfg.number = static_cast<unsigned short>(cfg.slot_def.size() - 1);
+        mcfg.sys_fpga = module["fpga"]["sys"];
+        mcfg.sp_fpga = module["fpga"]["fippi"];
+        mcfg.dsp_code = module["dsp"]["ldr"];
+        mcfg.dsp_par = module["dsp"]["par"];
+        mcfg.dsp_var = module["dsp"]["var"];
         if (module.contains("fw")) {
-            mod_cfg.fw.version = module["fw"]["version"];
-            mod_cfg.fw.revision = module["fw"]["revision"];
-            mod_cfg.fw.adc_msps = module["fw"]["adc_msps"];
-            mod_cfg.fw.adc_bits = module["fw"]["adc_bits"];
+            mcfg.fw.version = module["fw"]["version"];
+            mcfg.fw.revision = module["fw"]["revision"];
+            mcfg.fw.adc_msps = module["fw"]["adc_msps"];
+            mcfg.fw.adc_bits = module["fw"]["adc_bits"];
         }
         if (module.contains("worker")) {
-            mod_cfg.worker_config.bandwidth_mb_per_sec = module["worker"]["bandwidth_mb_per_sec"];
-            mod_cfg.worker_config.buffers = module["worker"]["buffers"];
-            mod_cfg.worker_config.dma_trigger_level_bytes =
+            mcfg.worker_config.bandwidth_mb_per_sec = module["worker"]["bandwidth_mb_per_sec"];
+            mcfg.worker_config.buffers = module["worker"]["buffers"];
+            mcfg.worker_config.dma_trigger_level_bytes =
                 module["worker"]["dma_trigger_level_bytes"];
-            mod_cfg.worker_config.hold_usecs = module["worker"]["hold_usecs"];
-            mod_cfg.worker_config.idle_wait_usecs = module["worker"]["idle_wait_usecs"];
-            mod_cfg.worker_config.run_wait_usecs = module["worker"]["run_wait_usecs"];
-            mod_cfg.has_worker_cfg = true;
+            mcfg.worker_config.hold_usecs = module["worker"]["hold_usecs"];
+            mcfg.worker_config.idle_wait_usecs = module["worker"]["idle_wait_usecs"];
+            mcfg.worker_config.run_wait_usecs = module["worker"]["run_wait_usecs"];
+            mcfg.has_worker_cfg = true;
         } else {
-            mod_cfg.has_worker_cfg = false;
+            mcfg.has_worker_cfg = false;
         }
-        cfg.modules.push_back(mod_cfg);
+        cfg.modules.push_back(mcfg);
     }
 }
 
@@ -824,10 +835,23 @@ void output_module_worker_info(const size_t mod_num) {
 }
 
 void output_module_info(mod_cfg& mod) {
-    if (!verify_api_return_value(PixieGetModuleInfo(mod.number, dynamic_cast<module_config*>(&mod)),
-                                 "PixieGetModuleInfo", false))
+    ::module_config mcfg;
+    if (!verify_api_return_value(PixieGetModuleInfo(mod.number, &mcfg),
+        "PixieGetModuleInfo", false)) {
         throw std::runtime_error("Could not get module information for Module " +
                                  std::to_string(mod.number));
+    }
+    mod.adc_bit_resolution = mcfg.adc_bit_resolution;
+    mod.adc_sampling_frequency = mcfg.adc_sampling_frequency;
+    mod.sys_fpga = mcfg.sys_fpga;
+    mod.dsp_code = mcfg.dsp_code;
+    mod.dsp_var = mcfg.dsp_var;
+    mod.sp_fpga = mcfg.sp_fpga;
+    mod.number = mcfg.number;
+    mod.number_of_channels = mcfg.number_of_channels;
+    mod.revision = mcfg.revision;
+    mod.serial_number = mcfg.serial_number;
+    mod.slot = mcfg.slot;
     std::cout << LOG("INFO") << "Begin module information for Module " << mod.number << std::endl;
     std::cout << LOG("INFO") << "Serial Number: " << mod.serial_number << std::endl;
     std::cout << LOG("INFO") << "Revision: " << mod.revision << std::endl;

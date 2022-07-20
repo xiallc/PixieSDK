@@ -23,6 +23,8 @@
 #ifndef PIXIE_H
 #define PIXIE_H
 
+#include <stddef.h>
+
 #include <pixie/os_compat.hpp>
 
 #ifdef __cplusplus
@@ -201,18 +203,35 @@ struct fifo_worker_config {
  * @ingroup PIXIE16_API
  * @brief Defines a data structure used to provide users information about the module.
  */
+#define PIXIE16_API_MOD_CONFIG_MAX_STRING (256)
 struct module_config {
     unsigned short adc_bit_resolution;
     unsigned short adc_sampling_frequency;
-    std::string sys_fpga;
-    std::string dsp_code;
-    std::string dsp_var;
+    char sys_fpga[PIXIE16_API_MOD_CONFIG_MAX_STRING];
+    char dsp_code[PIXIE16_API_MOD_CONFIG_MAX_STRING];
+    char dsp_var[PIXIE16_API_MOD_CONFIG_MAX_STRING];
     unsigned short number;
     unsigned short number_of_channels;
     unsigned short revision;
     unsigned int serial_number;
     unsigned short slot;
-    std::string sp_fpga;
+    char sp_fpga[PIXIE16_API_MOD_CONFIG_MAX_STRING];
+};
+
+/**
+ * @ingroup PIXIE16_API
+ * @brief Defines a data structure used to provide users FIFO statistics for a module.
+ */
+struct module_fifo_stats {
+    size_t in; /** Data into the data FIFO queue */
+    size_t out; /** Data out of the data FIFO queue */
+    size_t dma_in; /** DMA data read from the module into the data FIFO queue */
+    size_t overflows; /** FIFO queue overflows */
+    size_t dropped; /** FIFO queue data dropped */
+    size_t hw_overflows; /** Estimate of HW FIFO overflows */
+    size_t bandwidth; /** Current bandwidth */
+    size_t max_bandwidth; /** Maximum bandwidth */
+    size_t min_bandwidth; /** Minimum bandwidth */
 };
 
 /**
@@ -1024,7 +1043,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned
  * @param[out] cfg A pointer to the module_config object that will store the retrieved data.
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
  */
-PIXIE_EXPORT int PIXIE_API PixieGetModuleInfo(unsigned short mod_num, module_config* cfg);
+PIXIE_EXPORT int PIXIE_API PixieGetModuleInfo(unsigned short mod_num,
+                                              struct module_config* cfg);
 
 /**
  * @ingroup PIXIE16_API
@@ -1503,7 +1523,7 @@ enum PIXIE_BOOT_MODE {
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
  */
 PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file,
-                                          const PIXIE_BOOT_MODE boot_mode);
+                                          const enum PIXIE_BOOT_MODE boot_mode);
 
 /**
  * @ingroup PIXIE_API
@@ -1513,7 +1533,7 @@ PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file,
  * @return The value of the xia::pixie::error::code indicating the result of the operation
  */
 PIXIE_EXPORT int PIXIE_API PixieGetWorkerConfiguration(unsigned short mod_num,
-                                                       fifo_worker_config* worker_config);
+                                                       struct fifo_worker_config* worker_config);
 
 /**
  * @ingroup PIXIE_API
@@ -1547,7 +1567,28 @@ PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version, con
  * @return The value of the xia::pixie::error::code indicating the result of the operation
  */
 PIXIE_EXPORT int PIXIE_API PixieSetWorkerConfiguration(unsigned short mod_num,
-                                                       fifo_worker_config* worker_config);
+                                                       struct fifo_worker_config* worker_config);
+
+/**
+ * @ingroup PIXIE_API
+ * @brief Read the session's statistics for the module.
+ * @param mod_num The module number to read the statistics from.
+ * @param fifo_stats A pointer to the statistics the module data is copied too.
+ * @return The value of the xia::pixie::error::code indicating the result of the operation
+ */
+PIXIE_EXPORT int PIXIE_API PixieReadModuleFifoStats(unsigned short mod_num,
+                                                    struct module_fifo_stats* fifo_stats);
+
+/**
+ * @ingroup PIXIE_API
+ * @brief Read the run's statistics for the module. if a run as finished the statistics
+ * are for the last run.
+ * @param mod_num The module number to read the statistics from.
+ * @param fifo_stats A pointer to the statistics the module data is copied too.
+ * @return The value of the xia::pixie::error::code indicating the result of the operation
+ */
+PIXIE_EXPORT int PIXIE_API PixieReadModuleRunFifoStats(unsigned short mod_num,
+                                                       struct module_fifo_stats* fifo_stats);
 
 #ifdef __cplusplus
 }

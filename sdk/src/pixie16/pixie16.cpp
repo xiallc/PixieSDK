@@ -1109,16 +1109,20 @@ PIXIE_EXPORT int PIXIE_API PixieGetModuleInfo(unsigned short mod_num, module_con
         cfg->slot = module->slot;
         for (const auto& fw: module->firmware) {
             if (fw->device == "sys") {
-                cfg->sys_fpga = fw->filename;
+                std::memset(cfg->sys_fpga, 0, sizeof(cfg->sys_fpga));
+                std::strncpy(cfg->sys_fpga, fw->filename.c_str(), sizeof(cfg->sys_fpga) - 1);
             }
             if (fw->device == "fippi") {
-                cfg->sp_fpga = fw->filename;
+                std::memset(cfg->sp_fpga, 0, sizeof(cfg->sp_fpga));
+                std::strncpy(cfg->sp_fpga, fw->filename.c_str(), sizeof(cfg->sp_fpga) - 1);
             }
             if (fw->device == "dsp") {
-                cfg->dsp_code = fw->filename;
+                std::memset(cfg->dsp_code, 0, sizeof(cfg->dsp_code));
+                std::strncpy(cfg->dsp_code, fw->filename.c_str(), sizeof(cfg->dsp_code) - 1);
             }
             if (fw->device == "var") {
-                cfg->dsp_var = fw->filename;
+                std::memset(cfg->dsp_var, 0, sizeof(cfg->dsp_var));
+                std::strncpy(cfg->dsp_var, fw->filename.c_str(), sizeof(cfg->dsp_var) - 1);
             }
         }
     } catch (xia_error& e) {
@@ -1140,7 +1144,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buff
                                                       unsigned short ModNum,
                                                       unsigned short ChanNum) {
     xia_log(xia::log::debug) << "Pixie16ReadSglChanADCTrace: ModNum=" << ModNum
-                            << " ChanNum=" << ChanNum << " Trace_Length=" << Trace_Length;
+                             << " ChanNum=" << ChanNum << " Trace_Length=" << Trace_Length;
 
     try {
         crate.ready();
@@ -1693,6 +1697,70 @@ PIXIE_EXPORT int PIXIE_API PixieSetWorkerConfiguration(const unsigned short mod_
         module->set_fifo_hold(worker_config->hold_usecs);
         module->set_fifo_idle_wait(worker_config->idle_wait_usecs);
         module->set_fifo_run_wait(worker_config->run_wait_usecs);
+    } catch (xia_error& e) {
+        xia_log(xia::log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (...) {
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+    return 0;
+}
+
+PIXIE_EXPORT int PIXIE_API PixieReadModuleFifoStats(unsigned short mod_num,
+                                                    struct module_fifo_stats* fifo_stats) {
+    xia_log(xia::log::debug) << "PixieReadModuleFifoStats: Module=" << mod_num;
+
+    try {
+        crate.ready();
+        xia::pixie::crate::module_handle module(crate, mod_num,
+                                                xia::pixie::crate::module_handle::present);
+        xia::pixie::module::module::fifo_stats snapshot;
+        snapshot = module->data_stats;
+        fifo_stats->in = snapshot.in;
+        fifo_stats->out = snapshot.out;
+        fifo_stats->dma_in = snapshot.dma_in;
+        fifo_stats->overflows = snapshot.overflows;
+        fifo_stats->dropped = snapshot.dropped;
+        fifo_stats->hw_overflows = snapshot.hw_overflows;
+        fifo_stats->bandwidth = snapshot.bandwidth;
+        fifo_stats->max_bandwidth = snapshot.max_bandwidth;
+        fifo_stats->min_bandwidth = snapshot.min_bandwidth;
+    } catch (xia_error& e) {
+        xia_log(xia::log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (...) {
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+    return 0;
+}
+
+PIXIE_EXPORT int PIXIE_API PixieReadModuleRunFifoStats(unsigned short mod_num,
+                                                       struct module_fifo_stats* fifo_stats) {
+    xia_log(xia::log::debug) << "PixieReadModuleRunFifoStats: Module=" << mod_num;
+
+    try {
+        crate.ready();
+        xia::pixie::crate::module_handle module(crate, mod_num,
+                                                xia::pixie::crate::module_handle::present);
+        xia::pixie::module::module::fifo_stats snapshot;
+        snapshot = module->run_stats;
+        fifo_stats->in = snapshot.in;
+        fifo_stats->out = snapshot.out;
+        fifo_stats->dma_in = snapshot.dma_in;
+        fifo_stats->overflows = snapshot.overflows;
+        fifo_stats->dropped = snapshot.dropped;
+        fifo_stats->hw_overflows = snapshot.hw_overflows;
+        fifo_stats->bandwidth = snapshot.bandwidth;
+        fifo_stats->max_bandwidth = snapshot.max_bandwidth;
+        fifo_stats->min_bandwidth = snapshot.min_bandwidth;
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
         return e.return_code();
