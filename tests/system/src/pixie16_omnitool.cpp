@@ -635,6 +635,20 @@ static std::vector<T> get_values(
     return values;
 }
 
+static void next(args_commands_iter& ci, args_commands_iter& ce) {
+    if (ci != ce) {
+        ++ci;
+    }
+}
+
+static const args_command& get_and_next(args_commands_iter& ci, args_commands_iter& ce) {
+    if (ci == ce) {
+        throw std::runtime_error("not enough arguments");
+    }
+    const args_command& opt = *ci;
+    next(ci, ce);
+    return opt;
+}
 static size_t args_count(args_commands_iter& ci, args_commands_iter& ce) {
     return std::distance(ci, ce);
 }
@@ -982,7 +996,7 @@ static void process_commands(
     auto ci = opts.begin();
     auto ce = opts.end();
     while (ci != ce) {
-        auto& opt = *ci++;
+        auto& opt = get_and_next(ci, ce);
         auto fci = find_command(opt);
         if (valid_command(fci)) {
             const command& cmd = std::get<1>(*fci);
@@ -1211,7 +1225,7 @@ static void adc_acq(
     if (!valid_option(ci, ce, 1)) {
         throw std::runtime_error("adj-acq: not enough options");
     }
-    auto mod_nums_opt = *ci++;
+    auto mod_nums_opt = get_and_next(ci, ce);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1225,14 +1239,14 @@ static void adc_save(
     if (!valid_option(ci, ce, 1)) {
         throw std::runtime_error("adj-save: not enough options");
     }
-    auto mod_nums_opt = *ci++;
+    auto mod_nums_opt = get_and_next(ci, ce);
     args_command chans_opt;
     args_command len_opt;
     if (valid_option(ci, ce, 1)) {
-        chans_opt = *ci++;
+        chans_opt = get_and_next(ci, ce);
     }
     if (valid_option(ci, ce, 1)) {
-        len_opt = *ci++;
+        len_opt = get_and_next(ci, ce);
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
@@ -1278,7 +1292,7 @@ static void adj_off(
     if (!valid_option(ci, ce, 1)) {
         throw std::runtime_error("adj-off: not enough options");
     }
-    auto mod_nums_opt = *ci++;
+    auto mod_nums_opt = get_and_next(ci, ce);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1292,7 +1306,7 @@ static void bl_acq(
     if (!valid_option(ci, ce, 1)) {
         throw std::runtime_error("bl-acq: not enough options");
     }
-    auto mod_nums_opt = *ci++;
+    auto mod_nums_opt = get_and_next(ci, ce);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1306,10 +1320,10 @@ static void bl_save(
     if (!valid_option(ci, ce, 1)) {
         throw std::runtime_error("bl-save: not enough options");
     }
-    auto mod_nums_opt = *ci++;
+    auto mod_nums_opt = get_and_next(ci, ce);
     args_command chans_opt;
     if (valid_option(ci, ce, 1)) {
-        chans_opt = *ci++;
+        chans_opt = get_and_next(ci, ce);
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
@@ -1364,7 +1378,7 @@ static void export_(
     if (!valid_option(ci, ce, 1)) {
         throw std::runtime_error("export: not enough options");
     }
-    auto file_opt = *ci++;
+    auto file_opt = get_and_next(ci, ce);
     xia::util::timepoint tp;
     if (verbose) {
         tp.start();
@@ -1385,7 +1399,7 @@ static void help(
               << "   eg '0' or '3,4,6' or '3,4-5,10,20-22'" << std::endl;
     args_command help_opt;
     if (args_count(ci, ce) >= 1) {
-        help_opt = *ci++;
+        help_opt = get_and_next(ci, ce);
     }
     auto mi = std::max_element(
         commands.begin(), commands.end(), [](auto& a, auto& b) {
@@ -1424,7 +1438,7 @@ static void hist_resume(
     if (!valid_option(ci, ce, 1)) {
         throw std::runtime_error("hist-resume: not enough options");
     }
-    auto mod_nums_opt = *ci++;
+    auto mod_nums_opt = get_and_next(ci, ce);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1440,10 +1454,10 @@ static void hist_save(
     if (!valid_option(ci, ce, 1)) {
         throw std::runtime_error("hist-save: not enough options");
     }
-    auto mod_nums_opt = *ci++;
+    auto mod_nums_opt = get_and_next(ci, ce);
     args_command chans_opt;
     if (valid_option(ci, ce, 1)) {
-        chans_opt = *ci++;
+        chans_opt = get_and_next(ci, ce);
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
@@ -1489,7 +1503,7 @@ static void hist_start(
     if (!valid_option(ci, ce, 1)) {
         throw std::runtime_error("hist-start: not enough options");
     }
-    auto mod_nums_opt = *ci++;
+    auto mod_nums_opt = get_and_next(ci, ce);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1504,7 +1518,7 @@ static void import(
     if (!valid_option(ci, ce, 1)) {
         throw std::runtime_error("import: not enough options");
     }
-    auto path_opt = *ci++;
+    auto path_opt = get_and_next(ci, ce);
     xia::util::timepoint tp;
     xia::pixie::module::number_slots modules;
     tp.start();
@@ -1585,9 +1599,9 @@ static void list_mode_command(
     if (!valid_option(ci, ce, 3)) {
         throw std::runtime_error("list-[save,mode]: not enough options");
     }
-    auto mod_nums_opt = *ci++;
-    auto secs_opt = *ci++;
-    auto name_opt = *ci++;
+    auto mod_nums_opt = get_and_next(ci, ce);
+    auto secs_opt = get_and_next(ci, ce);
+    auto name_opt = get_and_next(ci, ce);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     auto secs = get_value<size_t>(secs_opt);
@@ -1619,7 +1633,7 @@ static void list_resume(
     if (!valid_option(ci, ce, 1)) {
         throw std::runtime_error("list-resume: not enough options");
     }
-    auto mod_nums_opt = *ci++;
+    auto mod_nums_opt = get_and_next(ci, ce);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1640,7 +1654,7 @@ static void list_start(
     if (!valid_option(ci, ce, 1)) {
         throw std::runtime_error("list-start: not enough options");
     }
-    auto mod_nums_opt = *ci++;
+    auto mod_nums_opt = get_and_next(ci, ce);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1655,13 +1669,13 @@ static void lset_import(
     if (!valid_option(ci, ce, 2)) {
         throw std::runtime_error("lset-import: not enough options");
     }
-    auto mod_nums_opt = *ci++;
-    auto settings_opt = *ci++;
+    auto mod_nums_opt = get_and_next(ci, ce);
+    auto settings_opt = get_and_next(ci, ce);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     std::string action;
     if (valid_option(ci, ce, 1)) {
-        auto action_opt = *ci++;
+        auto action_opt = get_and_next(ci, ce);
         if (action_opt == "flush" || action_opt == "sync") {
             action = action_opt;
         } else {
@@ -1691,13 +1705,13 @@ static void lset_load(
     if (!valid_option(ci, ce, 2)) {
         throw std::runtime_error("lset-load: not enough options");
     }
-    auto mod_nums_opt = *ci++;
-    auto settings_opt = *ci++;
+    auto mod_nums_opt = get_and_next(ci, ce);
+    auto settings_opt = get_and_next(ci, ce);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     std::string action;
     if (valid_option(ci, ce, 1)) {
-        auto action_opt = *ci++;
+        auto action_opt = get_and_next(ci, ce);
         if (action_opt == "flush" || action_opt == "sync") {
             action = action_opt;
         } else {
@@ -1728,8 +1742,8 @@ static void lset_report(
     if (!valid_option(ci, ce, 2)) {
         throw std::runtime_error("lset-report: not enough options");
     }
-    auto mod_nums_opt = *ci++;
-    auto settings_opt = *ci++;
+    auto mod_nums_opt = get_and_next(ci, ce);
+    auto settings_opt = get_and_next(ci, ce);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1799,9 +1813,8 @@ static void reg_read(
     if (!valid_option(ci, ce, 2)) {
         throw std::runtime_error("reg-read: not enough options");
     }
-    auto mod_slot_opt = *ci++;
-    auto reg_opt = *ci++;
-    auto value_opt = *ci++;
+    auto mod_slot_opt = get_and_next(ci, ce);
+    auto reg_opt = get_and_next(ci, ce);
     size_t mod_slot = get_value<size_t>(mod_slot_opt);
     std::string mem;
     std::string reg;
@@ -1823,7 +1836,7 @@ static void reg_read(
         value = dsp.read(address);
     }
     if (hex_opt == "true") {
-        std::cout << std::hex;
+        std::cout << std::hex << "0x";
     }
     std::cout << value << std::endl;
     if (hex_opt == "true") {
@@ -1837,11 +1850,11 @@ static void par_read(
     if (!valid_option(ci, ce, 2)) {
         throw std::runtime_error("par-write: not enough options");
     }
-    auto mod_nums_opt = *ci++;
-    auto param_opt = *ci++;
+    auto mod_nums_opt = get_and_next(ci, ce);
+    auto param_opt = get_and_next(ci, ce);
     args_command chans_opt;
     if (valid_option(ci, ce, 1)) {
-        chans_opt = *ci++;
+        chans_opt = get_and_next(ci, ce);
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
@@ -1899,13 +1912,13 @@ static void par_write(
     if (!valid_option(ci, ce, 3)) {
         throw std::runtime_error("par-write: not enough options");
     }
-    auto mod_nums_opt = *ci++;
-    auto param_opt = *ci++;
-    auto value_opt = *ci++;
+    auto mod_nums_opt = get_and_next(ci, ce);
+    auto param_opt = get_and_next(ci, ce);
+    auto value_opt = get_and_next(ci, ce);
     args_command chans_opt;
     if (valid_option(ci, ce, 1)) {
         chans_opt = value_opt;
-        value_opt = *ci++;
+        value_opt = get_and_next(ci, ce);
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
@@ -1929,7 +1942,7 @@ static void report(
     if (!valid_option(ci, ce, 1)) {
         throw std::runtime_error("report: not enough options");
     }
-    auto file_opt = *ci++;
+    auto file_opt = get_and_next(ci, ce);
     std::ofstream output_file(file_opt);
     if (!output_file) {
         throw std::runtime_error(
@@ -1944,7 +1957,7 @@ static void run_active(
     if (!valid_option(ci, ce, 1)) {
         throw std::runtime_error("run-active: not enough options");
     }
-    auto mod_nums_opt = *ci++;
+    auto mod_nums_opt = get_and_next(ci, ce);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1959,7 +1972,7 @@ static void run_end(
     if (!valid_option(ci, ce, 1)) {
         throw std::runtime_error("run-end: not enough options");
     }
-    auto mod_nums_opt = *ci++;
+    auto mod_nums_opt = get_and_next(ci, ce);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1973,7 +1986,7 @@ static void set_dacs(
     if (!valid_option(ci, ce, 1)) {
         throw std::runtime_error("set-dacs: not enough options");
     }
-    auto mod_nums_opt = *ci++;
+    auto mod_nums_opt = get_and_next(ci, ce);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1988,13 +2001,13 @@ static void stats(
     if (!valid_option(ci, ce, 1)) {
         throw std::runtime_error("stats: not enough options");
     }
-    auto mod_nums_opt = *ci++;
+    auto mod_nums_opt = get_and_next(ci, ce);
     args_command chans_opt;
     if (valid_option(ci, ce, 1)) {
-        mod_nums_opt = *ci++;
+        mod_nums_opt = get_and_next(ci, ce);
     }
     if (valid_option(ci, ce, 1)) {
-        chans_opt = *ci++;
+        chans_opt = get_and_next(ci, ce);
     }
     std::string stat = "all";
     if (!stat_opt.empty()) {
@@ -2094,7 +2107,7 @@ static void test(
     if (!valid_option(ci, ce, 1)) {
         throw std::runtime_error("test: not enough options");
     }
-    auto mod_nums_opt = *ci++;
+    auto mod_nums_opt = get_and_next(ci, ce);
     xia::pixie::module::module::test mode = xia::pixie::module::module::test::off;
     if (!mode_opt.empty()) {
         if (mode_opt == "lmfifo") {
@@ -2122,15 +2135,15 @@ static void var_read(
     if (!valid_option(ci, ce, 2)) {
         throw std::runtime_error("var-read: not enough options");
     }
-    auto mod_nums_opt = *ci++;
-    auto param_opt = *ci++;
+    auto mod_nums_opt = get_and_next(ci, ce);
+    auto param_opt = get_and_next(ci, ce);
     args_command chans_opt;
     args_command offsets_opt = "0";
     if (valid_option(ci, ce, 1)) {
-        chans_opt = *ci++;
+        chans_opt = get_and_next(ci, ce);
     }
     if (valid_option(ci, ce, 1)) {
-        offsets_opt = *ci++;
+        offsets_opt = get_and_next(ci, ce);
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
@@ -2193,18 +2206,18 @@ static void var_write(
     if (!valid_option(ci, ce, 3)) {
         throw std::runtime_error("var-write: not enough options");
     }
-    auto mod_nums_opt = *ci++;
-    auto param_opt = *ci++;
-    auto value_opt = *ci++;
+    auto mod_nums_opt = get_and_next(ci, ce);
+    auto param_opt = get_and_next(ci, ce);
+    auto value_opt = get_and_next(ci, ce);
     args_command chans_opt;
     args_command offsets_opt = "0";
     if (valid_option(ci, ce, 1)) {
         chans_opt = value_opt;
-        value_opt = *ci++;
+        value_opt = get_and_next(ci, ce);
     }
     if (valid_option(ci, ce, 1)) {
         offsets_opt = value_opt;
-        value_opt = *ci++;
+        value_opt = get_and_next(ci, ce);
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
@@ -2263,7 +2276,7 @@ static void wait(
     if (!valid_option(ci, ce, 1)) {
         throw std::runtime_error("wait: not enough options");
     }
-    auto period_opt = *ci++;
+    auto period_opt = get_and_next(ci, ce);
     auto msecs = get_value<size_t>(period_opt);
     if (verbose) {
         std::cout << "waiting " << msecs << " msecs" << std::endl;
