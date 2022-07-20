@@ -81,20 +81,9 @@ struct firmware_spec {
     firmware_spec() : version(0), revision(0), adc_msps(0), adc_bits(0) {}
 };
 
-struct mod_cfg {
+struct mod_cfg : module_config {
     firmware_spec fw;
-    unsigned short adc_bit_resolution;
-    unsigned short adc_sampling_frequency;
-    std::string sys_fpga;
-    std::string dsp_code;
-    std::string dsp_var;
     std::string dsp_par;
-    std::string sp_fpga;
-    unsigned short number;
-    unsigned short number_of_channels;
-    unsigned short revision;
-    unsigned int serial_number;
-    unsigned short slot;
     fifo_worker_config worker_config;
     bool has_worker_cfg;
 };
@@ -178,11 +167,11 @@ void read_config(const std::string& config_file_name, configuration& cfg) {
         mod_cfg mcfg;
         mcfg.slot = module["slot"];
         mcfg.number = static_cast<unsigned short>(cfg.slot_def.size() - 1);
-        mcfg.sys_fpga = module["fpga"]["sys"];
-        mcfg.sp_fpga = module["fpga"]["fippi"];
-        mcfg.dsp_code = module["dsp"]["ldr"];
+        std::strcpy(mcfg.sys_fpga, module["fpga"]["sys"].get<std::string>().c_str());
+        std::strcpy(mcfg.sp_fpga, module["fpga"]["fippi"].get<std::string>().c_str());
+        std::strcpy(mcfg.dsp_code, module["dsp"]["ldr"].get<std::string>().c_str());
         mcfg.dsp_par = module["dsp"]["par"];
-        mcfg.dsp_var = module["dsp"]["var"];
+        std::strcpy(mcfg.dsp_var, module["dsp"]["var"].get<std::string>().c_str());
         if (module.contains("fw")) {
             mcfg.fw.version = module["fw"]["version"];
             mcfg.fw.revision = module["fw"]["revision"];
@@ -843,10 +832,6 @@ void output_module_info(mod_cfg& mod) {
     }
     mod.adc_bit_resolution = mcfg.adc_bit_resolution;
     mod.adc_sampling_frequency = mcfg.adc_sampling_frequency;
-    mod.sys_fpga = mcfg.sys_fpga;
-    mod.dsp_code = mcfg.dsp_code;
-    mod.dsp_var = mcfg.dsp_var;
-    mod.sp_fpga = mcfg.sp_fpga;
     mod.number = mcfg.number;
     mod.number_of_channels = mcfg.number_of_channels;
     mod.revision = mcfg.revision;
@@ -1039,28 +1024,27 @@ int main(int argc, char** argv) {
         if (mod.fw.version != 0) {
             std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
                       << ": sys" << std::endl;
-            int rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps,
-                                           mod.fw.adc_bits, "sys", mod.sys_fpga.c_str(),
-                                           mod.number);
+            int rc =
+                PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps,
+                                      mod.fw.adc_bits, "sys", mod.sys_fpga, mod.number);
             if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
                 return EXIT_FAILURE;
             std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
                       << ": fippi" << std::endl;
             rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps,
-                                       mod.fw.adc_bits, "fippi", mod.sp_fpga.c_str(),
-                                       mod.number);
+                                       mod.fw.adc_bits, "fippi", mod.sp_fpga, mod.number);
             if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
                 return EXIT_FAILURE;
             std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
                       << ": dsp" << std::endl;
             rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps,
-                                       mod.fw.adc_bits, "dsp", mod.dsp_code.c_str(), mod.number);
+                                       mod.fw.adc_bits, "dsp", mod.dsp_code, mod.number);
             if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
                 return EXIT_FAILURE;
             std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
                       << ": var" << std::endl;
             rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps,
-                                       mod.fw.adc_bits, "var", mod.dsp_var.c_str(), mod.number);
+                                       mod.fw.adc_bits, "var", mod.dsp_var, mod.number);
             if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
                 return EXIT_FAILURE;
             par_file = mod.dsp_par;
@@ -1072,9 +1056,9 @@ int main(int argc, char** argv) {
                       << std::dec << std::endl;
 
             if (!verify_api_return_value(
-                    Pixie16BootModule(mod.sys_fpga.c_str(), mod.sp_fpga.c_str(),
-                                      nullptr, mod.dsp_code.c_str(), mod.dsp_par.c_str(),
-                                      mod.dsp_var.c_str(), mod.number, boot_pattern),
+                    Pixie16BootModule(mod.sys_fpga, mod.sp_fpga, nullptr,
+                                      mod.dsp_code, mod.dsp_par.c_str(),
+                                      mod.dsp_var, mod.number, boot_pattern),
                     "Pixie16BootModule", "Finished booting!"))
                 return EXIT_FAILURE;
             std::cout << LOG("INFO") << "Finished Pixie16BootModule for Module " << mod.number
