@@ -151,6 +151,7 @@ struct timepoint {
     marker end_mark;
 
     timepoint(bool autostart = false);
+    timepoint(const timepoint& tp);
     ~timepoint();
 
     bool running() const {
@@ -173,6 +174,8 @@ struct timepoint {
 
     operator std::string();
     std::string output();
+
+    timepoint& operator=(const timepoint& tp);
 
 private:
     void lock();

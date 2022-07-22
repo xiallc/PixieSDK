@@ -89,6 +89,12 @@ timepoint::timepoint(bool autostart)
     }
 }
 
+timepoint::timepoint(const timepoint& tp)
+    : start_mark(tp.start_mark), end_mark(tp.end_mark),
+      active(tp.active.load()), suspended(tp.suspended.load()),
+      captured(tp.captured.load()), locked(false) {
+}
+
 timepoint::~timepoint() {
     lock();
 }
@@ -207,6 +213,17 @@ void timepoint::lock() {
 
 void timepoint::unlock() {
     locked = false;
+}
+
+timepoint& timepoint::operator=(const timepoint& tp) {
+    lock();
+    active = tp.active.load();
+    suspended = tp.suspended.load();
+    captured = tp.captured.load();
+    start_mark = tp.start_mark;
+    end_mark = tp.end_mark;
+    unlock();
+    return *this;
 }
 
 ieee_float::ieee_float() : value(0) {}

@@ -1723,9 +1723,9 @@ PIXIE_EXPORT int PIXIE_API PixieReadModuleFifoStats(unsigned short mod_num,
         fifo_stats->overflows = snapshot.overflows;
         fifo_stats->dropped = snapshot.dropped;
         fifo_stats->hw_overflows = snapshot.hw_overflows;
-        fifo_stats->bandwidth = snapshot.bandwidth / 10;
-        fifo_stats->max_bandwidth = snapshot.max_bandwidth / 10;
-        fifo_stats->min_bandwidth = snapshot.min_bandwidth / 10;
+        fifo_stats->bandwidth = snapshot.bandwidth;
+        fifo_stats->max_bandwidth = snapshot.max_bandwidth;
+        fifo_stats->min_bandwidth = snapshot.min_bandwidth;
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
         return e.return_code();
@@ -1755,9 +1755,9 @@ PIXIE_EXPORT int PIXIE_API PixieReadModuleRunFifoStats(unsigned short mod_num,
         fifo_stats->overflows = snapshot.overflows;
         fifo_stats->dropped = snapshot.dropped;
         fifo_stats->hw_overflows = snapshot.hw_overflows;
-        fifo_stats->bandwidth = snapshot.bandwidth / 10;
-        fifo_stats->max_bandwidth = snapshot.max_bandwidth / 10;
-        fifo_stats->min_bandwidth = snapshot.min_bandwidth / 10;
+        fifo_stats->bandwidth = snapshot.bandwidth;
+        fifo_stats->max_bandwidth = snapshot.max_bandwidth;
+        fifo_stats->min_bandwidth = snapshot.min_bandwidth;
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
         return e.return_code();
