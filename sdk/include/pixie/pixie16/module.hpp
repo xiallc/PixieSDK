@@ -155,7 +155,7 @@ public:
      * Stats for the module or a run.
      */
     struct fifo_stats {
-        static constexpr size_t bw_update_period = 1000000; /* only update after */
+        static constexpr size_t bw_update_period = 100000; /* only update after usecs */
 
         std::atomic_size_t in; /* Data into the fifo queue, units hw::words */
         std::atomic_size_t out; /* Data read from the fifo queue, units hw::words */
@@ -369,12 +369,7 @@ public:
     std::atomic_size_t fifo_bandwidth;
 
     /*
-     * Dataflow stats
-     */
-    fifo_stats data_stats;
-
-    /*
-     * Run stats
+     * Run stats, only updated when a run is active
      */
     util::timepoint run_interval; /* Period of the run */
     fifo_stats run_stats;

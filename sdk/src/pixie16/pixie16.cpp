@@ -1707,40 +1707,8 @@ PIXIE_EXPORT int PIXIE_API PixieSetWorkerConfiguration(const unsigned short mod_
     return 0;
 }
 
-PIXIE_EXPORT int PIXIE_API PixieReadModuleFifoStats(unsigned short mod_num,
-                                                    struct module_fifo_stats* fifo_stats) {
-    xia_log(xia::log::debug) << "PixieReadModuleFifoStats: Module=" << mod_num;
-
-    try {
-        crate.ready();
-        xia::pixie::crate::module_handle module(crate, mod_num,
-                                                xia::pixie::crate::module_handle::present);
-        xia::pixie::module::module::fifo_stats snapshot;
-        snapshot = module->data_stats;
-        fifo_stats->in = snapshot.get_in_bytes();
-        fifo_stats->out = snapshot.get_out_bytes();
-        fifo_stats->dma_in = snapshot.get_dma_in_bytes();
-        fifo_stats->overflows = snapshot.overflows;
-        fifo_stats->dropped = snapshot.dropped;
-        fifo_stats->hw_overflows = snapshot.hw_overflows;
-        fifo_stats->bandwidth = snapshot.bandwidth;
-        fifo_stats->max_bandwidth = snapshot.max_bandwidth;
-        fifo_stats->min_bandwidth = snapshot.min_bandwidth;
-    } catch (xia_error& e) {
-        xia_log(xia::log::error) << e;
-        return e.return_code();
-    } catch (std::bad_alloc& e) {
-        xia_log(xia::log::error) << "bad allocation: " << e.what();
-        return xia::pixie::error::return_code_bad_alloc_error();
-    } catch (...) {
-        xia_log(xia::log::error) << "unknown error: unhandled exception";
-        return xia::pixie::error::return_code_unknown_error();
-    }
-    return 0;
-}
-
-PIXIE_EXPORT int PIXIE_API PixieReadModuleRunFifoStats(unsigned short mod_num,
-                                                       struct module_fifo_stats* fifo_stats) {
+PIXIE_EXPORT int PIXIE_API PixieReadRunFifoStats(unsigned short mod_num,
+                                                 struct module_fifo_stats* fifo_stats) {
     xia_log(xia::log::debug) << "PixieReadModuleRunFifoStats: Module=" << mod_num;
 
     try {
@@ -1755,9 +1723,6 @@ PIXIE_EXPORT int PIXIE_API PixieReadModuleRunFifoStats(unsigned short mod_num,
         fifo_stats->overflows = snapshot.overflows;
         fifo_stats->dropped = snapshot.dropped;
         fifo_stats->hw_overflows = snapshot.hw_overflows;
-        fifo_stats->bandwidth = snapshot.bandwidth;
-        fifo_stats->max_bandwidth = snapshot.max_bandwidth;
-        fifo_stats->min_bandwidth = snapshot.min_bandwidth;
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
         return e.return_code();

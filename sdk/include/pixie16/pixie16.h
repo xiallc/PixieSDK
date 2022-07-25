@@ -229,9 +229,6 @@ struct module_fifo_stats {
     size_t overflows; /** FIFO queue overflows */
     size_t dropped; /** FIFO queue data dropped */
     size_t hw_overflows; /** Estimate of HW FIFO overflows */
-    double bandwidth; /** Current bandwidth */
-    double max_bandwidth; /** Maximum bandwidth */
-    double min_bandwidth; /** Minimum bandwidth */
 };
 
 /**
@@ -1571,24 +1568,14 @@ PIXIE_EXPORT int PIXIE_API PixieSetWorkerConfiguration(unsigned short mod_num,
 
 /**
  * @ingroup PIXIE_API
- * @brief Read the session's statistics for the module.
- * @param mod_num The module number to read the statistics from.
- * @param fifo_stats A pointer to the statistics the module data is copied too.
- * @return The value of the xia::pixie::error::code indicating the result of the operation
- */
-PIXIE_EXPORT int PIXIE_API PixieReadModuleFifoStats(unsigned short mod_num,
-                                                    struct module_fifo_stats* fifo_stats);
-
-/**
- * @ingroup PIXIE_API
  * @brief Read the run's statistics for the module. if a run as finished the statistics
  * are for the last run.
  * @param mod_num The module number to read the statistics from.
  * @param fifo_stats A pointer to the statistics the module data is copied too.
  * @return The value of the xia::pixie::error::code indicating the result of the operation
  */
-PIXIE_EXPORT int PIXIE_API PixieReadModuleRunFifoStats(unsigned short mod_num,
-                                                       struct module_fifo_stats* fifo_stats);
+PIXIE_EXPORT int PIXIE_API PixieReadRunFifoStats(unsigned short mod_num,
+                                                 struct module_fifo_stats* fifo_stats);
 
 #ifdef __cplusplus
 }

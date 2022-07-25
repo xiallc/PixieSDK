@@ -406,7 +406,7 @@ module::module(module&& m)
       fifo_idle_wait_usecs(m.fifo_idle_wait_usecs.load()),
       fifo_hold_usecs(m.fifo_hold_usecs.load()), fifo_bandwidth(m.fifo_bandwidth.load()),
       fifo_dma_trigger_level(m.fifo_dma_trigger_level.load()),
-      data_stats(m.data_stats), run_stats(m.run_stats), crate_revision(m.crate_revision),
+      run_stats(m.run_stats), crate_revision(m.crate_revision),
       board_revision(m.board_revision), reg_trace(m.reg_trace), bus_cycle_period(100),
       fifo_worker_running(false), fifo_worker_finished(false), fifo_worker_req(fifo_worker_working),
       fifo_worker_resp(fifo_worker_working), in_use(0), present_(m.present_.load()),
@@ -436,7 +436,6 @@ module::module(module&& m)
     m.fifo_hold_usecs = default_fifo_hold_usec;
     m.fifo_dma_trigger_level = default_fifo_dma_trigger_level;
     m.fifo_bandwidth = 0;
-    m.data_stats.clear();
     m.run_stats.clear();
     m.crate_revision = -1;
     m.board_revision = -1;
@@ -496,7 +495,6 @@ module& module::operator=(module&& m) {
     fifo_hold_usecs = m.fifo_hold_usecs.load();
     fifo_dma_trigger_level = m.fifo_dma_trigger_level.load();
     fifo_bandwidth = m.fifo_bandwidth.load();
-    data_stats = m.data_stats;
     run_stats = m.run_stats;
     crate_revision = m.crate_revision;
     board_revision = m.board_revision;
@@ -533,7 +531,6 @@ module& module::operator=(module&& m) {
     m.fifo_hold_usecs = default_fifo_hold_usec;
     m.fifo_dma_trigger_level = default_fifo_dma_trigger_level;
     m.fifo_bandwidth = 0;
-    m.data_stats.clear();
     m.run_stats.clear();
     m.crate_revision = -1;
     m.board_revision = -1;
@@ -752,8 +749,6 @@ void module::close() {
         }
 
         force_offline();
-
-        log_stats("total", data_stats);
 
         ps_dma = ::PlxPci_DmaChannelClose(&device->handle, 0);
         if (ps_dma != PLX_STATUS_OK) {
@@ -1784,7 +1779,6 @@ size_t module::read_list_mode(hw::words& values) {
         return 0;
     }
     auto out = fifo_data.copy(values);
-    data_stats.out += out;
     run_stats.out += out;
     xia_log(log::debug) << module_label(*this) << "read-list-mode: values=" << values.size()
                         << " out=" << out << " fifo-size=" << fifo_data.size();
@@ -1800,7 +1794,6 @@ size_t module::read_list_mode(hw::word_ptr values, const size_t size) {
     }
     lock_guard guard(lock_);
     auto out = fifo_data.copy(values, size);
-    data_stats.out += size;
     run_stats.out += size;
     xia_log(log::debug) << module_label(*this) << "read-list-mode: values=" << size
                         << " out=" << out << " fifo-size=" << fifo_data.size();
@@ -2131,7 +2124,6 @@ void module::end_test() {
     pause_fifo_worker = true;
     test_mode = test::off;
     log_stats("run", run_stats);
-    log_stats("total", data_stats);
 }
 
 void module::load_vars() {
@@ -2415,8 +2407,6 @@ void module::fifo_worker() {
 
         sync::variable::lock_guard guard(fifo_worker_working);
 
-        data_stats.start();
-
         while (fifo_worker_running.load()) {
             if (!online()) {
                 if (!fifo_worker_req.wait(100 * 1000)) {
@@ -2513,7 +2503,6 @@ void module::fifo_worker() {
                         fifo_full_logged = true;
                         xia_log(log::warning) << module_label(*this) << "FIFO worker: FIFO full";
                     }
-                    data_stats.hw_overflows++;
                     run_stats.hw_overflows++;
                 }
                 /*
@@ -2566,14 +2555,11 @@ void module::fifo_worker() {
                     }
                     buf->resize(read_words);
                     fifo.read(*buf, read_words);
-                    data_stats.dma_in += read_words;
                     run_stats.dma_in += read_words;
                     if (queue_buf) {
-                        data_stats.in += read_words;
                         run_stats.in += read_words;
                         fifo_data.push(buf);
                     } else {
-                        data_stats.dropped += read_words;
                         run_stats.dropped += read_words;
                         xia_log(log::debug) << module_label(*this)
                                             << std::boolalpha
@@ -2614,13 +2600,8 @@ void module::fifo_worker() {
                 }
 
                 /*
-                 * Bandwidth of data (process) FIFO and run FIFO
-                 * performance stats.
+                 * Bandwidth of run FIFO performance stats.
                  */
-                if (data_stats.update_bandwidth()) {
-                     xia_log(log::debug) << module_label(*this)
-                                         << "FIFO stats: data: " << data_stats.output();
-                }
                 if (run_stats.update_bandwidth()) {
                      xia_log(log::debug) << module_label(*this)
                                          << "FIFO stats:  run: " << run_stats.output();
@@ -2632,7 +2613,7 @@ void module::fifo_worker() {
                      */
                     auto bandwidth = fifo_bandwidth.load();
                     if (bandwidth > 0) {
-                        auto data_in_bw = data_stats.bandwidth.load();
+                        auto data_in_bw = run_stats.bandwidth.load();
                         if (data_in_bw >= bandwidth) {
                             size_t slice =
                                 (100 - ((100 * bandwidth) / hw::pci_bus_datarate)) * 100;
@@ -2699,8 +2680,6 @@ void module::fifo_worker() {
     } catch (...) {
         xia_log(log::error) << "FIFO worker: unhandled exception";
     }
-
-    data_stats.stop();
 
     level = fifo.level();
     xia_log(log::info) << module_label(*this) << "FIFO worker: finishing, level=" << level;
