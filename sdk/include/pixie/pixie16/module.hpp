@@ -157,12 +157,12 @@ public:
     struct fifo_stats {
         static constexpr size_t bw_update_period = 1000000; /* only update after */
 
-        std::atomic_size_t in; /* Data into the fifo queue */
-        std::atomic_size_t out; /* Data read from the fifo queue */
-        std::atomic_size_t dma_in; /* DMA data in */
-        std::atomic_size_t overflows; /* Fifo queue overflows */
-        std::atomic_size_t dropped; /* Fifo queue data dropped */
-        std::atomic_size_t hw_overflows; /* Fifo HW overflows */
+        std::atomic_size_t in; /* Data into the fifo queue, units hw::words */
+        std::atomic_size_t out; /* Data read from the fifo queue, units hw::words */
+        std::atomic_size_t dma_in; /* DMA data in, units hw::words */
+        std::atomic_size_t overflows; /* Fifo queue overflows, units events */
+        std::atomic_size_t dropped; /* Fifo queue data dropped, units events */
+        std::atomic_size_t hw_overflows; /* Fifo HW overflows, units events */
         std::atomic<double> bandwidth; /* Current bandwidth in MB/s*/
         std::atomic<double> max_bandwidth; /* Maximum bandwidth in MB/s */
         std::atomic<double> min_bandwidth; /* Minimum bandwidth in MB/s */
@@ -177,6 +177,13 @@ public:
         fifo_stats& operator=(const fifo_stats& s);
 
         /*
+         * Get the lengths in bytes
+         */
+        size_t get_in_bytes() const;
+        size_t get_out_bytes() const;
+        size_t get_dma_in_bytes() const;
+
+        /*
          * Update the bandwidth. The update only happens
          * after the @ref bw_update_period of time. True is
          * returned when the update occurred.
@@ -186,6 +193,8 @@ public:
         std::string output() const;
 
     private:
+        bool calc_bandwidth(bool update_min_max = true);
+
         util::timepoint interval;
         uint64_t last_update;
         size_t last_dma_in;

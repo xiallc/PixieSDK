@@ -247,22 +247,6 @@ module::fifo_stats::fifo_stats() {
     clear();
 }
 
-module::fifo_stats& module::fifo_stats::operator=(const module::fifo_stats& s) {
-    interval = s.interval;
-    last_update = s.last_update;
-    last_dma_in = s.last_dma_in;
-    in = s.in.load();
-    out = s.out.load();
-    dma_in = s.dma_in.load();
-    overflows = s.overflows.load();
-    dropped = s.dropped.load();
-    hw_overflows = s.hw_overflows.load();
-    bandwidth = s.bandwidth.load();
-    max_bandwidth = s.max_bandwidth.load();
-    min_bandwidth = s.min_bandwidth.load();
-    return *this;
-}
-
 module::fifo_stats::fifo_stats(const module::fifo_stats& s)
     : in(s.in.load()), out(s.out.load()), dma_in(s.dma_in.load()),
       overflows(s.overflows.load()), dropped(s.dropped.load()),
@@ -284,7 +268,7 @@ void module::fifo_stats::stop() {
     interval.stop();
     last_update = 0;
     last_dma_in = 0;
-    update_bandwidth();
+    calc_bandwidth(false);
 }
 
 void module::fifo_stats::clear() {
@@ -302,44 +286,78 @@ void module::fifo_stats::clear() {
     last_dma_in = 0;
 }
 
+module::fifo_stats& module::fifo_stats::operator=(const module::fifo_stats& s) {
+    interval = s.interval;
+    last_update = s.last_update;
+    last_dma_in = s.last_dma_in;
+    in = s.in.load();
+    out = s.out.load();
+    dma_in = s.dma_in.load();
+    overflows = s.overflows.load();
+    dropped = s.dropped.load();
+    hw_overflows = s.hw_overflows.load();
+    bandwidth = s.bandwidth.load();
+    max_bandwidth = s.max_bandwidth.load();
+    min_bandwidth = s.min_bandwidth.load();
+    return *this;
+}
+
+size_t module::fifo_stats::get_in_bytes() const {
+    return in.load() * sizeof(hw::words);
+}
+
+size_t module::fifo_stats::get_out_bytes() const {
+    return out.load() * sizeof(hw::words);
+}
+
+size_t module::fifo_stats::get_dma_in_bytes() const {
+    return dma_in.load() * sizeof(hw::words);
+}
+
 bool module::fifo_stats::update_bandwidth() {
-    bool updated = false;
-    if (interval.running()) {
-        auto period = interval.usecs();
-        auto update_period = period - last_update;
-        if (update_period >= bw_update_period) {
-            auto this_dma_in = dma_in.load();
-            double delta = (this_dma_in - last_dma_in) * sizeof(hw::word);
-            double bw = delta / update_period;
-            bandwidth = bw;
-            if (bw > max_bandwidth.load()) {
-                max_bandwidth = bw;
-            }
-            if (min_bandwidth == 0 || bw < min_bandwidth.load()) {
-                min_bandwidth = bw;
-            }
-            last_dma_in = this_dma_in;
-            last_update = period;
-            updated = true;
-        }
+    if (!interval.running()) {
+        return false;
     }
-    return updated;
+    return calc_bandwidth();
 }
 
 std::string module::fifo_stats::output() const {
-    constexpr auto word_size = sizeof(hw::word);
     auto period = interval;
     std::ostringstream oss;
     oss << "period=" << period
         << " bw=" << bandwidth
         << "MB/s max-bw=" << max_bandwidth
         << "MB/s min-bw=" << min_bandwidth
-        << "MB/s in=" << in.load() * word_size
-        << " out=" << out.load() * word_size
-        << " dma-in=" << dma_in.load() * word_size
+        << "MB/s in=" << get_in_bytes()
+        << " out=" << get_out_bytes()
+        << " dma-in=" << get_dma_in_bytes()
         << " overflows=" << overflows.load() << " dropped=" << dropped.load()
         << " hw-overflows=" << hw_overflows.load();
     return oss.str();
+}
+
+bool module::fifo_stats::calc_bandwidth(bool update_min_max) {
+    bool updated = false;
+    auto period = interval.usecs();
+    auto update_period = period - last_update;
+    if (update_period >= bw_update_period) {
+        auto this_dma_in = dma_in.load();
+        double delta = (this_dma_in - last_dma_in) * sizeof(hw::word);
+        double bw = delta / update_period;
+        bandwidth = bw;
+        if (update_min_max) {
+            if (bw > max_bandwidth.load()) {
+                max_bandwidth = bw;
+            }
+            if (min_bandwidth == 0 || bw < min_bandwidth.load()) {
+                min_bandwidth = bw;
+            }
+        }
+        last_dma_in = this_dma_in;
+        last_update = period;
+        updated = true;
+    }
+    return updated;
 }
 
 /*

@@ -1717,9 +1717,9 @@ PIXIE_EXPORT int PIXIE_API PixieReadModuleFifoStats(unsigned short mod_num,
                                                 xia::pixie::crate::module_handle::present);
         xia::pixie::module::module::fifo_stats snapshot;
         snapshot = module->data_stats;
-        fifo_stats->in = snapshot.in;
-        fifo_stats->out = snapshot.out;
-        fifo_stats->dma_in = snapshot.dma_in;
+        fifo_stats->in = snapshot.get_in_bytes();
+        fifo_stats->out = snapshot.get_out_bytes();
+        fifo_stats->dma_in = snapshot.get_dma_in_bytes();
         fifo_stats->overflows = snapshot.overflows;
         fifo_stats->dropped = snapshot.dropped;
         fifo_stats->hw_overflows = snapshot.hw_overflows;
@@ -1749,9 +1749,9 @@ PIXIE_EXPORT int PIXIE_API PixieReadModuleRunFifoStats(unsigned short mod_num,
                                                 xia::pixie::crate::module_handle::present);
         xia::pixie::module::module::fifo_stats snapshot;
         snapshot = module->run_stats;
-        fifo_stats->in = snapshot.in;
-        fifo_stats->out = snapshot.out;
-        fifo_stats->dma_in = snapshot.dma_in;
+        fifo_stats->in = snapshot.get_in_bytes();
+        fifo_stats->out = snapshot.get_out_bytes();
+        fifo_stats->dma_in = snapshot.get_dma_in_bytes();
         fifo_stats->overflows = snapshot.overflows;
         fifo_stats->dropped = snapshot.dropped;
         fifo_stats->hw_overflows = snapshot.hw_overflows;
