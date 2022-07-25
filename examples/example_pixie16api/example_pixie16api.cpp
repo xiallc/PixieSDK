@@ -470,14 +470,13 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
 
     std::cout << LOG("INFO") << "Checking that the run is finalized in all the modules."
               << std::endl;
-    bool all_modules_finished = false;
+    bool all_modules_finished;
     const unsigned int max_finalize_attempts = 50;
     for (unsigned int counter = 0; counter < max_finalize_attempts; counter++) {
+        all_modules_finished = true;
         for (unsigned short k = 0; k < cfg.num_modules(); k++) {
             if (Pixie16CheckRunStatus(k) == 1) {
                 all_modules_finished = false;
-            } else {
-                all_modules_finished = true;
             }
         }
         if (all_modules_finished) {
@@ -615,14 +614,13 @@ bool execute_mca_run(unsigned int run_num, const configuration& cfg,
 
     std::cout << LOG("INFO") << "Checking that the run is finalized in all the modules."
               << std::endl;
-    bool all_modules_finished = false;
+    bool all_modules_finished;
     const unsigned int max_finalize_attempts = 50;
     for (unsigned int counter = 0; counter < max_finalize_attempts; counter++) {
+        all_modules_finished = true;
         for (unsigned short k = 0; k < cfg.num_modules(); k++) {
             if (Pixie16CheckRunStatus(k) == 1) {
                 all_modules_finished = false;
-            } else {
-                all_modules_finished = true;
             }
         }
         if (all_modules_finished) {
