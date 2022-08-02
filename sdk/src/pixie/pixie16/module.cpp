@@ -303,15 +303,15 @@ module::fifo_stats& module::fifo_stats::operator=(const module::fifo_stats& s) {
 }
 
 size_t module::fifo_stats::get_in_bytes() const {
-    return in.load() * sizeof(hw::words);
+    return in.load() * sizeof(hw::word);
 }
 
 size_t module::fifo_stats::get_out_bytes() const {
-    return out.load() * sizeof(hw::words);
+    return out.load() * sizeof(hw::word);
 }
 
 size_t module::fifo_stats::get_dma_in_bytes() const {
-    return dma_in.load() * sizeof(hw::words);
+    return dma_in.load() * sizeof(hw::word);
 }
 
 bool module::fifo_stats::update_bandwidth() {
