@@ -180,6 +180,7 @@ void eeprom::process() {
         if (revision >= hw::rev_B) {
             serial_num = get16<int>(0);
         } else {
+            revision = get8<int>(1);
             serial_num = get8<int>(0);
         }
 
