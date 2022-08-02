@@ -149,6 +149,7 @@ void eeprom::clear() {
     num_channels = 0;
     max_channels = 0;
     configs.clear();
+    dbs.clear();
 }
 
 void eeprom::clear_data() {
