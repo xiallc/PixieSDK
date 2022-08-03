@@ -183,70 +183,104 @@ int main(int argc, char** argv) {
     std::cout << LOG("INFO") << "Starting to parse " << input_flag.Get() << std::endl;
 
     std::ifstream input(input_flag.Get(), std::ios::in | std::ios::binary | std::ios::ate);
-    xia::pixie::data::list_mode::records records;
     xia::pixie::data::list_mode::buffer remainder;
+    auto record_total = 0;
+    channel_stats stats;
     try {
         if (input.fail()) {
             throw std::ios_base::failure("open: " + input_flag.Get() + ": " + std::strerror(errno));
         }
 
-        auto size = input.tellg();
-        /*
-         * We divide by 4 in the vector size as we're wanting to read 32-bit ints, which are read
-         * using a char data type.
-         */
-        xia::pixie::data::list_mode::buffer data(size / 4, 0);
-        input.seekg(0);
-        input.read(reinterpret_cast<char*>(&data.data()[0]), size);
-        input.close();
+        static const auto bytes_per_word = 4;
+        static const auto chunk_size_words = 262144;
+        auto size_bytes = input.tellg();
+        auto size_words = size_bytes / bytes_per_word;
+        auto num_chunks = size_words / chunk_size_words;
+        auto data_vec_size = chunk_size_words;
 
-        xia::pixie::data::list_mode::decode_data_block(data, cfgs[0].revision, cfgs[0].frequency,
-                                                       records, remainder);
+        if (size_words < chunk_size_words) {
+            data_vec_size = size_words;
+        }
+
+        std::cout << LOG("INFO") << "File Size In Bytes: " << size_bytes
+                  << " | File Size In Words: " << size_words << std::endl;
+
+        input.seekg(0);
+        std::cout << LOG("INFO") << "Starting to decode data." << std::endl;
+        for (int chunk_num = 0; chunk_num <= num_chunks; chunk_num++) {
+            xia::pixie::data::list_mode::buffer data(data_vec_size, 0);
+            input.read(reinterpret_cast<char*>(&data[0]), chunk_size_words * bytes_per_word);
+            if (!remainder.empty()) {
+                data.insert(data.begin(), remainder.begin(), remainder.end());
+                remainder.clear();
+                remainder.shrink_to_fit();
+            }
+            try {
+                xia::pixie::data::list_mode::records records;
+                xia::pixie::data::list_mode::decode_data_block(
+                    data, cfgs[0].revision, cfgs[0].frequency, records, remainder);
+                record_total += records.size();
+                for (const auto& record : records) {
+                    auto stat_rec = stats.find(record.channel_number);
+                    if (stat_rec == stats.end()) {
+                        stats[record.channel_number] = {record.channel_number,
+                                                        1,
+                                                        0,
+                                                        record.energy,
+                                                        record.energy,
+                                                        record.energy,
+                                                        static_cast<double>(record.event_length),
+                                                        static_cast<double>(record.header_length),
+                                                        record.time.count(),
+                                                        record.time.count(),
+                                                        static_cast<double>(record.trace_length)};
+                    } else {
+                        auto ch = &stat_rec->second;
+                        ch->count++;
+                        ch->energy_ave += record.energy;
+                        ch->trace_length_ave += record.trace_length;
+                        ch->header_length_ave += record.header_length;
+                        ch->event_length_ave += record.event_length;
+
+                        if (record.energy > ch->energy_max) {
+                            ch->energy_max = record.energy;
+                        }
+                        if (record.energy < ch->energy_min) {
+                            ch->energy_min = record.energy;
+                        }
+                        if (record.time.count() > ch->time_max) {
+                            ch->time_max = record.time.count();
+                        }
+                        if (record.time.count() < ch->time_min) {
+                            ch->time_min = record.time.count();
+                        }
+                    }
+                }
+            } catch (xia::pixie::data::list_mode::error& error) {
+                /*
+                 * We'll eat any issue related to an invalid header length, but this will at least
+                 * allow us to continue processing the data file.
+                 */
+                if (error.type == xia::pixie::data::list_mode::error::code::invalid_header_length) {
+                    continue;
+                } else {
+                    std::cout << LOG("ERROR") << error.what() << std::endl;
+                }
+            }
+        }
+        std::cout << LOG("INFO") << "Finished decoding data in "
+                  << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
+                  << std::endl;
+        input.close();
+    } catch (std::bad_alloc& bad_alloc) {
+        std::cout << LOG("ERROR") << bad_alloc.what() << std::endl;
     } catch (std::ios_base::failure& failure) {
         std::cout << LOG("ERROR") << failure.what() << std::endl;
     } catch (xia::pixie::error::error& sdkerr) {
         std::cout << LOG("ERROR") << sdkerr.what() << std::endl;
     }
 
-    std::cout << LOG("INFO") << "Total records processed : " << records.size() << std::endl;
-
-    channel_stats stats;
-    for (const auto& record : records) {
-        auto stat_rec = stats.find(record.channel_number);
-        if (stat_rec == stats.end()) {
-            stats[record.channel_number] = {record.channel_number,
-                                            1,
-                                            0,
-                                            record.energy,
-                                            record.energy,
-                                            record.energy,
-                                            static_cast<double>(record.event_length),
-                                            static_cast<double>(record.header_length),
-                                            record.time.count(),
-                                            record.time.count(),
-                                            static_cast<double>(record.trace_length)};
-        } else {
-            auto ch = &stat_rec->second;
-            ch->count++;
-            ch->energy_ave += record.energy;
-            ch->trace_length_ave += record.trace_length;
-            ch->header_length_ave += record.header_length;
-            ch->event_length_ave += record.event_length;
-
-            if (record.energy > ch->energy_max) {
-                ch->energy_max = record.energy;
-            }
-            if (record.energy < ch->energy_min) {
-                ch->energy_min = record.energy;
-            }
-            if (record.time.count() > ch->time_max) {
-                ch->time_max = record.time.count();
-            }
-            if (record.time.count() < ch->time_min) {
-                ch->time_min = record.time.count();
-            }
-        }
-    }
+    std::cout << LOG("INFO") << "Total records processed : " << record_total << std::endl;
 
     for (auto& stat : stats) {
         auto ch = &stat.second;
