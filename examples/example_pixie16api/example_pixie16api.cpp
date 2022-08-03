@@ -46,21 +46,23 @@
 #include <unistd.h>
 #endif
 
+std::string walltime_iso_string() {
+    std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+    std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
+    std::chrono::milliseconds now2 =
+        std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
+    char timeBuffer[80];
+    std::strftime(timeBuffer, 80, "%FT%T", gmtime(&currentTime));
+
+    std::stringstream tmp;
+    tmp << timeBuffer << "." << std::setfill('0') << std::setw(3) << now2.count() % 1000 << "Z";
+    return tmp.str();
+}
+
 struct LOG {
     explicit LOG(const std::string& type) {
         type_ = type;
-
-        std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-        std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
-        std::chrono::milliseconds now2 =
-            std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
-        char timeBuffer[80];
-        std::strftime(timeBuffer, 80, "%FT%T", gmtime(&currentTime));
-
-        std::stringstream tmp;
-        tmp << timeBuffer << "." << std::setfill('0') << std::setw(3) << now2.count() % 1000 << "Z";
-
-        datetime_ = tmp.str();
+        datetime_ = walltime_iso_string();
     }
 
     friend std::ostream& operator<<(std::ostream& os, const LOG& log) {
@@ -143,6 +145,21 @@ void verify_json_module(const nlohmann::json& mod) {
                 "dma_trigger_level_bytes, hold_usecs, idle_wait_usecs, run_wait_usecs).");
         }
     }
+}
+
+std::string fifo_stats_to_json(module_fifo_stats& stats) {
+    nlohmann::json data = {
+        {"timestamp", std::chrono::duration_cast<std::chrono::microseconds>(
+                          std::chrono::system_clock::now().time_since_epoch())
+                          .count()},
+        {"in", stats.in},
+        {"out", stats.out},
+        {"dma_in", stats.dma_in},
+        {"overflows", stats.overflows},
+        {"dropped", stats.dropped},
+        {"hw_overflows", stats.hw_overflows},
+    };
+    return data.dump();
 }
 
 void read_config(const std::string& config_file_name, configuration& cfg) {
@@ -377,14 +394,20 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
                                  "Pixie16StartListModeRun"))
         return false;
 
-    std::vector<std::ofstream*> output_streams(cfg.num_modules());
+    std::vector<std::ofstream*> record_streams(cfg.num_modules());
+    std::vector<std::ofstream*> fifo_stat_streams(cfg.num_modules());
     for (unsigned short i = 0; i < cfg.num_modules(); i++) {
-        output_streams[i] = new std::ofstream(
+        record_streams[i] = new std::ofstream(
             generate_filename(i, "list-mode-run" + std::to_string(run_num) + "-recs", "bin"),
             std::ios::out | std::ios::binary);
+        fifo_stat_streams[i] = new std::ofstream(
+            generate_filename(i, "list-mode-run" + std::to_string(run_num) + "-fifo-stats",
+                              "jsonl"),
+            std::ios::out);
     }
 
     unsigned int num_fifo_words = 0;
+    module_fifo_stats fifo_stats{};
 
     std::cout << LOG("INFO") << "Collecting data for " << runtime_in_seconds << " s." << std::endl;
     std::chrono::steady_clock::time_point run_start_time = std::chrono::steady_clock::now();
@@ -448,9 +471,18 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
                             Pixie16ReadDataFromExternalFIFO(data.data(), num_fifo_words, mod_num),
                             "Pixie16ReadDataFromExternalFIFO", false))
                         return false;
-                    output_streams[mod_num]->write(reinterpret_cast<char*>(data.data()),
+                    record_streams[mod_num]->write(reinterpret_cast<char*>(data.data()),
                                                    num_fifo_words * sizeof(uint32_t));
                 }
+
+                /*
+                 * The PixieSDK tracks list-mode data statistics. It keeps track of
+                 * how much data goes into the FIFO and how much data gets read out. We print
+                 */
+                if (!verify_api_return_value(PixieReadRunFifoStats(mod_num, &fifo_stats),
+                                             "PixieReadRunFifoStats", false))
+                    return false;
+                *fifo_stat_streams[mod_num] << fifo_stats_to_json(fifo_stats) << std::endl;
             } else {
                 std::cout << LOG("INFO") << "Module " << mod_num << " has no active run!"
                           << std::endl;
@@ -463,9 +495,6 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
          * in all chassis.
          */
         run_status = Pixie16CheckRunStatus(cfg.modules[0].number);
-
-        //Temper the thread so that we don't slam the module with run status requests.
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     std::cout << LOG("INFO") << "Checking that the run is finalized in all the modules."
@@ -517,11 +546,17 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
                     Pixie16ReadDataFromExternalFIFO(data.data(), num_fifo_words, mod_num),
                     "Pixie16ReadDataFromExternalFIFO", false))
                 return false;
-            output_streams[mod_num]->write(reinterpret_cast<char*>(data.data()),
+            record_streams[mod_num]->write(reinterpret_cast<char*>(data.data()),
                                            num_fifo_words * sizeof(uint32_t));
+
+            if (!verify_api_return_value(PixieReadRunFifoStats(mod_num, &fifo_stats),
+                                         "PixieReadRunFifoStats", false))
+                return false;
+            *fifo_stat_streams[mod_num] << fifo_stats_to_json(fifo_stats) << std::endl;
         }
+
         if (!output_statistics_data(cfg.modules[mod_num],
-                                    "list-mode-run" + std::to_string(run_num) + "-stats")) {
+                                    "list-mode-run" + std::to_string(run_num) + "-hw-stats")) {
             return false;
         }
 
@@ -530,7 +565,10 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
         export_mca_memory(cfg.modules[mod_num], name);
     }
 
-    for (auto& stream : output_streams)
+    for (auto& stream : record_streams)
+        stream->close();
+
+    for (auto& stream : fifo_stat_streams)
         stream->close();
 
     return true;
