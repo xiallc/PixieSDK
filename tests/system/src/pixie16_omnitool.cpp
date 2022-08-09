@@ -42,8 +42,12 @@
 #include <args/args.hxx>
 #include <nolhmann/json.hpp>
 
-#include <sys/types.h>
+#if defined(_WIN64) || defined(_WIN32)
+#include <windows.h>
+#else
 #include <dirent.h>
+#include <sys/types.h>
+#endif
 
 /*
  * Localize the log and error
@@ -2426,7 +2430,7 @@ int main(int argc, char* argv[]) {
         if (fw_host_path_flag) {
             process_opts.firmware_host_path = args::get(fw_host_path_flag);
         } else {
-#if WIN32
+#if defined(_WIN64) || defined(_WIN32)
             process_opts.firmware_host_path = "c:/xia/pixie/firmware";
 #else
             process_opts.firmware_host_path = "/usr/local/xia/pixie/firmware";
