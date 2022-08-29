@@ -44,6 +44,7 @@
 
 #if defined(_WIN64) || defined(_WIN32)
 #include <windows.h>
+#include <isakbosman/dirent.h>
 #else
 #include <dirent.h>
 #include <sys/types.h>
