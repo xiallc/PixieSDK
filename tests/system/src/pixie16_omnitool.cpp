@@ -61,6 +61,35 @@ using error = xia::pixie::error::error;
 using json = nlohmann::json;
 
 /*
+ * Operating system specific defaults
+ */
+#if defined(_WIN64) || defined(_WIN32)
+constexpr const char* system_firmware_path = "c:/xia/pixie/firmware";
+#else
+constexpr const char* system_firmware_path = "/usr/local/xia/pixie/firmware";
+#endif
+
+/*
+ * Process command line options
+ */
+using slot_range = std::vector<int>;
+using module_range = std::vector<size_t>;
+using files = std::vector<std::string>;
+
+struct process_command_options {
+    int num_modules;
+    slot_range slots;
+    std::string firmware_host_path;
+    files firmware_crate_files;
+    files firmware_files;
+    bool reg_trace;
+    bool verbose;
+    std::ostream& out;
+
+    process_command_options(std::ostream& out);
+};
+
+/*
  * Module threading worker base
  */
 struct module_thread_worker {
@@ -77,12 +106,10 @@ struct module_thread_worker {
 
     module_thread_worker();
 
-    virtual void worker(xia::pixie::module::module& module) = 0;
+    virtual void worker(
+        process_command_options& process_opts,
+        xia::pixie::module::module& module) = 0;
 };
-
-using slot_range = std::vector<int>;
-using module_range = std::vector<size_t>;
-using files = std::vector<std::string>;
 
 struct firmware {
     std::string filename;
@@ -102,16 +129,6 @@ struct firmware {
 
 using firmwares = std::vector<firmware>;
 
-struct process_command_options {
-    int num_modules;
-    slot_range slots;
-    std::string firmware_host_path;
-    files firmware_crate_files;
-    files firmware_files;
-    bool reg_trace;
-    bool verbose;
-};
-
 /*
  * Command processor.
  */
@@ -128,12 +145,20 @@ using args_positional_list = args::PositionalList<args_command>;
 using args_commands = std::vector<args_command>;
 using args_commands_iter = args_commands::iterator;
 
+struct command_args {
+    xia::pixie::crate::crate& crate;
+    process_command_options& opts;
+    args_commands_iter ci;
+    args_commands_iter ce;
+
+    command_args(
+        xia::pixie::crate::crate& crate, process_command_options& opts,
+        args_commands_iter ci, args_commands_iter ce);
+};
+
 struct command {
     using alias = std::vector<std::string>;
-    using handler = void (*)(
-        xia::pixie::crate::crate& crate,
-        args_commands_iter& ci, args_commands_iter& ce,
-        bool verbose);
+    using handler = void (*)(command_args& args);
 
     std::string name;
     handler call;
@@ -145,10 +170,7 @@ struct command {
     command() = default;
 };
 
-#define command_handler_decl(_name) \
-    static void _name(\
-       xia::pixie::crate::crate& crate, \
-       args_commands_iter& ci, args_commands_iter& ce, bool verbose)
+#define command_handler_decl(_name) static void _name(command_args& args)
 
 /*
  * The commands are sorted alphabetical
@@ -640,22 +662,22 @@ static std::vector<T> get_values(
     return values;
 }
 
-static void next(args_commands_iter& ci, args_commands_iter& ce) {
-    if (ci != ce) {
-        ++ci;
+static void next(command_args& args) {
+    if (args.ci != args.ce) {
+        ++args.ci;
     }
 }
 
-static const args_command& get_and_next(args_commands_iter& ci, args_commands_iter& ce) {
-    if (ci == ce) {
+static const args_command& get_and_next(command_args& args) {
+    if (args.ci == args.ce) {
         throw std::runtime_error("not enough arguments");
     }
-    const args_command& opt = *ci;
-    next(ci, ce);
+    const args_command& opt = *args.ci;
+    next(args);
     return opt;
 }
-static size_t args_count(args_commands_iter& ci, args_commands_iter& ce) {
-    return std::distance(ci, ce);
+static size_t args_count(command_args& args) {
+    return std::distance(args.ci, args.ce);
 }
 
 static command_map::const_iterator find_command(const args_command& opt) {
@@ -677,41 +699,39 @@ static bool valid_command(command_map::const_iterator ci) {
     return ci != commands.end();
 }
 
-static bool valid_option(
-    args_commands_iter& ci, args_commands_iter& ce, size_t count) {
+static bool valid_option(command_args& args, size_t count) {
     bool valid = true;
-    if (args_count(ci, ce) < count) {
+    if (args_count(args) < count) {
         valid = false;
     } else {
         for (int i = 0; valid && i < count; ++i) {
-            valid = !valid_command(find_command(*(ci + i)));
+            valid = !valid_command(find_command(*(args.ci + i)));
         }
     }
     return valid;
 }
 
 static args_command switch_option(
-    const std::string& opt_switch, args_commands_iter& ci, args_commands_iter& ce,
-    bool has_opt = true) {
+    const std::string& opt_switch, command_args& args, bool has_opt = true) {
     args_command sopt;
-    if (ci != ce) {
-        auto opt = *ci;
+    if (args.ci != args.ce) {
+        auto opt = *args.ci;
         if (!valid_command(find_command(opt))) {
             /*
              * Check the start of the option for the option switch
              */
             if (starts_with(opt, opt_switch)) {
-                ++ci;
+                ++args.ci;
                 /*
                  * Get next opt if separate else remove the switch
                  */
                 if (opt == opt_switch) {
                     if (has_opt) {
-                        if (ci == ce) {
+                        if (args.ci == args.ce) {
                             throw std::runtime_error(
                                 "no option with switch: " + opt_switch);
                         }
-                        sopt = *ci++;
+                        sopt = *args.ci++;
                     }
                 } else {
                     sopt = opt.substr(opt_switch.length());
@@ -807,6 +827,14 @@ static void find_files(
         throw;
     }
 }
+
+process_command_options::process_command_options(std::ostream& out_)
+    : num_modules(-1), reg_trace(false), verbose(false), out(out_) {}
+
+command_args::command_args(
+    xia::pixie::crate::crate& crate_, process_command_options& opts_,
+        args_commands_iter ci_, args_commands_iter ce_)
+    : crate(crate_), opts(opts_), ci(ci_), ce(ce_) {}
 
 firmware::firmware(
     const std::string& name, const std::string& dev, const std::string& fname) {
@@ -959,14 +987,14 @@ static void initialize(
     xia::pixie::crate::crate& crate, process_command_options& process_opts) {
     xia::util::timepoint tp;
     if (process_opts.verbose) {
-        std::cout << "crate: initialize" << std::endl;
+        process_opts.out << "crate: initialize" << std::endl;
         tp.start();
     }
     crate.initialize(process_opts.reg_trace);
     if (process_opts.verbose) {
         tp.end();
-        std::cout << "modules: detected=" << crate.modules.size()
-                  << " time=" << tp << std::endl;
+        process_opts.out << "modules: detected=" << crate.modules.size()
+                         << " time=" << tp << std::endl;
     }
     if (process_opts.num_modules != 0 &&
         crate.num_modules != process_opts.num_modules) {
@@ -986,8 +1014,8 @@ static void initialize(
 static void probe(
     xia::pixie::crate::crate& crate, process_command_options& process_opts) {
     if (process_opts.verbose) {
-        std::cout << "modules: online=" << crate.modules.size()
-                  << " offline=" << crate.offline.size() << std::endl;
+        process_opts.out << "modules: online=" << crate.modules.size()
+                         << " offline=" << crate.offline.size() << std::endl;
     }
     crate.set_firmware();
     crate.probe();
@@ -998,10 +1026,9 @@ static void process_commands(
     args_commands& opts) {
     bool init_done = false;
     bool probe_done = false;
-    auto ci = opts.begin();
-    auto ce = opts.end();
-    while (ci != ce) {
-        auto& opt = get_and_next(ci, ce);
+    command_args args(crate, process_opts, opts.begin(), opts.end());
+    while (args.ci != args.ce) {
+        auto& opt = get_and_next(args);
         auto fci = find_command(opt);
         if (valid_command(fci)) {
             const command& cmd = std::get<1>(*fci);
@@ -1014,7 +1041,7 @@ static void process_commands(
                 probe(crate, process_opts);
                 probe_done = true;
             }
-            cmd.call(crate, ci, ce, process_opts.verbose);
+            cmd.call(args);
         } else {
             throw std::runtime_error("invalid command: " + opt);
         }
@@ -1061,22 +1088,23 @@ static void module_check(xia::pixie::crate::crate& crate, std::vector<size_t> mo
 }
 
 template<typename V>
-static void output_value(const std::string& name, V value) {
-    xia::util::ostream_guard oguard(std::cout);
-    std::cout << name << " = " << value;
+static void output_value(std::ostream& out, const std::string& name, V value) {
+    xia::util::ostream_guard oguard(out);
+    out << name << " = " << value;
     if (!std::is_same<V, double>::value) {
-        std::cout << std::hex << " (0x" << value << ')';
+        out << std::hex << " (0x" << value << ')';
     }
-    std::cout << std::endl;
+    out << std::endl;
 }
 
 template<typename W>
-void module_threads(xia::pixie::crate::crate& crate, std::vector<size_t>& mod_nums,
-                    std::vector<W>& workers, std::string error_message,
-                    bool show_performance = true) {
+void module_threads(
+    command_args& args, std::vector<size_t>& mod_nums, std::vector<W>& workers,
+    std::string error_message, bool show_performance = true) {
     if (workers.size() != mod_nums.size()) {
         throw std::runtime_error("workers and modules counts mismatch");
     }
+    auto& crate = args.crate;
     using promise_error = std::promise<error::code>;
     using future_error = std::future<error::code>;
     std::vector<promise_error> promises(mod_nums.size());
@@ -1086,10 +1114,10 @@ void module_threads(xia::pixie::crate::crate& crate, std::vector<size_t>& mod_nu
         auto module = crate.modules[mod_nums[m]];
         auto& worker = workers[m];
         futures.push_back(future_error(promises[m].get_future()));
-        threads.push_back(std::thread([m, &promises, module, &worker] {
+        threads.push_back(std::thread([args, m, &promises, module, &worker] {
             try {
                 worker.running = true;
-                worker.worker(*module);
+                worker.worker(args.opts, *module);
                 promises[m].set_value(error::code::success);
             } catch (xia::pixie::error::error& e) {
                 promises[m].set_value(e.type);
@@ -1117,9 +1145,9 @@ void module_threads(xia::pixie::crate::crate& crate, std::vector<size_t>& mod_nu
                     workers[t].period.stop();
                     error::code e = future.get();
                     if (e != error::code::success) {
-                        std::cout << "module " << t
-                                  << ": error: " << xia::pixie::error::api_result_text(e)
-                                  << std::endl;
+                        args.opts.out << "module " << t << ": error: "
+                                      << xia::pixie::error::api_result_text(e)
+                                      << std::endl;
                     }
                     if (first_error == error::code::success) {
                         first_error = e;
@@ -1134,7 +1162,7 @@ void module_threads(xia::pixie::crate::crate& crate, std::vector<size_t>& mod_nu
         if (show_performance && interval.secs() > show_secs) {
             auto secs = interval.secs();
             interval.restart();
-            std::cout << "running: " << threads.size() - finished << std::endl;
+            args.opts.out << "running: " << threads.size() - finished << std::endl;
             size_t all_total = 0;
             for (auto& w : workers) {
                 if (w.period.secs() > 0) {
@@ -1150,10 +1178,11 @@ void module_threads(xia::pixie::crate::crate& crate, std::vector<size_t>& mod_nu
                         << xia::util::humanize(bytes) << " rate: " << std::setw(8)
                         << xia::util::humanize(rate) << " bytes/sec pci: bus=" << w.pci_bus
                         << " slot=" << w.pci_slot;
-                    std::cout << oss.str() << std::endl;
+                    args.opts.out << oss.str() << std::endl;
                     xia_log(xia::log::info) << oss.str();
                 } else {
-                    std::cout << ' ' << std::setw(2) << w.number << ": not running" << std::endl;
+                    args.opts.out << ' ' << std::setw(2) << w.number
+                                  << ": not running" << std::endl;
                 }
             }
             all_total *= sizeof(xia::pixie::hw::word);
@@ -1161,7 +1190,7 @@ void module_threads(xia::pixie::crate::crate& crate, std::vector<size_t>& mod_nu
             oss << " all: total: " << std::setw(8) << xia::util::humanize(all_total)
                 << " rate: " << std::setw(8)
                 << xia::util::humanize(double(all_total) / duration.secs()) << " bytes/sec";
-            std::cout << oss.str() << std::endl;
+            args.opts.out << oss.str() << std::endl;
             xia_log(xia::log::info) << oss.str();
         }
     }
@@ -1188,7 +1217,8 @@ void set_num_slot(xia::pixie::crate::crate& crate, std::vector<size_t>& mod_nums
 }
 
 template<typename W>
-void performance_stats(std::vector<W>& workers, bool show_workers = false) {
+void performance_stats(
+    command_args& args, std::vector<W>& workers, bool show_workers = false) {
     size_t total = 0;
     size_t secs = 0;
     for (auto& w : workers) {
@@ -1201,7 +1231,7 @@ void performance_stats(std::vector<W>& workers, bool show_workers = false) {
                 std::stringstream he_oss;
                 he_oss << "module: num:" << std::setw(2) << w.number << " slot:" << std::setw(2)
                        << w.slot << ": has an error; check the log";
-                std::cout << he_oss.str() << std::endl;
+                args.opts.out << he_oss.str() << std::endl;
                 xia_log(xia::log::info) << he_oss.str();
             }
             std::stringstream dr_oss;
@@ -1212,7 +1242,7 @@ void performance_stats(std::vector<W>& workers, bool show_workers = false) {
                    << " bytes (" << std::setw(9) << bytes << "), rate: " << std::setw(8)
                    << xia::util::humanize(rate) << " bytes/sec pci: bus=" << w.pci_bus
                    << " slot=" << w.pci_slot;
-            std::cout << dr_oss.str() << std::endl;
+            args.opts.out << dr_oss.str() << std::endl;
             xia_log(xia::log::info) << dr_oss.str();
         }
     }
@@ -1220,17 +1250,16 @@ void performance_stats(std::vector<W>& workers, bool show_workers = false) {
     std::stringstream oss;
     oss << "data received: " << xia::util::humanize(total) << " bytes (" << total
         << "), rate: " << xia::util::humanize(double(total) / secs, " bytes/sec");
-    std::cout << oss.str() << std::endl;
+    args.opts.out << oss.str() << std::endl;
     xia_log(xia::log::info) << oss.str();
 }
 
-static void adc_acq(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    if (!valid_option(ci, ce, 1)) {
+static void adc_acq(command_args& args) {
+    if (!valid_option(args, 1)) {
         throw std::runtime_error("adj-acq: not enough options");
     }
-    auto mod_nums_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1238,20 +1267,19 @@ static void adc_acq(
     }
 }
 
-static void adc_save(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    if (!valid_option(ci, ce, 1)) {
+static void adc_save(command_args& args) {
+    if (!valid_option(args, 1)) {
         throw std::runtime_error("adj-save: not enough options");
     }
-    auto mod_nums_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
     args_command chans_opt;
     args_command len_opt;
-    if (valid_option(ci, ce, 1)) {
-        chans_opt = get_and_next(ci, ce);
+    if (valid_option(args, 1)) {
+        chans_opt = get_and_next(args);
     }
-    if (valid_option(ci, ce, 1)) {
-        len_opt = get_and_next(ci, ce);
+    if (valid_option(args, 1)) {
+        len_opt = get_and_next(args);
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
@@ -1291,13 +1319,12 @@ static void adc_save(
     }
 }
 
-static void adj_off(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    if (!valid_option(ci, ce, 1)) {
+static void adj_off(command_args& args) {
+    if (!valid_option(args, 1)) {
         throw std::runtime_error("adj-off: not enough options");
     }
-    auto mod_nums_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1305,13 +1332,12 @@ static void adj_off(
     }
 }
 
-static void bl_acq(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    if (!valid_option(ci, ce, 1)) {
+static void bl_acq(command_args& args) {
+    if (!valid_option(args, 1)) {
         throw std::runtime_error("bl-acq: not enough options");
     }
-    auto mod_nums_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1319,16 +1345,15 @@ static void bl_acq(
     }
 }
 
-static void bl_save(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    if (!valid_option(ci, ce, 1)) {
+static void bl_save(command_args& args) {
+    if (!valid_option(args, 1)) {
         throw std::runtime_error("bl-save: not enough options");
     }
-    auto mod_nums_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
     args_command chans_opt;
-    if (valid_option(ci, ce, 1)) {
-        chans_opt = get_and_next(ci, ce);
+    if (valid_option(args, 1)) {
+        chans_opt = get_and_next(args);
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
@@ -1362,49 +1387,46 @@ static void bl_save(
     }
 }
 
-static void boot(
-    xia::pixie::crate::crate& crate, args_commands_iter& , args_commands_iter& , bool ) {
+static void boot(command_args& args) {
+    auto& crate = args.crate;
     xia::util::timepoint tp;
-    std::cout << "booting crate" << std::endl;
-    tp.start();
-    crate.boot();
-    tp.end();
-    std::cout << "boot time=" << tp << std::endl;
-}
-
-static void crate_report(
-    xia::pixie::crate::crate& crate, args_commands_iter& , args_commands_iter& , bool ) {
-    std::cout << crate << std::endl;
-}
-
-static void export_(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    if (!valid_option(ci, ce, 1)) {
-        throw std::runtime_error("export: not enough options");
-    }
-    auto file_opt = get_and_next(ci, ce);
-    xia::util::timepoint tp;
-    if (verbose) {
+    if (args.opts.verbose) {
+        args.opts.out << "booting crate" << std::endl;
         tp.start();
     }
-    crate.export_config(file_opt);
-    if (verbose) {
+    crate.boot();
+    if (args.opts.verbose) {
         tp.end();
-        std::cout << "Modules export time=" << tp << std::endl;
+        args.opts.out << "boot time=" << tp << std::endl;
     }
 }
 
-static void help(
-    xia::pixie::crate::crate& , args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    auto long_opt = switch_option("-l", ci, ce, false);
-    std::cout << "Command help:" << std::endl
-              << " 'modules(s)' and 'channel(s)' can be a number or series:" << std::endl
-              << "   eg '0' or '3,4,6' or '3,4-5,10,20-22'" << std::endl;
+static void crate_report(command_args& args) {
+    auto& crate = args.crate;
+    args.opts.out << crate << std::endl;
+}
+
+static void export_(command_args& args) {
+    if (!valid_option(args, 1)) {
+        throw std::runtime_error("export: not enough options");
+    }
+    auto& crate = args.crate;
+    auto file_opt = get_and_next(args);
+    xia::util::timepoint tp;
+    tp.start();
+    crate.export_config(file_opt);
+    tp.end();
+    args.opts.out << "Modules export time=" << tp << std::endl;
+}
+
+static void help(command_args& args) {
+    auto long_opt = switch_option("-l", args, false);
+    args.opts.out << "Command help:" << std::endl
+                  << " 'modules(s)' and 'channel(s)' can be a number or series:" << std::endl
+                  << "   eg '0' or '3,4,6' or '3,4-5,10,20-22'" << std::endl;
     args_command help_opt;
-    if (args_count(ci, ce) >= 1) {
-        help_opt = get_and_next(ci, ce);
+    if (args_count(args) >= 1) {
+        help_opt = get_and_next(args);
     }
     auto mi = std::max_element(
         commands.begin(), commands.end(), [](auto& a, auto& b) {
@@ -1422,28 +1444,27 @@ static void help(
     for (auto& c : cmds) {
         auto& cmd = std::get<1>(*find_command(c));
         if (long_opt == "true") {
-            std::cout << std::left << cmd.name << " : ";
+            args.opts.out << std::left << cmd.name << " : ";
             for (auto& a : cmd.aliases) {
-                std::cout << a << ' ';
+                args.opts.out << a << ' ';
             }
-            std::cout << std::endl
-                      << " " << cmd.help << std::endl
-                      << "  # " << cmd.help_cmd << std::endl;
+            args.opts.out << std::endl
+                          << " " << cmd.help << std::endl
+                          << "  # " << cmd.help_cmd << std::endl;
         } else {
-            std::cout << std::left << std::setw(max + 1) << cmd.name
-                      << " - " << cmd.help
-                      << std::endl;
+            args.opts.out << std::left << std::setw(max + 1) << cmd.name
+                          << " - " << cmd.help
+                          << std::endl;
         }
     }
 }
 
-static void hist_resume(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    if (!valid_option(ci, ce, 1)) {
+static void hist_resume(command_args& args) {
+    if (!valid_option(args, 1)) {
         throw std::runtime_error("hist-resume: not enough options");
     }
-    auto mod_nums_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1452,17 +1473,16 @@ static void hist_resume(
     }
 }
 
-static void hist_save(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    auto bins_opt = switch_option("-b", ci, ce);
-    if (!valid_option(ci, ce, 1)) {
+static void hist_save(command_args& args) {
+    auto bins_opt = switch_option("-b", args);
+    if (!valid_option(args, 1)) {
         throw std::runtime_error("hist-save: not enough options");
     }
-    auto mod_nums_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
     args_command chans_opt;
-    if (valid_option(ci, ce, 1)) {
-        chans_opt = get_and_next(ci, ce);
+    if (valid_option(args, 1)) {
+        chans_opt = get_and_next(args);
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
@@ -1502,13 +1522,12 @@ static void hist_save(
     }
 }
 
-static void hist_start(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    if (!valid_option(ci, ce, 1)) {
+static void hist_start(command_args& args) {
+    if (!valid_option(args, 1)) {
         throw std::runtime_error("hist-start: not enough options");
     }
-    auto mod_nums_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1517,21 +1536,20 @@ static void hist_start(
     }
 }
 
-static void import(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    if (!valid_option(ci, ce, 1)) {
+static void import(command_args& args) {
+    if (!valid_option(args, 1)) {
         throw std::runtime_error("import: not enough options");
     }
-    auto path_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto path_opt = get_and_next(args);
     xia::util::timepoint tp;
     xia::pixie::module::number_slots modules;
     tp.start();
     crate.import_config(path_opt, modules);
     crate.initialize_afe();
     tp.end();
-    std::cout << "Modules imported: " << modules.size()
-              << " time=" << tp << std::endl;
+    args.opts.out << "Modules imported: " << modules.size()
+                  << " time=" << tp << std::endl;
 }
 
 struct list_save_worker : public module_thread_worker {
@@ -1540,12 +1558,15 @@ struct list_save_worker : public module_thread_worker {
     bool run_task;
 
     list_save_worker();
-    void worker(xia::pixie::module::module& module);
+    void worker(
+        process_command_options& process_opts,
+        xia::pixie::module::module& module);
 };
 
 list_save_worker::list_save_worker() : seconds(0) {}
 
-void list_save_worker::worker(xia::pixie::module::module& module) {
+void list_save_worker::worker(
+    process_command_options& process_opts, xia::pixie::module::module& module) {
     name += '-' + std::to_string(module.number) + ".lmd";
     std::ofstream out(name, std::ios::binary);
     if (!out) {
@@ -1581,8 +1602,8 @@ void list_save_worker::worker(xia::pixie::module::module& module) {
                 reinterpret_cast<char*>(lm.data()),
                 lm.size() * sizeof(xia::pixie::hw::word));
         }
-        std::cout << "list-mode: " << module.number
-                  << ": " << module.run_stats.output() << std::endl;
+        process_opts.out << "list-mode: " << module.number
+                         << ": " << module.run_stats.output() << std::endl;
         if (module.run_stats.hw_overflows != 0) {
             throw std::runtime_error(
                 "list mode: EXT FIFO overflow (check workflow config)");
@@ -1599,14 +1620,14 @@ void list_save_worker::worker(xia::pixie::module::module& module) {
     period.end();
 }
 
-static void list_mode_command(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce, bool run_task) {
-    if (!valid_option(ci, ce, 3)) {
+static void list_mode_command(command_args& args, bool run_task) {
+    if (!valid_option(args, 3)) {
         throw std::runtime_error("list-[save,mode]: not enough options");
     }
-    auto mod_nums_opt = get_and_next(ci, ce);
-    auto secs_opt = get_and_next(ci, ce);
-    auto name_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
+    auto secs_opt = get_and_next(args);
+    auto name_opt = get_and_next(args);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     auto secs = get_value<size_t>(secs_opt);
@@ -1622,23 +1643,20 @@ static void list_mode_command(
         s.seconds = secs;
         s.run_task = run_task;
     };
-    module_threads(crate, mod_nums, saves, "list mode command error; see log");
-    performance_stats(saves);
+    module_threads(args, mod_nums, saves, "list mode command error; see log");
+    performance_stats(args, saves);
 }
 
-static void list_mode(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    list_mode_command(crate, ci, ce, true);
+static void list_mode(command_args& args) {
+    list_mode_command(args, true);
 }
 
-static void list_resume(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    if (!valid_option(ci, ce, 1)) {
+static void list_resume(command_args& args) {
+    if (!valid_option(args, 1)) {
         throw std::runtime_error("list-resume: not enough options");
     }
-    auto mod_nums_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1647,19 +1665,16 @@ static void list_resume(
     }
 }
 
-static void list_save(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    list_mode_command(crate, ci, ce, false);
+static void list_save(command_args& args) {
+    list_mode_command(args, false);
 }
 
-static void list_start(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    if (!valid_option(ci, ce, 1)) {
+static void list_start(command_args& args) {
+    if (!valid_option(args, 1)) {
         throw std::runtime_error("list-start: not enough options");
     }
-    auto mod_nums_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1668,19 +1683,18 @@ static void list_start(
     }
 }
 
-static void lset_import(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    if (!valid_option(ci, ce, 2)) {
+static void lset_import(command_args& args) {
+    if (!valid_option(args, 2)) {
         throw std::runtime_error("lset-import: not enough options");
     }
-    auto mod_nums_opt = get_and_next(ci, ce);
-    auto settings_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
+    auto settings_opt = get_and_next(args);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     std::string action;
-    if (valid_option(ci, ce, 1)) {
-        auto action_opt = get_and_next(ci, ce);
+    if (valid_option(args, 1)) {
+        auto action_opt = get_and_next(args);
         if (action_opt == "flush" || action_opt == "sync") {
             action = action_opt;
         } else {
@@ -1704,19 +1718,18 @@ static void lset_import(
     }
 }
 
-static void lset_load(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    if (!valid_option(ci, ce, 2)) {
+static void lset_load(command_args& args) {
+    if (!valid_option(args, 2)) {
         throw std::runtime_error("lset-load: not enough options");
     }
-    auto mod_nums_opt = get_and_next(ci, ce);
-    auto settings_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
+    auto settings_opt = get_and_next(args);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     std::string action;
-    if (valid_option(ci, ce, 1)) {
-        auto action_opt = get_and_next(ci, ce);
+    if (valid_option(args, 1)) {
+        auto action_opt = get_and_next(args);
         if (action_opt == "flush" || action_opt == "sync") {
             action = action_opt;
         } else {
@@ -1741,20 +1754,19 @@ static void lset_load(
     }
 }
 
-static void lset_report(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    if (!valid_option(ci, ce, 2)) {
+static void lset_report(command_args& args) {
+    if (!valid_option(args, 2)) {
         throw std::runtime_error("lset-report: not enough options");
     }
-    auto mod_nums_opt = get_and_next(ci, ce);
-    auto settings_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
+    auto settings_opt = get_and_next(args);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
         xia::pixie::legacy::settings settings(crate[mod_num]);
         settings.load(settings_opt);
-        std::cout << settings;
+        args.opts.out << settings;
     }
 }
 
@@ -1809,17 +1821,16 @@ static xia::pixie::hw::address get_address(
     return address;
 }
 
-static void reg_read(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
+static void reg_read(command_args& args) {
     const std::string label = "reg-read";
-    auto slot_opt = switch_option("-s", ci, ce, false);
-    auto hex_opt = switch_option("-x", ci, ce, false);
-    if (!valid_option(ci, ce, 2)) {
+    auto slot_opt = switch_option("-s", args, false);
+    auto hex_opt = switch_option("-x", args, false);
+    if (!valid_option(args, 2)) {
         throw std::runtime_error("reg-read: not enough options");
     }
-    auto mod_slot_opt = get_and_next(ci, ce);
-    auto reg_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_slot_opt = get_and_next(args);
+    auto reg_opt = get_and_next(args);
     size_t mod_slot = get_value<size_t>(mod_slot_opt);
     std::string mem;
     std::string reg;
@@ -1841,37 +1852,36 @@ static void reg_read(
         value = dsp.read(address);
     }
     if (hex_opt == "true") {
-        std::cout << std::hex << "0x";
+        args.opts.out << std::hex << "0x";
     }
-    std::cout << value << std::endl;
+    args.opts.out << value << std::endl;
     if (hex_opt == "true") {
-        std::cout << std::dec;
+        args.opts.out << std::dec;
     }
 }
 
-static void par_read(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    if (!valid_option(ci, ce, 2)) {
+static void par_read(command_args& args) {
+    if (!valid_option(args, 2)) {
         throw std::runtime_error("par-write: not enough options");
     }
-    auto mod_nums_opt = get_and_next(ci, ce);
-    auto param_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
+    auto param_opt = get_and_next(args);
     args_command chans_opt;
-    if (valid_option(ci, ce, 1)) {
-        chans_opt = get_and_next(ci, ce);
+    if (valid_option(args, 1)) {
+        chans_opt = get_and_next(args);
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
         if (chans_opt.empty()) {
-            std::cout << "# module param read: " << mod_num
-                      << ": " << param_opt << std::endl;
+            args.opts.out << "# module param read: " << mod_num
+                          << ": " << param_opt << std::endl;
             if (param_opt == "all") {
                 for (auto& par : xia::pixie::param::get_module_param_map()) {
                     try {
                         output_value(
-                            par.first, crate[mod_num].read(par.second));
+                            args.opts.out, par.first, crate[mod_num].read(par.second));
                     } catch (error& e) {
                         if (e.type != error::code::module_param_disabled &&
                             e.type != error::code::module_param_writeonly) {
@@ -1880,20 +1890,21 @@ static void par_read(
                     }
                 }
             } else {
-                output_value(param_opt, crate[mod_num].read(param_opt));
+                output_value(
+                    args.opts.out, param_opt, crate[mod_num].read(param_opt));
             }
         } else {
             xia::pixie::channel::range channels;
             channels_option(channels, chans_opt, crate[mod_num].num_channels);
             for (auto channel_num : channels) {
-                std::cout << "# channel param read: " << mod_num
-                          << ':' << channel_num << ": "
-                          << param_opt << std::endl;
+                args.opts.out << "# channel param read: " << mod_num
+                              << ':' << channel_num << ": "
+                              << param_opt << std::endl;
                 if (param_opt == "all") {
                     for (auto& par : xia::pixie::param::get_channel_param_map()) {
                         try {
                             output_value(
-                                par.first, crate[mod_num].read(
+                                args.opts.out, par.first, crate[mod_num].read(
                                     par.second, channel_num));
                         } catch (error& e) {
                             if (e.type != error::code::channel_param_disabled &&
@@ -1904,26 +1915,26 @@ static void par_read(
                     }
                 } else {
                     output_value(
-                        param_opt, crate[mod_num].read(param_opt, channel_num));
+                        args.opts.out, param_opt,
+                        crate[mod_num].read(param_opt, channel_num));
                 }
             }
         }
     }
 }
 
-static void par_write(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    if (!valid_option(ci, ce, 3)) {
+static void par_write(command_args& args) {
+    if (!valid_option(args, 3)) {
         throw std::runtime_error("par-write: not enough options");
     }
-    auto mod_nums_opt = get_and_next(ci, ce);
-    auto param_opt = get_and_next(ci, ce);
-    auto value_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
+    auto param_opt = get_and_next(args);
+    auto value_opt = get_and_next(args);
     args_command chans_opt;
-    if (valid_option(ci, ce, 1)) {
+    if (valid_option(args, 1)) {
         chans_opt = value_opt;
-        value_opt = get_and_next(ci, ce);
+        value_opt = get_and_next(args);
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
@@ -1941,13 +1952,12 @@ static void par_write(
     }
 }
 
-static void report(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    if (!valid_option(ci, ce, 1)) {
+static void report(command_args& args) {
+    if (!valid_option(args, 1)) {
         throw std::runtime_error("report: not enough options");
     }
-    auto file_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto file_opt = get_and_next(args);
     std::ofstream output_file(file_opt);
     if (!output_file) {
         throw std::runtime_error(
@@ -1956,28 +1966,26 @@ static void report(
     crate.report(output_file);
 }
 
-static void run_active(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    if (!valid_option(ci, ce, 1)) {
+static void run_active(command_args& args) {
+    if (!valid_option(args, 1)) {
         throw std::runtime_error("run-active: not enough options");
     }
-    auto mod_nums_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
-        std::cout << "module=" << mod_num << " run-active=" << std::boolalpha
-                  << crate[mod_num].run_active() << std::endl;
+        args.opts.out << "module=" << mod_num << " run-active=" << std::boolalpha
+                      << crate[mod_num].run_active() << std::endl;
     }
 }
 
-static void run_end(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    if (!valid_option(ci, ce, 1)) {
+static void run_end(command_args& args) {
+    if (!valid_option(args, 1)) {
         throw std::runtime_error("run-end: not enough options");
     }
-    auto mod_nums_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1985,13 +1993,12 @@ static void run_end(
     }
 }
 
-static void set_dacs(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    if (!valid_option(ci, ce, 1)) {
+static void set_dacs(command_args& args) {
+    if (!valid_option(args, 1)) {
         throw std::runtime_error("set-dacs: not enough options");
     }
-    auto mod_nums_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1999,20 +2006,19 @@ static void set_dacs(
     }
 }
 
-static void stats(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    auto stat_opt = switch_option("-s", ci, ce);
-    if (!valid_option(ci, ce, 1)) {
+static void stats(command_args& args) {
+    auto stat_opt = switch_option("-s", args);
+    if (!valid_option(args, 1)) {
         throw std::runtime_error("stats: not enough options");
     }
-    auto mod_nums_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
     args_command chans_opt;
-    if (valid_option(ci, ce, 1)) {
-        mod_nums_opt = get_and_next(ci, ce);
+    if (valid_option(args, 1)) {
+        mod_nums_opt = get_and_next(args);
     }
-    if (valid_option(ci, ce, 1)) {
-        chans_opt = get_and_next(ci, ce);
+    if (valid_option(args, 1)) {
+        chans_opt = get_and_next(args);
     }
     std::string stat = "all";
     if (!stat_opt.empty()) {
@@ -2032,36 +2038,36 @@ static void stats(
         xia::pixie::stats::stats stats(crate[mod_num]);
         crate[mod_num].read_stats(stats);
         if (stat == "all" || stat == "pe") {
-            std::cout << "module " << mod_num
-                      << ": processed-events="
-                      << stats.mod.processed_events() << std::endl;
+            args.opts.out << "module " << mod_num
+                          << ": processed-events="
+                          << stats.mod.processed_events() << std::endl;
         }
         if (stat == "all" || stat == "icr") {
             for (auto channel : channels) {
-                std::cout << "module " << mod_num << " chan " << channel
-                          << ": input-count-rate="
-                          << stats.chans[channel].input_count_rate()
-                          << std::endl;
+                args.opts.out << "module " << mod_num << " chan " << channel
+                              << ": input-count-rate="
+                              << stats.chans[channel].input_count_rate()
+                              << std::endl;
             }
         }
         if (stat == "all" || stat == "ocr") {
             for (auto channel : channels) {
-                std::cout << "module " << mod_num << " chan " << channel
-                          << ": output-count-rate="
-                          << stats.chans[channel].output_count_rate()
-                          << std::endl;
+                args.opts.out << "module " << mod_num << " chan " << channel
+                              << ": output-count-rate="
+                              << stats.chans[channel].output_count_rate()
+                              << std::endl;
             }
         }
         if (stat == "all" || stat == "rt") {
-            std::cout << "module " << mod_num
-                      << ": real-time=" << stats.mod.real_time()
-                      << std::endl;
+            args.opts.out << "module " << mod_num
+                          << ": real-time=" << stats.mod.real_time()
+                          << std::endl;
         }
         if (stat == "all" || stat == "lt") {
             for (auto channel : channels) {
-                std::cout << "module " << mod_num << " chan " << channel
-                          << ": live-time="
-                          << stats.chans[channel].live_time() << std::endl;
+                args.opts.out << "module " << mod_num << " chan " << channel
+                              << ": live-time="
+                              << stats.chans[channel].live_time() << std::endl;
             }
         }
     }
@@ -2071,12 +2077,15 @@ struct test_fifo_worker : public module_thread_worker {
     size_t length;
 
     test_fifo_worker();
-    void worker(xia::pixie::module::module& module);
+    void worker(
+        process_command_options& process_opts,
+        xia::pixie::module::module& module);
 };
 
 test_fifo_worker::test_fifo_worker() : length(0) {}
 
-void test_fifo_worker::worker(xia::pixie::module::module& module) {
+void test_fifo_worker::worker(
+    process_command_options& , xia::pixie::module::module& module) {
     try {
         std::ofstream out(list_mode_prefix + "-control-task-11.lmd", std::ios::out | std::ios::binary);
         module.start_test(xia::pixie::module::module::test::lm_fifo);
@@ -2105,14 +2114,13 @@ void test_fifo_worker::worker(xia::pixie::module::module& module) {
     }
 }
 
-static void test(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    auto mode_opt = switch_option("-m", ci, ce);
-    if (!valid_option(ci, ce, 1)) {
+static void test(command_args& args) {
+    auto mode_opt = switch_option("-m", args);
+    if (!valid_option(args, 1)) {
         throw std::runtime_error("test: not enough options");
     }
-    auto mod_nums_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
     xia::pixie::module::module::test mode = xia::pixie::module::module::test::off;
     if (!mode_opt.empty()) {
         if (mode_opt == "lmfifo") {
@@ -2129,26 +2137,26 @@ static void test(
     for (auto& t : tests) {
         t.length = (bytes) / sizeof(xia::pixie::hw::word);
     }
-    std::cout << "Test: " << mode_opt << " length=" << xia::util::humanize(bytes) << std::endl;
-    module_threads(crate, mod_nums, tests, "fifo test error; see log");
-    performance_stats(tests, true);
+    args.opts.out << "Test: " << mode_opt << " length=" << xia::util::humanize(bytes)
+                  << std::endl;
+    module_threads(args, mod_nums, tests, "fifo test error; see log");
+    performance_stats(args, tests, true);
 }
 
-static void var_read(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    if (!valid_option(ci, ce, 2)) {
+static void var_read(command_args& args) {
+    if (!valid_option(args, 2)) {
         throw std::runtime_error("var-read: not enough options");
     }
-    auto mod_nums_opt = get_and_next(ci, ce);
-    auto param_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
+    auto param_opt = get_and_next(args);
     args_command chans_opt;
     args_command offsets_opt = "0";
-    if (valid_option(ci, ce, 1)) {
-        chans_opt = get_and_next(ci, ce);
+    if (valid_option(args, 1)) {
+        chans_opt = get_and_next(args);
     }
-    if (valid_option(ci, ce, 1)) {
-        offsets_opt = get_and_next(ci, ce);
+    if (valid_option(args, 1)) {
+        offsets_opt = get_and_next(args);
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
@@ -2156,10 +2164,12 @@ static void var_read(
     for (auto mod_num : mod_nums) {
         if (chans_opt.empty()) {
             if (param_opt == "all") {
-                std::cout << "# module var read: " << mod_num << ": " << param_opt << std::endl;
+                args.opts.out << "# module var read: " << mod_num << ": "
+                              << param_opt << std::endl;
                 for (auto& var : crate[mod_num].module_var_descriptors) {
                     try {
-                        output_value(var.name, crate[mod_num].read_var(var.par));
+                        output_value(
+                            args.opts.out, var.name, crate[mod_num].read_var(var.par));
                     } catch (error& e) {
                         if (e.type != error::code::module_param_disabled &&
                             e.type != error::code::module_param_writeonly) {
@@ -2168,20 +2178,21 @@ static void var_read(
                     }
                 }
             } else {
-                output_value(param_opt, crate[mod_num].read_var(param_opt, 0));
+                output_value(
+                    args.opts.out, param_opt, crate[mod_num].read_var(param_opt, 0));
             }
         } else {
             xia::pixie::channel::range channels;
             channels_option(channels, chans_opt, crate[mod_num].num_channels);
             if (param_opt == "all") {
                 for (auto channel : channels) {
-                    std::cout << "# channel var read: " << mod_num << ':' << channel << ": "
-                              << param_opt << std::endl;
+                    args.opts.out << "# channel var read: " << mod_num << ':'
+                                  << channel << ": " << param_opt << std::endl;
                     for (auto& var : crate[mod_num].channel_var_descriptors) {
                         for (auto offset : offsets) {
                             try {
                                 output_value(
-                                    var.name, crate[mod_num].read_var(
+                                    args.opts.out, var.name, crate[mod_num].read_var(
                                         var.par, channel, offset));
                             } catch (error& e) {
                                 if (e.type != error::code::channel_param_disabled &&
@@ -2196,7 +2207,7 @@ static void var_read(
                 for (auto channel : channels) {
                     for (auto offset : offsets) {
                         output_value(
-                            param_opt, crate[mod_num].read_var(
+                            args.opts.out, param_opt, crate[mod_num].read_var(
                                 param_opt, channel, offset));
                     }
                 }
@@ -2205,24 +2216,23 @@ static void var_read(
     }
 }
 
-static void var_write(
-    xia::pixie::crate::crate& crate, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    if (!valid_option(ci, ce, 3)) {
+static void var_write(command_args& args) {
+    if (!valid_option(args, 3)) {
         throw std::runtime_error("var-write: not enough options");
     }
-    auto mod_nums_opt = get_and_next(ci, ce);
-    auto param_opt = get_and_next(ci, ce);
-    auto value_opt = get_and_next(ci, ce);
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
+    auto param_opt = get_and_next(args);
+    auto value_opt = get_and_next(args);
     args_command chans_opt;
     args_command offsets_opt = "0";
-    if (valid_option(ci, ce, 1)) {
+    if (valid_option(args, 1)) {
         chans_opt = value_opt;
-        value_opt = get_and_next(ci, ce);
+        value_opt = get_and_next(args);
     }
-    if (valid_option(ci, ce, 1)) {
+    if (valid_option(args, 1)) {
         offsets_opt = value_opt;
-        value_opt = get_and_next(ci, ce);
+        value_opt = get_and_next(args);
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
@@ -2275,16 +2285,14 @@ static void var_write(
     }
 }
 
-static void wait(
-    xia::pixie::crate::crate&, args_commands_iter& ci, args_commands_iter& ce,
-    bool verbose) {
-    if (!valid_option(ci, ce, 1)) {
+static void wait(command_args& args) {
+    if (!valid_option(args, 1)) {
         throw std::runtime_error("wait: not enough options");
     }
-    auto period_opt = get_and_next(ci, ce);
+    auto period_opt = get_and_next(args);
     auto msecs = get_value<size_t>(period_opt);
-    if (verbose) {
-        std::cout << "waiting " << msecs << " msecs" << std::endl;
+    if (args.opts.verbose) {
+        args.opts.out << "waiting " << msecs << " msecs" << std::endl;
     }
     xia::pixie::hw::wait(msecs * 1000);
 }
@@ -2338,7 +2346,10 @@ int main(int argc, char* argv[]) {
         {'C', "crate"});
     args_string_flag log_file_flag(
         option_group, "log_file_flag",
-        "Log file. Use `stdout` for the console.", {'l', "log"});
+        "Operational log file. Use `stdout` for the console.", {'l', "log"});
+    args_string_flag out_file_flag(
+        option_group, "out_file_flag",
+        "Output file. Default is the console.", {'o', "output"});
     args_strings_flag slot_map_flag(
         option_group, "slot_map_flag",
         "A list of slots used to define the slot to index mapping. "
@@ -2386,7 +2397,18 @@ int main(int argc, char* argv[]) {
         xia::logging::start("log", log, false);
         xia::logging::set_level(log_level);
 
-        process_command_options process_opts;
+        std::ostream* out = &std::cout;
+        std::ofstream output;
+        if (out_file_flag) {
+            std::string outfile = args::get(out_file_flag);
+            output.open(outfile);
+            if (!output) {
+                throw std::runtime_error("cannot open: " + outfile);
+            }
+            out = &output;
+        }
+
+        process_command_options process_opts(*out);
 
         process_opts.verbose = !args::get(quiet_flag);
         process_opts.reg_trace = args::get(reg_trace);
@@ -2431,11 +2453,7 @@ int main(int argc, char* argv[]) {
         if (fw_host_path_flag) {
             process_opts.firmware_host_path = args::get(fw_host_path_flag);
         } else {
-#if defined(_WIN64) || defined(_WIN32)
-            process_opts.firmware_host_path = "c:/xia/pixie/firmware";
-#else
-            process_opts.firmware_host_path = "/usr/local/xia/pixie/firmware";
-#endif
+            process_opts.firmware_host_path = system_firmware_path;
         }
 
         args_commands cmds;
@@ -2452,7 +2470,7 @@ int main(int argc, char* argv[]) {
 
         run.end();
         if (process_opts.verbose) {
-            std::cout << "run time=" << run << std::endl;
+            *out << "run time=" << run << std::endl;
         }
     } catch (xia::pixie::error::error& e) {
         xia_log(xia::log::error) << e;
