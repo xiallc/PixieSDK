@@ -366,7 +366,7 @@ static const command reg_read_cmd = {
     "reg-read", reg_read,
     {"rr"},
     "init",
-    "Read a register from a module or slot memory address",
+    "Read a register from a module or slot (-s) memory address",
     "reg-read [-s] [-x] module/slot [address] [name] [memory:name]"
 };
 
