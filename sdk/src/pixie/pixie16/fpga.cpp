@@ -60,6 +60,8 @@ void control::load(const firmware::image& image, int retries) {
     }
 
     bool programmed = false;
+    int backoff = 0;
+    int backoff_step = 2;
 
     while (!programmed) {
         uint32_t data;
@@ -121,7 +123,7 @@ void control::load(const firmware::image& image, int retries) {
             value |= ((firmware::image_value_type) *bytes++) << 8;
             value |= ((firmware::image_value_type) *bytes++) << 16;
             value |= ((firmware::image_value_type) *bytes++) << 24;
-            bus_write(reg.DATACS, value);
+            bus_write(reg.DATACS, value, backoff);
         }
 
         xia_log(log::debug) << "fpga-" << name << " [slot " << module.slot << "] waiting for done";
@@ -144,6 +146,9 @@ void control::load(const firmware::image& image, int retries) {
                 if (retries <= 0) {
                     throw error(error::code::device_load_failure, make_what("programming failure"));
                 }
+                backoff += backoff_step;
+                xia_log(log::debug) << "fpga-" << name
+                                    << " [slot " << module.slot << "] retry: backoff=" << backoff;
                 break;
             }
         }
@@ -156,12 +161,17 @@ bool control::done() {
     return (bus_read(reg.RDCS) & load_ctrl.done) == load_ctrl.done;
 }
 
-void control::bus_write(int reg, uint32_t data) {
-    module.write_word(reg, data);
+void control::bus_write(int regnum, uint32_t data, int backoff) {
+    if (backoff > 0) {
+        while (backoff-- > 0) {
+            bus_read(reg.RDCS);
+        }
+    }
+    module.write_word(regnum, data);
 }
 
-uint32_t control::bus_read(int reg) {
-    return module.read_word(reg);
+uint32_t control::bus_read(int regnum) {
+    return module.read_word(regnum);
 }
 
 std::string control::make_what(const char* msg) {

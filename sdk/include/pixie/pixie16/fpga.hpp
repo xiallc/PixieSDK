@@ -97,16 +97,17 @@ struct control {
 
     /**
      * @brief Provides low-level register write access to the FPGA
-     * @param[in] reg The register that you'd like to access
+     * @param[in] regnum The register number that you'd like to access
      * @param[in] data The data that you'd like to write to the register
+     * @param[in] backoff Count of backoff reads to wait
      */
-    void bus_write(int reg, uint32_t data);
+    void bus_write(int regnum, uint32_t data, int backoff = 0);
     /**
      * @brief Provides low-level register read access to the FPGA
-     * @param reg The register that you'd like to access on the FPGA.
+     * @param regnum The register number that you'd like to access on the FPGA.
      * @return The value that was contained within the requested register.
      */
-    uint32_t bus_read(int reg);
+    uint32_t bus_read(int regnum);
 
 private:
     std::string make_what(const char* msg);
