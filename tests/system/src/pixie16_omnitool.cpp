@@ -39,6 +39,9 @@
 #include <pixie/pixie16/memory.hpp>
 #include <pixie/pixie16/sim.hpp>
 
+#include <pixie/pixie16/fpga_comms.hpp>
+#include <pixie/pixie16/fpga_fippi.hpp>
+
 #include <args/args.hxx>
 #include <nolhmann/json.hpp>
 
@@ -158,16 +161,19 @@ struct command_args {
 
 struct command {
     using alias = std::vector<std::string>;
+    using ops = std::vector<std::string>;
     using handler = void (*)(command_args& args);
 
     std::string name;
     handler call;
     alias aliases;
-    std::string boot;
+    ops boot;
     std::string help;
     std::string help_cmd;
 
     command() = default;
+
+    bool boot_op(const std::string op) const;
 };
 
 #define command_handler_decl(_name) static void _name(command_args& args)
@@ -180,7 +186,7 @@ command_handler_decl(adc_acq);
 static const command adc_acq_cmd = {
     "adc-acq", adc_acq,
     {},
-    "init,probe",
+    {"init", "probe"},
     "Acquire a module's ADC trace",
     "adc-acq modules(s)"
 };
@@ -189,7 +195,7 @@ command_handler_decl(adc_save);
 static const command adc_save_cmd = {
     "adc-save", adc_save,
     {},
-    "init,probe",
+    {"init", "probe"},
     "Save a module's ADC trace to a file",
     "adc-save modules(s) [channel(s) [length]]"
 };
@@ -198,7 +204,7 @@ command_handler_decl(adj_off);
 static const command adj_off_cmd = {
     "adj-off", adj_off,
     {},
-    "init,probe",
+    {"init", "probe"},
     "Adjust the module's offsets",
     "adj-off modules(s)"
 };
@@ -207,7 +213,7 @@ command_handler_decl(bl_acq);
 static const command bl_acq_cmd = {
     "bl-acq", bl_acq,
     {},
-    "init,probe",
+    {"init", "probe"},
     "Acquire module baselines",
     "bl-acq module(s)"
 };
@@ -216,7 +222,7 @@ command_handler_decl(bl_save);
 static const command bl_save_cmd = {
     "bl-save", bl_save,
     {},
-    "init,probe",
+    {"init", "probe"},
     "Save the module's baselines",
     "bl-save module(s) [channel(s)]"
 };
@@ -225,7 +231,7 @@ command_handler_decl(boot);
 static const command boot_cmd = {
     "boot", boot,
     {"b"},
-    "init,probe",
+    {"init", "probe"},
     "Boots the module(s)",
     "boot"
 };
@@ -234,7 +240,7 @@ command_handler_decl(crate_report);
 static const command crate_cmd = {
     "crate", crate_report,
     {},
-    "init,probe",
+    {"init", "probe"},
     "Report the crate",
     "crate"
 };
@@ -243,7 +249,7 @@ command_handler_decl(export_);
 static const command export_cmd = {
     "export", export_,
     {},
-    "init,probe",
+    {"init", "probe"},
     "Export a configuration to a JSON file",
     "export file"
 };
@@ -252,7 +258,7 @@ command_handler_decl(help);
 static const command help_cmd = {
     "help", help,
     {},
-    "none",
+    {"none"},
     "Command specific help. Add '-l' to list all commands",
     "help [command]"
 };
@@ -261,7 +267,7 @@ command_handler_decl(hist_resume);
 static const command hist_resume_cmd = {
     "hist-resume", hist_resume,
     {"hr"},
-    "init,probe",
+    {"init", "probe"},
     "Resume module histograms",
     "hist-resume module(s)"
 };
@@ -270,7 +276,7 @@ command_handler_decl(hist_save);
 static const command hist_save_cmd = {
     "hist-save", hist_save,
     {"hv"},
-    "init,probe",
+    {"init", "probe"},
     "Save a module's histogram to a file",
     "hist-save [-b bins] module(s) [channel(s)]"
 };
@@ -279,7 +285,7 @@ command_handler_decl(hist_start);
 static const command hist_start_cmd = {
     "hist-start", hist_start,
     {"hs"},
-    "init,probe",
+    {"init", "probe"},
     "Start module histograms",
     "hist-start module(s)"
 };
@@ -288,7 +294,7 @@ command_handler_decl(import);
 static const command import_cmd = {
     "import", import,
     {},
-    "init,probe",
+    {"init", "probe"},
     "Import a JSON configuration file",
     "import file"
 };
@@ -297,7 +303,7 @@ command_handler_decl(list_mode);
 static const command list_mode_cmd = {
     "list-mode", list_mode,
     {"lm"},
-    "init,probe",
+    {"init", "probe"},
     "Run list mode saving the data to a file",
     "list-mode module(s) secs file"
 };
@@ -306,7 +312,7 @@ command_handler_decl(list_resume);
 static const command list_resume_cmd = {
     "list-resume", list_resume,
     {"lr"},
-    "init,probe",
+    {"init", "probe"},
     "Resume module list mode",
     "list-resume module(s)"
 };
@@ -315,7 +321,7 @@ command_handler_decl(list_save);
 static const command list_save_cmd = {
     "list-save", list_save,
     {"ls"},
-    "init,probe",
+    {"init", "probe"},
     "Save a module's list-mode data to a file",
     "list-save module(s) secs file"
 };
@@ -324,7 +330,7 @@ command_handler_decl(list_start);
 static const command list_start_cmd = {
     "list-start", list_start,
     {},
-    "init,probe",
+    {"init", "probe"},
     "Start module list mode",
     "list-start module(s)"
 };
@@ -333,7 +339,7 @@ command_handler_decl(lset_import);
 static const command lset_import_cmd = {
     "lset-import", lset_import,
     {"lsi"},
-    "init,probe",
+    {"init", "probe"},
     "Import a legacy settings file to a module",
     "lset-import module(s) file [flush/sync]"
 };
@@ -342,7 +348,7 @@ command_handler_decl(lset_load);
 static const command lset_load_cmd = {
     "lset-load", lset_load,
     {"lsl"},
-    "init,probe",
+    {"init", "probe"},
     "Load a legacy settings file to a module's DSP memory",
     "lset-load module(s) file [flush/sync]"
 };
@@ -351,7 +357,7 @@ command_handler_decl(lset_report);
 static const command lset_report_cmd = {
     "lset-report", lset_report,
     {"lsr"},
-    "init,probe",
+    {"init", "probe"},
     "Output a legacy settings file in a readable format",
     "lset-report module(s) file"
 };
@@ -360,7 +366,7 @@ command_handler_decl(par_read);
 static const command par_read_cmd = {
     "par-read", par_read,
     {"pr"},
-    "init,probe",
+    {"init", "probe"},
     "Read module/channel parameter",
     "par-read module(s) param [channel(s)]"
 };
@@ -369,7 +375,7 @@ command_handler_decl(par_write);
 static const command par_write_cmd = {
     "par-write", par_write,
     {},
-    "init,probe",
+    {"init", "probe"},
     "Write module/channel parameter",
     "par-write module(s) param [channel(s)] value"
 };
@@ -378,7 +384,7 @@ command_handler_decl(report);
 static const command report_cmd = {
     "report", report,
     {"re"},
-    "init,probe",
+    {"init", "probe"},
     "Report the crate's configuration",
     "report file"
 };
@@ -387,16 +393,25 @@ command_handler_decl(reg_read);
 static const command reg_read_cmd = {
     "reg-read", reg_read,
     {"rr"},
-    "init",
-    "Read a register from a module or slot (-s) memory address",
+    {"init"},
+    "Read from a register in a module or slot (-s) memory address",
     "reg-read [-s] [-x] module/slot [address] [name] [memory:name]"
+};
+
+command_handler_decl(reg_write);
+static const command reg_write_cmd = {
+    "reg-write", reg_write,
+    {"rw"},
+    {"init"},
+    "Write to a register in a module or slot (-s) memory address",
+    "reg-write [-s] module/slot [address] [name] [memory:name] [value]"
 };
 
 command_handler_decl(run_active);
 static const command run_active_cmd = {
     "run-active", run_active,
     {"ra"},
-    "init,probe",
+    {"init", "probe"},
     "Does the module have an active run?",
     "run-active module(s)"
 };
@@ -405,7 +420,7 @@ command_handler_decl(run_end);
 static const command run_end_cmd = {
     "run-end", run_end,
     {"re"},
-    "init,probe",
+    {"init", "probe"},
     "End module run's",
     "run-end module(s)"
 };
@@ -414,7 +429,7 @@ command_handler_decl(set_dacs);
 static const command set_dacs_cmd = {
     "set-dacs", set_dacs,
     {},
-    "init,probe",
+    {"init", "probe"},
     "Set the module's DACs",
     "set-dacs modules(s)"
 };
@@ -423,7 +438,7 @@ command_handler_decl(stats);
 static const command stats_cmd = {
     "stats", stats,
     {"st"},
-    "init,probe",
+    {"init", "probe"},
     "Module/channel stats",
     "stats [-s stat (pe/ocr/rt/lt)] module(s) [channel(s)]"
 };
@@ -432,7 +447,7 @@ command_handler_decl(test);
 static const command test_cmd = {
     "test", test,
     {},
-    "init,probe",
+    {"init", "probe"},
     "Test control, default mode is 'off'",
     "test [-m mode (off/lmfifo)] module(s)"
 };
@@ -441,7 +456,7 @@ command_handler_decl(var_read);
 static const command var_read_cmd = {
     "var-read", var_read,
     {},
-    "init,probe",
+    {"init", "probe"},
     "Read module/channel variable",
     "var-read module(s) param [channel(s) [offset(s)]]"
 };
@@ -450,7 +465,7 @@ command_handler_decl(var_write);
 static const command var_write_cmd = {
     "var-write", var_write,
     {},
-    "init,probe",
+    {"init", "probe"},
     "Write module/channel variable",
     "var-write module(s) param [channel(s) [offset(s)]] value"
 };
@@ -459,7 +474,7 @@ command_handler_decl(wait);
 static const command wait_cmd = {
     "wait", wait,
     {},
-    "none",
+    {"none"},
     "wait a number of msecs",
     "wait msecs"
 };
@@ -490,6 +505,7 @@ static const command_map commands = {
     {"par-read", par_read_cmd},
     {"par-write", par_write_cmd},
     {"reg-read", reg_read_cmd},
+    {"reg-write", reg_write_cmd},
     {"report", report_cmd},
     {"run-active", run_active_cmd},
     {"run-end", run_end_cmd},
@@ -676,6 +692,7 @@ static const args_command& get_and_next(command_args& args) {
     next(args);
     return opt;
 }
+
 static size_t args_count(command_args& args) {
     return std::distance(args.ci, args.ce);
 }
@@ -826,6 +843,15 @@ static void find_files(
         }
         throw;
     }
+}
+
+bool command::boot_op(const std::string op) const {
+    for (auto& o : boot) {
+        if (o == op) {
+            return true;
+        }
+    }
+    return false;
 }
 
 process_command_options::process_command_options(std::ostream& out_)
@@ -1032,11 +1058,11 @@ static void process_commands(
         auto fci = find_command(opt);
         if (valid_command(fci)) {
             const command& cmd = std::get<1>(*fci);
-            if (!init_done && cmd.boot.find("init") != std::string::npos) {
+            if (!init_done && cmd.boot_op("init")) {
                 initialize(crate, process_opts);
                 init_done = true;
             }
-            if (!probe_done && cmd.boot.find("probe") != std::string::npos) {
+            if (!probe_done && cmd.boot_op("probe")) {
                 firmware_load(crate, process_opts);
                 probe(crate, process_opts);
                 probe_done = true;
@@ -1844,12 +1870,18 @@ static void reg_read(command_args& args) {
     xia::pixie::hw::word value;
     if (mem == "sys") {
         value =  mod.read_word(address);
-    } else if (mem == "fippi") {
-        auto fippi = xia::pixie::hw::memory::fippi(mod);
-        value = fippi.read(address);
-    } else if (mem == "dsp") {
-        auto dsp = xia::pixie::hw::memory::dsp(mod);
-        value = dsp.read(address);
+    } else {
+        xia::pixie::hw::fpga::comms comms(mod);
+        if (!comms.done()) {
+            throw std::runtime_error("reg-read: comms/sys FPGA not loaded");
+        }
+        if (mem == "fippi") {
+            auto fippi = xia::pixie::hw::memory::fippi(mod);
+            value = fippi.read(address);
+        } else if (mem == "dsp") {
+            auto dsp = xia::pixie::hw::memory::dsp(mod);
+            value = dsp.read(address);
+        }
     }
     if (hex_opt == "true") {
         args.opts.out << std::hex << "0x";
@@ -1857,6 +1889,45 @@ static void reg_read(command_args& args) {
     args.opts.out << value << std::endl;
     if (hex_opt == "true") {
         args.opts.out << std::dec;
+    }
+}
+
+static void reg_write(command_args& args) {
+    const std::string label = "reg-write";
+    auto slot_opt = switch_option("-s", args, false);
+    if (!valid_option(args, 3)) {
+        throw std::runtime_error("reg-write: not enough options");
+    }
+    auto& crate = args.crate;
+    auto mod_slot_opt = get_and_next(args);
+    auto reg_opt = get_and_next(args);
+    auto value_opt = get_and_next(args);
+    size_t mod_slot = get_value<size_t>(mod_slot_opt);
+    std::string mem;
+    std::string reg;
+    get_memory_reg(reg_opt, mem, reg, label);
+    xia::pixie::hw::address address = get_address(mem, reg, label);
+    if (slot_opt == "true") {
+        auto mod = crate.find(mod_slot);
+        mod_slot = mod->number;
+    }
+    auto& mod = crate[mod_slot];
+    xia::pixie::hw::word value =
+        get_value<xia::pixie::hw::word>(value_opt);
+    if (mem == "sys") {
+        mod.write_word(address, value);
+    } else {
+        xia::pixie::hw::fpga::comms comms(mod);
+        if (!comms.done()) {
+            throw std::runtime_error("reg-write: comms/sys FPGA not loaded");
+        }
+        if (mem == "fippi") {
+            auto fippi = xia::pixie::hw::memory::fippi(mod);
+            fippi.write(address, value);
+        } else if (mem == "dsp") {
+            auto dsp = xia::pixie::hw::memory::dsp(mod);
+            dsp.write(address, value);
+        }
     }
 }
 
