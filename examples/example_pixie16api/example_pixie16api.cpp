@@ -32,6 +32,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <thread>
 #include <vector>
 
@@ -227,6 +228,8 @@ bool verify_api_return_value(const int& val, const std::string& func_name,
 }
 
 bool output_statistics_data(const mod_cfg& mod, const std::string& type) {
+
+    typedef std::numeric_limits<double> dbl;
     std::cout << LOG("INFO") << "Requesting run statistics from module." << std::endl;
     std::vector<unsigned int> stats(Pixie16GetStatisticsSize(), 0);
     if (!verify_api_return_value(Pixie16ReadStatisticsFromModule(stats.data(), mod.number),
@@ -256,7 +259,9 @@ bool output_statistics_data(const mod_cfg& mod, const std::string& type) {
         json_stats["raw_input_count"] = ic;
         json_stats["raw_output_count"] = oc;
 
-        csv_output << chan << "," << real_time << "," << live_time << "," << ic << "," << icr << ","
+	csv_output.precision(dbl::max_digits10);
+
+	csv_output << chan << "," << real_time << "," << live_time << "," << ic << "," << icr << ","
                    << oc << "," << ocr << std::endl;
 
         std::cout << LOG("INFO") << json_stats << std::endl;
