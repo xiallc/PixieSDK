@@ -216,8 +216,7 @@ bool output_statistics_data(const module_config& mod, const std::string& type) {
             {"live_time", live_time}, {"icr", icr},      {"ocr", ocr},
         };
 
-        csv_output << chan << "," << real_time << "," << live_time << "," << icr << "," << ocr
-                   << std::endl;
+        csv_output << std::fixed << chan << "," << real_time << "," << live_time << "," << icr << "," << ocr << std::endl;
         std::cout << LOG("INFO") << json_stats << std::endl;
     }
 
@@ -1114,3 +1113,4 @@ int main(int argc, char** argv) {
     execute_close_module_connection(cfg.num_modules());
     return EXIT_SUCCESS;
 }
+/* SPDX-License-Identifier: Apache-2.0 */

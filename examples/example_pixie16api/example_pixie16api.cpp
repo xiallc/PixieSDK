@@ -32,7 +32,6 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <limits>
 #include <thread>
 #include <vector>
 
@@ -259,9 +258,7 @@ bool output_statistics_data(const mod_cfg& mod, const std::string& type) {
         json_stats["raw_input_count"] = ic;
         json_stats["raw_output_count"] = oc;
 
-	csv_output.precision(dbl::max_digits10);
-
-	csv_output << chan << "," << real_time << "," << live_time << "," << ic << "," << icr << ","
+	csv_output << std::fixed << chan << "," << real_time << "," << live_time << "," << ic << "," << icr << ","
                    << oc << "," << ocr << std::endl;
 
         std::cout << LOG("INFO") << json_stats << std::endl;
