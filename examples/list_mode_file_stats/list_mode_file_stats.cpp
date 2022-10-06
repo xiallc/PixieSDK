@@ -192,11 +192,16 @@ int main(int argc, char** argv) {
         }
 
         static const auto bytes_per_word = 4;
-        static const auto chunk_size_words = 262144;
+        /*
+         * This is the approximate maximum size of a Rev H record (header + trace).
+         */
+        static const auto chunk_size_words = 16398;
         auto size_bytes = input.tellg();
         auto size_words = size_bytes / bytes_per_word;
         auto num_chunks = size_words / chunk_size_words;
         auto data_vec_size = chunk_size_words;
+        auto max_retries = 10;
+        auto retries = max_retries;
 
         if (size_words < chunk_size_words) {
             data_vec_size = size_words;
@@ -208,6 +213,11 @@ int main(int argc, char** argv) {
         input.seekg(0);
         std::cout << LOG("INFO") << "Starting to decode data." << std::endl;
         for (int chunk_num = 0; chunk_num <= num_chunks; chunk_num++) {
+            if (retries == 0) {
+                std::cout << LOG("ERROR") << "Failed to resync data stream." << std::endl;
+                break;
+            }
+
             xia::pixie::data::list_mode::buffer data(data_vec_size, 0);
             input.read(reinterpret_cast<char*>(&data[0]), chunk_size_words * bytes_per_word);
             if (!remainder.empty()) {
@@ -256,16 +266,13 @@ int main(int argc, char** argv) {
                         }
                     }
                 }
+                retries = max_retries;
             } catch (xia::pixie::data::list_mode::error& error) {
-                /*
-                 * We'll eat any issue related to an invalid header length, but this will at least
-                 * allow us to continue processing the data file.
-                 */
-                if (error.type == xia::pixie::data::list_mode::error::code::invalid_header_length) {
-                    continue;
-                } else {
-                    std::cout << LOG("ERROR") << error.what() << std::endl;
-                }
+                std::cout << LOG("WARN") << "Decoding failed on chunk " << chunk_num - 1
+                          << " starting at byte " << (chunk_num-1) * chunk_size_words * bytes_per_word
+                          << " with the following error. Attempting to resync data stream." << std::endl;
+                std::cout << LOG("ERROR") << error.what() << std::endl;
+                retries--;
             }
         }
         std::cout << LOG("INFO") << "Finished decoding data in "
