@@ -1113,4 +1113,3 @@ int main(int argc, char** argv) {
     execute_close_module_connection(cfg.num_modules());
     return EXIT_SUCCESS;
 }
-/* SPDX-License-Identifier: Apache-2.0 */
