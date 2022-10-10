@@ -386,12 +386,12 @@ module::module(backplane::backplane& backplane_)
       fifo_buffers(default_fifo_buffers), fifo_run_wait_usecs(default_fifo_run_wait_usec),
       fifo_idle_wait_usecs(default_fifo_idle_wait_usec), fifo_hold_usecs(default_fifo_hold_usec),
       fifo_dma_trigger_level(default_fifo_dma_trigger_level), fifo_bandwidth(0),
-      crate_revision(-1), board_revision(-1), reg_trace(false), bus_cycle_period(100),
-      fifo_worker_running(false), fifo_worker_finished(false), fifo_worker_req(fifo_worker_working),
-      fifo_worker_resp(fifo_worker_working), in_use(0), present_(false), online_(false),
-      forced_offline_(false), pause_fifo_worker(true), comms_fpga(false), fippi_fpga(false),
-      have_hardware(false), vars_loaded(false), cfg_ctrlcs(0xaaa),
-      device(std::make_unique<pci_bus_handle>()), test_mode(test::off) {}
+      crate_revision(-1), board_revision(-1), reg_trace(false), i2c_read_period(100),
+      io_cpld_version_old(false), fifo_worker_running(false), fifo_worker_finished(false),
+      fifo_worker_req(fifo_worker_working), fifo_worker_resp(fifo_worker_working), in_use(0),
+      present_(false), online_(false), forced_offline_(false), pause_fifo_worker(true),
+      comms_fpga(false), fippi_fpga(false), have_hardware(false), vars_loaded(false),
+      cfg_ctrlcs(0xaaa), device(std::make_unique<pci_bus_handle>()), test_mode(test::off) {}
 
 module::module(module&& m)
     : slot(m.slot), number(m.number), serial_num(m.serial_num), revision(m.revision),
@@ -407,12 +407,12 @@ module::module(module&& m)
       fifo_hold_usecs(m.fifo_hold_usecs.load()), fifo_bandwidth(m.fifo_bandwidth.load()),
       fifo_dma_trigger_level(m.fifo_dma_trigger_level.load()),
       run_stats(m.run_stats), crate_revision(m.crate_revision),
-      board_revision(m.board_revision), reg_trace(m.reg_trace), bus_cycle_period(100),
-      fifo_worker_running(false), fifo_worker_finished(false), fifo_worker_req(fifo_worker_working),
-      fifo_worker_resp(fifo_worker_working), in_use(0), present_(m.present_.load()),
-      online_(m.online_.load()), forced_offline_(m.forced_offline_.load()),
-      pause_fifo_worker(m.pause_fifo_worker.load()), comms_fpga(m.comms_fpga),
-      fippi_fpga(m.fippi_fpga), have_hardware(false), vars_loaded(false),
+      board_revision(m.board_revision), reg_trace(m.reg_trace), i2c_read_period(100),
+      io_cpld_version_old(false), fifo_worker_running(false), fifo_worker_finished(false),
+      fifo_worker_req(fifo_worker_working), fifo_worker_resp(fifo_worker_working),
+      in_use(0), present_(m.present_.load()), online_(m.online_.load()),
+      forced_offline_(m.forced_offline_.load()), pause_fifo_worker(m.pause_fifo_worker.load()),
+      comms_fpga(m.comms_fpga), fippi_fpga(m.fippi_fpga), have_hardware(false), vars_loaded(false),
       cfg_ctrlcs(0xaaa), device(std::move(m.device)), test_mode(m.test_mode.load()) {
     m.slot = 0;
     m.number = -1;
@@ -440,7 +440,6 @@ module::module(module&& m)
     m.crate_revision = -1;
     m.board_revision = -1;
     m.reg_trace = false;
-    m.bus_cycle_period = 100;
     m.present_ = false;
     m.online_ = false;
     m.forced_offline_ = false;
@@ -499,7 +498,8 @@ module& module::operator=(module&& m) {
     crate_revision = m.crate_revision;
     board_revision = m.board_revision;
     reg_trace = m.reg_trace;
-    bus_cycle_period = m.reg_trace;
+    i2c_read_period = m.i2c_read_period;
+    io_cpld_version_old = m.io_cpld_version_old;
     present_ = m.present_.load();
     online_ = m.online_.load();
     forced_offline_ = m.forced_offline_.load();
@@ -535,7 +535,8 @@ module& module::operator=(module&& m) {
     m.crate_revision = -1;
     m.board_revision = -1;
     m.reg_trace = false;
-    m.bus_cycle_period = 100;
+    m.i2c_read_period = 100;
+    m.io_cpld_version_old = false;
     m.present_ = false;
     m.online_ = false;
     m.forced_offline_ = false;
@@ -879,6 +880,8 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
 
     load_vars();
 
+    int io_cpld_backoff = io_cpld_version_old ? 2 : 0;
+
     if (boot_comms) {
         if (comms_fpga) {
             xia_log(log::info) << module_label(*this) << "comms already loaded";
@@ -887,7 +890,7 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
         hw::fpga::comms comms(*this);
         comms_fpga = false;
         fw->load();
-        comms.boot(fw->data);
+        comms.boot(fw->data, io_cpld_backoff);
         comms_fpga = comms.done();
         if (comms_fpga) {
             fixtures->fgpa_comms_loaded();
@@ -906,7 +909,7 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
         hw::fpga::fippi fippi(*this);
         fippi_fpga = false;
         fw->load();
-        fippi.boot(fw->data);
+        fippi.boot(fw->data, io_cpld_backoff);
         fippi_fpga = fippi.done();
         if (fippi_fpga) {
             fixtures->fgpa_fippi_loaded();
@@ -1911,7 +1914,7 @@ char module::revision_label() const {
 void module::report(std::ostream& out) const {
     util::ostream_guard flags(out);
 
-    out << std::fixed << std::setprecision(3);
+    out << std::fixed << std::setprecision(3) << std::boolalpha;
 
     std::ostringstream title;
     title << "Module " << number << " (slot " << slot << ')';
@@ -1919,29 +1922,29 @@ void module::report(std::ostream& out) const {
     out << title.str() << std::endl
         << std::string(title.str().length(), '=') << std::endl
         << std::endl
-        << "Serial Number  : " << serial_num << std::endl
-        << "Revision       : " << revision_label() << " (" << revision << ')' << std::endl
-        << "Major Revision : " << major_revision << std::endl
-        << "Minor Revision : " << minor_revision << std::endl
-        << "Crate Revision : " << crate_revision << std::endl
-        << "Board Revision : " << board_revision << std::endl
+        << "Serial Number   : " << serial_num << std::endl
+        << "Revision        : " << revision_label() << " (" << revision << ')' << std::endl
+        << "Major Revision  : " << major_revision << std::endl
+        << "Minor Revision  : " << minor_revision << std::endl
+        << "Crate Revision  : " << crate_revision << std::endl
+        << "Board Revision  : " << board_revision << std::endl
         << std::endl;
     if (device) {
-        out << "PCI Bus        : " << device->bus() << std::endl
-            << "PCI_Slot       : " << device->slot() << std::endl
+        out << "PCI Bus         : " << device->bus() << std::endl
+            << "PCI_Slot        : " << device->slot() << std::endl
             << std::endl;
     }
-    out << "Num Channels   : " << num_channels << std::endl
-        << "Max Channels   : " << max_channels << std::endl
+    out << "Num Channels    : " << num_channels << std::endl
+        << "Max Channels    : " << max_channels << std::endl
         << std::endl
-        << "EEPROM Format  : " << eeprom_format << std::endl
+        << "EEPROM Format   : " << eeprom_format << std::endl
         << std::endl
-        << "FIFO Buffers   : " << fifo_buffers << std::endl
-        << "FIFO Run wait  : " << fifo_run_wait_usecs << " usecs" << std::endl
-        << "FIFO Idle wait : " << fifo_idle_wait_usecs << " usecs" << std::endl
-        << "FIFO Hold      : " << fifo_hold_usecs << " usecs" << std::endl
-        << "FIFO DMA Trig  : " << fifo_dma_trigger_level << " words" << std::endl
-        << "FIFO Bandwidth : ";
+        << "FIFO Buffers    : " << fifo_buffers << std::endl
+        << "FIFO Run wait   : " << fifo_run_wait_usecs << " usecs" << std::endl
+        << "FIFO Idle wait  : " << fifo_idle_wait_usecs << " usecs" << std::endl
+        << "FIFO Hold       : " << fifo_hold_usecs << " usecs" << std::endl
+        << "FIFO DMA Trig   : " << fifo_dma_trigger_level << " words" << std::endl
+        << "FIFO Bandwidth  : ";
     if (fifo_bandwidth == 0) {
         out << "unlimited";
     } else {
@@ -1949,7 +1952,8 @@ void module::report(std::ostream& out) const {
     }
     out << std::endl
         << std::endl
-        << "Bus cycle      : " << bus_cycle_period << " usecs" << std::endl
+        << "I2C read period : " << i2c_read_period << " usecs" << std::endl
+        << "IO CPLD old     : " << io_cpld_version_old << std::endl
         << std::endl;
 
     if (online()) {
@@ -1963,12 +1967,12 @@ void module::report(std::ostream& out) const {
             vartitle << var.var.name;
             out << vartitle.str() << std::endl
                 << std::string(vartitle.str().length(), '~') << std::endl
-                << "Mode           : " << param::label(var.var.mode) << std::endl
-                << "Access         : " << param::label(var.var.state) << std::endl
+                << "Mode            : " << param::label(var.var.mode) << std::endl
+                << "Access          : " << param::label(var.var.state) << std::endl
                 << std::hex << std::setfill('0') << "Address        : 0x" << std::setw(8)
                 << var.var.address << std::endl
                 << std::dec << std::setfill(' ') << "Size           : " << var.var.size << std::endl
-                << "Index          : " << int(var.var.par) << std::endl
+                << "Index           : " << int(var.var.par) << std::endl
                 << std::endl;
         }
 
@@ -2703,9 +2707,54 @@ void module::calc_bus_speed() {
         tp.stop();
     }
     double usecs = static_cast<double>(tp.usecs());
-    bus_cycle_period = usecs / count;
-    xia_log(log::debug) << "module: PCI bus-cycle-speed=" << bus_cycle_period
+    i2c_read_period = usecs / count;
+    xia_log(log::debug) << "PCI i2c-read-speed=" << i2c_read_period
                         << "usec sample-period=" << usecs << "usec";
+    tp.reset();
+    {
+        module::module::bus_guard guard(*this);
+        size_t polls = count;
+        volatile uint32_t tmp = 0;
+        tp.start();
+        while (polls-- != 0) {
+            write_word(hw::device::CFG_CTRLCS, tmp);
+        }
+        tp.stop();
+    }
+    usecs = static_cast<double>(tp.usecs());
+    double ctrl_cs_write = usecs / count;
+    xia_log(log::debug) << "PCI cpld-ctrlcs-write-speed=" << ctrl_cs_write
+                        << "usec sample-period=" << usecs << "usec";
+    tp.reset();
+    {
+        module::module::bus_guard guard(*this);
+        size_t polls = count;
+        volatile uint32_t tmp = 0;
+        tp.start();
+        write_word(hw::device::CFG_CTRLCS, tmp);
+        while (polls-- != 0) {
+            write_word(hw::device::CFG_DATACS, tmp);
+        }
+        tp.stop();
+    }
+    usecs = static_cast<double>(tp.usecs());
+    double data_cs_write = usecs / count;
+    xia_log(log::debug) << "PCI cpld-datacs-write-speed=" << data_cs_write
+                        << "usec sample-period=" << usecs << "usec";
+    double ratio = data_cs_write / ctrl_cs_write;
+    if (ratio < 1.5) {
+        io_cpld_version_old = true;
+    }
+    xia_log(log::debug) << std::boolalpha
+                        <<"PCI cpld-version-old=" << io_cpld_version_old;
+}
+
+void module::wait_usec_timed(size_t period) {
+  size_t loops = (period / i2c_read_period) + 1;
+  while (loops-- != 0) {
+    volatile uint32_t tmp = read_word(hw::device::PCF8574);
+    (void) tmp;
+  }
 }
 
 void module::log_stats(const char* label, const fifo_stats& stats) {
@@ -2725,6 +2774,12 @@ void module::sync_worker_run(bool forced) {
     if (forced || fifo_run_wait_usecs.load() == 0) {
         fifo_worker_run(250 * 1000);
     }
+}
+
+void module::trace_reg(char type, const char* ptr, void* vmaddr, int reg, hw::word value) {
+    xia_log(log::debug) << "M " << type << " " << std::setfill('0') << std::hex << vmaddr
+                        << ':' << std::setw(2)
+                        << reg << ptr << std::setw(8) << value;
 }
 
 void assign(modules& modules_, const number_slots& numbers) {

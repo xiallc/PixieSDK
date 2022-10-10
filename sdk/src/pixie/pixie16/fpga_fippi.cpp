@@ -39,10 +39,12 @@ fippi::fippi(module::module& module_, bool trace)
                control::regs(hw::device::CFG_DATACS, hw::device::CFG_CTRLCS, hw::device::CFG_RDCS),
                trace) {}
 
-void fippi::boot(const firmware::image& image, int retries) {
+void fippi::boot(const firmware::image& image, int& backoff, int retries) {
     module::module::bus_guard guard(module);
-    ctrl_1_2.load(image, retries);
-    ctrl_3_4.load(image, retries);
+    module.write_word(hw::device::CFG_DCMRST, 0);
+    wait(10000);
+    ctrl_1_2.load(image, backoff, retries);
+    ctrl_3_4.load(image, backoff, retries);
     wait(10000);
     module.write_word(hw::device::CFG_DCMRST, 0);
 }

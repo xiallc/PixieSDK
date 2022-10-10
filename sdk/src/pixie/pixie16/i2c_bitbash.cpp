@@ -39,7 +39,7 @@ bitbash::bitbash(module::module& module_, int reg_, size_t bus_freq_, uint32_t S
     /*
      * Maximum clock freq is 200KHz
      */
-    access_backoff = static_cast<size_t>(((1.0 / bus_freq) / module.bus_cycle_period)) + 2;
+    access_backoff = static_cast<size_t>(((1.0 / bus_freq) / module.i2c_read_period)) + 2;
 }
 
 bitbash::~bitbash() {

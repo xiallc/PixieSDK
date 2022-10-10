@@ -87,7 +87,7 @@ struct control {
      * @param image The image data that we'd like to load to the hardware.
      * @param retries The number of times to retry if we encounter an issue.
      */
-    void load(const firmware::image& image, int retries = 10);
+    void load(const firmware::image& image, int& backoff, int retries = 10);
 
     /**
      * @brief Checks if the FPGA has firmware and is ready for operation.

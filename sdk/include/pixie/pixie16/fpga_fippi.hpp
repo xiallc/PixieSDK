@@ -44,7 +44,7 @@ struct fippi {
 
     fippi(module::module& module, bool trace = false);
 
-    void boot(const firmware::image& image, int retries = 10);
+    void boot(const firmware::image& image, int& backoff, int retries = 10);
 
     bool done();
 };

@@ -48,11 +48,14 @@ control::control(module::module& module_, const std::string name_, const control
     : module(module_), name(name_), load_ctrl(load_ctrl_), clear_ctrl(clear_ctrl_), reg(reg_),
       trace(trace_) {}
 
-void control::load(const firmware::image& image, int retries) {
+void control::load(const firmware::image& image, int& backoff, int retries) {
     xia_log(log::info) << "fpga-" << name << " [slot " << module.slot
-                       << "] load: length=" << image.size() << " retries=" << retries << std::hex
-                       << " clear-controls: clear=0x" << clear_ctrl.clear << ",set=0x" << clear_ctrl.set
-                       << ",done=0x" << clear_ctrl.done << " load-controls: clear=0x" << load_ctrl.clear
+                       << "] load: length=" << image.size()
+                       << " retries=" << retries << std::hex
+                       << " clear-controls: clear=0x" << clear_ctrl.clear
+                       << ",set=0x" << clear_ctrl.set
+                       << ",done=0x" << clear_ctrl.done
+                       << " load-controls: clear=0x" << load_ctrl.clear
                        << ",set=0x" << load_ctrl.set << ",done=0x" << load_ctrl.done;
 
     if (image.empty()) {
@@ -60,7 +63,6 @@ void control::load(const firmware::image& image, int retries) {
     }
 
     bool programmed = false;
-    int backoff = 0;
     int backoff_step = 2;
 
     while (!programmed) {
@@ -79,7 +81,12 @@ void control::load(const firmware::image& image, int retries) {
             data = bus_read(reg.RDCS);
             data &= clear_ctrl.clear;
             data |= clear_ctrl.set;
-            bus_write(reg.CTRLCS, data);
+            bus_write(reg.CTRLCS, data, backoff);
+
+            /*
+             * Wait 100usec
+             */
+            module.wait_usec_timed(100);
 
             /*
              * Ready the FPGA(s)
@@ -87,7 +94,7 @@ void control::load(const firmware::image& image, int retries) {
             data = bus_read(reg.RDCS);
             data &= load_ctrl.clear;
             data |= load_ctrl.set;
-            bus_write(reg.CTRLCS, data);
+            bus_write(reg.CTRLCS, data, backoff);
 
             while (true) {
                 wait(1000);
@@ -103,14 +110,20 @@ void control::load(const firmware::image& image, int retries) {
                 if (timeout_msec <= 0) {
                     --retries;
                     if (retries <= 0) {
-                        throw error(error::code::device_load_failure, make_what("clear failure"));
+                        throw error(
+                            error::code::device_load_failure, make_what("clear failure"));
                     }
+                    backoff += backoff_step;
+                    xia_log(log::debug) << "fpga-" << name
+                                        << " [slot " << module.slot
+                                        << "] retry: backoff=" << backoff;
                     break;
                 }
             }
         }
 
-        xia_log(log::debug) << "fpga-" << name << " [slot " << module.slot << "] programming";
+        xia_log(log::debug) << "fpga-" << name
+                            << " [slot " << module.slot << "] programming";
 
         /*
          * Load the data.
@@ -126,7 +139,8 @@ void control::load(const firmware::image& image, int retries) {
             bus_write(reg.DATACS, value, backoff);
         }
 
-        xia_log(log::debug) << "fpga-" << name << " [slot " << module.slot << "] waiting for done";
+        xia_log(log::debug) << "fpga-" << name
+                            << " [slot " << module.slot << "] waiting for done";
 
         timeout_msec = 25;
 
@@ -144,11 +158,13 @@ void control::load(const firmware::image& image, int retries) {
             if (timeout_msec <= 0) {
                 --retries;
                 if (retries <= 0) {
-                    throw error(error::code::device_load_failure, make_what("programming failure"));
+                    throw error(
+                        error::code::device_load_failure, make_what("programming failure"));
                 }
                 backoff += backoff_step;
                 xia_log(log::debug) << "fpga-" << name
-                                    << " [slot " << module.slot << "] retry: backoff=" << backoff;
+                                    << " [slot " << module.slot
+                                    << "] retry: backoff=" << backoff;
                 break;
             }
         }
@@ -162,12 +178,12 @@ bool control::done() {
 }
 
 void control::bus_write(int regnum, uint32_t data, int backoff) {
+    module.write_word(regnum, data);
     if (backoff > 0) {
         while (backoff-- > 0) {
             bus_read(reg.RDCS);
         }
     }
-    module.write_word(regnum, data);
 }
 
 uint32_t control::bus_read(int regnum) {

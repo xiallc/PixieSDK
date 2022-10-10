@@ -37,9 +37,9 @@ comms::comms(module::module& module, bool trace)
            control::regs(hw::device::CFG_DATACS, hw::device::CFG_CTRLCS, hw::device::CFG_RDCS),
            trace) {}
 
-void comms::boot(const firmware::image& image, int retries) {
+void comms::boot(const firmware::image& image, int& backoff, int retries) {
     module::module::bus_guard guard(ctrl.module);
-    ctrl.load(image, retries);
+    ctrl.load(image, backoff, retries);
 }
 
 bool comms::done() {

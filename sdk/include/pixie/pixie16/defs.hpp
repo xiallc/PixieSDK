@@ -36,15 +36,19 @@ namespace hw {
  */
 struct device {
     /*
-     * PCI address decoding and control registers
+     * IO FPGA, also called COMM or BOOT CPLD
      */
     static const address CFG_DATACS = 0x00;
     static const address CFG_CTRLCS = 0x04;
     static const address CFG_RDCS = 0x08;
+    static const address CFG_RDVER = 0x0c;
     static const address I2CM24C64 = 0x10;
     static const address PCF8574 = 0x10;
     static const address CFG_DCMRST = 0x14;
     static const address CFG_DAC = 0x18;
+    /*
+     * System FPGA
+     */
     static const address CSR = 0x48;
     static const address REQUEST_HBR = 0x80;
     static const address HBR_DONE = 0x84;

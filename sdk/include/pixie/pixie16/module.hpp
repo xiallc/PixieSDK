@@ -390,9 +390,14 @@ public:
     bool reg_trace;
 
     /*
-     * Microsconds for a read
+     * Microsconds for an I2C read
      */
-    double bus_cycle_period;
+    double i2c_read_period;
+
+    /*
+     * Does the board has an old CPLD version?
+     */
+    bool io_cpld_version_old;
 
     /**
      * Modules are created by the crate.
@@ -670,6 +675,12 @@ public:
     void start_test(const test mode);
     void end_test();
 
+    /*
+     * Wait a period of microseconds using the timed poll read of a
+     * register.
+     */
+    void wait_usec_timed(size_t period);
+
 protected:
     /*
      * Locks
@@ -750,6 +761,8 @@ protected:
      * Synchronous worker run
      */
     void sync_worker_run(bool forced = false);
+
+    void trace_reg(char type, const char* ptr, void* vmaddr, int reg, hw::word value);
 
     std::thread fifo_thread;
 
@@ -838,16 +851,14 @@ inline hw::word module::read_word(int reg) {
         value = 0;
     }
     if (reg_trace) {
-        xia_log(log::debug) << "M r " << std::setfill('0') << std::hex << vmaddr << ':' << std::setw(2)
-                            << reg << " => " << std::setw(8) << value;
+        trace_reg('r', " => ", vmaddr, reg, value);
     }
     return value;
 }
 
 inline void module::write_word(int reg, const hw::word value) {
     if (reg_trace) {
-        xia_log(log::debug) << "M w " << std::setfill('0') << std::hex << vmaddr << ':' << std::setw(2)
-                            << reg << " <= " << std::setw(8) << value;
+        trace_reg('w', " <= ", vmaddr, reg, value);
     }
     if (have_hardware) {
         hw::write_word(vmaddr, reg, value);
