@@ -25,6 +25,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <climits>
 #include <cmath>
 #include <iomanip>
 #include <iostream>
@@ -267,6 +268,67 @@ private:
      * A precomputed lookup table for the CRC32 bitwise algorithm
      */
     static const value_type table[256];
+};
+
+/**
+ * Average a series of numbers and record the maximum and minimum values.
+ */
+struct average {
+    int avg;
+    int max;
+    int min;
+    int count;
+    average() : avg(0), max(INT_MIN), min(INT_MAX), count(0) {}
+    void update(int val) {
+        avg += val;
+        max = std::max(max, val);
+        min = std::min(min, val);
+        ++count;
+    }
+    void calc() { if (count > 0) avg /= count; }
+};
+
+/**
+ * linear fit using least squares. Provide linear interpolation.
+ */
+template<typename T>
+struct linear_fit {
+    using sample = std::pair<T, T>;
+    std::vector<sample> samples;
+
+    /*
+     * Y = kX + c
+     */
+    double k;
+    double c;
+
+    double sum_x;
+    double sum_y;
+    double sum_xy;
+    double sum_x_sq;
+
+    int count;
+
+    linear_fit() : k(0), c(0), sum_x(0), sum_y(0), sum_xy(0), sum_x_sq(0), count(0) {}
+
+    void update(T x, T y) {
+        samples.push_back(std::make_pair(x, y));
+        sum_x += x;
+        sum_y += y;
+        sum_xy += x * y;
+        sum_x_sq += x * x;
+        ++count;
+    }
+
+    void calc() {
+        auto divisor = (sum_x * sum_x) - (count * sum_x_sq);
+        k = ((sum_x * sum_y) - (count * sum_xy)) / divisor;
+        c = ((sum_x * sum_xy) - (sum_y * sum_x_sq)) / divisor;
+    }
+
+    T y(T x) {
+        return (k * x) + c;
+    }
 };
 
 
