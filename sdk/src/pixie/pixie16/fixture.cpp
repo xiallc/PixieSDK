@@ -27,6 +27,7 @@
 #include <pixie/log.hpp>
 #include <pixie/util.hpp>
 
+#include <pixie/pixie16/baseline.hpp>
 #include <pixie/pixie16/channel.hpp>
 #include <pixie/pixie16/defs.hpp>
 #include <pixie/pixie16/fixture.hpp>
@@ -53,40 +54,6 @@ struct userin_save {
 
     ~userin_save();
 };
-
-/**
- * ADC trace analyize
- *
- * This is a simple approach to detecting the average voltage.
- */
-struct channel_baseline {
-    using bin_buckets = std::vector<int>;
-
-    const int noise_bins = 30;
-
-    int channel;
-    int adc_bits;
-    double noise_percent;
-
-    int runs;
-    int baseline;
-
-    channel_baseline(double noise_percent = 0.5);
-
-    void start(int channel, int adc_bits);
-    void end();
-
-    void update(const hw::adc_trace& trace);
-
-    bool operator==(const channel_baseline& other) const;
-    bool operator!=(const channel_baseline& other) const;
-    bool operator==(const int bl) const;
-    bool operator!=(const int bl) const;
-
-    bin_buckets bins;
-};
-
-using channel_baselines = std::vector<channel_baseline>;
 
 /**
  * The daughter board fixture
@@ -214,7 +181,7 @@ static void set_channel_voffset(pixie::module::module& mod, double voffset, int 
 }
 
 static void analyze_channel_baselines(pixie::module::module& mod,
-                                      channel_baselines& baselines,
+                                      baseline::channels& baselines,
                                       const int traces = 1) {
     baselines.resize(mod.num_channels);
     for (auto& channel : mod.channels) {
@@ -231,7 +198,7 @@ static void analyze_channel_baselines(pixie::module::module& mod,
     for (auto& bl : baselines) {
         bl.end();
         log(log::debug) << pixie::module::module_label(mod, "afe-dbs: analyze-baselines")
-                        << "channel=" << bl.channel
+                        << "channel=" << bl.number
                         << " baseline=" << bl.baseline;
     }
 }
@@ -250,96 +217,6 @@ void userin_save::update(const hw::word& db_index, const hw::word& db_channel) {
 userin_save::~userin_save() {
     dsp.write(0, address, userin_0);
     dsp.write(1, address, userin_1);
-}
-
-channel_baseline::channel_baseline(double noise_percent_)
-    : channel(-1), adc_bits(0), noise_percent(noise_percent_), runs(0), baseline(-1) {
-    if (noise_percent > 100) {
-        noise_percent = 100;
-    } else if (noise_percent < 0) {
-        noise_percent = 0;
-    }
-}
-
-void channel_baseline::start(int channel_, int adc_bits_) {
-    channel = channel_;
-    adc_bits = adc_bits_;
-    bins.clear();
-    bins.resize(1 << adc_bits);
-    runs = 0;
-    baseline = -1;
-}
-
-void channel_baseline::end() {
-    /*
-     * Find the bin with the most values, the signal spent the most time at
-     * that voltage. Average a number of bins either side;
-     */
-    auto max = std::max_element(bins.begin() + noise_bins, bins.end() - noise_bins);
-    int max_bin = std::distance(bins.begin(), max);
-    int from_bin;
-    int to_bin;
-    if (bins[max_bin] != 0) {
-        from_bin = std::max(max_bin - noise_bins, 0);
-        to_bin = std::min(max_bin + noise_bins, int(bins.size()));
-    } else {
-        auto max_top = std::max_element(bins.end() - noise_bins, bins.end());
-        int max_top_bin = std::distance(bins.begin(), max_top);
-        auto max_bottom = std::max_element(bins.begin(), bins.begin() + noise_bins);
-        int max_bottom_bin = std::distance(bins.begin(), max_bottom);
-        if (bins[max_top_bin] > bins[max_bottom_bin]) {
-            from_bin = bins.size() - noise_bins;
-            to_bin = bins.size();
-        } else {
-            from_bin = 0;
-            to_bin = noise_bins;
-        }
-    }
-    int sum = 0;
-    int samples = 0;
-    for (int b = from_bin; b < to_bin; ++b) {
-        sum += b * bins[b];
-        samples += bins[b];
-    }
-    if (samples > 0) {
-        baseline = sum / samples;
-    } else {
-        baseline = 0;
-    }
-}
-
-void channel_baseline::update(const hw::adc_trace& trace) {
-    ++runs;
-    for (auto sample : trace) {
-        if (sample >= bins.size()) {
-            sample = static_cast<unsigned short>(bins.size() - 1);
-        }
-        ++bins[sample];
-    }
-}
-
-bool channel_baseline::operator==(const channel_baseline& other) const
-{
-    return *this == other.baseline;
-}
-
-bool channel_baseline::operator!=(const channel_baseline& other) const
-{
-    return *this != other.baseline;
-}
-
-bool channel_baseline::operator==(const int bl) const
-{
-    int range = 1;
-    if (noise_percent > 0) {
-        range = int((1 << adc_bits) * (noise_percent / 100));
-    }
-    return baseline >= (bl - range) && baseline <= (bl + range);
-}
-
-bool channel_baseline::operator!=(const int bl) const
-{
-    return !(*this == bl);
 }
 
 db::db(pixie::channel::channel& module_channel_, const hw::config& config_)
@@ -542,14 +419,14 @@ void afe_dbs::boot() {
     /*
      * Set the voffset for all channels to the low rail
      */
-    channel_baselines bl_same;
+    baseline::channels bl_same;
     set_channel_voffset(module_, -1.5, 1);
     analyze_channel_baselines(module_, bl_same);
 
     /*
      * Move the voffset for the even channels to high rail
      */
-    channel_baselines bl_moved;
+    baseline::channels bl_moved;
     set_channel_voffset(module_, 1.5, 2);
     analyze_channel_baselines(module_, bl_moved);
 
@@ -596,7 +473,7 @@ void afe_dbs::boot() {
      */
     bool failed = false;
     if (adc_swap_verify) {
-        channel_baselines bl_verify;
+        baseline::channels bl_verify;
         analyze_channel_baselines(module_, bl_verify);
         for (size_t chan = 0; chan < module_.num_channels; ++chan) {
             if ((chan % 2) == 0) {
@@ -706,7 +583,7 @@ void afe_dbs::adjust_offsets() {
     for (int run = 0; run_again && run < runs; ++run) {
         log(log::debug) << log_leader << "adjust-offsets: run=" << run;
         run_again = false;
-        channel_baselines baselines(baseline_noise_margin);
+        baseline::channels baselines(baseline_noise_margin);
         analyze_channel_baselines(module_, baselines, 1);
         for (size_t chan = 0; chan < module_.num_channels; ++chan) {
             auto& channel = module_.channels[chan];
