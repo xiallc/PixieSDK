@@ -2228,10 +2228,12 @@ void module::slow_filter_range(param::value_type value, size_t offset, bool io) 
 
         hw::run::control(*this, hw::run::control_task::program_fippi);
 
-        channel::range chans(num_channels);
-        channel::range_set(chans);
-        channel::baseline bl(*this, chans);
-        bl.find_cut();
+	if (this->get_rev_tag() != xia::pixie::hw::rev_H) {
+            channel::range chans(num_channels);
+            channel::range_set(chans);
+            channel::baseline bl(*this, chans);
+            bl.find_cut();
+	}
     }
 }
 
