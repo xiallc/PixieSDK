@@ -228,7 +228,6 @@ bool verify_api_return_value(const int& val, const std::string& func_name,
 
 bool output_statistics_data(const mod_cfg& mod, const std::string& type) {
 
-    typedef std::numeric_limits<double> dbl;
     std::cout << LOG("INFO") << "Requesting run statistics from module." << std::endl;
     std::vector<unsigned int> stats(Pixie16GetStatisticsSize(), 0);
     if (!verify_api_return_value(Pixie16ReadStatisticsFromModule(stats.data(), mod.number),
