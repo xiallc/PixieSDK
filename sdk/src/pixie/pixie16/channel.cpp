@@ -813,7 +813,7 @@ void channel::csra(double value) {
 
     if (((csra & (1 << hw::bit::CCSRA_ENARELAY)) !=
         (current_csra & (1 << hw::bit::CCSRA_ENARELAY))) &&
-	(mod.get_rev_tag() != hw::rev_tag::rev_H)) {
+        (mod.get_rev_tag() < hw::rev_tag::rev_H)) {
         range chans = {number};
         baseline bl(mod, chans);
         bl.find_cut();

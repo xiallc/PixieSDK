@@ -360,9 +360,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16BLcutFinder(unsigned short ModNum, unsigned sh
         xia::pixie::crate::module_handle module(crate, ModNum);
         module->channel_check(ChanNum);
 
-	if (*module == xia::pixie::hw::rev_H) {
-	    return not_supported();
-	}
+        if (*module == xia::pixie::hw::rev_H) {
+            return not_supported();
+        }
 
         xia::pixie::channel::range channels = {size_t(ChanNum)};
         xia::pixie::param::values values;
