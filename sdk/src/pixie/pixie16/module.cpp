@@ -664,7 +664,8 @@ void module::open(size_t device_number) {
         /*
          * Determine the bus speed.
          */
-        calc_bus_speed();
+        calc_i2c_bus_speed();
+        calc_io_cpld_bus_speed();
 
         /*
          * We can only touch specific registers at this early stage of
@@ -870,7 +871,7 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
         xia_log(log::warning) << "module forced offline";
     }
 
-    if (online()) {
+    if (online() && (boot_comms || boot_fippi || boot_dsp)) {
         xia_log(log::warning) << "booting online module";
     }
 
@@ -2695,7 +2696,7 @@ void module::fifo_worker() {
 }
 
 
-void module::calc_bus_speed() {
+void module::calc_i2c_bus_speed() {
     const size_t count = 5000;
     util::timepoint tp;
     {
@@ -2712,28 +2713,39 @@ void module::calc_bus_speed() {
     i2c_read_period = usecs / count;
     xia_log(log::debug) << "PCI i2c-read-speed=" << i2c_read_period
                         << "usec sample-period=" << usecs << "usec";
-    tp.reset();
+}
+
+void module::calc_io_cpld_bus_speed() {
+    /*
+     * Hold PROGB of all FPGAs high with SEL low when writing
+     * to the CFG_DATACS
+     */
+    xia_log(log::debug) << module_label(*this)
+                        << "PCI io-cpld-rdcs-in=0x" << std::hex
+                        << read_word(hw::device::CFG_RDCS);
+    const size_t count = 5000;
+    util::timepoint tp;
     {
         module::module::bus_guard guard(*this);
         size_t polls = count;
-        volatile uint32_t tmp = 0;
+        volatile uint32_t tmp = hw::mask::CPLDCSR_PROGB_ALL_FPGAS;
         tp.start();
         while (polls-- != 0) {
             write_word(hw::device::CFG_CTRLCS, tmp);
         }
         tp.stop();
     }
-    usecs = static_cast<double>(tp.usecs());
+    double usecs = static_cast<double>(tp.usecs());
     double ctrl_cs_write = usecs / count;
-    xia_log(log::debug) << "PCI cpld-ctrlcs-write-speed=" << ctrl_cs_write
+    xia_log(log::debug) << module_label(*this)
+                        << "PCI io-cpld-ctrlcs-write-speed=" << ctrl_cs_write
                         << "usec sample-period=" << usecs << "usec";
     tp.reset();
     {
         module::module::bus_guard guard(*this);
         size_t polls = count;
-        volatile uint32_t tmp = 0;
+        volatile uint32_t tmp = UINT_MAX;
         tp.start();
-        write_word(hw::device::CFG_CTRLCS, tmp);
         while (polls-- != 0) {
             write_word(hw::device::CFG_DATACS, tmp);
         }
@@ -2741,14 +2753,19 @@ void module::calc_bus_speed() {
     }
     usecs = static_cast<double>(tp.usecs());
     double data_cs_write = usecs / count;
-    xia_log(log::debug) << "PCI cpld-datacs-write-speed=" << data_cs_write
+    xia_log(log::debug) << module_label(*this)
+                        << "PCI io-cpld-datacs-write-speed=" << data_cs_write
                         << "usec sample-period=" << usecs << "usec";
     double ratio = data_cs_write / ctrl_cs_write;
     if (ratio < 1.5) {
         io_cpld_version_old = true;
     }
-    xia_log(log::debug) << std::boolalpha
-                        <<"PCI cpld-version-old=" << io_cpld_version_old;
+    xia_log(log::debug) << module_label(*this)
+                        << std::boolalpha
+                        <<"PCI io-cpld-version-old=" << io_cpld_version_old;
+    xia_log(log::debug) << module_label(*this)
+                        << "PCI io-cpld-rdcs-out=0x" << std::hex
+                        << read_word(hw::device::CFG_RDCS);
 }
 
 void module::wait_usec_timed(size_t period) {

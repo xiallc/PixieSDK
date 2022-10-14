@@ -104,6 +104,58 @@ static inline address fippi_addr(int device, address reg) {
  */
 struct bit {
     /*
+     * Host PCI IO CPLD CTRL register bit definitions
+     */
+    /**
+     *  Select System FPGA
+     */
+    static constexpr size_t CPLDCSR_SEL_SYS_FPGA = 0;
+    /**
+     *  PROGB System FPGA
+     */
+    static constexpr size_t CPLDCSR_PROGB_SYS_FPGA = 1;
+    /**
+     *  Select FIPPI 0 FPGA
+     */
+    static constexpr size_t CPLDCSR_SEL_FIPPI_0_FPGA = 4;
+    /**
+     *  PROGB FIPPI 0 FPGA
+     */
+    static constexpr size_t CPLDCSR_PROGB_FIPPI_0_FPGA = 5;
+    /**
+     *  Select FIPPI 1 FPGA
+     */
+    static constexpr size_t CPLDCSR_SEL_FIPPI_1_FPGA = 6;
+    /**
+     *  PROGB FIPPI 1 FPGA
+     */
+    static constexpr size_t CPLDCSR_PROGB_FIPPI_1_FPGA = 7;
+    /**
+     *  Select FIPPI 2 FPGA
+     */
+    static constexpr size_t CPLDCSR_SEL_FIPPI_2_FPGA = 8;
+    /**
+     *  PROGB FIPPI 2 FPGA
+     */
+    static constexpr size_t CPLDCSR_PROGB_FIPPI_2_FPGA = 9;
+    /**
+     *  Select FIPPI 3 FPGA
+     */
+    static constexpr size_t CPLDCSR_SEL_FIPPI_3_FPGA = 10;
+    /**
+     *  PROGB FIPPI 3 FPGA
+     */
+    static constexpr size_t CPLDCSR_PROGB_FIPPI_3_FPGA = 11;
+    /**
+     *  Control connections of PXI nearest neighbor lines (J2) onto the
+     *  backplane for Rev-B/C/D modules
+     */
+    static const size_t CPLDCSR_BPCONNECT = 12;
+    /**
+     * Control backplane pullups: 1: pulled up, 0: not pulled up
+     */
+    static const size_t CPLDCSR_PULLUP = 13;
+    /*
      * Host Bus Request bit definitions. Used on rev H and later and don't on
      * earlier versions.
      */
@@ -171,15 +223,6 @@ struct bit {
      * Set this module as the Director module (1) or non-Director module (0)
      */
     static const size_t MODCSRB_CHASSISMASTER = 6;
-    /**
-     *  Control connections of PXI nearest neighbor lines (J2) onto the
-     *  backplane for Rev-B/C/D modules
-     */
-    static const size_t CPLDCSR_BPCONNECT = 12;
-    /**
-     * Control backplane pullups: 1: pulled up, 0: not pulled up
-     */
-    static const size_t CPLDCSR_PULLUP = 13;
 
     /*
      * CHANCSRA bits definitions
@@ -249,6 +292,18 @@ struct bit {
      * Control input relay: 1: connect, 0: disconnect
      */
     static const size_t CCSRA_ENARELAY = 14;
+};
+/**
+ * @brief Defines various bit masks used to manage the hw.
+ */
+struct mask {
+    /**
+     *  PROGB ALL FPGAS
+     */
+    static constexpr size_t CPLDCSR_PROGB_ALL_FPGAS =
+        1 << bit::CPLDCSR_PROGB_SYS_FPGA |
+        1 << bit::CPLDCSR_PROGB_FIPPI_0_FPGA | 1 << bit::CPLDCSR_PROGB_FIPPI_1_FPGA |
+        1 << bit::CPLDCSR_PROGB_FIPPI_2_FPGA | 1 << bit::CPLDCSR_PROGB_FIPPI_3_FPGA;
 };
 
 /**

@@ -744,7 +744,8 @@ protected:
     /*
      * Calculate the bus speed
      */
-    void calc_bus_speed();
+    void calc_i2c_bus_speed();
+    void calc_io_cpld_bus_speed();
 
     /*
      * Output stats
