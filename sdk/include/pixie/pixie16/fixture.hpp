@@ -114,12 +114,18 @@ struct channel {
     /**
      * Report the fixture's details
      */
-    virtual void report(std::ostream& out) const;
+    virtual void report(
+        std::ostream& out, const std::string& prefix = "") const;
 
     /**
      * Get the module.
      */
     module::module& get_module();
+
+    /**
+     * Get a persistent key for the channel fixture
+     */
+    const std::string persistent_key(const std::string& item) const;
 };
 
 using channel_ptr = std::shared_ptr<channel>;

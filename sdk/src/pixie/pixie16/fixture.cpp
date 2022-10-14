@@ -73,9 +73,9 @@ void channel::read_adc(hw::adc_word* , size_t ) {
     unsupported_op("read ADC is using the DSP");
 }
 
-void channel::report(std::ostream& out) const {
-    out << "Fixture        : " << label << std::endl;
-    config.report(out);
+void channel::report(std::ostream& out, const std::string& prefix) const {
+    out << prefix << "Fixture        : " << label << std::endl;
+    config.report(out, prefix);
 }
 
 void channel::set(const std::string item, bool ) {
@@ -112,6 +112,12 @@ void channel::get(const std::string item, hw::word& ) {
 
 pixie::module::module& channel::get_module() {
     return module_channel.module;
+}
+
+const std::string channel::persistent_key(const std::string& item) const {
+    return
+        "fixture.channel." +
+        std::to_string(module_channel.number) + '.' + label + '.' + item;
 }
 
 module::module(pixie::module::module& module__)

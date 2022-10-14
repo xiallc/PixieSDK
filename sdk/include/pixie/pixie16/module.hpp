@@ -26,6 +26,7 @@
 #include <atomic>
 #include <iomanip>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -99,6 +100,15 @@ class module {
      */
     typedef std::mutex bus_lock_type;
     typedef std::lock_guard<bus_lock_type> bus_lock_guard;
+
+    /*
+     * A datasotre for persistent module wide data. This is for
+     * internal values. Use wisely.
+     *
+     * The key is a dot delimited path. Please ask before adding a new
+     * path. For example 'fixture.channel.3.adc_swap_disabled'.
+     */
+    using data_store = std::map<std::string, std::string>;
 
 public:
     /**
@@ -681,6 +691,13 @@ public:
      */
     void wait_usec_timed(size_t period);
 
+    /*
+     * Persistent data access
+     */
+    bool persistent_has(const std::string& key) const;
+    void persistent_set(const std::string& key, const std::string& value);
+    const std::string& persistent_get(const std::string& key) const;
+
 protected:
     /*
      * Locks
@@ -842,6 +859,14 @@ protected:
      * Current test mode.
      */
     std::atomic<test> test_mode;
+
+    /*
+     * A datastore for persistent module wide data. The boot process
+     * erases channels and this store provides a way for channels,
+     * fixtures or anything else to hold data that needs to survive a
+     * boot.
+     */
+    data_store persistent;
 };
 
 inline hw::word module::read_word(int reg) {

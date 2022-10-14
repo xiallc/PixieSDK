@@ -129,7 +129,13 @@ db::db(pixie::channel::channel& module_channel_, const hw::config& config_)
     number = mod.eeprom.db_find(module_channel.number);
     base =  mod.eeprom.db_channel_base(number);
     offset = static_cast<int>(module_channel.number) - base;
-    adc_state = adc_boot_state;
+    auto key = persistent_key("adc_swap_disabled");
+    if (mod.persistent_has(key)) {
+        auto& val = mod.persistent_get(key);
+        adc_state = val == "true" ? adc_swap_disabled : adc_boot_state;
+    } else {
+        adc_state = adc_boot_state;
+    }
 }
 
 void db::acquire_adc() {
@@ -165,7 +171,19 @@ void db::read_adc(hw::adc_word* buffer, size_t size) {
 }
 
 void db::set(const std::string item, bool value) {
-    if (item == "ADC_SWAP") {
+    if (item == "ADC_SWAP_DISABLE") {
+        auto& mod = get_module();
+        auto key = persistent_key("adc_swap_disabled");
+        mod.persistent_set(key, value ? "true" : "false");
+        if (adc_state == adc_swap_disabled || adc_state == adc_boot_state) {
+            adc_state = value ? adc_swap_disabled : adc_boot_state;
+        } else {
+            auto& mod = get_module();
+            throw pixie::module::error(
+                mod.number, mod.slot, pixie::module::error::code::invalid_value,
+                "DB swap state already set");
+        }
+    } else if (item == "ADC_SWAP") {
         if (adc_state == adc_boot_state) {
             adc_state = value ? adc_swapped : adc_unswapped;
         }
@@ -175,7 +193,9 @@ void db::set(const std::string item, bool value) {
 }
 
 void db::get(const std::string item, bool& value) {
-    if (item == "ADC_SWAP") {
+    if (item == "ADC_SWAP_DISABLE") {
+        value = (adc_state == adc_swap_disabled);
+    } else if (item == "ADC_SWAP") {
         value = (adc_state == adc_swapped);
     } else {
         channel::get(item, value);
@@ -198,13 +218,16 @@ void db::get(const std::string item, double& value) {
     channel::get(item, value);
 }
 
-void db::report(std::ostream& out) const {
-    channel::report(out);
-    out << "DB Number      : " << number << std::endl
-        << "DB Base        : " << base << std::endl
-        << "DB Offset      : " << offset << std::endl
-        << "ADC swap state : ";
+void db::report(std::ostream& out, const std::string& prefix) const {
+    channel::report(out, prefix);
+    out << prefix << "DB Number      : " << number << std::endl
+        << prefix << "DB Base        : " << base << std::endl
+        << prefix << "DB Offset      : " << offset << std::endl
+        << prefix << "ADC swap state : ";
     switch (adc_state) {
+    case adc_swap_disabled:
+        out << "disabled (no swap)";
+        break;
     case adc_boot_state:
         out << "boot state";
         break;
@@ -217,7 +240,6 @@ void db::report(std::ostream& out) const {
     }
     out << std::endl;
 }
-
 
 afe_dbs::afe_dbs(pixie::module::module& module__)
     : module(module__), adcctrl { } {
@@ -253,6 +275,13 @@ void afe_dbs::boot() {
      * Check all the channels and swap of the ADCs if required.
      */
     for (int chan = 0; chan < static_cast<int>(module_.num_channels); ++chan) {
+        bool swap_disabled = true;
+        module_.channels[chan].fixture->get("ADC_SWAP_DISABLE", swap_disabled);
+        if (swap_disabled) {
+            log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")
+                            << "boot: adc_swap: disabled: " + std::to_string(chan);
+            continue;
+        }
         bool swapped = false;
         if ((chan % 2) == 0) {
             if (bl_same[chan] == bl_moved[chan]) {
@@ -270,15 +299,16 @@ void afe_dbs::boot() {
             module_.channels[chan].fixture->get("DB_NUMBER", chan_db);
             module_.channels[chan].fixture->get("DB_OFFSET", chan_offset);
             if (chan_db >= max_dbs) {
-                throw pixie::module::error(module_.number, module_.slot,
-                                           pixie::module::error::code::module_initialize_failure,
-                                           "invalid DB number for channel: " + std::to_string(chan));
+                throw pixie::module::error(
+                    module_.number, module_.slot,
+                    pixie::module::error::code::module_initialize_failure,
+                    "invalid DB number for channel: " + std::to_string(chan));
             }
             hw::word last_adcctrl = adcctrl[chan_db];
             adcctrl[chan_db] |= 1 << (chan_offset / 2);
             log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")
-                            << "boot: adc_swap: db="
-                            << chan_db << " offset=" << chan_offset
+                            << "boot: adc_swap: chan=" << chan
+                            << " db=" << chan_db << " offset=" << chan_offset
                             << " adcctrl=0x" << std::hex << adcctrl[chan_db];
             if (adcctrl[chan_db] != last_adcctrl) {
                 hw::memory::fippi fippi(module_);

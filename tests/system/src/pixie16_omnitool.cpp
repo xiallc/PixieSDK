@@ -245,6 +245,15 @@ static const command crate_cmd = {
     "crate"
 };
 
+command_handler_decl(db);
+static const command db_cmd = {
+    "db", db,
+    {},
+    {"init", "probe"},
+    "Daughter board control",
+    "db module(s) [channel(s)] [disable-swap]]"
+};
+
 command_handler_decl(export_);
 static const command export_cmd = {
     "export", export_,
@@ -489,6 +498,7 @@ static const command_map commands = {
     {"bl-save", bl_save_cmd},
     {"boot", boot_cmd},
     {"crate", crate_cmd},
+    {"db", db_cmd},
     {"export", export_cmd},
     {"help", help_cmd},
     {"hist-resume", hist_resume_cmd},
@@ -655,16 +665,31 @@ static std::vector<T> get_values(
             xia::util::strings sd;
             xia::util::split(sd, slots, '-');
             if (sd.size() == 1) {
-                values.push_back(get_value<T>(sd[0]));
+                auto val = get_value<T>(sd[0]);
+                if (val < max_count) {
+                    values.push_back(val);
+                } else if (!no_error) {
+                    throw std::runtime_error(
+                        "value out of range: " + std::to_string(val));
+                }
             } else if (sd.size() == 2) {
                 auto start = get_value<T>(sd[0]);
                 auto end = get_value<T>(sd[1]);
                 if (start > end) {
+                    if (!no_error) {
+                        throw std::runtime_error("invalid range: " + opt);
+                    }
                     values.clear();
                     break;
                 }
-                for (T s = start; s <= end; ++s) {
-                    values.push_back(s);
+                if (start < max_count && end < max_count) {
+                    for (T s = start; s <= end; ++s) {
+                        values.push_back(s);
+                    }
+                } else if (!no_error) {
+                    auto val = start < max_count ? end : start;
+                    throw std::runtime_error(
+                        "value out of range: " + std::to_string(val));
                 }
             } else {
                 if (!no_error) {
@@ -1108,7 +1133,8 @@ static void module_check(xia::pixie::crate::crate& crate, std::vector<size_t> mo
                 std::string("invalid module number: " + std::to_string(mod_num)));
         }
         if (!crate.modules[mod_num]->online()) {
-            throw std::runtime_error(std::string("module offline: " + std::to_string(mod_num)));
+            throw std::runtime_error(
+                std::string("module offline: " + std::to_string(mod_num)));
         }
     }
 }
@@ -1200,7 +1226,8 @@ void module_threads(
                     char active = w.running.load() ? '>' : ' ';
                     w.last_total = total;
                     std::ostringstream oss;
-                    oss << ' ' << active << std::setw(2) << w.number << ": total: " << std::setw(8)
+                    oss << ' ' << active << std::setw(2) << w.number
+                        << ": total: " << std::setw(8)
                         << xia::util::humanize(bytes) << " rate: " << std::setw(8)
                         << xia::util::humanize(rate) << " bytes/sec pci: bus=" << w.pci_bus
                         << " slot=" << w.pci_slot;
@@ -1226,8 +1253,8 @@ void module_threads(
 }
 
 module_thread_worker::module_thread_worker()
-    : number(-1), slot(-1), pci_bus(-1), pci_slot(-1), running(false), has_error(false), total(0),
-      last_total(0) {}
+    : number(-1), slot(-1), pci_bus(-1), pci_slot(-1), running(false), has_error(false),
+      total(0), last_total(0) {}
 
 template<typename W>
 void set_num_slot(xia::pixie::crate::crate& crate, std::vector<size_t>& mod_nums,
@@ -1255,7 +1282,8 @@ void performance_stats(
         if (show_workers) {
             if (w.has_error) {
                 std::stringstream he_oss;
-                he_oss << "module: num:" << std::setw(2) << w.number << " slot:" << std::setw(2)
+                he_oss << "module: num:" << std::setw(2) << w.number
+                       << " slot:" << std::setw(2)
                        << w.slot << ": has an error; check the log";
                 args.opts.out << he_oss.str() << std::endl;
                 xia_log(xia::log::info) << he_oss.str();
@@ -1264,7 +1292,8 @@ void performance_stats(
             auto bytes = w.total * sizeof(xia::pixie::hw::word);
             auto rate = double(bytes) / w.period.secs();
             dr_oss << "module: num:" << std::setw(2) << w.number << " slot:" << std::setw(2)
-                   << w.slot << ": data received: " << std::setw(8) << xia::util::humanize(bytes)
+                   << w.slot << ": data received: "
+                   << std::setw(8) << xia::util::humanize(bytes)
                    << " bytes (" << std::setw(9) << bytes << "), rate: " << std::setw(8)
                    << xia::util::humanize(rate) << " bytes/sec pci: bus=" << w.pci_bus
                    << " slot=" << w.pci_slot;
@@ -1386,11 +1415,13 @@ static void bl_save(command_args& args) {
     for (auto mod_num : mod_nums) {
         xia::pixie::channel::range channels;
         channels_option(channels, chans_opt, crate[mod_num].num_channels);
-        xia::pixie::channel::baseline::channels_values baselines(crate[mod_num].num_channels);
+        xia::pixie::channel::baseline::channels_values
+            baselines(crate[mod_num].num_channels);
         crate[mod_num].bl_get(channels, baselines, false);
 
         std::ostringstream name;
-        name << std::setfill('0') << baseline_prefix << '-' << std::setw(2) << mod_num << ".csv";
+        name << std::setfill('0') << baseline_prefix
+             << '-' << std::setw(2) << mod_num << ".csv";
         std::ofstream out(name.str());
         out << "sample, time,";
 
@@ -1430,6 +1461,69 @@ static void boot(command_args& args) {
 static void crate_report(command_args& args) {
     auto& crate = args.crate;
     args.opts.out << crate << std::endl;
+}
+
+static void db(command_args& args) {
+    auto check_cmd = [](auto& str) {
+      return str == "show" ||
+        str == "disable-swap";
+    };
+    auto& crate = args.crate;
+    args_command mod_nums_opt;
+    args_command chans_opt;
+    args_command db_opt;
+    if (valid_option(args, 1)) {
+        db_opt = get_and_next(args);
+        if (!check_cmd(db_opt)) {
+            mod_nums_opt = db_opt;
+            db_opt.clear();
+        }
+    }
+    if (valid_option(args, 1)) {
+        db_opt = get_and_next(args);
+        if (!check_cmd(db_opt)) {
+            chans_opt = db_opt;
+            db_opt.clear();
+        }
+    }
+    if (valid_option(args, 1)) {
+        db_opt = get_and_next(args);
+    }
+    std::string db_command = "show";
+    if (!db_opt.empty()) {
+        if (!check_cmd(db_opt)) {
+            throw std::runtime_error("db: invalid command: " + db_opt);
+        }
+        db_command = db_opt;
+    }
+    module_range mod_nums;
+    modules_option(mod_nums, mod_nums_opt, crate.num_modules);
+    for (auto mod_num : mod_nums) {
+        if (crate[mod_num] < xia::pixie::hw::rev_H) {
+            throw std::runtime_error(
+                "db: module not rev H or later: " + std::to_string(mod_num));
+        }
+        if (!crate[mod_num].online()) {
+            throw std::runtime_error("db: module off-line");
+        }
+        xia::pixie::channel::range channels;
+        channels_option(channels, chans_opt, crate[mod_num].num_channels);
+        for (auto channel : channels) {
+            auto& fixture = crate[mod_num].channels[channel].fixture;
+            if (!fixture) {
+                throw std::runtime_error(
+                    "db: no fixture: module: " + std::to_string(mod_num) +
+                    " channel: " + std::to_string(channel));
+            }
+            if (db_command == "show") {
+                std::cout << "DB: module:" << mod_num
+                          << " channel:" << channel << std::endl;
+                fixture->report(args.opts.out, " ");
+            } else if (db_command == "disable-swap") {
+                fixture->set("ADC_SWAP_DISABLE", true);
+            }
+        }
+    }
 }
 
 static void export_(command_args& args) {
@@ -2024,17 +2118,19 @@ static void par_write(command_args& args) {
 }
 
 static void report(command_args& args) {
-    if (!valid_option(args, 1)) {
-        throw std::runtime_error("report: not enough options");
+    std::ostream* out= &std::cout;
+    std::ofstream output_file;
+    if (valid_option(args, 1)) {
+        auto file_opt = get_and_next(args);
+        output_file.open(file_opt);
+        if (!output_file) {
+            throw std::runtime_error(
+                std::string("opening report: " + file_opt + ": " + std::strerror(errno)));
+        }
+        out = &output_file;
     }
     auto& crate = args.crate;
-    auto file_opt = get_and_next(args);
-    std::ofstream output_file(file_opt);
-    if (!output_file) {
-        throw std::runtime_error(
-            std::string("opening report: " + file_opt + ": " + std::strerror(errno)));
-    }
-    crate.report(output_file);
+    crate.report(*out);
 }
 
 static void run_active(command_args& args) {

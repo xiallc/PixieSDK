@@ -250,7 +250,7 @@ struct config {
     /**
      * Report the fixture's details
      */
-    void report(std::ostream& out) const;
+    void report(std::ostream& out, const std::string& prefix = "") const;
 };
 
 typedef std::vector<config> configs;

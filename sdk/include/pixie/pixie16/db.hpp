@@ -41,6 +41,7 @@ struct db : public channel {
      * If the DSP is not loaded the swap state is unknown.
      */
     enum adc_swap_state {
+        adc_swap_disabled,
         adc_boot_state,
         adc_unswapped,
         adc_swapped
@@ -77,9 +78,9 @@ struct db : public channel {
     virtual void get(const std::string item, int& value);
     virtual void get(const std::string item, double& value);
 
-    virtual void report(std::ostream& out) const override;
+    virtual void report(
+        std::ostream& out, const std::string& prefix = "") const override;
 };
-
 
 /**
  * @brief Pixie16 module's have AFE daughter board fixtures

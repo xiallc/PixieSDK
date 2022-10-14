@@ -1896,7 +1896,8 @@ void module::output(std::ostream& out) const {
         << slot << " present:" << present_.load() << " online:" << online_.load()
         << " forced-offline:" << forced_offline_.load() << " serial:" << serial_num
         << " rev:" << revision_label() << " (" << revision << ") vaddr:" << vmaddr
-        << " fw: " << firmware.size();
+        << " fw: " << firmware.size() << " max-channels: " << max_channels
+        << " num-channels: " << num_channels;
 }
 
 std::string module::version_label() const {
@@ -2799,6 +2800,23 @@ void module::trace_reg(char type, const char* ptr, void* vmaddr, int reg, hw::wo
     xia_log(log::debug) << "M " << type << " " << std::setfill('0') << std::hex << vmaddr
                         << ':' << std::setw(2)
                         << reg << ptr << std::setw(8) << value;
+}
+
+bool module::persistent_has(const std::string& key) const {
+    return persistent.find(key) != persistent.end();
+}
+
+void module::persistent_set(const std::string& key, const std::string& value) {
+    persistent[key] = value;
+}
+
+const std::string& module::persistent_get(const std::string& key) const {
+    auto val = persistent.find(key);
+    if (val == persistent.end()) {
+        throw error(number, slot, error::code::internal_failure,
+                    "persistent key not found: " + key);
+    }
+    return val->second;
 }
 
 void assign(modules& modules_, const number_slots& numbers) {
