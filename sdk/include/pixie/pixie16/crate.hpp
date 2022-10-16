@@ -81,6 +81,27 @@ public:
     };
 
     /**
+     * Boot settings.
+     *
+     * Defaults to all true and all modules.
+     */
+    struct boot_params {
+        using range = std::vector<size_t>;
+
+        /**
+         * If true (the default) boot or module else boot only the
+         * modules offline.
+         */
+        bool force;
+        bool boot_comms; /** Clear and load the COMM FPGA */
+        bool boot_fippi; /** Clear and load the FIPPI FPGA */
+        bool boot_dsp; /** Reset and load the DSP */
+        range modules; /** Range of modules to boot, empty is all */
+
+        boot_params();
+    };
+
+    /**
      * Number of modules present in the crate.
      */
     size_t num_modules;
@@ -161,12 +182,15 @@ public:
     module::module_ptr find(T slot) {
         int slot_ = static_cast<int>(slot);
         auto mod = std::find_if(modules.begin(), modules.end(),
-                                [slot_](const module::module_ptr m) { return m->slot == slot_; });
+                                [slot_](const module::module_ptr m) {
+                                    return m->slot == slot_; });
         if (mod == modules.end()) {
             mod = std::find_if(offline.begin(), offline.end(),
-                               [slot_](const module::module_ptr m) { return m->slot == slot_; });
+                               [slot_](const module::module_ptr m) {
+                                   return m->slot == slot_; });
             if (mod == offline.end()) {
-                throw error(pixie::error::code::module_number_invalid, "module slot not found");
+                throw error(
+                    pixie::error::code::module_number_invalid, "module slot not found");
             }
         }
         return *mod;
@@ -213,10 +237,9 @@ public:
     /**
      * @brief Boot all modules by loading the firmware onto the hardware.
      *
-     * @param force If true (the default) boot or module else boot only the
-     *              modules offline.
+     * @param params The crate boot parameters
      */
-    void boot(const bool force = true);
+    void boot(const boot_params& params = boot_params());
 
     /**
      * @brief Assign numbers to the modules by slot.

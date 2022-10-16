@@ -1588,7 +1588,9 @@ PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file,
         }
 
         if (boot) {
-            crate.boot(force);
+            xia::pixie::crate::crate::boot_params boot_params;
+            boot_params.force = force;
+            crate.boot(boot_params);
         }
 
         if (import_settings) {

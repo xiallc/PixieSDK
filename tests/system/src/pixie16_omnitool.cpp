@@ -1446,12 +1446,54 @@ static void bl_save(command_args& args) {
 
 static void boot(command_args& args) {
     auto& crate = args.crate;
+    xia::pixie::crate::crate::boot_params boot_params;
+    bool first = true;
+    bool clear_boots = true;
+    while (valid_option(args, 1)) {
+        auto opt = get_and_next(args);
+        if (first) {
+            first = false;
+            boot_params.modules = get_values<size_t>(opt, crate.num_modules);
+            if (!boot_params.modules.empty()) {
+                continue;
+            }
+        }
+        if (clear_boots) {
+            clear_boots = false;
+            boot_params.boot_comms = false;
+            boot_params.boot_fippi = false;
+            boot_params.boot_dsp = false;
+        }
+        if (opt == "comms" || opt == "sys" || opt == "system") {
+            boot_params.boot_comms = true;
+        } else if (opt == "fippi") {
+            boot_params.boot_fippi = true;
+        } else if (opt == "dsp") {
+            boot_params.boot_dsp = true;
+        } else {
+            throw std::runtime_error("boot: invalid option: " + opt);
+        }
+    }
     xia::util::timepoint tp;
     if (args.opts.verbose) {
-        args.opts.out << "booting crate" << std::endl;
+        args.opts.out << std::boolalpha
+                      << "booting crate: comms=" << boot_params.boot_comms
+                      << " fippi=" << boot_params.boot_fippi
+                      << " dsp=" << boot_params.boot_dsp
+                      << " modules";
+        if (boot_params.modules.empty()) {
+            args.opts.out << "=all";
+        } else {
+            char delimiter = '=';
+            for (auto m : boot_params.modules) {
+                args.opts.out << delimiter << m;
+                delimiter = ',';
+            }
+        }
+        args.opts.out << std::endl;
         tp.start();
     }
-    crate.boot();
+    crate.boot(boot_params);
     if (args.opts.verbose) {
         tp.end();
         args.opts.out << "boot time=" << tp << std::endl;

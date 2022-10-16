@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <future>
 #include <iomanip>
+#include <numeric>
 #include <sstream>
 
 #include <pixie/config.hpp>
@@ -42,6 +43,10 @@ crate::user::user(crate& crate__) : crate_(crate__) {
 
 crate::user::~user() {
     --crate_.users_;
+}
+
+crate::boot_params::boot_params()
+    : force(true), boot_comms(true), boot_fippi(true), boot_dsp(true) {
 }
 
 crate::crate() : num_modules(0), revision(-1), ready_(false), users_(0) {}
@@ -179,8 +184,25 @@ bool crate::probe() {
     return online == num_modules;
 }
 
-void crate::boot(const bool force) {
-    xia_log(log::info) << "crate: boot: force=" << std::boolalpha << force;
+void crate::boot(const crate::boot_params& params) {
+    xia_log(log::info) << "crate: boot: force=" << std::boolalpha << params.force
+                       << " comms=" << params.boot_comms << " fippi=" << params.boot_fippi
+                       << " dsp=" << params.boot_dsp;
+
+    crate::boot_params::range mod_nums;
+
+    if (params.modules.empty()) {
+        mod_nums.resize(modules.size());
+        std::iota(mod_nums.begin(), mod_nums.end(), 0);
+    } else {
+        for (auto mod_num : params.modules) {
+            if (mod_num < 0 || mod_num >= modules.size()) {
+                throw error(
+                    error::code::module_number_invalid, "boot module number invalid");
+            }
+        }
+        mod_nums = params.modules;
+    }
 
     ready();
     lock_guard guard(lock_);
@@ -192,21 +214,21 @@ void crate::boot(const bool force) {
     std::vector<future_error> futures;
     std::vector<std::thread> threads;
 
-    for (size_t m = 0; m < modules.size(); ++m) {
-        auto module = modules[m];
-        if (module->revision == 0 || (!force && module->online())) {
+    for (auto mod_num : mod_nums) {
+        auto module = modules[mod_num];
+        if (module->revision == 0 || (!params.force && module->online())) {
             continue;
         }
-        futures.push_back(future_error(promises[m].get_future()));
-        threads.push_back(std::thread([m, &promises, module] {
+        futures.push_back(future_error(promises[mod_num].get_future()));
+        threads.push_back(std::thread([mod_num, &params, &promises, module] {
             try {
-                module->boot();
-                promises[m].set_value(error::code::success);
+                module->boot(params.boot_comms, params.boot_fippi, params.boot_dsp);
+                promises[mod_num].set_value(error::code::success);
             } catch (pixie::error::error& e) {
-                promises[m].set_value(e.type);
+                promises[mod_num].set_value(e.type);
             } catch (...) {
                 try {
-                    promises[m].set_exception(std::current_exception());
+                    promises[mod_num].set_exception(std::current_exception());
                 } catch (...) {
                 }
             }
@@ -496,7 +518,8 @@ void crate::check_revision() {
                 revision = module->crate_revision;
                 xia_log(log::info) << "crate: crate revision: " << revision;
             } else if (revision != module->crate_revision) {
-                xia_log(log::warning) << "crate: crate revision mismatch: " << module->crate_revision
+                xia_log(log::warning) << "crate: crate revision mismatch: "
+                                      << module->crate_revision
                                       << " module slot=" << module->slot;
             }
         }
