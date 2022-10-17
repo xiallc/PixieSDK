@@ -2,6 +2,7 @@ add_executable(pixie_sdk_integration_test_runner $<TARGET_OBJECTS:BaseTestRunner
         src/test_parameter_read_write.cpp
         $<TARGET_OBJECTS:PixieSdkObjLib>
         )
+target_link_libraries(pixie_sdk_integration_test_runner PUBLIC PixieSdkCommonLib)
 target_include_directories(pixie_sdk_integration_test_runner PUBLIC
         ${PROJECT_SOURCE_DIR}/sdk/include
         ${PROJECT_SOURCE_DIR}/externals/
