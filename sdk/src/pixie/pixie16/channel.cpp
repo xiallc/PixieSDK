@@ -520,7 +520,7 @@ void channel::tau(double value) {
 
     mod.write_var(param::channel_var::PreampTau, preamp_tau, number);
 
-    if (mod.revision < hw::rev_H) {
+    if (mod < hw::rev_H) {
         range chans = {number};
         baseline bl(mod, chans);
         bl.find_cut();
@@ -813,7 +813,7 @@ void channel::csra(double value) {
 
     if (((csra & (1 << hw::bit::CCSRA_ENARELAY)) !=
         (current_csra & (1 << hw::bit::CCSRA_ENARELAY))) &&
-        (mod.revision < hw::rev_H)) {
+        (mod < hw::rev_H)) {
         range chans = {number};
         baseline bl(mod, chans);
         bl.find_cut();
