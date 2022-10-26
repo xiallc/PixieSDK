@@ -752,18 +752,32 @@ bool execute_trace_capture(const module_config& mod) {
     return true;
 }
 
-bool execute_blcut(args::ValueFlag<unsigned int>& module, args::ValueFlag<unsigned int>& channel) {
-    if (!module)
-        return false;
-
-    std::cout << LOG("INFO") << "Executing Pixie16BLcutFinder for Module" << module.Get() << "."
+bool execute_blcut(const module_config& module) {
+    std::cout << LOG("INFO") << "Executing Pixie16BLcutFinder for Module" << module.number << "."
               << std::endl;
     unsigned int blcut = 0;
-    if (!verify_api_return_value(Pixie16BLcutFinder(module.Get(), channel.Get(), &blcut),
-                                 "Pixie16BLcutFinder", false))
+    for (int ch = 0; ch < module.number_of_channels; ch++) {
+        if (!verify_api_return_value(Pixie16BLcutFinder(module.number, ch, &blcut), "Pixie16BLcutFinder", false)) {
+            return false;
+        }
+        std::cout << LOG("INFO") << "BLCut for Module " << module.number << " Channel " << ch
+                  << " is " << blcut << std::endl;
+    }
+    return true;
+}
+
+bool execute_findtau(const module_config& module) {
+    std::cout << LOG("INFO") << "Executing Pixie16TauFinder for Module" << module.number << "."
+              << std::endl;
+
+    std::vector<double> taus(module.number_of_channels);
+    if (!verify_api_return_value(Pixie16TauFinder(module.number, taus.data()),
+                                    "Pixie16TauFinder", true)) {
         return false;
-    std::cout << LOG("INFO") << "BLCut for Module " << module.Get() << " Channel " << channel.Get()
-              << " is " << blcut << std::endl;
+    }
+    for (unsigned int i = 0; i < taus.size(); i++) {
+        std::cout << "Channel " << i << ": " << taus.at(i) << std::endl;
+    }
     return true;
 }
 
@@ -804,6 +818,51 @@ void output_module_info(configuration& cfg) {
         std::cout << LOG("INFO") << "Num Channels: " << mod.number_of_channels << std::endl;
         std::cout << LOG("INFO") << "End module information for Module " << mod.number << std::endl;
     }
+}
+
+bool init_system_set_workers(configuration& cfg, int offline_mode) {
+    auto start = std::chrono::system_clock::now();
+    std::cout << LOG("INFO") << "Calling Pixie16InitSystem." << std::endl;
+    if (!verify_api_return_value(
+            Pixie16InitSystem(cfg.num_modules(), cfg.slot_def.data(), offline_mode),
+            "Pixie16InitSystem", false))
+        return false;
+
+    std::cout << LOG("INFO") << "Finished Pixie16InitSystem in "
+              << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
+              << std::endl;
+
+    try {
+        output_module_info(cfg);
+    } catch (std::runtime_error& error) {
+        std::cout << LOG("ERROR") << error.what() << std::endl;
+        return false;
+    }
+    return true;
+}
+
+bool boot_function(configuration& cfg, args::ValueFlag<std::string>& boot_flag, args::ValueFlag<std::string>& add_cfg) {
+    unsigned int boot_pattern = stoul(args::get(boot_flag), nullptr, 0);
+    if (add_cfg)
+        boot_pattern = 0x70;
+
+    for (auto& mod : cfg.modules) {
+        auto start = std::chrono::system_clock::now();
+        std::cout << LOG("INFO") << "Calling Pixie16BootModule for Module " << mod.number
+                  << " with boot pattern: " << std::showbase << std::hex << boot_pattern << std::dec
+                  << std::endl;
+
+        if (!verify_api_return_value(
+                Pixie16BootModule(mod.com_fpga_config.c_str(), mod.sp_fpga_config.c_str(), nullptr,
+                                  mod.dsp_code.c_str(), mod.dsp_par.c_str(), mod.dsp_var.c_str(),
+                                  mod.number, boot_pattern),
+                "Pixie16BootModule", "Finished booting!"))
+            return false;
+        std::cout << LOG("INFO") << "Finished Pixie16BootModule for Module " << mod.number << " in "
+                  << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
+                  << std::endl;
+    }
+    return true;
 }
 
 
@@ -882,18 +941,22 @@ int main(int argc, char** argv) {
 
     adjust_offsets.Add(conf_flag);
     adjust_offsets.Add(boot_pattern_flag);
+    baseline.Add(conf_flag);
     baseline.Add(boot_pattern_flag);
-    blcut.Add(module);
-    blcut.Add(channel);
+    //blcut.Add(module);
+    //blcut.Add(channel);
+    blcut.Add(conf_flag);
+    blcut.Add(boot_pattern_flag);
     boot.Add(conf_flag);
     boot.Add(boot_pattern_flag);
     copy.Add(boot_pattern_flag);
     copy.Add(module);
     copy.Add(channel);
-    dacs.Add(module);
+    dacs.Add(conf_flag);
+    dacs.Add(boot_pattern_flag);
     list_mode.Add(num_runs);
-    mca.Add(module);
-    mca.Add(boot_pattern_flag);
+    //mca.Add(module);
+    //mca.Add(boot_pattern_flag);
     mca.Add(synch_wait);
     mca.Add(in_synch);
     mca.Add(num_runs);
@@ -903,7 +966,8 @@ int main(int argc, char** argv) {
     read.Add(module);
     read.Add(channel);
     read.Add(parameter);
-    tau_finder.Add(module);
+    tau_finder.Add(conf_flag);
+    //tau_finder.Add(module);
     trace.Add(conf_flag);
     trace.Add(boot_pattern_flag);
     write.Add(conf_flag);
@@ -940,49 +1004,16 @@ int main(int argc, char** argv) {
     if (is_offline)
         offline_mode = 1;
 
-    start = std::chrono::system_clock::now();
-    std::cout << LOG("INFO") << "Calling Pixie16InitSystem." << std::endl;
-    if (!verify_api_return_value(
-            Pixie16InitSystem(cfg.num_modules(), cfg.slot_def.data(), offline_mode),
-            "Pixie16InitSystem", false))
+    if (!init_system_set_workers(cfg, offline_mode))
         return EXIT_FAILURE;
-
-    std::cout << LOG("INFO") << "Finished Pixie16InitSystem in "
-              << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
-              << std::endl;
-
-    try {
-        output_module_info(cfg);
-    } catch (std::runtime_error& error) {
-        std::cout << LOG("ERROR") << error.what() << std::endl;
-        return EXIT_FAILURE;
-    }
 
     if (init) {
         execute_close_module_connection(cfg.num_modules());
         return EXIT_SUCCESS;
     }
 
-    unsigned int boot_pattern = stoul(args::get(boot_pattern_flag), nullptr, 0);
-    if (additional_cfg_flag)
-        boot_pattern = 0x70;
-
-    for (auto& mod : cfg.modules) {
-        start = std::chrono::system_clock::now();
-        std::cout << LOG("INFO") << "Calling Pixie16BootModule for Module " << mod.number
-                  << " with boot pattern: " << std::showbase << std::hex << boot_pattern << std::dec
-                  << std::endl;
-
-        if (!verify_api_return_value(
-                Pixie16BootModule(mod.com_fpga_config.c_str(), mod.sp_fpga_config.c_str(), nullptr,
-                                  mod.dsp_code.c_str(), mod.dsp_par.c_str(), mod.dsp_var.c_str(),
-                                  mod.number, boot_pattern),
-                "Pixie16BootModule", "Finished booting!"))
-            return EXIT_FAILURE;
-        std::cout << LOG("INFO") << "Finished Pixie16BootModule for Module " << mod.number << " in "
-                  << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
-                  << std::endl;
-    }
+    if (!boot_function(cfg, boot_pattern_flag, additional_cfg_flag))
+        return EXIT_FAILURE;
 
     if (boot) {
         execute_close_module_connection(cfg.num_modules());
@@ -996,44 +1027,53 @@ int main(int argc, char** argv) {
             return EXIT_FAILURE;
     }
 
-    if (copy) {
-        if (!module || !channel || !copy_mask || !dest_channel || !dest_module) {
-            std::cout
-                << LOG("ERROR")
-                << "Pixie16CopyDSPParameters requires the source/destination module and channel "
-                   "and the destination mask to execute!"
-                << std::endl;
-        }
-        std::vector<unsigned short> dest_masks;
-        for (size_t mod = 0; mod < cfg.num_modules(); mod++) {
-            for (size_t chan = 0; chan < cfg.modules[mod].number_of_channels; chan++) {
-                if (mod == dest_module.Get() && chan == dest_channel.Get())
-                    dest_masks.push_back(1);
-                else
-                    dest_masks.push_back(0);
-            }
-        }
-        if (!verify_api_return_value(Pixie16CopyDSPParameters(copy_mask.Get(), module.Get(),
-                                                              channel.Get(), dest_masks.data()),
-                                     "Pixie16CopyDSPParameters", true)) {
-            return EXIT_FAILURE;
-        }
+    if (trace) {
+        for (auto& mod : cfg.modules)
+            if (!execute_trace_capture(mod))
+                return EXIT_FAILURE;
+    }
+
+    if (adjust_offsets) {
+        for (auto& mod : cfg.modules)
+            if (!execute_adjust_offsets(mod))
+                return EXIT_FAILURE;
+    }
+
+    if (baseline) {
+        for (auto& mod : cfg.modules)
+            if (!execute_baseline_capture(mod))
+                return EXIT_FAILURE;
+    }
+
+    if (blcut) {
+        for (auto& mod : cfg.modules)
+            if (!execute_blcut(mod))
+                return EXIT_FAILURE;
+    }
+
+
+    if (dacs) {
+        for (auto& mod : cfg.modules)
+            if (!execute_set_dacs(mod))
+                return EXIT_FAILURE;
     }
 
     if (tau_finder) {
-        if (!module) {
-            std::cout << LOG("ERROR") << "Pixie16TauFinder requires the module flag to execute!"
-                      << std::endl;
-        }
+        for (auto& mod : cfg.modules)
+            if (!execute_findtau(mod))
+                return EXIT_FAILURE;
+    }
 
-        std::vector<double> taus(cfg.modules[module.Get()].number_of_channels);
-        if (!verify_api_return_value(Pixie16TauFinder(module.Get(), taus.data()),
-                                     "Pixie16TauFinder", true)) {
+    if (list_mode) {
+        if (!execute_list_mode_runs(num_runs.Get(), cfg, run_time.Get(), synch_wait.Get(),
+                                    in_synch.Get()))
             return EXIT_FAILURE;
-        }
-        for (unsigned int i = 0; i < taus.size(); i++) {
-            std::cout << "Channel " << i << ": " << taus.at(i) << std::endl;
-        }
+    }
+
+    if (mca) {
+        if (!execute_mca_runs(num_runs.Get(), cfg, run_time.Get(), synch_wait.Get(),
+                              in_synch.Get()))
+            return EXIT_FAILURE;
     }
 
     if (read) {
@@ -1064,22 +1104,28 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (adjust_offsets) {
-        for (auto& mod : cfg.modules)
-            if (!execute_adjust_offsets(mod))
-                return EXIT_FAILURE;
-    }
-
-    if (trace) {
-        for (auto& mod : cfg.modules)
-            if (!execute_trace_capture(mod))
-                return EXIT_FAILURE;
-    }
-
-    if (list_mode) {
-        if (!execute_list_mode_runs(num_runs.Get(), cfg, run_time.Get(), synch_wait.Get(),
-                                    in_synch.Get()))
+    if (copy) {
+        if (!module || !channel || !copy_mask || !dest_channel || !dest_module) {
+            std::cout
+                << LOG("ERROR")
+                << "Pixie16CopyDSPParameters requires the source/destination module and channel "
+                   "and the destination mask to execute!"
+                << std::endl;
+        }
+        std::vector<unsigned short> dest_masks;
+        for (size_t mod = 0; mod < cfg.num_modules(); mod++) {
+            for (size_t chan = 0; chan < cfg.modules[mod].number_of_channels; chan++) {
+                if (mod == dest_module.Get() && chan == dest_channel.Get())
+                    dest_masks.push_back(1);
+                else
+                    dest_masks.push_back(0);
+            }
+        }
+        if (!verify_api_return_value(Pixie16CopyDSPParameters(copy_mask.Get(), module.Get(),
+                                                              channel.Get(), dest_masks.data()),
+                                     "Pixie16CopyDSPParameters", true)) {
             return EXIT_FAILURE;
+        }
     }
 
     if (export_settings) {
@@ -1087,28 +1133,6 @@ int main(int argc, char** argv) {
             return EXIT_FAILURE;
     }
 
-    if (baseline) {
-        for (auto& mod : cfg.modules)
-            if (!execute_baseline_capture(mod))
-                return EXIT_FAILURE;
-    }
-
-    if (mca) {
-        if (!execute_mca_runs(num_runs.Get(), cfg, run_time.Get(), synch_wait.Get(),
-                              in_synch.Get()))
-            return EXIT_FAILURE;
-    }
-
-    if (blcut) {
-        if (!execute_blcut(module, channel))
-            return EXIT_FAILURE;
-    }
-
-    if (dacs) {
-        for (auto& mod : cfg.modules)
-            if (!execute_set_dacs(mod))
-                return EXIT_FAILURE;
-    }
 
     execute_close_module_connection(cfg.num_modules());
     return EXIT_SUCCESS;

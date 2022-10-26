@@ -372,12 +372,7 @@ bool execute_baseline_capture(const mod_cfg& mod) {
     return true;
 }
 
-bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
-                           const double& runtime_in_seconds, unsigned int synch_wait,
-                           unsigned int in_synch) {
-    std::cout << LOG("INFO") << "Starting list mode data run for " << runtime_in_seconds << " s."
-              << std::endl;
-
+bool write_synch_parameters(unsigned int synch_wait, unsigned int in_synch) {
     std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write SYNCH_WAIT = " << synch_wait
               << " in Module 0." << std::endl;
     if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", synch_wait, 0),
@@ -388,6 +383,43 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
               << " in Module 0." << std::endl;
     if (!verify_api_return_value(Pixie16WriteSglModPar("IN_SYNCH", in_synch, 0),
                                  "Pixie16WriteSglModPar - IN_SYNC"))
+        return false;
+    return true;
+}
+
+bool check_run_completion(const configuration& cfg) {
+    std::cout << LOG("INFO") << "Checking that the run is finalized in all the modules."
+              << std::endl;
+    bool all_modules_finished;
+    const unsigned int max_finalize_attempts = 50;
+    for (unsigned int counter = 0; counter < max_finalize_attempts; counter++) {
+        all_modules_finished = true;
+        for (unsigned short k = 0; k < cfg.num_modules(); k++) {
+            if (Pixie16CheckRunStatus(k) == 1) {
+                all_modules_finished = false;
+            }
+        }
+        if (all_modules_finished) {
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    if (!all_modules_finished) {
+        std::cout << LOG("ERROR") << "All modules did not stop their runs properly!" << std::endl;
+        return false;
+    } else {
+        return true;
+    }
+}
+
+bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
+                           const double& runtime_in_seconds, unsigned int synch_wait,
+                           unsigned int in_synch) {
+    std::cout << LOG("INFO") << "Starting list mode data run for " << runtime_in_seconds << " s."
+              << std::endl;
+
+    if (!write_synch_parameters(synch_wait, in_synch))
         return false;
 
     std::cout << LOG("INFO") << "Starting list-mode run." << std::endl;
@@ -498,27 +530,8 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
         run_status = Pixie16CheckRunStatus(cfg.modules[0].number);
     }
 
-    std::cout << LOG("INFO") << "Checking that the run is finalized in all the modules."
-              << std::endl;
-    bool all_modules_finished;
-    const unsigned int max_finalize_attempts = 50;
-    for (unsigned int counter = 0; counter < max_finalize_attempts; counter++) {
-        all_modules_finished = true;
-        for (unsigned short k = 0; k < cfg.num_modules(); k++) {
-            if (Pixie16CheckRunStatus(k) == 1) {
-                all_modules_finished = false;
-            }
-        }
-        if (all_modules_finished) {
-            break;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-
-    if (!all_modules_finished) {
-        std::cout << LOG("ERROR") << "All modules did not stop their runs properly!" << std::endl;
+    if (!check_run_completion(cfg))
         return false;
-    }
 
     std::cout << LOG("INFO") << "List-mode run finished in "
               << std::chrono::duration_cast<std::chrono::duration<double>>(
@@ -595,16 +608,7 @@ bool execute_mca_run(unsigned int run_num, const configuration& cfg,
                      const double& runtime_in_seconds, unsigned int synch_wait,
                      unsigned int in_synch) {
 
-    std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write SYNCH_WAIT = " << synch_wait
-              << " in Module 0." << std::endl;
-    if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", synch_wait, 0),
-                                 "Pixie16WriteSglModPar - SYNC_WAIT"))
-        return false;
-
-    std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write IN_SYNCH  = " << in_synch
-              << " in Module 0." << std::endl;
-    if (!verify_api_return_value(Pixie16WriteSglModPar("IN_SYNCH", in_synch, 0),
-                                 "Pixie16WriteSglModPar - IN_SYNC"))
+    if (!write_synch_parameters(synch_wait, in_synch))
         return false;
 
     std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write HOST_RT_PRESET to "
@@ -627,6 +631,7 @@ bool execute_mca_run(unsigned int run_num, const configuration& cfg,
     double current_run_time = 0;
     double check_time = 0;
     bool run_status = Pixie16CheckRunStatus(0);
+    bool forced_end = false;
     while (run_status != 0) {
         current_run_time = std::chrono::duration_cast<std::chrono::duration<double>>(
                                std::chrono::steady_clock::now() - run_start_time)
@@ -640,36 +645,24 @@ bool execute_mca_run(unsigned int run_num, const configuration& cfg,
                           << std::endl;
             check_time = current_run_time;
         }
+        if (current_run_time > runtime_in_seconds + 5) {
+            std::cout << LOG("INFO") << "Forcing end of run in Module 0" << std::endl;
+            if (!verify_api_return_value(Pixie16EndRun(cfg.num_modules()), "Pixie16EndRun"))
+                return false;
+            forced_end = true;
+        }
     }
 
     if (current_run_time < runtime_in_seconds) {
         std::cout << LOG("ERROR") << "MCA Run exited prematurely! Check log for more details."
                   << std::endl;
-    } else {
+    } else if (!forced_end) {
         //@todo We need to temporarily execute a manual end run until P16-440 is complete.
         if (!verify_api_return_value(Pixie16EndRun(cfg.num_modules()), "Pixie16EndRun"))
             return false;
     }
 
-    std::cout << LOG("INFO") << "Checking that the run is finalized in all the modules."
-              << std::endl;
-    bool all_modules_finished;
-    const unsigned int max_finalize_attempts = 50;
-    for (unsigned int counter = 0; counter < max_finalize_attempts; counter++) {
-        all_modules_finished = true;
-        for (unsigned short k = 0; k < cfg.num_modules(); k++) {
-            if (Pixie16CheckRunStatus(k) == 1) {
-                all_modules_finished = false;
-            }
-        }
-        if (all_modules_finished) {
-            break;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-
-    if (!all_modules_finished) {
-        std::cout << LOG("ERROR") << "All modules did not stop their runs properly!" << std::endl;
+    if (!check_run_completion(cfg)) {
         return false;
     } else {
         std::cout << LOG("INFO") << "MCA Run finished!" << std::endl;
@@ -774,14 +767,16 @@ bool execute_trace_capture(const mod_cfg& mod) {
     std::vector<std::vector<unsigned short>> traces;
     for (unsigned int i = 0; i < mod.number_of_channels; i++) {
         unsigned int tmp = 0;
-        PixieGetTraceLength(mod.number, i, &tmp);
+        if (!verify_api_return_value(
+                PixieGetTraceLength(mod.number, i, &tmp), "Pixie16GetTraceLength", false))
+            return false;
         std::vector<unsigned short> trace(tmp, 0);
         if (trace.size() > max_trace_length)
             max_trace_length = trace.size();
 
         if (!verify_api_return_value(
                 Pixie16ReadSglChanADCTrace(trace.data(), trace.size(), mod.number, i),
-                "Pixie16AcquireADCTrace", false))
+                "Pixie16ReadSglChanADCTrace", false))
             return false;
         traces.push_back(trace);
 
@@ -808,7 +803,7 @@ bool execute_trace_capture(const mod_cfg& mod) {
     return true;
 }
 
-bool execute_blcut(args::ValueFlag<unsigned int>& module, args::ValueFlag<unsigned int>& channel) {
+/*bool execute_blcut(args::ValueFlag<unsigned int>& module, args::ValueFlag<unsigned int>& channel) {
     if (!module)
         return false;
 
@@ -820,6 +815,52 @@ bool execute_blcut(args::ValueFlag<unsigned int>& module, args::ValueFlag<unsign
         return false;
     std::cout << LOG("INFO") << "BLCut for Module " << module.Get() << " Channel " << channel.Get()
               << " is " << blcut << std::endl;
+    return true;
+}*/
+
+bool execute_blcut(mod_cfg& module) {
+    std::cout << LOG("INFO") << "Executing Pixie16BLcutFinder for Module" << module.number << "."
+              << std::endl;
+    unsigned int blcut = 0;
+    for (int ch = 0; ch < module.number_of_channels; ch++) {
+        if (!verify_api_return_value(Pixie16BLcutFinder(module.number, ch, &blcut), "Pixie16BLcutFinder", false)) {
+            return false;
+        }
+        std::cout << LOG("INFO") << "BLCut for Module " << module.number << " Channel " << ch
+                  << " is " << blcut << std::endl;
+    }
+    return true;
+}
+
+/*bool execute_findtau(args::ValueFlag<unsigned int>& module, const configuration& cfg) {
+    if (!module) {
+        std::cout << LOG("ERROR") << "Pixie16TauFinder requires the module flag to execute!"
+                    << std::endl;
+    }
+
+    std::vector<double> taus(cfg.modules[module.Get()].number_of_channels);
+    if (!verify_api_return_value(Pixie16TauFinder(module.Get(), taus.data()),
+                                    "Pixie16TauFinder", true)) {
+        return false;
+    }
+    for (unsigned int i = 0; i < taus.size(); i++) {
+        std::cout << "Channel " << i << ": " << taus.at(i) << std::endl;
+    }
+    return true;
+}*/
+
+bool execute_findtau(const mod_cfg& module) {
+    std::cout << LOG("INFO") << "Executing Pixie16TauFinder for Module" << module.number << "."
+              << std::endl;
+
+    std::vector<double> taus(module.number_of_channels);
+    if (!verify_api_return_value(Pixie16TauFinder(module.number, taus.data()),
+                                    "Pixie16TauFinder", true)) {
+        return false;
+    }
+    for (unsigned int i = 0; i < taus.size(); i++) {
+        std::cout << "Channel " << i << ": " << taus.at(i) << std::endl;
+    }
     return true;
 }
 
@@ -885,6 +926,128 @@ void output_module_info(mod_cfg& mod) {
     std::cout << LOG("INFO") << "End module information for Module " << mod.number << std::endl;
 }
 
+bool boot_crate(std::string par_file, unsigned int boot_pattern) {
+    auto start = std::chrono::system_clock::now();
+    std::cout << LOG("INFO") << "Calling PixieBootCrate with settings: " << par_file
+                << std::endl;
+
+    PIXIE_BOOT_MODE boot_mode;
+    switch (boot_pattern) {
+        case 0x00:
+            boot_mode = PIXIE_BOOT_PROBE;
+            break;
+        case 0x70:
+            boot_mode = PIXIE_BOOT_SETTINGS_LOAD;
+            break;
+        case 0x7F:
+        default:
+            boot_mode = PIXIE_BOOT_RESET_LOAD;
+    }
+
+    int rc = PixieBootCrate(par_file.c_str(), boot_mode);
+    if (!verify_api_return_value(rc, "PixieBootCrate", false))
+        return false;
+    std::cout << LOG("INFO") << "Finished PixieBootCrate in "
+                << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
+                << std::endl;
+    return true;
+}
+
+bool init_system_set_workers(configuration& cfg, int offline_mode) {
+    auto start = std::chrono::system_clock::now();
+    std::cout << LOG("INFO") << "Calling Pixie16InitSystem." << std::endl;
+    if (!verify_api_return_value(
+            Pixie16InitSystem(cfg.num_modules(), cfg.slot_def.data(), offline_mode),
+            "Pixie16InitSystem", false))
+        return false;
+
+    std::cout << LOG("INFO") << "Finished Pixie16InitSystem in "
+              << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
+              << std::endl;
+
+    try {
+        for (auto& mod : cfg.modules) {
+            if (mod.has_worker_cfg) {
+                if (!verify_api_return_value(
+                        PixieSetWorkerConfiguration(mod.number, &mod.worker_config),
+                        "PixieSetWorkerConfiguration", false))
+                    return false;
+            }
+            output_module_info(mod);
+            output_module_worker_info(mod.number);
+        }
+    } catch (std::runtime_error& error) {
+        std::cout << LOG("ERROR") << error.what() << std::endl;
+        return false;
+    }
+    return true;
+}
+
+int parse_firmware(const configuration& cfg, std::string& par, unsigned int boot_pattern) {
+    for (auto& mod : cfg.modules) {
+        if (mod.fw.version != 0) {
+            std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
+                      << ": sys" << std::endl;
+            int rc =
+                PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps,
+                                      mod.fw.adc_bits, "sys", mod.sys_fpga, mod.number);
+            if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
+                return EXIT_FAILURE;
+            std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
+                      << ": fippi" << std::endl;
+            rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps,
+                                       mod.fw.adc_bits, "fippi", mod.sp_fpga, mod.number);
+            if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
+                return EXIT_FAILURE;
+            std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
+                      << ": dsp" << std::endl;
+            rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps,
+                                       mod.fw.adc_bits, "dsp", mod.dsp_code, mod.number);
+            if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
+                return EXIT_FAILURE;
+            std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
+                      << ": var" << std::endl;
+            rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps,
+                                       mod.fw.adc_bits, "var", mod.dsp_var, mod.number);
+            if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
+                return EXIT_FAILURE;
+            par = mod.dsp_par;
+            return -1;
+        } else {
+            auto start = std::chrono::system_clock::now();
+            std::cout << LOG("INFO") << "Calling Pixie16BootModule for Module " << mod.number
+                      << " with boot pattern: " << std::showbase << std::hex << boot_pattern
+                      << std::dec << std::endl;
+
+            if (!verify_api_return_value(
+                    Pixie16BootModule(mod.sys_fpga, mod.sp_fpga, nullptr,
+                                      mod.dsp_code, mod.dsp_par.c_str(),
+                                      mod.dsp_var, mod.number, boot_pattern),
+                    "Pixie16BootModule", "Finished booting!"))
+                return EXIT_FAILURE;
+            std::cout << LOG("INFO") << "Finished Pixie16BootModule for Module " << mod.number
+                      << " in "
+                      << calculate_duration_in_seconds(start, std::chrono::system_clock::now())
+                      << " s." << std::endl;
+        }
+    }
+    return 0;
+}
+
+bool boot_function(configuration& cfg, args::ValueFlag<std::string>& boot_flag, args::ValueFlag<std::string>& add_cfg) {
+    unsigned int boot_pattern = stoul(args::get(boot_flag), nullptr, 0);
+    if (add_cfg)
+        boot_pattern = 0x70;
+
+    std::string par_file;
+    if (int rc = parse_firmware(cfg, par_file, boot_pattern) > 0) {
+        return false;
+    } else if (rc < 0) {
+        if (!boot_crate(par_file, boot_pattern))
+            return false;
+    }
+    return true;
+}
 
 int main(int argc, char** argv) {
     auto start = std::chrono::system_clock::now();
@@ -900,11 +1063,11 @@ int main(int argc, char** argv) {
         "Boots the system and dumps the settings to the file defined in the config.");
     args::Command mca_export(commands, "mca-export",
                              "Exports histograms from the module without executing a run.");
-    args::Command init(commands, "init", "Initializes the system without going any farther.");
+    args::Command init(commands, "init", "Initializes the SDK and prints module information.");
     args::Command list_mode(commands, "list-mode", "Starts a list mode data run");
     args::Command read(commands, "read", "Read a parameter from the module.");
     args::Command write(commands, "write", "Write a parameter to the module.");
-    args::Command trace(commands, "trace", "Captures traces from the modules.");
+    args::Command trace(commands, "trace", "Captures ADC traces from the modules.");
     args::Command adjust_offsets(commands, "adjust_offsets",
                                  "Adjusts the DC offsets for all modules in the config file.");
     args::Command baseline(commands, "baseline", "Acquire and print baselines from the module");
@@ -962,29 +1125,35 @@ int main(int argc, char** argv) {
 
     adjust_offsets.Add(conf_flag);
     adjust_offsets.Add(boot_pattern_flag);
+    baseline.Add(conf_flag);
     baseline.Add(boot_pattern_flag);
-    blcut.Add(module);
-    blcut.Add(channel);
+    //blcut.Add(module);
+    //blcut.Add(channel);
+    blcut.Add(conf_flag);
+    blcut.Add(boot_pattern_flag);
     boot.Add(conf_flag);
     boot.Add(boot_pattern_flag);
     copy.Add(boot_pattern_flag);
     copy.Add(module);
     copy.Add(channel);
-    dacs.Add(module);
+    dacs.Add(conf_flag);
+    dacs.Add(boot_pattern_flag);
     list_mode.Add(num_runs);
-    mca.Add(module);
-    mca.Add(boot_pattern_flag);
+    //mca.Add(module);
+    //mca.Add(boot_pattern_flag);
     mca.Add(synch_wait);
     mca.Add(in_synch);
     mca.Add(num_runs);
     mca.Add(run_time);
-    mca_export.Add(module);
+    mca_export.Add(conf_flag);
+    //mca_export.Add(module);
     read.Add(conf_flag);
     read.Add(crate);
     read.Add(module);
     read.Add(channel);
     read.Add(parameter);
-    tau_finder.Add(module);
+    tau_finder.Add(conf_flag);
+    //tau_finder.Add(module);
     trace.Add(conf_flag);
     trace.Add(boot_pattern_flag);
     write.Add(conf_flag);
@@ -1021,117 +1190,16 @@ int main(int argc, char** argv) {
     if (is_offline)
         offline_mode = 1;
 
-    start = std::chrono::system_clock::now();
-    std::cout << LOG("INFO") << "Calling Pixie16InitSystem." << std::endl;
-    if (!verify_api_return_value(
-            Pixie16InitSystem(cfg.num_modules(), cfg.slot_def.data(), offline_mode),
-            "Pixie16InitSystem", false))
+    if (!init_system_set_workers(cfg, offline_mode))
         return EXIT_FAILURE;
-
-    std::cout << LOG("INFO") << "Finished Pixie16InitSystem in "
-              << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
-              << std::endl;
-
-    try {
-        for (auto& mod : cfg.modules) {
-            if (mod.has_worker_cfg) {
-                if (!verify_api_return_value(
-                        PixieSetWorkerConfiguration(mod.number, &mod.worker_config),
-                        "PixieSetWorkerConfiguration", false))
-                    return EXIT_FAILURE;
-            }
-            output_module_info(mod);
-            output_module_worker_info(mod.number);
-        }
-    } catch (std::runtime_error& error) {
-        std::cout << LOG("ERROR") << error.what() << std::endl;
-        return EXIT_FAILURE;
-    }
 
     if (init) {
         execute_close_module_connection(cfg.num_modules());
         return EXIT_SUCCESS;
     }
 
-    unsigned int boot_pattern = stoul(args::get(boot_pattern_flag), nullptr, 0);
-    if (additional_cfg_flag)
-        boot_pattern = 0x70;
-
-    bool crate_boot = false;
-    std::string par_file;
-    for (auto& mod : cfg.modules) {
-        if (mod.fw.version != 0) {
-            std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
-                      << ": sys" << std::endl;
-            int rc =
-                PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps,
-                                      mod.fw.adc_bits, "sys", mod.sys_fpga, mod.number);
-            if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
-                return EXIT_FAILURE;
-            std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
-                      << ": fippi" << std::endl;
-            rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps,
-                                       mod.fw.adc_bits, "fippi", mod.sp_fpga, mod.number);
-            if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
-                return EXIT_FAILURE;
-            std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
-                      << ": dsp" << std::endl;
-            rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps,
-                                       mod.fw.adc_bits, "dsp", mod.dsp_code, mod.number);
-            if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
-                return EXIT_FAILURE;
-            std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
-                      << ": var" << std::endl;
-            rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps,
-                                       mod.fw.adc_bits, "var", mod.dsp_var, mod.number);
-            if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
-                return EXIT_FAILURE;
-            par_file = mod.dsp_par;
-            crate_boot = true;
-        } else {
-            start = std::chrono::system_clock::now();
-            std::cout << LOG("INFO") << "Calling Pixie16BootModule for Module " << mod.number
-                      << " with boot pattern: " << std::showbase << std::hex << boot_pattern
-                      << std::dec << std::endl;
-
-            if (!verify_api_return_value(
-                    Pixie16BootModule(mod.sys_fpga, mod.sp_fpga, nullptr,
-                                      mod.dsp_code, mod.dsp_par.c_str(),
-                                      mod.dsp_var, mod.number, boot_pattern),
-                    "Pixie16BootModule", "Finished booting!"))
-                return EXIT_FAILURE;
-            std::cout << LOG("INFO") << "Finished Pixie16BootModule for Module " << mod.number
-                      << " in "
-                      << calculate_duration_in_seconds(start, std::chrono::system_clock::now())
-                      << " s." << std::endl;
-        }
-    }
-
-    if (crate_boot) {
-        start = std::chrono::system_clock::now();
-        std::cout << LOG("INFO") << "Calling PixieBootCrate with settings: " << par_file
-                  << std::endl;
-
-        PIXIE_BOOT_MODE boot_mode;
-        switch (boot_pattern) {
-            case 0x00:
-                boot_mode = PIXIE_BOOT_PROBE;
-                break;
-            case 0x70:
-                boot_mode = PIXIE_BOOT_SETTINGS_LOAD;
-                break;
-            case 0x7F:
-            default:
-                boot_mode = PIXIE_BOOT_RESET_LOAD;
-        }
-
-        int rc = PixieBootCrate(par_file.c_str(), boot_mode);
-        if (!verify_api_return_value(rc, "PixieBootCrate", false))
-            return EXIT_FAILURE;
-        std::cout << LOG("INFO") << "Finished PixieBootCrate in "
-                  << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
-                  << std::endl;
-    }
+    if (!boot_function(cfg, boot_pattern_flag, additional_cfg_flag))
+        return EXIT_FAILURE;
 
     if (boot) {
         execute_close_module_connection(cfg.num_modules());
@@ -1145,50 +1213,68 @@ int main(int argc, char** argv) {
             return EXIT_FAILURE;
     }
 
+    if (trace) {
+        for (auto& mod : cfg.modules)
+            if (!execute_trace_capture(mod))
+                return EXIT_FAILURE;
+    }
+
+    if (adjust_offsets) {
+        for (auto& mod : cfg.modules)
+            if (!execute_adjust_offsets(mod))
+                return EXIT_FAILURE;
+    }
+
+    if (baseline) {
+        for (auto& mod : cfg.modules)
+            if (!execute_baseline_capture(mod))
+                return EXIT_FAILURE;
+    }
+
+    /**if (blcut) {
+        if (!execute_blcut(module, channel))
+            return EXIT_FAILURE;
+    }*/
+
+    if (blcut) {
+        for (auto& mod : cfg.modules)
+            if (!execute_blcut(mod))
+                return EXIT_FAILURE;
+    }
+
+    if (dacs) {
+        for (auto& mod : cfg.modules)
+            if (!execute_set_dacs(mod))
+                return EXIT_FAILURE;
+    }
+
+    /*if (tau_finder) {
+        if (!execute_findtau(module, cfg))
+            return EXIT_FAILURE;
+    }*/
+
+    if (tau_finder) {
+        for (auto& mod : cfg.modules)
+            if (!execute_findtau(mod))
+                return EXIT_FAILURE;
+    }
+
+    if (list_mode) {
+        if (!execute_list_mode_runs(num_runs.Get(), cfg, run_time.Get(), synch_wait.Get(),
+                                    in_synch.Get()))
+            return EXIT_FAILURE;
+    }
+
+    if (mca) {
+        if (!execute_mca_runs(num_runs.Get(), cfg, run_time.Get(), synch_wait.Get(),
+                              in_synch.Get()))
+            return EXIT_FAILURE;
+    }
+
     if (mca_export) {
         for (const auto& mod : cfg.modules) {
             std::string name = generate_filename(mod.number, "mca-export", "csv");
             export_mca_memory(mod, name);
-        }
-    }
-
-    if (copy) {
-        if (!module || !channel || !copy_mask || !dest_channel || !dest_module) {
-            std::cout
-                << LOG("ERROR")
-                << "Pixie16CopyDSPParameters requires the source/destination module and channel "
-                   "and the destination mask to execute!"
-                << std::endl;
-        }
-        std::vector<unsigned short> dest_masks;
-        for (size_t mod = 0; mod < cfg.num_modules(); mod++) {
-            for (size_t chan = 0; chan < cfg.modules[mod].number_of_channels; chan++) {
-                if (mod == dest_module.Get() && chan == dest_channel.Get())
-                    dest_masks.push_back(1);
-                else
-                    dest_masks.push_back(0);
-            }
-        }
-        if (!verify_api_return_value(Pixie16CopyDSPParameters(copy_mask.Get(), module.Get(),
-                                                              channel.Get(), dest_masks.data()),
-                                     "Pixie16CopyDSPParameters", true)) {
-            return EXIT_FAILURE;
-        }
-    }
-
-    if (tau_finder) {
-        if (!module) {
-            std::cout << LOG("ERROR") << "Pixie16TauFinder requires the module flag to execute!"
-                      << std::endl;
-        }
-
-        std::vector<double> taus(cfg.modules[module.Get()].number_of_channels);
-        if (!verify_api_return_value(Pixie16TauFinder(module.Get(), taus.data()),
-                                     "Pixie16TauFinder", true)) {
-            return EXIT_FAILURE;
-        }
-        for (unsigned int i = 0; i < taus.size(); i++) {
-            std::cout << "Channel " << i << ": " << taus.at(i) << std::endl;
         }
     }
 
@@ -1220,50 +1306,33 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (adjust_offsets) {
-        for (auto& mod : cfg.modules)
-            if (!execute_adjust_offsets(mod))
-                return EXIT_FAILURE;
-    }
-
-    if (trace) {
-        for (auto& mod : cfg.modules)
-            if (!execute_trace_capture(mod))
-                return EXIT_FAILURE;
-    }
-
-    if (list_mode) {
-        if (!execute_list_mode_runs(num_runs.Get(), cfg, run_time.Get(), synch_wait.Get(),
-                                    in_synch.Get()))
+    if (copy) {
+        if (!module || !channel || !copy_mask || !dest_channel || !dest_module) {
+            std::cout
+                << LOG("ERROR")
+                << "Pixie16CopyDSPParameters requires the source/destination module and channel "
+                   "and the destination mask to execute!"
+                << std::endl;
+        }
+        std::vector<unsigned short> dest_masks;
+        for (size_t mod = 0; mod < cfg.num_modules(); mod++) {
+            for (size_t chan = 0; chan < cfg.modules[mod].number_of_channels; chan++) {
+                if (mod == dest_module.Get() && chan == dest_channel.Get())
+                    dest_masks.push_back(1);
+                else
+                    dest_masks.push_back(0);
+            }
+        }
+        if (!verify_api_return_value(Pixie16CopyDSPParameters(copy_mask.Get(), module.Get(),
+                                                              channel.Get(), dest_masks.data()),
+                                     "Pixie16CopyDSPParameters", true)) {
             return EXIT_FAILURE;
+        }
     }
 
     if (export_settings) {
         if (!save_dsp_pars(cfg.modules.front().dsp_par))
             return EXIT_FAILURE;
-    }
-
-    if (baseline) {
-        for (auto& mod : cfg.modules)
-            if (!execute_baseline_capture(mod))
-                return EXIT_FAILURE;
-    }
-
-    if (mca) {
-        if (!execute_mca_runs(num_runs.Get(), cfg, run_time.Get(), synch_wait.Get(),
-                              in_synch.Get()))
-            return EXIT_FAILURE;
-    }
-
-    if (blcut) {
-        if (!execute_blcut(module, channel))
-            return EXIT_FAILURE;
-    }
-
-    if (dacs) {
-        for (auto& mod : cfg.modules)
-            if (!execute_set_dacs(mod))
-                return EXIT_FAILURE;
     }
 
     execute_close_module_connection(cfg.num_modules());
