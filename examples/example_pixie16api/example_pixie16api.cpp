@@ -803,21 +803,6 @@ bool execute_trace_capture(const mod_cfg& mod) {
     return true;
 }
 
-/*bool execute_blcut(args::ValueFlag<unsigned int>& module, args::ValueFlag<unsigned int>& channel) {
-    if (!module)
-        return false;
-
-    std::cout << LOG("INFO") << "Executing Pixie16BLcutFinder for Module" << module.Get() << "."
-              << std::endl;
-    unsigned int blcut = 0;
-    if (!verify_api_return_value(Pixie16BLcutFinder(module.Get(), channel.Get(), &blcut),
-                                 "Pixie16BLcutFinder", false))
-        return false;
-    std::cout << LOG("INFO") << "BLCut for Module " << module.Get() << " Channel " << channel.Get()
-              << " is " << blcut << std::endl;
-    return true;
-}*/
-
 bool execute_blcut(mod_cfg& module) {
     std::cout << LOG("INFO") << "Executing Pixie16BLcutFinder for Module" << module.number << "."
               << std::endl;
@@ -831,23 +816,6 @@ bool execute_blcut(mod_cfg& module) {
     }
     return true;
 }
-
-/*bool execute_findtau(args::ValueFlag<unsigned int>& module, const configuration& cfg) {
-    if (!module) {
-        std::cout << LOG("ERROR") << "Pixie16TauFinder requires the module flag to execute!"
-                    << std::endl;
-    }
-
-    std::vector<double> taus(cfg.modules[module.Get()].number_of_channels);
-    if (!verify_api_return_value(Pixie16TauFinder(module.Get(), taus.data()),
-                                    "Pixie16TauFinder", true)) {
-        return false;
-    }
-    for (unsigned int i = 0; i < taus.size(); i++) {
-        std::cout << "Channel " << i << ": " << taus.at(i) << std::endl;
-    }
-    return true;
-}*/
 
 bool execute_findtau(const mod_cfg& module) {
     std::cout << LOG("INFO") << "Executing Pixie16TauFinder for Module" << module.number << "."
@@ -1127,8 +1095,6 @@ int main(int argc, char** argv) {
     adjust_offsets.Add(boot_pattern_flag);
     baseline.Add(conf_flag);
     baseline.Add(boot_pattern_flag);
-    //blcut.Add(module);
-    //blcut.Add(channel);
     blcut.Add(conf_flag);
     blcut.Add(boot_pattern_flag);
     boot.Add(conf_flag);
@@ -1139,21 +1105,17 @@ int main(int argc, char** argv) {
     dacs.Add(conf_flag);
     dacs.Add(boot_pattern_flag);
     list_mode.Add(num_runs);
-    //mca.Add(module);
-    //mca.Add(boot_pattern_flag);
     mca.Add(synch_wait);
     mca.Add(in_synch);
     mca.Add(num_runs);
     mca.Add(run_time);
     mca_export.Add(conf_flag);
-    //mca_export.Add(module);
     read.Add(conf_flag);
     read.Add(crate);
     read.Add(module);
     read.Add(channel);
     read.Add(parameter);
     tau_finder.Add(conf_flag);
-    //tau_finder.Add(module);
     trace.Add(conf_flag);
     trace.Add(boot_pattern_flag);
     write.Add(conf_flag);
@@ -1231,11 +1193,6 @@ int main(int argc, char** argv) {
                 return EXIT_FAILURE;
     }
 
-    /**if (blcut) {
-        if (!execute_blcut(module, channel))
-            return EXIT_FAILURE;
-    }*/
-
     if (blcut) {
         for (auto& mod : cfg.modules)
             if (!execute_blcut(mod))
@@ -1247,11 +1204,6 @@ int main(int argc, char** argv) {
             if (!execute_set_dacs(mod))
                 return EXIT_FAILURE;
     }
-
-    /*if (tau_finder) {
-        if (!execute_findtau(module, cfg))
-            return EXIT_FAILURE;
-    }*/
 
     if (tau_finder) {
         for (auto& mod : cfg.modules)

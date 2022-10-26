@@ -943,8 +943,6 @@ int main(int argc, char** argv) {
     adjust_offsets.Add(boot_pattern_flag);
     baseline.Add(conf_flag);
     baseline.Add(boot_pattern_flag);
-    //blcut.Add(module);
-    //blcut.Add(channel);
     blcut.Add(conf_flag);
     blcut.Add(boot_pattern_flag);
     boot.Add(conf_flag);
@@ -955,8 +953,6 @@ int main(int argc, char** argv) {
     dacs.Add(conf_flag);
     dacs.Add(boot_pattern_flag);
     list_mode.Add(num_runs);
-    //mca.Add(module);
-    //mca.Add(boot_pattern_flag);
     mca.Add(synch_wait);
     mca.Add(in_synch);
     mca.Add(num_runs);
@@ -967,7 +963,6 @@ int main(int argc, char** argv) {
     read.Add(channel);
     read.Add(parameter);
     tau_finder.Add(conf_flag);
-    //tau_finder.Add(module);
     trace.Add(conf_flag);
     trace.Add(boot_pattern_flag);
     write.Add(conf_flag);
