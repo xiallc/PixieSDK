@@ -817,7 +817,7 @@ bool execute_blcut(mod_cfg& module) {
     return true;
 }
 
-bool execute_findtau(const mod_cfg& module) {
+bool execute_find_tau(const mod_cfg& module) {
     std::cout << LOG("INFO") << "Executing Pixie16TauFinder for Module" << module.number << "."
               << std::endl;
 
@@ -921,7 +921,7 @@ bool boot_crate(std::string par_file, unsigned int boot_pattern) {
     return true;
 }
 
-bool init_system_set_workers(configuration& cfg, int offline_mode) {
+bool init_system(configuration& cfg, int offline_mode) {
     auto start = std::chrono::system_clock::now();
     std::cout << LOG("INFO") << "Calling Pixie16InitSystem." << std::endl;
     if (!verify_api_return_value(
@@ -932,7 +932,10 @@ bool init_system_set_workers(configuration& cfg, int offline_mode) {
     std::cout << LOG("INFO") << "Finished Pixie16InitSystem in "
               << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
               << std::endl;
+    return true;
+}
 
+bool set_workers(configuration& cfg) {
     try {
         for (auto& mod : cfg.modules) {
             if (mod.has_worker_cfg) {
@@ -1008,7 +1011,8 @@ bool boot_function(configuration& cfg, args::ValueFlag<std::string>& boot_flag, 
         boot_pattern = 0x70;
 
     std::string par_file;
-    if (int rc = parse_firmware(cfg, par_file, boot_pattern) > 0) {
+    int rc = parse_firmware(cfg, par_file, boot_pattern);
+    if (rc > 0) {
         return false;
     } else if (rc < 0) {
         if (!boot_crate(par_file, boot_pattern))
@@ -1152,7 +1156,7 @@ int main(int argc, char** argv) {
     if (is_offline)
         offline_mode = 1;
 
-    if (!init_system_set_workers(cfg, offline_mode))
+    if (!init_system(cfg, offline_mode) || !set_workers(cfg))
         return EXIT_FAILURE;
 
     if (init) {
@@ -1207,7 +1211,7 @@ int main(int argc, char** argv) {
 
     if (tau_finder) {
         for (auto& mod : cfg.modules)
-            if (!execute_findtau(mod))
+            if (!execute_find_tau(mod))
                 return EXIT_FAILURE;
     }
 

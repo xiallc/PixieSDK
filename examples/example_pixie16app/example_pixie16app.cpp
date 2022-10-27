@@ -573,6 +573,7 @@ bool execute_mca_run(unsigned int run_num, const configuration& cfg,
     double current_run_time = 0;
     double check_time = 0;
     bool run_status = Pixie16CheckRunStatus(0);
+    bool forced_end = false;
     while (run_status != 0) {
         current_run_time = std::chrono::duration_cast<std::chrono::duration<double>>(
                                std::chrono::steady_clock::now() - run_start_time)
@@ -586,12 +587,18 @@ bool execute_mca_run(unsigned int run_num, const configuration& cfg,
                           << std::endl;
             check_time = current_run_time;
         }
+        if (current_run_time > runtime_in_seconds + 5) {
+            std::cout << LOG("INFO") << "Forcing end of run in Module 0" << std::endl;
+            if (!verify_api_return_value(Pixie16EndRun(cfg.num_modules()), "Pixie16EndRun"))
+                return false;
+            forced_end = true;
+        }
     }
 
     if (current_run_time < runtime_in_seconds) {
         std::cout << LOG("ERROR") << "MCA Run exited prematurely! Check log for more details."
                   << std::endl;
-    } else {
+    } else if (!forced_end) {
         //@todo We need to temporarily execute a manual end run until P16-440 is complete.
         if (!verify_api_return_value(Pixie16EndRun(cfg.num_modules()), "Pixie16EndRun"))
             return false;
