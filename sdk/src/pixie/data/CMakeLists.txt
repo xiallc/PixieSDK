@@ -4,7 +4,7 @@ target_include_directories(PixieDataObjLib PUBLIC ${PROJECT_SOURCE_DIR}/sdk/incl
 xia_configure_target(TARGET PixieDataObjLib CONFIG_OBJ)
 
 add_library(PixieData SHARED $<TARGET_OBJECTS:PixieDataObjLib>)
-target_link_libraries(PixieData PUBLIC PixieSdkCommonLib)
+target_link_libraries(PixieData PUBLIC PixieSdkCommonObjLib)
 target_include_directories(PixieData PUBLIC ${PROJECT_SOURCE_DIR}/sdk/include/
         ${PROJECT_SOURCE_DIR}/externals/)
 xia_configure_target(TARGET PixieData)
