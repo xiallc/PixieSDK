@@ -598,7 +598,8 @@ bool execute_mca_run(unsigned int run_num, const configuration& cfg,
     if (current_run_time < runtime_in_seconds) {
         std::cout << LOG("ERROR") << "MCA Run exited prematurely! Check log for more details."
                   << std::endl;
-    } else if (!forced_end) {
+    }
+    if (!forced_end) {
         //@todo We need to temporarily execute a manual end run until P16-440 is complete.
         if (!verify_api_return_value(Pixie16EndRun(cfg.num_modules()), "Pixie16EndRun"))
             return false;
@@ -827,7 +828,7 @@ void output_module_info(configuration& cfg) {
     }
 }
 
-bool init_system_set_workers(configuration& cfg, int offline_mode) {
+bool init_system(configuration& cfg, int offline_mode) {
     auto start = std::chrono::system_clock::now();
     std::cout << LOG("INFO") << "Calling Pixie16InitSystem." << std::endl;
     if (!verify_api_return_value(
@@ -838,7 +839,10 @@ bool init_system_set_workers(configuration& cfg, int offline_mode) {
     std::cout << LOG("INFO") << "Finished Pixie16InitSystem in "
               << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
               << std::endl;
+    return true;
+}
 
+bool set_workers(configuration& cfg) {
     try {
         output_module_info(cfg);
     } catch (std::runtime_error& error) {
@@ -1006,7 +1010,7 @@ int main(int argc, char** argv) {
     if (is_offline)
         offline_mode = 1;
 
-    if (!init_system_set_workers(cfg, offline_mode))
+    if (!init_system(cfg, offline_mode) || !set_workers(cfg))
         return EXIT_FAILURE;
 
     if (init) {
