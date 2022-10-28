@@ -635,6 +635,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckRunStatus(unsigned short ModNum);
  * @param[in] ChanNum ChanNum is the channel number which starts counting at 0.
  * @return 0 if the live time was 0. The number of triggers divided by the live time in seconds
  *     otherwise.
+ * @return The value of the xia::pixie::error::code if there was an error.
  */
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeInputCountRate(unsigned int* Statistics,
                                                            unsigned short ModNum,
@@ -661,6 +662,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeInputCountRate(unsigned int* Statist
  * @param[in] ModNum ModNum is the module number, which starts counting at 0.
  * @param[in] ChanNum ChanNum is the channel number, which starts counting at 0.
  * @return The live time of the module in seconds.
+ * @return The value of the xia::pixie::error::code if there was an error.
  */
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeLiveTime(unsigned int* Statistics,
                                                      unsigned short ModNum, unsigned short ChanNum);
@@ -689,6 +691,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeLiveTime(unsigned int* Statistics,
  * @param[in] ChanNum ChanNum is the channel number which starts counting at 0.
  * @return 0 if the live time was 0. Otherwise, the number of channel events divided by the
  *     live time in seconds.
+ * @return The value of the xia::pixie::error::code if there was an error.
  */
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeOutputCountRate(unsigned int* Statistics,
                                                             unsigned short ModNum,
@@ -718,6 +721,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeOutputCountRate(unsigned int* Statis
  * @param[in] Statistics A pointer to the statistics array returned by ::Pixie16ReadStatisticsFromModule
  * @param[in] ModNum ModNum is the module number, which starts counting at 0.
  * @return The number of events processed by the module.
+ * @return The value of the xia::pixie::error::code if there was an error.
  */
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeProcessedEvents(unsigned int* Statistics,
                                                             unsigned short ModNum);
@@ -737,6 +741,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeProcessedEvents(unsigned int* Statis
  * @param[in] ModNum ModNum is the module number which starts counting at 0.
  * @param[in] ChanNum ChanNum is the channel number which starts counting at 0.
  * @return The raw number fast triggers that the channel observed.
+ * @return The value of the xia::pixie::error::code if there was an error.
  */
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeRawInputCount(unsigned int* Statistics,
                                                           unsigned short ModNum,
@@ -761,6 +766,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeRawInputCount(unsigned int* Statisti
  * @param[in] ModNum ModNum is the module number which starts counting at 0.
  * @param[in] ChanNum ChanNum is the channel number which starts counting at 0.
  * @return The raw number of events handled by the DSP.
+ * @return The value of the xia::pixie::error::code if there was an error.
  */
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeRawOutputCount(unsigned int* Statistics,
                                                            unsigned short ModNum,
@@ -786,6 +792,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeRawOutputCount(unsigned int* Statist
  * @param[in] Statistics A pointer to the statistics array returned by ::Pixie16ReadStatisticsFromModule
  * @param[in] ModNum The module number, which starts counting at 0.
  * @return The number of seconds that the module spent on data acquisition.
+ * @return The value of the xia::pixie::error::code if there was an error.
  */
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeRealTime(unsigned int* Statistics,
                                                      unsigned short ModNum);
@@ -828,6 +835,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeRealTime(unsigned int* Statistics,
  *     channel 0 to 15 of module 1, and so on. If a given channel i is to be copied,
  *     then `DestinationMask[i]` should be set to 1, otherwise, it should be set to 0.
  * @returns The value of the xia::pixie::error::code indicating the result of the operation
+ * @return The value of the xia::pixie::error::code if there was an error.
  */
 PIXIE_EXPORT int PIXIE_API Pixie16CopyDSPParameters(unsigned short BitMask,
                                                     unsigned short SourceModule,

@@ -565,13 +565,16 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeInputCountRate(unsigned int* Statist
         result = stats->channels[ChanNum].input_count_rate();
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
+        return e.return_code();
     } catch (std::bad_alloc& e) {
         xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia::log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
         xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
     }
 
     return result;
@@ -597,13 +600,16 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeLiveTime(unsigned int* Statistics,
         result = stats->channels[ChanNum].live_time();
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
+        return e.return_code();
     } catch (std::bad_alloc& e) {
         xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia::log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
         xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
     }
 
     return result;
@@ -629,13 +635,16 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeOutputCountRate(unsigned int* Statis
         result = stats->channels[ChanNum].output_count_rate();
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
+        return e.return_code();
     } catch (std::bad_alloc& e) {
         xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia::log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
         xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
     }
 
     return result;
@@ -669,13 +678,16 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeRawInputCount(unsigned int* Statisti
         result = stats->channels[ChanNum].input_counts();
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
+        return e.return_code();
     } catch (std::bad_alloc& e) {
         xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia::log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
         xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
     }
 
     return result;
@@ -701,13 +713,16 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeRawOutputCount(unsigned int* Statist
         result = stats->channels[ChanNum].output_counts();
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
+        return e.return_code();
     } catch (std::bad_alloc& e) {
         xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia::log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
         xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
     }
 
     return result;
@@ -728,13 +743,16 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeRealTime(unsigned int* Statistics,
         result = double(stats->module.real_time());
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
+        return e.return_code();
     } catch (std::bad_alloc& e) {
         xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
     } catch (std::exception& e) {
         xia_log(xia::log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::return_code_unknown_error();
     } catch (...) {
         xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
     }
 
     return result;
