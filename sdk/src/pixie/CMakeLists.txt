@@ -24,7 +24,6 @@ target_include_directories(PixieSdkObjLib PUBLIC ${PROJECT_SOURCE_DIR}/sdk/inclu
 xia_configure_target(TARGET PixieSdkObjLib USE_PLX CONFIG_OBJ)
 
 add_library(PixieSDK STATIC $<TARGET_OBJECTS:PixieSdkObjLib> $<TARGET_OBJECTS:PixieSdkCommonObjLib>)
-#target_link_libraries(PixieSDK PUBLIC PixieSdkCommonObjLib)
 target_include_directories(PixieSDK PUBLIC ${PROJECT_SOURCE_DIR}/sdk/include/ ${PROJECT_SOURCE_DIR}/externals/)
 xia_configure_target(TARGET PixieSDK USE_PLX)
 

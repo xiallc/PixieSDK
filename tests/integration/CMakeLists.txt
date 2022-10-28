@@ -3,7 +3,6 @@ add_executable(pixie_sdk_integration_test_runner $<TARGET_OBJECTS:BaseTestRunner
         $<TARGET_OBJECTS:PixieSdkObjLib>
         $<TARGET_OBJECTS:PixieSdkCommonObjLib>
         )
-#target_link_libraries(pixie_sdk_integration_test_runner PUBLIC PixieSdkCommonObjLib)
 target_include_directories(pixie_sdk_integration_test_runner PUBLIC
         ${PROJECT_SOURCE_DIR}/sdk/include
         ${PROJECT_SOURCE_DIR}/externals/

@@ -6,7 +6,6 @@ endif ()
 
 if (BUILD_SDK)
     add_executable(pixie16_omnitool src/pixie16_omnitool.cpp $<TARGET_OBJECTS:PixieSdkObjLib> $<TARGET_OBJECTS:PixieSdkCommonObjLib>)
-    #target_link_libraries(pixie16_omnitool PUBLIC PixieSdkCommonObjLib)
     target_include_directories(pixie16_omnitool PUBLIC ${PROJECT_SOURCE_DIR}/sdk/include ${PROJECT_SOURCE_DIR}/externals/)
     xia_configure_target(TARGET pixie16_omnitool USE_PLX)
 
