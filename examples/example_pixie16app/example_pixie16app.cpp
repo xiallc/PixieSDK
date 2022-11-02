@@ -109,8 +109,8 @@ struct configuration {
 };
 
 std::string generate_filename(const unsigned int& module_number, const std::string& type,
-                              const std::string& ext) {
-    return "pixie16app-module" + std::to_string(module_number) + "-" + type + "." + ext;
+                              const std::string& ext, std::string dir) {
+    return dir + "pixie16app-module" + std::to_string(module_number) + "-" + type + "." + ext;
 }
 
 void verify_json_module(const nlohmann::json& mod) {
@@ -195,13 +195,13 @@ bool verify_api_return_value(const int& val, const std::string& func_name,
     return true;
 }
 
-bool output_statistics_data(const module_config& mod, const std::string& type) {
+bool output_statistics_data(const module_config& mod, const std::string& type, std::string dir) {
     std::vector<unsigned int> stats(N_DSP_PAR - DSP_IO_BORDER, 0);
     if (!verify_api_return_value(Pixie16ReadStatisticsFromModule(stats.data(), mod.number),
                                  "Pixie16ReadStatisticsFromModule", false))
         return false;
 
-    std::ofstream csv_output(generate_filename(mod.number, type, "csv"), std::ios::out);
+    std::ofstream csv_output(generate_filename(mod.number, type, "csv", dir), std::ios::out);
     csv_output << "channel,real_time,live_time,input_count_rate,output_count_rate" << std::endl;
     auto real_time = Pixie16ComputeRealTime(stats.data(), mod.number);
 
@@ -280,7 +280,7 @@ bool execute_adjust_offsets(const module_config& module) {
     return true;
 }
 
-bool execute_baseline_capture(const module_config& mod) {
+bool execute_baseline_capture(const module_config& mod, std::string dir) {
     std::cout << LOG("INFO") << "Starting baseline capture for Module " << mod.number << std::endl;
     if (!verify_api_return_value(Pixie16AcquireBaselines(mod.number), "Pixie16AcquireBaselines"))
         return false;
@@ -303,7 +303,7 @@ bool execute_baseline_capture(const module_config& mod) {
         timestamps.push_back(timestamp);
     }
 
-    std::ofstream ofstream1(generate_filename(mod.number, "baselines", "csv"));
+    std::ofstream ofstream1(generate_filename(mod.number, "baselines", "csv", dir));
     ofstream1 << "bin,timestamp,";
     for (unsigned int i = 0; i < mod.number_of_channels; i++) {
         if (i != static_cast<unsigned int>(mod.number_of_channels - 1))
@@ -328,7 +328,7 @@ bool execute_baseline_capture(const module_config& mod) {
 
 bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
                            const double& runtime_in_seconds, unsigned int synch_wait,
-                           unsigned int in_synch) {
+                           unsigned int in_synch, std::string dir) {
     std::cout << LOG("INFO") << "Starting list mode data run for " << runtime_in_seconds << " s."
               << std::endl;
 
@@ -363,7 +363,7 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
     std::vector<std::ofstream*> output_streams(cfg.num_modules());
     for (unsigned short i = 0; i < cfg.num_modules(); i++) {
         output_streams[i] = new std::ofstream(
-            generate_filename(i, "list-mode-run" + std::to_string(run_num) + "-recs", "bin"),
+            generate_filename(i, "list-mode-run" + std::to_string(run_num) + "-recs", "bin", dir),
             std::ios::out | std::ios::binary);
     }
 
@@ -496,12 +496,12 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
                                            num_fifo_words * sizeof(uint32_t));
         }
         if (!output_statistics_data(cfg.modules[mod_num],
-                                    "list-mode-run" + std::to_string(run_num) + "-hw-stats")) {
+                                    "list-mode-run" + std::to_string(run_num) + "-hw-stats", dir)) {
             return false;
         }
 
         std::string name =
-            generate_filename(mod_num, "list-mode-run" + std::to_string(run_num) + "-mca", "csv");
+            generate_filename(mod_num, "list-mode-run" + std::to_string(run_num) + "-mca", "csv", dir);
         export_mca_memory(cfg.modules[mod_num], name);
     }
 
@@ -513,10 +513,10 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
 
 bool execute_list_mode_runs(const unsigned int num_runs, const configuration& cfg,
                             const double& runtime_in_seconds, unsigned int synch_wait,
-                            unsigned int in_synch) {
+                            unsigned int in_synch, std::string dir) {
     for (unsigned int i = 0; i < num_runs; i++) {
         std::cout << LOG("INFO") << "Starting list-mode run number " << i << std::endl;
-        if (!execute_list_mode_run(i, cfg, runtime_in_seconds, synch_wait, in_synch)) {
+        if (!execute_list_mode_run(i, cfg, runtime_in_seconds, synch_wait, in_synch, dir)) {
             std::cout << LOG("INFO") << "List-mode data run " << i
                       << " failed! See log for more details." << std::endl;
             return false;
@@ -529,7 +529,7 @@ bool execute_list_mode_runs(const unsigned int num_runs, const configuration& cf
 
 bool execute_mca_run(unsigned int run_num, const configuration& cfg,
                      const double& runtime_in_seconds, unsigned int synch_wait,
-                     unsigned int in_synch) {
+                     unsigned int in_synch, std::string dir) {
     std::cout << LOG("INFO") << "Calling Pixie16WriteSglModPar to write SYNCH_WAIT = " << synch_wait
               << " in Module 0." << std::endl;
     if (!verify_api_return_value(Pixie16WriteSglModPar("SYNCH_WAIT", synch_wait, 0),
@@ -599,10 +599,9 @@ bool execute_mca_run(unsigned int run_num, const configuration& cfg,
         std::cout << LOG("ERROR") << "MCA Run exited prematurely! Check log for more details."
                   << std::endl;
     }
-    if (!forced_end) {
-        //@todo We need to temporarily execute a manual end run until P16-440 is complete.
-        if (!verify_api_return_value(Pixie16EndRun(cfg.num_modules()), "Pixie16EndRun"))
-            return false;
+    if (forced_end) {
+        std::cout << LOG("ERROR") << "MCA Run was forced to end!" << std::endl;
+        return false;
     }
 
     std::cout << LOG("INFO") << "Checking that the run is finalized in all the modules."
@@ -630,11 +629,11 @@ bool execute_mca_run(unsigned int run_num, const configuration& cfg,
     }
 
     for (unsigned short i = 0; i < cfg.num_modules(); i++) {
-        std::string name = generate_filename(i, "mca-run" + std::to_string(run_num), "csv");
+        std::string name = generate_filename(i, "mca-run" + std::to_string(run_num), "csv", dir);
         export_mca_memory(cfg.modules[i], name);
 
         if (!output_statistics_data(cfg.modules[i],
-                                    "mca-run" + std::to_string(run_num) + "-stats")) {
+                                    "mca-run" + std::to_string(run_num) + "-stats", dir)) {
             return false;
         }
     }
@@ -644,10 +643,10 @@ bool execute_mca_run(unsigned int run_num, const configuration& cfg,
 
 bool execute_mca_runs(const unsigned int num_runs, const configuration& cfg,
                       const double& runtime_in_seconds, unsigned int synch_wait,
-                      unsigned int in_synch) {
+                      unsigned int in_synch, std::string dir) {
     for (unsigned int i = 0; i < num_runs; i++) {
         std::cout << LOG("INFO") << "Starting MCA run number " << i << std::endl;
-        if (!execute_mca_run(i, cfg, runtime_in_seconds, synch_wait, in_synch)) {
+        if (!execute_mca_run(i, cfg, runtime_in_seconds, synch_wait, in_synch, dir)) {
             std::cout << LOG("INFO") << "MCA data run " << i
                       << " failed! See log for more details.";
             return false;
@@ -715,13 +714,13 @@ bool execute_parameter_write(args::ValueFlag<std::string>& parameter,
     return true;
 }
 
-bool execute_trace_capture(const module_config& mod) {
+bool execute_trace_capture(const module_config& mod, std::string dir) {
     std::cout << LOG("INFO") << "Pixie16AcquireADCTrace acquiring traces for Module " << mod.number
               << "." << std::endl;
     if (!verify_api_return_value(Pixie16AcquireADCTrace(mod.number), "Pixie16AcquireADCTrace"))
         return false;
 
-    std::ofstream ofstream1(generate_filename(mod.number, "adc", "csv"));
+    std::ofstream ofstream1(generate_filename(mod.number, "adc", "csv", dir));
     ofstream1 << "bin,";
 
     unsigned int max_trace_length = 0;
@@ -876,6 +875,29 @@ bool boot_function(configuration& cfg, args::ValueFlag<std::string>& boot_flag, 
     return true;
 }
 
+bool directory_check(std::string &d, args::ValueFlag<std::string>& direc) {
+    struct stat info;
+    if (direc) {
+        const char* dir = direc.Get().c_str();
+        if (dir == "") {
+            return true;
+        }
+        if (stat(dir, &info) != 0) {
+            std::cout << LOG("ERROR") << "cannot access " << dir << std::endl;
+            return false;
+        } else if (info.st_mode & S_IFDIR) {
+            std::cout << LOG("INFO") << dir << " is a valid directory." << std::endl;
+            d = direc.Get();
+            if (d.back() != '/')
+                d = d + "/";
+            return true;
+        } else {
+            std::cout << LOG("ERROR") << dir << " is not a valid directory." << std::endl;
+            return false;
+        }
+    }
+    return true;
+}
 
 int main(int argc, char** argv) {
     auto start = std::chrono::system_clock::now();
@@ -935,6 +957,7 @@ int main(int argc, char** argv) {
                                                "The channel that we'll copy to", {"dest-chan"});
     args::ValueFlag<unsigned int> dest_module(copy, "dest_module", "The module that we'll copy to.",
                                               {"dest-mod"});
+    args::ValueFlag<std::string> directory(arguments, "directory", "The directory to write files to", {'o', "output_dir"});
     args::ValueFlag<unsigned int> module(arguments, "module", "The module to operate on.", {"mod"});
     args::ValueFlag<unsigned int> num_runs(
         arguments, "num_runs", "The number of runs to execute when taking list-mode or MCA data.",
@@ -956,6 +979,8 @@ int main(int argc, char** argv) {
     baseline.Add(boot_pattern_flag);
     blcut.Add(conf_flag);
     blcut.Add(boot_pattern_flag);
+    blcut.Add(module);
+    baseline.Add(directory);
     boot.Add(conf_flag);
     boot.Add(boot_pattern_flag);
     copy.Add(boot_pattern_flag);
@@ -963,7 +988,12 @@ int main(int argc, char** argv) {
     copy.Add(channel);
     dacs.Add(conf_flag);
     dacs.Add(boot_pattern_flag);
+    dacs.Add(module);
+    list_mode.Add(directory);
     list_mode.Add(num_runs);
+    mca.Add(directory);
+    mca.Add(module);
+    mca.Add(boot_pattern_flag);
     mca.Add(synch_wait);
     mca.Add(in_synch);
     mca.Add(num_runs);
@@ -976,6 +1006,7 @@ int main(int argc, char** argv) {
     tau_finder.Add(conf_flag);
     trace.Add(conf_flag);
     trace.Add(boot_pattern_flag);
+    trace.Add(directory);
     write.Add(conf_flag);
     write.Add(parameter);
     write.Add(crate);
@@ -1034,8 +1065,11 @@ int main(int argc, char** argv) {
     }
 
     if (trace) {
+        std::string dir = "";
+        if (!directory_check(dir, directory))
+            return EXIT_FAILURE;
         for (auto& mod : cfg.modules)
-            if (!execute_trace_capture(mod))
+            if (!execute_trace_capture(mod, dir))
                 return EXIT_FAILURE;
     }
 
@@ -1046,8 +1080,11 @@ int main(int argc, char** argv) {
     }
 
     if (baseline) {
+        std::string dir = "";
+        if (!directory_check(dir, directory))
+            return EXIT_FAILURE;
         for (auto& mod : cfg.modules)
-            if (!execute_baseline_capture(mod))
+            if (!execute_baseline_capture(mod, dir))
                 return EXIT_FAILURE;
     }
 
@@ -1071,14 +1108,20 @@ int main(int argc, char** argv) {
     }
 
     if (list_mode) {
+        std::string dir = "";
+        if (!directory_check(dir, directory))
+            return EXIT_FAILURE;
         if (!execute_list_mode_runs(num_runs.Get(), cfg, run_time.Get(), synch_wait.Get(),
-                                    in_synch.Get()))
+                                    in_synch.Get(), dir))
             return EXIT_FAILURE;
     }
 
     if (mca) {
+        std::string dir = "";
+        if (!directory_check(dir, directory))
+            return EXIT_FAILURE;
         if (!execute_mca_runs(num_runs.Get(), cfg, run_time.Get(), synch_wait.Get(),
-                              in_synch.Get()))
+                              in_synch.Get(), dir))
             return EXIT_FAILURE;
     }
 
