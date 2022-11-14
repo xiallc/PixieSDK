@@ -1,6 +1,8 @@
 # in project install directory for testing
 install*/
 
+
+
 # External Tools
 sourcetrail/
 
@@ -26,6 +28,7 @@ venv/
 
 # Local History for Visual Studio Code
 .history/
+.vscode/
 
 # CMake
 cmake-build-*/
