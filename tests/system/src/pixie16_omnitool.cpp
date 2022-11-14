@@ -1396,7 +1396,12 @@ static void bl_acq(command_args& args) {
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
-        crate[mod_num].acquire_baselines();
+        if (crate[mod_num] < xia::pixie::hw::rev_H) {
+            crate[mod_num].acquire_baselines();
+        } else {
+            throw std::runtime_error(
+                "db: can not acquire baseline for rev H module: " + std::to_string(mod_num));
+        }
     }
 }
 
