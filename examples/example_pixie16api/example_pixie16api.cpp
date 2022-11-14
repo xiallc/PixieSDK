@@ -956,7 +956,8 @@ bool set_workers(configuration& cfg) {
     return true;
 }
 
-int parse_firmware(const configuration& cfg, std::string& par, unsigned int boot_pattern) {
+int firmware_parse_boot(const configuration& cfg, std::string& par, unsigned int boot_pattern) {
+    int rc = 0;
     for (auto& mod : cfg.modules) {
         if (mod.fw.version != 0) {
             std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
@@ -985,7 +986,7 @@ int parse_firmware(const configuration& cfg, std::string& par, unsigned int boot
             if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
                 return EXIT_FAILURE;
             par = mod.dsp_par;
-            return -1;
+            rc = -1;
         } else {
             auto start = std::chrono::system_clock::now();
             std::cout << LOG("INFO") << "Calling Pixie16BootModule for Module " << mod.number
@@ -1004,16 +1005,16 @@ int parse_firmware(const configuration& cfg, std::string& par, unsigned int boot
                       << " s." << std::endl;
         }
     }
-    return 0;
+    return rc;
 }
 
-bool boot_function(configuration& cfg, args::ValueFlag<std::string>& boot_flag, args::ValueFlag<std::string>& add_cfg) {
+bool execute_boot(configuration& cfg, args::ValueFlag<std::string>& boot_flag, args::ValueFlag<std::string>& add_cfg) {
     unsigned int boot_pattern = stoul(args::get(boot_flag), nullptr, 0);
     if (add_cfg)
         boot_pattern = 0x70;
 
     std::string par_file;
-    int rc = parse_firmware(cfg, par_file, boot_pattern);
+    int rc = firmware_parse_boot(cfg, par_file, boot_pattern);
     if (rc > 0) {
         return false;
     } else if (rc < 0) {
@@ -1166,7 +1167,7 @@ int main(int argc, char** argv) {
         return EXIT_SUCCESS;
     }
 
-    if (!boot_function(cfg, boot_pattern_flag, additional_cfg_flag))
+    if (!execute_boot(cfg, boot_pattern_flag, additional_cfg_flag))
         return EXIT_FAILURE;
 
     if (boot) {
