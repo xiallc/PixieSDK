@@ -14,10 +14,12 @@ if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 message(STATUS "Install Path: ${CMAKE_INSTALL_PREFIX}")
 
-if ((NOT CMAKE_BUILD_TYPE) OR ${CMAKE_BUILD_TYPE} STREQUAL "MinSizeRel")
-    set(CMAKE_BUILD_TYPE Release CACHE STRING
+if (NOT CMAKE_BUILD_TYPE)
+    if (${CMAKE_BUILD_TYPE} MATCHES "MinSizeRel")
+        set(CMAKE_BUILD_TYPE Release CACHE STRING
             "Build type, options are: Debug Release RelWithDebInfo." FORCE)
-endif ((NOT CMAKE_BUILD_TYPE) OR ${CMAKE_BUILD_TYPE} STREQUAL "MinSizeRel")
+    endif (${CMAKE_BUILD_TYPE} MATCHES "MinSizeRel")
+endif (NOT CMAKE_BUILD_TYPE)
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL GNU)
@@ -44,7 +46,7 @@ option(BUILD_DOCO "Tells CMake to build documentation" OFF)
 option(BUILD_EXAMPLES "Builds the example programs" ON)
 option(BUILD_LEGACY "Builds the legacy C API - Pixie16App.a" OFF)
 option(BUILD_SDK "Builds the base SDK library - PixieSdk.a" ON)
-option(BUILD_TESTS "Builds the test suites" OFF)
+option(BUILD_TESTS "Builds the test suites" ON)
 
 cmake_dependent_option(BUILD_INTEGRATION_TESTS "Builds integration tests" ON "BUILD_TESTS;BUILD_SDK" OFF)
 cmake_dependent_option(BUILD_LEGACY_UNIT_TESTS "Builds unit tests" ON "BUILD_TESTS;BUILD_LEGACY" OFF)

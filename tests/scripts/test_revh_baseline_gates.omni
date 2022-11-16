@@ -1,0 +1,6 @@
+boot
+par-write 0 TAU 0 1
+par-read 0 TAU 0
+par-write 0 SLOW_FILTER_RANGE 2
+par-read 0 SLOW_FILTER_RANGE
+bl-acq 0
