@@ -661,11 +661,10 @@ bool execute_mca_run(unsigned int run_num, const configuration& cfg,
         std::cout << LOG("ERROR") << "MCA Run exited prematurely! Check log for more details."
                   << std::endl;
     }
-    
-    if (!forced_end) {
-        //@todo We need to temporarily execute a manual end run until P16-440 is complete.
-        if (!verify_api_return_value(Pixie16EndRun(cfg.num_modules()), "Pixie16EndRun"))
-            return false;
+
+    if (forced_end) {
+        std::cout << LOG("ERROR") << "MCA Run was forced to end!" << std::endl;
+        return false;
     }
 
     if (!check_run_completion(cfg)) {
