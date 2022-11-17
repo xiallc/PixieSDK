@@ -1652,7 +1652,7 @@ void module::start_histograms(hw::run::run_mode mode) {
     xia_log(log::info) << module_label(*this) << "start-histograms: mode=" << int(mode);
     online_check();
     lock_guard guard(lock_);
-    if (run_task.load() != hw::run::run_task::nop) {
+    if (run_active()) {
         throw error(number, slot, error::code::module_invalid_operation,
                     "module already running a task");
     }
