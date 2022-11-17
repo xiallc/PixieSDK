@@ -261,8 +261,8 @@ bool output_statistics_data(const mod_cfg& mod, const std::string& type) {
         json_stats["raw_input_count"] = ic;
         json_stats["raw_output_count"] = oc;
 
-	csv_output << std::fixed << chan << "," << real_time << "," << live_time << "," << ic << "," << icr << ","
-                   << oc << "," << ocr << std::endl;
+        csv_output << std::fixed << chan << "," << real_time << "," << live_time << "," << ic << ","
+                   << icr << "," << oc << "," << ocr << std::endl;
 
         std::cout << LOG("INFO") << json_stats << std::endl;
     }
@@ -773,8 +773,8 @@ bool execute_trace_capture(const mod_cfg& mod) {
     std::vector<std::vector<unsigned short>> traces;
     for (unsigned int i = 0; i < mod.number_of_channels; i++) {
         unsigned int tmp = 0;
-        if (!verify_api_return_value(
-                PixieGetTraceLength(mod.number, i, &tmp), "Pixie16GetTraceLength", false))
+        if (!verify_api_return_value(PixieGetTraceLength(mod.number, i, &tmp),
+                                     "Pixie16GetTraceLength", false))
             return false;
         std::vector<unsigned short> trace(tmp, 0);
         if (trace.size() > max_trace_length)
@@ -814,7 +814,8 @@ bool execute_blcut(mod_cfg& module) {
               << std::endl;
     unsigned int blcut = 0;
     for (int ch = 0; ch < module.number_of_channels; ch++) {
-        if (!verify_api_return_value(Pixie16BLcutFinder(module.number, ch, &blcut), "Pixie16BLcutFinder", false)) {
+        if (!verify_api_return_value(Pixie16BLcutFinder(module.number, ch, &blcut),
+                                     "Pixie16BLcutFinder", false)) {
             return false;
         }
         std::cout << LOG("INFO") << "BLCut for Module " << module.number << " Channel " << ch
@@ -828,8 +829,8 @@ bool execute_find_tau(const mod_cfg& module) {
               << std::endl;
 
     std::vector<double> taus(module.number_of_channels);
-    if (!verify_api_return_value(Pixie16TauFinder(module.number, taus.data()),
-                                    "Pixie16TauFinder", true)) {
+    if (!verify_api_return_value(Pixie16TauFinder(module.number, taus.data()), "Pixie16TauFinder",
+                                 true)) {
         return false;
     }
     for (unsigned int i = 0; i < taus.size(); i++) {
@@ -902,8 +903,7 @@ void output_module_info(mod_cfg& mod) {
 
 bool boot_crate(std::string par_file, unsigned int boot_pattern) {
     auto start = std::chrono::system_clock::now();
-    std::cout << LOG("INFO") << "Calling PixieBootCrate with settings: " << par_file
-                << std::endl;
+    std::cout << LOG("INFO") << "Calling PixieBootCrate with settings: " << par_file << std::endl;
 
     PIXIE_BOOT_MODE boot_mode;
     switch (boot_pattern) {
@@ -922,8 +922,8 @@ bool boot_crate(std::string par_file, unsigned int boot_pattern) {
     if (!verify_api_return_value(rc, "PixieBootCrate", false))
         return false;
     std::cout << LOG("INFO") << "Finished PixieBootCrate in "
-                << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
-                << std::endl;
+              << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
+              << std::endl;
     return true;
 }
 
