@@ -88,6 +88,7 @@ struct mod_cfg : module_config {
     std::string dsp_par;
     fifo_worker_config worker_config;
     bool has_worker_cfg;
+    bool has_firmware_spec;
 };
 
 typedef std::vector<mod_cfg> module_configs;
@@ -194,6 +195,9 @@ void read_config(const std::string& config_file_name, configuration& cfg) {
             mcfg.fw.revision = module["fw"]["revision"];
             mcfg.fw.adc_msps = module["fw"]["adc_msps"];
             mcfg.fw.adc_bits = module["fw"]["adc_bits"];
+            mcfg.has_firmware_spec = true;
+        } else {
+            mcfg.has_firmware_spec = false;
         }
         if (module.contains("worker")) {
             mcfg.worker_config.bandwidth_mb_per_sec = module["worker"]["bandwidth_mb_per_sec"];
@@ -956,69 +960,77 @@ bool set_workers(configuration& cfg) {
     return true;
 }
 
-int firmware_parse_boot(const configuration& cfg, std::string& par, unsigned int boot_pattern) {
-    int rc = 0;
-    for (auto& mod : cfg.modules) {
-        if (mod.fw.version != 0) {
-            std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
-                      << ": sys" << std::endl;
-            int rc =
-                PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps,
-                                      mod.fw.adc_bits, "sys", mod.sys_fpga, mod.number);
-            if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
-                return EXIT_FAILURE;
-            std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
-                      << ": fippi" << std::endl;
-            rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps,
-                                       mod.fw.adc_bits, "fippi", mod.sp_fpga, mod.number);
-            if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
-                return EXIT_FAILURE;
-            std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
-                      << ": dsp" << std::endl;
-            rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps,
-                                       mod.fw.adc_bits, "dsp", mod.dsp_code, mod.number);
-            if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
-                return EXIT_FAILURE;
-            std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
-                      << ": var" << std::endl;
-            rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps,
-                                       mod.fw.adc_bits, "var", mod.dsp_var, mod.number);
-            if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
-                return EXIT_FAILURE;
-            par = mod.dsp_par;
-            rc = -1;
-        } else {
-            auto start = std::chrono::system_clock::now();
-            std::cout << LOG("INFO") << "Calling Pixie16BootModule for Module " << mod.number
-                      << " with boot pattern: " << std::showbase << std::hex << boot_pattern
-                      << std::dec << std::endl;
+bool boot_module(const mod_cfg& mod, unsigned int boot_pattern) {
+    auto start = std::chrono::system_clock::now();
+    std::cout << LOG("INFO") << "Calling Pixie16BootModule for Module " << mod.number
+              << " with boot pattern: " << std::showbase << std::hex << boot_pattern << std::dec
+              << std::endl;
 
-            if (!verify_api_return_value(
-                    Pixie16BootModule(mod.sys_fpga, mod.sp_fpga, nullptr,
-                                      mod.dsp_code, mod.dsp_par.c_str(),
-                                      mod.dsp_var, mod.number, boot_pattern),
-                    "Pixie16BootModule", "Finished booting!"))
-                return EXIT_FAILURE;
-            std::cout << LOG("INFO") << "Finished Pixie16BootModule for Module " << mod.number
-                      << " in "
-                      << calculate_duration_in_seconds(start, std::chrono::system_clock::now())
-                      << " s." << std::endl;
-        }
-    }
-    return rc;
+    if (!verify_api_return_value(Pixie16BootModule(mod.sys_fpga, mod.sp_fpga, nullptr, mod.dsp_code,
+                                                   mod.dsp_par.c_str(), mod.dsp_var, mod.number,
+                                                   boot_pattern),
+                                 "Pixie16BootModule", "Finished booting!"))
+        return false;
+    std::cout << LOG("INFO") << "Finished Pixie16BootModule for Module " << mod.number << " in "
+              << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
+              << std::endl;
+    return true;
 }
 
-bool execute_boot(configuration& cfg, args::ValueFlag<std::string>& boot_flag, args::ValueFlag<std::string>& add_cfg) {
+bool register_firmware(const mod_cfg& mod) {
+    std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number << ": sys"
+              << std::endl;
+    int rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps,
+                                   mod.fw.adc_bits, "sys", mod.sys_fpga, mod.number);
+    if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
+        return false;
+
+    std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
+              << ": fippi" << std::endl;
+    rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps, mod.fw.adc_bits,
+                               "fippi", mod.sp_fpga, mod.number);
+    if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
+        return false;
+
+    std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number << ": dsp"
+              << std::endl;
+    rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps, mod.fw.adc_bits,
+                               "dsp", mod.dsp_code, mod.number);
+    if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
+        return false;
+
+    std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number << ": var"
+              << std::endl;
+    rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps, mod.fw.adc_bits,
+                               "var", mod.dsp_var, mod.number);
+    if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
+        return false;
+
+    return true;
+}
+
+bool execute_boot(configuration& cfg, args::ValueFlag<std::string>& boot_flag,
+                  args::ValueFlag<std::string>& add_cfg) {
     unsigned int boot_pattern = stoul(args::get(boot_flag), nullptr, 0);
     if (add_cfg)
         boot_pattern = 0x70;
 
-    std::string par_file;
-    int rc = firmware_parse_boot(cfg, par_file, boot_pattern);
-    if (rc > 0) {
-        return false;
-    } else if (rc < 0) {
-        if (!boot_crate(par_file, boot_pattern))
+    bool crate_boot = true;
+    for (const auto& mod : cfg.modules) {
+        if (!mod.has_firmware_spec) {
+            crate_boot = false;
+            if (!boot_module(mod, boot_pattern)) {
+                return false;
+            }
+        } else {
+            if (!register_firmware(mod)) {
+                return false;
+            }
+        }
+    }
+
+    if (crate_boot) {
+        if (!boot_crate(cfg.modules.front().dsp_par, boot_pattern))
             return false;
     }
     return true;
