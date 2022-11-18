@@ -1048,7 +1048,7 @@ bool directory_check(args::ValueFlag<std::string>& direc) {
             dir = ::opendir(direc.Get().c_str());
             if (dir == nullptr) {
                 throw std::runtime_error(
-                  "directory find path: " + path + ": " + std::strerror(errno));
+                  "directory find path: " + direc.Get() + ": " + std::strerror(errno));
             }
             ::closedir(dir);
         } catch (...) {
