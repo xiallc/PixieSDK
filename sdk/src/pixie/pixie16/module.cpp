@@ -877,6 +877,15 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
 
     online_ = false;
 
+    /*
+     * Load the DSP if the COMMS or FIPPI are loaded. There is no DSP
+     * reset without loading.
+     */
+    if (boot_comms || boot_fippi) {
+      xia_log(log::debug) << module_label(*this) << "dsp load forced";
+      boot_dsp = true;
+    }
+
     stop_fifo_services();
 
     load_vars();

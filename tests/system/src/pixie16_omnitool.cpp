@@ -233,7 +233,7 @@ static const command boot_cmd = {
     {"b"},
     {"init", "probe"},
     "Boots the module(s)",
-    "boot"
+    "boot [modules(s) [comms] [fippi] [dsp]]"
 };
 
 command_handler_decl(crate_report);
@@ -269,7 +269,7 @@ static const command help_cmd = {
     {},
     {"none"},
     "Command specific help. Add '-l' to list all commands",
-    "help [command]"
+    "help [-l] [command]"
 };
 
 command_handler_decl(hist_resume);
@@ -1478,11 +1478,13 @@ static void boot(command_args& args) {
     }
     xia::util::timepoint tp;
     if (args.opts.verbose) {
+        bool dsp_boot_forced = boot_params.boot_comms || boot_params.boot_fippi;
         args.opts.out << std::boolalpha
                       << "booting crate: comms=" << boot_params.boot_comms
                       << " fippi=" << boot_params.boot_fippi
                       << " dsp=" << boot_params.boot_dsp
-                      << " modules";
+                      << " (forced=" << dsp_boot_forced
+                      << ") modules";
         if (boot_params.modules.empty()) {
             args.opts.out << "=all";
         } else {
