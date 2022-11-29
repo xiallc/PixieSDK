@@ -1132,7 +1132,7 @@ int main(int argc, char** argv) {
                                                "The channel that we'll copy to", {"dest-chan"});
     args::ValueFlag<unsigned int> dest_module(copy, "dest_module", "The module that we'll copy to.",
                                               {"dest-mod"});
-    args::ValueFlag<std::string> directory(arguments, "directory", "The directory to write files to", {"output_dir"}, "");
+    args::ValueFlag<std::string> directory(arguments, "directory", "The directory to write files to", {"output-dir"}, "");
     args::ValueFlag<unsigned int> module(arguments, "module", "The module to operate on.", {"mod"});
     args::ValueFlag<unsigned int> num_runs(
         arguments, "num_runs", "The number of runs to execute when taking list-mode or MCA data.",
