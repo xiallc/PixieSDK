@@ -639,7 +639,11 @@ template<typename T>
 static T get_value(const std::string& opt) {
     T value = 0;
     try {
-        value = std::stoul(opt, nullptr, 0);
+        if (std::is_same<T, double>::value) {
+            value = std::stod(opt, nullptr);
+        } else {
+            value = std::stoul(opt, nullptr, 0);
+        }
     } catch (std::invalid_argument e) {
         throw std::runtime_error("invalid number: " + opt);
     } catch (std::out_of_range e) {
@@ -2149,7 +2153,7 @@ static void par_write(command_args& args) {
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
-    auto value = get_value<xia::pixie::param::value_type>(value_opt);
+    auto value = get_value<double>(value_opt);
     for (auto mod_num : mod_nums) {
         if (chans_opt.empty()) {
             crate[mod_num].write(param_opt, value);
