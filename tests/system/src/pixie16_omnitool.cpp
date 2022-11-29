@@ -2518,9 +2518,6 @@ int main(int argc, char* argv[]) {
 
     args_group option_group(parser, "Options");
     args_help_flag help(option_group, "help", "Display this help menu", {'h', "help"});
-    args_flag debug_flag(
-        option_group, "debug_flag", "Enable debug log level", {'d', "debug"},
-        false);
     args_flag quiet_flag(
         option_group, "quiet_flag", "Quiet output", {'q', "quiet"},
         false);
@@ -2560,6 +2557,9 @@ int main(int argc, char* argv[]) {
     args_string_flag log_file_flag(
         option_group, "log_file_flag",
         "Operational log file. Use `stdout` for the console.", {'l', "log"});
+    args_string_flag log_level_flag(
+        option_group, "log_level_flag", "Set the logging level (off, error, warning, info, debug)",
+        {'L', "log-level"});
     args_string_flag out_file_flag(
         option_group, "out_file_flag",
         "Output file. Default is the console.", {'o', "output"});
@@ -2603,9 +2603,22 @@ int main(int argc, char* argv[]) {
             log = "pixie16-omnitool.log";
         }
 
-        auto log_level = xia::log::info;
-        if (args::get(debug_flag)) {
-            log_level = xia::log::debug;
+        auto log_level = xia::log::debug;
+        if (log_level_flag) {
+            std::string level = args::get(log_level_flag);
+            if (level == "off") {
+                log_level = xia::log::off;
+            } else if  (level == "error") {
+                log_level = xia::log::error;
+            } else if  (level == "warning") {
+                log_level = xia::log::warning;
+            } else if  (level == "info") {
+                log_level = xia::log::info;
+            } else if  (level == "debug") {
+                log_level = xia::log::debug;
+            } else {
+                throw std::runtime_error("invalid log level: " + level);
+            }
         }
         xia::logging::start("log", log, false);
         xia::logging::set_level(log_level);
