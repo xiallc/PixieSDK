@@ -31,6 +31,7 @@
 
 #include <pixie/os_compat.hpp>
 
+#include <pixie/error.hpp>
 #include <pixie/pixie16/hw.hpp>
 
 namespace xia {
@@ -1422,6 +1423,14 @@ module_param lookup_module_param(const std::string& label);
 channel_param lookup_channel_param(const std::string& label);
 module_var lookup_module_var(const std::string& label);
 channel_var lookup_channel_var(const std::string& label);
+
+/*
+ * Look up parameters and variables descriptors.
+ */
+const module_var_desc& lookup_module_descriptor(
+    const std::string& label, const module_var_descs& descs);
+const channel_var_desc& lookup_channel_descriptor(
+    const std::string& label, const channel_var_descs& descs);
 
 /**
  * @brief Maps a Module parameter to module variable.

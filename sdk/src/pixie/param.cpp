@@ -654,6 +654,33 @@ channel_var lookup_channel_var(const std::string& label) {
     return search->second;
 }
 
+template<typename D, typename Ds, typename V> const D&
+lookup_descriptor(const std::string& label, const Ds& descs, const V& vars) {
+    auto search = vars.find(label);
+    if (search == vars.end()) {
+        throw error(error::code::invalid_value, "invalid variable: " + label);
+    }
+    auto var = search->second;
+    const size_t index = static_cast<size_t>(var);
+    if (index >= descs.size()) {
+        std::ostringstream oss;
+        oss << "invalid vairable: " << label << " (" << index << ')';
+        throw error(error::code::invalid_value, oss.str());
+    }
+    return descs[index];
+}
+
+const module_var_desc& lookup_module_descriptor(
+    const std::string& label, const module_var_descs& descs) {
+    return lookup_descriptor<module_var_desc, module_var_descs, module_var_map>(
+        label, descs, module_vars);
+}
+const channel_var_desc& lookup_channel_descriptor(
+    const std::string& label, const channel_var_descs& descs) {
+    return lookup_descriptor<channel_var_desc, channel_var_descs, channel_var_map>(
+        label, descs, channel_vars);
+}
+
 void load(const std::string& dspvarfile, module_var_descs& module_var_descriptors,
           channel_var_descs& channel_var_descriptors) {
     std::ifstream input(dspvarfile, std::ios::in | std::ios::binary);

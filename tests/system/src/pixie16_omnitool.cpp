@@ -377,7 +377,7 @@ static const command par_read_cmd = {
     {"pr"},
     {"init", "probe"},
     "Read module/channel parameter",
-    "par-read module(s) param [channel(s)]"
+    "par-read module(s) [channel(s)] param"
 };
 
 command_handler_decl(par_write);
@@ -386,7 +386,7 @@ static const command par_write_cmd = {
     {},
     {"init", "probe"},
     "Write module/channel parameter",
-    "par-write module(s) param [channel(s)] value"
+    "par-write module(s) [channel(s)] param value"
 };
 
 command_handler_decl(report);
@@ -466,8 +466,8 @@ static const command var_read_cmd = {
     "var-read", var_read,
     {},
     {"init", "probe"},
-    "Read module/channel variable",
-    "var-read module(s) param [channel(s) [offset(s)]]"
+    "Read module/channel variable. A channel references a channel variable.",
+    "var-read module(s) [channel(s)] param [offset(s)]"
 };
 
 command_handler_decl(var_write);
@@ -475,8 +475,8 @@ static const command var_write_cmd = {
     "var-write", var_write,
     {},
     {"init", "probe"},
-    "Write module/channel variable",
-    "var-write module(s) param [channel(s) [offset(s)]] value"
+    "Write module/channel variable. A channel references a channel variable.",
+    "var-write module(s) [channel(s)] param [offset(s)] value"
 };
 
 command_handler_decl(wait);
@@ -2081,10 +2081,13 @@ static void par_read(command_args& args) {
     }
     auto& crate = args.crate;
     auto mod_nums_opt = get_and_next(args);
-    auto param_opt = get_and_next(args);
-    args_command chans_opt;
+    auto chans_opt = get_and_next(args);
+    args_command param_opt;
     if (valid_option(args, 1)) {
-        chans_opt = get_and_next(args);
+        param_opt = get_and_next(args);
+    } else {
+        param_opt = chans_opt;
+        chans_opt.clear();
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
@@ -2144,12 +2147,15 @@ static void par_write(command_args& args) {
     }
     auto& crate = args.crate;
     auto mod_nums_opt = get_and_next(args);
+    auto chans_opt = get_and_next(args);
     auto param_opt = get_and_next(args);
-    auto value_opt = get_and_next(args);
-    args_command chans_opt;
+    args_command value_opt;
     if (valid_option(args, 1)) {
-        chans_opt = value_opt;
         value_opt = get_and_next(args);
+    } else {
+      value_opt = param_opt;
+      param_opt = chans_opt;
+      chans_opt.clear();
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
@@ -2366,50 +2372,70 @@ static void var_read(command_args& args) {
     }
     auto& crate = args.crate;
     auto mod_nums_opt = get_and_next(args);
-    auto param_opt = get_and_next(args);
-    args_command chans_opt;
+    auto chans_opt = get_and_next(args);
+    args_command param_opt;
     args_command offsets_opt = "0";
-    if (valid_option(args, 1)) {
-        chans_opt = get_and_next(args);
-    }
-    if (valid_option(args, 1)) {
-        offsets_opt = get_and_next(args);
+    if (check_number(chans_opt)) {
+        if (valid_option(args, 1)) {
+            param_opt = get_and_next(args);
+            if (valid_option(args, 1)) {
+                offsets_opt = get_and_next(args);
+            }
+        }
+    } else {
+        param_opt = chans_opt;
+        chans_opt.clear();
+        if (valid_option(args, 1)) {
+            offsets_opt = get_and_next(args);
+        }
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
-    auto offsets = get_values<size_t>(offsets_opt);
     for (auto mod_num : mod_nums) {
+        auto& mod = crate[mod_num];
         if (chans_opt.empty()) {
+            const auto& desc =
+                xia::pixie::param::lookup_module_descriptor(
+                    param_opt, mod.module_var_descriptors);
+            auto offsets = get_values<size_t>(offsets_opt, desc.size);
             if (param_opt == "all") {
                 args.opts.out << "# module var read: " << mod_num << ": "
                               << param_opt << std::endl;
-                for (auto& var : crate[mod_num].module_var_descriptors) {
-                    try {
-                        output_value(
-                            args.opts.out, var.name, crate[mod_num].read_var(var.par));
-                    } catch (error& e) {
-                        if (e.type != error::code::module_param_disabled &&
-                            e.type != error::code::module_param_writeonly) {
-                            throw;
+                for (auto& var : mod.module_var_descriptors) {
+                    for (auto offset : offsets) {
+                        try {
+                            output_value(
+                                args.opts.out, var.name, mod.read_var(var.par, offset));
+                        } catch (error& e) {
+                            if (e.type != error::code::module_param_disabled &&
+                                e.type != error::code::module_param_writeonly) {
+                                throw;
+                            }
                         }
                     }
                 }
             } else {
-                output_value(
-                    args.opts.out, param_opt, crate[mod_num].read_var(param_opt, 0));
+                for (auto offset : offsets) {
+                    output_value(
+                        args.opts.out, param_opt, mod.read_var(param_opt, 0, offset));
+                }
             }
         } else {
             xia::pixie::channel::range channels;
-            channels_option(channels, chans_opt, crate[mod_num].num_channels);
-            if (param_opt == "all") {
-                for (auto channel : channels) {
+            channels_option(channels, chans_opt, mod.num_channels);
+            for (auto channel : channels) {
+                const auto& desc =
+                    xia::pixie::param::lookup_channel_descriptor(
+                        param_opt, mod.channel_var_descriptors);
+                auto offsets = get_values<size_t>(offsets_opt, desc.size);
+                if (param_opt == "all") {
                     args.opts.out << "# channel var read: " << mod_num << ':'
                                   << channel << ": " << param_opt << std::endl;
-                    for (auto& var : crate[mod_num].channel_var_descriptors) {
+                    for (auto& var : mod.channel_var_descriptors) {
                         for (auto offset : offsets) {
                             try {
                                 output_value(
-                                    args.opts.out, var.name, crate[mod_num].read_var(
+                                    args.opts.out, var.name, mod.read_var(
                                         var.par, channel, offset));
                             } catch (error& e) {
                                 if (e.type != error::code::channel_param_disabled &&
@@ -2419,12 +2445,10 @@ static void var_read(command_args& args) {
                             }
                         }
                     }
-                }
-            } else {
-                for (auto channel : channels) {
+                } else {
                     for (auto offset : offsets) {
                         output_value(
-                            args.opts.out, param_opt, crate[mod_num].read_var(
+                            args.opts.out, param_opt, mod.read_var(
                                 param_opt, channel, offset));
                     }
                 }
@@ -2439,12 +2463,15 @@ static void var_write(command_args& args) {
     }
     auto& crate = args.crate;
     auto mod_nums_opt = get_and_next(args);
+    auto chans_opt = get_and_next(args);
     auto param_opt = get_and_next(args);
-    auto value_opt = get_and_next(args);
-    args_command chans_opt;
     args_command offsets_opt = "0";
-    if (valid_option(args, 1)) {
-        chans_opt = value_opt;
+    args_command value_opt;
+    if (!check_number(chans_opt)) {
+        value_opt = param_opt;
+        param_opt = chans_opt;
+        chans_opt.clear();
+    } else {
         value_opt = get_and_next(args);
     }
     if (valid_option(args, 1)) {
@@ -2453,34 +2480,46 @@ static void var_write(command_args& args) {
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
-    auto offsets = get_values<size_t>(offsets_opt);
     auto value = get_value<xia::pixie::param::value_type>(value_opt);
     for (auto mod_num : mod_nums) {
+        auto& mod = crate[mod_num];
         if (chans_opt.empty()) {
+            const auto& desc =
+                xia::pixie::param::lookup_module_descriptor(
+                    param_opt, mod.module_var_descriptors);
+            auto offsets = get_values<size_t>(offsets_opt, desc.size);
             if (param_opt == "all") {
-                for (auto& var : crate[mod_num].module_var_descriptors) {
-                    try {
-                        crate[mod_num].write_var(var.par, value);
-                    } catch (error& e) {
-                        if (e.type != error::code::module_param_disabled &&
-                            e.type != error::code::module_param_readonly) {
-                            throw;
+                for (auto& var : mod.module_var_descriptors) {
+                    for (auto offset : offsets) {
+                        try {
+                            mod.write_var(var.par, value, offset);
+                        } catch (error& e) {
+                            if (e.type != error::code::module_param_disabled &&
+                                e.type != error::code::module_param_readonly) {
+                                throw;
+                            }
                         }
                     }
                 }
             } else {
-                crate[mod_num].read_var(param_opt, value);
+                for (auto offset : offsets) {
+                    mod.write_var(param_opt, value, offset);
+                }
             }
         } else {
             xia::pixie::channel::range channels;
-            channels_option(channels, chans_opt, crate[mod_num].num_channels);
-            if (param_opt == "all") {
-                for (auto channel : channels) {
-                    for (auto& var : crate[mod_num].channel_var_descriptors) {
+            channels_option(channels, chans_opt, mod.num_channels);
+            for (auto channel : channels) {
+                const auto& desc =
+                    xia::pixie::param::lookup_channel_descriptor(
+                        param_opt, mod.channel_var_descriptors);
+                auto offsets = get_values<size_t>(offsets_opt, desc.size);
+                if (param_opt == "all") {
+                    for (auto& var : mod.channel_var_descriptors) {
                         for (auto offset : offsets) {
                             try {
-                                crate[mod_num].write_var(
-                                    var.par, channel, offset, value);
+                                mod.write_var(
+                                    var.par, value, channel, offset);
                             } catch (error& e) {
                                 if (e.type != error::code::channel_param_disabled &&
                                     e.type != error::code::channel_param_readonly) {
@@ -2489,12 +2528,10 @@ static void var_write(command_args& args) {
                             }
                         }
                     }
-                }
-            } else {
-                for (auto channel : channels) {
+                } else {
                     for (auto offset : offsets) {
-                        crate[mod_num].write_var(
-                            param_opt, channel, offset, value);
+                        mod.write_var(
+                            param_opt, value, channel, offset);
                     }
                 }
             }
