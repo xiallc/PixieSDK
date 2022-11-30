@@ -1353,7 +1353,7 @@ param::value_type module::read_var(param::module_var var, size_t offset, bool io
     if (index >= module_var_descriptors.size()) {
         std::ostringstream oss;
         oss << "invalid module variable: " << index;
-        throw error(number, slot, error::code::module_invalid_param, oss.str());
+        throw error(number, slot, error::code::module_invalid_var, oss.str());
     }
     const auto& desc = module_var_descriptors[index];
     xia_log(log::debug) << module_label(*this) << "read_var: module var=" << desc.name
@@ -1395,7 +1395,7 @@ param::value_type module::read_var(param::channel_var var, size_t channel, size_
     if (index >= channel_var_descriptors.size()) {
         std::ostringstream oss;
         oss << "invalid channel variable: " << index;
-        throw error(number, slot, error::code::channel_invalid_param, oss.str());
+        throw error(number, slot, error::code::channel_invalid_var, oss.str());
     }
     const auto& desc = channel_var_descriptors[index];
     xia_log(log::debug) << module_label(*this) << "read_var: channel var=" << desc.name
@@ -1449,7 +1449,7 @@ void module::write_var(param::module_var var, param::value_type value, size_t of
     if (index >= module_var_descriptors.size()) {
         std::ostringstream oss;
         oss << "invalid module variable: " << index;
-        throw error(number, slot, error::code::module_invalid_param, oss.str());
+        throw error(number, slot, error::code::module_invalid_var, oss.str());
     }
     const auto& desc = module_var_descriptors[index];
     xia_log(log::debug) << module_label(*this) << "write_var: module var=" << desc.name << " value["
@@ -1486,7 +1486,7 @@ void module::write_var(param::channel_var var, param::value_type value, size_t c
     if (index >= channel_var_descriptors.size()) {
         std::ostringstream oss;
         oss << "invalid channel variable: " << index;
-        throw error(number, slot, error::code::channel_invalid_param, oss.str());
+        throw error(number, slot, error::code::channel_invalid_var, oss.str());
     }
     const auto& desc = channel_var_descriptors[index];
     xia_log(log::debug) << module_label(*this) << "write_var: channel var=" << desc.name
