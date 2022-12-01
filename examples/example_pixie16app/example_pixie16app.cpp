@@ -43,8 +43,10 @@
 
 #if defined(_WIN64) || defined(_WIN32)
 #include <windows.h>
+#include <isakbosman/dirent.h>
 #else
 #include <unistd.h>
+#include <sys/stat.h>
 #endif
 
 struct LOG {
@@ -841,17 +843,8 @@ bool init_system(configuration& cfg, int offline_mode) {
     return true;
 }
 
-bool set_workers(configuration& cfg) {
-    try {
-        output_module_info(cfg);
-    } catch (std::runtime_error& error) {
-        std::cout << LOG("ERROR") << error.what() << std::endl;
-        return false;
-    }
-    return true;
-}
-
-bool boot_function(configuration& cfg, args::ValueFlag<std::string>& boot_flag, args::ValueFlag<std::string>& add_cfg) {
+bool execute_boot(configuration& cfg, args::ValueFlag<std::string>& boot_flag,
+                  args::ValueFlag<std::string>& add_cfg) {
     unsigned int boot_pattern = stoul(args::get(boot_flag), nullptr, 0);
     if (add_cfg)
         boot_pattern = 0x70;
@@ -875,26 +868,36 @@ bool boot_function(configuration& cfg, args::ValueFlag<std::string>& boot_flag, 
     return true;
 }
 
-bool directory_check(std::string &d, args::ValueFlag<std::string>& direc) {
+bool directory_check(args::ValueFlag<std::string>& direc) {
     struct stat info;
     if (direc) {
-        const char* dir = direc.Get().c_str();
-        if (dir == "") {
-            return true;
+#if defined(_WIN64) || defined(_WIN32)
+        DIR* dir = nullptr;
+        try {
+            dir = ::opendir(direc.Get().c_str());
+            if (dir == nullptr) {
+                throw std::runtime_error(
+                  "directory find path: " + direc.Get() + ": " + std::strerror(errno));
+            }
+            ::closedir(dir);
+        } catch (...) {
+            if (dir != nullptr) {
+                ::closedir(dir);
+            }
+            return false;
         }
+#else
+        const char* dir = direc.Get().c_str();
         if (stat(dir, &info) != 0) {
             std::cout << LOG("ERROR") << "cannot access " << dir << std::endl;
             return false;
         } else if (info.st_mode & S_IFDIR) {
             std::cout << LOG("INFO") << dir << " is a valid directory." << std::endl;
-            d = direc.Get();
-            if (d.back() != '/')
-                d = d + "/";
-            return true;
         } else {
             std::cout << LOG("ERROR") << dir << " is not a valid directory." << std::endl;
             return false;
         }
+#endif
     }
     return true;
 }
@@ -957,7 +960,7 @@ int main(int argc, char** argv) {
                                                "The channel that we'll copy to", {"dest-chan"});
     args::ValueFlag<unsigned int> dest_module(copy, "dest_module", "The module that we'll copy to.",
                                               {"dest-mod"});
-    args::ValueFlag<std::string> directory(arguments, "directory", "The directory to write files to", {'o', "output_dir"});
+    args::ValueFlag<std::string> directory(arguments, "directory", "The directory to write files to", {"output-dir"});
     args::ValueFlag<unsigned int> module(arguments, "module", "The module to operate on.", {"mod"});
     args::ValueFlag<unsigned int> num_runs(
         arguments, "num_runs", "The number of runs to execute when taking list-mode or MCA data.",
@@ -1041,15 +1044,33 @@ int main(int argc, char** argv) {
     if (is_offline)
         offline_mode = 1;
 
-    if (!init_system(cfg, offline_mode) || !set_workers(cfg))
+    if (!directory_check(directory))
         return EXIT_FAILURE;
+
+    std::string dir = directory.Get().c_str();
+    if (dir != "" && dir.back() != '/')
+        dir = dir + "/";
+
+    if (!init_system(cfg, offline_mode))
+        return EXIT_FAILURE;
+
+    std::cout << LOG("INFO") << "Finished Pixie16InitSystem in "
+              << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
+              << std::endl;
+
+    try {
+        output_module_info(cfg);
+    } catch (std::runtime_error& error) {
+        std::cout << LOG("ERROR") << error.what() << std::endl;
+        return EXIT_FAILURE;
+    }
 
     if (init) {
         execute_close_module_connection(cfg.num_modules());
         return EXIT_SUCCESS;
     }
 
-    if (!boot_function(cfg, boot_pattern_flag, additional_cfg_flag))
+    if (!execute_boot(cfg, boot_pattern_flag, additional_cfg_flag))
         return EXIT_FAILURE;
 
     if (boot) {
@@ -1065,9 +1086,6 @@ int main(int argc, char** argv) {
     }
 
     if (trace) {
-        std::string dir = "";
-        if (!directory_check(dir, directory))
-            return EXIT_FAILURE;
         for (auto& mod : cfg.modules)
             if (!execute_trace_capture(mod, dir))
                 return EXIT_FAILURE;
@@ -1080,9 +1098,6 @@ int main(int argc, char** argv) {
     }
 
     if (baseline) {
-        std::string dir = "";
-        if (!directory_check(dir, directory))
-            return EXIT_FAILURE;
         for (auto& mod : cfg.modules)
             if (!execute_baseline_capture(mod, dir))
                 return EXIT_FAILURE;
@@ -1108,18 +1123,12 @@ int main(int argc, char** argv) {
     }
 
     if (list_mode) {
-        std::string dir = "";
-        if (!directory_check(dir, directory))
-            return EXIT_FAILURE;
         if (!execute_list_mode_runs(num_runs.Get(), cfg, run_time.Get(), synch_wait.Get(),
                                     in_synch.Get(), dir))
             return EXIT_FAILURE;
     }
 
     if (mca) {
-        std::string dir = "";
-        if (!directory_check(dir, directory))
-            return EXIT_FAILURE;
         if (!execute_mca_runs(num_runs.Get(), cfg, run_time.Get(), synch_wait.Get(),
                               in_synch.Get(), dir))
             return EXIT_FAILURE;
