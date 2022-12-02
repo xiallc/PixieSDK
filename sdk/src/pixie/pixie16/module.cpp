@@ -884,6 +884,10 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
     if (boot_comms || boot_fippi) {
       xia_log(log::debug) << module_label(*this) << "dsp load forced";
       boot_dsp = true;
+      if (boot_comms && !fippi_fpga) {
+        xia_log(log::debug) << module_label(*this) << "fippi load forced";
+        boot_fippi = true;
+      }
     }
 
     stop_fifo_services();
