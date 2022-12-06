@@ -1337,14 +1337,13 @@ void module::write(param::channel_param par, size_t channel, double value) {
 param::value_type module::read_var(const std::string& var, size_t channel, size_t offset, bool io) {
     xia_log(log::info) << module_label(*this) << "read: var=" << var << " channel=" << channel
                        << " offset=" << offset << " io=" << io;
-    try {
+    if (param::is_module_var(var)) {
         return read_var(param::lookup_module_var(var), offset, io);
-    } catch (pixie::error::error& e) {
-        if (e.type != error::code::module_invalid_var) {
-            throw;
-        }
+    } else if (param::is_channel_var(var)) {
+        return read_var(param::lookup_channel_var(var), channel, offset, io);
+    } else {
+        throw error(number, slot, error::code::module_invalid_var, "invalid module variable: " + var);
     }
-    return read_var(param::lookup_channel_var(var), channel, offset, io);
 }
 
 param::value_type module::read_var(param::module_var var, size_t offset, bool io) {
@@ -1433,13 +1432,12 @@ void module::write_var(const std::string& var, param::value_type value, size_t c
                        size_t offset, bool io) {
     xia_log(log::info) << module_label(*this) << "write: var=" << var << " channel=" << channel
                        << " value[" << offset << "]=" << value << " (0x" << std::hex << value << ')';
-    try {
+    if (param::is_module_var(var)) {
         write_var(param::lookup_module_var(var), value, offset, io);
-    } catch (pixie::error::error& e) {
-        if (e.type != error::code::module_invalid_var) {
-            throw;
-        }
+    } else if (param::is_channel_var(var)) {
         write_var(param::lookup_channel_var(var), value, channel, offset, io);
+    } else {
+        throw error(number, slot, error::code::module_invalid_var, "invalid module variable: " + var);
     }
 }
 
