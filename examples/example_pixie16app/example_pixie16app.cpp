@@ -218,7 +218,7 @@ bool output_statistics_data(const module_config& mod, const std::string& type, s
             {"live_time", live_time}, {"icr", icr},      {"ocr", ocr},
         };
 
-        csv_output << std::fixed << chan << "," << real_time << "," << live_time << "," << icr << "," << ocr << std::endl;
+        csv_output << std::fixed << std::setprecision(12) << chan << "," << real_time << "," << live_time << "," << icr << "," << ocr << std::endl;
         std::cout << LOG("INFO") << json_stats << std::endl;
     }
 
@@ -603,7 +603,6 @@ bool execute_mca_run(unsigned int run_num, const configuration& cfg,
     }
     if (forced_end) {
         std::cout << LOG("ERROR") << "MCA Run was forced to end!" << std::endl;
-        return false;
     }
 
     std::cout << LOG("INFO") << "Checking that the run is finalized in all the modules."

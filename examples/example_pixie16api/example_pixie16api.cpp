@@ -265,7 +265,7 @@ bool output_statistics_data(const mod_cfg& mod, const std::string& type, std::st
         json_stats["raw_input_count"] = ic;
         json_stats["raw_output_count"] = oc;
 
-        csv_output << std::fixed << chan << "," << real_time << "," << live_time << "," << ic << ","
+        csv_output << std::fixed << std::setprecision(12) << chan << "," << real_time << "," << live_time << "," << ic << ","
                    << icr << "," << oc << "," << ocr << std::endl;
 
         std::cout << LOG("INFO") << json_stats << std::endl;
@@ -668,7 +668,6 @@ bool execute_mca_run(unsigned int run_num, const configuration& cfg,
 
     if (forced_end) {
         std::cout << LOG("ERROR") << "MCA Run was forced to end!" << std::endl;
-        return false;
     }
 
     if (!check_run_completion(cfg)) {
