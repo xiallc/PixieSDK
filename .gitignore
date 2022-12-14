@@ -21,6 +21,7 @@ venv/
 
 # Created by .ignore support plugin (hsz.mobi)
 ### VisualStudioCode template
+.vs/
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
