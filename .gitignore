@@ -1,7 +1,9 @@
 # in project install directory for testing
 install*/
 
-
+# Exclude working directories
+dev/
+working/
 
 # External Tools
 sourcetrail/
