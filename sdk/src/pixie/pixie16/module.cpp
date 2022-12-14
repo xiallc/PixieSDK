@@ -1342,7 +1342,7 @@ param::value_type module::read_var(const std::string& var, size_t channel, size_
     } else if (param::is_channel_var(var)) {
         return read_var(param::lookup_channel_var(var), channel, offset, io);
     } else {
-        throw error(number, slot, error::code::module_invalid_var, "invalid module variable: " + var);
+        throw error(number, slot, error::code::module_invalid_var, "invalid variable: " + var);
     }
 }
 
@@ -1437,7 +1437,7 @@ void module::write_var(const std::string& var, param::value_type value, size_t c
     } else if (param::is_channel_var(var)) {
         write_var(param::lookup_channel_var(var), value, channel, offset, io);
     } else {
-        throw error(number, slot, error::code::module_invalid_var, "invalid module variable: " + var);
+        throw error(number, slot, error::code::module_invalid_var, "invalid variable: " + var);
     }
 }
 
