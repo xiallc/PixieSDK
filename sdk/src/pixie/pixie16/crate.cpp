@@ -86,7 +86,6 @@ void crate::initialize(bool reg_trace) {
 
             auto& module_ptr = modules.back();
             module::module& module = *module_ptr;
-            bool last_module_found = false;
 
             try {
                 module.module_var_descriptors =
@@ -96,8 +95,15 @@ void crate::initialize(bool reg_trace) {
                 module.reg_trace = reg_trace;
                 module.open(device_number);
             } catch (pixie::error::error& e) {
-                last_module_found = e.type == module::error::code::not_supported;
                 xia_log(log::error) << "module: device " << device_number << ": error: " << e.what();
+            }
+
+            /*
+             * Have all modules been found?
+             */
+            if (!module.device_present()) {
+                modules.pop_back();
+                break;
             }
 
             if (module.present()) {
@@ -105,10 +111,6 @@ void crate::initialize(bool reg_trace) {
                                    << " serial-number:" << module.serial_num
                                    << " version:" << module.version_label();
             } else {
-                if (last_module_found) {
-                    modules.pop_back();
-                    break;
-                }
                 xia_log(log::info) << "module offline: device " << device_number;
                 std::move(std::prev(modules.end()), modules.end(), std::back_inserter(offline));
                 modules.pop_back();

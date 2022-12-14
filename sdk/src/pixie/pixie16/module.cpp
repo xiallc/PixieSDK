@@ -551,6 +551,10 @@ module& module::operator=(module&& m) {
     return *this;
 }
 
+bool module::device_present() const {
+    return device->device_number >= 0;
+}
+
 bool module::present() const {
     return present_.load();
 }
@@ -573,20 +577,21 @@ void module::open(size_t device_number) {
         throw error(number, slot, error::code::module_already_open, "module already open");
     }
 
-    if (device->device_number < 0) {
+    if (!device_present()) {
         PLX_STATUS ps;
 
         ps = ::PlxPci_DeviceFind(&device->key, uint16_t(device_number));
         if (ps != PLX_STATUS_OK) {
-            std::ostringstream oss;
-            oss << "PCI find: device: " << device_number << ": " << pci_error_text(ps);
-            error::code ec = error::code::module_initialize_failure;
-            if (ps == PLX_STATUS_NO_DRIVER || ps == PLX_STATUS_INVALID_OBJECT) {
-                ec = error::code::not_supported;
-            }
-            throw error(number, slot, ec, oss);
+            /*
+             * Module not found so the device is not present. Users
+             * need to check for the device or module being present.
+             */
+            return;
         }
 
+        /*
+         * The module device is present.
+         */
         device->device_number = int(device_number);
 
         ps = ::PlxPci_DeviceOpen(&device->key, &device->handle);

@@ -418,7 +418,12 @@ public:
     module& operator=(module&& mod);
 
     /**
-     * If the module present?
+     * Is the module device present?
+     */
+    bool device_present() const;
+
+    /**
+     * Is the module present?
      */
     bool present() const;
 
