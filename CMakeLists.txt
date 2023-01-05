@@ -14,14 +14,10 @@ if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 message(STATUS "Install Path: ${CMAKE_INSTALL_PREFIX}")
 
-if (NOT CMAKE_BUILD_TYPE)
-    if (${CMAKE_BUILD_TYPE} MATCHES "MinSizeRel")
-        set(CMAKE_BUILD_TYPE Release CACHE STRING
-            "Build type, options are: Debug Release RelWithDebInfo." FORCE)
-    endif (${CMAKE_BUILD_TYPE} MATCHES "MinSizeRel")
+if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE MATCHES "MinSizeRel")
     set(CMAKE_BUILD_TYPE Release CACHE STRING
         "Build type, options are: Debug Release RelWithDebInfo." FORCE)
-endif (NOT CMAKE_BUILD_TYPE)
+endif (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE MATCHES "MinSizeRel")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL GNU)
