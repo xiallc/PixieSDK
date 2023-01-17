@@ -101,6 +101,7 @@ void module::open(size_t device_number) {
 
             std::memset(vmaddr, 0, pci_addr_space_size);
 
+            set_bus_device_number(device_number);
             slot = mod_def.slot;
             revision = mod_def.revision;
             eeprom_format = mod_def.eeprom_format;

@@ -716,6 +716,11 @@ protected:
     }
 
     /*
+     * Set the bus device number. Only used when simulating.
+     */
+    virtual void set_bus_device_number(int device_number);
+
+    /*
      * Load the variable address map.
      */
     virtual void load_vars();

@@ -2148,6 +2148,10 @@ void module::end_test() {
     log_stats("run", run_stats);
 }
 
+void module::set_bus_device_number(int device_number) {
+    device->device_number = device_number;
+}
+
 void module::load_vars() {
     if (!vars_loaded) {
         firmware::firmware_ref vars = get("var");
