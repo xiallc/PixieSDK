@@ -1036,7 +1036,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
         crate.ready();
         xia::pixie::crate::module_handle module(crate, ModNum);
         module->channel_check(ChanNum);
-        auto chan = module->channels[ChanNum];
+        auto& chan = module->channels[ChanNum];
         auto read_words = NumWords;
         if (read_words > chan.fixture->config.max_histogram_length) {
             xia_log(xia::log::warning)

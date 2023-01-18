@@ -160,6 +160,8 @@ struct channel {
      * @param[in] module A channel must be part of a module.
      */
     channel(module::module& module);
+    channel(channel& chan) = delete;
+    channel(channel&& chan);
     ~channel() = default;
 
     channel& operator=(const channel& c);

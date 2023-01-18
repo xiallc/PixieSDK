@@ -236,6 +236,10 @@ void baseline::compute_cut(size_t num) {
 
 channel::channel(module::module& module_) : number(-1), module(module_) {}
 
+channel::channel(channel&& orig)
+    : number(orig.number), module(std::move(orig.module)), vars(std::move(orig.vars)),
+      adc_trace(std::move(orig.adc_trace)) {}
+
 channel& channel::operator=(const channel& c) {
     number = c.number;
     module = c.module;

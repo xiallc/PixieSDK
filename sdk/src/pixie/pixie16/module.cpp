@@ -2203,7 +2203,9 @@ void module::init_channels() {
                     "invalid number of channels configurations");
     }
     erase_channels();
-    channels.resize(num_channels, channel::channel(*this));
+    for (size_t c = 0; c < num_channels; ++c) {
+        channels.emplace_back(channel::channel(*this));
+    }
     for (size_t channel = 0; channel < num_channels; ++channel) {
         channels[channel].number = channel;
         for (const auto& desc : channel_var_descriptors) {
