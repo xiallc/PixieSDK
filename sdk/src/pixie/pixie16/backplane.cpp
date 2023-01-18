@@ -29,7 +29,7 @@
 namespace xia {
 namespace pixie {
 namespace backplane {
-backplane::role::role(const std::string& label_) : leader(-1), label(label_) {}
+backplane::role::role(const std::string& label_) : label(label_), leader(-1) {}
 
 bool backplane::role::request(const module::module& mod) {
     int expected = released;
@@ -92,7 +92,7 @@ void backplane::sync_wait(module::module& mod, const param::value_type synch_wai
          * check against the size of the waiters which is the maximum
          * number of slots a crate has. Out of range is bug.
          */
-        auto sw = sync_waits.load();
+        size_t sw = sync_waits.load();
         if (sw > sync_waiters.size()) {
             throw error(error::code::internal_failure,
                         "module: " + std::to_string(mod.number) +
@@ -108,7 +108,7 @@ void backplane::sync_wait(module::module& mod) {
 }
 
 void backplane::sync_wait_valid() const {
-    auto waits = sync_waits.load();
+    size_t waits = sync_waits.load();
     if (waits != 0 && waits != sync_waiters.size()) {
         throw error(error::code::module_invalid_operation,
                     "sync wait mode enabled and not all modules in the sync wait state");
@@ -122,7 +122,7 @@ void backplane::init(const int num_modules) {
 }
 
 void backplane::offline(const module::module& module) {
-    if (module.number >= 0 && module.number < sync_waiters.size()) {
+    if (module.number >= 0 && module.number < int(sync_waiters.size())) {
         if (sync_waiters[module.number]) {
             --sync_waits;
         }

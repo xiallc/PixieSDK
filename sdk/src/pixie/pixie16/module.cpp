@@ -404,8 +404,9 @@ module::module(module&& m)
       control_task(m.control_task.load()), fifo_buffers(m.fifo_buffers),
       fifo_run_wait_usecs(m.fifo_run_wait_usecs.load()),
       fifo_idle_wait_usecs(m.fifo_idle_wait_usecs.load()),
-      fifo_hold_usecs(m.fifo_hold_usecs.load()), fifo_bandwidth(m.fifo_bandwidth.load()),
+      fifo_hold_usecs(m.fifo_hold_usecs.load()),
       fifo_dma_trigger_level(m.fifo_dma_trigger_level.load()),
+      fifo_bandwidth(m.fifo_bandwidth.load()),
       run_stats(m.run_stats), crate_revision(m.crate_revision),
       board_revision(m.board_revision), reg_trace(m.reg_trace), i2c_read_period(100),
       io_cpld_version_old(false), fifo_worker_running(false), fifo_worker_finished(false),
@@ -1185,6 +1186,7 @@ bool module::write(param::module_param par, param::value_type value) {
             break;
         case param::module_param::synch_wait:
             backplane.sync_wait(*this, value);
+            /* fall through */
         case param::module_param::in_synch:
         case param::module_param::host_rt_preset:
             bcast = true;
@@ -1193,7 +1195,6 @@ bool module::write(param::module_param par, param::value_type value) {
         case param::module_param::max_events:
             write_var(param::map_module_param(par), value, offset);
             break;
-            /* fall through */
         case param::module_param::trigconfig0:
         case param::module_param::trigconfig1:
         case param::module_param::trigconfig2:
@@ -1676,7 +1677,7 @@ void module::start_histograms(hw::run::run_mode mode) {
         throw error(number, slot, error::code::module_test_invalid,
                     "test running; cannot start a run task");
     }
-    auto sync_waits = backplane.sync_waits.load();
+    size_t sync_waits = backplane.sync_waits.load();
     if (sync_waits != 0 && sync_waits != backplane.sync_waiters.size()) {
         throw error(number, slot, error::code::module_invalid_operation,
                     "sync wait mode enabled and not all modules in sync wait state");
@@ -2431,7 +2432,6 @@ void module::fifo_worker() {
 
         bool pool_empty_logged = false;
         bool fifo_full_logged = false;
-        size_t last_dma_in = 0;
 
         int requested_wait_loops = 0;
 

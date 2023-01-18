@@ -175,7 +175,7 @@ bool crate::probe() {
     xia_log(log::info) << "crate: probe";
     ready();
     lock_guard guard(lock_);
-    int online = 0;
+    size_t online = 0;
     for (auto& module : modules) {
         module->probe();
         if (module->online()) {
@@ -198,7 +198,7 @@ void crate::boot(const crate::boot_params& params) {
         std::iota(mod_nums.begin(), mod_nums.end(), 0);
     } else {
         for (auto mod_num : params.modules) {
-            if (mod_num < 0 || mod_num >= modules.size()) {
+            if (mod_num >= modules.size()) {
                 throw error(
                     error::code::module_number_invalid, "boot module number invalid");
             }

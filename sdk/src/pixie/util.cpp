@@ -90,9 +90,9 @@ timepoint::timepoint(bool autostart)
 }
 
 timepoint::timepoint(const timepoint& tp)
-    : start_mark(tp.start_mark), end_mark(tp.end_mark),
-      active(tp.active.load()), suspended(tp.suspended.load()),
-      captured(tp.captured.load()), locked(false) {
+    : active(tp.active.load()), suspended(tp.suspended.load()), captured(tp.captured.load()),
+      start_mark(tp.start_mark), end_mark(tp.end_mark),
+      locked(false) {
 }
 
 timepoint::~timepoint() {

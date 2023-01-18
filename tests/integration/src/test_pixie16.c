@@ -24,4 +24,6 @@
 
 int main(int argc, char** argv) {
     //do nothing for now
+    (void) argc;
+    (void) argv;
 }

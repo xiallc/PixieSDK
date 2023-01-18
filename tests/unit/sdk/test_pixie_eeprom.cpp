@@ -105,9 +105,9 @@ static T get_value(const std::string& opt, int base = 9) {
     T value = 0;
     try {
         value = std::stoul(opt, nullptr, base);
-    } catch (std::invalid_argument e) {
+    } catch (std::invalid_argument& e) {
         throw std::runtime_error("invalid number: " + opt);
-    } catch (std::out_of_range e) {
+    } catch (std::out_of_range& e) {
         throw std::runtime_error("number out of range: " + opt);
     }
     return value;

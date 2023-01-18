@@ -80,7 +80,7 @@ using module_range = std::vector<size_t>;
 using files = std::vector<std::string>;
 
 struct process_command_options {
-    int num_modules;
+    size_t num_modules;
     slot_range slots;
     std::string firmware_host_path;
     files firmware_crate_files;
@@ -644,9 +644,9 @@ static T get_value(const std::string& opt) {
         } else {
             value = std::stoul(opt, nullptr, 0);
         }
-    } catch (std::invalid_argument e) {
+    } catch (std::invalid_argument& e) {
         throw std::runtime_error("invalid number: " + opt);
-    } catch (std::out_of_range e) {
+    } catch (std::out_of_range& e) {
         throw std::runtime_error("number out of range: " + opt);
     }
     return value;
@@ -669,7 +669,7 @@ static std::vector<T> get_values(
             xia::util::strings sd;
             xia::util::split(sd, slots, '-');
             if (sd.size() == 1) {
-                auto val = get_value<T>(sd[0]);
+                size_t val = get_value<T>(sd[0]);
                 if (val < max_count) {
                     values.push_back(val);
                 } else if (!no_error) {
@@ -677,8 +677,8 @@ static std::vector<T> get_values(
                         "value out of range: " + std::to_string(val));
                 }
             } else if (sd.size() == 2) {
-                auto start = get_value<T>(sd[0]);
-                auto end = get_value<T>(sd[1]);
+                size_t start = get_value<T>(sd[0]);
+                size_t end = get_value<T>(sd[1]);
                 if (start > end) {
                     if (!no_error) {
                         throw std::runtime_error("invalid range: " + opt);
@@ -687,7 +687,7 @@ static std::vector<T> get_values(
                     break;
                 }
                 if (start < max_count && end < max_count) {
-                    for (T s = start; s <= end; ++s) {
+                  for (T s = T(start); s <= T(end); ++s) {
                         values.push_back(s);
                     }
                 } else if (!no_error) {
@@ -750,7 +750,7 @@ static bool valid_option(command_args& args, size_t count) {
     if (args_count(args) < count) {
         valid = false;
     } else {
-        for (int i = 0; valid && i < count; ++i) {
+        for (size_t i = 0; valid && i < count; ++i) {
             valid = !valid_command(find_command(*(args.ci + i)));
         }
     }
@@ -1971,9 +1971,9 @@ static xia::pixie::hw::address get_address(
     bool number = true;
     try {
         address = std::stoul(reg, nullptr, 0);
-    } catch (std::invalid_argument e) {
+    } catch (std::invalid_argument& e) {
         number = false;
-    } catch (std::out_of_range e) {
+    } catch (std::out_of_range& e) {
         throw std::runtime_error(label + ": reg value of range: " + reg);
     }
     const auto& mems = hardware["memory"];
@@ -2360,7 +2360,8 @@ static void test(command_args& args) {
     for (auto& t : tests) {
         t.length = (bytes) / sizeof(xia::pixie::hw::word);
     }
-    args.opts.out << "Test: " << mode_opt << " length=" << xia::util::humanize(bytes)
+    args.opts.out << "Test: " << mode_opt << " (" << int(mode)
+                  << ") length=" << xia::util::humanize(bytes)
                   << std::endl;
     module_threads(args, mod_nums, tests, "fifo test error; see log");
     performance_stats(args, tests, true);

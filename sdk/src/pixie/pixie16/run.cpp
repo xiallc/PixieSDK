@@ -222,7 +222,7 @@ static bool control_task_prerun(module::module& module, control_task control_tsk
     return true;
 }
 
-static void control_task_postrun(module::module& module, control_task control_tsk, int ) {
+static void control_task_postrun(module::module& , control_task control_tsk, int ) {
     switch (control_tsk) {
     case control_task::tau_finder:
         /*

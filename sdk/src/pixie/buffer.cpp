@@ -169,7 +169,6 @@ size_t queue::copy_unprotected(buffer_value_ptr to, size_t to_move) {
         check("copy start");
     }
     auto copied = to_move;
-    auto to_in = to;
     auto from_bi = buffers.begin();
     while (to_move > 0 && from_bi != buffers.end()) {
         auto from = *from_bi;
