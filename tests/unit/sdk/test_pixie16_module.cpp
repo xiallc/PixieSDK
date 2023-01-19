@@ -80,14 +80,14 @@ TEST_SUITE("Crate: modules") {
             CHECK_THROWS_WITH_AS(crate.find(7), "module slot not found", crate_error);
             CHECK(crate.num_modules == test_modules);
             CHECK(crate.modules.size() == test_modules);
-            CHECK(crate.offline.size() == hw::max_slots - test_modules);
+            CHECK(crate.offline.size() == 0);
             CHECK(crate.backplane.sync_waiters.size() == crate.num_modules);
             CHECK_THROWS_WITH_AS(crate.set_offline(7), "module number out of range: 7",
                                  crate_error);
             CHECK_NOTHROW(crate.set_offline(1));
             CHECK(crate.num_modules == test_modules - 1);
             CHECK(crate.modules.size() == test_modules - 1);
-            CHECK(crate.offline.size() == hw::max_slots - test_modules + 1);
+            CHECK(crate.offline.size() == 1);
             CHECK(crate.backplane.sync_waiters.size() == crate.num_modules);
         }
         using namespace xia::pixie;
@@ -183,12 +183,12 @@ TEST_SUITE("Crate: modules") {
         CHECK(crate[2].slot == 10);
         CHECK_NOTHROW(crate.assign(module::number_slots{{1, 2}, {0, 6}}, false));
         CHECK(crate.num_modules == test_modules - 1);
-        CHECK(crate.offline.size() == hw::max_slots - test_modules + 1);
+        CHECK(crate.offline.size() == 1);
         CHECK(crate[0].slot == 6);
         CHECK(crate[1].slot == 2);
         CHECK_NOTHROW(crate.assign(module::number_slots{{0, 6}}));
         CHECK(crate.num_modules == test_modules - 2);
-        CHECK(crate.offline.size() == hw::max_slots - test_modules + 1);
+        CHECK(crate.offline.size() == 1);
         CHECK(crate[0].slot == 6);
     }
     TEST_CASE("run") {
