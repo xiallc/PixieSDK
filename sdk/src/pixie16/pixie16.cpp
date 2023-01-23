@@ -179,7 +179,8 @@ PIXIE_EXPORT int PIXIE_API PixieGetHistogramLength(const unsigned short mod_num,
         crate.ready();
         xia::pixie::crate::module_handle module(crate, mod_num);
         module->channel_check(chan_num);
-        *hist_length = module->channels[chan_num].fixture->config.max_histogram_length;
+        *hist_length =
+            static_cast<unsigned int>(module->channels[chan_num].fixture->config.max_histogram_length);
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
         return e.return_code();
@@ -203,7 +204,8 @@ PIXIE_EXPORT int PIXIE_API PixieGetTraceLength(const unsigned short mod_num,
         crate.ready();
         xia::pixie::crate::module_handle module(crate, mod_num);
         module->channel_check(chan_num);
-        *trace_length = module->channels[chan_num].fixture->config.max_adc_trace_length;
+        *trace_length =
+            static_cast<unsigned int>(module->channels[chan_num].fixture->config.max_adc_trace_length);
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
         return e.return_code();
@@ -227,7 +229,8 @@ PIXIE_EXPORT int PIXIE_API PixieGetMaxNumBaselines(const unsigned short mod_num,
         crate.ready();
         xia::pixie::crate::module_handle module(crate, mod_num);
         module->channel_check(chan_num);
-        *max_num_baselines = module->channels[chan_num].fixture->config.max_num_baselines;
+        *max_num_baselines =
+            static_cast<unsigned int>(module->channels[chan_num].fixture->config.max_num_baselines);
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
         return e.return_code();
@@ -1044,7 +1047,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
                 << chan.fixture->config.max_histogram_length << ") for Module " << ModNum
                 << " Channel " << ChanNum
                 << ". Truncating to the maximum length and filling with max bin values.";
-            read_words = chan.fixture->config.max_histogram_length;
+            read_words =
+                static_cast<unsigned int>(chan.fixture->config.max_histogram_length);
 
             for (unsigned int i = read_words; i < NumWords; i++)
                 Histogram[i] = std::numeric_limits<unsigned int>::max();

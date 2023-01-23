@@ -640,13 +640,13 @@ static T get_value(const std::string& opt) {
     T value = 0;
     try {
         if (std::is_same<T, double>::value) {
-            value = std::stod(opt, nullptr);
+            value = T(std::stod(opt, nullptr));
         } else {
-            value = std::stoul(opt, nullptr, 0);
+            value = T(std::stoul(opt, nullptr, 0));
         }
-    } catch (std::invalid_argument& e) {
+    } catch (std::invalid_argument& ) {
         throw std::runtime_error("invalid number: " + opt);
-    } catch (std::out_of_range& e) {
+    } catch (std::out_of_range& ) {
         throw std::runtime_error("number out of range: " + opt);
     }
     return value;
@@ -1971,9 +1971,9 @@ static xia::pixie::hw::address get_address(
     bool number = true;
     try {
         address = std::stoul(reg, nullptr, 0);
-    } catch (std::invalid_argument& e) {
+    } catch (std::invalid_argument& ) {
         number = false;
-    } catch (std::out_of_range& e) {
+    } catch (std::out_of_range& ) {
         throw std::runtime_error(label + ": reg value of range: " + reg);
     }
     const auto& mems = hardware["memory"];

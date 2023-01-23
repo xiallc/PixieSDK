@@ -44,7 +44,7 @@ struct channel {
 
     int noise_bins;
     double noise_percent;
-    int number;
+    size_t number;
     int adc_bits;
 
     int runs;
@@ -52,7 +52,7 @@ struct channel {
 
     channel(int noise_bins = 30, double noise_percent = 0.5);
 
-    void start(int channel, int adc_bits);
+    void start(size_t number, int adc_bits);
     void end();
 
     void update(const hw::adc_trace& trace);

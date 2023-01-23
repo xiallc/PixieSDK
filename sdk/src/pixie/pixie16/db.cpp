@@ -398,6 +398,7 @@ void afe_dbs::adjust_offsets() {
     const int dac_bits = 16;
     const int dac_linear_fit_steps = 200;
     const int dac_linear_fit_samples = 2;
+    const int baseline_noise_bins = 30;
     const double baseline_noise_margin = 0.5; /* % */
     const int runs = 10;
 
@@ -432,7 +433,7 @@ void afe_dbs::adjust_offsets() {
     for (int run = 0; run_again && run < runs; ++run) {
         log(log::debug) << log_leader << "adjust-offsets: run=" << run;
         run_again = false;
-        baseline::channels baselines(baseline_noise_margin);
+        baseline::channels baselines(baseline_noise_bins, baseline_noise_margin);
         analyze_channel_baselines(module_, baselines, 1);
         for (size_t chan = 0; chan < module_.num_channels; ++chan) {
             auto& channel = module_.channels[chan];

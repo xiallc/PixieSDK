@@ -341,7 +341,7 @@ bool module::fifo_stats::calc_bandwidth(bool update_min_max) {
     auto period = interval.usecs();
     auto update_period = period - last_update;
     if (update_period >= bw_update_period) {
-        auto this_dma_in = dma_in.load();
+        size_t this_dma_in = dma_in.load();
         double delta = (this_dma_in - last_dma_in) * sizeof(hw::word);
         double bw = delta / update_period;
         bandwidth = bw;
@@ -2149,8 +2149,8 @@ void module::end_test() {
     log_stats("run", run_stats);
 }
 
-void module::set_bus_device_number(int device_number) {
-    device->device_number = device_number;
+void module::set_bus_device_number(size_t device_number) {
+    device->device_number = int(device_number);
 }
 
 void module::load_vars() {
@@ -2792,11 +2792,11 @@ void module::calc_io_cpld_bus_speed() {
 }
 
 void module::wait_usec_timed(size_t period) {
-  size_t loops = (period / i2c_read_period) + 1;
-  while (loops-- != 0) {
-    volatile uint32_t tmp = read_word(hw::device::PCF8574);
-    (void) tmp;
-  }
+    size_t loops = size_t((period / i2c_read_period)) + 1;
+    while (loops-- != 0) {
+        volatile uint32_t tmp = read_word(hw::device::PCF8574);
+        (void) tmp;
+    }
 }
 
 void module::log_stats(const char* label, const fifo_stats& stats) {

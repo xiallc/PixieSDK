@@ -29,7 +29,7 @@ namespace pixie {
 namespace baseline {
 
 channel::channel(int noise_bins_, double noise_percent_)
-    : noise_bins(noise_bins_),noise_percent(noise_percent_), number(-1),
+    : noise_bins(noise_bins_), noise_percent(noise_percent_), number(-1),
       adc_bits(0), runs(0), baseline(-1) {
     if (noise_bins > 500) {
         noise_bins = 500;
@@ -41,11 +41,11 @@ channel::channel(int noise_bins_, double noise_percent_)
     }
 }
 
-void channel::start(int number_, int adc_bits_) {
+void channel::start(size_t number_, int adc_bits_) {
     number = number_;
     adc_bits = adc_bits_;
     bins.clear();
-    bins.resize(1 << adc_bits);
+    bins.resize(bin_buckets::size_type(1) << adc_bits);
     runs = 0;
     baseline = -1;
 }
@@ -56,7 +56,7 @@ void channel::end() {
      * that voltage. Average a number of bins either side;
      */
     auto max = std::max_element(bins.begin() + noise_bins, bins.end() - noise_bins);
-    int max_bin = std::distance(bins.begin(), max);
+    int max_bin = int(std::distance(bins.begin(), max));
     int from_bin;
     int to_bin;
     if (bins[max_bin] != 0) {
@@ -64,12 +64,12 @@ void channel::end() {
         to_bin = std::min(max_bin + noise_bins, int(bins.size()));
     } else {
         auto max_top = std::max_element(bins.end() - noise_bins, bins.end());
-        int max_top_bin = std::distance(bins.begin(), max_top);
+        int max_top_bin = int(std::distance(bins.begin(), max_top));
         auto max_bottom = std::max_element(bins.begin(), bins.begin() + noise_bins);
-        int max_bottom_bin = std::distance(bins.begin(), max_bottom);
+        int max_bottom_bin = int(std::distance(bins.begin(), max_bottom));
         if (bins[max_top_bin] > bins[max_bottom_bin]) {
-            from_bin = bins.size() - noise_bins;
-            to_bin = bins.size();
+            from_bin = int(bins.size()) - noise_bins;
+            to_bin = int(bins.size());
         } else {
             from_bin = 0;
             to_bin = noise_bins;

@@ -160,7 +160,7 @@ struct backplane {
     /**
      * Initialize
      */
-    void init(const int num_modules);
+    void init(const size_t num_modules);
 
     /**
      * Reinitialize. Use a template as a container forward decal.

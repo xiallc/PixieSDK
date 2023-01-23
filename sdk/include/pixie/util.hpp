@@ -327,7 +327,7 @@ struct linear_fit {
     }
 
     T y(T x) {
-        return (k * x) + c;
+        return T((k * x) + c);
     }
 };
 
