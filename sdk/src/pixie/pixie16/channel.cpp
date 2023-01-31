@@ -875,6 +875,10 @@ void channel::integrator(double value) {
     ///@note This variable is disabled. Do we still need this functionality??
     module::module& mod = module.get();
 
+    if (value < 0) {
+        value = 0;
+    }
+
     if (value > 7) {
         value = 7;
     }

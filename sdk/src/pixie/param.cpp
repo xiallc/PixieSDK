@@ -313,7 +313,7 @@ static const channel_var_descs channel_var_descriptors_default = {
     {channel_var::GainDAC, disable, rw, 1, "GainDAC"},
     {channel_var::InSpecA, enable, ro, 1, "InSpecA"},
     {channel_var::InSpecB, enable, ro, 1, "InSpecB"},
-    {channel_var::Integrator, disable, rw, 1, "Integrator"},
+    {channel_var::Integrator, enable, rw, 1, "Integrator"},
     {channel_var::LiveTimeA, enable, ro, 1, "LiveTimeA"},
     {channel_var::LiveTimeB, enable, ro, 1, "LiveTimeB"},
     {channel_var::Log2Bweight, enable, rw, 1, "Log2Bweight"},
