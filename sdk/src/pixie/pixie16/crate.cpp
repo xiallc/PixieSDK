@@ -369,13 +369,17 @@ void crate::set_firmware() {
     for (auto& module : slots) {
         if (module->opened()) {
             for (auto& config : module->eeprom.configs) {
-                auto tag = firmware::tag(module->revision, config.adc_msps, config.adc_bits);
+                std::string tag = firmware::tag(module->revision, config.adc_msps, config.adc_bits);
                 auto mod_fw = firmware.find(tag);
                 if (mod_fw != firmware.end()) {
                     module->add(firmware[tag]);
                 } else {
-                    xia_log(log::warning) << module::module_label(*module)
-                                          << "crate: module firmware not found: " << tag;
+                    if (firmware::revision_tag_check(tag, module->revision, config, firmware)) {;
+                        module->add(firmware[tag]);
+                    } else {
+                        xia_log(log::warning) << module::module_label(*module)
+                                              << "crate: module firmware not found: " << tag;
+                    }
                 }
             }
             if (module->firmware.size() == 0) {

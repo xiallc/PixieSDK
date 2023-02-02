@@ -33,6 +33,14 @@
 #include <pixie/error.hpp>
 #include <pixie/util.hpp>
 
+#include <pixie/os_compat.hpp>
+
+#ifdef XIA_PIXIE_WINDOWS
+#include <isakbosman/dirent.h>
+#else
+#include <dirent.h>
+#endif
+
 namespace xia {
 namespace util {
 void dequote(std::string& s) {
@@ -475,6 +483,70 @@ const crc32::value_type crc32::table[256] = {
     0x47b2cf7fL, 0x30b5ffe9L, 0xbdbdf21cL, 0xcabac28aL, 0x53b39330L, 0x24b4a3a6L, 0xbad03605L,
     0xcdd70693L, 0x54de5729L, 0x23d967bfL, 0xb3667a2eL, 0xc4614ab8L, 0x5d681b02L, 0x2a6f2b94L,
     0xb40bbe37L, 0xc30c8ea1L, 0x5a05df1bL, 0x2d02ef8dUL};
+
+void find_files(
+    const std::string path, strings& files_, const std::string& ext, size_t depth) {
+    if (depth > 100) {
+        throw std::runtime_error("file find path too deep: " + path);
+    }
+    if (depth == 0) {
+        files_.clear();
+    }
+    DIR* dir = nullptr;
+    try {
+        dir = ::opendir(path.c_str());
+        if (dir == nullptr) {
+            throw std::runtime_error(
+              "file find path: " + path + ": " + std::strerror(errno));
+        }
+        while (true) {
+            struct dirent* ent = ::readdir(dir);
+            if (ent == nullptr) {
+                break;
+            }
+            std::string name = ent->d_name;
+            if (ent->d_type == DT_REG) {
+                if (name.size() > ext.size() && name.compare(
+                        name.size() - ext.size(), ext.size(), ext) == 0) {
+                    files_.push_back(path + '/' + name);
+                }
+            } else if (ent->d_type == DT_DIR && name != "." && name != "..") {
+                std::string child = path + '/' + name;
+                find_files(child, files_, ext, depth + 1);
+            }
+        }
+        ::closedir(dir);
+    } catch (...) {
+        if (dir != nullptr) {
+            ::closedir(dir);
+        }
+        throw;
+    }
+}
+
+const std::string basename(const std::string& name) {
+    size_t b = name.find_last_of('/');
+    if (b != std::string::npos) {
+        return name.substr(b + 1);
+    }
+    return name;
+};
+
+const std::string dirname(const std::string& name) {
+    size_t b = name.find_last_of('/');
+    if (b != std::string::npos) {
+        return name.substr(0, b);
+    }
+    return name;
+};
+
+const std::string extension(const std::string& name) {
+    size_t d = name.find_last_of('.');
+    if (d != std::string::npos) {
+        return name.substr(d + 1);
+    }
+    return name;
+}
 
 }  // namespace util
 }  // namespace xia

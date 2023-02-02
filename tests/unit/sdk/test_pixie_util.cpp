@@ -172,4 +172,16 @@ TEST_SUITE("xia::util") {
             CHECK(test_time_str == "1995-03-09T16-16-15.123Z");
         }
     }
+
+    TEST_CASE("extension") {
+        std::string test_good = "testfile.bin";
+        std::string test_bad = "testfile";
+        std::string test_end = "testfile.";
+        std::string ext_good = xia::util::extension(test_good);
+        std::string ext_bad = xia::util::extension(test_bad);
+        std::string ext_end = xia::util::extension(test_end);
+        CHECK(ext_good == "bin");
+        CHECK(ext_bad == "testfile");
+        CHECK(ext_bad == "testfile");
+    }
 }

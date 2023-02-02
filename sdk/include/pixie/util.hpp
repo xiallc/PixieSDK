@@ -351,6 +351,31 @@ struct linear_fit {
     }
 };
 
+/**
+ * @brief Look for a file at the given path and store the filename
+ *
+ * @param path The filepath as a string
+ * @param files A string vector to store filenames in
+ * @param ext The type of file extension as a string
+ * @param depth The depth at which the deepest file found is
+*/
+void find_files(const std::string path, strings& files_, const std::string& ext, size_t depth = 0);
+
+/**
+ * @brief Returns the base filename of a given filename string
+*/
+const std::string basename(const std::string& name);
+
+/**
+ * @brief Returns the directory tree of a given filename as a filepath string
+*/
+const std::string dirname(const std::string& name);
+
+/**
+ * @brief Returns the extension for the given filepath
+*/
+
+const std::string extension(const std::string& name);
 
 }  // namespace util
 }  // namespace xia

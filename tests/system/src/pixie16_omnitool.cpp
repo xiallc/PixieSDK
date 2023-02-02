@@ -45,14 +45,6 @@
 #include <args/args.hxx>
 #include <nolhmann/json.hpp>
 
-#if defined(_WIN64) || defined(_WIN32)
-#include <windows.h>
-#include <isakbosman/dirent.h>
-#else
-#include <dirent.h>
-#include <sys/types.h>
-#endif
-
 /*
  * Localize the log and error
  */
@@ -62,15 +54,6 @@ using error = xia::pixie::error::error;
  * JSON support
  */
 using json = nlohmann::json;
-
-/*
- * Operating system specific defaults
- */
-#if defined(_WIN64) || defined(_WIN32)
-constexpr const char* system_firmware_path = "c:/xia/pixie/firmware";
-#else
-constexpr const char* system_firmware_path = "/usr/local/xia/pixie/firmware";
-#endif
 
 /*
  * Process command line options
@@ -129,24 +112,6 @@ struct module_thread_worker {
         command_context& context,
         xia::pixie::module::module& module) = 0;
 };
-
-struct firmware {
-    std::string filename;
-    std::string date;
-    int version;
-    int mod_revision;
-    int mod_adc_msps;
-    int mod_adc_bits;
-    std::string device;
-
-    firmware(
-        const std::string& name, const std::string& dev,
-        const std::string& fname);
-
-    std::string spec() const;
-};
-
-using firmwares = std::vector<firmware>;
 
 /*
  * Commands.
@@ -339,6 +304,16 @@ static const command_definition export_cmd = {
     "Export a configuration to a JSON file"
 };
 
+command_handler_decl(fw_report);
+static const command_definition fw_report_cmd = {
+    "Crate", "/crate/firmware/report", fw_report,
+    {"init", "probe"},
+    1, 1, 0,
+    {},
+    "file",
+    "Report on the system's firmware"
+};
+
 command_handler_decl(import);
 static const command_definition import_cmd = {
     "Crate", "/crate/import", import,
@@ -363,8 +338,9 @@ static const command_definitions crate_commands = {
     boot_cmd,
     crate_cmd,
     export_cmd,
+    fw_report_cmd,
     import_cmd,
-    report_cmd
+    report_cmd,
 };
 
 command_handler_decl(adc_acq);
@@ -547,6 +523,16 @@ static const command_definition mod_online_cmd = {
     "Set a module online"
 };
 
+command_handler_decl(override_fw);
+static const command_definition override_fw_cmd = {
+    "Module", "/module/firmware/override", override_fw,
+    {"init", "probe"},
+    2, 2, 0,
+    {},
+    "module fwfile",
+    "Override a firmware file for a module"
+};
+
 command_handler_decl(par_read);
 static const command_definition par_read_cmd = {
     "Module", "/module/par-read", par_read,
@@ -686,6 +672,7 @@ static const command_definitions module_commands = {
     lset_report_cmd,
     mod_offline_cmd,
     mod_online_cmd,
+    override_fw_cmd,
     par_read_cmd,
     par_write_cmd,
     reg_read_cmd,
@@ -990,62 +977,6 @@ static void modules_option(
     }
 }
 
-static const std::string basename(const std::string& name) {
-    size_t b = name.find_last_of('/');
-    if (b != std::string::npos) {
-        return name.substr(b + 1);
-    }
-    return name;
-}
-
-static const std::string dirname(const std::string& name) {
-    size_t b = name.find_last_of('/');
-    if (b != std::string::npos) {
-        return name.substr(0, b);
-    }
-    return name;
-}
-
-static void find_files(
-    const std::string path, files& files_, const std::string& ext, size_t depth = 0) {
-    if (depth > 100) {
-        throw std::runtime_error("file find path too deep: " + path);
-    }
-    if (depth == 0) {
-        files_.clear();
-    }
-    DIR* dir = nullptr;
-    try {
-        dir = ::opendir(path.c_str());
-        if (dir == nullptr) {
-            throw std::runtime_error(
-              "file find path: " + path + ": " + std::strerror(errno));
-        }
-        while (true) {
-            struct dirent* ent = ::readdir(dir);
-            if (ent == nullptr) {
-                break;
-            }
-            std::string name = ent->d_name;
-            if (ent->d_type == DT_REG) {
-                if (name.size() > ext.size() && name.compare(
-                        name.size() - ext.size(), ext.size(), ext) == 0) {
-                    files_.push_back(path + '/' + name);
-                }
-            } else if (ent->d_type == DT_DIR && name != "." && name != "..") {
-                std::string child = path + '/' + name;
-                find_files(child, files_, ext, depth + 1);
-            }
-        }
-        ::closedir(dir);
-    } catch (...) {
-        if (dir != nullptr) {
-            ::closedir(dir);
-        }
-        throw;
-    }
-}
-
 process_options::process_options(std::ostream& out_)
     : num_modules(-1), reg_trace(false), verbose(false), out(out_) {}
 
@@ -1274,112 +1205,6 @@ void command_batch::report(std::ostream& out) {
     }
 }
 
-firmware::firmware(
-    const std::string& name, const std::string& dev, const std::string& fname) {
-    xia::util::strings ns;
-    xia::util::split(ns, name, '_');
-    if (ns.size() != 6) {
-        throw std::runtime_error("invalid firmware name: " + name);
-    }
-    filename = fname;
-    date = ns[5];
-    auto mr = ns[1][3];
-    if (mr >= 'a' && mr <= 'z') {
-        mr -= 'a' - 10;
-    }
-    version = std::atoi(ns[4].c_str());
-    mod_revision = int(mr);
-    auto b = ns[3].find_first_of('b');
-    mod_adc_msps = std::atoi(ns[3].substr(b + 1, ns[3].size() - b - 1).c_str());
-    mod_adc_bits = std::atoi(ns[3].substr(0, b).c_str());
-    device = dev;
-}
-
-std::string firmware::spec() const {
-    std::ostringstream oss;
-    oss << "version=" << version << ", "
-        << "revision=" << mod_revision << ", "
-        << "adc-msps=" << mod_adc_msps << ", "
-        << "adc-bits=" << mod_adc_bits << ", "
-        << "device=" << device << ", "
-        << "file=" << filename;
-    return oss.str();
-}
-
-static void find_firmwares(const std::string basepath, firmwares& fws) {
-    files files_;
-    find_files(basepath, files_, ".yaml");
-    for (auto& f : files_) {
-        std::string bname = basename(f);
-        std::string dir = dirname(f);
-        auto name = bname.substr(0, bname.size() - 5);
-        files rev_files;
-        find_files(dir, rev_files, ".ldr");
-        if (rev_files.size() != 1) {
-            throw std::runtime_error("fimrware has too many LDR files: " + name);
-        }
-        fws.emplace_back(name, "dsp", rev_files[0]);
-        find_files(dir, rev_files, ".var");
-        if (rev_files.size() != 1) {
-            throw std::runtime_error("fimrware has too many VAR files: " + name);
-        }
-        fws.emplace_back(name, "var", rev_files[0]);
-        find_files(dir, rev_files, ".bin");
-        if (rev_files.size() != 2) {
-            throw std::runtime_error("fimrware has too many BIN files: " + name);
-        }
-        for (auto bin : rev_files) {
-            if (bin.find("fip") != std::string::npos) {
-                fws.emplace_back(name, "fippi", bin);
-            } else if (bin.find("sys") != std::string::npos) {
-                fws.emplace_back(name, "sys", bin);
-            }
-        }
-    }
-}
-
-static void load_host_firmwares(
-    const std::string& basepath, xia::pixie::firmware::crate& fws) {
-    firmwares all;
-    firmwares latest;
-    find_firmwares(basepath, all);
-    /*
-     * Sort the firmwares found into the latest for each type of
-     * module.
-     */
-    for (auto& fw : all) {
-        auto mod_match = [&fw](auto& b) {
-            return
-                fw.device == b.device &&
-                fw.mod_revision == b.mod_revision &&
-                fw.mod_adc_msps == b.mod_adc_msps &&
-                fw.mod_adc_bits == b.mod_adc_bits;
-        };
-        auto lfi =
-            std::find_if(std::begin(latest), std::end(latest), mod_match);
-        if (lfi == std::end(latest)) {
-            latest.push_back(fw);
-        } else {
-            auto& lfw = *lfi;
-            bool swap = false;
-            if (lfw.date == fw.date) {
-                swap = lfw.version < fw.version;
-            } else {
-                swap = lfw.date < fw.date;
-            }
-            if (swap) {
-                *lfi = fw;
-            }
-        }
-    }
-    for (auto& lfw : latest) {
-        auto fw = xia::pixie::firmware::parse(lfw.spec(), ',');
-        if (!xia::pixie::firmware::check(fws, fw)) {
-            xia::pixie::firmware::add(fws, fw);
-        }
-    }
-}
-
 void load_crate_firmwares(
     const std::string& file, xia::pixie::firmware::crate& fws) {
     std::ifstream input(file, std::ios::in | std::ios::binary);
@@ -1419,7 +1244,7 @@ static void firmware_load(command_context& context) {
     for (auto& fwfile : opts.firmware_crate_files) {
         load_crate_firmwares(fwfile, crate->firmware);
     }
-    load_host_firmwares(opts.firmware_host_path, crate->firmware);
+    load_firmwares(crate->firmware, opts.firmware_host_path.c_str());
 }
 
 static void initialize(command_context& context) {
@@ -1926,6 +1751,21 @@ static void export_(command_context& context) {
     context.opts.out << "Modules export time=" << tp << std::endl;
 }
 
+static void fw_report(command_context& context) {
+    std::ostream* out= &std::cout;
+    std::ofstream output_file;
+    auto file_opt = context.cmd.get_arg();
+    if (!file_opt.empty()) {
+        output_file.open(file_opt);
+        if (!output_file) {
+            throw std::runtime_error(
+                std::string("opening report: " + file_opt + ": " + std::strerror(errno)));
+        }
+        out = &output_file;
+    }
+    xia::pixie::firmware::system_fw_report(*out, xia::pixie::firmware::system_firmware_path);
+}
+
 static void help(command_context& context) {
     auto long_opt = context.cmd.get_option("-l");
     context.opts.out << "Command help:" << std::endl
@@ -2272,6 +2112,20 @@ static void mod_online(command_context& context) {
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
         crate->set_online(crate[mod_num]);
+    }
+}
+
+static void override_fw(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
+    auto fwfile_opt = context.cmd.get_arg();
+    module_range mod_nums;
+    modules_option(mod_nums, mod_nums_opt, crate.num_modules);
+    if (mod_nums.size() > 1) {
+        throw std::runtime_error("override_report: too many modules");
+    }
+    for (auto mod_num : mod_nums) {
+        xia::pixie::firmware::override_default_fw(crate[mod_num].firmware, fwfile_opt);
     }
 }
 
@@ -3072,7 +2926,7 @@ int main(int argc, char* argv[]) {
         if (fw_host_path_flag) {
             process_opts.firmware_host_path = args::get(fw_host_path_flag);
         } else {
-            process_opts.firmware_host_path = system_firmware_path;
+            process_opts.firmware_host_path = xia::pixie::firmware::system_firmware_path;
         }
 
         command::arguments cmds;

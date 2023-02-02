@@ -98,6 +98,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
                                              const char* DSPVarFile, unsigned short ModNum,
                                              unsigned short BootPattern);
 
+PIXIE_EXPORT int PIXIE_API Pixie16BootModuleFirmware(const char* DSPParFile, unsigned short ModNum,
+                                                    unsigned short BootPattern);
+
 PIXIE_EXPORT int PIXIE_API Pixie16CheckExternalFIFOStatus(unsigned int* nFIFOWords,
                                                           unsigned short ModNum);
 
@@ -136,6 +139,10 @@ PIXIE_EXPORT int PIXIE_API Pixie16ExitSystem(unsigned short ModNum);
 
 PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned short* PXISlotMap,
                                              unsigned short OfflineMode);
+
+PIXIE_EXPORT int PIXIE_API Pixie16LoadModuleFirmware(const char* SearchPath);
+
+PIXIE_EXPORT int PIXIE_API Pixie16SetModuleFirmware(const char* FwFile, unsigned int ModNum, const char* Device);
 
 PIXIE_EXPORT int PIXIE_API Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO_Data,
                                                            unsigned int nFIFOWords,

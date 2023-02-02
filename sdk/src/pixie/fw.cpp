@@ -30,19 +30,22 @@
 #include <sstream>
 #include <utility>
 
+#include <nolhmann/json.hpp>
+
 #include <pixie/error.hpp>
 #include <pixie/fw.hpp>
 #include <pixie/log.hpp>
 #include <pixie/util.hpp>
 
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#if defined(_WIN64) || defined(_WIN32)
-#include <io.h>
+using json = nlohmann::json;
+
+#ifdef XIA_PIXIE_WINDOWS
+    #include <io.h>
 #else
-#include <unistd.h>
+    #include <unistd.h>
 #endif
 
 namespace xia {
@@ -51,7 +54,12 @@ namespace firmware {
 /*
  * Param errors
  */
-typedef pixie::error::error error;
+using error = pixie::error::error;
+
+/*
+ * Firmware files as filepaths
+ */
+using files = std::vector<std::string>;
 
 /*
  * Amount of memory being used.
@@ -144,7 +152,7 @@ void firmware::load() {
          */
         int fd = -1;
         try {
-#if defined(_WIN64) || defined(_WIN32)
+#ifdef XIA_PIXIE_WINDOWS
             fd = ::_open(filename.c_str(), O_RDONLY);
 #else
             fd = ::open(filename.c_str(), O_RDONLY);
@@ -161,7 +169,7 @@ void firmware::load() {
             }
             size_t size = size_t(sb.st_size);
             data.resize(size);
-#if defined(_WIN64) || defined(_WIN32)
+#ifdef XIA_PIXIE_WINDOWS
             r = ::_read(fd, data.data(), static_cast<unsigned int>(size));
 #else
             r = ::read(fd, data.data(), static_cast<unsigned int>(size));
@@ -171,7 +179,7 @@ void firmware::load() {
                 throw error(error::code::file_not_found,
                             "firmware: image read: " + tag + ": " + std::strerror(errno));
             }
-#if defined(_WIN64) || defined(_WIN32)
+#ifdef XIA_PIXIE_WINDOWS
             ::_close(fd);
 #else
             ::close(fd);
@@ -179,7 +187,7 @@ void firmware::load() {
             total_image_size += size;
         } catch (...) {
             if (fd >= 0) {
-#if defined(_WIN64) || defined(_WIN32)
+#ifdef XIA_PIXIE_WINDOWS
                 ::_close(fd);
 #else
                 ::close(fd);
@@ -231,7 +239,7 @@ void firmware::output(T& out) const {
     } else {
         out << "default";
     }
-    out << " size:" << data.size();
+    out << " size:" << data.size() << " file:" << filename;
 }
 
 std::string tag(const int revision, const int adc_msps, const int adc_bits) {
@@ -385,6 +393,223 @@ firmware parse(const std::string fw_desc, const char delimiter) {
     fw.filename = filename;
 
     return fw;
+}
+
+std::string system_firmware_path =
+#ifdef XIA_PIXIE_WINDOWS
+    "c:/xia/pixie-16/firmware";
+#else
+    "/usr/local/xia/pixie-16/firmware";
+#endif
+
+static void find_firmwares(const std::string basepath, descriptions& fws) {
+    files files_;
+    xia::util::find_files(basepath, files_, ".json");
+    for (auto& f : files_) {
+        std::string bname = xia::util::basename(f);
+        std::string dir = xia::util::dirname(f);
+        files rev_files;
+        xia::util::find_files(dir, rev_files, ".ldr");
+        if (rev_files.size() != 1) {
+            throw std::runtime_error("fimrware has more than one LDR file: " + bname);
+        }
+        fws.emplace_back(f, "dsp", rev_files.front());
+        xia::util::find_files(dir, rev_files, ".var");
+        if (rev_files.size() != 1) {
+            throw std::runtime_error("fimrware has more than one VAR file: " + bname);
+        }
+        fws.emplace_back(f, "var", rev_files.front());
+        xia::util::find_files(dir, rev_files, ".bin");
+        if (rev_files.size() != 2) {
+            throw std::runtime_error("fimrware has more than two BIN files: " + bname);
+        }
+        for (auto bin : rev_files) {
+            if (bin.find("fip") != std::string::npos) {
+                fws.emplace_back(f, "fippi", bin);
+            } else if (bin.find("sys") != std::string::npos) {
+                fws.emplace_back(f, "sys", bin);
+            }
+        }
+    }
+}
+
+description::description() {
+    filename = "filename";
+    date = "date";
+    version = 0;
+    mod_revision = 0;
+    mod_adc_msps = 0;
+    mod_adc_bits = 0;
+    device = "device";
+    crc32 = "crc32";
+}
+
+description::description(const std::string& name, const std::string& dev, const std::string& fname) {
+    try {
+        std::ifstream input(name, std::ios::in);
+        json jf = json::parse(input);
+        filename = fname;
+        date = jf["date"];
+
+        std::string v = jf["files"][dev]["version"];
+        version = std::stoi(v);
+
+        std::string mtag = jf["module_tag"];
+        auto d = mtag.find_first_of('-');
+        mod_revision = std::stoi(mtag.substr(0, d));
+
+        auto end_tag = mtag.substr(d + 1, mtag.size() - d - 1);
+        d = end_tag.find_first_of('-');
+        mod_adc_msps = std::stoi(end_tag.substr(0, d));
+        mod_adc_bits = std::stoi(end_tag.substr(d + 1, end_tag.size() - d - 1));
+
+        device = dev;
+        crc32 = jf["files"][dev]["crc32"];
+    } catch (json::exception& e) {
+        std::string what = e.what();
+        throw error(error::code::config_json_error, "parse firmware file: " + what);
+    } catch (...) {
+        throw error(error::code::config_json_error, "invalid firmware spec file");
+    }
+}
+
+std::string description::spec() {
+    std::ostringstream oss;
+    oss << "version=" << version << ", "
+        << "revision=" << mod_revision << ", "
+        << "adc-msps=" << mod_adc_msps << ", "
+        << "adc-bits=" << mod_adc_bits << ", "
+        << "device=" << device << ", "
+        << "file=" << filename;
+    return oss.str();
+}
+
+bool revision_tag_check(std::string& m_tag, int revision, hw::config& config, crate& firmwares) {
+    if (revision > hw::rev_A && revision < hw::rev_E) {
+        for (int rev = hw::rev_D; rev > hw::rev_A; rev--) {
+            /*
+             * There was already no firmware found for the given revision if this
+             * function was called, so it can be skipped in the search.
+             */
+            if (rev == revision) {
+                continue;
+            }
+            auto fw_tag = tag(rev, config.adc_msps, config.adc_bits);
+            auto mod_fw = firmwares.find(fw_tag);
+            if (mod_fw != firmwares.end()) {
+                m_tag = fw_tag;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/*
+ * A version of revision tag check for during the loading of firmware.
+ * Since Rev B, Rev C, and Rev D can have interchangeable firmware, this
+ * check accounts for a module having firmware with a different revision.
+ */
+static bool revision_tag_check(description& fw_a, description& fw_b) {
+    if (fw_a.mod_revision > hw::rev_A && fw_a.mod_revision < hw::rev_E) {
+        if (fw_b.mod_revision > hw::rev_A && fw_b.mod_revision < hw::rev_E) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void load_firmwares(
+    crate& firmwares, std::string basepath) {
+    descriptions all;
+    descriptions latest;
+    if (basepath.empty()) {
+        basepath = system_firmware_path;
+    }
+    find_firmwares(basepath, all);
+    /*
+     * Sort the firmwares found into the latest for each type of
+     * module.
+     */
+    for (auto& fw : all) {
+        auto mod_match = [&fw](auto& b) {
+            return
+                fw.device == b.device &&
+                ((fw.mod_revision == b.mod_revision) ||
+                revision_tag_check(fw, b)) &&
+                fw.mod_adc_msps == b.mod_adc_msps &&
+                fw.mod_adc_bits == b.mod_adc_bits;
+        };
+        auto lfi =
+            std::find_if(std::begin(latest), std::end(latest), mod_match);
+        if (lfi == std::end(latest)) {
+            latest.push_back(fw);
+        } else {
+            auto& lfw = *lfi;
+            bool swap = false;
+            /*
+             * Swaps out the latest firmware for the module type if the firmware
+             * being checked is newer.
+             */
+            if (lfw.date == fw.date) {
+                swap = lfw.version < fw.version;
+            } else {
+                swap = lfw.date < fw.date;
+            }
+            if (swap) {
+                *lfi = fw;
+            }
+        }
+    }
+    for (auto& lfw : latest) {
+        auto fw = parse(lfw.spec(), ',');
+        if (!check(firmwares, fw)) {
+            add(firmwares, fw);
+        }
+    }
+}
+
+void system_fw_report(std::ostream& out, std::string basepath) {
+    descriptions all;
+    find_firmwares(basepath, all);
+    json json_out = json::array();
+
+    for (auto& fw : all) {
+        json fw_info;
+        fw_info["version"] = fw.version;
+        fw_info["revision"] = fw.mod_revision;
+        fw_info["adc-msps"] = fw.mod_adc_msps;
+        fw_info["adc-bits"] = fw.mod_adc_bits;
+        fw_info["device"] = fw.device;
+        fw_info["file"] = fw.filename;
+        fw_info["crc32"] = fw.crc32;
+        json_out.push_back(fw_info);
+    }
+    out << json_out;
+}
+
+bool override_default_fw(module& firmwares, const std::string& filepath, std::string device) {
+    if (device.empty()) {
+        auto ext = xia::util::extension(filepath);
+        if (ext == "ldr") {
+            device = "dsp";
+        } else if (ext == "bin") {
+            if (filepath.find("fip") != std::string::npos) {
+                device = "fippi";
+            } else if (filepath.find("sys") != std::string::npos) {
+                device = "sys";
+            }
+        } else {
+            device = ext;
+        }
+    }
+    for (auto& fw : firmwares) {
+        if (fw->device == device) {
+            fw->filename = filepath;
+            return true;
+        }
+    }
+    return false;
 }
 };  // namespace firmware
 };  // namespace pixie

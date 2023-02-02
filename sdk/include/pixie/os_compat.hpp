@@ -25,6 +25,7 @@
 
 #if defined(_WIN64) || defined(_WIN32)
 #define _USE_MATH_DEFINES
+#define XIA_PIXIE_WINDOWS
 
 #ifndef NOMINMAX
 #define NOMINMAX

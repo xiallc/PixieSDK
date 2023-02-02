@@ -27,6 +27,7 @@
 
 #include <pixie/config.hpp>
 #include <pixie/error.hpp>
+#include <pixie/fw.hpp>
 #include <pixie/log.hpp>
 #include <pixie/os_compat.hpp>
 #include <pixie/stats.hpp>
@@ -488,6 +489,25 @@ static void PixieBootModule(xia::pixie::module::module& module, const char* ComF
         load_settings_file(module, DSPParFile);
     }
 
+    module.sync_hw(pattern.test(BOOTPATTERN_PROGFIPPI_BIT), pattern.test(BOOTPATTERN_SETDACS_BIT));
+}
+
+static void PixieBootModule(xia::pixie::module::module& module,
+                            const char* DSPParFile, unsigned short BootPattern) {
+    crate->set_firmware();
+    xia::pixie::firmware::load(crate->firmware);
+
+    const auto num_bits = std::numeric_limits<unsigned short>::digits;
+    auto pattern = std::bitset<num_bits>(BootPattern);
+
+    module.probe();
+    module.boot(pattern.test(BOOTPATTERN_COMFPGA_BIT), pattern.test(BOOTPATTERN_SPFPGA_BIT),
+                pattern.test(BOOTPATTERN_DSPCODE_BIT));
+
+    if (pattern.test(BOOTPATTERN_DSPPAR_BIT)) {
+        load_settings_file(module, DSPParFile);
+    }
+
     module.sync_hw(
       pattern.test(BOOTPATTERN_PROGFIPPI_BIT), pattern.test(BOOTPATTERN_SETDACS_BIT));
 
@@ -541,6 +561,49 @@ PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
         } else {
             PixieBootModule(crate.modules[ModNum], ComFPGAConfigFile, SPFPGAConfigFile,
                             DSPCodeFile, DSPParFile, DSPVarFile, BootPattern);
+        }
+    } catch (xia_error& e) {
+        xia_log(xia::log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (std::exception& e) {
+        xia_log(xia::log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::return_code_unknown_error();
+    } catch (...) {
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+
+    return 0;
+}
+
+PIXIE_EXPORT int PIXIE_API Pixie16BootModuleFirmware(const char* DSPParFile, unsigned short ModNum,
+                                             unsigned short BootPattern) {
+    xia_log(xia::log::info) << "Pixie16BootModule: ModNum=" << ModNum << std::hex
+                            << " BootPattern=0x" << BootPattern;
+    xia_log(xia::log::info) << "Pixie16BootModule: ModNum=" << ModNum
+                            << " DSPParFile=" << DSPParFile;
+
+    const unsigned short device_boot_mask = (1 << BOOTPATTERN_COMFPGA_BIT) |
+                                            (1 << BOOTPATTERN_SPFPGA_BIT) |
+                                            (1 << BOOTPATTERN_DSPCODE_BIT);
+    const unsigned short devices_boot = BootPattern & device_boot_mask;
+
+    if (devices_boot != 0 && devices_boot != device_boot_mask) {
+        xia_log(xia::log::error) << "invalid value: must boot COMM, FPGA and DSP together";
+        return xia::pixie::error::return_code(
+            xia::pixie::error::api_result(xia_error::code::invalid_value));
+    }
+
+    try {
+        if (ModNum == crate.modules.num_modules) {
+            for (size_t mod_num = 0; mod_num < crate.modules.num_modules; ++mod_num) {
+                PixieBootModule(crate.modules[mod_num], DSPParFile, BootPattern);
+            }
+        } else {
+            PixieBootModule(crate.modules[ModNum], DSPParFile, BootPattern);
         }
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
@@ -1048,6 +1111,57 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(
             crate->shutdown();
         } catch (...) {
         }
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+
+    return 0;
+}
+
+PIXIE_EXPORT int PIXIE_API Pixie16LoadModuleFirmware(const char* SearchPath) {
+    try {
+        crate->ready();
+        xia::pixie::firmware::load_firmwares(crate->firmware, SearchPath);
+        crate->set_firmware();
+    } catch (xia_error& e) {
+        xia_log(xia::log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (std::exception& e) {
+        xia_log(xia::log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::return_code_unknown_error();
+    } catch (...) {
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+    return 0;
+}
+
+PIXIE_EXPORT int PIXIE_API Pixie16SetModuleFirmware(const char* FwFile, unsigned int ModSlot, const char* Device) {
+    try {
+        crate->ready();
+        xia::pixie::module::module_ptr module = crate->find(ModSlot);
+        if (!xia::pixie::firmware::override_default_fw(module->firmware, FwFile, Device)) {
+            using firmware = xia::pixie::firmware::firmware;
+            using hw_config = xia::pixie::hw::config;
+            hw_config config = module->eeprom.configs[0];
+            firmware fw("n/a", module->revision, config.adc_msps, config.adc_bits, Device);
+            fw.filename = FwFile;
+            fw.slot.push_back(ModSlot);
+            xia::pixie::firmware::add(crate->firmware, fw);
+        };
+    } catch (xia_error& e) {
+        xia_log(xia::log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (std::exception& e) {
+        xia_log(xia::log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::return_code_unknown_error();
+    } catch (...) {
         xia_log(xia::log::error) << "unknown error: unhandled exception";
         return xia::pixie::error::return_code_unknown_error();
     }

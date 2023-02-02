@@ -39,6 +39,7 @@ namespace pixie {
  * @brief Collects all the firmware related information.
  */
 namespace firmware {
+
 /**
  * @brief The image. We keep this as bytes because it makes using it simpler.
  */
@@ -315,6 +316,72 @@ void clear(module& fw);
  * @return The firmware object created with the parsed data.
  */
 firmware parse(const std::string fw_desc, const char delimiter = ':');
+
+/**
+ * @brief The default path for the location of firmware in the user's filesystem
+ */
+extern std::string system_firmware_path;
+
+/**
+ * @brief Data structure holding the information of a firmware file from the filesystem
+ */
+struct description {
+    std::string filename;
+    std::string date;
+    int version;
+    int mod_revision;
+    int mod_adc_msps;
+    int mod_adc_bits;
+    std::string device;
+    std::string crc32; /* Reserved; not used */
+
+    description();
+    description(
+        const std::string& name, const std::string& dev,
+        const std::string& fname);
+
+    std::string spec();
+};
+
+using descriptions = std::vector<description>;
+
+/**
+ * @brief Rev B, Rev C, and Rev D firmwares are interchangeable, so this
+ *        checks for existing firmware against each of those revisions
+ * 
+ * @param revision The module's revision
+ * @param config The module's config
+ * @param firmwares The crate's firmware
+ * @return The tag of a matching firmware if one exists, else "false"
+*/
+bool revision_tag_check(std::string& m_tag, int revision, hw::config& config, crate& firmwares);
+
+/**
+ * @brief Load firmwares found containing the given basepath onto the crate
+ *
+ * @param basepath The string to search for in the firmware filepaths.
+ *                  Default = system_firmware_path
+ * @param firmwares The crate firmware to load the found firmware onto
+*/
+void load_firmwares(crate& firmwares, std::string basepath = system_firmware_path);
+
+/**
+ * @brief Get a report of all the firmware files in the system
+ * 
+ * @param out Where to output the firmware report
+ * @param basepath The filepath to collect the system firmware files from
+*/
+void system_fw_report(std::ostream& out, std::string basepath);
+
+/**
+ * @brief Set/override one of the default firmware files in a module
+ * 
+ * @param firmwares The module firmware we want to set/override
+ * @param filepath The filepath of the new firmware file
+ * @param device The type of the device of the firmware file. The filepath will be parsed
+ *               to find the device if not provided
+*/
+bool override_default_fw(module& firmwares, const std::string& filepath, std::string device = "");
 }  // namespace firmware
 }  // namespace pixie
 }  // namespace xia
