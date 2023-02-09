@@ -105,9 +105,8 @@ struct configuration {
     }
 };
 
-std::string generate_filename(const unsigned int& module_number, const std::string& type,
-                              const std::string& ext, std::string dir) {
-    return dir + "pixie16api-module" + std::to_string(module_number) + "-" + type + "." + ext;
+std::string generate_filename(const std::string& type, const std::string& ext, const std::string& dir) {
+    return dir + "pixie16api-" + type + "." + ext;
 }
 
 void verify_json_module(const nlohmann::json& mod) {
@@ -234,45 +233,50 @@ bool verify_api_return_value(const int& val, const std::string& func_name,
     return true;
 }
 
-bool output_statistics_data(const mod_cfg& mod, const std::string& type, std::string dir) {
+std::string generate_hardware_statistics_header() {
+    return "time,run,module,channel,real_time,live_time,input_counts,input_count_rate,output_counts,output_count_rate";
+}
 
-    std::cout << LOG("INFO") << "Requesting run statistics from module." << std::endl;
+bool output_statistics_data(std::ofstream& stream, const mod_cfg& mod, const unsigned int run_num, const bool& final_stats) {
+    if (final_stats) {
+        std::cout << LOG("INFO") << "Requesting run statistics from module." << std::endl;
+    }
     std::vector<unsigned int> stats(Pixie16GetStatisticsSize(), 0);
     if (!verify_api_return_value(Pixie16ReadStatisticsFromModule(stats.data(), mod.number),
                                  "Pixie16ReadStatisticsFromModule", false))
         return false;
 
-    std::ofstream csv_output(generate_filename(mod.number, type, "csv", dir), std::ios::out);
-    csv_output
-        << "channel,real_time,live_time,input_counts,input_count_rate,output_counts,output_count_rate"
-        << std::endl;
     auto real_time = Pixie16ComputeRealTime(stats.data(), mod.number);
-
-    std::cout << LOG("INFO") << "Begin Statistics for Module " << mod.number << std::endl;
+    nlohmann::json json_stats;
+    if (final_stats) {
+        std::cout << LOG("INFO") << "Begin Statistics for Module " << mod.number << std::endl;
+    }
     for (unsigned int chan = 0; chan < mod.number_of_channels; chan++) {
         auto live_time = Pixie16ComputeLiveTime(stats.data(), mod.number, chan);
         auto icr = Pixie16ComputeInputCountRate(stats.data(), mod.number, chan);
         auto ocr = Pixie16ComputeOutputCountRate(stats.data(), mod.number, chan);
-
-        nlohmann::json json_stats = {
-            {"module", mod.number},   {"channel", chan}, {"real_time", real_time},
-            {"live_time", live_time}, {"icr", icr},      {"ocr", ocr},
-        };
-
         auto ic = Pixie16ComputeRawInputCount(stats.data(), mod.number, chan);
         auto oc = Pixie16ComputeRawOutputCount(stats.data(), mod.number, chan);
 
-        json_stats["raw_input_count"] = ic;
-        json_stats["raw_output_count"] = oc;
+        if (final_stats) {
+            json_stats = {
+                {"run_number", run_num}, {"module", mod.number},   {"channel", chan},
+                {"real_time", real_time}, {"live_time", live_time}, {"icr", icr}, {"ocr", ocr},
+                {"input_counts", ic}, {"output_counts", oc}
+            };
+        }
 
-        csv_output << std::fixed << std::setprecision(12) << chan << "," << real_time << "," << live_time << "," << ic << ","
+        stream << walltime_iso_string() << "," << run_num << "," << mod.number << "," << chan << ","
+               << std::fixed << std::setprecision(12) << real_time << "," << live_time << "," << ic << ","
                    << icr << "," << oc << "," << ocr << std::endl;
 
-        std::cout << LOG("INFO") << json_stats << std::endl;
+        if (final_stats) {
+            std::cout << LOG("INFO") << json_stats << std::endl;
+        }
     }
-
-    std::cout << LOG("INFO") << "End Statistics for Module " << mod.number << std::endl;
-    csv_output.close();
+    if (final_stats) {
+        std::cout << LOG("INFO") << "End Statistics for Module " << mod.number << std::endl;
+    }
     return true;
 }
 
@@ -357,7 +361,8 @@ bool execute_baseline_capture(const mod_cfg& mod, std::string dir) {
         timestamps.push_back(timestamp);
     }
 
-    std::ofstream ofstream1(generate_filename(mod.number, "baselines", "csv", dir));
+    std::ofstream ofstream1(generate_filename("module" + std::to_string(mod.number) + "-baselines",
+                                              "csv", dir));
     ofstream1 << "bin,timestamp,";
     for (unsigned int i = 0; i < mod.number_of_channels; i++) {
         if (i != static_cast<unsigned int>(mod.number_of_channels - 1))
@@ -377,6 +382,8 @@ bool execute_baseline_capture(const mod_cfg& mod, std::string dir) {
         }
         ofstream1 << std::endl;
     }
+
+    ofstream1.close();
     return true;
 }
 
@@ -437,12 +444,16 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
 
     std::vector<std::ofstream*> record_streams(cfg.num_modules());
     std::vector<std::ofstream*> fifo_stat_streams(cfg.num_modules());
+
+    std::ofstream hw_stats_output(generate_filename("list-mode-hw-stats", "csv", dir), std::ios::out);
+    hw_stats_output << generate_hardware_statistics_header() << std::endl;
+
     for (unsigned short i = 0; i < cfg.num_modules(); i++) {
         record_streams[i] = new std::ofstream(
-            generate_filename(i, "list-mode-run" + std::to_string(run_num) + "-recs", "bin", dir),
+            generate_filename("list-mode-module" + std::to_string(i) + "-run" + std::to_string(run_num) + "-recs", "bin", dir),
             std::ios::out | std::ios::binary);
         fifo_stat_streams[i] = new std::ofstream(
-            generate_filename(i, "list-mode-run" + std::to_string(run_num) + "-fifo-stats",
+            generate_filename("list-mode-module" + std::to_string(i) + "-run" + std::to_string(run_num) + "-fifo-stats",
                               "jsonl", dir),
             std::ios::out);
     }
@@ -498,14 +509,11 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
                 std::cout << LOG("INFO") << "Module " << mod_num << " FIFO has " << num_fifo_words
                           << " words." << std::endl;
                 /*
-                     * NOTE: The PixieSDK now uses threaded list-mode FIFO workers that live on the host machine. These
-                     * workers perform execute in parallel. They'll read the data from each module as needed to
-                     * ensure that the EXTERNAL_FIFO_LENGTH isn't exceeded. When calling
-                     * `Pixie16CheckExternalFIFOStatus`, you're actually checking the status of the FIFO workers for
-                     * that module.
-                     *
-                     * We've gated the reads in this example using one-second intervals, but you don't have to.
-                     */
+                 * NOTE: The PixieSDK now uses threaded list-mode FIFO workers that live on the host machine. These
+                 * workers execute in parallel. They'll read the data from each module as needed to
+                 * ensure that the EXTERNAL_FIFO_LENGTH isn't exceeded. When calling
+                 * `Pixie16CheckExternalFIFOStatus`, you're actually checking the status of the worker's data buffer.
+                 */
                 if (num_fifo_words > 0) {
                     std::vector<uint32_t> data(num_fifo_words, 0xDEADBEEF);
                     if (!verify_api_return_value(
@@ -518,12 +526,15 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
 
                 /*
                  * The PixieSDK tracks list-mode data statistics. It keeps track of
-                 * how much data goes into the FIFO and how much data gets read out. We print
+                 * how much data goes into the FIFO and how much data gets read out.
                  */
                 if (!verify_api_return_value(PixieReadRunFifoStats(mod_num, &fifo_stats),
                                              "PixieReadRunFifoStats", false))
                     return false;
                 *fifo_stat_streams[mod_num] << fifo_stats_to_json(fifo_stats) << std::endl;
+
+                if (!output_statistics_data(hw_stats_output, cfg.modules[mod_num], run_num, false))
+                    return false;
             } else {
                 std::cout << LOG("INFO") << "Module " << mod_num << " has no active run!"
                           << std::endl;
@@ -577,13 +588,11 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
             *fifo_stat_streams[mod_num] << fifo_stats_to_json(fifo_stats) << std::endl;
         }
 
-        if (!output_statistics_data(cfg.modules[mod_num],
-                                    "list-mode-run" + std::to_string(run_num) + "-hw-stats", dir)) {
+        if (!output_statistics_data(hw_stats_output, cfg.modules[mod_num], run_num, true))
             return false;
-        }
 
         std::string name =
-            generate_filename(mod_num, "list-mode-run" + std::to_string(run_num) + "-mca", "csv", dir);
+            generate_filename("list-mode-module" + std::to_string(mod_num) + "-run" + std::to_string(run_num) + "-mca", "csv", dir);
         export_mca_memory(cfg.modules[mod_num], name);
     }
 
@@ -593,6 +602,7 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
     for (auto& stream : fifo_stat_streams)
         stream->close();
 
+    hw_stats_output.close();
     return true;
 }
 
@@ -676,16 +686,17 @@ bool execute_mca_run(unsigned int run_num, const configuration& cfg,
         std::cout << LOG("INFO") << "MCA Run finished!" << std::endl;
     }
 
+    std::ofstream hw_stats_output(generate_filename("mca-run-hw-stats", "csv", dir), std::ios::out);
+    hw_stats_output << generate_hardware_statistics_header() << std::endl;
+
     for (unsigned short i = 0; i < cfg.num_modules(); i++) {
-        std::string name = generate_filename(i, "mca-run" + std::to_string(run_num), "csv", dir);
+        std::string name = generate_filename("module" + std::to_string(i) + "-mca-run" + std::to_string(run_num), "csv", dir);
         export_mca_memory(cfg.modules[i], name);
 
-        if (!output_statistics_data(cfg.modules[i],
-                                    "mca-run" + std::to_string(run_num) + "-stats", dir)) {
+        if (!output_statistics_data(hw_stats_output, cfg.modules[i], run_num, true))
             return false;
-        }
     }
-
+    hw_stats_output.close();
     return true;
 }
 
@@ -768,7 +779,7 @@ bool execute_trace_capture(const mod_cfg& mod, std::string dir) {
     if (!verify_api_return_value(Pixie16AcquireADCTrace(mod.number), "Pixie16AcquireADCTrace"))
         return false;
 
-    std::ofstream ofstream1(generate_filename(mod.number, "adc", "csv", dir));
+    std::ofstream ofstream1(generate_filename("module" + std::to_string(mod.number) + "-adc", "csv", dir));
     ofstream1 << "bin,";
 
     unsigned int max_trace_length = 0;
@@ -808,6 +819,7 @@ bool execute_trace_capture(const mod_cfg& mod, std::string dir) {
         }
         ofstream1 << std::endl;
     }
+    ofstream1.close();
     return true;
 }
 
@@ -1298,7 +1310,7 @@ int main(int argc, char** argv) {
 
     if (mca_export) {
         for (const auto& mod : cfg.modules) {
-            std::string name = generate_filename(mod.number, "mca-export", "csv", dir);
+            std::string name = generate_filename("module" + std::to_string(mod.number) + "-mca-export", "csv", dir);
             export_mca_memory(mod, name);
         }
     }
