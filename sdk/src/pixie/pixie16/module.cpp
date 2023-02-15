@@ -744,6 +744,12 @@ void module::open(size_t device_number) {
 void module::close() {
     lock_guard guard(lock_);
 
+    if (online()) {
+        if (run_active()) {
+            run_end();
+        }
+    }
+
     if (device && device->device_number >= 0) {
         PLX_STATUS ps_dma;
         PLX_STATUS ps_unmap_bar = PLX_STATUS_OK;
