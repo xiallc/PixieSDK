@@ -1619,9 +1619,6 @@ PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file,
             xia::pixie::module::number_slots loaded_slots;
             crate.import_config(settings_file, loaded_slots);
             crate.initialize_afe();
-            for (auto module : crate.modules) {
-                std::cout << module->slot << " " << module->read("TRACE_DELAY", 0) << " " << module->read("TRACE_LENGTH", 0) << std::endl;
-            }
         }
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
