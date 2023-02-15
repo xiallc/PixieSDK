@@ -34,6 +34,9 @@ backplane::role::role(const std::string& label_) : label(label_), leader(-1) {}
 bool backplane::role::request(const module::module& mod) {
     int expected = released;
     int desired = mod.number;
+    if (leader == desired) {
+        return true;
+    }
     const bool requested = leader.compare_exchange_strong(
         expected, desired, std::memory_order_release, std::memory_order_relaxed);
     if (requested) {
