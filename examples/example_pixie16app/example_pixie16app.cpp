@@ -49,21 +49,23 @@
 #include <sys/stat.h>
 #endif
 
+std::string walltime_iso_string() {
+    std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+    std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
+    std::chrono::milliseconds now2 =
+        std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
+    char timeBuffer[80];
+    std::strftime(timeBuffer, 80, "%FT%T", gmtime(&currentTime));
+
+    std::stringstream tmp;
+    tmp << timeBuffer << "." << std::setfill('0') << std::setw(3) << now2.count() % 1000 << "Z";
+    return tmp.str();
+}
+
 struct LOG {
     explicit LOG(const std::string& type) {
         type_ = type;
-
-        std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-        std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
-        std::chrono::milliseconds now2 =
-            std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch());
-        char timeBuffer[80];
-        std::strftime(timeBuffer, 80, "%FT%T", gmtime(&currentTime));
-
-        std::stringstream tmp;
-        tmp << timeBuffer << "." << std::setfill('0') << std::setw(3) << now2.count() % 1000 << "Z";
-
-        datetime_ = tmp.str();
+        datetime_ = walltime_iso_string();
     }
 
     friend std::ostream& operator<<(std::ostream& os, const LOG& log) {
@@ -110,9 +112,8 @@ struct configuration {
     }
 };
 
-std::string generate_filename(const unsigned int& module_number, const std::string& type,
-                              const std::string& ext, std::string dir) {
-    return dir + "pixie16app-module" + std::to_string(module_number) + "-" + type + "." + ext;
+std::string generate_filename(const std::string& type, const std::string& ext, const std::string& dir) {
+    return dir + "pixie16app-" + type + "." + ext;
 }
 
 void verify_json_module(const nlohmann::json& mod) {
@@ -197,33 +198,47 @@ bool verify_api_return_value(const int& val, const std::string& func_name,
     return true;
 }
 
-bool output_statistics_data(const module_config& mod, const std::string& type, std::string dir) {
+std::string generate_hardware_statistics_header() {
+    return "time,run,module,channel,real_time,live_time,input_count_rate,output_count_rate";
+}
+
+bool output_statistics_data(std::ofstream& stream, const module_config& mod, const unsigned int run_num, const bool& final_stats) {
+    if (final_stats) {
+        std::cout << LOG("INFO") << "Requesting run statistics from module." << std::endl;
+    }
     std::vector<unsigned int> stats(N_DSP_PAR - DSP_IO_BORDER, 0);
     if (!verify_api_return_value(Pixie16ReadStatisticsFromModule(stats.data(), mod.number),
                                  "Pixie16ReadStatisticsFromModule", false))
         return false;
 
-    std::ofstream csv_output(generate_filename(mod.number, type, "csv", dir), std::ios::out);
-    csv_output << "channel,real_time,live_time,input_count_rate,output_count_rate" << std::endl;
     auto real_time = Pixie16ComputeRealTime(stats.data(), mod.number);
-
-    std::cout << LOG("INFO") << "Begin Statistics for Module " << mod.number << std::endl;
+    nlohmann::json json_stats;
+    if (final_stats) {
+        std::cout << LOG("INFO") << "Begin Statistics for Module " << mod.number << std::endl;
+    }
     for (unsigned int chan = 0; chan < mod.number_of_channels; chan++) {
         auto live_time = Pixie16ComputeLiveTime(stats.data(), mod.number, chan);
         auto icr = Pixie16ComputeInputCountRate(stats.data(), mod.number, chan);
         auto ocr = Pixie16ComputeOutputCountRate(stats.data(), mod.number, chan);
 
-        nlohmann::json json_stats = {
-            {"module", mod.number},   {"channel", chan}, {"real_time", real_time},
-            {"live_time", live_time}, {"icr", icr},      {"ocr", ocr},
-        };
+        if (final_stats) {
+            json_stats = {
+                {"run_number", run_num}, {"module", mod.number},   {"channel", chan},
+                {"real_time", real_time}, {"live_time", live_time}, {"icr", icr}, {"ocr", ocr}
+            };
+        }
 
-        csv_output << std::fixed << std::setprecision(12) << chan << "," << real_time << "," << live_time << "," << icr << "," << ocr << std::endl;
-        std::cout << LOG("INFO") << json_stats << std::endl;
+        stream << walltime_iso_string() << "," << run_num << "," << mod.number << "," << chan << ","
+               << std::fixed << std::setprecision(12) << real_time << "," << live_time << ","
+               << icr << "," << ocr << std::endl;
+
+        if (final_stats) {
+            std::cout << LOG("INFO") << json_stats << std::endl;
+        }
     }
-
-    std::cout << LOG("INFO") << "End Statistics for Module " << mod.number << std::endl;
-    csv_output.close();
+    if (final_stats) {
+        std::cout << LOG("INFO") << "End Statistics for Module " << mod.number << std::endl;
+    }
     return true;
 }
 
@@ -305,7 +320,8 @@ bool execute_baseline_capture(const module_config& mod, std::string dir) {
         timestamps.push_back(timestamp);
     }
 
-    std::ofstream ofstream1(generate_filename(mod.number, "baselines", "csv", dir));
+    std::ofstream ofstream1(generate_filename("module" + std::to_string(mod.number) + "-baselines",
+                                              "csv", dir));
     ofstream1 << "bin,timestamp,";
     for (unsigned int i = 0; i < mod.number_of_channels; i++) {
         if (i != static_cast<unsigned int>(mod.number_of_channels - 1))
@@ -325,6 +341,7 @@ bool execute_baseline_capture(const module_config& mod, std::string dir) {
         }
         ofstream1 << std::endl;
     }
+    ofstream1.close();
     return true;
 }
 
@@ -362,10 +379,13 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
      */
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
+    std::ofstream hw_stats_output(generate_filename("list-mode-hw-stats", "csv", dir), std::ios::out);
+    hw_stats_output << generate_hardware_statistics_header() << std::endl;
+
     std::vector<std::ofstream*> output_streams(cfg.num_modules());
     for (unsigned short i = 0; i < cfg.num_modules(); i++) {
         output_streams[i] = new std::ofstream(
-            generate_filename(i, "list-mode-run" + std::to_string(run_num) + "-recs", "bin", dir),
+            generate_filename("list-mode-module" + std::to_string(i) + "-run" + std::to_string(run_num) + "-recs", "bin", dir),
             std::ios::out | std::ios::binary);
     }
 
@@ -431,6 +451,8 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
                     output_streams[mod_num]->write(reinterpret_cast<char*>(data.data()),
                                                    num_fifo_words * sizeof(uint32_t));
                 }
+                if (!output_statistics_data(hw_stats_output, cfg.modules[mod_num], run_num, false))
+                    return false;
             } else {
                 std::cout << LOG("INFO") << "Module " << mod_num << " has no active run!"
                           << std::endl;
@@ -497,18 +519,19 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
             output_streams[mod_num]->write(reinterpret_cast<char*>(data.data()),
                                            num_fifo_words * sizeof(uint32_t));
         }
-        if (!output_statistics_data(cfg.modules[mod_num],
-                                    "list-mode-run" + std::to_string(run_num) + "-hw-stats", dir)) {
+
+        if (!output_statistics_data(hw_stats_output, cfg.modules[mod_num], run_num, true))
             return false;
-        }
 
         std::string name =
-            generate_filename(mod_num, "list-mode-run" + std::to_string(run_num) + "-mca", "csv", dir);
+            generate_filename("list-mode-module" + std::to_string(mod_num) + "-run" + std::to_string(run_num) + "-mca", "csv", dir);
         export_mca_memory(cfg.modules[mod_num], name);
     }
 
     for (auto& stream : output_streams)
         stream->close();
+
+    hw_stats_output.close();
 
     return true;
 }
@@ -629,16 +652,17 @@ bool execute_mca_run(unsigned int run_num, const configuration& cfg,
         std::cout << LOG("INFO") << "MCA Run finished!" << std::endl;
     }
 
+    std::ofstream hw_stats_output(generate_filename("mca-run-hw-stats", "csv", dir), std::ios::out);
+    hw_stats_output << generate_hardware_statistics_header() << std::endl;
+
     for (unsigned short i = 0; i < cfg.num_modules(); i++) {
-        std::string name = generate_filename(i, "mca-run" + std::to_string(run_num), "csv", dir);
+        std::string name = generate_filename("module" + std::to_string(i) + "-mca-run" + std::to_string(run_num), "csv", dir);
         export_mca_memory(cfg.modules[i], name);
 
-        if (!output_statistics_data(cfg.modules[i],
-                                    "mca-run" + std::to_string(run_num) + "-stats", dir)) {
+        if (!output_statistics_data(hw_stats_output, cfg.modules[i], run_num, true))
             return false;
-        }
     }
-
+    hw_stats_output.close();
     return true;
 }
 
@@ -721,7 +745,7 @@ bool execute_trace_capture(const module_config& mod, std::string dir) {
     if (!verify_api_return_value(Pixie16AcquireADCTrace(mod.number), "Pixie16AcquireADCTrace"))
         return false;
 
-    std::ofstream ofstream1(generate_filename(mod.number, "adc", "csv", dir));
+    std::ofstream ofstream1(generate_filename("module" + std::to_string(mod.number) + "-adc", "csv", dir));
     ofstream1 << "bin,";
 
     unsigned int max_trace_length = 0;
