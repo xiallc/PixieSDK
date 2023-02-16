@@ -325,6 +325,13 @@ void afe_dbs::boot() {
         baseline::channels bl_verify;
         analyze_channel_baselines(module_, bl_verify);
         for (size_t chan = 0; chan < module_.num_channels; ++chan) {
+            bool swap_disabled = true;
+            module_.channels[chan].fixture->get("ADC_SWAP_DISABLE", swap_disabled);
+            if (swap_disabled) {
+                log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")
+                                << "boot: adc_swap: verify: disabled: " + std::to_string(chan);
+                continue;
+            }
             if ((chan % 2) == 0) {
                 if (bl_same[chan] == bl_verify[chan]) {
                     failed = true;
