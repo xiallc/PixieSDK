@@ -93,6 +93,31 @@ def plot_lmd(df, args):
     plt.show()
 
 
+def plot_hw_stats(data, args):
+    """
+     Plots hardware statistics data produced by the example software.
+     :param data: The data frame containing the data that we need to plot
+     :param args: The arguments parsed by the argument parser.
+     :return: None
+    """
+    logging.info("Starting to plot hardware statistics data.")
+    data = data.groupby(['module', 'channel', 'run']).mean().reset_index()
+    for i in data.module.unique():
+        for j in data.run.unique():
+            tmp = data[(data['module'] == i) & (data['run'] == j)]
+            if not tmp.empty:
+                tmp.plot.bar(x="channel",
+                             y=["input_count_rate",
+                                "output_count_rate"],
+                             title=f"Rate Statistics - Mod {i} - Run {j}",
+                             xlabel="Channel",
+                             ylabel="Counts / second",
+                             label=['Input', "Output"])
+                plt.tight_layout()
+                plt.savefig(f"{os.path.splitext(args.file)[0]}-mod{i}-run{j}.png", format='png')
+                plt.show()
+
+
 def plot_csv(plot_type, data, args):
     """
     Plots the various CSV data produced by the example software.
@@ -118,19 +143,14 @@ def plot_csv(plot_type, data, args):
     if plot_type == 'baseline':
         title = "Baselines"
 
-    if plot_type == 'stats':
-        data.plot.bar(x="channel", y=["input_count_rate", "output_count_rate"],
-                      title="Rate Statistics", xlabel="Channel", ylabel="Counts / second",
-                      label=['Input', "Output"])
+    if args.chan is not None:
+        data[f'Chan{args.chan}'].plot(title=title, xlabel=xlabel, ylabel=ylabel)
+        plt.legend()
     else:
-        if args.chan is not None:
-            data[f'Chan{args.chan}'].plot(title=title, xlabel=xlabel, ylabel=ylabel)
-            plt.legend()
-        else:
-            subplot_cfg = calculate_subplot_dims(len(df.columns))
-            data.plot(subplots=True, layout=(subplot_cfg['rows'], subplot_cfg['cols']), title=title,
-                      xlabel=xlabel, ylabel=ylabel, figsize=(11, 8.5), sharey=True)
-            plt.tight_layout()
+        subplot_cfg = calculate_subplot_dims(len(df.columns))
+        data.plot(subplots=True, layout=(subplot_cfg['rows'], subplot_cfg['cols']), title=title,
+                  xlabel=xlabel, ylabel=ylabel, figsize=(11, 8.5), sharey=True)
+        plt.tight_layout()
 
     if args.xlim:
         plt.xlim(args.xlim)
@@ -186,4 +206,4 @@ if __name__ == '__main__':
                 df.pop("timestamp")
                 plot_csv('baseline', df, ARGS)
         else:
-            plot_csv('stats', pd.read_csv(ARGS.file, keep_default_na=False), ARGS)
+            plot_hw_stats(pd.read_csv(ARGS.file, keep_default_na=False), ARGS)
