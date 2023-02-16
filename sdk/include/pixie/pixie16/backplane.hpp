@@ -70,7 +70,7 @@ struct backplane {
 
         /**
          * Request leader role.
-         * @retval true The request is successful and module is the
+         * @retval true The request is successful or module is the
          *              role leader
          */
         bool request(const module::module& mod);

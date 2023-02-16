@@ -218,6 +218,7 @@ TEST_SUITE("Crate: modules") {
                 crate_error);
             CHECK_NOTHROW(
                 crate[0].write(module_param::module_csrb, 1 << hw::bit::MODCSRB_CPLDPULLUP));
+            CHECK(crate.backplane.wired_or_triggers_pullup.request(crate[2]) == false);
             CHECK_NOTHROW(crate[0].write(module_param::module_csrb, 0));
             CHECK_NOTHROW(
                 crate[2].write(module_param::module_csrb, 1 << hw::bit::MODCSRB_CPLDPULLUP));
@@ -229,6 +230,7 @@ TEST_SUITE("Crate: modules") {
                 crate[2].write(module_param::module_csrb, 1 << hw::bit::MODCSRB_DIRMOD),
                 "module: num=2,slot=10: director leader role already taken: 0", crate_error);
             CHECK_NOTHROW(crate[0].write(module_param::module_csrb, 1 << hw::bit::MODCSRB_DIRMOD));
+            CHECK(crate.backplane.director.request(crate[2]) == false);
             CHECK_NOTHROW(crate[0].write(module_param::module_csrb, 0));
             CHECK_NOTHROW(crate[2].write(module_param::module_csrb, 1 << hw::bit::MODCSRB_DIRMOD));
             CHECK_NOTHROW(crate[2].write(module_param::module_csrb, 0));
@@ -241,6 +243,7 @@ TEST_SUITE("Crate: modules") {
                 "module: num=2,slot=10: run leader role already taken: 0", crate_error);
             CHECK_NOTHROW(
                 crate[0].write(module_param::module_csrb, 1 << hw::bit::MODCSRB_CHASSISMASTER));
+            CHECK(crate.backplane.run.request(crate[2]) == false);
             CHECK_NOTHROW(crate[0].write(module_param::module_csrb, 0));
             CHECK_NOTHROW(
                 crate[2].write(module_param::module_csrb, 1 << hw::bit::MODCSRB_CHASSISMASTER));
