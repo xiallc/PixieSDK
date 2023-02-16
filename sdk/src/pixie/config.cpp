@@ -68,6 +68,7 @@ static const json default_config = {
         {"MultiplicityMaskH", {0}},
         {"MultiplicityMaskL", {0}},
         {"OffsetDAC", {34952}},
+        {"PAFlength", {119}},
         {"PSAlength", {0}},
         {"PSAoffset", {0}},
         {"PeakSample", {42}},
