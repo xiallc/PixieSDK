@@ -955,7 +955,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned
                                 "module count does not match user supplied "
                                 "number of modules");
             }
-            crate.assign(numbers);
+            crate.assign(numbers, false);
         }
     } catch (xia_error& e) {
         try {

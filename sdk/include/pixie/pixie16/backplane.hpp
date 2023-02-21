@@ -165,7 +165,7 @@ struct backplane {
     /**
      * Reinitialize. Use a template as a container forward decal.
      */
-    template<typename T> void reinit(T& modules);
+    template<typename T> void reinit(T& modules, T& offline);
 
     /**
      * A module is taken offline. Update the backplane.
@@ -173,8 +173,8 @@ struct backplane {
     void offline(const module::module& module);
 };
 
-template<typename T> void backplane::reinit(T& modules) {
-    init(modules.size());
+template<typename T> void backplane::reinit(T& modules, T& offline) {
+    init(modules.size() + offline.size());
     for (auto& mod : modules) {
         sync_wait(*mod);
     }

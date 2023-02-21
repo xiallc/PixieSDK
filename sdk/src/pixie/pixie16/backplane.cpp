@@ -106,7 +106,7 @@ void backplane::sync_wait(module::module& mod, const param::value_type synch_wai
 }
 
 void backplane::sync_wait(module::module& mod) {
-    if (mod.online()) {
+    if (mod.online() && mod.present()) {
         sync_wait(mod, mod.read(param::module_param::synch_wait));
     }
 }
@@ -130,7 +130,7 @@ void backplane::offline(const module::module& module) {
         if (sync_waiters[module.number]) {
             --sync_waits;
         }
-        sync_waiters.erase(sync_waiters.begin() + module.number);
+        sync_waiters[module.number] = false;
     }
 }
 

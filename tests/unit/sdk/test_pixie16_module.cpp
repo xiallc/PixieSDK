@@ -85,10 +85,12 @@ TEST_SUITE("Crate: modules") {
             CHECK_THROWS_WITH_AS(crate.set_offline(7), "module number out of range: 7",
                                  crate_error);
             CHECK_NOTHROW(crate.set_offline(1));
+            CHECK(crate.backplane.sync_waiters.size() == (crate.num_modules + crate.offline.size()));
+            CHECK_NOTHROW(crate.backplane.reinit(crate.modules, crate.offline));
             CHECK(crate.num_modules == test_modules - 1);
             CHECK(crate.modules.size() == test_modules - 1);
             CHECK(crate.offline.size() == 1);
-            CHECK(crate.backplane.sync_waiters.size() == crate.num_modules);
+            CHECK(crate.backplane.sync_waiters.size() == (crate.num_modules + crate.offline.size()));
         }
         using namespace xia::pixie;
         SUBCASE("FIFO defaults") {

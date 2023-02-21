@@ -118,7 +118,7 @@ void crate::initialize(bool reg_trace) {
         }
 
         num_modules = modules.size();
-        backplane.init(num_modules);
+        backplane.init(num_modules + offline.size());
 
         check_revision();
         check_slots();
@@ -182,7 +182,7 @@ bool crate::probe() {
           ++online;
         }
     }
-    backplane.reinit(modules);
+    backplane.reinit(modules, offline);
     return online == num_modules;
 }
 
@@ -251,7 +251,7 @@ void crate::boot(const crate::boot_params& params) {
         throw error(first_error, "crate boot error; see log");
     }
 
-    backplane.reinit(modules);
+    backplane.reinit(modules, offline);
 }
 
 void crate::set_firmware() {
@@ -286,7 +286,7 @@ void crate::import_config(const std::string json_file, module::number_slots& loa
             module->sync_vars();
         }
     }
-    backplane.reinit(modules);
+    backplane.reinit(modules, offline);
 }
 
 void crate::initialize_afe() {
@@ -430,7 +430,7 @@ void crate::assign(const module::number_slots& numbers, bool close) {
         }
         num_modules = modules.size();
         module::order_by_number(modules);
-        backplane.reinit(modules);
+        backplane.reinit(modules, offline);
     } catch (...) {
         num_modules = modules.size();
         module::set_number_by_slot(modules);
