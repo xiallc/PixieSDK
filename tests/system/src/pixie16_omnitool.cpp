@@ -1849,6 +1849,12 @@ static void list_start(command_args& args) {
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
         using namespace xia::pixie::hw::run;
+        if (crate[mod_num].read("SYNCH_WAIT") == 1) {
+            for (auto& module : crate.modules) {
+                module->start_listmode(run_mode::new_run);
+            }
+            break;
+        }
         crate[mod_num].start_listmode(run_mode::new_run);
     }
 }
