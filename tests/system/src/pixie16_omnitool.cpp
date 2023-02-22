@@ -2162,7 +2162,16 @@ static void par_write(command_args& args) {
     auto value = get_value<double>(value_opt);
     for (auto mod_num : mod_nums) {
         if (chans_opt.empty()) {
-            crate[mod_num].write(param_opt, value);
+            bool bcast = crate[mod_num].write(param_opt, value);
+            if (bcast) {
+                xia::pixie::crate::crate::user user(crate);
+                for (auto& module : crate.modules) {
+                    if (mod_num != module->number && module->online()) {
+                        module->write(param_opt, value);
+                    }
+                }
+                break;
+            }
         } else {
             xia::pixie::channel::range channels;
             channels_option(channels, chans_opt, crate[mod_num].num_channels);
