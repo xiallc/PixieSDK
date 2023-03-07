@@ -116,6 +116,9 @@ void backplane::sync_wait_valid() const {
     if (waits != 0 && waits != sync_waiters.size()) {
         throw error(error::code::module_invalid_operation,
                     "sync wait mode enabled and not all modules in the sync wait state");
+    } else if (waits != 0 && !run.has_leader()) {
+        throw error(error::code::module_invalid_operation,
+                    "sync wait mode enabled but no run leader module is assigned");
     }
 }
 
