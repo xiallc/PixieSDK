@@ -23,6 +23,7 @@
 #ifndef PIXIE_DB_H
 #define PIXIE_DB_H
 
+#include <pixie/pixie16/baseline.hpp>
 #include <pixie/pixie16/fixture.hpp>
 
 namespace xia {
@@ -90,6 +91,9 @@ struct afe_dbs : public module {
         max_dbs = 4
     };
 
+    static constexpr int baseline_noise_bins = 30;
+    static constexpr double baseline_noise_margin = 0.5; /* % */
+
     /*
      * These are development modes.
      */
@@ -106,6 +110,9 @@ struct afe_dbs : public module {
     virtual void set_dacs() override;
     virtual void get_traces() override;
     virtual void adjust_offsets() override;
+
+    void analyze_channel_baselines(
+        baseline::channels& baselines, const int traces = 1);
 };
 
 /**

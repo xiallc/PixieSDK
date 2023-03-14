@@ -27,7 +27,6 @@
 #include <pixie/log.hpp>
 #include <pixie/util.hpp>
 
-#include <pixie/pixie16/baseline.hpp>
 #include <pixie/pixie16/channel.hpp>
 #include <pixie/pixie16/db.hpp>
 #include <pixie/pixie16/defs.hpp>
@@ -81,29 +80,6 @@ static void set_channel_voffset(pixie::module::module& mod, double voffset, int 
     }
     mod.set_dacs();
     wait_dac_settle_period(mod);
-}
-
-static void analyze_channel_baselines(pixie::module::module& mod,
-                                      baseline::channels& baselines,
-                                      const int traces = 1) {
-    baselines.resize(mod.num_channels);
-    for (auto& channel : mod.channels) {
-        baselines[channel.number].start(channel.number, channel.fixture->config.adc_bits);
-    }
-    for (int t = 0; t < traces; ++t) {
-        mod.get_traces();
-        for (auto& channel : mod.channels) {
-            xia::pixie::hw::adc_trace trace;
-            mod.read_adc(channel.number, trace, false);
-            baselines[channel.number].update(trace);
-        }
-    }
-    for (auto& bl : baselines) {
-        bl.end();
-        log(log::debug) << pixie::module::module_label(mod, "afe-dbs: analyze-baselines")
-                        << "channel=" << bl.number
-                        << " baseline=" << bl.baseline;
-    }
 }
 
 userin_save::userin_save(pixie::module::module& module) : dsp(module) {
@@ -262,14 +238,14 @@ void afe_dbs::boot() {
      */
     baseline::channels bl_same;
     set_channel_voffset(module_, -1.5, 1);
-    analyze_channel_baselines(module_, bl_same);
+    analyze_channel_baselines(bl_same);
 
     /*
      * Move the voffset for the even channels to high rail
      */
     baseline::channels bl_moved;
     set_channel_voffset(module_, 1.5, 2);
-    analyze_channel_baselines(module_, bl_moved);
+    analyze_channel_baselines(bl_moved);
 
     /*
      * Check all the channels and swap of the ADCs if required.
@@ -323,7 +299,7 @@ void afe_dbs::boot() {
     bool failed = false;
     if (adc_swap_verify) {
         baseline::channels bl_verify;
-        analyze_channel_baselines(module_, bl_verify);
+        analyze_channel_baselines(bl_verify);
         for (size_t chan = 0; chan < module_.num_channels; ++chan) {
             bool swap_disabled = true;
             module_.channels[chan].fixture->get("ADC_SWAP_DISABLE", swap_disabled);
@@ -405,9 +381,7 @@ void afe_dbs::adjust_offsets() {
     const int dac_bits = 16;
     const int dac_linear_fit_steps = 200;
     const int dac_linear_fit_samples = 2;
-    const int baseline_noise_bins = 30;
-    const double baseline_noise_margin = 0.5; /* % */
-    const int runs = 10;
+    const int runs = 30;
 
     util::timepoint tp(true);
 
@@ -440,14 +414,15 @@ void afe_dbs::adjust_offsets() {
     for (int run = 0; run_again && run < runs; ++run) {
         log(log::debug) << log_leader << "adjust-offsets: run=" << run;
         run_again = false;
-        baseline::channels baselines(baseline_noise_bins, baseline_noise_margin);
-        analyze_channel_baselines(module_, baselines, 1);
+        baseline::channels baselines;
+        analyze_channel_baselines(baselines, 1);
         for (size_t chan = 0; chan < module_.num_channels; ++chan) {
             auto& channel = module_.channels[chan];
             if (has_offset_dacs[chan]) {
                 auto& bl = baselines[chan];
                 const int adc_bottom_rail = 0;
                 const int adc_top_rail = 1 << bl.adc_bits;
+                const int adc_rail_dac_step = adc_top_rail / (runs - 5);
                 const int adc_target =
                     int((adc_top_rail - adc_bottom_rail) * (bl_percents[chan] / 100));
                 auto& offsetdac = offsetdacs[chan];
@@ -469,31 +444,32 @@ void afe_dbs::adjust_offsets() {
                                     << " bl=" << bl.baseline
                                     << " offset-dac=" << dac;
                     bl_linear_fit& bl_fit = bl_fits[chan];
+                    bl_fit.update(bl.baseline, dac);
+                    if (bl_fit.count == 2) {
+                        const int delta_adc =
+                            std::get<0>(bl_fit.samples[1]) - std::get<0>(bl_fit.samples[0]);
+                        const int delta_dac =
+                            std::get<1>(bl_fit.samples[1]) - std::get<1>(bl_fit.samples[0]);
+                        if ((delta_adc < 0) != (delta_dac < 0) && !inverted[chan]) {
+                            inverted[chan] = true;
+                            log(log::info) << log_leader
+                                           << "adjust-offsets: channel=" << chan
+                                           << " input signal may be inverted";
+                        }
+                    }
                     const char* action = "none";
                     if (bl.baseline == 0 || bl.baseline == adc_top_rail) {
                         action = "rail hit";
-                        dac = std::get<1>(offsetdac) +
-                            ((std::get<0>(offsetdac) - std::get<1>(offsetdac)) / 2);
+                        dac = std::get<0>(offsetdac) +
+                            (adc_rail_dac_step * (inverted[chan] ? -1 : 1));
                         log(log::debug) << log_leader
                                         << "adjust-offsets: rail-hit: channel=" << chan
+                                        << " baseline=" << bl.baseline
                                         << " od<0>=" << std::get<0>(offsetdac)
                                         << " od<1>=" << std::get<1>(offsetdac)
                                         << " dac=" << dac;
 
                     } else {
-                        bl_fit.update(bl.baseline, dac);
-                        if (bl_fit.count == 2) {
-                            const int delta_adc =
-                                std::get<0>(bl_fit.samples[1]) - std::get<0>(bl_fit.samples[0]);
-                            const int delta_dac =
-                                std::get<1>(bl_fit.samples[1]) - std::get<1>(bl_fit.samples[0]);
-                            if ((delta_adc < 0) != (delta_dac < 0)) {
-                                inverted[chan] = true;
-                                log(log::info) << log_leader
-                                               << "adjust-offsets: channel=" << chan
-                                               << " input signal may be inverted";
-                            }
-                        }
                         if (bl_fit.count < dac_linear_fit_samples) {
                             action = "linear-fit";
                             const int steps = dac_linear_fit_steps * (inverted[chan] ? 1 : -1);
@@ -515,7 +491,7 @@ void afe_dbs::adjust_offsets() {
                     dac = std::min(1 << dac_bits, dac);
                     log(log::debug) << log_leader
                                     << "adjust-offsets: update: channel=" << chan
-                                    << ' ' << action
+                                    << " action=" << action
                                     << ": adc-error=" << adc_target - bl.baseline
                                     << " dac-error=" << std::get<0>(offsetdac) - dac
                                     << " dac=" << dac;
@@ -538,6 +514,30 @@ void afe_dbs::adjust_offsets() {
     }
     log(log::debug) << log_leader
                     << "adjust-offsets: duration=" << tp;
+}
+
+void afe_dbs::analyze_channel_baselines(
+    baseline::channels& baselines, const int traces) {
+    baselines.resize(
+        module_.num_channels,
+        baseline::channel(baseline_noise_bins, baseline_noise_margin));
+    for (auto& channel : module_.channels) {
+        baselines[channel.number].start(channel.number, channel.fixture->config.adc_bits);
+    }
+    for (int t = 0; t < traces; ++t) {
+        module_.get_traces();
+        for (auto& channel : module_.channels) {
+            xia::pixie::hw::adc_trace trace;
+            module_.read_adc(channel.number, trace, false);
+            baselines[channel.number].update(trace);
+        }
+    }
+    for (auto& bl : baselines) {
+        bl.end();
+        log(log::debug) << pixie::module::module_label(module_, "afe-dbs: analyze-baselines")
+                        << "channel=" << bl.number
+                        << " baseline=" << bl.baseline;
+    }
 }
 
 db04::db04(pixie::channel::channel& module_channel_, const hw::config& config_)

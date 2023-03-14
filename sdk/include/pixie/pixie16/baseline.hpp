@@ -50,7 +50,7 @@ struct channel {
     int runs;
     int baseline;
 
-    channel(int noise_bins = 30, double noise_percent = 0.5);
+    channel(const int noise_bins, const double noise_percent);
 
     void start(size_t number, int adc_bits);
     void end();
