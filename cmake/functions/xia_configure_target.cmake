@@ -40,6 +40,10 @@ function(xia_configure_target)
         endif ()
     endif ()
 
+    if (${XIA_CT_LEGACY})
+        target_compile_options(${XIA_CT_TARGET} PRIVATE -fcommon)
+    endif (${XIA_CT_LEGACY})
+
     if (${XIA_CT_USE_PLX})
         target_include_directories(${XIA_CT_TARGET} PUBLIC ${PLX_INCLUDE_DIR})
         if (${CMAKE_VERSION} VERSION_GREATER "3.12")
