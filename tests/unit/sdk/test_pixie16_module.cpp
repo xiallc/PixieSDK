@@ -273,6 +273,20 @@ TEST_SUITE("Crate: modules") {
                 crate_error);
             CHECK_NOTHROW(crate[0].run_end());
         };
+        SUBCASE("complete synch wait with no leader") {
+            CHECK_NOTHROW(crate[0].write(module_param::synch_wait, 1));
+            CHECK_NOTHROW(crate[1].write(module_param::synch_wait, 1));
+            CHECK_NOTHROW(crate[2].write(module_param::synch_wait, 1));
+            CHECK(crate.backplane.sync_waits == test_modules);
+            CHECK(crate.backplane.sync_waiters[0] == true);
+            CHECK(crate.backplane.sync_waiters[1] == true);
+            CHECK(crate.backplane.sync_waiters[2] == true);
+            CHECK_THROWS_WITH_AS(
+                crate[0].start_histograms(hw::run::run_mode::new_run),
+                "sync wait mode enabled but no run leader module is assigned",
+                crate_error);
+            CHECK_NOTHROW(crate[0].run_end());
+        }
         SUBCASE("complete synch wait") {
             CHECK_NOTHROW(crate[0].write(module_param::synch_wait, 1));
             CHECK_NOTHROW(crate[1].write(module_param::synch_wait, 1));
@@ -281,6 +295,8 @@ TEST_SUITE("Crate: modules") {
             CHECK(crate.backplane.sync_waiters[0] == true);
             CHECK(crate.backplane.sync_waiters[1] == true);
             CHECK(crate.backplane.sync_waiters[2] == true);
+            CHECK_NOTHROW(
+                crate[0].write(module_param::module_csrb, 1 << hw::bit::MODCSRB_CHASSISMASTER));
             CHECK_NOTHROW(crate[0].start_histograms(hw::run::run_mode::new_run));
             CHECK_NOTHROW(crate[0].run_end());
         }
