@@ -117,6 +117,174 @@ static const json default_config = {
         {"TrigConfig", {0, 0, 0, 0}},
         {"U00", {0, 0, 0, 0, 0, 0, 0}},
         {"UserIn", {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}}}}}};
+        
+static void fill_config(module::module& module, nlohmann::json& settings) {
+    if (!settings.contains("metadata")) {
+        throw error(error::code::config_json_error, "'metadata' not found");
+    }
+
+    if (!settings.contains("module")) {
+        throw error(error::code::config_json_error, "'module' not found");
+    }
+
+    if (!settings.contains("channel")) {
+        throw error(error::code::config_json_error, "'channel' not found");
+    }
+
+    auto metadata = settings["metadata"];
+    auto moddata = settings["module"];
+    auto chandata = settings["channel"];
+
+    if (!moddata.contains("input")) {
+        throw error(error::code::config_json_error, "module 'input' not found");
+    }
+
+    if (!chandata.contains("input")) {
+        throw error(error::code::config_json_error, "channel 'input' not found");
+    }
+
+    try {
+        auto rev = metadata["hardware_revision"].get<std::string>();
+        if (rev[0] != module.revision_label()) {
+            xia_log(log::warning) << "config module " << module.number << " (rev " << rev
+                                  << ") loading on to " << module.revision_label();
+        }
+    } catch (json::exception& e) {
+        throw_json_error(e, "config rev");
+    }
+
+    try {
+        auto slot = metadata["slot"];
+        if (slot != module.slot) {
+            xia_log(log::warning) << "config module " << module.number << " (slot " << slot
+                                  << ") has moved to slot " << module.slot;
+        }
+    } catch (json::exception& e) {
+        throw_json_error(e, "config slot-id");
+    }
+
+    /*
+     * Write the config to the module variables
+     */
+    for (auto& el : moddata["input"].items()) {
+        /*
+         * Load variables first and if not a variable check if it is a
+         * parameter and if not a parameter log a warning. This puts
+         * variables before parameters and ignores parameters if
+         * present.
+         */
+        if (param::is_module_var(el.key())) {
+            auto var = param::lookup_module_var(el.key());
+            auto& desc = module.module_var_descriptors[int(var)];
+            if (desc.writeable()) {
+                if (desc.size != el.value().size()) {
+                    xia_log(log::warning) << module::module_label(module)
+                                          << "size does not match: " << el.key();
+                } else {
+                    xia_log(log::debug)
+                        << module::module_label(module) << "module var set: " << el.key();
+                    if (desc.size > 1) {
+                        for (size_t v = 0; v < desc.size; ++v) {
+                            try {
+                                module.write_var(var, el.value()[v], v, false);
+                            } catch (json::exception& e) {
+                                auto s = el.key() + ": " + std::string(el.value());
+                                throw_json_error(e, s);
+                            }
+                        }
+                    } else {
+                        try {
+                            if (desc.par == xia::pixie::param::module_var::SlotID) {
+                                module.write_var(var, param::value_type(module.slot), 0, false);
+                            } else if (desc.par == xia::pixie::param::module_var::ModNum) {
+                                module.write_var(var, module.number, 0, false);
+                            } else {
+                                module.write_var(var, el.value(), 0, false);
+                            }
+                        } catch (json::exception& e) {
+                            auto s = el.key() + ": " + std::string(el.value());
+                            throw_json_error(e, s);
+                        }
+                    }
+                }
+            }
+        } else if (!param::is_module_param(el.key())) {
+            /*
+             * If not a parameter (ignore those) log a message
+             */
+            xia_log(log::warning) << "config module " << module.number << " (slot " << module.slot
+                                  << "): invalid variable: " << el.key();
+        }
+    }
+
+    /*
+     * Write the config to the channel variables
+     */
+    for (auto& el : chandata["input"].items()) {
+        /*
+         * Load variables first and if not a variable check if it is a
+         * parameter and if not a parameter log a warning. This puts
+         * variables before parameters and ignores parameters if
+         * present.
+         */
+        if (param::is_channel_var(el.key())) {
+            auto var = param::lookup_channel_var(el.key());
+            auto& desc = module.channel_var_descriptors[int(var)];
+            if (desc.writeable()) {
+                if ((el.value().size() % desc.size) != 0) {
+                    xia_log(log::warning) << module::module_label(module)
+                                          << "size does not match config: " << el.key();
+                } else {
+                    xia_log(log::debug)
+                        << module::module_label(module) << "channel var set: " << el.key()
+                        << ": " << el.value();
+                    size_t vchannels = el.value().size() / desc.size;
+
+                    if (vchannels < module.num_channels) {
+                        if (metadata["hardware_revision"].get<std::string>() != "DEFAULT") {
+                            xia_log(log::warning) << module::module_label(module) << el.key()
+                                                  << " config has too few elements. "
+                                                  << "vchannels= " << vchannels
+                                                  << " num_channels=" << module.num_channels;
+                        }
+
+                        xia_log(log::debug) << module::module_label(module) << "extending "
+                                            << el.key() << " to " << module.num_channels
+                                            << " elements using value at index 0.";
+                        for (size_t idx = vchannels; idx < module.num_channels; idx++) {
+                            el.value().push_back(el.value()[0]);
+                        }
+
+                        vchannels = el.value().size() / desc.size;
+                    }
+
+                    for (size_t channel = 0;
+                         channel < module.num_channels && channel < vchannels &&
+                         channel * desc.size < el.value().size();
+                         ++channel) {
+                        size_t vbase = channel * desc.size;
+                        for (size_t v = 0; v < desc.size; ++v) {
+                            try {
+                                module.write_var(var, el.value()[vbase + v], channel, v,
+                                                 false);
+                            } catch (json::exception& e) {
+                                auto s =
+                                    el.key() + ": " + std::string(el.value()[vbase + v]);
+                                throw_json_error(e, s);
+                            }
+                        }
+                    }
+                }
+            }
+        } else if (!param::is_channel_param(el.key())) {
+            /*
+             * If not a parameter (ignore those) log a message
+             */
+            xia_log(log::warning) << "config module " << module.number << " (slot " << module.slot
+                                  << "): invalid variable: " << el.key();
+        }
+    }
+}
 
 void import_json(const std::string& filename, crate::crate& crate, module::number_slots& loaded) {
     std::ifstream input_json(filename);
@@ -154,173 +322,7 @@ void import_json(const std::string& filename, crate::crate& crate, module::numbe
 
         if (module.online()) {
             auto& settings = *ci;
-
-            if (!settings.contains("metadata")) {
-                throw error(error::code::config_json_error, "'metadata' not found");
-            }
-
-            if (!settings.contains("module")) {
-                throw error(error::code::config_json_error, "'module' not found");
-            }
-
-            if (!settings.contains("channel")) {
-                throw error(error::code::config_json_error, "'channel' not found");
-            }
-
-            auto metadata = settings["metadata"];
-            auto moddata = settings["module"];
-            auto chandata = settings["channel"];
-
-            if (!moddata.contains("input")) {
-                throw error(error::code::config_json_error, "module 'input' not found");
-            }
-
-            if (!chandata.contains("input")) {
-                throw error(error::code::config_json_error, "channel 'input' not found");
-            }
-
-            try {
-                auto rev = metadata["hardware_revision"].get<std::string>();
-                if (rev[0] != module.revision_label()) {
-                    xia_log(log::warning) << "config module " << mod << " (rev " << rev
-                                          << ") loading on to " << module.revision_label();
-                }
-            } catch (json::exception& e) {
-                throw_json_error(e, "config rev");
-            }
-
-            try {
-                auto slot = metadata["slot"];
-                if (slot != module.slot) {
-                    xia_log(log::warning) << "config module " << mod << " (slot " << slot
-                                          << ") has moved to slot " << module.slot;
-                }
-            } catch (json::exception& e) {
-                throw_json_error(e, "config slot-id");
-            }
-
-            /*
-             * Write the config to the module variables
-             */
-            for (auto& el : moddata["input"].items()) {
-                /*
-                 * Load variables first and if not a variable check if it is a
-                 * parameter and if not a parameter log a warning. This puts
-                 * variables before parameters and ignores parameters if
-                 * present.
-                 */
-                if (param::is_module_var(el.key())) {
-                    auto var = param::lookup_module_var(el.key());
-                    auto& desc = module.module_var_descriptors[int(var)];
-                    if (desc.writeable()) {
-                        if (desc.size != el.value().size()) {
-                            xia_log(log::warning) << module::module_label(module)
-                                                  << "size does not match: " << el.key();
-                        } else {
-                            xia_log(log::debug)
-                                << module::module_label(module) << "module var set: " << el.key();
-                            if (desc.size > 1) {
-                                for (size_t v = 0; v < desc.size; ++v) {
-                                    try {
-                                        module.write_var(var, el.value()[v], v, false);
-                                    } catch (json::exception& e) {
-                                        auto s = el.key() + ": " + std::string(el.value());
-                                        throw_json_error(e, s);
-                                    }
-                                }
-                            } else {
-                                try {
-                                    if (desc.par == xia::pixie::param::module_var::SlotID) {
-                                        module.write_var(var, param::value_type(module.slot), 0, false);
-                                    } else if (desc.par == xia::pixie::param::module_var::ModNum) {
-                                        module.write_var(var, module.number, 0, false);
-                                    } else {
-                                        module.write_var(var, el.value(), 0, false);
-                                    }
-                                } catch (json::exception& e) {
-                                    auto s = el.key() + ": " + std::string(el.value());
-                                    throw_json_error(e, s);
-                                }
-                            }
-                        }
-                    }
-                } else if (!param::is_module_param(el.key())) {
-                    /*
-                     * If not a parameter (ignore those) log a message
-                     */
-                    xia_log(log::warning) << "config module " << mod << " (slot " << module.slot
-                                          << "): invalid variable: " << el.key();
-                }
-            }
-
-            /*
-             * Write the config to the channel variables
-             */
-            for (auto& el : chandata["input"].items()) {
-                /*
-                 * Load variables first and if not a variable check if it is a
-                 * parameter and if not a parameter log a warning. This puts
-                 * variables before parameters and ignores parameters if
-                 * present.
-                 */
-                if (param::is_channel_var(el.key())) {
-                    auto var = param::lookup_channel_var(el.key());
-                    auto& desc = module.channel_var_descriptors[int(var)];
-                    if (desc.writeable()) {
-                        if ((el.value().size() % desc.size) != 0) {
-                            xia_log(log::warning) << module::module_label(module)
-                                                  << "size does not match config: " << el.key();
-                        } else {
-                            xia_log(log::debug)
-                                << module::module_label(module) << "channel var set: " << el.key()
-                                << ": " << el.value();
-                            size_t vchannels = el.value().size() / desc.size;
-
-                            if (vchannels < module.num_channels) {
-                                if (metadata["hardware_revision"].get<std::string>() != "DEFAULT") {
-                                    xia_log(log::warning) << module::module_label(module) << el.key()
-                                                          << " config has too few elements. "
-                                                          << "vchannels= " << vchannels
-                                                          << " num_channels=" << module.num_channels;
-                                }
-
-                                xia_log(log::debug) << module::module_label(module) << "extending "
-                                                    << el.key() << " to " << module.num_channels
-                                                    << " elements using value at index 0.";
-                                for (size_t idx = vchannels; idx < module.num_channels; idx++) {
-                                    el.value().push_back(el.value()[0]);
-                                }
-
-                                vchannels = el.value().size() / desc.size;
-                            }
-
-                            for (size_t channel = 0;
-                                 channel < module.num_channels && channel < vchannels &&
-                                 channel * desc.size < el.value().size();
-                                 ++channel) {
-                                size_t vbase = channel * desc.size;
-                                for (size_t v = 0; v < desc.size; ++v) {
-                                    try {
-                                        module.write_var(var, el.value()[vbase + v], channel, v,
-                                                         false);
-                                    } catch (json::exception& e) {
-                                        auto s =
-                                            el.key() + ": " + std::string(el.value()[vbase + v]);
-                                        throw_json_error(e, s);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } else if (!param::is_channel_param(el.key())) {
-                    /*
-                     * If not a parameter (ignore those) log a message
-                     */
-                    xia_log(log::warning) << "config module " << mod << " (slot " << module.slot
-                                          << "): invalid variable: " << el.key();
-                }
-            }
-
+            fill_config(module, settings);
             /*
              * Record the module had been loaded.
              */
@@ -331,6 +333,32 @@ void import_json(const std::string& filename, crate::crate& crate, module::numbe
         if (ci == config.end()) {
             break;
         }
+    }
+}
+
+void import_json(const std::string& filename, module::module& mod) {
+    std::ifstream input_json(filename);
+    if (!input_json) {
+        throw error(pixie::error::code::file_open_failure,
+                    "opening json config: " + filename + ": " + std::strerror(errno));
+    }
+
+    json config;
+
+    try {
+        config = json::parse(input_json);
+    } catch (json::exception& e) {
+        throw_json_error(e, "parse config");
+    }
+    
+    auto ci = config.begin();
+
+    if (!mod.online()) {
+        xia_log(log::warning) << "module " << mod.number << " not online, skipping";
+    } else {
+        auto& settings = *ci;
+        fill_config(mod, settings);
+        mod.sync_vars();
     }
 }
 

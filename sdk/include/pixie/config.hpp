@@ -48,6 +48,13 @@ typedef pixie::error::error error;
 void import_json(const std::string& filename, crate::crate& crate, module::number_slots& loaded);
 
 /**
+ * @brief Import a JSON configuration for a module
+ * @param[in] filename The name of the file with the relative or absolute path.
+ * @param[in] mod The module object that we're going to load this configuration into.
+ */
+void import_json(const std::string& filename, module::module& mod);
+
+/**
  * @brief Export the active module configurations to a JSON file.
  * @param[in] filename The name of the JSON output file used for the export.
  * @param[in] crate The crate object holding the modules to be exported.

@@ -340,7 +340,7 @@ static const command_definitions crate_commands = {
     export_cmd,
     fw_report_cmd,
     import_cmd,
-    report_cmd,
+    report_cmd
 };
 
 command_handler_decl(adc_acq);
@@ -533,6 +533,16 @@ static const command_definition mod_online_cmd = {
     "Set a module online"
 };
 
+command_handler_decl(mset_import);
+static const command_definition mset_import_cmd = {
+    "mset-import", "/module/mset-import", mset_import,
+    {"init", "probe"},
+    2, 3, 0,
+    {},
+    "module(s) file [flush/sync]",
+    "Import a settings file to a module"
+};
+
 command_handler_decl(override_fw);
 static const command_definition override_fw_cmd = {
     "Module", "/module/firmware/override", override_fw,
@@ -683,6 +693,7 @@ static const command_definitions module_commands = {
     lset_report_cmd,
     mod_offline_cmd,
     mod_online_cmd,
+    mset_import_cmd,
     override_fw_cmd,
     par_read_cmd,
     par_write_cmd,
@@ -2162,6 +2173,37 @@ static void mod_online(command_context& context) {
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
         crate->set_online(crate[mod_num]);
+    }
+}
+
+static void mset_import(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
+    auto settings_opt = context.cmd.get_arg();
+    module_range mod_nums;
+    std::string action;
+    if (context.cmd.has_arg()) {
+        auto action_opt = context.cmd.get_arg();
+        if (action_opt == "flush" || action_opt == "sync") {
+            action = action_opt;
+        } else {
+            throw std::runtime_error(
+                std::string("invalid post settings import operation: " +
+                            action_opt));
+        }
+    }
+    modules_option(mod_nums, mod_nums_opt, crate.num_modules);
+    for (auto mod_num : mod_nums) {
+        xia::pixie::module::module& module = crate[mod_num];
+        xia::pixie::config::import_json(settings_opt, module);
+        if (module.online() && !action.empty()) {
+            if (action == "flush") {
+                module.sync_vars();
+            } else if (action == "sync") {
+                module.sync_vars();
+                module.sync_hw();
+            }
+        }
     }
 }
 
