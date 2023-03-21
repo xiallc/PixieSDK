@@ -323,7 +323,7 @@ TEST_SUITE("xia::buffer") {
                 CHECK(buf->size() == 0);
                 CHECK(buf->capacity() == pool.size);
                 size_t size = pool.size;
-                buf->resize(size, static_cast<int>(queue.count()) + 1);
+                buf->resize(size, int(queue.count()) + 1);
                 total += size;
                 queue.push(buf);
             }
@@ -332,7 +332,7 @@ TEST_SUITE("xia::buffer") {
                 CHECK(buf->size() == 0);
                 CHECK(buf->capacity() == pool.size);
                 size_t size = pool.size / 4;
-                buf->resize(size, static_cast<int>(queue.count()) + 1);
+                buf->resize(size, int(queue.count()) + 1);
                 total += size;
                 queue.push(buf);
             }
@@ -373,7 +373,7 @@ TEST_SUITE("xia::buffer") {
                 buf->resize(10);
                 xia::buffer::buffer_value_ptr bp = buf->data();
                 for (size_t c = 0; c < 10; ++c) {
-                    *bp = total;
+                    *bp = static_cast<xia::pixie::hw::word>(total);
                     ++bp;
                     ++total;
                 }

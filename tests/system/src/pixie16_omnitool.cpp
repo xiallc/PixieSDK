@@ -669,8 +669,8 @@ static std::vector<T> get_values(
             xia::util::strings sd;
             xia::util::split(sd, slots, '-');
             if (sd.size() == 1) {
-                size_t val = get_value<T>(sd[0]);
-                if (val < max_count) {
+                T val = get_value<T>(sd[0]);
+                if (val < T(max_count)) {
                     values.push_back(val);
                 } else if (!no_error) {
                     throw std::runtime_error(
@@ -2165,14 +2165,14 @@ static void par_write(command_args& args) {
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
-    auto value = get_value<double>(value_opt);
+    auto value = get_value<xia::pixie::param::value_type>(value_opt);
     for (auto mod_num : mod_nums) {
         if (chans_opt.empty()) {
             bool bcast = crate[mod_num].write(param_opt, value);
             if (bcast) {
                 xia::pixie::crate::crate::user user(crate);
                 for (auto& module : crate.modules) {
-                    if (mod_num != module->number && module->online()) {
+                    if (mod_num != size_t(module->number) && module->online()) {
                         module->write(param_opt, value);
                     }
                 }

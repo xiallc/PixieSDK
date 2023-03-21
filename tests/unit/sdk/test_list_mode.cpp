@@ -58,7 +58,7 @@ TEST_SUITE("xia::pixie::list_mode") {
         evt.external_time = record::time_type(4771708667090);
         evt.time = record::time_type(4771708666967);
         evt.header_length = 6;
-        evt.trace = std::vector<size_t>(1, 0xBAFF1ED);
+        evt.trace = std::vector<uint32_t>(1, 0xBAFF1ED);
 
         SUBCASE("Comparison operators") {
             record eventB = evt;
@@ -143,12 +143,12 @@ TEST_SUITE("xia::pixie::list_mode") {
             case 250:
                 filter_conv = 8e-9;
                 expected.cfd_fractional_time = record::time_type(
-                    ((cfd_frac_time / cfd_scale) - static_cast<double>(trig_source)) * 4e-9);
+                    ((cfd_frac_time / cfd_scale) - double(trig_source)) * 4e-9);
                 break;
             case 500:
                 filter_conv = 10e-9;
                 expected.cfd_fractional_time = record::time_type(
-                    ((cfd_frac_time / cfd_scale) + static_cast<double>(trig_source) - 1) * 2e-9);
+                    ((cfd_frac_time / cfd_scale) + double(trig_source) - 1) * 2e-9);
                 break;
             default:
                 filter_conv = 10e-9;
@@ -158,7 +158,7 @@ TEST_SUITE("xia::pixie::list_mode") {
         }
 
         expected.cfd_forced_trigger = cfd_force;
-        expected.cfd_trigger_source = trig_source;
+        expected.cfd_trigger_source = uint32_t(trig_source);
         expected.channel_number = 10;
         expected.crate_id = 0;
         expected.energy = 480.0;
@@ -166,10 +166,10 @@ TEST_SUITE("xia::pixie::list_mode") {
             expected.energy_sums = {123, 456, 789};
             expected.filter_baseline = 159.357;
         }
-        expected.event_length = event_len;
+        expected.event_length = uint32_t(event_len);
         expected.filter_time = record::time_type(17514317598928 * filter_conv);
         expected.finish_code = true;
-        expected.header_length = header_len;
+        expected.header_length = uint32_t(header_len);
         if (qdc) {
             expected.qdc = {147, 258, 369, 963, 852, 741, 159, 357};
         }

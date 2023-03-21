@@ -342,7 +342,7 @@ bool module::fifo_stats::calc_bandwidth(bool update_min_max) {
     auto update_period = period - last_update;
     if (update_period >= bw_update_period) {
         size_t this_dma_in = dma_in.load();
-        double delta = (this_dma_in - last_dma_in) * sizeof(hw::word);
+        double delta = double((this_dma_in - last_dma_in) * sizeof(hw::word));
         double bw = delta / update_period;
         bandwidth = bw;
         if (update_min_max) {

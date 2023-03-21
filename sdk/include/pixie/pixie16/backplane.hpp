@@ -174,7 +174,7 @@ struct backplane {
 };
 
 template<typename T> void backplane::reinit(T& modules, T& offline) {
-    init(modules.size() + offline.size());
+    init(static_cast<int>(modules.size() + offline.size()));
     for (auto& mod : modules) {
         sync_wait(*mod);
     }

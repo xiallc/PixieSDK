@@ -32,13 +32,13 @@ namespace pixie {
 namespace data {
 namespace list_mode {
 
-static constexpr size_t min_rev = 17562;
-static constexpr size_t min_words = 4;
-static constexpr size_t num_qdc_words = 8;
-static constexpr size_t num_esum_words = 4;
-static constexpr size_t num_ext_ts_words = 2;
-static constexpr size_t min_slot_id = 2;
-static constexpr size_t max_slot_id = 14;
+static constexpr uint32_t min_rev = 17562;
+static constexpr uint32_t min_words = 4;
+static constexpr uint32_t num_qdc_words = 8;
+static constexpr uint32_t num_esum_words = 4;
+static constexpr uint32_t num_ext_ts_words = 2;
+static constexpr uint32_t min_slot_id = 2;
+static constexpr uint32_t max_slot_id = 14;
 
 using json = nlohmann::json;
 
@@ -177,18 +177,18 @@ struct element_desc {
     /**
      * @brief Defines the value of the descriptor
      */
-    const size_t value;
+    const uint32_t value;
     /**
      * @brief The bit that the value occupies within the data structure
      */
-    const size_t start_bit;
+    const uint32_t start_bit;
     /**
      * @brief The header word that this element appears on.
      */
-    const size_t header_index;
+    const uint32_t header_index;
 
-    element_desc(const element type_, const size_t value_, const size_t bit_,
-                 const size_t header_index_)
+    element_desc(const element type_, const uint32_t value_, const uint32_t bit_,
+                 const uint32_t header_index_)
         : type(type_), value(value_), start_bit(bit_), header_index(header_index_) {}
 };
 
@@ -388,19 +388,19 @@ static double make_u64_double(const uint32_t high, const uint32_t low) {
     return double(make_u64(high, low));
 }
 
-static void make_time(record& rec, const size_t freq, const uint32_t filter_low,
+static void make_time(record& rec, const uint32_t freq, const uint32_t filter_low,
                       const uint32_t filter_high, const double cfd_time) {
     double filter_conv;
     switch (freq) {
         case 250:
             filter_conv = 8e-9;
             rec.cfd_fractional_time =
-                record::time_type((cfd_time - static_cast<double>(rec.cfd_trigger_source)) * 4e-9);
+                record::time_type((cfd_time - double(rec.cfd_trigger_source)) * 4e-9);
             break;
         case 500:
             filter_conv = 10e-9;
             rec.cfd_fractional_time = record::time_type(
-                (cfd_time + static_cast<double>(rec.cfd_trigger_source) - 1) * 2e-9);
+                (cfd_time + double(rec.cfd_trigger_source) - 1) * 2e-9);
             break;
         default:
             filter_conv = 10e-9;
@@ -411,7 +411,7 @@ static void make_time(record& rec, const size_t freq, const uint32_t filter_low,
     rec.time = rec.cfd_fractional_time + rec.filter_time;
 }
 
-static const descriptor_list& find_element_set(size_t rev, size_t freq) {
+static const descriptor_list& find_element_set(uint32_t rev, uint32_t freq) {
     switch (freq) {
         case 100:
             if (rev >= 17562 && rev < 29432) {
@@ -455,7 +455,7 @@ static const descriptor_list& find_element_set(size_t rev, size_t freq) {
     }
 }
 
-static double cfd_multiplier(const size_t rev, const size_t freq) {
+static double cfd_multiplier(const uint32_t rev, const uint32_t freq) {
     switch (freq) {
         case 100:
             if (rev >= 17562 && rev < 30474) {
@@ -490,7 +490,7 @@ struct header_config {
         valid = false;
     }
 
-    void generate(size_t len, size_t rev, record& rec) {
+    void generate(uint32_t len, uint32_t rev, record& rec) {
         if (rev < 30980) {
             switch (len) {
                 case header_length::header_ets:
@@ -545,9 +545,9 @@ struct header_config {
         rec.header_length = len;
     }
 
-    size_t ets_offset;
-    size_t esums_offset;
-    size_t qdc_offset;
+    uint32_t ets_offset;
+    uint32_t esums_offset;
+    uint32_t qdc_offset;
     bool ets;
     bool qdc;
     bool esums;
@@ -561,7 +561,7 @@ void fill_remainder(uint32_t* data, uint32_t* data_end, buffer& leftovers) {
     }
 }
 
-void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequency, records& recs,
+void decode_data_block(uint32_t* data, size_t len, uint32_t revision, uint32_t frequency, records& recs,
                        buffer& leftovers) {
     if (data == nullptr) {
         throw error(error::code::invalid_buffer, "buffer pointed to an invalid location");
@@ -664,7 +664,7 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
                                     "data corruption: cfd was forced but still recorded a time");
                     }
                     cfd_fractional_time =
-                        static_cast<double>(val) / cfd_multiplier(revision, frequency);
+                        double(val) / cfd_multiplier(revision, frequency);
                     break;
                 case element::cfd_trigger_source_bit:
                     evt.cfd_trigger_source = val;
@@ -676,13 +676,13 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
                     evt.crate_id = val;
                     break;
                 case element::energy:
-                    evt.energy = static_cast<double>(val);
+                    evt.energy = double(val);
                     break;
                 case element::event_time_high:
-                    event_time_high = static_cast<uint32_t>(val);
+                    event_time_high = uint32_t(val);
                     break;
                 case element::event_time_low:
-                    event_time_low = static_cast<uint32_t>(val);
+                    event_time_low = uint32_t(val);
                     break;
                 case element::finish_code:
                     evt.finish_code = val != 0;
@@ -733,7 +733,7 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
         }
 
         if (evt.trace_length > 0) {
-            for (size_t w = evt.header_length; w < evt.event_length; ++w) {
+            for (uint32_t w = evt.header_length; w < evt.event_length; ++w) {
                 evt.trace.push_back(data[w] & 0xFFFF);
                 evt.trace.push_back((data[w] >> 16) & 0xFFFF);
             }
@@ -745,7 +745,7 @@ void decode_data_block(uint32_t* data, size_t len, size_t revision, size_t frequ
     }
 }
 
-void decode_data_block(buffer data, size_t revision, size_t frequency, records& recs,
+void decode_data_block(buffer data, uint32_t revision, uint32_t frequency, records& recs,
                        buffer& leftovers) {
     decode_data_block(data.data(), data.size(), revision, frequency, recs, leftovers);
 }

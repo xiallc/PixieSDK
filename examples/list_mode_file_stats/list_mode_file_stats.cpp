@@ -62,9 +62,9 @@ struct LOG {
 
 struct config {
     ///TODO: Add a set of expected data that can be configured on a per-channel basis. E.g. esums.
-    size_t frequency;
-    size_t revision;
-    size_t slot;
+    uint32_t frequency;
+    uint32_t revision;
+    uint32_t slot;
     config() : frequency(0), revision(0), slot(0) {}
 };
 
@@ -204,7 +204,7 @@ int main(int argc, char** argv) {
         auto retries = max_retries;
 
         if (size_words < chunk_size_words) {
-            data_vec_size = size_words;
+            data_vec_size = int(size_words);
         }
 
         std::cout << LOG("INFO") << "File Size In Bytes: " << size_bytes
@@ -229,7 +229,7 @@ int main(int argc, char** argv) {
                 xia::pixie::data::list_mode::records records;
                 xia::pixie::data::list_mode::decode_data_block(
                     data, cfgs[0].revision, cfgs[0].frequency, records, remainder);
-                record_total += records.size();
+                record_total += int(records.size());
                 for (const auto& record : records) {
                     auto stat_rec = stats.find(record.channel_number);
                     if (stat_rec == stats.end()) {
@@ -239,11 +239,11 @@ int main(int argc, char** argv) {
                                                         record.energy,
                                                         record.energy,
                                                         record.energy,
-                                                        static_cast<double>(record.event_length),
-                                                        static_cast<double>(record.header_length),
+                                                        double(record.event_length),
+                                                        double(record.header_length),
                                                         record.time.count(),
                                                         record.time.count(),
-                                                        static_cast<double>(record.trace_length)};
+                                                        double(record.trace_length)};
                     } else {
                         auto ch = &stat_rec->second;
                         ch->count++;

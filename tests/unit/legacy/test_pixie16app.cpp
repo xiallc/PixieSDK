@@ -28,6 +28,20 @@
 #include <fstream>
 #include <vector>
 
+#if defined(_WIN64) || defined(_WIN32)
+#include <io.h>
+#endif
+
+void generate_tempfile(std::string& str) {
+    char filename_c[] = "legacy_unit_test_XXXXXX";
+#if defined(_WIN64) || defined(_WIN32)
+    CHECK((_mktemp_s(filename_c, sizeof(filename_c)) == 0));
+#else
+    CHECK((mkstemp(filename_c) != -1));
+#endif
+    str = filename_c;
+}
+
 TEST_SUITE("app/pixie16app.c") {
     TEST_CASE("APP16_ClrBit") {
         CHECK(10 == APP16_ClrBit(10, 10));
@@ -148,9 +162,10 @@ TEST_SUITE("app/pixie16app.c") {
             877, 750, 667, 619,  591,  563,  526,  458,  395,  403,  452,  478,  492,  498,
             494, 477, 460, 459,  462,  461,  460,  456,  452,  452,  455,  453,  446,  441,
             440, 444, 456, 459,  451,  450,  447,  445,  449,  456,  456,  455};
-        auto trace_length = static_cast<unsigned short>(trc.size());
+        auto trace_length = (unsigned short)(trc.size());
 
-        std::string filename = std::tmpnam(nullptr);
+        std::string filename;
+        generate_tempfile(filename);
         std::ofstream outfile(filename, std::ios::binary | std::ios::out);
         for (uint16_t val : trc)
             outfile.write(reinterpret_cast<const char*>(&val), sizeof(val));
@@ -421,7 +436,8 @@ TEST_SUITE("app/pixie16app.c") {
         }
 
         SUBCASE("Verify results") {
-            std::string filename = std::tmpnam(nullptr);
+            std::string filename;
+            generate_tempfile(filename);
             std::ofstream outfile(filename, std::ios::binary | std::ios::out);
             for (uint16_t val : trc)
                 outfile.write(reinterpret_cast<const char*>(&val), sizeof(val));

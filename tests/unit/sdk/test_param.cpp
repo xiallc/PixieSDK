@@ -65,7 +65,7 @@ TEST_SUITE("xia::pixie::param") {
 
     TEST_CASE("copy_parameters with copy filter") {
         auto var = xia::pixie::param::channel_var::PreampTau;
-        auto var_idx = static_cast<int>(var);
+        auto var_idx = int(var);
         xia::pixie::param::copy_filter filter = {var};
 
         SUBCASE("Mis-matched sizes.") {
@@ -88,21 +88,21 @@ TEST_SUITE("xia::pixie::param") {
         SUBCASE("Everything") {
             test_filter_mask(4095);
             for (auto& var : xia::pixie::param::get_channel_var_descriptors()) {
-                auto idx = static_cast<int>(var.par);
+                auto idx = int(var.par);
                 CHECK(source[idx].value.front().value == destination[idx].value.front().value);
             }
         }
         SUBCASE("Nothing") {
             test_filter_mask(0);
             for (auto& var : xia::pixie::param::get_channel_var_descriptors()) {
-                auto idx = static_cast<int>(var.par);
+                auto idx = int(var.par);
                 CHECK(destination[idx].value.front().value == destination_default);
             }
         }
         SUBCASE("Energy and Trigger Filters") {
             test_filter_mask(1);
             for (auto& var : xia::pixie::param::get_channel_var_descriptors()) {
-                auto idx = static_cast<int>(var.par);
+                auto idx = int(var.par);
                 if (var.par != xia::pixie::param::channel_var::BLcut &&
                     var.par != xia::pixie::param::channel_var::PAFlength &&
                     var.par != xia::pixie::param::channel_var::PeakSample &&
@@ -120,11 +120,11 @@ TEST_SUITE("xia::pixie::param") {
             }
         }
         SUBCASE("Analog Signal Conditioning") {
-            source[static_cast<int>(xia::pixie::param::channel_var::ChanCSRa)].value.front().value =
+            source[int(xia::pixie::param::channel_var::ChanCSRa)].value.front().value =
                 0xDEBAEE;
             test_filter_mask(2);
             for (auto& var : xia::pixie::param::get_channel_var_descriptors()) {
-                auto idx = static_cast<int>(var.par);
+                auto idx = int(var.par);
                 if (var.par != xia::pixie::param::channel_var::OffsetDAC) {
                     CHECK(destination[idx].value.front().value == destination_default);
                 } else if (var.par == xia::pixie::param::channel_var::ChanCSRa) {
@@ -137,7 +137,7 @@ TEST_SUITE("xia::pixie::param") {
         SUBCASE("Histogram Control") {
             test_filter_mask(4);
             for (auto& var : xia::pixie::param::get_channel_var_descriptors()) {
-                auto idx = static_cast<int>(var.par);
+                auto idx = int(var.par);
                 if (var.par != xia::pixie::param::channel_var::EnergyLow &&
                     var.par != xia::pixie::param::channel_var::Log2Ebin) {
                     CHECK(destination[idx].value.front().value == destination_default);
@@ -149,7 +149,7 @@ TEST_SUITE("xia::pixie::param") {
         SUBCASE("Decay Time") {
             test_filter_mask(8);
             for (auto& var : xia::pixie::param::get_channel_var_descriptors()) {
-                auto idx = static_cast<int>(var.par);
+                auto idx = int(var.par);
                 if (var.par != xia::pixie::param::channel_var::PreampTau) {
                     CHECK(destination[idx].value.front().value == destination_default);
                 } else {
@@ -160,7 +160,7 @@ TEST_SUITE("xia::pixie::param") {
         SUBCASE("Pulse Shape Analysis") {
             test_filter_mask(16);
             for (auto& var : xia::pixie::param::get_channel_var_descriptors()) {
-                auto idx = static_cast<int>(var.par);
+                auto idx = int(var.par);
                 if (var.par != xia::pixie::param::channel_var::TraceLength &&
                     var.par != xia::pixie::param::channel_var::TriggerDelay &&
                     var.par != xia::pixie::param::channel_var::PAFlength) {
@@ -173,7 +173,7 @@ TEST_SUITE("xia::pixie::param") {
         SUBCASE("Baseline Control") {
             test_filter_mask(32);
             for (auto& var : xia::pixie::param::get_channel_var_descriptors()) {
-                auto idx = static_cast<int>(var.par);
+                auto idx = int(var.par);
                 if (var.par != xia::pixie::param::channel_var::BLcut &&
                     var.par != xia::pixie::param::channel_var::BaselinePercent &&
                     var.par != xia::pixie::param::channel_var::Log2Bweight) {
@@ -186,7 +186,7 @@ TEST_SUITE("xia::pixie::param") {
         SUBCASE("Channel CSRA") {
             test_filter_mask(128);
             for (auto& var : xia::pixie::param::get_channel_var_descriptors()) {
-                auto idx = static_cast<int>(var.par);
+                auto idx = int(var.par);
                 if (var.par != xia::pixie::param::channel_var::ChanCSRa) {
                     CHECK(destination[idx].value.front().value == destination_default);
                 } else {
@@ -197,7 +197,7 @@ TEST_SUITE("xia::pixie::param") {
         SUBCASE("CFD Triggering") {
             test_filter_mask(256);
             for (auto& var : xia::pixie::param::get_channel_var_descriptors()) {
-                auto idx = static_cast<int>(var.par);
+                auto idx = int(var.par);
                 if (var.par != xia::pixie::param::channel_var::CFDDelay &&
                     var.par != xia::pixie::param::channel_var::CFDScale &&
                     var.par != xia::pixie::param::channel_var::CFDThresh) {
@@ -210,7 +210,7 @@ TEST_SUITE("xia::pixie::param") {
         SUBCASE("Trigger Stretch Length") {
             test_filter_mask(512);
             for (auto& var : xia::pixie::param::get_channel_var_descriptors()) {
-                auto idx = static_cast<int>(var.par);
+                auto idx = int(var.par);
                 if (var.par != xia::pixie::param::channel_var::ExtTrigStretch &&
                     var.par != xia::pixie::param::channel_var::ChanTrigStretch &&
                     var.par != xia::pixie::param::channel_var::VetoStretch &&
@@ -224,7 +224,7 @@ TEST_SUITE("xia::pixie::param") {
         SUBCASE("FIFO Delays") {
             test_filter_mask(1024);
             for (auto& var : xia::pixie::param::get_channel_var_descriptors()) {
-                auto idx = static_cast<int>(var.par);
+                auto idx = int(var.par);
                 if (var.par != xia::pixie::param::channel_var::ExternDelayLen &&
                     var.par != xia::pixie::param::channel_var::FtrigoutDelay) {
                     CHECK(destination[idx].value.front().value == destination_default);
@@ -236,7 +236,7 @@ TEST_SUITE("xia::pixie::param") {
         SUBCASE("Multiplicity Mask") {
             test_filter_mask(2048);
             for (auto& var : xia::pixie::param::get_channel_var_descriptors()) {
-                auto idx = static_cast<int>(var.par);
+                auto idx = int(var.par);
                 if (var.par != xia::pixie::param::channel_var::MultiplicityMaskL &&
                     var.par != xia::pixie::param::channel_var::MultiplicityMaskH) {
                     CHECK(destination[idx].value.front().value == destination_default);
@@ -248,7 +248,7 @@ TEST_SUITE("xia::pixie::param") {
         SUBCASE("QDC") {
             test_filter_mask(4096);
             for (auto& var : xia::pixie::param::get_channel_var_descriptors()) {
-                auto idx = static_cast<int>(var.par);
+                auto idx = int(var.par);
                 if (var.par != xia::pixie::param::channel_var::QDCLen0 &&
                     var.par != xia::pixie::param::channel_var::QDCLen1 &&
                     var.par != xia::pixie::param::channel_var::QDCLen2 &&
@@ -266,7 +266,7 @@ TEST_SUITE("xia::pixie::param") {
         SUBCASE("Multiplicity Mask and FIFO Delays") {
             test_filter_mask(3072);
             for (auto& var : xia::pixie::param::get_channel_var_descriptors()) {
-                auto idx = static_cast<int>(var.par);
+                auto idx = int(var.par);
                 if (var.par != xia::pixie::param::channel_var::MultiplicityMaskL &&
                     var.par != xia::pixie::param::channel_var::MultiplicityMaskH &&
                     var.par != xia::pixie::param::channel_var::ExternDelayLen &&

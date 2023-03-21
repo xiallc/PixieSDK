@@ -363,8 +363,6 @@ TEST_SUITE("Channel Parameter Reads and Writes") {
             CHECK(crate[1].read_var("Integrator", 0, 0) == 7);
             CHECK(crate[1].read("INTEGRATOR", 0) == 7);
         }
-        ///@NOTE This variable is disabled at the time of writing the test.
-        //CHECK_THROWS_AS(crate[1].write("INTEGRATOR", 0, 0.3), xia::pixie::error::error);
     }
     TEST_CASE("QDCLen") {
         const double value = 1.5;

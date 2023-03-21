@@ -105,15 +105,15 @@ struct record {
     /**
      * @brief Defines the type of object used for the energy sums data.
      */
-    using energy_sums_type = std::vector<size_t>;
+    using energy_sums_type = std::vector<uint32_t>;
     /**
      * @brief Defines the type of object used for the trace
      */
-    using trace_type = std::vector<size_t>;
+    using trace_type = std::vector<uint32_t>;
     /**
      * @brief Defines the type of object used for the QDCs.
      */
-    using qdc_type = std::vector<size_t>;
+    using qdc_type = std::vector<uint32_t>;
     /**
      * @brief Defines a time type that all the times in the object use.
      */
@@ -186,19 +186,19 @@ struct record {
      * programs can then know exactly when the CFD zero crossing occurred and
      * the exact CFD fractional time can be known.
      */
-    size_t cfd_trigger_source;
+    uint32_t cfd_trigger_source;
     /**
      * @brief  The channel number that recorded the event.
      *
      * This value starts counting at 0. For example a Pixie-16 Rev F module
      * would range from [0, 15].
      */
-    size_t channel_number;
+    uint32_t channel_number;
     /**
      * @brief The crate id for the crate that produced the event.
      * @note The SDK does not support multi-crate systems so this will always be 0.
      */
-    size_t crate_id;
+    uint32_t crate_id;
     /**
      * @brief  The energy as recorded by the on-board energy (slow) filter.
      *
@@ -220,7 +220,7 @@ struct record {
     /**
      * @brief The number of 32-bit unsigned integers that this record was packed into.
      */
-    size_t event_length;
+    uint32_t event_length;
     /**
      * @brief The external time input to the front panel of the system.
      * @note Units of clock cycles
@@ -261,7 +261,7 @@ struct record {
     /**
      * @brief The length of the list-mode data header used for processing the data.
      */
-    size_t header_length;
+    uint32_t header_length;
     /**
      * @brief QDCs recorded by the module
      *
@@ -277,7 +277,7 @@ struct record {
     /**
      * @brief The module's physical slot in the crate this ranges from [2, 14].
      */
-    size_t slot_id;
+    uint32_t slot_id;
     /**
      * @brief The arrival time of the event within the system in seconds.
      * @note Units of seconds
@@ -365,8 +365,8 @@ using buffer = std::vector<uint32_t>;
  *  typically happens when you've passed in a partial record, or a data block
  *  that contains a partial record at the end.
  */
-PIXIE_EXPORT void PIXIE_API decode_data_block(uint32_t* data, size_t len, size_t revision,
-                                              size_t frequency, records& recs, buffer& leftovers);
+PIXIE_EXPORT void PIXIE_API decode_data_block(uint32_t* data, size_t len, uint32_t revision,
+                                              uint32_t frequency, records& recs, buffer& leftovers);
 
 /**
  * @brief Decodes a Pixie-16 list-mode data block.
@@ -396,7 +396,7 @@ PIXIE_EXPORT void PIXIE_API decode_data_block(uint32_t* data, size_t len, size_t
  *  typically happens when you've passed in a partial record, or a data block
  *  that contains a partial record at the end.
  */
-PIXIE_EXPORT void PIXIE_API decode_data_block(buffer data, size_t revision, size_t frequency,
+PIXIE_EXPORT void PIXIE_API decode_data_block(buffer data, uint32_t revision, uint32_t frequency,
                                               records& recs, buffer& leftovers);
 }  // namespace list_mode
 }  // namespace data

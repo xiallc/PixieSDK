@@ -41,8 +41,8 @@ TEST_SUITE("xia::util") {
             CHECK(xia::util::ieee_float(0.5) == xia::util::ieee_float(0.5));
         }
         SUBCASE("Cast operator / out()") {
-            CHECK(static_cast<double>(xia::util::ieee_float(0.5)) == 0.5);
-            CHECK(static_cast<double>(xia::util::ieee_float(-0.5)) == -0.5);
+            CHECK(double(xia::util::ieee_float(0.5)) == 0.5);
+            CHECK(double(xia::util::ieee_float(-0.5)) == -0.5);
         }
         SUBCASE("Sign Bit 0 / Exponent > 0") {
             CHECK(doctest::Approx(xia::util::ieee_float(0x40490fdbu)) == 3.14159);

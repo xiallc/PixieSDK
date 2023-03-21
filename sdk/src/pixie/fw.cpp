@@ -144,7 +144,11 @@ void firmware::load() {
          */
         int fd = -1;
         try {
+#if defined(_WIN64) || defined(_WIN32)
+            fd = ::_open(filename.c_str(), O_RDONLY);
+#else
             fd = ::open(filename.c_str(), O_RDONLY);
+#endif
             if (fd < 0) {
                 throw error(error::code::file_not_found,
                             "firmware: image open: " + tag + ": " + std::strerror(errno));
@@ -157,16 +161,29 @@ void firmware::load() {
             }
             size_t size = size_t(sb.st_size);
             data.resize(size);
+#if defined(_WIN64) || defined(_WIN32)
+            r = ::_read(fd, data.data(), static_cast<unsigned int>(size));
+#else
             r = ::read(fd, data.data(), static_cast<unsigned int>(size));
+
+#endif
             if (r < 0) {
                 throw error(error::code::file_not_found,
                             "firmware: image read: " + tag + ": " + std::strerror(errno));
             }
+#if defined(_WIN64) || defined(_WIN32)
+            ::_close(fd);
+#else
             ::close(fd);
+#endif
             total_image_size += size;
         } catch (...) {
             if (fd >= 0) {
+#if defined(_WIN64) || defined(_WIN32)
+                ::_close(fd);
+#else
                 ::close(fd);
+#endif
             }
             throw;
         }

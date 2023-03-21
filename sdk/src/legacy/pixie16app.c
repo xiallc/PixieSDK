@@ -2746,6 +2746,8 @@ PIXIE16APP_EXPORT int PIXIE16APP_API Pixie16WriteSglChanPar(const char* ChanParN
             fastthresh = (unsigned int) (ChanParData * (double) FL * 2.0);
         else if (Module_Information[ModNum].Module_ADCMSPS == 500)
             fastthresh = (unsigned int) (ChanParData * (double) FL * 5.0);
+        else
+            fastthresh = FAST_THRESHOLD_MAX;
 
         // Check FastThresh limit
         if (fastthresh >= FAST_THRESHOLD_MAX) {

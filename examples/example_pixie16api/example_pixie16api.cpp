@@ -101,7 +101,7 @@ struct configuration {
     module_configs modules;
     std::vector<unsigned short> slot_def;
     unsigned short num_modules() const {
-        return static_cast<unsigned short>(modules.size());
+        return (unsigned short)(modules.size());
     }
 };
 
@@ -187,7 +187,7 @@ void read_config(const std::string& config_file_name, configuration& cfg) {
 
         mod_cfg mcfg;
         mcfg.slot = module["slot"];
-        mcfg.number = static_cast<unsigned short>(cfg.slot_def.size() - 1);
+        mcfg.number = (unsigned short)(cfg.slot_def.size()) - 1;
         std::strcpy(mcfg.sys_fpga, module["fpga"]["sys"].get<std::string>().c_str());
         std::strcpy(mcfg.sp_fpga, module["fpga"]["fippi"].get<std::string>().c_str());
         std::strcpy(mcfg.dsp_code, module["dsp"]["ldr"].get<std::string>().c_str());
@@ -223,7 +223,7 @@ bool verify_api_return_value(const int& val, const std::string& func_name,
     if (val < 0) {
         std::string msg;
         msg.resize(1024);
-        PixieGetReturnCodeText(val, &msg[0], msg.size());
+        PixieGetReturnCodeText(val, &msg[0], (unsigned int)(msg.size()));
         std::cout << LOG("ERROR") << func_name << " failed with code " << val
                   << " and message: " << msg << std::endl;
         return false;
@@ -294,7 +294,7 @@ void export_mca_memory(const mod_cfg& mod, const std::string& filename) {
     std::ofstream out(filename);
     out << "bin,";
     std::vector<std::vector<uint32_t>> hists;
-    unsigned int max_histogram_length = 0;
+    size_t max_histogram_length = 0;
     for (unsigned int i = 0; i < mod.number_of_channels; i++) {
         unsigned int tmp = 0;
         PixieGetHistogramLength(mod.number, i, &tmp);
@@ -302,9 +302,9 @@ void export_mca_memory(const mod_cfg& mod, const std::string& filename) {
         if (hist.size() > max_histogram_length)
             max_histogram_length = hist.size();
 
-        Pixie16ReadHistogramFromModule(hist.data(), hist.size(), mod.number, i);
+        Pixie16ReadHistogramFromModule(hist.data(), (unsigned int)(hist.size()), mod.number, i);
         hists.push_back(hist);
-        if (i < static_cast<unsigned int>(mod.number_of_channels - 1))
+        if (i < (unsigned int)(mod.number_of_channels - 1))
             out << "Chan" << i << ",";
         else
             out << "Chan" << i;
@@ -365,7 +365,7 @@ bool execute_baseline_capture(const mod_cfg& mod, std::string dir) {
                                               "csv", dir));
     ofstream1 << "bin,timestamp,";
     for (unsigned int i = 0; i < mod.number_of_channels; i++) {
-        if (i != static_cast<unsigned int>(mod.number_of_channels - 1))
+        if (i != (unsigned int)(mod.number_of_channels) - 1)
             ofstream1 << "Chan" << i << ",";
         else
             ofstream1 << "Chan" << i;
@@ -375,7 +375,7 @@ bool execute_baseline_capture(const mod_cfg& mod, std::string dir) {
     for (unsigned int i = 0; i < max_num_baselines; i++) {
         ofstream1 << i << "," << timestamps[0][i] << ",";
         for (unsigned int k = 0; k < mod.number_of_channels; k++) {
-            if (k != static_cast<unsigned int>(mod.number_of_channels - 1))
+            if (k != (unsigned int)(mod.number_of_channels) - 1)
                 ofstream1 << baselines[k][i] << ",";
             else
                 ofstream1 << baselines[k][i];
@@ -782,7 +782,7 @@ bool execute_trace_capture(const mod_cfg& mod, std::string dir) {
     std::ofstream ofstream1(generate_filename("module" + std::to_string(mod.number) + "-adc", "csv", dir));
     ofstream1 << "bin,";
 
-    unsigned int max_trace_length = 0;
+    size_t max_trace_length = 0;
     std::vector<std::vector<unsigned short>> traces;
     for (unsigned int i = 0; i < mod.number_of_channels; i++) {
         unsigned int tmp = 0;
@@ -794,12 +794,12 @@ bool execute_trace_capture(const mod_cfg& mod, std::string dir) {
             max_trace_length = trace.size();
 
         if (!verify_api_return_value(
-                Pixie16ReadSglChanADCTrace(trace.data(), trace.size(), mod.number, i),
-                "Pixie16ReadSglChanADCTrace", false))
+                Pixie16ReadSglChanADCTrace(trace.data(), (unsigned int)(trace.size()), mod.number, i),
+                "Pixie16AcquireADCTrace", false))
             return false;
         traces.push_back(trace);
 
-        if (i != static_cast<unsigned int>(mod.number_of_channels - 1))
+        if (i != (unsigned int)(mod.number_of_channels) - 1)
             ofstream1 << "Chan" << i << ",";
         else
             ofstream1 << "Chan" << i;
@@ -872,7 +872,7 @@ double calculate_duration_in_seconds(const std::chrono::system_clock::time_point
     return std::chrono::duration<double>(end - start).count();
 }
 
-void output_module_worker_info(const size_t mod_num) {
+void output_module_worker_info(const unsigned short& mod_num) {
     fifo_worker_config worker_config;
     if (!verify_api_return_value(PixieGetWorkerConfiguration(mod_num, &worker_config),
                                  "PixieGetWorkerConfiguration", false))
@@ -1051,7 +1051,6 @@ bool execute_boot(configuration& cfg, args::ValueFlag<std::string>& boot_flag,
 }
 
 bool directory_check(args::ValueFlag<std::string>& direc) {
-    struct stat info;
     if (direc) {
 #if defined(_WIN64) || defined(_WIN32)
         DIR* dir = nullptr;
@@ -1069,6 +1068,7 @@ bool directory_check(args::ValueFlag<std::string>& direc) {
             return false;
         }
 #else
+        struct stat info;
         const char* dir = direc.Get().c_str();
         if (stat(dir, &info) != 0) {
             std::cout << LOG("ERROR") << "cannot access " << dir << std::endl;
@@ -1147,17 +1147,17 @@ int main(int argc, char** argv) {
     args::ValueFlag<unsigned int> module(arguments, "module", "The module to operate on.", {"mod"});
     args::ValueFlag<unsigned int> num_runs(
         arguments, "num_runs", "The number of runs to execute when taking list-mode or MCA data.",
-        {"num-runs"}, static_cast<unsigned int>(1));
+        {"num-runs"}, (unsigned int)(1));
     args::ValueFlag<double> parameter_value(
         write, "parameter_value", "The value of the parameter we want to write.", {'v', "value"});
     args::ValueFlag<unsigned int> synch_wait(
         list_mode, "synch_wait",
         "SynchWait = 0 to start/stop runs independently. (default)\nSynchWait = 1 to start/stop runs synchronously.",
-        {"synch-wait"}, static_cast<unsigned int>(0));
+        {"synch-wait"}, (unsigned int)(0));
     args::ValueFlag<unsigned int> in_synch(
         list_mode, "in_synch",
         "InSynch = 0 to reset clocks prior to starting a run. (default)\nInSynch = 1 to take no clock action.",
-        {"in-synch"}, static_cast<unsigned int>(0));
+        {"in-synch"}, (unsigned int)(0));
 
     adjust_offsets.Add(conf_flag);
     adjust_offsets.Add(boot_pattern_flag);

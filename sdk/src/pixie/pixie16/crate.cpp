@@ -118,7 +118,7 @@ void crate::initialize(bool reg_trace) {
         }
 
         num_modules = modules.size();
-        backplane.init(num_modules + offline.size());
+        backplane.init(static_cast<int>(num_modules + offline.size()));
 
         check_revision();
         check_slots();

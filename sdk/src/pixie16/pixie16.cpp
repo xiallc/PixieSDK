@@ -161,11 +161,11 @@ PIXIE_EXPORT unsigned int PIXIE_API APP32_TstBit(unsigned short bit, unsigned in
 }
 
 PIXIE_EXPORT double PIXIE_API IEEEFloating2Decimal(unsigned int IEEEFloatingNumber) {
-    return static_cast<double>(xia::util::ieee_float(IEEEFloatingNumber));
+    return double(xia::util::ieee_float(IEEEFloatingNumber));
 }
 
 PIXIE_EXPORT unsigned int PIXIE_API Decimal2IEEEFloating(double DecimalNumber) {
-    return static_cast<unsigned int>(xia::util::ieee_float(DecimalNumber));
+    return (unsigned int)(xia::util::ieee_float(DecimalNumber));
 }
 
 PIXIE_EXPORT unsigned int PIXIE_API Pixie16GetStatisticsSize(void) {
@@ -925,7 +925,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned
 
     try {
         xia::pixie::module::number_slots numbers;
-        for (int i = 0; i < static_cast<int>(NumModules); ++i) {
+        for (int i = 0; i < int(NumModules); ++i) {
             using number_slot = xia::pixie::module::number_slot;
             xia_log(xia::log::info)
                 << "Pixie16InitSystem: slot map: " << PXISlotMap[i] << " => " << i;
@@ -1047,8 +1047,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
                 << chan.fixture->config.max_histogram_length << ") for Module " << ModNum
                 << " Channel " << ChanNum
                 << ". Truncating to the maximum length and filling with max bin values.";
-            read_words =
-                static_cast<unsigned int>(chan.fixture->config.max_histogram_length);
+            read_words = (unsigned int)(chan.fixture->config.max_histogram_length);
 
             for (unsigned int i = read_words; i < NumWords; i++)
                 Histogram[i] = std::numeric_limits<unsigned int>::max();
@@ -1126,7 +1125,7 @@ PIXIE_EXPORT int PIXIE_API PixieGetModuleInfo(unsigned short mod_num, module_con
         cfg->adc_bit_resolution = module->eeprom.configs[0].adc_bits;
         cfg->adc_sampling_frequency = module->eeprom.configs[0].adc_msps;
         cfg->number = module->number;
-        cfg->number_of_channels = static_cast<unsigned short>(module->num_channels);
+        cfg->number_of_channels = (unsigned short)(module->num_channels);
         cfg->revision = module->revision;
         cfg->serial_number = module->serial_num;
         cfg->slot = module->slot;
@@ -1432,7 +1431,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsign
                             << " RunType=" << RunType << " mode=" << mode;
 
     try {
-        if (RunType != static_cast<unsigned short>(xia::pixie::hw::run::run_task::list_mode)) {
+        if (RunType != (unsigned short)(xia::pixie::hw::run::run_task::list_mode)) {
             throw xia_error(xia_error::code::invalid_value,
                             "invalid list-mode start run type (must be 0x100)");
         }
