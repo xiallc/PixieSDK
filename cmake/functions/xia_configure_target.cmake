@@ -35,7 +35,7 @@ function(xia_configure_target)
                 CXX_EXTENSIONS NO
                 )
     else ()
-        if (NOT LEGACY)
+        if (NOT ${XIA_CT_LEGACY})
             target_compile_options(${XIA_CT_TARGET} PRIVATE -std=c++${XIA_CT_CXX_STD})
         endif ()
     endif ()
