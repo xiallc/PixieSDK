@@ -2165,7 +2165,7 @@ static void par_write(command_args& args) {
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
-    auto value = get_value<xia::pixie::param::value_type>(value_opt);
+    auto value = get_value<double>(value_opt);
     for (auto mod_num : mod_nums) {
         if (chans_opt.empty()) {
             bool bcast = crate[mod_num].write(param_opt, value);
