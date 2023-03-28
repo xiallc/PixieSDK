@@ -1660,7 +1660,7 @@ static void hist_save(command_args& args) {
         using namespace xia::pixie::hw::run;
         xia::pixie::channel::range channels;
         channels_option(channels, chans_opt, crate[mod_num].num_channels);
-        size_t length = crate[mod_num].num_channels;
+        size_t length = crate[mod_num].channels[0].fixture->config.max_histogram_length;
         if (!bins_opt.empty()) {
             length = get_value<size_t>(bins_opt);
         }
