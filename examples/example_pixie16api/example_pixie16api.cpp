@@ -650,7 +650,7 @@ bool execute_mca_run(unsigned int run_num, const configuration& cfg,
     double check_time = 0;
     bool run_status = Pixie16CheckRunStatus(0);
     bool forced_end = false;
-    while (run_status != 0) {
+    while (run_status != 0 && forced_end == false) {
         current_run_time = std::chrono::duration_cast<std::chrono::duration<double>>(
                                std::chrono::steady_clock::now() - run_start_time)
                                .count();
