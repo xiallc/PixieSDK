@@ -319,14 +319,14 @@ using records = std::vector<record>;
  * @param[in] rec The record that we want to convert into a string.
  * @return The JSON string representation of the record object.
  */
-std::string record_to_json(const record& rec);
+PIXIE_EXPORT void PIXIE_API record_to_json(const record& rec, std::string& str);
 /**
  * @brief Converts a JSON string object into a record.
  * @param[in] json_string The JSON string that we want converted to a record.
  * @param[in, out] rec The record object to store the converted information.
  * @throws xia::pixie::error::error if the string could not be converted to a record.
  */
-void json_to_record(const std::string& json_string, record& rec);
+PIXIE_EXPORT void PIXIE_API json_to_record(const std::string& json_string, record& rec);
 
 /**
  * @brief A type definition to define an object that holds the binary data.

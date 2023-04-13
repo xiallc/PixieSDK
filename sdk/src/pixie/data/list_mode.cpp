@@ -109,7 +109,7 @@ void json_to_record(const std::string& json_string, record& rec) {
     }
 }
 
-std::string record_to_json(const record& evt) {
+void record_to_json(const record& evt, std::string& str) {
     json val = {{"cfd_forced_trigger", evt.cfd_forced_trigger},
                 {"cfd_fractional_time", evt.cfd_fractional_time.count()},
                 {"cfd_trigger_source", evt.cfd_trigger_source},
@@ -128,7 +128,7 @@ std::string record_to_json(const record& evt) {
                 {"time", evt.time.count()},
                 {"trace", evt.trace},
                 {"trace_out_of_range", evt.trace_out_of_range}};
-    return val.dump();
+    str = val.dump();
 }
 
 record::record()
@@ -399,8 +399,8 @@ static void make_time(record& rec, const uint32_t freq, const uint32_t filter_lo
             break;
         case 500:
             filter_conv = 10e-9;
-            rec.cfd_fractional_time = record::time_type(
-                (cfd_time + double(rec.cfd_trigger_source) - 1) * 2e-9);
+            rec.cfd_fractional_time =
+                record::time_type((cfd_time + double(rec.cfd_trigger_source) - 1) * 2e-9);
             break;
         default:
             filter_conv = 10e-9;
@@ -561,8 +561,8 @@ void fill_remainder(uint32_t* data, uint32_t* data_end, buffer& leftovers) {
     }
 }
 
-void decode_data_block(uint32_t* data, size_t len, uint32_t revision, uint32_t frequency, records& recs,
-                       buffer& leftovers) {
+void decode_data_block(uint32_t* data, size_t len, uint32_t revision, uint32_t frequency,
+                       records& recs, buffer& leftovers) {
     if (data == nullptr) {
         throw error(error::code::invalid_buffer, "buffer pointed to an invalid location");
     }
@@ -663,8 +663,7 @@ void decode_data_block(uint32_t* data, size_t len, uint32_t revision, uint32_t f
                         throw error(error::code::invalid_cfd_time,
                                     "data corruption: cfd was forced but still recorded a time");
                     }
-                    cfd_fractional_time =
-                        double(val) / cfd_multiplier(revision, frequency);
+                    cfd_fractional_time = double(val) / cfd_multiplier(revision, frequency);
                     break;
                 case element::cfd_trigger_source_bit:
                     evt.cfd_trigger_source = val;

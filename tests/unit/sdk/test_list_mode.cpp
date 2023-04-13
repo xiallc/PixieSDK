@@ -77,7 +77,10 @@ TEST_SUITE("xia::pixie::list_mode") {
             CHECK_THROWS_AS(json_to_record("", rec), xia::pixie::error::error);
             CHECK_THROWS_AS(json_to_record("{}", rec), xia::pixie::error::error);
 
-            CHECK(record_to_json(evt) == json_str);
+            std::string str;
+            record_to_json(evt, str);
+            CHECK(str == json_str);
+
             json_to_record(json_str, rec);
             CHECK(rec == evt);
         }
