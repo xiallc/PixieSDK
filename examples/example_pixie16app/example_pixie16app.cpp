@@ -724,9 +724,10 @@ bool execute_parameter_write(args::ValueFlag<std::string>& parameter,
         std::cout << LOG("INFO") << "Pixie16WriteSglModPar"
                   << " setting " << parameter.Get() << " to " << value.Get() << " for  Crate "
                   << crate.Get() << " Module " << module.number << "." << std::endl;
-        if (!verify_api_return_value(
-                Pixie16WriteSglModPar(parameter.Get().c_str(), value, module.number),
-                "Pixie16WriteSglModPar"))
+        if (!verify_api_return_value(Pixie16WriteSglModPar(parameter.Get().c_str(),
+                                                           (unsigned int) (value.Get()),
+                                                           module.number),
+                                     "Pixie16WriteSglModPar"))
             return false;
     }
 
