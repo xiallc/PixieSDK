@@ -632,7 +632,7 @@ static void tolower(std::string& s) {
 
 static bool check_number(const std::string& opt) {
     return std::regex_match(
-        opt, std::regex(("((\\+|-)?[[:digit:]]+)(\\.(([[:digit:]]+)?))?")));
+        opt, std::regex(("((\\+|-)?[0-9]+)(.(([0-9]+)?))*")));
 }
 
 template<typename T>
