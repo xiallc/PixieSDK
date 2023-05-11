@@ -25,6 +25,8 @@
 
 #include <vector>
 
+#include <nolhmann/json.hpp>
+
 #include <pixie/param.hpp>
 
 #include <pixie/pixie16/hw.hpp>
@@ -96,6 +98,7 @@ struct stats {
     channels chans;
 
     stats(const pixie::module::module& module_);
+    void report(pixie::module::module& module_, std::stringstream& report);
 };
 
 void read(pixie::module::module& module_, stats& stats_);

@@ -452,6 +452,15 @@ static const command stats_cmd = {
     "stats [-s stat (pe/ocr/rt/lt)] module(s) [channel(s)]"
 };
 
+command_handler_decl(stats_rpt);
+static const command stats_rpt_cmd = {
+    "stats-rpt", stats_rpt,
+    {"str"},
+    {"init", "probe"},
+    "Module/channel stats",
+    "stats-rpt module(s) filename"
+};
+
 command_handler_decl(test);
 static const command test_cmd = {
     "test", test,
@@ -521,6 +530,7 @@ static const command_map commands = {
     {"run-end", run_end_cmd},
     {"set-dacs", set_dacs_cmd},
     {"stats", stats_cmd},
+    {"stats-rpt", stats_rpt_cmd},
     {"test", test_cmd},
     {"var-read", var_read_cmd},
     {"var-write", var_write_cmd},
@@ -2309,6 +2319,28 @@ static void stats(command_args& args) {
             }
         }
     }
+}
+
+static void stats_rpt(command_args& args) {
+    if (!valid_option(args, 2)) {
+        throw std::runtime_error("stats: not enough options");
+    }
+    auto& crate = args.crate;
+    auto mod_nums_opt = get_and_next(args);
+    auto file_opt = get_and_next(args);
+    std::stringstream rpt;
+    module_range mod_nums;
+    modules_option(mod_nums, mod_nums_opt, crate.num_modules);
+    for (auto mod_num : mod_nums) {
+        xia::pixie::stats::stats stats(crate[mod_num]);
+        crate[mod_num].read_stats(stats);
+        stats.report(crate[mod_num], rpt);
+        if (mod_num != mod_nums.back()) {
+            rpt << ",\n";
+        }
+    }
+    std::ofstream output(file_opt);
+    output << rpt.str();
 }
 
 struct test_fifo_worker : public module_thread_worker {
