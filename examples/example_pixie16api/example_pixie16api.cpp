@@ -43,11 +43,11 @@
 #include <sys/types.h>
 
 #if defined(_WIN64) || defined(_WIN32)
-#include <windows.h>
 #include <isakbosman/dirent.h>
+#include <windows.h>
 #else
-#include <unistd.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #endif
 
 std::string walltime_iso_string() {
@@ -101,11 +101,12 @@ struct configuration {
     module_configs modules;
     std::vector<unsigned short> slot_def;
     unsigned short num_modules() const {
-        return (unsigned short)(modules.size());
+        return (unsigned short) (modules.size());
     }
 };
 
-std::string generate_filename(const std::string& type, const std::string& ext, const std::string& dir) {
+std::string generate_filename(const std::string& type, const std::string& ext,
+                              const std::string& dir) {
     return dir + "pixie16api-" + type + "." + ext;
 }
 
@@ -187,7 +188,7 @@ void read_config(const std::string& config_file_name, configuration& cfg) {
 
         mod_cfg mcfg;
         mcfg.slot = module["slot"];
-        mcfg.number = (unsigned short)(cfg.slot_def.size()) - 1;
+        mcfg.number = (unsigned short) (cfg.slot_def.size()) - 1;
         std::strcpy(mcfg.sys_fpga, module["fpga"]["sys"].get<std::string>().c_str());
         std::strcpy(mcfg.sp_fpga, module["fpga"]["fippi"].get<std::string>().c_str());
         std::strcpy(mcfg.dsp_code, module["dsp"]["ldr"].get<std::string>().c_str());
@@ -223,7 +224,7 @@ bool verify_api_return_value(const int& val, const std::string& func_name,
     if (val < 0) {
         std::string msg;
         msg.resize(1024);
-        PixieGetReturnCodeText(val, &msg[0], (unsigned int)(msg.size()));
+        PixieGetReturnCodeText(val, &msg[0], (unsigned int) (msg.size()));
         std::cout << LOG("ERROR") << func_name << " failed with code " << val
                   << " and message: " << msg << std::endl;
         return false;
@@ -237,7 +238,8 @@ std::string generate_hardware_statistics_header() {
     return "time,run,module,channel,real_time,live_time,input_counts,input_count_rate,output_counts,output_count_rate";
 }
 
-bool output_statistics_data(std::ofstream& stream, const mod_cfg& mod, const unsigned int run_num, const bool& final_stats) {
+bool output_statistics_data(std::ofstream& stream, const mod_cfg& mod, const unsigned int run_num,
+                            const bool& final_stats) {
     if (final_stats) {
         std::cout << LOG("INFO") << "Requesting run statistics from module." << std::endl;
     }
@@ -259,16 +261,20 @@ bool output_statistics_data(std::ofstream& stream, const mod_cfg& mod, const uns
         auto oc = Pixie16ComputeRawOutputCount(stats.data(), mod.number, chan);
 
         if (final_stats) {
-            json_stats = {
-                {"run_number", run_num}, {"module", mod.number},   {"channel", chan},
-                {"real_time", real_time}, {"live_time", live_time}, {"icr", icr}, {"ocr", ocr},
-                {"input_counts", ic}, {"output_counts", oc}
-            };
+            json_stats = {{"run_number", run_num},
+                          {"module", mod.number},
+                          {"channel", chan},
+                          {"real_time", real_time},
+                          {"live_time", live_time},
+                          {"icr", icr},
+                          {"ocr", ocr},
+                          {"input_counts", ic},
+                          {"output_counts", oc}};
         }
 
         stream << walltime_iso_string() << "," << run_num << "," << mod.number << "," << chan << ","
-               << std::fixed << std::setprecision(12) << real_time << "," << live_time << "," << ic << ","
-                   << icr << "," << oc << "," << ocr << std::endl;
+               << std::fixed << std::setprecision(12) << real_time << "," << live_time << "," << ic
+               << "," << icr << "," << oc << "," << ocr << std::endl;
 
         if (final_stats) {
             std::cout << LOG("INFO") << json_stats << std::endl;
@@ -302,9 +308,9 @@ void export_mca_memory(const mod_cfg& mod, const std::string& filename) {
         if (hist.size() > max_histogram_length)
             max_histogram_length = hist.size();
 
-        Pixie16ReadHistogramFromModule(hist.data(), (unsigned int)(hist.size()), mod.number, i);
+        Pixie16ReadHistogramFromModule(hist.data(), (unsigned int) (hist.size()), mod.number, i);
         hists.push_back(hist);
-        if (i < (unsigned int)(mod.number_of_channels - 1))
+        if (i < (unsigned int) (mod.number_of_channels - 1))
             out << "Chan" << i << ",";
         else
             out << "Chan" << i;
@@ -361,11 +367,11 @@ bool execute_baseline_capture(const mod_cfg& mod, std::string dir) {
         timestamps.push_back(timestamp);
     }
 
-    std::ofstream ofstream1(generate_filename("module" + std::to_string(mod.number) + "-baselines",
-                                              "csv", dir));
+    std::ofstream ofstream1(
+        generate_filename("module" + std::to_string(mod.number) + "-baselines", "csv", dir));
     ofstream1 << "bin,timestamp,";
     for (unsigned int i = 0; i < mod.number_of_channels; i++) {
-        if (i != (unsigned int)(mod.number_of_channels) - 1)
+        if (i != (unsigned int) (mod.number_of_channels) - 1)
             ofstream1 << "Chan" << i << ",";
         else
             ofstream1 << "Chan" << i;
@@ -375,7 +381,7 @@ bool execute_baseline_capture(const mod_cfg& mod, std::string dir) {
     for (unsigned int i = 0; i < max_num_baselines; i++) {
         ofstream1 << i << "," << timestamps[0][i] << ",";
         for (unsigned int k = 0; k < mod.number_of_channels; k++) {
-            if (k != (unsigned int)(mod.number_of_channels) - 1)
+            if (k != (unsigned int) (mod.number_of_channels) - 1)
                 ofstream1 << baselines[k][i] << ",";
             else
                 ofstream1 << baselines[k][i];
@@ -445,17 +451,21 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
     std::vector<std::ofstream*> record_streams(cfg.num_modules());
     std::vector<std::ofstream*> fifo_stat_streams(cfg.num_modules());
 
-    std::ofstream hw_stats_output(generate_filename("list-mode-hw-stats", "csv", dir), std::ios::out);
+    std::ofstream hw_stats_output(generate_filename("list-mode-hw-stats", "csv", dir),
+                                  std::ios::out);
     hw_stats_output << generate_hardware_statistics_header() << std::endl;
 
     for (unsigned short i = 0; i < cfg.num_modules(); i++) {
-        record_streams[i] = new std::ofstream(
-            generate_filename("list-mode-module" + std::to_string(i) + "-run" + std::to_string(run_num) + "-recs", "bin", dir),
-            std::ios::out | std::ios::binary);
-        fifo_stat_streams[i] = new std::ofstream(
-            generate_filename("list-mode-module" + std::to_string(i) + "-run" + std::to_string(run_num) + "-fifo-stats",
-                              "jsonl", dir),
-            std::ios::out);
+        record_streams[i] =
+            new std::ofstream(generate_filename("list-mode-module" + std::to_string(i) + "-run" +
+                                                    std::to_string(run_num) + "-recs",
+                                                "bin", dir),
+                              std::ios::out | std::ios::binary);
+        fifo_stat_streams[i] =
+            new std::ofstream(generate_filename("list-mode-module" + std::to_string(i) + "-run" +
+                                                    std::to_string(run_num) + "-fifo-stats",
+                                                "jsonl", dir),
+                              std::ios::out);
     }
 
     unsigned int num_fifo_words = 0;
@@ -591,8 +601,9 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
         if (!output_statistics_data(hw_stats_output, cfg.modules[mod_num], run_num, true))
             return false;
 
-        std::string name =
-            generate_filename("list-mode-module" + std::to_string(mod_num) + "-run" + std::to_string(run_num) + "-mca", "csv", dir);
+        std::string name = generate_filename("list-mode-module" + std::to_string(mod_num) + "-run" +
+                                                 std::to_string(run_num) + "-mca",
+                                             "csv", dir);
         export_mca_memory(cfg.modules[mod_num], name);
     }
 
@@ -690,7 +701,8 @@ bool execute_mca_run(unsigned int run_num, const configuration& cfg,
     hw_stats_output << generate_hardware_statistics_header() << std::endl;
 
     for (unsigned short i = 0; i < cfg.num_modules(); i++) {
-        std::string name = generate_filename("module" + std::to_string(i) + "-mca-run" + std::to_string(run_num), "csv", dir);
+        std::string name = generate_filename(
+            "module" + std::to_string(i) + "-mca-run" + std::to_string(run_num), "csv", dir);
         export_mca_memory(cfg.modules[i], name);
 
         if (!output_statistics_data(hw_stats_output, cfg.modules[i], run_num, true))
@@ -780,7 +792,8 @@ bool execute_trace_capture(const mod_cfg& mod, std::string dir) {
     if (!verify_api_return_value(Pixie16AcquireADCTrace(mod.number), "Pixie16AcquireADCTrace"))
         return false;
 
-    std::ofstream ofstream1(generate_filename("module" + std::to_string(mod.number) + "-adc", "csv", dir));
+    std::ofstream ofstream1(
+        generate_filename("module" + std::to_string(mod.number) + "-adc", "csv", dir));
     ofstream1 << "bin,";
 
     size_t max_trace_length = 0;
@@ -794,13 +807,14 @@ bool execute_trace_capture(const mod_cfg& mod, std::string dir) {
         if (trace.size() > max_trace_length)
             max_trace_length = trace.size();
 
-        if (!verify_api_return_value(
-                Pixie16ReadSglChanADCTrace(trace.data(), (unsigned int)(trace.size()), mod.number, i),
-                "Pixie16AcquireADCTrace", false))
+        if (!verify_api_return_value(Pixie16ReadSglChanADCTrace(trace.data(),
+                                                                (unsigned int) (trace.size()),
+                                                                mod.number, i),
+                                     "Pixie16AcquireADCTrace", false))
             return false;
         traces.push_back(trace);
 
-        if (i != (unsigned int)(mod.number_of_channels) - 1)
+        if (i != (unsigned int) (mod.number_of_channels) - 1)
             ofstream1 << "Chan" << i << ",";
         else
             ofstream1 << "Chan" << i;
@@ -1025,21 +1039,24 @@ bool register_firmware(const mod_cfg& mod) {
 }
 
 bool execute_boot(configuration& cfg, args::ValueFlag<std::string>& boot_flag,
-                  args::ValueFlag<std::string>& add_cfg) {
+                  args::ValueFlag<std::string>& add_cfg, const int& offline) {
     unsigned int boot_pattern = stoul(args::get(boot_flag), nullptr, 0);
+
     if (add_cfg)
         boot_pattern = 0x70;
 
     bool crate_boot = true;
-    for (const auto& mod : cfg.modules) {
-        if (!mod.has_firmware_spec) {
-            crate_boot = false;
-            if (!boot_module(mod, boot_pattern)) {
-                return false;
-            }
-        } else {
-            if (!register_firmware(mod)) {
-                return false;
+    if (offline == 0) {
+        for (const auto& mod : cfg.modules) {
+            if (!mod.has_firmware_spec) {
+                crate_boot = false;
+                if (!boot_module(mod, boot_pattern)) {
+                    return false;
+                }
+            } else {
+                if (!register_firmware(mod)) {
+                    return false;
+                }
             }
         }
     }
@@ -1058,8 +1075,8 @@ bool directory_check(args::ValueFlag<std::string>& direc) {
         try {
             dir = ::opendir(direc.Get().c_str());
             if (dir == nullptr) {
-                throw std::runtime_error(
-                  "directory find path: " + direc.Get() + ": " + std::strerror(errno));
+                throw std::runtime_error("directory find path: " + direc.Get() + ": " +
+                                         std::strerror(errno));
             }
             ::closedir(dir);
         } catch (...) {
@@ -1117,12 +1134,13 @@ int main(int argc, char** argv) {
     args::Group arguments(parser, "arguments", args::Group::Validators::AtLeastOne,
                           args::Options::Global);
     args::ValueFlag<std::string> conf_flag(arguments, "cfg", "The configuration file to load.",
-                                           {'c', "config"}, args::Options::Required);
+                                           {'c', "config"});
     args::ValueFlag<std::string> additional_cfg_flag(
         arguments, "cfg", "The configuration file to load.", {"additional-config"});
     args::HelpFlag help_flag(arguments, "help", "Displays this message", {'h', "help"});
-    args::Flag is_offline(arguments, "Offline Mode",
-                          "Tells the API to use Offline mode when running.", {'o', "offline"});
+    args::ValueFlag<std::string> is_offline(arguments, "Offline Mode",
+                                            "Tells the API to use Offline mode when running.",
+                                            {'o', "offline"});
     args::ValueFlag<std::string> boot_pattern_flag(arguments, "boot_pattern",
                                                    "The boot pattern used for booting.",
                                                    {'b', "boot_pattern"}, "0x7F");
@@ -1144,21 +1162,22 @@ int main(int argc, char** argv) {
                                                "The channel that we'll copy to", {"dest-chan"});
     args::ValueFlag<unsigned int> dest_module(copy, "dest_module", "The module that we'll copy to.",
                                               {"dest-mod"});
-    args::ValueFlag<std::string> directory(arguments, "directory", "The directory to write files to", {"output-dir"}, "");
+    args::ValueFlag<std::string> directory(arguments, "directory",
+                                           "The directory to write files to", {"output-dir"}, "");
     args::ValueFlag<unsigned int> module(arguments, "module", "The module to operate on.", {"mod"});
     args::ValueFlag<unsigned int> num_runs(
         arguments, "num_runs", "The number of runs to execute when taking list-mode or MCA data.",
-        {"num-runs"}, (unsigned int)(1));
+        {"num-runs"}, (unsigned int) (1));
     args::ValueFlag<double> parameter_value(
         write, "parameter_value", "The value of the parameter we want to write.", {'v', "value"});
     args::ValueFlag<unsigned int> synch_wait(
         list_mode, "synch_wait",
         "SynchWait = 0 to start/stop runs independently. (default)\nSynchWait = 1 to start/stop runs synchronously.",
-        {"synch-wait"}, (unsigned int)(0));
+        {"synch-wait"}, (unsigned int) (0));
     args::ValueFlag<unsigned int> in_synch(
         list_mode, "in_synch",
         "InSynch = 0 to reset clocks prior to starting a run. (default)\nInSynch = 1 to take no clock action.",
-        {"in-synch"}, (unsigned int)(0));
+        {"in-synch"}, (unsigned int) (0));
 
     adjust_offsets.Add(conf_flag);
     adjust_offsets.Add(boot_pattern_flag);
@@ -1216,20 +1235,37 @@ int main(int argc, char** argv) {
     }
 
     configuration cfg;
-    try {
-        read_config(conf_flag.Get(), cfg);
-    } catch (std::exception& e) {
-        std::cout << LOG("ERROR") << e.what() << std::endl;
-        return EXIT_FAILURE;
+    int offline_mode = 0;
+
+    if (!is_offline) {
+        if (conf_flag) {
+            try {
+                read_config(conf_flag.Get(), cfg);
+            } catch (std::exception& e) {
+                std::cout << LOG("ERROR") << e.what() << std::endl;
+                return EXIT_FAILURE;
+            }
+        } else {
+            std::cout << LOG("ERROR") << "Configuration file required." << std::endl;
+            return EXIT_FAILURE;
+        }
+    } else {
+        offline_mode = 1;
+        for (int m = 0; m < 4; m++) {
+            mod_cfg mcfg;
+            mcfg.number = m;
+            mcfg.dsp_par = is_offline.Get();
+            mcfg.has_firmware_spec = false;
+            mcfg.has_worker_cfg = false;
+            cfg.modules.push_back(mcfg);
+        }
+        cfg.slot_def = {2, 3, 4, 5};
+        boot_pattern_flag.ParseValue({"0x70"});
     }
 
     std::cout << LOG("INFO") << "Finished reading config in "
               << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
               << std::endl;
-
-    int offline_mode = 0;
-    if (is_offline)
-        offline_mode = 1;
 
     if (!directory_check(directory))
         return EXIT_FAILURE;
@@ -1246,7 +1282,7 @@ int main(int argc, char** argv) {
         return EXIT_SUCCESS;
     }
 
-    if (!execute_boot(cfg, boot_pattern_flag, additional_cfg_flag))
+    if (!execute_boot(cfg, boot_pattern_flag, additional_cfg_flag, offline_mode))
         return EXIT_FAILURE;
 
     if (boot) {
@@ -1304,14 +1340,15 @@ int main(int argc, char** argv) {
     }
 
     if (mca) {
-        if (!execute_mca_runs(num_runs.Get(), cfg, run_time.Get(), synch_wait.Get(),
-                              in_synch.Get(), dir))
+        if (!execute_mca_runs(num_runs.Get(), cfg, run_time.Get(), synch_wait.Get(), in_synch.Get(),
+                              dir))
             return EXIT_FAILURE;
     }
 
     if (mca_export) {
         for (const auto& mod : cfg.modules) {
-            std::string name = generate_filename("module" + std::to_string(mod.number) + "-mca-export", "csv", dir);
+            std::string name = generate_filename(
+                "module" + std::to_string(mod.number) + "-mca-export", "csv", dir);
             export_mca_memory(mod, name);
         }
     }
