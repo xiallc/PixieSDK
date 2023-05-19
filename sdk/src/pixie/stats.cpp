@@ -97,7 +97,6 @@ stats::stats(const pixie::module::module& mod) {
 
 void stats::report(pixie::module::module& module_, std::stringstream& report) {
     nlohmann::json out;
-    int ch_num = 0;
     xia::pixie::module::module::fifo_stats snapshot;
     snapshot = module_.run_stats;
 
@@ -105,7 +104,7 @@ void stats::report(pixie::module::module& module_, std::stringstream& report) {
     out["data"] = nlohmann::json::array();
     for (auto& ch : chans) {
         nlohmann::json chan;
-        chan["channel_number"] = ch_num;
+        chan["channel_number"] = ch.config.index;
         chan["time"] = std::chrono::duration_cast<std::chrono::milliseconds>
                         (std::chrono::system_clock::now().time_since_epoch()).count();
         nlohmann::json statistics;
@@ -117,18 +116,15 @@ void stats::report(pixie::module::module& module_, std::stringstream& report) {
         hardware["output_counts"] = ch.output_counts();
         hardware["output_count_rate"] = ch.output_count_rate();
         statistics["hardware"] = hardware;
-        if (module_.run_active() && module_.run_task.load() == xia::pixie::hw::run::run_task::list_mode) {
-            nlohmann::json listmode;
-            listmode["dma_in"] = snapshot.get_dma_in_bytes();
-            listmode["dropped"] = snapshot.dropped.load();
-            listmode["hw_overflows"] = snapshot.hw_overflows.load();
-            listmode["in"] = snapshot.get_in_bytes();
-            listmode["out"] = snapshot.get_out_bytes();
-            statistics["list-mode"] = listmode;
-        }
+        nlohmann::json listmode;
+        listmode["dma_in"] = snapshot.get_dma_in_bytes();
+        listmode["dropped"] = snapshot.dropped.load();
+        listmode["hw_overflows"] = snapshot.hw_overflows.load();
+        listmode["in"] = snapshot.get_in_bytes();
+        listmode["out"] = snapshot.get_out_bytes();
+        statistics["list-mode"] = listmode;
         chan["statistics"] = statistics;
         out["data"].push_back(chan);
-        ch_num++;
     }
     report << out;
 }
