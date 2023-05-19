@@ -978,7 +978,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(unsigned short NumModules, unsigned
     }
 
     if (OfflineMode == 1) {
-        NumModules = module_defs.size();
+        NumModules = (unsigned short)(module_defs.size());
         setSimMods();
         crate.setState(OfflineMode);
     }
