@@ -1,5 +1,5 @@
-example_pixie16api
-##################
+Pixie-16 C API Example
+######################
 
 ``example_pixie16api`` compiles and links against ``Pixie16Api.so``.
 This library provides users a C wrapper to the ``PixieSDK``. We also

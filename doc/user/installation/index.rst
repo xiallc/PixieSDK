@@ -1,5 +1,5 @@
-Installation Instructions
-=========================
+Installation
+############
 
 These instructions primarily focus on the PixieSDK. We encourage all
 users to migrate to the latest version of the library. For convenience,
@@ -9,12 +9,12 @@ We will not be distributing any precompiled binaries for the time being.
 This is due to the extreme variability of the compiler / architecture
 options for Windows.
 
-There are a number of `CMake Options <cmake-options.rst>`__ available
+There are a number of `CMake Options <#cmake-options>`__ available
 when generating the build system files. The defaults will always build
 the PixieSDK and the Pixie16Api compatibility library.
 
 Prerequisites
--------------
+*************
 
 You've already
 
@@ -25,7 +25,7 @@ You've already
 5. installed a compiler that supports C++ 14 standard.
 
 Windows 10
-----------
+**********
 
 At the moment we can only compile the 32-bit application on Windows.
 This is due to an issue determining the appropriate system architecture,
@@ -33,7 +33,7 @@ compiler architecture, and variability in Broadcom's installation
 process.
 
 Instructions
-~~~~~~~~~~~~
+============
 
 1. Clone or download the project and put the ``pixie_sdk`` directory in
    your ``Downloads`` folder.
@@ -73,12 +73,12 @@ Instructions
       C:Users\username\Downloads\pixie_sdk\build>nmake install
 
 Linux
------
+******
 
 .. _instructions-1:
 
 Instructions
-~~~~~~~~~~~~
+============
 
 These installation instructions assume that you're using git to obtain a
 copy of the project. If you're starting with a zip folder from a release
@@ -119,3 +119,39 @@ then skip to Step 2.
    .. code:: shell
 
      [user@localhost build]$ echo -e "export XIA_PIXIE_SDK=/usr/local/xia/PixieSDK\n" | sudo tee -a /etc/profile.d/xia_pixie_sdk.sh
+
+
+CMake Options
+*************
+
+Primary Options
+===============
+
+============== ==================================== =======
+Option         Description                          Default
+============== ==================================== =======
+BUILD_DOCO     Tells CMake to build documentation   OFF
+BUILD_EXAMPLES Builds the example programs          ON
+BUILD_LEGACY   Builds the legacy C API Pixie16App.a OFF
+BUILD_SDK      Builds PixieSdk.a                    ON
+BUILD_TESTS    Builds the test suites               OFF
+============== ==================================== =======
+
+Dependent Options
+=================
+
++-------------------------+----------------------------------------------------+--------------------------+---------+
+| Option                  | Description                                        | Depends on               | Default |
++=========================+====================================================+==========================+=========+
+| BUILD_INTEGRATION_TESTS | Builds integration tests                           | BUILD_TESTS; BUILD_SDK   | ON      |
++-------------------------+----------------------------------------------------+--------------------------+---------+
+| BUILD_LEGACY_UNIT_TESTS | Builds legacy unit tests                           | BUILD_TESTS;BUILD_LEGACY | ON      |
++-------------------------+----------------------------------------------------+--------------------------+---------+
+| BUILD_PIXIE16_API       | Builds backward compatible Pixie16 SDK API Library | BUILD_SDK                | ON      |
++-------------------------+----------------------------------------------------+--------------------------+---------+
+| BUILD_SYSTEM_TESTS      | Enables build of system tests                      | BUILD_TESTS;BUILD_SDK    | ON      |
++-------------------------+----------------------------------------------------+--------------------------+---------+
+| BUILD _SDK_UNIT_TESTS   | Builds PixieSDK unit tests                         | BUILD_TESTS;BUILD_SDK    | ON      |
++-------------------------+----------------------------------------------------+--------------------------+---------+
+| USE_USLEEP              | Adds the USE_USLEEP flag to Legacy builds          | BUILD_LEGACY             | OFF     |
++-------------------------+----------------------------------------------------+--------------------------+---------+

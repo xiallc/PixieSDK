@@ -14,16 +14,16 @@ up-and-running without the user writing a single line of code.
 Quick Links
 ***********
 
-* `Installation <doc/pages/installation.rst>`_
-* `Example Programs <examples/README.rst>`_
-* `Project Glossary <doc/pages/glossary.rst>`_
-* `FAQ <doc/pages/faq.rst>`_
+* `Installation <doc/user/installation/installation.rst>`_
+* `Example Programs <doc/user/examples/index.rst>`_
+* `Project Glossary <doc/user/glossary/index.rst>`_
+* `FAQ <doc/user/faq.rst>`_
 
 Legacy API
 ==========
-* `Architecture <doc/pages/pixie16/legacy/legacy-api-architecture.rst>`_
-* `Usage Overview <doc/pages/pixie16/legacy/legacy-overview.rst>`_
-* `API Transition Guide <doc/pages/pixie16/pixiesdk-transition-guide.rst>`_
+* `Architecture <doc/user/pixie/pixie-16/legacy/legacy-api-architecture.rst>`_
+* `Usage Overview <doc/user/pixie/pixie-16/legacy/legacy-overview.rst>`_
+* `API Transition Guide <doc/user/pixie/pixie-16/legacy/pixiesdk-transition-guide.rst>`_
 
 API Update Policy
 *****************
@@ -49,7 +49,7 @@ The Legacy C API is now deprecated and will no longer receive support outside cr
 **We will remove the legacy C API on July 31, 2023**.
 
 We provide
-a `basic guide on how to transition to the new API <doc/pages/pixie16/pixiesdk-transition-guide.md>`__
+a `basic guide on how to transition to the new API <doc/user/pixie/pixie-16/legacy/pixiesdk-transition-guide.rst>`__
 within the documentation.
 
 Feature highlights
@@ -88,7 +88,7 @@ Dependencies and Prerequisites
 
 Library Architecture
 ********************
-.. image:: doc/images/pixiesdk-library-architecture.png
+.. image:: doc/_static/images/pixiesdk-library-architecture.png
 
 Copyright
 *********

@@ -1,5 +1,5 @@
-example_pixie16app
-##################
+Pixie-16 Legacy C API Example
+#############################
 
 ``example_pixie16app`` compiles and links against the Legacy C
 implementation. Most users will be familiar with this implementation.

@@ -32,7 +32,7 @@ the data.
 Usage
 *****
 
-.. code:: shell
+.. code:: none
 
    list_mode_file_parser {OPTIONS}
 

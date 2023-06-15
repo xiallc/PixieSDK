@@ -1,5 +1,6 @@
 # in project install directory for testing
 install*/
+!installation/
 
 # Exclude working directories
 dev/

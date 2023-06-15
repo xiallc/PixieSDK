@@ -5,7 +5,7 @@ The Pixie-16 API consists of two libraries: Application Library and System Libra
 performs different functionality, is standalone, and can be compiled separately. The following
 drawing illustrates the basic architecture of the Pixie-16 API.
 
-.. image:: legacy-api-architecture.png
+.. image:: ../../../../_static/images/legacy-api-architecture.png
 
 The Application Library consists of C functions that translate user parameters into DSP parameters
 and control the operation of Pixie-16 modules. They call functions in the System Library to

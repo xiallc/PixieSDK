@@ -60,4 +60,4 @@ output count rate by using the functions
 The following diagram illustrates the sequences for operating the
 Pixie-16 modules.
 
-.. image:: legacy-overview.png
+.. image:: ../../../../_static/images/legacy-overview.png

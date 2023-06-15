@@ -40,7 +40,6 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules/;${PROJECT_SO
 include(xia_configure_target)
 include(CMakeDependentOption)
 
-option(BUILD_DOCO "Tells CMake to build documentation" OFF)
 option(BUILD_EXAMPLES "Builds the example programs" ON)
 option(BUILD_LEGACY "Builds the legacy C API - Pixie16App.a" OFF)
 option(BUILD_SDK "Builds the base SDK library - PixieSdk.a" ON)
@@ -77,8 +76,4 @@ if (BUILD_SDK OR BUILD_LEGACY)
     endif ()
 
     add_subdirectory(externals)
-endif ()
-
-if (BUILD_DOCO)
-    add_subdirectory(doc)
 endif ()
