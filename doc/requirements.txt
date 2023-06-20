@@ -1,2 +1,0 @@
-sphinxcontrib-svg2pdfconverter
-sphinx_rtd_theme
