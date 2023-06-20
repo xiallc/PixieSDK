@@ -96,35 +96,39 @@ stats::stats(const pixie::module::module& mod) {
 }
 
 void stats::report(pixie::module::module& module_, std::stringstream& report) {
-    nlohmann::json out;
     xia::pixie::module::module::fifo_stats snapshot;
     snapshot = module_.run_stats;
 
-    out["module_id"] = module_.slot;
-    out["data"] = nlohmann::json::array();
+    nlohmann::json out = {{"module_id", module_.slot},
+                          {"stats_time", std::chrono::duration_cast<std::chrono::milliseconds>(
+                                             std::chrono::system_clock::now().time_since_epoch())
+                                             .count()},
+                          {"real_time", mod.real_time()},
+                          {"list-mode",
+                           {{"dma_in", snapshot.get_dma_in_bytes()},
+                            {"dropped", snapshot.dropped.load()},
+                            {"hw_overflows", snapshot.hw_overflows.load()},
+                            {"in", snapshot.get_in_bytes()},
+                            {"out", snapshot.get_out_bytes()},
+                            {"min_bandwidth", snapshot.min_bandwidth.load()},
+                            {"max_bandwidth", snapshot.max_bandwidth.load()},
+                            {"bandwidth", snapshot.bandwidth.load()}}},
+                          {"hardware", nlohmann::json::array()}};
+
     for (auto& ch : chans) {
-        nlohmann::json chan;
-        chan["channel_number"] = ch.config.index;
-        chan["time"] = std::chrono::duration_cast<std::chrono::milliseconds>
-                        (std::chrono::system_clock::now().time_since_epoch()).count();
-        nlohmann::json statistics;
-        nlohmann::json hardware;
-        hardware["real_time"] = mod.real_time();
-        hardware["live_time"] = ch.live_time();
-        hardware["input_counts"] = ch.input_counts();
-        hardware["input_count_rate"] = ch.input_count_rate();
-        hardware["output_counts"] = ch.output_counts();
-        hardware["output_count_rate"] = ch.output_count_rate();
-        statistics["hardware"] = hardware;
-        nlohmann::json listmode;
-        listmode["dma_in"] = snapshot.get_dma_in_bytes();
-        listmode["dropped"] = snapshot.dropped.load();
-        listmode["hw_overflows"] = snapshot.hw_overflows.load();
-        listmode["in"] = snapshot.get_in_bytes();
-        listmode["out"] = snapshot.get_out_bytes();
-        statistics["list-mode"] = listmode;
-        chan["statistics"] = statistics;
-        out["data"].push_back(chan);
+        double output_efficiency = 0;
+        if (ch.input_counts() != 0) {
+            output_efficiency = ch.output_counts() / ch.input_counts();
+        }
+        out["hardware"].emplace_back(
+            nlohmann::json({{"channel_number", ch.config.index},
+                            {"live_time", ch.live_time()},
+                            {"dead_time", 1. - ch.live_time() / mod.real_time()},
+                            {"input_counts", ch.input_counts()},
+                            {"input_count_rate", ch.input_count_rate()},
+                            {"output_counts", ch.output_counts()},
+                            {"output_count_rate", ch.output_count_rate()},
+                            {"output_efficiency", output_efficiency}}));
     }
     report << out;
 }
