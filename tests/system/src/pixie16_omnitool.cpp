@@ -80,6 +80,8 @@ using module_range = std::vector<size_t>;
 using files = std::vector<std::string>;
 
 struct process_command_options {
+    using paths = std::vector<std::string>;
+
     size_t num_modules;
     slot_range slots;
     std::string firmware_host_path;
@@ -88,6 +90,8 @@ struct process_command_options {
     bool reg_trace;
     bool verbose;
     std::ostream& out;
+
+    paths path;
 
     process_command_options(std::ostream& out);
 };
@@ -164,9 +168,9 @@ struct command {
     using ops = std::vector<std::string>;
     using handler = void (*)(command_args& args);
 
+    std::string group;
     std::string name;
     handler call;
-    alias aliases;
     ops boot;
     std::string help;
     std::string help_cmd;
@@ -178,59 +182,15 @@ struct command {
 
 #define command_handler_decl(_name) static void _name(command_args& args)
 
+using commands = std::vector<command>;
+
 /*
  * The commands are sorted alphabetical
  */
 
-command_handler_decl(adc_acq);
-static const command adc_acq_cmd = {
-    "adc-acq", adc_acq,
-    {},
-    {"init", "probe"},
-    "Acquire a module's ADC trace",
-    "adc-acq modules(s)"
-};
-
-command_handler_decl(adc_save);
-static const command adc_save_cmd = {
-    "adc-save", adc_save,
-    {},
-    {"init", "probe"},
-    "Save a module's ADC trace to a file",
-    "adc-save modules(s) [channel(s) [length]]"
-};
-
-command_handler_decl(adj_off);
-static const command adj_off_cmd = {
-    "adj-off", adj_off,
-    {},
-    {"init", "probe"},
-    "Adjust the module's offsets",
-    "adj-off modules(s)"
-};
-
-command_handler_decl(bl_acq);
-static const command bl_acq_cmd = {
-    "bl-acq", bl_acq,
-    {},
-    {"init", "probe"},
-    "Acquire module baselines",
-    "bl-acq module(s)"
-};
-
-command_handler_decl(bl_save);
-static const command bl_save_cmd = {
-    "bl-save", bl_save,
-    {},
-    {"init", "probe"},
-    "Save the module's baselines",
-    "bl-save module(s) [channel(s)]"
-};
-
 command_handler_decl(boot);
 static const command boot_cmd = {
-    "boot", boot,
-    {"b"},
+    "Crate", "/crate/boot", boot,
     {"init", "probe"},
     "Boots the module(s)",
     "boot [modules(s) [comms] [fippi] [dsp]]"
@@ -238,44 +198,95 @@ static const command boot_cmd = {
 
 command_handler_decl(crate_report);
 static const command crate_cmd = {
-    "crate", crate_report,
-    {},
+    "Crate", "/crate/crate", crate_report,
     {"init", "probe"},
     "Report the crate",
     "crate"
 };
 
-command_handler_decl(db);
-static const command db_cmd = {
-    "db", db,
-    {},
-    {"init", "probe"},
-    "Daughter board control",
-    "db module(s) [channel(s)] [disable-swap]]"
-};
-
 command_handler_decl(export_);
 static const command export_cmd = {
-    "export", export_,
-    {},
+    "Crate", "/crate/export", export_,
     {"init", "probe"},
     "Export a configuration to a JSON file",
     "export file"
 };
 
-command_handler_decl(help);
-static const command help_cmd = {
-    "help", help,
-    {},
-    {"none"},
-    "Command specific help. Add '-l' to list all commands",
-    "help [-l] [command]"
+command_handler_decl(import);
+static const command import_cmd = {
+    "Crate", "/crate/import", import,
+    {"init", "probe"},
+    "Import a JSON configuration file",
+    "import file"
+};
+
+command_handler_decl(report);
+static const command report_cmd = {
+    "Crate", "/crate/report", report,
+    {"init", "probe"},
+    "Report the crate's configuration",
+    "report file"
+};
+
+static const commands crate_commands = {
+    boot_cmd,
+    crate_cmd,
+    export_cmd,
+    import_cmd,
+    report_cmd
+};
+
+command_handler_decl(adc_acq);
+static const command adc_acq_cmd = {
+    "Module", "/module/adc-acq", adc_acq,
+    {"init", "probe"},
+    "Acquire a module's ADC trace",
+    "adc-acq modules(s)"
+};
+
+command_handler_decl(adc_save);
+static const command adc_save_cmd = {
+    "Module", "/module/adc-save", adc_save,
+    {"init", "probe"},
+    "Save a module's ADC trace to a file",
+    "adc-save modules(s) [channel(s) [length]]"
+};
+
+command_handler_decl(adj_off);
+static const command adj_off_cmd = {
+    "Module", "/module/adj-off", adj_off,
+    {"init", "probe"},
+    "Adjust the module's offsets",
+    "adj-off modules(s)"
+};
+
+command_handler_decl(bl_acq);
+static const command bl_acq_cmd = {
+    "Module", "/module/bl-acq", bl_acq,
+    {"init", "probe"},
+    "Acquire module baselines",
+    "bl-acq module(s)"
+};
+
+command_handler_decl(bl_save);
+static const command bl_save_cmd = {
+    "Module", "/module/bl-save", bl_save,
+    {"init", "probe"},
+    "Save the module's baselines",
+    "bl-save module(s) [channel(s)]"
+};
+
+command_handler_decl(db);
+static const command db_cmd = {
+    "Module", "/module/db", db,
+    {"init", "probe"},
+    "Daughter board control",
+    "db module(s) [channel(s)] [disable-swap]]"
 };
 
 command_handler_decl(hist_resume);
 static const command hist_resume_cmd = {
-    "hist-resume", hist_resume,
-    {"hr"},
+    "Module", "/module/hist-resume", hist_resume,
     {"init", "probe"},
     "Resume module histograms",
     "hist-resume module(s)"
@@ -283,8 +294,7 @@ static const command hist_resume_cmd = {
 
 command_handler_decl(hist_save);
 static const command hist_save_cmd = {
-    "hist-save", hist_save,
-    {"hv"},
+    "Module", "/module/hist-save", hist_save,
     {"init", "probe"},
     "Save a module's histogram to a file",
     "hist-save [-b bins] module(s) [channel(s)]"
@@ -292,26 +302,15 @@ static const command hist_save_cmd = {
 
 command_handler_decl(hist_start);
 static const command hist_start_cmd = {
-    "hist-start", hist_start,
-    {"hs"},
+    "Module", "/module/hist-start", hist_start,
     {"init", "probe"},
     "Start module histograms",
     "hist-start module(s)"
 };
 
-command_handler_decl(import);
-static const command import_cmd = {
-    "import", import,
-    {},
-    {"init", "probe"},
-    "Import a JSON configuration file",
-    "import file"
-};
-
 command_handler_decl(list_mode);
 static const command list_mode_cmd = {
-    "list-mode", list_mode,
-    {"lm"},
+    "Module", "/module/list-mode", list_mode,
     {"init", "probe"},
     "Run list mode saving the data to a file",
     "list-mode module(s) secs file"
@@ -319,8 +318,7 @@ static const command list_mode_cmd = {
 
 command_handler_decl(list_resume);
 static const command list_resume_cmd = {
-    "list-resume", list_resume,
-    {"lr"},
+    "Module", "/module/list-resume", list_resume,
     {"init", "probe"},
     "Resume module list mode",
     "list-resume module(s)"
@@ -328,8 +326,7 @@ static const command list_resume_cmd = {
 
 command_handler_decl(list_save);
 static const command list_save_cmd = {
-    "list-save", list_save,
-    {"ls"},
+    "Module", "/module/list-save", list_save,
     {"init", "probe"},
     "Save a module's list-mode data to a file",
     "list-save module(s) secs file"
@@ -337,8 +334,7 @@ static const command list_save_cmd = {
 
 command_handler_decl(list_start);
 static const command list_start_cmd = {
-    "list-start", list_start,
-    {},
+    "Module", "/module/list-start", list_start,
     {"init", "probe"},
     "Start module list mode",
     "list-start module(s)"
@@ -346,8 +342,7 @@ static const command list_start_cmd = {
 
 command_handler_decl(lset_import);
 static const command lset_import_cmd = {
-    "lset-import", lset_import,
-    {"lsi"},
+    "Module", "/module/lset-import", lset_import,
     {"init", "probe"},
     "Import a legacy settings file to a module",
     "lset-import module(s) file [flush/sync]"
@@ -355,8 +350,7 @@ static const command lset_import_cmd = {
 
 command_handler_decl(lset_load);
 static const command lset_load_cmd = {
-    "lset-load", lset_load,
-    {"lsl"},
+    "Module", "/module/lset-load", lset_load,
     {"init", "probe"},
     "Load a legacy settings file to a module's DSP memory",
     "lset-load module(s) file [flush/sync]"
@@ -364,8 +358,7 @@ static const command lset_load_cmd = {
 
 command_handler_decl(lset_report);
 static const command lset_report_cmd = {
-    "lset-report", lset_report,
-    {"lsr"},
+    "Module", "/module/lset-report", lset_report,
     {"init", "probe"},
     "Output a legacy settings file in a readable format",
     "lset-report module(s) file"
@@ -373,8 +366,7 @@ static const command lset_report_cmd = {
 
 command_handler_decl(mod_offline);
 static const command mod_offline_cmd = {
-    "mod-offline", mod_offline,
-    {"moff"},
+    "Module", "/module/mod-offline", mod_offline,
     {"init", "probe"},
     "Set a module offline",
     "mod-offline module(s)"
@@ -382,8 +374,7 @@ static const command mod_offline_cmd = {
 
 command_handler_decl(mod_online);
 static const command mod_online_cmd = {
-    "mod-online", mod_online,
-    {"mon"},
+    "Module", "/module/mod-online", mod_online,
     {"init", "probe"},
     "Set a module online",
     "mod-online module(s)"
@@ -391,8 +382,7 @@ static const command mod_online_cmd = {
 
 command_handler_decl(par_read);
 static const command par_read_cmd = {
-    "par-read", par_read,
-    {"pr"},
+    "Module", "/module/par-read", par_read,
     {"init", "probe"},
     "Read module/channel parameter",
     "par-read module(s) [channel(s)] param"
@@ -400,26 +390,15 @@ static const command par_read_cmd = {
 
 command_handler_decl(par_write);
 static const command par_write_cmd = {
-    "par-write", par_write,
-    {},
+    "Module", "/module/par-write", par_write,
     {"init", "probe"},
     "Write module/channel parameter",
     "par-write module(s) [channel(s)] param value"
 };
 
-command_handler_decl(report);
-static const command report_cmd = {
-    "report", report,
-    {"re"},
-    {"init", "probe"},
-    "Report the crate's configuration",
-    "report file"
-};
-
 command_handler_decl(reg_read);
 static const command reg_read_cmd = {
-    "reg-read", reg_read,
-    {"rr"},
+    "Module", "/module/reg-read", reg_read,
     {"init"},
     "Read from a register in a module or slot (-s) memory address",
     "reg-read [-s] [-x] module/slot [address] [name] [memory:name]"
@@ -427,8 +406,7 @@ static const command reg_read_cmd = {
 
 command_handler_decl(reg_write);
 static const command reg_write_cmd = {
-    "reg-write", reg_write,
-    {"rw"},
+    "Module", "/module/reg-write", reg_write,
     {"init"},
     "Write to a register in a module or slot (-s) memory address",
     "reg-write [-s] module/slot [address] [name] [memory:name] [value]"
@@ -436,8 +414,7 @@ static const command reg_write_cmd = {
 
 command_handler_decl(run_active);
 static const command run_active_cmd = {
-    "run-active", run_active,
-    {"ra"},
+    "Module", "/module/run-active", run_active,
     {"init", "probe"},
     "Does the module have an active run?",
     "run-active module(s)"
@@ -445,8 +422,7 @@ static const command run_active_cmd = {
 
 command_handler_decl(run_end);
 static const command run_end_cmd = {
-    "run-end", run_end,
-    {"re"},
+    "Module", "/module/run-end", run_end,
     {"init", "probe"},
     "End module run's",
     "run-end module(s)"
@@ -454,8 +430,7 @@ static const command run_end_cmd = {
 
 command_handler_decl(set_dacs);
 static const command set_dacs_cmd = {
-    "set-dacs", set_dacs,
-    {},
+    "Module", "/module/set-dacs", set_dacs,
     {"init", "probe"},
     "Set the module's DACs",
     "set-dacs modules(s)"
@@ -463,26 +438,23 @@ static const command set_dacs_cmd = {
 
 command_handler_decl(stats);
 static const command stats_cmd = {
-    "stats", stats,
-    {"st"},
+    "Module", "/module/stats", stats,
     {"init", "probe"},
-    "Module/channel stats",
+    "/module/channel stats",
     "stats [-s stat (pe/ocr/rt/lt)] module(s) [channel(s)]"
 };
 
 command_handler_decl(stats_rpt);
 static const command stats_rpt_cmd = {
-    "stats-rpt", stats_rpt,
-    {"str"},
+    "Module", "/module/stats-rpt", stats_rpt,
     {"init", "probe"},
-    "Module/channel stats",
+    "/module/channel stats",
     "stats-rpt module(s) filename"
 };
 
 command_handler_decl(test);
 static const command test_cmd = {
-    "test", test,
-    {},
+    "Module", "/module/test", test,
     {"init", "probe"},
     "Test control, default mode is 'off'",
     "test [-m mode (off/lmfifo)] module(s)"
@@ -490,8 +462,7 @@ static const command test_cmd = {
 
 command_handler_decl(var_read);
 static const command var_read_cmd = {
-    "var-read", var_read,
-    {},
+    "Module", "/module/var-read", var_read,
     {"init", "probe"},
     "Read module/channel variable. A channel references a channel variable.",
     "var-read module(s) [channel(s)] param [offset(s)]"
@@ -499,63 +470,77 @@ static const command var_read_cmd = {
 
 command_handler_decl(var_write);
 static const command var_write_cmd = {
-    "var-write", var_write,
-    {},
+    "Module", "/module/var-write", var_write,
     {"init", "probe"},
     "Write module/channel variable. A channel references a channel variable.",
     "var-write module(s) [channel(s)] param [offset(s)] value"
 };
 
+static const commands module_commands = {
+    adc_acq_cmd,
+    adc_save_cmd,
+    adj_off_cmd,
+    bl_acq_cmd,
+    bl_save_cmd,
+    db_cmd,
+    hist_resume_cmd,
+    hist_save_cmd,
+    hist_start_cmd,
+    list_mode_cmd,
+    list_resume_cmd,
+    list_save_cmd,
+    list_start_cmd,
+    lset_import_cmd,
+    lset_load_cmd,
+    lset_report_cmd,
+    mod_offline_cmd,
+    mod_online_cmd,
+    par_read_cmd,
+    par_write_cmd,
+    reg_read_cmd,
+    reg_write_cmd,
+    run_active_cmd,
+    run_end_cmd,
+    set_dacs_cmd,
+    stats_cmd,
+    stats_rpt_cmd,
+    test_cmd,
+    var_read_cmd,
+    var_write_cmd
+};
+
+command_handler_decl(help);
+static const command help_cmd = {
+    "Utilities", "/util/help", help,
+    {"none"},
+    "Command specific help. Add '-l' to list all commands",
+    "help [-l] [command]"
+};
+
 command_handler_decl(wait);
 static const command wait_cmd = {
-    "wait", wait,
-    {},
+    "Utilities", "/util/wait", wait,
     {"none"},
     "wait a number of msecs; add 's' for seconds and 'm' for minutes",
     "wait msecs"
 };
 
-using command_map = std::map<std::string, const command&>;
-
-static const command_map commands = {
-    {"adc-acq", adc_acq_cmd},
-    {"adc-save", adc_save_cmd},
-    {"adj-off", adj_off_cmd},
-    {"bl-acq", bl_acq_cmd},
-    {"bl-save", bl_save_cmd},
-    {"boot", boot_cmd},
-    {"crate", crate_cmd},
-    {"db", db_cmd},
-    {"export", export_cmd},
-    {"help", help_cmd},
-    {"hist-resume", hist_resume_cmd},
-    {"hist-save", hist_save_cmd},
-    {"hist-start", hist_start_cmd},
-    {"import", import_cmd},
-    {"list-mode", list_mode_cmd},
-    {"list-resume", list_resume_cmd},
-    {"list-save", list_save_cmd},
-    {"list-start", list_start_cmd},
-    {"lset-import", lset_import_cmd},
-    {"lset-load", lset_load_cmd},
-    {"lset-report", lset_report_cmd},
-    {"mod-offline", mod_offline_cmd},
-    {"mod-online", mod_online_cmd},
-    {"par-read", par_read_cmd},
-    {"par-write", par_write_cmd},
-    {"reg-read", reg_read_cmd},
-    {"reg-write", reg_write_cmd},
-    {"report", report_cmd},
-    {"run-active", run_active_cmd},
-    {"run-end", run_end_cmd},
-    {"set-dacs", set_dacs_cmd},
-    {"stats", stats_cmd},
-    {"stats-rpt", stats_rpt_cmd},
-    {"test", test_cmd},
-    {"var-read", var_read_cmd},
-    {"var-write", var_write_cmd},
-    {"wait", wait_cmd}
+static const commands util_commands = {
+    help_cmd,
+    wait_cmd
 };
+
+/*
+ * Commands are registered at start up
+ */
+static commands ominitool_commands;
+
+/*
+ * Command group labels.
+ */
+using command_group = std::vector<std::string>;
+
+static command_group command_groups;
 
 static std::string adc_prefix = "pixie16-omnitool-adc";
 static std::string histogram_prefix = "pixie16-omnitool-mca";
@@ -638,6 +623,21 @@ static const json hardware = {
         {"ccsra_chantrig", 13},
         {"ccsra_enarelay", 14}}}}}
 };
+
+void ominitool_register_commands(const commands& cmds) {
+    for (auto& cmd : cmds) {
+        auto fi = std::find(command_groups.begin(), command_groups.end(), cmd.group);
+        if (fi == command_groups.end()) {
+            command_groups.push_back(cmd.group);
+        }
+        ominitool_commands.push_back(cmd);
+    }
+    std::sort(command_groups.begin(), command_groups.end());
+    std::sort(
+        ominitool_commands.begin(), ominitool_commands.end(), [](auto& a, auto& b) {
+        return a.name < b.name;
+    });
+}
 
 static bool starts_with(const std::string& s1, const std::string& s2) {
     return s2.size () <= s1.size () && s1.compare (0, s2.size (), s2) == 0;
@@ -756,23 +756,39 @@ static size_t args_count(command_args& args) {
     return std::distance(args.ci, args.ce);
 }
 
-static command_map::const_iterator find_command(const args_command& opt) {
-    for (command_map::const_iterator ci = commands.begin(); ci != commands.end(); ++ci) {
-        const command& cmd = std::get<1>(*ci);
+static commands::const_iterator no_command() {
+    return ominitool_commands.end();
+}
+
+static bool valid_command(commands::const_iterator ci) {
+    return ci != no_command();
+}
+
+static commands::const_iterator find_command(const args_command& opt) {
+    for (commands::const_iterator ci = ominitool_commands.begin();
+         ci != ominitool_commands.end();
+         ++ci) {
+        const command& cmd = *ci;
         if (cmd.name == opt) {
             return ci;
         }
-        for (auto& alias : cmd.aliases) {
-            if (alias == opt) {
-                return ci;
-            }
-        }
     }
-    return commands.end();
+    return no_command();
 }
 
-static bool valid_command(command_map::const_iterator ci) {
-    return ci != commands.end();
+static commands::const_iterator find_command(
+    command_args& args, const args_command& opt) {
+    auto ci = find_command(opt);
+    if (valid_command(ci)) {
+        return ci;
+    }
+    for (auto& dir : args.opts.path) {
+        auto dci = find_command(dir + '/' + opt);
+        if (valid_command(dci)) {
+            return dci;
+        }
+    }
+    return no_command();
 }
 
 static bool valid_option(command_args& args, size_t count) {
@@ -781,7 +797,7 @@ static bool valid_option(command_args& args, size_t count) {
         valid = false;
     } else {
         for (size_t i = 0; valid && i < count; ++i) {
-            valid = !valid_command(find_command(*(args.ci + i)));
+            valid = !valid_command(find_command(args, *(args.ci + i)));
         }
     }
     return valid;
@@ -792,7 +808,7 @@ static args_command switch_option(
     args_command sopt;
     if (args.ci != args.ce) {
         auto opt = *args.ci;
-        if (!valid_command(find_command(opt))) {
+        if (!valid_command(find_command(args, opt))) {
             /*
              * Check the start of the option for the option switch
              */
@@ -914,7 +930,8 @@ bool command::boot_op(const std::string op) const {
 }
 
 process_command_options::process_command_options(std::ostream& out_)
-    : num_modules(-1), reg_trace(false), verbose(false), out(out_) {}
+    : num_modules(-1), reg_trace(false), verbose(false), out(out_),
+      path({"/crate", "/module", "/util"}) {}
 
 command_args::command_args(
     xia::pixie::crate::module_crate& crate_, process_command_options& opts_,
@@ -1118,9 +1135,9 @@ static void process_commands(
     command_args args(crate, process_opts, opts.begin(), opts.end());
     while (args.ci != args.ce) {
         auto& opt = get_and_next(args);
-        auto fci = find_command(opt);
+        auto fci = find_command(args, opt);
         if (valid_command(fci)) {
-            const command& cmd = std::get<1>(*fci);
+            const command& cmd = *fci;
             if (!init_done && cmd.boot_op("init")) {
                 initialize(crate, process_opts);
                 init_done = true;
@@ -1157,11 +1174,16 @@ static void load_commands(const std::string& name, args_commands& cmds) {
 }
 
 static void help_output(std::ostream& out) {
-    out << "  COMMANDS:" << std::endl;
-    const command& cmd = std::get<1>(*find_command("help"));
-    out << "      " << cmd.name << " - " << cmd.help << std::endl
-        << "        eg '-- help -l'" << std::endl
-        << std::endl;
+    auto ci = find_command("/util/help");
+    if (valid_command(ci)) {
+        const command& cmd = *ci;
+        out << "  COMMANDS:" << std::endl;
+        out << "      " << cmd.name << " - " << cmd.help << std::endl
+            << "        eg '-- help -l'" << std::endl
+            << std::endl;
+    } else {
+        out << "  No help found; please report to XIA" << std::endl;
+    }
 }
 
 static void module_check(xia::pixie::crate::module_crate& crate, std::vector<size_t> mod_nums) {
@@ -1625,42 +1647,61 @@ static void export_(command_args& args) {
     args.opts.out << "Modules export time=" << tp << std::endl;
 }
 
+static void help_print(
+    command_args& args, const command& cmd, const std::string& long_opt,  const size_t max) {
+    if (long_opt == "true") {
+        args.opts.out << ' '<< std::left << cmd.name << ": ";
+        args.opts.out << std::endl
+                      << "  " << cmd.help << std::endl
+                      << "   # " << cmd.help_cmd << std::endl;
+    } else {
+        args.opts.out << ' ' << std::left << std::setw(max + 1) << cmd.name
+                      << " - " << cmd.help
+                      << std::endl;
+    }
+}
+
 static void help(command_args& args) {
     auto long_opt = switch_option("-l", args, false);
     args.opts.out << "Command help:" << std::endl
                   << " 'modules(s)' and 'channel(s)' can be a number or series:" << std::endl
                   << "   eg '0' or '3,4,6' or '3,4-5,10,20-22'" << std::endl;
+    args.opts.out << "Search path: " << std::endl << ' ';
+    bool first = true;
+    for (auto& p : args.opts.path) {
+        if (first) {
+            first = false;
+        } else {
+            args.opts.out << ':';
+        }
+        args.opts.out << p;
+    }
+    args.opts.out << std::endl;
     args_command help_opt;
     if (args_count(args) >= 1) {
         help_opt = get_and_next(args);
     }
     auto mi = std::max_element(
-        commands.begin(), commands.end(), [](auto& a, auto& b) {
-            return (std::get<0>(a).size() < std::get<0>(b).size());
+        ominitool_commands.begin(), ominitool_commands.end(),
+        [](auto& a, auto& b) {
+            return a.name.size() < b.name.size();
         });
-    auto max = std::get<0>(*mi).size();
-    auto cmds = std::vector<args_command>();
+    size_t max = (*mi).name.size();
     if (!help_opt.empty()) {
-        cmds.push_back(help_opt);
-    } else {
-        for (auto& c : commands) {
-            cmds.push_back(std::get<0>(c));
-        }
-    }
-    for (auto& c : cmds) {
-        auto& cmd = std::get<1>(*find_command(c));
-        if (long_opt == "true") {
-            args.opts.out << std::left << cmd.name << " : ";
-            for (auto& a : cmd.aliases) {
-                args.opts.out << a << ' ';
-            }
-            args.opts.out << std::endl
-                          << " " << cmd.help << std::endl
-                          << "  # " << cmd.help_cmd << std::endl;
+        auto ci = find_command(args, help_opt);
+        if (valid_command(ci)) {
+            help_print(args, *ci, long_opt, max);
         } else {
-            args.opts.out << std::left << std::setw(max + 1) << cmd.name
-                          << " - " << cmd.help
-                          << std::endl;
+            args.opts.out << "error: command not found: " << help_opt << std::endl;
+        }
+    } else {
+        for (auto& group : command_groups) {
+            args.opts.out << group << ':' << std::endl;
+            for (auto& cmd : ominitool_commands) {
+                if (cmd.group == group) {
+                    help_print(args, cmd, long_opt, max);
+                }
+            }
         }
     }
 }
@@ -2680,6 +2721,10 @@ static void wait(command_args& args) {
 }
 
 int main(int argc, char* argv[]) {
+    ominitool_register_commands(crate_commands);
+    ominitool_register_commands(module_commands);
+    ominitool_register_commands(util_commands);
+
     args_parser parser("Pixie-16 OmniTool ");
 
     parser.helpParams.addDefault = true;
