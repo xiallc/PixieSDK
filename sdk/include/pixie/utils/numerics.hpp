@@ -24,6 +24,8 @@
 #define PIXIESDK_UTIL_NUMERICS_HPP
 
 #include <climits>
+#include <cmath>
+#include <limits>
 #include <vector>
 
 namespace xia {
@@ -64,21 +66,45 @@ private:
 /**
  * Average a series of numbers and record the maximum and minimum values.
  */
+template<typename T>
 struct average {
-    int avg;
-    int max;
-    int min;
-    int count;
-    average() : avg(0), max(INT_MIN), min(INT_MAX), count(0) {}
-    void update(int val) {
+    T avg;
+    T max;
+    T min;
+    size_t count;
+    average() :
+        avg(0),
+        max(std::numeric_limits<T>::min()),
+        min(std::numeric_limits<T>::max()), count(0) {}
+    void update(T val) {
         avg += val;
         max = std::max(max, val);
         min = std::min(min, val);
         ++count;
     }
+    void calc() { if (count > 0) avg /= count; }
+};
+
+/**
+ * Variance is average of the squared differences from the mean.
+ */
+template<typename T>
+struct variance {
+    double var;
+    double stddev;
+    double mean;
+    size_t count;
+    variance(double mean_) : var(0), stddev(0), mean(mean_), count(0) {}
+    void update(T val) {
+        val -= mean;
+        var += val * val;
+        ++count;
+    }
     void calc() {
-        if (count > 0)
-            avg /= count;
+        if (count > 0) {
+            var /= count;
+        }
+        stddev = std::sqrt(var);
     }
 };
 
