@@ -226,6 +226,32 @@ timepoint& timepoint::operator=(const timepoint& tp) {
     return *this;
 }
 
+std::string datetime_iso8601(datetime_timepoint tp) {
+    auto secs = std::chrono::time_point_cast<std::chrono::seconds>(tp);
+    auto ns =
+        std::chrono::time_point_cast<std::chrono::nanoseconds>(tp) -
+        std::chrono::time_point_cast<std::chrono::nanoseconds>(secs);
+    std::time_t time = std::time_t{secs.time_since_epoch().count()};
+    char buf[sizeof "YYYY-MM-DDTHH:MM:SS.MMMZ"];
+    struct tm tm;
+#if defined(_WIN64) || defined(_WIN32)
+    ::gmtime_s(&tm, &time);
+#else
+    ::gmtime_r(&time, &tm);
+#endif
+    auto end = std::strftime(buf, sizeof buf, "%FT%T.", &tm);
+    snprintf(buf + end, sizeof(buf) - end, "%03dZ", int((ns.count() / 1000000) % 1000));
+    return std::string(buf);
+}
+
+std::string datetime_iso8601() {
+    return datetime_iso8601(std::chrono::system_clock::now());
+}
+
+void datetime_iso8601_as_filename(std::string& datetime) {
+    std::replace(datetime.begin(), datetime.end(), ':', '-');
+}
+
 ieee_float::ieee_float() : value(0) {}
 
 ieee_float::ieee_float(const ieee_float& ieee) : value(ieee.value) {}

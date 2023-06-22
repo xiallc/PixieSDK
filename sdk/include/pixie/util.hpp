@@ -186,6 +186,26 @@ private:
 };
 
 /**
+ * @brief The datetime clock we use is the system clock.
+ */
+using datetime_timepoint = std::chrono::time_point<std::chrono::system_clock>;
+
+/**
+ * @brief Return time in the ISO-8601 format
+ */
+std::string datetime_iso8601(datetime_timepoint tp);
+
+/**
+ * @brief Return the current time in the ISO-8601 format
+ */
+std::string datetime_iso8601();
+
+/**
+ * @brief Make an ISO-8601 format string suitable as a file name.
+ */
+void datetime_iso8601_as_filename(std::string& datetime);
+
+/**
  * @brief Defines a type for the IEEE 754 floating point standard.
  */
 struct ieee_float {

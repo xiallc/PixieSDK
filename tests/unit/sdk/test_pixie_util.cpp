@@ -160,4 +160,16 @@ TEST_SUITE("xia::util") {
             CHECK(chksum3.value == 0);
         }
     }
+
+    TEST_CASE("ISO-8601 Timestamps") {
+        xia::util::datetime_timepoint test_time{std::chrono::milliseconds{794765775123}};
+        std::string test_time_str = xia::util::datetime_iso8601(test_time);
+        SUBCASE("Timestamp as string") {
+            CHECK(test_time_str == "1995-03-09T16:16:15.123Z");
+        }
+        SUBCASE("Timestamp as file name") {
+            xia::util::datetime_iso8601_as_filename(test_time_str);
+            CHECK(test_time_str == "1995-03-09T16-16-15.123Z");
+        }
+    }
 }
