@@ -133,29 +133,26 @@ void import_json(const std::string& filename, crate::crate& crate, module::numbe
         throw_json_error(e, "parse config");
     }
 
-    if (config.size() > crate.num_modules) {
+    if (config.size() > crate.num_online) {
         xia_log(log::warning) << "too many module configs (" << config.size() << "), crate only has "
-                              << crate.num_modules << " modules ";
+                              << crate.num_online << " modules ";
     }
 
-    if (config.size() < crate.num_modules) {
+    if (config.size() < crate.num_online) {
         xia_log(log::warning) << "too few module configs (" << config.size() << "), crate has "
-                              << crate.num_modules
+                              << crate.num_online
                               << " modules. Using default config for missing modules";
-        while (config.size() < crate.num_modules) {
+        while (config.size() < crate.num_online) {
             config.push_back(default_config);
         }
     }
 
-    size_t mod = 0;
     auto ci = config.begin();
 
-    while (mod < crate.num_modules) {
+    for (size_t mod = 0; mod < crate.num_slots; ++mod) {
         auto& module = crate[mod];
 
-        if (!module.online()) {
-            xia_log(log::warning) << "module " << mod << " not online, skipping";
-        } else {
+        if (module.online()) {
             auto& settings = *ci;
 
             if (!settings.contains("metadata")) {
@@ -234,7 +231,7 @@ void import_json(const std::string& filename, crate::crate& crate, module::numbe
                             } else {
                                 try {
                                     if (desc.par == xia::pixie::param::module_var::SlotID) {
-                                        module.write_var(var, module.slot, 0, false);
+                                        module.write_var(var, param::value_type(module.slot), 0, false);
                                     } else if (desc.par == xia::pixie::param::module_var::ModNum) {
                                         module.write_var(var, module.number, 0, false);
                                     } else {
@@ -334,8 +331,6 @@ void import_json(const std::string& filename, crate::crate& crate, module::numbe
         if (ci == config.end()) {
             break;
         }
-
-        ++mod;
     }
 }
 
@@ -353,8 +348,12 @@ static json json_firmware(const firmware::firmware_ref fw) {
 void export_json(const std::string& filename, crate::crate& crate) {
     json config;
 
-    for (auto m : crate.modules) {
-        module::module& mod = *m;
+    for (size_t m = 0; m < crate.num_slots; ++m) {
+        module::module& mod = crate[m];
+
+        if (!mod.online()) {
+            continue;
+        }
 
         /*
          * Refresh the vairables from the DSP before exporting

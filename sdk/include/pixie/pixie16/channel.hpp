@@ -45,16 +45,16 @@ namespace channel {
  */
 struct error : public pixie::error::error {
     typedef pixie::error::code code;
-    explicit error(const int num, const int slot, const size_t channel, const code type,
+    explicit error(const int num, const hw::slot_type slot, const size_t channel, const code type,
                    const std::ostringstream& what);
-    explicit error(const int num, const int slot, const size_t channel, const code type,
+    explicit error(const int num, const hw::slot_type slot, const size_t channel, const code type,
                    const std::string& what);
-    explicit error(const int num, const int slot, const size_t channel, const code type,
+    explicit error(const int num, const hw::slot_type slot, const size_t channel, const code type,
                    const char* what);
     virtual void output(std::ostream& out);
 
 private:
-    std::string make_what(const int num, const int slot, const size_t channel, const char* what);
+    std::string make_what(const int num, const hw::slot_type slot, const size_t channel, const char* what);
 };
 
 struct channel;

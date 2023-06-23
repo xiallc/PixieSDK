@@ -174,6 +174,11 @@ struct module {
     virtual void online();
 
     /**
+     * The module has been forced online.
+     */
+    virtual void forced_online();
+
+    /**
      * The module has been forced offline.
      */
     virtual void forced_offline();

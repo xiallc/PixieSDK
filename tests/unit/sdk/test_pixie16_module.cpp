@@ -53,26 +53,44 @@ TEST_SUITE("Crate: modules") {
     TEST_CASE("SETUP") {
         test_setup();
     }
-    TEST_CASE("none") {
+    TEST_CASE("empty") {
         using namespace xia::pixie;
-        sim::crate crate;
+        sim::crate sim_crate;
+        crate::module_crate crate(sim_crate);
         CHECK(crate.num_modules == 0);
-        CHECK(crate.revision == -1);
         CHECK(crate.modules.size() == 0);
-        CHECK(crate.offline.size() == 0);
-        CHECK(crate.busy() == false);
-        CHECK(crate.users() == 0);
-        CHECK_THROWS_WITH_AS(crate.probe(), "crate is not ready", crate_error);
-        CHECK_THROWS_WITH_AS(crate.ready(), "crate is not ready", crate_error);
-        CHECK_THROWS_WITH_AS(crate.probe(), "crate is not ready", crate_error);
+        CHECK(crate->revision == -1);
+        CHECK(crate->busy() == false);
+        CHECK(crate->users() == 0);
+        CHECK_THROWS_WITH_AS(crate->probe(), "crate is not ready", crate_error);
+        CHECK_THROWS_WITH_AS(crate->ready(), "crate is not ready", crate_error);
+        CHECK_THROWS_WITH_AS(crate->probe(), "crate is not ready", crate_error);
+        CHECK_THROWS_WITH_AS(crate->find(crate->num_slots), "module slot not found", crate_error);
         CHECK_THROWS_WITH_AS(crate[0], "module number out of range: 0", crate_error);
         CHECK_THROWS_WITH_AS(crate.find(0), "module slot not found", crate_error);
     }
+    TEST_CASE("initialize offline, boot") {
+        using namespace xia::pixie;
+        sim::crate sim_crate(false);
+        crate::module_crate crate(sim_crate);
+        CHECK_NOTHROW(crate->initialize());
+        CHECK(crate.num_modules == test_modules);
+        CHECK(crate->num_offline == test_modules);
+        CHECK_NOTHROW(crate->probe());
+        CHECK(crate.num_modules == test_modules);
+        CHECK(crate->num_offline == test_modules);
+        CHECK_NOTHROW(crate->boot());
+        CHECK(crate->num_online == test_modules);
+        CHECK(crate->num_offline == 0);
+    }
     TEST_CASE("initialize") {
         using namespace xia::pixie;
-        sim::crate crate;
-        CHECK_NOTHROW(crate.initialize());
-        CHECK_NOTHROW(crate.probe());
+        sim::crate sim_crate;
+        crate::module_crate crate(sim_crate);
+        CHECK_NOTHROW(crate->initialize());
+        CHECK_NOTHROW(crate->probe());
+        CHECK(crate->num_online == test_modules);
+        CHECK(crate->num_offline == 0);
         SUBCASE("Finding and offline") {
             CHECK_NOTHROW(crate.find(2));
             CHECK_THROWS_WITH_AS(crate[-1], "module number out of range: -1", crate_error);
@@ -80,17 +98,21 @@ TEST_SUITE("Crate: modules") {
             CHECK_THROWS_WITH_AS(crate.find(7), "module slot not found", crate_error);
             CHECK(crate.num_modules == test_modules);
             CHECK(crate.modules.size() == test_modules);
-            CHECK(crate.offline.size() == 0);
-            CHECK(crate.backplane.sync_waiters.size() == crate.num_modules);
-            CHECK_THROWS_WITH_AS(crate.set_offline(7), "module number out of range: 7",
+            CHECK(crate->num_online == test_modules);
+            CHECK(crate->num_offline == 0);
+            CHECK(crate->backplane.sync_waiters.size() == crate->num_slots);
+            CHECK_THROWS_WITH_AS(crate->set_offline(7), "module not seen as online",
                                  crate_error);
-            CHECK_NOTHROW(crate.set_offline(1));
-            CHECK(crate.backplane.sync_waiters.size() == (crate.num_modules + crate.offline.size()));
-            CHECK_NOTHROW(crate.backplane.reinit(crate.modules, crate.offline));
-            CHECK(crate.num_modules == test_modules - 1);
-            CHECK(crate.modules.size() == test_modules - 1);
-            CHECK(crate.offline.size() == 1);
-            CHECK(crate.backplane.sync_waiters.size() == (crate.num_modules + crate.offline.size()));
+            CHECK_THROWS_WITH_AS(crate->set_offline(crate[7]), "module number out of range: 7",
+                                 crate_error);
+            CHECK_NOTHROW(crate->set_offline(crate[1]));
+            CHECK(crate->backplane.sync_waiters.size() == crate->num_slots);
+            CHECK_NOTHROW(crate->backplane_reinit());
+            CHECK(crate.num_modules == test_modules);
+            CHECK(crate.modules.size() == test_modules);
+            CHECK(crate->num_online == test_modules - 1);
+            CHECK(crate->num_offline == 1);
+            CHECK(crate->backplane.sync_waiters.size() == crate->num_slots);
         }
         using namespace xia::pixie;
         SUBCASE("FIFO defaults") {
@@ -166,12 +188,37 @@ TEST_SUITE("Crate: modules") {
                                  crate_error);
         }
     }
+    TEST_CASE("open and close") {
+        using namespace xia::pixie;
+        sim::crate sim_crate;
+        crate::module_crate crate(sim_crate);
+        CHECK_NOTHROW(crate->initialize());
+        CHECK_NOTHROW(crate->probe());
+        CHECK_THROWS_WITH_AS(crate[0].open(0),
+                             "module: num=0,slot=2: module has a vaddr", crate_error);
+        CHECK_NOTHROW(crate[0].close());
+        WARN_NOTHROW(crate[0].close());
+        CHECK_NOTHROW(crate[1].close());
+        CHECK_NOTHROW(crate[2].close());
+        CHECK_NOTHROW(crate[0].open(0));
+        CHECK_NOTHROW(crate[1].open(1));
+        CHECK_NOTHROW(crate[2].open(2));
+    }
     TEST_CASE("assign slots") {
         using namespace xia::pixie;
-        sim::crate crate;
-        CHECK_NOTHROW(crate.initialize());
-        CHECK_NOTHROW(crate.probe());
+        sim::crate sim_crate;
+        crate::module_crate crate(sim_crate);
+        CHECK_NOTHROW(crate->initialize());
+        CHECK_NOTHROW(crate->probe());
+        CHECK_THROWS_WITH_AS(crate.assign(module::number_slots{{0, 2}, {6, 6}}),
+                             "module asignment numbers are not continuous", crate_error);
+        CHECK_THROWS_WITH_AS(crate.assign(module::number_slots{{0, 2}, {1, 50}}),
+                             "module asignment has invalid slot numbers", crate_error);
         CHECK_NOTHROW(crate.assign(module::number_slots{{0, 2}, {1, 6}, {2, 10}}));
+        CHECK(crate[0].slot == 2);
+        CHECK(crate[1].slot == 6);
+        CHECK(crate[2].slot == 10);
+        CHECK_NOTHROW(crate->probe());
         CHECK(crate[0].slot == 2);
         CHECK(crate[1].slot == 6);
         CHECK(crate[2].slot == 10);
@@ -179,25 +226,44 @@ TEST_SUITE("Crate: modules") {
         CHECK(crate[0].slot == 10);
         CHECK(crate[1].slot == 6);
         CHECK(crate[2].slot == 2);
+        CHECK_NOTHROW(crate->probe());
+        CHECK(crate[0].slot == 10);
+        CHECK(crate[1].slot == 6);
+        CHECK(crate[2].slot == 2);
         CHECK_NOTHROW(crate.assign(module::number_slots{{1, 2}, {0, 6}, {2, 10}}));
         CHECK(crate[0].slot == 6);
         CHECK(crate[1].slot == 2);
         CHECK(crate[2].slot == 10);
-        CHECK_NOTHROW(crate.assign(module::number_slots{{1, 2}, {0, 6}}, false));
+        CHECK_NOTHROW(crate->probe());
+        CHECK(crate[0].slot == 6);
+        CHECK(crate[1].slot == 2);
+        CHECK(crate[2].slot == 10);
+        CHECK_NOTHROW(crate.assign(module::number_slots{{1, 2}, {0, 6}}));
         CHECK(crate.num_modules == test_modules - 1);
-        CHECK(crate.offline.size() == 1);
+        CHECK(crate[0].slot == 6);
+        CHECK(crate[1].slot == 2);
+        CHECK_NOTHROW(crate->probe());
         CHECK(crate[0].slot == 6);
         CHECK(crate[1].slot == 2);
         CHECK_NOTHROW(crate.assign(module::number_slots{{0, 6}}));
         CHECK(crate.num_modules == test_modules - 2);
-        CHECK(crate.offline.size() == 1);
         CHECK(crate[0].slot == 6);
+        CHECK_NOTHROW(crate.assign(module::number_slots{{1, 2}, {0, 6}, {2, 10}}));
+        CHECK(crate[0].slot == 6);
+        CHECK(crate[1].slot == 2);
+        CHECK(crate[2].slot == 10);
+        CHECK_NOTHROW(crate->probe());
+        CHECK(crate[0].slot == 6);
+        CHECK(crate[1].slot == 2);
+        CHECK(crate[2].slot == 10);
+        CHECK(crate.num_modules == test_modules);
     }
     TEST_CASE("run") {
         using namespace xia::pixie;
-        sim::crate crate;
-        CHECK_NOTHROW(crate.initialize());
-        CHECK_NOTHROW(crate.probe());
+        sim::crate sim_crate;
+        crate::module_crate crate(sim_crate);
+        CHECK_NOTHROW(crate->initialize());
+        CHECK_NOTHROW(crate->probe());
         CHECK_NOTHROW(crate[0].start_histograms(hw::run::run_mode::new_run));
         CHECK_NOTHROW(crate[1].start_histograms(hw::run::run_mode::new_run));
         CHECK_NOTHROW(crate[2].start_histograms(hw::run::run_mode::new_run));
@@ -208,15 +274,16 @@ TEST_SUITE("Crate: modules") {
     TEST_CASE("backplane") {
         using namespace xia::pixie;
         using namespace xia::pixie::param;
-        sim::crate crate;
-        CHECK_NOTHROW(crate.initialize());
-        CHECK_NOTHROW(crate.probe());
+        sim::crate sim_crate;
+        crate::module_crate crate(sim_crate);
+        CHECK_NOTHROW(crate->initialize());
+        CHECK_NOTHROW(crate->probe());
         SUBCASE("wired-or trigger pullup") {
             CHECK_NOTHROW(
                 crate[0].write(module_param::module_csrb, 1 << hw::bit::MODCSRB_CPLDPULLUP));
             CHECK_THROWS_WITH_AS(
                 crate[2].write(module_param::module_csrb, 1 << hw::bit::MODCSRB_CPLDPULLUP),
-                "module: num=2,slot=10: wired-or trigger pullups leader role already taken: 0",
+                "module: num=2,slot=10: wired-or trigger pullups leader role already taken: slot: 2",
                 crate_error);
             CHECK_NOTHROW(
                 crate[0].write(module_param::module_csrb, 1 << hw::bit::MODCSRB_CPLDPULLUP));
@@ -229,7 +296,7 @@ TEST_SUITE("Crate: modules") {
             CHECK_NOTHROW(crate[0].write(module_param::module_csrb, 1 << hw::bit::MODCSRB_DIRMOD));
             CHECK_THROWS_WITH_AS(
                 crate[2].write(module_param::module_csrb, 1 << hw::bit::MODCSRB_DIRMOD),
-                "module: num=2,slot=10: director leader role already taken: 0", crate_error);
+                "module: num=2,slot=10: director leader role already taken: slot: 2", crate_error);
             CHECK_NOTHROW(crate[0].write(module_param::module_csrb, 1 << hw::bit::MODCSRB_DIRMOD));
             CHECK_NOTHROW(crate[0].write(module_param::module_csrb, 0));
             CHECK_NOTHROW(crate[2].write(module_param::module_csrb, 1 << hw::bit::MODCSRB_DIRMOD));
@@ -240,7 +307,7 @@ TEST_SUITE("Crate: modules") {
                 crate[0].write(module_param::module_csrb, 1 << hw::bit::MODCSRB_CHASSISMASTER));
             CHECK_THROWS_WITH_AS(
                 crate[2].write(module_param::module_csrb, 1 << hw::bit::MODCSRB_CHASSISMASTER),
-                "module: num=2,slot=10: run leader role already taken: 0", crate_error);
+                "module: num=2,slot=10: run leader role already taken: slot: 2", crate_error);
             CHECK_NOTHROW(
                 crate[0].write(module_param::module_csrb, 1 << hw::bit::MODCSRB_CHASSISMASTER));
             CHECK_NOTHROW(crate[0].write(module_param::module_csrb, 0));
@@ -249,27 +316,27 @@ TEST_SUITE("Crate: modules") {
             CHECK_NOTHROW(crate[2].write(module_param::module_csrb, 0));
         }
         SUBCASE("no synch wait") {
-            CHECK(crate.backplane.sync_waits == 0);
-            CHECK(crate.backplane.sync_waiters[0] == false);
-            CHECK(crate.backplane.sync_waiters[1] == false);
-            CHECK(crate.backplane.sync_waiters[2] == false);
+            CHECK(crate->backplane.sync_waits == 0);
+            CHECK(crate->backplane.sync_waiters[crate[0].slot] == false);
+            CHECK(crate->backplane.sync_waiters[crate[1].slot] == false);
+            CHECK(crate->backplane.sync_waiters[crate[2].slot] == false);
             CHECK_NOTHROW(crate[0].write(module_param::synch_wait, 0));
-            CHECK(crate.backplane.sync_waits == 0);
-            CHECK(crate.backplane.sync_waiters[0] == false);
-            CHECK(crate.backplane.sync_waiters[1] == false);
-            CHECK(crate.backplane.sync_waiters[2] == false);
+            CHECK(crate->backplane.sync_waits == 0);
+            CHECK(crate->backplane.sync_waiters[crate[0].slot] == false);
+            CHECK(crate->backplane.sync_waiters[crate[1].slot] == false);
+            CHECK(crate->backplane.sync_waiters[crate[2].slot] == false);
             CHECK_NOTHROW(crate[0].start_histograms(hw::run::run_mode::new_run));
             CHECK_NOTHROW(crate[0].run_end());
         }
         SUBCASE("incomplete synch wait") {
             CHECK_NOTHROW(crate[0].write(module_param::synch_wait, 1));
-            CHECK(crate.backplane.sync_waits == 1);
-            CHECK(crate.backplane.sync_waiters[0] == true);
-            CHECK(crate.backplane.sync_waiters[1] == false);
-            CHECK(crate.backplane.sync_waiters[2] == false);
+            CHECK(crate->backplane.sync_waits == 1);
+            CHECK(crate->backplane.sync_waiters[crate[0].slot] == true);
+            CHECK(crate->backplane.sync_waiters[crate[1].slot] == false);
+            CHECK(crate->backplane.sync_waiters[crate[2].slot] == false);
             CHECK_THROWS_WITH_AS(
                 crate[0].start_histograms(hw::run::run_mode::new_run),
-                "module: num=0,slot=2: sync wait mode enabled and not all modules in sync wait state",
+                "sync wait mode enabled and not all slots in the sync wait state: 1 of 3 waiting",
                 crate_error);
             CHECK_NOTHROW(crate[0].run_end());
         };
@@ -277,13 +344,13 @@ TEST_SUITE("Crate: modules") {
             CHECK_NOTHROW(crate[0].write(module_param::synch_wait, 1));
             CHECK_NOTHROW(crate[1].write(module_param::synch_wait, 1));
             CHECK_NOTHROW(crate[2].write(module_param::synch_wait, 1));
-            CHECK(crate.backplane.sync_waits == test_modules);
-            CHECK(crate.backplane.sync_waiters[0] == true);
-            CHECK(crate.backplane.sync_waiters[1] == true);
-            CHECK(crate.backplane.sync_waiters[2] == true);
+            CHECK(crate->backplane.sync_waits == test_modules);
+            CHECK(crate->backplane.sync_waiters[crate[0].slot] == true);
+            CHECK(crate->backplane.sync_waiters[crate[1].slot] == true);
+            CHECK(crate->backplane.sync_waiters[crate[2].slot] == true);
             CHECK_THROWS_WITH_AS(
                 crate[0].start_histograms(hw::run::run_mode::new_run),
-                "sync wait mode enabled but no run leader module is assigned",
+                "sync wait mode enabled but no run leader slot is assigned",
                 crate_error);
             CHECK_NOTHROW(crate[0].run_end());
         }
@@ -291,10 +358,10 @@ TEST_SUITE("Crate: modules") {
             CHECK_NOTHROW(crate[0].write(module_param::synch_wait, 1));
             CHECK_NOTHROW(crate[1].write(module_param::synch_wait, 1));
             CHECK_NOTHROW(crate[2].write(module_param::synch_wait, 1));
-            CHECK(crate.backplane.sync_waits == test_modules);
-            CHECK(crate.backplane.sync_waiters[0] == true);
-            CHECK(crate.backplane.sync_waiters[1] == true);
-            CHECK(crate.backplane.sync_waiters[2] == true);
+            CHECK(crate->backplane.sync_waits == test_modules);
+            CHECK(crate->backplane.sync_waiters[crate[0].slot] == true);
+            CHECK(crate->backplane.sync_waiters[crate[1].slot] == true);
+            CHECK(crate->backplane.sync_waiters[crate[2].slot] == true);
             CHECK_NOTHROW(
                 crate[0].write(module_param::module_csrb, 1 << hw::bit::MODCSRB_CHASSISMASTER));
             CHECK_NOTHROW(crate[0].start_histograms(hw::run::run_mode::new_run));

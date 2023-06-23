@@ -35,7 +35,8 @@ int main() {
     xia::logging::start("log", "stdout", false);
     xia::logging::set_level(xia::log::level::info);
 
-    xia::pixie::crate::crate crate;
+    xia::pixie::crate::crate phys_crate;
+    xia::pixie::crate::module_crate crate(phys_crate);
 
     static const std::vector<std::string> firmware_list = {
         "version=r33341, revision=15, adc-msps=500, adc-bits=14, device=sys, file=/usr/local/xia/pixie/firmware/revf_general_14b500m_r35207/firmware/syspixie16_revfgeneral_adc500mhz_r33341.bin",
@@ -49,34 +50,34 @@ int main() {
 
     for (auto& firmware : firmware_list) {
         auto fw = xia::pixie::firmware::parse(firmware, ',');
-        if (xia::pixie::firmware::check(crate.firmware, fw)) {
+        if (xia::pixie::firmware::check(crate->firmware, fw)) {
             std::string what("duplicate firmware: ");
             what += firmware;
             throw std::runtime_error(what);
         }
-        xia::pixie::firmware::add(crate.firmware, fw);
+        xia::pixie::firmware::add(crate->firmware, fw);
     }
 
     try {
-        crate.initialize(false);
-        crate.set_firmware();
-        crate.probe();
-        crate.boot();
+        crate->initialize(false);
+        crate->set_firmware();
+        crate->probe();
+        crate->boot();
 
         xia::pixie::module::number_slots modules;
-        crate.import_config("pixie.json", modules);
+        crate->import_config("pixie.json", modules);
 
-        auto module = crate.modules.front();
+        auto& module = crate[0];
 
-        module->write_var(xia::pixie::param::module_var::SynchWait, 0);
-        module->write_var(xia::pixie::param::module_var::InSynch, 1);
-        module->start_listmode(xia::pixie::hw::run::run_mode::new_run);
+        module.write_var(xia::pixie::param::module_var::SynchWait, 0);
+        module.write_var(xia::pixie::param::module_var::InSynch, 1);
+        module.start_listmode(xia::pixie::hw::run::run_mode::new_run);
 
-        module->fifo_buffers = 1;
-        module->fifo_hold_usecs = (unsigned long)1e7;
+        module.fifo_buffers = 1;
+        module.fifo_hold_usecs = (unsigned long)1e7;
         std::this_thread::sleep_for(std::chrono::seconds(2));
 
-        xia::pixie::hw::memory::fifo fifo(*module);
+        xia::pixie::hw::memory::fifo fifo(module);
 
         size_t last_fifo_val = 0;
         size_t fifo_change_timeout = 10;
@@ -85,7 +86,7 @@ int main() {
             auto level = fifo.level();
             xia_log(xia::log::level::info) << "On-board FIFO level: " << level;
             xia_log(xia::log::level::info)
-                << "Worker FIFO level: " << module->read_list_mode_level();
+                << "Worker FIFO level: " << module.read_list_mode_level();
 
             if (level == last_fifo_val)
                 fifo_change_time.start();
@@ -96,7 +97,7 @@ int main() {
         fifo_change_time.stop();
 
         xia_log(xia::log::level::info) << "On-board FIFO level: " << fifo.level();
-        xia_log(xia::log::level::info) << "Worker FIFO level: " << module->read_list_mode_level();
+        xia_log(xia::log::level::info) << "Worker FIFO level: " << module.read_list_mode_level();
         xia_log(xia::log::level::info) << "On-board FIFO level hasn't changed in " << fifo_change_time << ". It's filled up!";
 
         static const size_t wait_in_seconds = 120;
@@ -108,7 +109,7 @@ int main() {
             std::this_thread::sleep_for(std::chrono::seconds(5));
         }
         timepoint.end();
-        module->run_end();
+        module.run_end();
     } catch (xia::pixie::error::error& error) {
         std::cerr << error.what() << std::endl;
         return EXIT_FAILURE;

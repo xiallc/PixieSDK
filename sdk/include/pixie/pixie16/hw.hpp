@@ -24,6 +24,7 @@
 #define PIXIE_HW_H
 
 #include <array>
+#include <limits>
 #include <stdexcept>
 #include <vector>
 
@@ -56,9 +57,23 @@ enum rev_tag {
 };
 
 /**
- * Maximum number of slots in a crate.
+ * Slot number type
  */
-static const int max_slots = 13;
+using slot_type = size_t;
+using slot_numbers = std::vector<hw::slot_type>;
+
+/**
+ * Invalid slot number
+ */
+static constexpr slot_type slot_invalid = std::numeric_limits<slot_type>::max();
+
+/**
+ * Maximum number of physical slots in a crate.
+ *
+ * @note Some slots may not be available for modules. The modules shall
+ *       return not present.
+ */
+static const int max_slots = 15;
 
 /**
  * Maximum number of channels a module can have.

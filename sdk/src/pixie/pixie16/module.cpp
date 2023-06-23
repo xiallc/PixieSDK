@@ -47,9 +47,19 @@
 namespace xia {
 namespace pixie {
 namespace module {
-static std::string module_label(const int num, const int slot, const char* label = "module") {
+static std::string module_label(const int num, const hw::slot_type slot, const char* label = "module") {
     std::ostringstream oss;
-    oss << label << ": num=" << num << ",slot=" << slot << ": ";
+    oss << label << ": ";
+    if (num >= 0) {
+        oss << "num=" << num << ",";
+    }
+    oss << "slot=";
+    if (slot != hw::slot_invalid) {
+        oss << slot;
+    } else {
+        oss << "invalid";
+    }
+    oss << ": ";
     return oss.str();
 }
 
@@ -57,13 +67,13 @@ std::string module_label(const module& mod, const char* label) {
     return module_label(mod.number, mod.slot, label);
 }
 
-error::error(const int num, const int slot, const code type, const std::ostringstream& what)
+error::error(const int num, const hw::slot_type slot, const code type, const std::ostringstream& what)
     : pixie::error::error(type, make_what(num, slot, what.str().c_str())) {}
 
-error::error(const int num, const int slot, const code type, const std::string& what)
+error::error(const int num, const hw::slot_type slot, const code type, const std::string& what)
     : pixie::error::error(type, make_what(num, slot, what.c_str())) {}
 
-error::error(const int num, const int slot, const code type, const char* what)
+error::error(const int num, const hw::slot_type slot, const code type, const char* what)
     : pixie::error::error(type, make_what(num, slot, what)) {}
 
 void error::output(std::ostream& out) {
@@ -71,17 +81,17 @@ void error::output(std::ostream& out) {
     out << std::setfill(' ') << "error: code=" << std::setw(2) << result() << ' ' << what();
 }
 
-std::string error::make_what(const int num, const int slot, const char* what_) {
+std::string error::make_what(const int num, const hw::slot_type slot, const char* what) {
     std::ostringstream oss;
-    oss << module_label(num, slot) << what_;
+    oss << module_label(num, slot) << what;
     return oss.str();
 }
 
 /*
  * PLX PCI vendor and device id
  */
-const int vendor_id = 0x10b5;
-const int device_id = 0x9054;
+static constexpr int vendor_id = 0x10b5;
+static constexpr int device_id = 0x9054;
 
 #if PLX_SDK_VERSION_MAJOR >= 8
 static const char* pci_error_labels[] = {"PLX_STATUS_OK",
@@ -165,39 +175,87 @@ static const char* pci_error_labels[] = {"ApiSuccess",
 #endif
 
 struct pci_bus_handle {
+    enum struct mailbox {
+        flags,
+        config,
+        fw_crc,
+        reservered_3,
+        reservered_4,
+        reservered_5,
+        reservered_6,
+        opens
+    };
+    static constexpr size_t num_mailboxes = 8;
+    static constexpr int version = 1;
+
     int device_number;
     PLX_DEVICE_OBJECT handle;
     PLX_DEVICE_KEY key;
     PLX_DMA_PROP dma;
+
+    uint32_t mailboxes[num_mailboxes];
+
     pci_bus_handle();
-    unsigned int domain() const;
-    unsigned int bus() const;
-    unsigned int slot() const;
+    unsigned int pci_domain() const;
+    unsigned int pci_bus() const;
+    unsigned int pci_slot() const;
+
+    /*
+     * Read the mailboxes
+     */
+    void read_mailboxes(const hw::slot_type slot);
+
+    /*
+     * Has any data been set or is this the first
+     * access since reset?
+     */
+    bool reset() const;
+
+    /*
+     * Get the version of the data in the mailboxes
+     */
+    int get_version() const;
+
+    /*
+     * Get the slot numnber
+     */
+    hw::slot_type slot() const;
+
+    /*
+     * Get the serial number and module revision
+     */
+    int serial_num() const;
+    int revision() const;
+
+    /*
+     * Get the open count
+     */
+    size_t opens() const;
+
+    /*
+     * Get the formware CRC32
+     */
+    uint32_t fimware_crc() const;
+
+    /*
+     * Set the mail box values
+     */
+    void set_config(hw::slot_type slot, int serial_num, int revision);
+    void set_firmware_crc(hw::slot_type slot, uint32_t crc32);
+    void update_opens(hw::slot_type slot);
+
+    /*
+     * Mailbox using the enum
+     */
+    uint32_t get(mailbox mb) const {
+        return mailboxes[int(mb)];
+    }
+    void set(mailbox mb, uint32_t value) {
+        mailboxes[int(mb)] = value;
+    }
 };
 
-pci_bus_handle::pci_bus_handle() : device_number(-1) {
-    ::memset(&key, PCI_FIELD_IGNORE, sizeof(PLX_DEVICE_KEY));
-    ::memset(&dma, 0, sizeof(PLX_DMA_PROP));
-    key.VendorId = vendor_id;
-    key.DeviceId = device_id;
-}
-
-unsigned int pci_bus_handle::domain() const {
-    unsigned int val(key.domain);
-    return val;
-}
-
-unsigned int pci_bus_handle::bus() const {
-    unsigned int val(key.bus);
-    return val;
-}
-
-unsigned int pci_bus_handle::slot() const {
-    unsigned int val(key.slot);
-    return val;
-}
-
-std::string pci_error_text(PLX_STATUS ps) {
+static std::string pci_error_text(PLX_STATUS ps) {
     std::ostringstream oss;
     oss << "PLX (" << int(ps) << ") ";
     if (ps >= PLX_STATUS_OK && ps < PLX_STATUS_RSVD_LAST_ERROR) {
@@ -206,6 +264,110 @@ std::string pci_error_text(PLX_STATUS ps) {
         oss << "unknown error code";
     }
     return oss.str();
+}
+
+/*
+ * Mailboxs are part of the PLX device and we can access them
+ * at any time with the module in any state. Use them to hold
+ * data we can only read when the module is open.
+ */
+static uint32_t plx_mailbox_read(
+    pci_bus_handle& device, const hw::slot_type slot, size_t mailbox) {
+    PLX_STATUS ps;
+    uint32_t value = PlxPci_PlxMailboxRead(&device.handle, U16(mailbox), &ps);
+    if (ps != PLX_STATUS_OK) {
+        std::ostringstream oss;
+        oss << "PCI mailbox: read: " << mailbox << ": " << pci_error_text(ps);
+        throw error(-1, slot, error::code::module_initialize_failure, oss);
+    }
+    return value;
+}
+
+static void plx_mailbox_write(
+    pci_bus_handle& device, const hw::slot_type slot,
+    size_t mailbox, const uint32_t value) {
+    PLX_STATUS ps = PlxPci_PlxMailboxWrite(&device.handle, U16(mailbox), value);
+    if (ps != PLX_STATUS_OK) {
+        std::ostringstream oss;
+        oss << "PCI mailbox: write: " << mailbox << ": " << pci_error_text(ps);
+        throw error(-1, slot, error::code::module_initialize_failure, oss);
+    }
+}
+
+pci_bus_handle::pci_bus_handle() : device_number(-1) {
+    ::memset(&key, PCI_FIELD_IGNORE, sizeof(PLX_DEVICE_KEY));
+    ::memset(&dma, 0, sizeof(PLX_DMA_PROP));
+    std::memset(mailboxes, 0, sizeof(mailboxes));
+    key.VendorId = vendor_id;
+    key.DeviceId = device_id;
+}
+
+unsigned int pci_bus_handle::pci_domain() const {
+    unsigned int val(key.domain);
+    return val;
+}
+
+unsigned int pci_bus_handle::pci_bus() const {
+    unsigned int val(key.bus);
+    return val;
+}
+
+unsigned int pci_bus_handle::pci_slot() const {
+    unsigned int val(key.slot);
+    return val;
+}
+
+void pci_bus_handle::read_mailboxes(const hw::slot_type slot) {
+    for (size_t mb = 0; mb < num_mailboxes; ++mb) {
+        mailboxes[mb] = plx_mailbox_read(*this, slot, mb);
+    }
+}
+
+bool pci_bus_handle::reset() const {
+    return get(mailbox::flags) == 0;
+}
+
+int pci_bus_handle::get_version() const {
+    return get(mailbox::flags) & 0xf;
+}
+
+hw::slot_type pci_bus_handle::slot() const {
+    return get(mailbox::config) & 0xff;
+}
+
+int pci_bus_handle::serial_num() const {
+    return get(mailbox::config) >> 16;
+}
+
+int pci_bus_handle::revision() const {
+    return (get(mailbox::config) >> 8) && 0xff;
+}
+
+size_t pci_bus_handle::opens() const {
+    return static_cast<size_t>(get(mailbox::opens));
+}
+
+uint32_t pci_bus_handle::fimware_crc() const {
+    return get(mailbox::fw_crc);
+}
+
+void pci_bus_handle::set_config(hw::slot_type slot, int serial_num, int revision) {
+    set(mailbox::config, (serial_num << 16) | ((revision & 0xff) << 8) | (slot & 0xff));
+    int mb = int(mailbox::config);
+    plx_mailbox_write(*this, slot, 0, version);
+    plx_mailbox_write(*this, slot, mb, get(mailbox::config));
+}
+
+void pci_bus_handle::set_firmware_crc(hw::slot_type slot, uint32_t crc32) {
+    set(mailbox::fw_crc, crc32);
+    int mb = int(mailbox::fw_crc);
+    plx_mailbox_write(*this, slot, mb, get(mailbox::fw_crc));
+}
+
+void pci_bus_handle::update_opens(hw::slot_type slot) {
+    set(mailbox::opens, get(mailbox::opens) + 1);
+    int mb = int(mailbox::opens);
+    plx_mailbox_write(*this, slot, mb, get(mailbox::opens));
 }
 
 module::guard::guard(module& mod) : lock_(mod.lock_), guard_(lock_) {}
@@ -380,23 +542,24 @@ const size_t module::min_fifo_dma_trigger_level = 512;
 const size_t module::max_fifo_dma_trigger_level = hw::max_dma_block_size;
 
 module::module(backplane::backplane& backplane_)
-    : slot(0), number(-1), serial_num(0), revision(0), major_revision(0), minor_revision(0),
-      num_channels(0), vmaddr(nullptr), backplane(backplane_), eeprom_format(-1),
-      run_task(hw::run::run_task::nop), control_task(hw::run::control_task::nop),
+    : slot(hw::slot_invalid), number(-1), serial_num(0), revision(0), major_revision(0),
+      minor_revision(0), num_channels(0), vmaddr(nullptr), open_count(0), backplane(backplane_),
+      eeprom_format(-1), run_task(hw::run::run_task::nop), control_task(hw::run::control_task::nop),
       fifo_buffers(default_fifo_buffers), fifo_run_wait_usecs(default_fifo_run_wait_usec),
       fifo_idle_wait_usecs(default_fifo_idle_wait_usec), fifo_hold_usecs(default_fifo_hold_usec),
       fifo_dma_trigger_level(default_fifo_dma_trigger_level), fifo_bandwidth(0),
       crate_revision(-1), board_revision(-1), reg_trace(false), i2c_read_period(100),
       io_cpld_version_old(false), fifo_worker_running(false), fifo_worker_finished(false),
       fifo_worker_req(fifo_worker_working), fifo_worker_resp(fifo_worker_working), in_use(0),
-      present_(false), online_(false), forced_offline_(false), pause_fifo_worker(true),
-      comms_fpga(false), fippi_fpga(false), have_hardware(false), vars_loaded(false),
+      opened_(false), online_(false), forced_offline_(false), pause_fifo_worker(true),
+      comms_fpga(false), comms_loaded(false), fippi_fpga(false), fippi_loaded(false),
+      dsp_online(false), dsp_loaded(false), have_hardware(false), vars_loaded(false),
       cfg_ctrlcs(0xaaa), device(std::make_unique<pci_bus_handle>()), test_mode(test::off) {}
 
 module::module(module&& m)
     : slot(m.slot), number(m.number), serial_num(m.serial_num), revision(m.revision),
       major_revision(0), minor_revision(0), num_channels(m.num_channels), vmaddr(m.vmaddr),
-      backplane(m.backplane), eeprom(m.eeprom), eeprom_format(m.eeprom_format),
+      open_count(m.open_count), backplane(m.backplane), eeprom(m.eeprom), eeprom_format(m.eeprom_format),
       module_var_descriptors(std::move(m.module_var_descriptors)),
       module_vars(std::move(m.module_vars)),
       channel_var_descriptors(std::move(m.channel_var_descriptors)),
@@ -411,11 +574,13 @@ module::module(module&& m)
       board_revision(m.board_revision), reg_trace(m.reg_trace), i2c_read_period(100),
       io_cpld_version_old(false), fifo_worker_running(false), fifo_worker_finished(false),
       fifo_worker_req(fifo_worker_working), fifo_worker_resp(fifo_worker_working),
-      in_use(0), present_(m.present_.load()), online_(m.online_.load()),
+      in_use(0), opened_(m.opened_.load()), online_(m.online_.load()),
       forced_offline_(m.forced_offline_.load()), pause_fifo_worker(m.pause_fifo_worker.load()),
-      comms_fpga(m.comms_fpga), fippi_fpga(m.fippi_fpga), have_hardware(false), vars_loaded(false),
-      cfg_ctrlcs(0xaaa), device(std::move(m.device)), test_mode(m.test_mode.load()) {
-    m.slot = 0;
+      comms_fpga(m.comms_fpga), comms_loaded(m.comms_loaded), fippi_fpga(m.fippi_fpga),
+      fippi_loaded(m.fippi_loaded), dsp_online(m.dsp_online), dsp_loaded(m.dsp_loaded),
+      have_hardware(false), vars_loaded(false), cfg_ctrlcs(0xaaa), device(std::move(m.device)),
+      test_mode(m.test_mode.load()) {
+    m.slot = hw::slot_invalid;
     m.number = -1;
     m.serial_num = 0;
     m.revision = 0;
@@ -423,6 +588,7 @@ module::module(module&& m)
     m.minor_revision = 0;
     m.num_channels = 0;
     m.vmaddr = nullptr;
+    m.open_count = 0;
     m.eeprom.clear();
     m.eeprom_format = -1;
     m.module_var_descriptors.clear();
@@ -441,12 +607,16 @@ module::module(module&& m)
     m.crate_revision = -1;
     m.board_revision = -1;
     m.reg_trace = false;
-    m.present_ = false;
+    m.opened_ = false;
     m.online_ = false;
     m.forced_offline_ = false;
     m.pause_fifo_worker = true;
     m.comms_fpga = false;
+    m.comms_loaded = false;
     m.fippi_fpga = false;
+    m.fippi_loaded = false;
+    m.dsp_online = false;
+    m.dsp_loaded = false;
     m.have_hardware = false;
     m.vars_loaded = false;
     m.cfg_ctrlcs = 0xaaa;
@@ -481,6 +651,7 @@ module& module::operator=(module&& m) {
     minor_revision = m.minor_revision;
     num_channels = m.num_channels;
     vmaddr = m.vmaddr;
+    open_count = m.open_count;
     eeprom = std::move(m.eeprom);
     eeprom_format = m.eeprom_format;
     module_var_descriptors = std::move(m.module_var_descriptors);
@@ -501,12 +672,16 @@ module& module::operator=(module&& m) {
     reg_trace = m.reg_trace;
     i2c_read_period = m.i2c_read_period;
     io_cpld_version_old = m.io_cpld_version_old;
-    present_ = m.present_.load();
+    opened_ = m.opened_.load();
     online_ = m.online_.load();
     forced_offline_ = m.forced_offline_.load();
     pause_fifo_worker = m.pause_fifo_worker.load();
     comms_fpga = m.comms_fpga;
+    comms_loaded = m.comms_loaded;
     fippi_fpga = m.fippi_fpga;
+    fippi_loaded = m.fippi_loaded;
+    dsp_online = m.dsp_online;
+    dsp_loaded = m.dsp_loaded;
     have_hardware = m.have_hardware;
     vars_loaded = m.vars_loaded;
     cfg_ctrlcs = m.cfg_ctrlcs;
@@ -514,7 +689,7 @@ module& module::operator=(module&& m) {
 
     device = std::move(m.device);
 
-    m.slot = 0;
+    m.slot = hw::slot_invalid;
     m.number = -1;
     m.serial_num = 0;
     m.revision = 0;
@@ -522,6 +697,7 @@ module& module::operator=(module&& m) {
     m.minor_revision = 0;
     m.num_channels = 0;
     m.vmaddr = nullptr;
+    m.open_count = 0;
     m.eeprom.clear();
     m.eeprom_format = -1;
     m.run_task = hw::run::run_task::nop;
@@ -538,12 +714,16 @@ module& module::operator=(module&& m) {
     m.reg_trace = false;
     m.i2c_read_period = 100;
     m.io_cpld_version_old = false;
-    m.present_ = false;
+    m.opened_ = false;
     m.online_ = false;
     m.forced_offline_ = false;
     m.pause_fifo_worker = true;
     m.comms_fpga = false;
+    m.comms_loaded = false;
     m.fippi_fpga = false;
+    m.fippi_loaded = false;
+    m.dsp_online = false;
+    m.dsp_loaded = false;
     m.have_hardware = false;
     m.vars_loaded = false;
     m.cfg_ctrlcs = 0xaaa;
@@ -552,16 +732,40 @@ module& module::operator=(module&& m) {
     return *this;
 }
 
-bool module::device_present() const {
+bool module::present() const {
     return device->device_number >= 0;
 }
 
-bool module::present() const {
-    return present_.load();
+bool module::hardware_accessable() const {
+    return have_hardware;
+}
+
+bool module::slot_valid() const {
+    return slot != hw::slot_invalid;
+}
+
+bool module::opened() const {
+    return opened_.load();
 }
 
 bool module::online() const {
     return online_.load() && !forced_offline_.load();
+}
+
+bool module::fw_verified() const {
+    return comms_loaded && fippi_loaded && dsp_loaded;
+}
+
+bool module::fw_comms_verified() const {
+    return comms_loaded;
+}
+
+bool module::fw_fippi_verified() const {
+    return fippi_loaded;
+}
+
+bool module::fw_dsp_verified() const {
+    return dsp_loaded;
 }
 
 void module::open(size_t device_number) {
@@ -574,11 +778,11 @@ void module::open(size_t device_number) {
                     "no module or channel variable descriptors");
     }
 
-    if (present()) {
+    if (opened()) {
         throw error(number, slot, error::code::module_already_open, "module already open");
     }
 
-    if (!device_present()) {
+    if (!present()) {
         PLX_STATUS ps;
 
         ps = ::PlxPci_DeviceFind(&device->key, uint16_t(device_number));
@@ -638,9 +842,18 @@ void module::open(size_t device_number) {
             throw error(number, slot, error::code::module_initialize_failure, oss);
         }
 
-        xia_log(log::info) << "module: PLX: pci: device-number=" << device_number
-                           << " domain=" << device->domain() << " bus=" << device->bus()
-                           << " slot=" << device->slot();
+        device->read_mailboxes(slot);
+
+        xia_log(log::info) << std::boolalpha
+                           << "module: PLX: pci: device-number=" << device_number
+                           << " domain=" << device->pci_domain() << " bus=" << device->pci_bus()
+                           << " slot=" << device->pci_slot()
+                           << " reset=" << device->reset();
+
+        slot = device->slot();
+        revision = device->revision();
+        serial_num = device->serial_num();
+        open_count = device->opens();
 
         /*
          * DMA channel for block transfers.
@@ -727,7 +940,10 @@ void module::open(size_t device_number) {
         minor_revision = eeprom.minor_revision;
         eeprom_format = eeprom.format;
 
-        present_ = true;
+        opened_ = true;
+
+        device->update_opens(slot);
+        device->set_config(slot, revision, serial_num);
 
         erase_values();
         erase_channels();
@@ -739,6 +955,10 @@ void module::open(size_t device_number) {
 
         fixtures->open();
     }
+}
+
+void module::open() {
+    open(device->device_number);
 }
 
 void module::close() {
@@ -780,11 +1000,19 @@ void module::close() {
 
         ps_close = ::PlxPci_DeviceClose(&device->handle);
 
-        device->device_number = -1;
+        comms_fpga = false;
+        comms_loaded = false;
+        fippi_fpga = false;
+        fippi_loaded = false;
+        dsp_online = false;
+        dsp_loaded = false;
+
+        number = -1;
+
         online_ = false;
         forced_offline_ = false;
         have_hardware = false;
-        present_ = false;
+        opened_ = false;
 
         if (ps_unmap_bar != PLX_STATUS_OK || ps_close != PLX_STATUS_OK) {
             std::ostringstream oss;
@@ -805,10 +1033,38 @@ void module::close() {
     }
 }
 
+void module::force_online() {
+    xia_log(log::info) << module_label(*this) << "set online";
+    lock_guard guard(lock_);
+    if (opened() && !online()) {
+        try {
+            hw::fpga::comms comms(*this);
+            comms_fpga = comms.done();
+            if (comms_fpga) {
+                hw::fpga::fippi fippi(*this);
+                hw::dsp::dsp dsp(*this);
+                online_ = fippi.done() && dsp.init_done();
+                if (online_) {
+                    if (fixtures) {
+                        fixtures->forced_online();
+                    }
+                    start_fifo_services();
+                    forced_offline_ = false;
+                } else {
+                    xia_log(log::error) << module_label(*this)
+                                        << "force online: module needs booting";
+                }
+            }
+        } catch (pixie::error::error& e) {
+            xia_log(log::error) << module_label(*this) << "force online: " << e;
+        }
+    }
+}
+
 void module::force_offline() {
     xia_log(log::info) << module_label(*this) << "set offline";
     lock_guard guard(lock_);
-    if (present() && !forced_offline_.load()) {
+    if (opened() && !forced_offline_.load()) {
         try {
             if (fixtures) {
                 fixtures->forced_offline();
@@ -836,7 +1092,7 @@ void module::check_channel_num(T num) {
 void module::probe() {
     lock_guard guard(lock_);
 
-    if (!present()) {
+    if (!opened()) {
         throw error(number, slot, error::code::module_offline, "module not open");
     }
 
@@ -875,7 +1131,7 @@ void module::probe() {
 void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
     lock_guard guard(lock_);
 
-    if (!present()) {
+    if (!opened()) {
         throw error(number, slot, error::code::module_offline, "module not open");
     }
 
@@ -916,6 +1172,7 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
         hw::fpga::comms comms(*this);
         comms_fpga = false;
         fw->load();
+        comms_loaded = true;
         comms.boot(fw->data, io_cpld_backoff);
         comms_fpga = comms.done();
         if (comms_fpga) {
@@ -935,6 +1192,7 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
         hw::fpga::fippi fippi(*this);
         fippi_fpga = false;
         fw->load();
+        fippi_loaded = true;
         fippi.boot(fw->data, io_cpld_backoff);
         fippi_fpga = fippi.done();
         if (fippi_fpga) {
@@ -954,6 +1212,7 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
         hw::dsp::dsp dsp(*this);
         dsp_online = false;
         fw->load();
+        dsp_loaded = true;
         dsp.boot(fw->data);
         dsp_online = dsp.init_done();
         if (dsp_online) {
@@ -1379,7 +1638,7 @@ param::value_type module::read_var(param::module_var var, size_t offset, bool io
     param::value_type value;
     {
         lock_guard guard(lock_);
-        if (have_hardware && io) {
+        if (hardware_accessable() && io) {
             hw::memory::dsp dsp(*this);
             hw::word mem = dsp.read(offset, desc.address);
             hw::convert(mem, value);
@@ -1421,7 +1680,7 @@ param::value_type module::read_var(param::channel_var var, size_t channel, size_
     param::value_type value;
     {
         lock_guard guard(lock_);
-        if (have_hardware && io) {
+        if (hardware_accessable() && io) {
             hw::memory::dsp dsp(*this);
             hw::convert(dsp.read(channel, offset, desc.address), value);
             channels[channel].vars[index].value[offset].value = value;
@@ -1474,7 +1733,7 @@ void module::write_var(param::module_var var, param::value_type value, size_t of
     lock_guard guard(lock_);
     module_vars[index].value[offset].value = value;
     module_vars[index].value[offset].dirty = true;
-    if (have_hardware && io) {
+    if (hardware_accessable() && io) {
         hw::word word;
         hw::convert(value, word);
         hw::memory::dsp dsp(*this);
@@ -1512,7 +1771,7 @@ void module::write_var(param::channel_var var, param::value_type value, size_t c
     lock_guard guard(lock_);
     channels[channel].vars[index].value[offset].value = value;
     channels[channel].vars[index].value[offset].dirty = true;
-    if (have_hardware && io) {
+    if (hardware_accessable() && io) {
         hw::word word;
         hw::convert(value, word);
         hw::memory::dsp dsp(*this);
@@ -1525,7 +1784,7 @@ void module::sync_vars(const sync_var_mode sync_mode) {
     online_check();
     xia_log(log::info) << module_label(*this) << "sync variables: mode: "
                        << (char*) (sync_mode == sync_to_dsp ? "to dsp" : "from dsp");
-    if (!have_hardware) {
+    if (!hardware_accessable()) {
         return;
     }
     lock_guard guard(lock_);
@@ -1682,11 +1941,6 @@ void module::start_histograms(hw::run::run_mode mode) {
     if (test_mode.load() != test::off) {
         throw error(number, slot, error::code::module_test_invalid,
                     "test running; cannot start a run task");
-    }
-    size_t sync_waits = backplane.sync_waits.load();
-    if (sync_waits != 0 && sync_waits != backplane.sync_waiters.size()) {
-        throw error(number, slot, error::code::module_invalid_operation,
-                    "sync wait mode enabled and not all modules in sync wait state");
     }
     backplane.sync_wait_valid();
     run_stats.start();
@@ -1915,12 +2169,26 @@ void module::select_port(const int port) {
 
 void module::output(std::ostream& out) const {
     util::ostream_guard flags(out);
-    out << std::boolalpha << "number: " << std::setw(2) << number << " slot: " << std::setw(2)
-        << slot << " present:" << present_.load() << " online:" << online_.load()
-        << " forced-offline:" << forced_offline_.load() << " serial:" << serial_num
-        << " rev:" << revision_label() << " (" << revision << ") vaddr:" << vmaddr
-        << " fw: " << firmware.size() << " max-channels: " << max_channels
-        << " num-channels: " << num_channels;
+    if (present()) {
+        out << std::boolalpha;
+        out << "slot: ";
+        if (slot_valid()) {
+            out << std::setw(2) << slot;
+        } else {
+            out << "unknown";
+        }
+        if (number >= 0) {
+            out << " number: " << std::setw(2) << number << ' ';
+        }
+        out << " opens: " << open_count
+            << " open:" << opened_.load() << " online:" << online_.load()
+            << " forced-offline:" << forced_offline_.load() << " serial:" << serial_num
+            << " rev:" << revision_label() << " (" << revision << ") vaddr:" << vmaddr
+            << " fw: " << firmware.size() << " max-channels: " << max_channels
+            << " num-channels: " << num_channels;
+    } else {
+        out << "not-present";
+    }
 }
 
 std::string module::version_label() const {
@@ -1955,8 +2223,8 @@ void module::report(std::ostream& out) const {
         << "Board Revision  : " << board_revision << std::endl
         << std::endl;
     if (device) {
-        out << "PCI Bus         : " << device->bus() << std::endl
-            << "PCI_Slot        : " << device->slot() << std::endl
+        out << "PCI Bus         : " << device->pci_bus() << std::endl
+            << "PCI_Slot        : " << device->pci_slot() << std::endl
             << std::endl;
     }
     out << "Num Channels    : " << num_channels << std::endl
@@ -2110,7 +2378,7 @@ void module::channel_check(const size_t channel) const {
 int module::pci_bus() {
     lock_guard guard(lock_);
     if (device) {
-        return device->bus();
+        return device->pci_bus();
     }
     return -1;
 }
@@ -2118,7 +2386,7 @@ int module::pci_bus() {
 int module::pci_slot() {
     lock_guard guard(lock_);
     if (device) {
-        return device->slot();
+        return device->pci_slot();
     }
     return -1;
 }
@@ -2157,6 +2425,10 @@ void module::end_test() {
 
 void module::set_bus_device_number(size_t device_number) {
     device->device_number = int(device_number);
+}
+
+int module::get_bus_device_number() const {
+    return device->device_number;
 }
 
 void module::load_vars() {
@@ -2342,8 +2614,8 @@ void module::backplane_csrb(const param::value_type csrb) {
     if ((csrb & (1 << hw::bit::MODCSRB_CPLDPULLUP)) != 0) {
         if (!backplane.wired_or_triggers_pullup.request(*this)) {
             throw error(number, slot, error::code::module_invalid_param,
-                        "wired-or trigger pullups leader role already taken: " +
-                            std::to_string(backplane.wired_or_triggers_pullup.module()));
+                        "wired-or trigger pullups leader role already taken: slot: " +
+                            std::to_string(backplane.wired_or_triggers_pullup.slot()));
         }
     } else {
         backplane.wired_or_triggers_pullup.release(*this);
@@ -2354,7 +2626,8 @@ void module::backplane_csrb(const param::value_type csrb) {
     if ((csrb & (1 << hw::bit::MODCSRB_CHASSISMASTER)) != 0) {
         if (!backplane.run.request(*this)) {
             throw error(number, slot, error::code::module_invalid_param,
-                        "run leader role already taken: " + std::to_string(backplane.run.module()));
+                        "run leader role already taken: slot: " +
+                        std::to_string(backplane.run.slot()));
         }
     } else {
         backplane.run.release(*this);
@@ -2365,8 +2638,8 @@ void module::backplane_csrb(const param::value_type csrb) {
     if ((csrb & (1 << hw::bit::MODCSRB_DIRMOD)) != 0) {
         if (!backplane.director.request(*this)) {
             throw error(number, slot, error::code::module_invalid_param,
-                        "director leader role already taken: " +
-                            std::to_string(backplane.director.module()));
+                        "director leader role already taken: slot: " +
+                            std::to_string(backplane.director.slot()));
         }
     } else {
         backplane.director.release(*this);
@@ -2847,48 +3120,53 @@ const std::string& module::persistent_get(const std::string& key) const {
     return val->second;
 }
 
-void assign(modules& modules_, const number_slots& numbers) {
-    std::ostringstream oss;
-    for (auto& number_slot : numbers) {
-        oss << number_slot.second << "->" << number_slot.first << ' ';
-    }
-    xia_log(log::info) << "assign slot map: " << oss.str();
-    for (auto& mod : modules_) {
-        mod->number = -1;
-    }
-    for (auto& mod : modules_) {
-        for (auto number_slot : numbers) {
-            if (mod->slot == number_slot.second) {
-                mod->number = number_slot.first;
-                break;
-            }
+void check_module(const module& module_, check check_) {
+    switch (check_) {
+    case check::none:
+        return;
+    case check::present:
+        if (!module_.present()) {
+            throw error(module_.number, module_.slot,
+                        error::code::module_offline, "module: check: module not present");
         }
-    }
-    for (auto& mod : modules_) {
-        if (mod->number == -1) {
-            xia_log(log::warning) << "module not found in slot map: " << mod->slot;
+        break;
+    case check::open:
+        if (!module_.opened()) {
+            throw error(module_.number, module_.slot,
+                        error::code::module_offline, "module: check: module not open");
         }
+        break;
+    case check::online:
+        if (!module_.online()) {
+            throw error(module_.number, module_.slot,
+                        error::code::module_offline, "module: check: module not online");
+        }
+        break;
+    default:
+        throw error(module_.number, module_.slot,
+                    error::code::internal_failure, "module: check: bad check value");
+        break;
     }
 }
 
-void order_by_number(modules& mods) {
-    std::sort(mods.begin(), mods.end(), [](module_ptr& a, module_ptr& b) {
-        return a->number != -1 && b->number != -1 && a->number < b->number;
-    });
+module_state::module_state(const module& m)
+    : present(m.present()), open(m.opened()), online(m.online()), slot_valid(m.slot_valid()),
+      fw_verified(m.fw_verified()), serial_num(m.serial_num), num_channels(m.num_channels),
+      number(m.number), slot(m.slot), opens(m.open_count) {
 }
 
-void order_by_slot(modules& mods) {
-    std::sort(mods.begin(), mods.end(),
-              [](module_ptr& a, module_ptr& b) { return a->slot < b->slot; });
-}
-
-void set_number_by_slot(modules& mods) {
-    order_by_slot(mods);
-    int number = 0;
-    for (auto& mod : mods) {
-        mod->number = number;
-        number++;
-    }
+void module_state::output(std::ostream& out) const {
+    out << std::boolalpha
+        << "present=" << present
+        << " opens=" << opens
+        << " open=" << open
+        << " online=" << online
+        << " slot_valid=" << slot_valid
+        << " fw-verified=" << fw_verified
+        << " serial-num=" << serial_num
+        << " num-channels=" << num_channels
+        << " number=" << number
+        << " slot=" << slot;
 }
 };  // namespace module
 };  // namespace pixie
@@ -2896,5 +3174,10 @@ void set_number_by_slot(modules& mods) {
 
 std::ostream& operator<<(std::ostream& out, const xia::pixie::module::module& module) {
     module.output(out);
+    return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const xia::pixie::module::module_state& state) {
+    state.output(out);
     return out;
 }

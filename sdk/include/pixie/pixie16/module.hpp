@@ -57,13 +57,13 @@ namespace module {
  */
 struct error : public pixie::error::error {
     typedef pixie::error::code code;
-    explicit error(const int num, const int slot, const code type, const std::ostringstream& what);
-    explicit error(const int num, const int slot, const code type, const std::string& what);
-    explicit error(const int num, const int slot, const code type, const char* what);
+    explicit error(const int num, const hw::slot_type slot, const code type, const std::ostringstream& what);
+    explicit error(const int num, const hw::slot_type slot, const code type, const std::string& what);
+    explicit error(const int num, const hw::slot_type slot, const code type, const char* what);
     virtual void output(std::ostream& out);
 
 private:
-    std::string make_what(const int num, const int slot, const char* what);
+    std::string make_what(const int num, const hw::slot_type slot, const char* what);
 };
 
 /**
@@ -241,10 +241,11 @@ public:
     /**
      * Slot in the crate.
      */
-    int slot;
+    hw::slot_type slot;
 
     /**
-     * Logical module mapping for this instance of the SDK.
+     * Logical module mapping. It is the slot number unless logical
+     * module numbering is being used.
      */
     int number;
 
@@ -274,6 +275,11 @@ public:
      * Module's register VM address.
      */
     void* vmaddr;
+
+    /**
+     * Module's register VM address.
+     */
+    size_t open_count;
 
     /**
      * Crate's backplane. Shared by all the modules.
@@ -418,14 +424,24 @@ public:
     module& operator=(module&& mod);
 
     /**
-     * Is the module device present?
-     */
-    bool device_present() const;
-
-    /**
      * Is the module present?
      */
     bool present() const;
+
+    /**
+     * Is the hardware accessable?
+     */
+    bool hardware_accessable() const;
+
+    /**
+     * Is the slot number valid?
+     */
+    bool slot_valid() const;
+
+    /**
+     * Is the module open?
+     */
+    bool opened() const;
 
     /**
      * Has the module been booted and is online?
@@ -433,10 +449,44 @@ public:
     bool online() const;
 
     /**
+     * Is the firmware is verified?
+     */
+    bool fw_verified() const;
+
+    /**
+     * Is the COMMS firmware is verified?
+     */
+    bool fw_comms_verified() const;
+
+    /**
+     * Is the FIPPI firmware is verified?
+     */
+    bool fw_fippi_verified() const;
+
+    /**
+     * Is the DSP firmware is verified?
+     */
+    bool fw_dsp_verified() const;
+
+    /**
      * Open the module and find the device on the bus.
      */
     virtual void open(size_t device_number);
+
+    /**
+     * Open a module if it is present.
+     */
+    virtual void open();
+
+    /*
+     * Close the module and release all resources.
+     */
     virtual void close();
+
+    /**
+     * Force online.
+     */
+    void force_online();
 
     /**
      * Force offline.
@@ -679,6 +729,11 @@ public:
     int pci_slot();
 
     /*
+     * Get the bus device number.
+     */
+    int get_bus_device_number() const;
+
+    /*
      * Test modes
      *
      * The following provide module test modes. These are use to check the
@@ -819,9 +874,9 @@ protected:
     size_t in_use;
 
     /*
-     * Present in the rack.
+     * Opened in the crate.
      */
-    std::atomic_bool present_;
+    std::atomic_bool opened_;
 
     /*
      * Online and ready to use.
@@ -842,8 +897,11 @@ protected:
      * System, FIPPI and DSP online.
      */
     bool comms_fpga;
+    bool comms_loaded;
     bool fippi_fpga;
+    bool fippi_loaded;
     bool dsp_online;
+    bool dsp_loaded;
 
     /*
      * Have hardware?
@@ -879,6 +937,56 @@ protected:
     data_store persistent;
 };
 
+/**
+ * @brief Module checks
+ */
+enum struct check {
+    present,
+    open,
+    online,
+    none
+};
+
+/**
+ * @brief Check the module against one of the checks.
+ */
+void check_module(const module& module_, check check_);
+
+/**
+ * @brief Module state captured from a module.
+ */
+struct module_state {
+    const bool present;
+    const bool open;
+    const bool online;
+    const bool slot_valid;
+    const bool fw_verified;
+
+    const int serial_num;
+
+    const size_t num_channels;
+
+    const int number;
+    const size_t slot;
+
+    const size_t opens;
+
+    /**
+     * @brief Capture the module state
+     */
+    module_state(const module& mo);
+
+    /**
+     * @brief Report the state
+     */
+    void output(std::ostream& out) const;
+};
+
+/**
+ * @brief Module states container
+ */
+using module_states = std::vector<module_state>;
+
 inline hw::word module::read_word(int reg) {
     hw::word value;
     if (have_hardware) {
@@ -909,7 +1017,7 @@ std::string module_label(const module& mod, const char* label = "module");
 /*
  * A list of numbers that can be assigned to modules by slots
  */
-typedef std::pair<int, int> number_slot;
+typedef std::pair<size_t, size_t> number_slot;
 typedef std::vector<number_slot> number_slots;
 
 /**

@@ -73,24 +73,72 @@ struct stats_legacy {
 typedef stats_legacy* stats_legacy_ptr;
 
 /*
- * The crate-> We only handle a single crate with the legacy API.
+ * API Crate
+ *
+ * The API crate multiplexes the type of crate the user has
+ * selected. We support access to the crate, the hardware, and an
+ * offline mode via simulation for users who wish to run tests
+ * configurations.
+ *
+ * Note, the simulated crate is an on going efforts and the level of
+ *       simulation support it provides varies between releases.
  */
-
 struct api_crate {
+    using module_defs = std::vector<std::string>;
+
+    /*
+     * Physical crates, uses slots.
+     */
     xia::pixie::crate::crate crate_hw;
     xia::pixie::sim::crate crate_sim;
-    std::atomic_int state;
+
+    /*
+     * Module crate handles logical mapping unique the to legacy API.
+     */
+    xia::pixie::crate::module_crate modules;
 
     api_crate();
-    api_crate(int state_);
 
-    void setState(int state_);
+    void set_simulation();
+    unsigned short num_simulation_modules();
 
     xia::pixie::crate::crate* operator->();
-    xia::pixie::crate::crate& operator*();
+    operator xia::pixie::crate::crate&();
+    operator xia::pixie::crate::module_crate&();
+
+    /*
+     * Simulation module definitions. Currently this is hard coded.
+     */
+    static const module_defs sim_module_defs;
 };
 
-static const std::vector<std::string> module_defs = {
+api_crate::api_crate() : modules(crate_hw) {
+}
+
+void api_crate::set_simulation() {
+    modules.set(crate_sim);
+    for (auto& mod : sim_module_defs) {
+        xia::pixie::sim::add_module_def(mod, ' ');
+    }
+}
+
+unsigned short api_crate::num_simulation_modules() {
+    return static_cast<unsigned short>(sim_module_defs.size());
+}
+
+xia::pixie::crate::crate* api_crate::operator->() {
+    return modules;
+}
+
+api_crate::operator xia::pixie::crate::crate&() {
+    return *modules;
+}
+
+api_crate::operator xia::pixie::crate::module_crate&() {
+    return modules;
+}
+
+const api_crate::module_defs api_crate::sim_module_defs = {
     "device-number=0 slot=2 revision=15 eeprom-format=1 " \
     "serial-num=250 num-channels=16 adc-msps=250 adc-bits=16 adc-clk-div=1",
     "device-number=1 slot=3 revision=15 eeprom-format=1 " \
@@ -100,42 +148,9 @@ static const std::vector<std::string> module_defs = {
     "device-number=3 slot=5 revision=17 eeprom-format=1 " \
     "serial-num=1002 num-channels=32 adc-msps=250 adc-bits=14 adc-clk-div=1"};
 
-static void setSimMods() {
-    for (auto& mod : module_defs) {
-        xia::pixie::sim::add_module_def(mod, ' ');
-    }
-}
-
-api_crate::api_crate() {
-    state = -1;
-}
-
-api_crate::api_crate(int state_) {
-    state = state_;
-}
-
-void api_crate::setState(int state_) {
-    if (state > -1 && state != state_) {
-        throw xia_error(xia_error::code::crate_invalid_param,
-                        "can not change states during execution");
-    }
-    state = state_;
-}
-
-xia::pixie::crate::crate* api_crate::operator->() {
-    if (state > 0) {
-        return &crate_sim;
-    }
-    return &crate_hw;
-}
-
-xia::pixie::crate::crate& api_crate::operator*() {
-    if (state > 0) {
-        return crate_sim;
-    }
-    return crate_hw;
-}
-
+/*
+ * The crate. We only handle a single crate with the legacy API.
+ */
 api_crate crate;
 
 stats_legacy::stats_legacy(const xia::pixie::hw::configs& configs)
@@ -241,7 +256,7 @@ PIXIE_EXPORT int PIXIE_API PixieGetHistogramLength(const unsigned short mod_num,
                                                    unsigned int* hist_length) {
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(*crate, mod_num);
+        xia::pixie::crate::module_handle module(crate, mod_num);
         module->channel_check(chan_num);
         *hist_length = static_cast<unsigned int>(
             module->channels[chan_num].fixture->config.max_histogram_length);
@@ -266,7 +281,7 @@ PIXIE_EXPORT int PIXIE_API PixieGetTraceLength(const unsigned short mod_num,
                                                unsigned int* trace_length) {
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(*crate, mod_num);
+        xia::pixie::crate::module_handle module(crate, mod_num);
         module->channel_check(chan_num);
         *trace_length = static_cast<unsigned int>(
             module->channels[chan_num].fixture->config.max_adc_trace_length);
@@ -291,7 +306,7 @@ PIXIE_EXPORT int PIXIE_API PixieGetMaxNumBaselines(const unsigned short mod_num,
                                                    unsigned int* max_num_baselines) {
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(*crate, mod_num);
+        xia::pixie::crate::module_handle module(crate, mod_num);
         module->channel_check(chan_num);
         auto mxl = module->channels[chan_num].fixture->config.max_num_baselines;
         *max_num_baselines = static_cast<unsigned int>(mxl);
@@ -328,7 +343,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16AcquireADCTrace(unsigned short ModNum) {
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(*crate, ModNum);
+        xia::pixie::crate::module_handle module(crate, ModNum);
         module->get_traces();
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
@@ -352,16 +367,16 @@ PIXIE_EXPORT int PIXIE_API Pixie16AcquireBaselines(unsigned short ModNum) {
 
     try {
         crate->ready();
-        if (ModNum == crate->num_modules) {
-            for (size_t mod_num = 0; mod_num < crate->num_modules; mod_num++) {
-                xia::pixie::crate::module_handle module(*crate, mod_num);
+        if (ModNum == crate.modules.num_modules) {
+            for (size_t mod_num = 0; mod_num < crate.modules.num_modules; mod_num++) {
+                xia::pixie::crate::module_handle module(crate, mod_num);
                 if (*module == xia::pixie::hw::rev_H) {
                     return not_supported();
                 }
                 module->acquire_baselines();
             }
         } else {
-            xia::pixie::crate::module_handle module(*crate, ModNum);
+            xia::pixie::crate::module_handle module(crate, ModNum);
             if (*module == xia::pixie::hw::rev_H) {
                 return not_supported();
             }
@@ -389,13 +404,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16AdjustOffsets(unsigned short ModNum) {
 
     try {
         crate->ready();
-        if (ModNum == crate->num_modules) {
-            for (size_t mod_num = 0; mod_num < crate->num_modules; mod_num++) {
-                xia::pixie::crate::module_handle module(*crate, mod_num);
+        if (ModNum == crate.modules.num_modules) {
+            for (size_t mod_num = 0; mod_num < crate.modules.num_modules; mod_num++) {
+                xia::pixie::crate::module_handle module(crate, mod_num);
                 module->adjust_offsets();
             }
         } else {
-            xia::pixie::crate::module_handle module(*crate, ModNum);
+            xia::pixie::crate::module_handle module(crate, ModNum);
             module->adjust_offsets();
         }
     } catch (xia_error& e) {
@@ -425,7 +440,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16BLcutFinder(unsigned short ModNum, unsigned sh
             throw xia_error(xia_error::code::invalid_value, "BLcut is NULL");
         }
         crate->ready();
-        xia::pixie::crate::module_handle module(*crate, ModNum);
+        xia::pixie::crate::module_handle module(crate, ModNum);
         module->channel_check(ChanNum);
 
         if (*module == xia::pixie::hw::rev_H) {
@@ -499,6 +514,16 @@ static void PixieBootModule(xia::pixie::module::module& module, const char* ComF
 
     module.sync_hw(
       pattern.test(BOOTPATTERN_PROGFIPPI_BIT), pattern.test(BOOTPATTERN_SETDACS_BIT));
+
+    if (!module.fw_comms_verified()) {
+        xia_log(xia::log::warning) << "COMM firmware ready loaded; not verified";
+    }
+    if (!module.fw_fippi_verified()) {
+        xia_log(xia::log::warning) << "FIPPI firmware ready loaded; not verified";
+    }
+    if (!module.fw_dsp_verified()) {
+        xia_log(xia::log::warning) << "DSP firmware ready loaded; not verified; variables may not match";
+    }
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
@@ -530,16 +555,15 @@ PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
             xia::pixie::error::api_result(xia_error::code::invalid_value));
     }
 
-    ///todo: This needs to use the handle, but the handle won't work until this is complete!
     try {
-        if (ModNum == crate->num_modules) {
-            xia::pixie::crate::crate::user user(*crate);
-            for (auto& module : crate->modules) {
-                PixieBootModule(*module, ComFPGAConfigFile, SPFPGAConfigFile, DSPCodeFile,
+        xia::pixie::crate::crate::user user(crate);
+        if (ModNum == crate.modules.num_modules) {
+            for (size_t mod_num = 0; mod_num < crate.modules.num_modules; ++mod_num) {
+                PixieBootModule(crate.modules[mod_num], ComFPGAConfigFile, SPFPGAConfigFile, DSPCodeFile,
                                 DSPParFile, DSPVarFile, BootPattern);
             }
         } else {
-            PixieBootModule(*crate->modules[ModNum], ComFPGAConfigFile, SPFPGAConfigFile,
+            PixieBootModule(crate.modules[ModNum], ComFPGAConfigFile, SPFPGAConfigFile,
                             DSPCodeFile, DSPParFile, DSPVarFile, BootPattern);
         }
     } catch (xia_error& e) {
@@ -567,7 +591,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckExternalFIFOStatus(unsigned int* nFIFOWor
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(*crate, ModNum);
+        xia::pixie::crate::module_handle module(crate, ModNum);
         *nFIFOWords = static_cast<unsigned int>(module->read_list_mode_level());
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
@@ -593,7 +617,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckRunStatus(unsigned short ModNum) {
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(*crate, ModNum);
+        xia::pixie::crate::module_handle module(crate, ModNum);
         if (module->run_active()) {
             result = 1;
         }
@@ -838,10 +862,10 @@ PIXIE_EXPORT int PIXIE_API Pixie16CopyDSPParameters(unsigned short BitMask,
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle source(*crate, SourceModule);
+        xia::pixie::crate::module_handle source(crate, SourceModule);
 
-        for (size_t dest_mod = 0; dest_mod < crate->num_modules; dest_mod++) {
-            xia::pixie::crate::module_handle dest_handle(*crate, dest_mod);
+        for (size_t dest_mod = 0; dest_mod < crate.modules.num_modules; dest_mod++) {
+            xia::pixie::crate::module_handle dest_handle(crate, dest_mod);
 
             for (size_t dest_chan = 0; dest_chan < dest_handle->num_channels; dest_chan++) {
                 if (DestinationMask[dest_mod * dest_handle->num_channels + dest_chan] == 0) {
@@ -873,8 +897,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16LoadDSPParametersFromFile(const char* FileName
 
     try {
         crate->ready();
-        xia::pixie::crate::crate::user user(*crate);
-        for (auto& module : crate->modules) {
+        xia::pixie::crate::crate::user user(crate);
+        for (size_t mod_num = 0; mod_num < crate.modules.num_modules; ++mod_num) {
+            xia::pixie::crate::module_handle module(crate, mod_num);
             load_settings_file(*module, FileName);
             xia::pixie::hw::run::control(
               *module, xia::pixie::hw::run::control_task::program_fippi);
@@ -900,13 +925,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16EndRun(unsigned short ModNum) {
 
     try {
         crate->ready();
-        if (ModNum == crate->num_modules) {
-            for (size_t mod_num = 0; mod_num < crate->num_modules; mod_num++) {
-                xia::pixie::crate::module_handle module(*crate, mod_num);
+        if (ModNum == crate.modules.num_modules) {
+            for (size_t mod_num = 0; mod_num < crate.modules.num_modules; mod_num++) {
+                xia::pixie::crate::module_handle module(crate, mod_num);
                 module->run_end();
             }
         } else {
-            xia::pixie::crate::module_handle module(*crate, ModNum);
+            xia::pixie::crate::module_handle module(crate, ModNum);
             module->run_end();
         }
     } catch (xia_error& e) {
@@ -931,17 +956,15 @@ PIXIE_EXPORT int PIXIE_API Pixie16ExitSystem(unsigned short ModNum) {
 
     try {
         crate->ready();
-        if (ModNum == crate->num_modules) {
-            for (size_t mod_num = 0; mod_num < crate->num_modules; mod_num++) {
+        if (ModNum == crate.modules.num_modules) {
+            for (size_t mod_num = 0; mod_num < crate.modules.num_modules; mod_num++) {
                 xia::pixie::crate::module_handle
-                  module(*crate, mod_num,
-                         xia::pixie::crate::module_handle::present);
+                  module(crate, mod_num, xia::pixie::module::check::open);
                 module->close();
             }
         } else {
             xia::pixie::crate::module_handle
-              module(*crate, ModNum,
-                     xia::pixie::crate::module_handle::present);
+              module(crate, ModNum, xia::pixie::module::check::open);
             module->close();
         }
     } catch (xia_error& e) {
@@ -990,9 +1013,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(
     }
 
     if (OfflineMode == 1) {
-        NumModules = (unsigned short)(module_defs.size());
-        setSimMods();
-        crate.setState(OfflineMode);
+        crate.set_simulation();
+        NumModules = crate.num_simulation_modules();
     }
 
     xia_log(xia::log::info) << "Pixie16InitSystem: NumModules=" << NumModules
@@ -1009,7 +1031,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(
 
         crate->initialize();
 
-        if (crate->modules.size() == 0) {
+        if (crate.modules.num_modules == 0) {
             crate->shutdown();
             throw xia_error(xia::pixie::error::code::module_total_invalid,
                             "Crate did not initialize with any modules.");
@@ -1024,13 +1046,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(
              * If the number of modules requested is greater than the number
              * of modules in the crate, then it is an error.
              */
-            if (NumModules > crate->num_modules) {
+            if (NumModules > crate.modules.num_modules) {
                 crate->shutdown();
                 throw xia_error(xia_error::code::module_total_invalid,
                                 "module count does not match user supplied "
                                 "number of modules");
             }
-            crate->assign(numbers, false);
+            crate.modules.assign(numbers);
         }
     } catch (xia_error& e) {
         try {
@@ -1073,7 +1095,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(*crate, ModNum);
+        xia::pixie::crate::module_handle module(crate, ModNum);
 
         xia::pixie::hw::words data(nFIFOWords);
         auto copied = module->read_list_mode(data);
@@ -1112,7 +1134,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(*crate, ModNum);
+        xia::pixie::crate::module_handle module(crate, ModNum);
         module->channel_check(ChanNum);
         auto& chan = module->channels[ChanNum];
         auto read_words = NumWords;
@@ -1159,8 +1181,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(*crate, ModNum,
-                                                xia::pixie::crate::module_handle::present);
+        xia::pixie::crate::module_handle module(crate, ModNum,
+                                                xia::pixie::module::check::open);
         if (ModRev)
             *ModRev = module->revision;
         if (ModSerNum)
@@ -1194,8 +1216,7 @@ PIXIE_EXPORT int PIXIE_API PixieGetModuleInfo(unsigned short mod_num, module_con
         }
 
         crate->ready();
-        xia::pixie::crate::module_handle module(*crate, mod_num,
-                                                xia::pixie::crate::module_handle::present);
+        xia::pixie::crate::module_handle module(crate, mod_num, xia::pixie::module::check::open);
 
         cfg->adc_bit_resolution = module->eeprom.configs[0].adc_bits;
         cfg->adc_sampling_frequency = module->eeprom.configs[0].adc_msps;
@@ -1203,7 +1224,7 @@ PIXIE_EXPORT int PIXIE_API PixieGetModuleInfo(unsigned short mod_num, module_con
         cfg->number_of_channels = (unsigned short) (module->num_channels);
         cfg->revision = module->revision;
         cfg->serial_number = module->serial_num;
-        cfg->slot = module->slot;
+        cfg->slot = static_cast<unsigned short>(module->slot);
         for (const auto& fw : module->firmware) {
             if (fw->device == "sys") {
                 std::memset(cfg->sys_fpga, 0, sizeof(cfg->sys_fpga));
@@ -1245,7 +1266,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buff
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(*crate, ModNum);
+        xia::pixie::crate::module_handle module(crate, ModNum);
         module->channel_check(ChanNum);
         module->read_adc(ChanNum, Trace_Buffer, Trace_Length, false);
     } catch (xia_error& e) {
@@ -1281,7 +1302,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanBaselines(double* Baselines, double
         }
 
         crate->ready();
-        xia::pixie::crate::module_handle module(*crate, ModNum);
+        xia::pixie::crate::module_handle module(crate, ModNum);
         module->channel_check(ChanNum);
 
         xia::pixie::channel::range channels = {size_t(ChanNum)};
@@ -1317,7 +1338,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanPar(const char* ChanParName, double
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(*crate, ModNum);
+        xia::pixie::crate::module_handle module(crate, ModNum);
         module->channel_check(ChanNum);
 
         *ChanParData = module->read(ChanParName, ChanNum);
@@ -1348,7 +1369,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglModPar(const char* ModParName, unsigned
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(*crate, ModNum);
+        xia::pixie::crate::module_handle module(crate, ModNum);
         *ModParData = module->read(ModParName);
         xia_log(xia::log::debug) << "Pixie16ReadSglModPar: ModNum=" << ModNum
                                  << " ModParName=" << ModParName
@@ -1379,7 +1400,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadStatisticsFromModule(unsigned int* Statist
             throw xia_error(xia_error::code::invalid_value, "statistics pointer is NULL");
         }
         crate->ready();
-        xia::pixie::crate::module_handle module(*crate, ModNum);
+        xia::pixie::crate::module_handle module(crate, ModNum);
         stats_legacy_ptr legacy_stats = new (Statistics) stats_legacy(module->eeprom.configs);
         legacy_stats->validate();
         xia::pixie::stats::stats stats(*module);
@@ -1407,7 +1428,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16SaveDSPParametersToFile(const char* FileName) 
     xia_log(xia::log::debug) << "Pixie16SaveDSPParametersToFile: FileName=" << FileName;
 
     try {
-        xia::pixie::config::export_json(FileName, *crate);
+        xia::pixie::config::export_json(FileName, crate);
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
     } catch (std::bad_alloc& e) {
@@ -1434,13 +1455,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16SetDACs(unsigned short ModNum) {
 
     try {
         crate->ready();
-        if (ModNum == crate->num_modules) {
-            for (size_t mod_num = 0; mod_num < crate->num_modules; mod_num++) {
-                xia::pixie::crate::module_handle module(*crate, mod_num);
+        if (ModNum == crate.modules.num_modules) {
+            for (size_t mod_num = 0; mod_num < crate.modules.num_modules; mod_num++) {
+                xia::pixie::crate::module_handle module(crate, mod_num);
                 module->set_dacs();
             }
         } else {
-            xia::pixie::crate::module_handle module(*crate, ModNum);
+            xia::pixie::crate::module_handle module(crate, ModNum);
             module->set_dacs();
         }
     } catch (xia_error& e) {
@@ -1478,13 +1499,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartHistogramRun(unsigned short ModNum, unsig
                   xia_error::code::invalid_value, "invalid histogram start run mode");
         }
         crate->ready();
-        if (ModNum == crate->num_modules) {
-            for (size_t mod_num = 0; mod_num < crate->num_modules; mod_num++) {
-                xia::pixie::crate::module_handle module(*crate, mod_num);
+        if (ModNum == crate.modules.num_modules) {
+            for (size_t mod_num = 0; mod_num < crate.modules.num_modules; mod_num++) {
+                xia::pixie::crate::module_handle module(crate, mod_num);
                 module->start_histograms(run_mode);
             }
         } else {
-            xia::pixie::crate::module_handle module(*crate, ModNum);
+            xia::pixie::crate::module_handle module(crate, ModNum);
             module->start_histograms(run_mode);
         }
     } catch (xia_error& e) {
@@ -1528,13 +1549,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsign
         }
 
         crate->ready();
-        if (ModNum == crate->num_modules) {
-            for (size_t mod_num = 0; mod_num < crate->num_modules; mod_num++) {
-                xia::pixie::crate::module_handle module(*crate, mod_num);
+        if (ModNum == crate.modules.num_modules) {
+            for (size_t mod_num = 0; mod_num < crate.modules.num_modules; mod_num++) {
+                xia::pixie::crate::module_handle module(crate, mod_num);
                 module->start_listmode(run_mode);
             }
         } else {
-            xia::pixie::crate::module_handle module(*crate, ModNum);
+            xia::pixie::crate::module_handle module(crate, ModNum);
             module->start_listmode(run_mode);
         }
     } catch (xia_error& e) {
@@ -1559,7 +1580,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16TauFinder(unsigned short ModNum, double* Tau) 
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(*crate, ModNum);
+        xia::pixie::crate::module_handle module(crate, ModNum);
         if (*module == xia::pixie::hw::rev_H) {
             return not_supported();
         }
@@ -1591,7 +1612,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglChanPar(const char* ChanParName, doubl
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(*crate, ModNum);
+        xia::pixie::crate::module_handle module(crate, ModNum);
         module->channel_check(ChanNum);
         module->write(ChanParName, ChanNum, ChanParData);
     } catch (xia_error& e) {
@@ -1619,17 +1640,20 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglModPar(const char* ModParName, unsigne
     try {
         crate->ready();
         bool bcast;
-        if (ModNum == crate->num_modules) {
+        if (ModNum == crate.modules.num_modules) {
             bcast = true;
         } else {
-            xia::pixie::crate::module_handle module(*crate, ModNum);
+            xia::pixie::crate::module_handle module(crate, ModNum);
             bcast = module->write(ModParName, ModParData);
         }
         if (bcast) {
-            xia::pixie::crate::crate::user user(*crate);
-            for (auto& module : crate->modules) {
-                if (ModNum != module->number && module->online()) {
-                    module->write(ModParName, ModParData);
+            xia::pixie::crate::crate::user user(crate);
+            for (size_t mod_num = 0; mod_num < crate.modules.num_modules; ++mod_num) {
+                if (ModNum != mod_num) {
+                    xia::pixie::crate::module_handle module(crate, mod_num);
+                    if (module->online()) {
+                        module->write(ModParName, ModParData);
+                    }
                 }
             }
         }
@@ -1723,8 +1747,8 @@ PIXIE_EXPORT int PIXIE_API PixieGetWorkerConfiguration(const unsigned short mod_
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(*crate, mod_num,
-                                                xia::pixie::crate::module_handle::present);
+        xia::pixie::crate::module_handle module(crate, mod_num,
+                                                xia::pixie::module::check::open);
         worker_config->bandwidth_mb_per_sec = module->fifo_bandwidth;
         worker_config->buffers = module->fifo_buffers;
         worker_config->dma_trigger_level_bytes = module->fifo_dma_trigger_level;
@@ -1757,17 +1781,17 @@ PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version, con
     using firmware = xia::pixie::firmware::firmware;
 
     try {
-        int slot = -1;
+        xia::pixie::hw::slot_type slot = xia::pixie::hw::slot_invalid;
         if (ModNum != 0xACE) {
-            xia::pixie::crate::module_handle module(*crate, ModNum,
-                                                    xia::pixie::crate::module_handle::present);
+            xia::pixie::crate::module_handle module(crate, ModNum,
+                                                    xia::pixie::module::check::open);
             slot = module->slot;
         }
         std::string ver_s = std::to_string(version);
         std::string dev_s = device;
         firmware fw(ver_s, revision, adc_msps, adc_bits, dev_s);
         fw.filename = path;
-        if (slot > 0) {
+        if (slot != xia::pixie::hw::slot_invalid) {
             fw.slot.push_back(slot);
         }
         xia::pixie::firmware::add(crate->firmware, fw);
@@ -1794,8 +1818,7 @@ PIXIE_EXPORT int PIXIE_API PixieSetWorkerConfiguration(const unsigned short mod_
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(*crate, mod_num,
-                                                xia::pixie::crate::module_handle::present);
+        xia::pixie::crate::module_handle module(crate, mod_num, xia::pixie::module::check::open);
         module->set_fifo_bandwidth(worker_config->bandwidth_mb_per_sec);
         module->set_fifo_buffers(worker_config->buffers);
         module->set_fifo_dma_trigger_level(worker_config->dma_trigger_level_bytes);
@@ -1821,8 +1844,7 @@ PIXIE_EXPORT int PIXIE_API PixieReadRunFifoStats(unsigned short mod_num,
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(*crate, mod_num,
-                                                xia::pixie::crate::module_handle::present);
+        xia::pixie::crate::module_handle module(crate, mod_num, xia::pixie::module::check::open);
         xia::pixie::module::module::fifo_stats snapshot;
         snapshot = module->run_stats;
         fifo_stats->in = snapshot.get_in_bytes();

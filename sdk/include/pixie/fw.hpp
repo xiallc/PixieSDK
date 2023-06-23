@@ -110,7 +110,7 @@ struct firmware {
     /**
      * @brief The firmware can be used in a range of slots.
      */
-    typedef std::vector<int> slots;
+    typedef std::vector<hw::slot_type> slots;
 
     /**
      * @brief The firmware's file in a file system.

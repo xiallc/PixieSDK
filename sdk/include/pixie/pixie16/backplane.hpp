@@ -24,6 +24,7 @@
 #define PIXIE_BACKPLANE_H
 
 #include <atomic>
+#include <limits>
 #include <vector>
 
 #include <pixie/error.hpp>
@@ -51,9 +52,9 @@ struct backplane {
 
     struct role {
         /**
-         * The released value
+         * Leader is released when this value.
          */
-        static const int released = -1;
+        static const size_t released = std::numeric_limits<size_t>::max();
 
         /**
          * The role's label
@@ -66,7 +67,7 @@ struct backplane {
          * value is -1 there is no active role leader and the
          * leadership can be reserved.
          */
-        std::atomic_int leader;
+        std::atomic_size_t leader;
 
         /**
          * Request leader role.
@@ -88,14 +89,14 @@ struct backplane {
         bool operator!=(const module::module& mod) const;
 
         /**
-         * Leader module?
+         * Leader slot?
          */
-        int module() const { return leader.load(); }
+        size_t slot() const { return leader.load(); }
 
         /**
          * Has leader?
          */
-        bool has_leader() const { return module() != released; }
+        bool has_leader() const { return slot() != released; }
 
         /**
          * Not leader?
@@ -136,9 +137,14 @@ struct backplane {
     role director;
 
     /**
-     * Sync waits must be 0 or the number of module in a crate.
+     * Slots present
      */
-    std::atomic_int sync_waits;
+    std::atomic_size_t num_slots_present;
+
+    /**
+     * Sync waits must be 0 or the number of slots in a crate.
+     */
+    std::atomic_size_t sync_waits;
     waiters sync_waiters;
 
     backplane();
@@ -158,14 +164,22 @@ struct backplane {
     void sync_wait_valid() const;
 
     /**
-     * Initialize
+     * Initialize the sync waiters to the number of slots in the crate
+     * and initialise to false. Set the number of slots with the
+     * modules present.
      */
-    void init(const size_t num_modules);
+    void init(const size_t num_slots, const size_t num_present);
+
+    /**
+     * Initialize the sync waiter state to false and set the number
+     * of slots with the modules present.
+     */
+    void init(const size_t num_present);
 
     /**
      * Reinitialize. Use a template as a container forward decal.
      */
-    template<typename T> void reinit(T& modules, T& offline);
+    template<typename T> void reinit(T& slots, const size_t num_slots);
 
     /**
      * A module is taken offline. Update the backplane.
@@ -173,9 +187,9 @@ struct backplane {
     void offline(const module::module& module);
 };
 
-template<typename T> void backplane::reinit(T& modules, T& offline) {
-    init(static_cast<int>(modules.size() + offline.size()));
-    for (auto& mod : modules) {
+template<typename T> void backplane::reinit(T& slots, const size_t num_slots) {
+    init(num_slots);
+    for (auto& mod : slots) {
         sync_wait(*mod);
     }
 }

@@ -145,6 +145,10 @@ void module::online() {
     /* Do nothing */
 }
 
+void module::forced_online() {
+    /* Do nothing */
+}
+
 void module::forced_offline() {
     /* Do nothing */
 }

@@ -34,7 +34,9 @@
 #include <pixie/pixie16/sim.hpp>
 
 
-static xia::pixie::sim::crate crate;
+static xia::pixie::sim::crate sim_crate;
+static xia::pixie::crate::module_crate crate(sim_crate);
+
 
 static const std::vector<std::string> module_defs = {
     "device-number=0,slot=2, revision=13, eeprom-format=1, serial-num=250, num-channels=16, adc-msps=100, adc-bits=16, adc-clk-div=1",
@@ -66,19 +68,21 @@ void setup_simulation() {
     xia_log(xia::log::level::info) << "Logging for test_parameter_read_write integration tests.";
 
     std::stringstream def;
-    for (const auto& mod_def : module_defs)
+    for (const auto& mod_def : module_defs) {
         def << mod_def << std::endl;
+    }
     xia::pixie::sim::load_module_defs(def);
 
-    crate.initialize(false);
-    crate.set_firmware();
-    crate.probe();
+    crate->initialize(false);
+    crate->probe();
+    crate->set_firmware();
 
-    for (auto& mod : crate.modules) {
-        mod->write_var("FastFilterRange", xia::pixie::param::value_type(0), 0);
-        mod->write_var("SlowFilterRange", xia::pixie::param::value_type(3), 0);
+    for (size_t m = 0; m < crate.num_modules; ++m) {
+        xia::pixie::module::module& mod = crate[m];
+        mod.write_var("FastFilterRange", xia::pixie::param::value_type(0), 0);
+        mod.write_var("SlowFilterRange", xia::pixie::param::value_type(3), 0);
         //@TODO This is here temporarily to facilitate tests until P16-263 is done.
-        mod->write_var("FIFOLength", xia::pixie::param::value_type(max_fifo_length), 0);
+        mod.write_var("FIFOLength", xia::pixie::param::value_type(max_fifo_length), 0);
     }
 }
 

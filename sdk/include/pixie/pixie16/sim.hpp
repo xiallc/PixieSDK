@@ -62,6 +62,8 @@ public:
 
     std::unique_ptr<uint8_t[]> pci_memory;
     std::string var_defaults;
+
+    bool init_online;
 };
 
 /**
@@ -71,7 +73,11 @@ class crate : public xia::pixie::crate::crate {
 public:
     typedef xia::pixie::crate::error error;
 
-    void add_module() override;
+    crate(bool init_online = true);
+
+    void create_module_slots() override;
+
+    bool init_online;
 };
 
 /**

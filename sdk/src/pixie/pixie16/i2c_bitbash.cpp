@@ -43,7 +43,7 @@ bitbash::bitbash(module::module& module_, int reg_, size_t bus_freq_, uint32_t S
 }
 
 bitbash::~bitbash() {
-    if (module.present())
+    if (module.opened())
         stop();
 }
 

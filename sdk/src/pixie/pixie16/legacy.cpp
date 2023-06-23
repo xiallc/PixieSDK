@@ -99,7 +99,7 @@ void settings::import(module::module& module) {
         if (desc.writeable()) {
             auto value = read_var(desc.par, module.number);
             if (desc.par == xia::pixie::param::module_var::SlotID) {
-                module.write_var(desc.par, module.slot, 0, false);
+                module.write_var(desc.par, param::value_type(module.slot), 0, false);
             } else if (desc.par == xia::pixie::param::module_var::ModNum) {
                 module.write_var(desc.par, module.number, 0, false);
             } else {

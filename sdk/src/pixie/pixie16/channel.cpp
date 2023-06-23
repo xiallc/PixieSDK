@@ -37,7 +37,7 @@
 namespace xia {
 namespace pixie {
 namespace channel {
-static std::string channel_label(const int num, const int slot, const size_t chan) {
+static std::string channel_label(const int num, const hw::slot_type slot, const size_t chan) {
     std::ostringstream oss;
     oss << "channel: num=" << num << ",slot=" << slot << ",chan=" << chan << ": ";
     return oss.str();
@@ -48,15 +48,15 @@ static std::string channel_label(const channel& chan) {
     return channel_label(mod.number, mod.slot, chan.number);
 }
 
-error::error(const int num, const int slot, const size_t channel, const code type,
+error::error(const int num, const hw::slot_type slot, const size_t channel, const code type,
              const std::ostringstream& what)
     : pixie::error::error(type, make_what(num, slot, channel, what.str().c_str())) {}
 
-error::error(const int num, const int slot, const size_t channel, const code type,
+error::error(const int num, const hw::slot_type slot, const size_t channel, const code type,
              const std::string& what)
     : pixie::error::error(type, make_what(num, slot, channel, what.c_str())) {}
 
-error::error(const int num, const int slot, const size_t channel, const code type, const char* what)
+error::error(const int num, const hw::slot_type slot, const size_t channel, const code type, const char* what)
     : pixie::error::error(type, make_what(num, slot, channel, what)) {}
 
 void error::output(std::ostream& out) {
@@ -64,10 +64,10 @@ void error::output(std::ostream& out) {
     out << std::setfill(' ') << "error: code=" << std::setw(2) << result() << ' ' << what();
 }
 
-std::string error::make_what(const int num, const int slot, const size_t channel,
-                             const char* what_) {
+std::string error::make_what(const int num, const hw::slot_type slot, const size_t channel,
+                             const char* what) {
     std::ostringstream oss;
-    oss << channel_label(num, slot, channel) << what_;
+    oss << channel_label(num, slot, channel) << what;
     return oss.str();
 }
 

@@ -32,37 +32,43 @@ namespace backplane {
 backplane::role::role(const std::string& label_) : label(label_), leader(-1) {}
 
 bool backplane::role::request(const module::module& mod) {
-    int expected = released;
-    int desired = mod.number;
-    const bool requested = leader.compare_exchange_strong(
-        expected, desired, std::memory_order_release, std::memory_order_relaxed);
-    if (requested) {
-        xia_log(log::info) << "backplane: " << label << ": leader: module=" << mod.number;
-    } else {
-        if (leader.load() == desired) {
-            return true;
+    if (mod.opened()) {
+        auto expected = released;
+        auto desired = mod.slot;
+        const bool requested = leader.compare_exchange_strong(
+            expected, desired, std::memory_order_release, std::memory_order_relaxed);
+        if (requested) {
+            xia_log(log::info) << "backplane: " << label << ": leader: slot=" << mod.slot;
+        } else {
+            if (leader.load() == desired) {
+                return true;
+            }
         }
+        return requested;
     }
-    return requested;
+    return false;
 }
 
 bool backplane::role::release(const module::module& mod) {
-    int expected = mod.number;
-    int desired = released;
-    const bool released_ = leader.compare_exchange_strong(
-        expected, desired, std::memory_order_release, std::memory_order_relaxed);
-    if (released_) {
-        xia_log(log::info) << "backplane: " << label << ": released: module=" << mod.number;
+    if (mod.opened()) {
+        auto expected = mod.slot;
+        auto desired = released;
+        const bool released_ = leader.compare_exchange_strong(
+            expected, desired, std::memory_order_release, std::memory_order_relaxed);
+        if (released_) {
+            xia_log(log::info) << "backplane: " << label << ": released: slot=" << mod.slot;
+        }
+        return released_;
     }
-    return released_;
+    return false;
 }
 
 bool backplane::role::operator==(const module::module& mod) const {
-    return module() == mod.number;
+    return slot() == mod.slot;
 }
 
 bool backplane::role::operator!=(const module::module& mod) const {
-    return module() != mod.number;
+    return slot() != mod.slot;
 }
 
 bool backplane::role::not_leader(const module::module& mod) {
@@ -71,69 +77,78 @@ bool backplane::role::not_leader(const module::module& mod) {
 
 backplane::backplane()
     : wired_or_triggers_pullup("wired-or-triggers"), run("run"), director("director"),
-      sync_waits(0), sync_waiters({false}) {}
+      num_slots_present(0), sync_waits(0), sync_waiters({false}) {}
 
 void backplane::sync_wait(module::module& mod, const param::value_type synch_wait) {
     bool synch_wait_active = synch_wait == 1;
-    if (synch_wait_active != sync_waiters[mod.number]) {
-        if (synch_wait_active) {
-            ++sync_waits;
-        } else {
-            /*
-             * P16-556
-             *  The default setting for the sync_waiters is false so
-             *  if a module sets the synch_wait with 0 and there is no
-             *  leader the sync_waits will underroll.
-             */
-            if (sync_waits.load() > 0) {
-                --sync_waits;
+    if (mod.online()) {
+        if (synch_wait_active != sync_waiters[mod.slot]) {
+            if (synch_wait_active) {
+                ++sync_waits;
+            } else {
+                /*
+                 * P16-556
+                 *  The default setting for the sync_waiters is false so
+                 *  if a module sets the synch_wait with 0 and there is no
+                 *  leader the sync_waits will underroll.
+                 */
+                if (sync_waits.load() > 0) {
+                    --sync_waits;
+                }
             }
-        }
-        sync_waiters[mod.number] = synch_wait_active;
-        /*
-         * Range check. The check is not for the module count in the
-         * crate because a module does not know about other modules so
-         * check against the size of the waiters which is the maximum
-         * number of slots a crate has. Out of range is bug.
-         */
-        size_t sw = sync_waits.load();
-        if (sw > sync_waiters.size()) {
-            throw error(error::code::internal_failure,
-                        "module: " + std::to_string(mod.number) +
-                        ": invalid backplane sync_wait value: " + std::to_string(sw));
+            sync_waiters[mod.slot] = synch_wait_active;
+            /*
+             * Range check. The check is not for the module count in the
+             * crate because a module does not know about other modules so
+             * check against the size of the waiters which is the maximum
+             * number of slots a crate has. Out of range is bug.
+             */
+            size_t sw = sync_waits.load();
+            if (sw > num_slots_present) {
+                throw error(error::code::internal_failure,
+                            "slot: " + std::to_string(mod.slot) +
+                            ": invalid backplane sync_wait value: " + std::to_string(sw));
+            }
         }
     }
 }
 
 void backplane::sync_wait(module::module& mod) {
-    if (mod.online() && mod.present()) {
+    if (mod.online()) {
         sync_wait(mod, mod.read(param::module_param::synch_wait));
     }
 }
 
 void backplane::sync_wait_valid() const {
     size_t waits = sync_waits.load();
-    if (waits != 0 && waits != sync_waiters.size()) {
+    if (waits != 0 && waits != num_slots_present) {
         throw error(error::code::module_invalid_operation,
-                    "sync wait mode enabled and not all modules in the sync wait state");
+                    "sync wait mode enabled and not all slots in the sync wait state: " +
+                    std::to_string(waits) + " of " + std::to_string(num_slots_present) +
+                    " waiting");
     } else if (waits != 0 && !run.has_leader()) {
         throw error(error::code::module_invalid_operation,
-                    "sync wait mode enabled but no run leader module is assigned");
+                    "sync wait mode enabled but no run leader slot is assigned");
     }
 }
 
-void backplane::init(const size_t num_modules) {
+void backplane::init(const size_t num_present) {
+    init(sync_waiters.size(), num_present);
+}
+
+void backplane::init(const size_t num_slots, const size_t num_present) {
     sync_waits = 0;
-    sync_waiters.resize(num_modules, false);
+    num_slots_present = num_present;
+    sync_waiters.resize(num_slots, false);
     std::fill(sync_waiters.begin(), sync_waiters.end(), false);
 }
 
 void backplane::offline(const module::module& module) {
-    if (module.number >= 0 && module.number < int(sync_waiters.size())) {
-        if (sync_waiters[module.number]) {
+    if (module.slot_valid() && module.slot < sync_waiters.size()) {
+        if (sync_waiters[module.slot]) {
             --sync_waits;
         }
-        sync_waiters[module.number] = false;
+        sync_waiters[module.slot] = false;
     }
 }
 

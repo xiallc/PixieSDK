@@ -83,7 +83,9 @@ void fixture::get_traces() {}
 void fixture::adjust_offsets() {}
 void fixture::tau_finder() {}
 
-module::module(xia::pixie::backplane::backplane& backplane_) : xia::pixie::module::module(backplane_) {}
+module::module(xia::pixie::backplane::backplane& backplane_)
+    : xia::pixie::module::module(backplane_), init_online(true) {
+}
 
 module::~module() {}
 
@@ -103,6 +105,7 @@ void module::open(size_t device_number) {
 
             set_bus_device_number(device_number);
             slot = mod_def.slot;
+            number = int(slot);
             revision = mod_def.revision;
             eeprom_format = mod_def.eeprom_format;
             serial_num = mod_def.serial_num;
@@ -118,7 +121,7 @@ void module::open(size_t device_number) {
 
             fixtures = std::make_shared<fixture>(*this);
 
-            present_ = true;
+            opened_ = true;
             return;
         }
     }
@@ -128,7 +131,7 @@ void module::open(size_t device_number) {
 
 void module::close() {
     xia_log(log::info) << "sim: module: close";
-    present_ = false;
+    opened_ = false;
     vmaddr = nullptr;
     pci_memory.release();
 }
@@ -140,8 +143,10 @@ void module::probe() {
     erase_channels();
     init_values();
     init_channels();
-    online_ = dsp_online = fippi_fpga = comms_fpga = true;
-    fixtures->online();
+    online_ = dsp_online = fippi_fpga = comms_fpga = init_online;
+    if (online_) {
+        fixtures->online();
+    }
 }
 
 void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
@@ -220,9 +225,16 @@ void module::load_var_defaults(const std::string& file) {
     input.close();
 }
 
-void crate::add_module() {
-    xia_log(log::info) << "sim: module: add";
-    modules.push_back(std::make_unique<module>(backplane));
+    crate::crate(bool init_online_) : init_online(init_online_) {}
+
+void crate::create_module_slots() {
+    xia_log(log::info) << "sim: module: create crate";
+    num_slots = hw::max_slots;
+    for (size_t s = 0; s < num_slots; ++s) {
+        auto mod = std::make_shared<module>(backplane);
+        mod->init_online = init_online;
+        slots.push_back(mod);
+    }
 }
 
 module_def::module_def()
