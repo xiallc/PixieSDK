@@ -63,7 +63,7 @@ enum struct element {
     END
 };
 
-void json_to_record(const std::string& json_string, record& rec) {
+PIXIE_EXPORT void PIXIE_API json_to_record(const std::string& json_string, record& rec) {
     /*
      * We define a dummy double here because the JSON deseralizer can't get to
      * the chrono type that we defined. Using the dummy also ensures that
@@ -109,7 +109,7 @@ void json_to_record(const std::string& json_string, record& rec) {
     }
 }
 
-void record_to_json(const record& evt, std::string& str) {
+PIXIE_EXPORT void PIXIE_API record_to_json(const record& evt, std::string& str) {
     json val = {{"cfd_forced_trigger", evt.cfd_forced_trigger},
                 {"cfd_fractional_time", evt.cfd_fractional_time.count()},
                 {"cfd_trigger_source", evt.cfd_trigger_source},
@@ -561,8 +561,8 @@ void fill_remainder(uint32_t* data, uint32_t* data_end, buffer& leftovers) {
     }
 }
 
-void decode_data_block(uint32_t* data, size_t len, uint32_t revision, uint32_t frequency,
-                       records& recs, buffer& leftovers) {
+PIXIE_EXPORT void PIXIE_API decode_data_block(
+    uint32_t* data, size_t len, uint32_t revision, uint32_t frequency, records& recs, buffer& leftovers) {
     if (data == nullptr) {
         throw error(error::code::invalid_buffer, "buffer pointed to an invalid location");
     }
@@ -744,8 +744,8 @@ void decode_data_block(uint32_t* data, size_t len, uint32_t revision, uint32_t f
     }
 }
 
-void decode_data_block(buffer data, uint32_t revision, uint32_t frequency, records& recs,
-                       buffer& leftovers) {
+PIXIE_EXPORT void PIXIE_API decode_data_block(
+    buffer data, uint32_t revision, uint32_t frequency, records& recs, buffer& leftovers) {
     decode_data_block(data.data(), data.size(), revision, frequency, recs, leftovers);
 }
 
