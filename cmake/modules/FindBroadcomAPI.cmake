@@ -30,20 +30,20 @@
 find_path(PLX_LIBRARY_DIR
         NAMES PlxApi.a PlxApi.lib
         HINTS $ENV{PLX_SDK_DIR}
-        PATHS /usr/local/broadcom/current /usr/src/PlxSdk C:/PlxApi
+        PATHS /usr/local/broadcom/current /usr/src/PlxSdk C:/Plx/PlxSdk
         PATH_SUFFIXES PlxApi/Library Linux/PlxApi/Library PlxApi/Release)
 
 find_library(PLX_STATIC_LIBRARY_PATH
         NAMES PlxApi.a PlxApi.lib
         HINTS ${PLX_LIBRARY_DIR}
-        PATHS /usr/local/broadcom/current /usr/src/PlxSdk C:/PlxApi
+        PATHS /usr/local/broadcom/current /usr/src/PlxSdk C:/Plx/PlxSdk
         PATH_SUFFIXES PlxApi/Library Linux/PlxApi/Library PlxApi/Release
         )
 
 find_path(PLX_INCLUDE_DIR
         NAMES Plx.h PlxTypes.h PlxApi.h
         HINTS $ENV{PLX_SDK_DIR}
-        PATHS /usr/local/broadcom/current /usr/src/PlxSdk
+        PATHS /usr/local/broadcom/current /usr/src/PlxSdk C:/Plx/PlxSdk
         PATH_SUFFIXES Include
         )
 
