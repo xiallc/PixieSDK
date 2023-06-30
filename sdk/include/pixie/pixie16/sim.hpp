@@ -74,6 +74,7 @@ public:
     typedef xia::pixie::crate::error error;
 
     crate(bool init_online = true);
+    ~crate() override;
 
     void create_module_slots() override;
 

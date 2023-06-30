@@ -578,7 +578,7 @@ module::module(module&& m)
       forced_offline_(m.forced_offline_.load()), pause_fifo_worker(m.pause_fifo_worker.load()),
       comms_fpga(m.comms_fpga), comms_loaded(m.comms_loaded), fippi_fpga(m.fippi_fpga),
       fippi_loaded(m.fippi_loaded), dsp_online(m.dsp_online), dsp_loaded(m.dsp_loaded),
-      have_hardware(false), vars_loaded(false), cfg_ctrlcs(0xaaa), device(std::move(m.device)),
+      have_hardware(m.have_hardware), vars_loaded(false), cfg_ctrlcs(0xaaa), device(std::move(m.device)),
       test_mode(m.test_mode.load()) {
     m.slot = hw::slot_invalid;
     m.number = -1;
@@ -733,7 +733,7 @@ module& module::operator=(module&& m) {
 }
 
 bool module::present() const {
-    return device->device_number >= 0;
+    return device && device->device_number >= 0;
 }
 
 bool module::hardware_accessable() const {
@@ -964,18 +964,18 @@ void module::open() {
 void module::close() {
     lock_guard guard(lock_);
 
-    if (online()) {
-        if (run_active()) {
-            run_end();
-        }
-    }
-
-    if (device && device->device_number >= 0) {
+    if (opened()) {
         PLX_STATUS ps_dma;
         PLX_STATUS ps_unmap_bar = PLX_STATUS_OK;
         PLX_STATUS ps_close;
 
         xia_log(log::debug) << module_label(*this) << "close: device-number=" << device->device_number;
+
+        if (online()) {
+            if (run_active()) {
+                run_end();
+            }
+        }
 
         if (fixtures) {
             fixtures->close();
@@ -984,13 +984,16 @@ void module::close() {
 
         force_offline();
 
-        ps_dma = ::PlxPci_DmaChannelClose(&device->handle, 0);
-        if (ps_dma != PLX_STATUS_OK) {
-            xia_log(log::debug) << module_label(*this) << "DMA close: " << pci_error_text(ps_dma);
-            if (ps_dma == PLX_STATUS_IN_PROGRESS) {
-                ::PlxPci_DeviceReset(&device->handle);
-                ::PlxPci_DmaChannelClose(&device->handle, 0);
+        if (have_hardware) {
+            ps_dma = ::PlxPci_DmaChannelClose(&device->handle, 0);
+            if (ps_dma != PLX_STATUS_OK) {
+                xia_log(log::debug) << module_label(*this) << "DMA close: " << pci_error_text(ps_dma);
+                if (ps_dma == PLX_STATUS_IN_PROGRESS) {
+                    ::PlxPci_DeviceReset(&device->handle);
+                    ::PlxPci_DmaChannelClose(&device->handle, 0);
+                }
             }
+            have_hardware = false;
         }
 
         if (vmaddr != nullptr) {
@@ -1011,7 +1014,6 @@ void module::close() {
 
         online_ = false;
         forced_offline_ = false;
-        have_hardware = false;
         opened_ = false;
 
         if (ps_unmap_bar != PLX_STATUS_OK || ps_close != PLX_STATUS_OK) {

@@ -225,7 +225,13 @@ void module::load_var_defaults(const std::string& file) {
     input.close();
 }
 
-    crate::crate(bool init_online_) : init_online(init_online_) {}
+crate::crate(bool init_online_) : init_online(init_online_) {}
+
+crate::~crate() {
+    for (auto slot : slots) {
+        slot->close();
+    }
+}
 
 void crate::create_module_slots() {
     xia_log(log::info) << "sim: module: create crate";
