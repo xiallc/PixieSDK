@@ -393,6 +393,16 @@ static const command_definition bl_save_cmd = {
     "Save the module's baselines"
 };
 
+command_handler_decl(copy);
+static const command_definition copy_cmd = {
+    "Module", "/module/copy", copy,
+    {"init", "probe"},
+    3, 5, 0,
+    {},
+    "filter-mask src-module dest-module [src-channel] [dest-channel]",
+    "Copy parameters from one module to another"
+};
+
 command_handler_decl(db);
 static const command_definition db_cmd = {
     "Module", "/module/db", db,
@@ -659,6 +669,7 @@ static const command_definitions module_commands = {
     adj_off_cmd,
     bl_acq_cmd,
     bl_save_cmd,
+    copy_cmd,
     db_cmd,
     hist_resume_cmd,
     hist_save_cmd,
@@ -1680,6 +1691,45 @@ static void boot(command_context& context) {
         tp.end();
         context.opts.out << "boot time=" << tp << std::endl;
     }
+}
+
+static void copy(command_context& context) {
+    auto& crate = context.crate;
+    command::argument filter_mask;
+    command::argument src_mod_opt;
+    command::argument dest_mod_opt;
+    command::argument src_chan_opt;
+    command::argument dest_chan_opt;
+    filter_mask = context.cmd.get_arg();
+    src_mod_opt = context.cmd.get_arg();
+    dest_mod_opt = context.cmd.get_arg();
+    if (context.cmd.has_arg()) {
+        src_chan_opt = context.cmd.get_arg();
+        dest_chan_opt = context.cmd.get_arg();
+    }
+    module_range src_mod_nums;
+    modules_option(src_mod_nums, src_mod_opt, crate.num_modules);
+    module_range dest_mod_nums;
+    modules_option(dest_mod_nums, dest_mod_opt, crate.num_modules);
+    if (src_mod_nums.size() > 1 || dest_mod_nums.size() > 1) {
+        throw std::runtime_error("can only copy from one module to one module");
+    }
+    std::string string_mask = filter_mask;
+    int mask = get_value<int>(string_mask);
+    if (src_chan_opt.empty() || dest_chan_opt.empty()) {
+        xia::pixie::param::copy_parameters(mask, crate[src_mod_nums[0]].module_vars,
+                                        crate[dest_mod_nums[0]].module_vars);
+    } else {
+        xia::pixie::channel::range src_chan_nums;
+        channels_option(src_chan_nums, src_chan_opt, crate[src_mod_nums[0]].num_channels);
+        xia::pixie::channel::range dest_chan_nums;
+        channels_option(dest_chan_nums, dest_chan_opt, crate[dest_mod_nums[0]].num_channels);
+        xia::pixie::param::copy_parameters(mask, crate[src_mod_nums[0]][src_chan_nums[0]].vars,
+                                        crate[dest_mod_nums[0]][dest_chan_nums[0]].vars,
+                                        crate[src_mod_nums[0]].module_vars,
+                                        crate[dest_mod_nums[0]].module_vars);
+    }
+    crate[dest_mod_nums[0]].sync_vars();
 }
 
 static void crate_report(command_context& context) {

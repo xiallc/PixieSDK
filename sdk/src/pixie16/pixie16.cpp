@@ -898,13 +898,23 @@ PIXIE_EXPORT int PIXIE_API Pixie16CopyDSPParameters(unsigned short BitMask,
         for (size_t dest_mod = 0; dest_mod < crate.modules.num_modules; dest_mod++) {
             xia::pixie::crate::module_handle dest_handle(crate, dest_mod);
 
-            for (size_t dest_chan = 0; dest_chan < dest_handle->num_channels; dest_chan++) {
-                if (DestinationMask[dest_mod * dest_handle->num_channels + dest_chan] == 0) {
+            if (SourceChannel < dest_handle->num_channels) {
+                for (size_t dest_chan = 0; dest_chan < dest_handle->num_channels; dest_chan++) {
+                    if (DestinationMask[dest_mod * dest_handle->num_channels + dest_chan] == 0) {
+                        continue;
+                    }
+                    xia::pixie::param::copy_parameters(BitMask, source->channels[SourceChannel].vars,
+                                                       dest_handle->channels[dest_chan].vars,
+                                                       source->module_vars, dest_handle->module_vars);
+                }
+            } else {
+                if (DestinationMask[dest_mod] == 0) {
                     continue;
                 }
-                xia::pixie::param::copy_parameters(BitMask, source->channels[dest_chan].vars,
-                                                   dest_handle->channels[dest_chan].vars);
+                xia::pixie::param::copy_parameters(BitMask, source->module_vars,
+                                                   dest_handle->module_vars);
             }
+            dest_handle->sync_vars();
         }
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;

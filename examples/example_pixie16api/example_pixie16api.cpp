@@ -1428,7 +1428,7 @@ int main(int argc, char** argv) {
     }
 
     if (copy) {
-        if (!module || !channel || !copy_mask || !dest_channel || !dest_module) {
+        if (!module || !copy_mask || !dest_module || (!channel != !dest_channel)) {
             std::cout
                 << LOG("ERROR")
                 << "Pixie16CopyDSPParameters requires the source/destination module and channel "
@@ -1437,17 +1437,33 @@ int main(int argc, char** argv) {
         }
         std::vector<unsigned short> dest_masks;
         for (size_t mod = 0; mod < cfg.num_modules(); mod++) {
-            for (size_t chan = 0; chan < cfg.modules[mod].number_of_channels; chan++) {
-                if (mod == dest_module.Get() && chan == dest_channel.Get())
+            if (!dest_channel || !channel) {
+                if (mod == dest_module.Get())
                     dest_masks.push_back(1);
                 else
                     dest_masks.push_back(0);
+            } else {
+                for (size_t chan = 0; chan < cfg.modules[mod].number_of_channels; chan++) {
+                    if (mod == dest_module.Get() && chan == dest_channel.Get())
+                        dest_masks.push_back(1);
+                    else
+                        dest_masks.push_back(0);
+                }
             }
         }
-        if (!verify_api_return_value(Pixie16CopyDSPParameters(copy_mask.Get(), module.Get(),
-                                                              channel.Get(), dest_masks.data()),
-                                     "Pixie16CopyDSPParameters", true)) {
-            return EXIT_FAILURE;
+        if (!dest_channel || !channel) {
+            if (!verify_api_return_value(Pixie16CopyDSPParameters(copy_mask.Get(), module.Get(),
+                                                                 cfg.modules[module.Get()].number_of_channels,
+                                                                 dest_masks.data()),
+                                         "Pixie16CopyDSPParameters", true)) {
+                return EXIT_FAILURE;
+            }
+        } else {
+            if (!verify_api_return_value(Pixie16CopyDSPParameters(copy_mask.Get(), module.Get(),
+                                                                channel.Get(), dest_masks.data()),
+                                        "Pixie16CopyDSPParameters", true)) {
+                return EXIT_FAILURE;
+            }
         }
     }
 

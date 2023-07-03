@@ -35,6 +35,9 @@ constexpr size_t source_default = 0xDEFACE;
 xia::pixie::param::channel_variables destination;
 constexpr size_t destination_default = 0xFACADE;
 
+xia::pixie::param::module_variables mod_source;
+xia::pixie::param::module_variables mod_destination;
+
 void initialize_vars() {
     for (auto& var : source)
         for (auto& item : var.value)
@@ -51,11 +54,15 @@ static void test_setup() {
         source.push_back(var);
         destination.push_back(var);
     }
+    for (auto& var : xia::pixie::param::get_module_var_descriptors()) {
+        mod_source.push_back(var);
+        mod_destination.push_back(var);
+    }
 }
 
 static void test_filter_mask(const int& mask) {
     initialize_vars();
-    xia::pixie::param::copy_parameters(mask, source, destination);
+    xia::pixie::param::copy_parameters(mask, source, destination, mod_source, mod_destination);
 }
 
 TEST_SUITE("xia::pixie::param") {
@@ -66,7 +73,7 @@ TEST_SUITE("xia::pixie::param") {
     TEST_CASE("copy_parameters with copy filter") {
         auto var = xia::pixie::param::channel_var::PreampTau;
         auto var_idx = int(var);
-        xia::pixie::param::copy_filter filter = {var};
+        xia::pixie::param::copy_filter_channel filter = {var};
 
         SUBCASE("Mis-matched sizes.") {
             try {

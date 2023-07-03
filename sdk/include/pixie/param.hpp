@@ -683,7 +683,8 @@ struct copy_filter_var {
     copy_filter_var(V var_, uint32_t mask_ = UINT32_MAX) : var(var_), mask(mask_) {}
 };
 
-typedef std::vector<copy_filter_var<channel_var>> copy_filter;
+typedef std::vector<copy_filter_var<module_var>> copy_filter_module;
+typedef std::vector<copy_filter_var<channel_var>> copy_filter_channel;
 
 /*
  * Copy filter masks. The masks select the filters used in a copy.
@@ -829,16 +830,29 @@ void load(std::istream& input, module_var_descs& module_var_descriptors,
           channel_var_descs& channel_var_descriptors);
 
 /**
- * @brief Copy the variables based on the filter.
+ * @brief Copy the module variables based on the filter.
  */
-void copy_parameters(const copy_filter& filter, const channel_variables& source,
+void copy_parameters(const copy_filter_module& filter, const module_variables& source,
+                     module_variables& dest);
+
+/**
+ * @brief Copy the channel variables based on the filter.
+ */
+void copy_parameters(const copy_filter_channel& filter, const channel_variables& source,
                      channel_variables& dest);
 
 /**
- * @brief Copy the variables based on the filter mask.
+ * @brief Copy the module variables based on the filter mask.
  */
-void copy_parameters(const unsigned int filter_mask, const channel_variables& source,
-                     channel_variables& dest);
+void copy_parameters(const unsigned int filter_mask, const module_variables& source,
+                     module_variables& dest);
+
+/**
+ * @brief Copy the module and/or channel variables based on the filter mask.
+ */
+void copy_parameters(const unsigned int filter_mask, const channel_variables& chan_source,
+                     channel_variables& chan_dest, const module_variables& mod_source,
+                     module_variables& mod_dest);
 
 /**
  * @brief Return the rwrowr label.

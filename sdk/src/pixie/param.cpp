@@ -373,7 +373,15 @@ static const module_var module_param_var_map[] = {
     module_var::TrigConfig,
 };
 
-const copy_filter energy_filter = {
+const copy_filter_module mod_energy_filter = {
+    module_var::SlowFilterRange, module_var::CoincWait,
+};
+
+const copy_filter_module mod_trigger_filter = {
+    module_var::FastFilterRange,
+};
+
+const copy_filter_channel energy_filter = {
     channel_var::BLcut,        channel_var::PAFlength,  channel_var::PeakSample,
     channel_var::PeakSep,      channel_var::SlowLength, channel_var::SlowGap,
     channel_var::TriggerDelay,
@@ -381,40 +389,40 @@ const copy_filter energy_filter = {
     /* channel_var::SlowFilterRange MODULE var?? */
 };
 
-const copy_filter trigger_filter = {
+const copy_filter_channel trigger_filter = {
     channel_var::FastGap, channel_var::FastLength, channel_var::FastThresh,
     /* channel_var::FastFilterRange MODULE var?? */
 };
 
-const copy_filter analog_signal_cond_filter = {
+const copy_filter_channel analog_signal_cond_filter = {
     {channel_var::ChanCSRa, 1 << hw::bit::CCSRA_POLARITY | 1 << hw::bit::CCSRA_ENARELAY},
     channel_var::OffsetDAC};
 
-const copy_filter histogram_control_filter = {channel_var::EnergyLow, channel_var::Log2Ebin};
+const copy_filter_channel histogram_control_filter = {channel_var::EnergyLow, channel_var::Log2Ebin};
 
-const copy_filter decay_time_filter = {channel_var::PreampTau};
+const copy_filter_channel decay_time_filter = {channel_var::PreampTau};
 
-const copy_filter pulse_shape_analysis_filter = {channel_var::TraceLength,
+const copy_filter_channel pulse_shape_analysis_filter = {channel_var::TraceLength,
                                                  channel_var::TriggerDelay, channel_var::PAFlength};
 
-const copy_filter baseline_control_filter = {channel_var::BLcut, channel_var::BaselinePercent,
+const copy_filter_channel baseline_control_filter = {channel_var::BLcut, channel_var::BaselinePercent,
                                              channel_var::Log2Bweight};
 
-const copy_filter channel_csra_filter = {channel_var::ChanCSRa};
+const copy_filter_channel channel_csra_filter = {channel_var::ChanCSRa};
 
-const copy_filter cfd_trigger_filter = {channel_var::CFDDelay, channel_var::CFDScale,
+const copy_filter_channel cfd_trigger_filter = {channel_var::CFDDelay, channel_var::CFDScale,
                                         channel_var::CFDThresh};
 
-const copy_filter trigger_stretch_len_filter = {
+const copy_filter_channel trigger_stretch_len_filter = {
     channel_var::ExtTrigStretch, channel_var::ChanTrigStretch, channel_var::VetoStretch,
     channel_var::FastTrigBackLen};
 
-const copy_filter fifo_delays_filter = {channel_var::ExternDelayLen, channel_var::FtrigoutDelay};
+const copy_filter_channel fifo_delays_filter = {channel_var::ExternDelayLen, channel_var::FtrigoutDelay};
 
-const copy_filter multiplicity_filter = {channel_var::MultiplicityMaskL,
+const copy_filter_channel multiplicity_filter = {channel_var::MultiplicityMaskL,
                                          channel_var::MultiplicityMaskH};
 
-const copy_filter qdc_filter = {channel_var::QDCLen0, channel_var::QDCLen1, channel_var::QDCLen2,
+const copy_filter_channel qdc_filter = {channel_var::QDCLen0, channel_var::QDCLen1, channel_var::QDCLen2,
                                 channel_var::QDCLen3, channel_var::QDCLen4, channel_var::QDCLen5,
                                 channel_var::QDCLen6, channel_var::QDCLen7};
 
@@ -775,7 +783,22 @@ void load(std::istream& input, module_var_descs& module_var_descriptors,
                        << " channel=" << channel_var_descriptors.size();
 }
 
-void copy_parameters(const copy_filter& filter, const channel_variables& source,
+void copy_parameters(const copy_filter_module& filter, const module_variables& source,
+                     module_variables& dest) {
+    if (source.size() != dest.size())
+        throw error(error::code::device_copy_failure, "copy source and dest size do not match");
+
+    for (auto f : filter) {
+        int v = static_cast<int>(f.var);
+        for (size_t i = 0; i < dest[v].value.size(); ++i) {
+            dest[v].value[i].value =
+                (dest[v].value[i].value & ~f.mask) | (source[v].value[i].value & f.mask);
+            dest[v].value[i].dirty = true;
+        }
+    }
+}
+
+void copy_parameters(const copy_filter_channel& filter, const channel_variables& source,
                      channel_variables& dest) {
     if (source.size() != dest.size())
         throw error(error::code::device_copy_failure, "copy source and dest size do not match");
@@ -790,12 +813,32 @@ void copy_parameters(const copy_filter& filter, const channel_variables& source,
     }
 }
 
-void copy_parameters(const unsigned int filter_mask, const channel_variables& source,
-                     channel_variables& dest) {
+void copy_parameters(const unsigned int filter_mask, const module_variables& source,
+                     module_variables& dest) {
     if ((filter_mask & energy_mask) != 0) {
+        copy_parameters(mod_energy_filter, source, dest);
+    }
+    if ((filter_mask & trigger_mask) != 0) {
+        copy_parameters(mod_trigger_filter, source, dest);
+    }
+    if (filter_mask == all_mask) {
+        copy_filter_module all;
+        for (const auto& var: module_var_descriptors_default) {
+            all.push_back(var.par);
+        }
+        copy_parameters(all, source, dest);
+    }
+}
+
+void copy_parameters(const unsigned int filter_mask, const channel_variables& source,
+                     channel_variables& dest, const module_variables& mod_source,
+                     module_variables& mod_dest) {
+    if ((filter_mask & energy_mask) != 0) {
+        copy_parameters(mod_energy_filter, mod_source, mod_dest);
         copy_parameters(energy_filter, source, dest);
     }
     if ((filter_mask & trigger_mask) != 0) {
+        copy_parameters(mod_trigger_filter, mod_source, mod_dest);
         copy_parameters(trigger_filter, source, dest);
     }
     if ((filter_mask & analog_signal_cond_mask) != 0) {
@@ -832,7 +875,7 @@ void copy_parameters(const unsigned int filter_mask, const channel_variables& so
         copy_parameters(qdc_filter, source, dest);
     }
     if (filter_mask == all_mask) {
-        copy_filter all;
+        copy_filter_channel all;
         for (const auto& var: channel_var_descriptors_default) {
             all.push_back(var.par);
         }
