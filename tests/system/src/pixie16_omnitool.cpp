@@ -77,11 +77,11 @@ constexpr const char* system_firmware_path = "/usr/local/xia/pixie/firmware";
  */
 using slot_range = std::vector<int>;
 using module_range = std::vector<size_t>;
+using channel_range = xia::pixie::channel::range;
 using files = std::vector<std::string>;
+using paths = std::vector<std::string>;
 
-struct process_command_options {
-    using paths = std::vector<std::string>;
-
+struct process_options {
     size_t num_modules;
     slot_range slots;
     std::string firmware_host_path;
@@ -91,9 +91,21 @@ struct process_command_options {
     bool verbose;
     std::ostream& out;
 
-    paths path;
+    process_options(std::ostream& out);
+};
 
-    process_command_options(std::ostream& out);
+/**
+ * Command context
+ */
+struct command;
+struct command_context {
+    xia::pixie::crate::module_crate& crate;
+    process_options& opts;
+    command& cmd;
+    command_context(
+        xia::pixie::crate::module_crate& crate_,
+        process_options& opts_,
+        command& cmd_) : crate(crate_), opts(opts_), cmd(cmd_) {}
 };
 
 /*
@@ -114,7 +126,7 @@ struct module_thread_worker {
     module_thread_worker();
 
     virtual void worker(
-        process_command_options& process_opts,
+        command_context& context,
         xia::pixie::module::module& module) = 0;
 };
 
@@ -137,7 +149,151 @@ struct firmware {
 using firmwares = std::vector<firmware>;
 
 /*
- * Command processor.
+ * Commands.
+ */
+
+/**
+ * @brief Command Definition defines a command that runs a function
+ *        when executed
+ */
+struct command_definition {
+    using argument = std::string;
+    using arguments = std::vector<argument>;
+    using arguments_iter = arguments::iterator;
+    using option = std::pair<argument, argument>;
+    using options = std::vector<option>;
+    using operation = argument;
+    using operations = arguments;
+    using handler = void (*)(command_context& context);
+
+    std::string group;
+    std::string name;
+
+    handler call;
+    operations boot;
+
+    size_t min_args;
+    size_t max_args;
+    size_t forced;
+    options opts;
+
+    std::string help_cmd;
+    std::string help;
+
+    command_definition() = default;
+
+    std::string formatted_help(const bool long_opt, const size_t max) const;
+};
+
+using command_definitions = std::vector<command_definition>;
+
+/**
+ * @brief A command is an instance of the command to executed
+ */
+struct command {
+    using argument = command_definition::argument;
+    using arguments = command_definition::arguments;
+    using arguments_iter = command_definition::arguments_iter;
+    using option = command_definition::option;
+    using options = command_definition::options;
+
+    const command_definition& def;
+    options opts;
+    arguments args;
+
+    command(const command_definition& cmd);
+
+    /**
+     * @brief Parse the options and arguments from the list of arguments
+     */
+    void parse(arguments_iter& ai, arguments_iter& ae);
+
+    /**
+     * @brief Get the argument and return an empty string is the user
+     * did not supply one.
+     */
+    std::string get_arg();
+
+    /**
+     * @brief Is there an argument available?
+     */
+    bool has_arg() const;
+
+    /**
+     * @brief Get the option if valid
+     */
+    std::string get_option(const argument& opt) const;
+
+    /**
+     * @brief Is the option true?
+     */
+    bool option_true(const std::string& opt) const;
+
+    /**
+     * @brief Run the command
+     */
+    void run(command_context& context);
+};
+
+using commands = std::vector<command>;
+
+/**
+ * @brief A batch of commands are executed in sequence
+ */
+struct command_batch {
+    using operation_func = std::function<void(command_context& context)>;
+    struct operation {
+        bool run_once;
+        operation_func handler;
+        operation(operation_func& handler_);
+        operation();
+        void run(command_context& context);
+    };
+    using operations = std::map<std::string, operation>;
+
+    commands cmds;
+    paths path;
+
+    operations ops;
+
+    command_batch();
+
+    /**
+     * @brief Set a operation
+     */
+    void set_operation(const std::string& name, operation_func func);
+
+    /**
+     * @brief Parse a set of arguments into commands.
+     *
+     * This valids some basics of the commands before executing
+     * them. It checks options are valid and argument counts are
+     * within range.
+     */
+    void parse(command::arguments& cmds);
+
+    /**
+     * @brief Execute the batch of commands
+     */
+    void execute(xia::pixie::crate::module_crate& crate, process_options& opts);
+
+    /**
+     * @brief Run the operation
+     */
+    void run_operation(const std::string& name, command_context& context);
+
+    /**
+     * @brief Report the parsed commands
+     */
+    void report(std::ostream& out);
+};
+
+#define command_handler_decl(_name) static void _name(command_context& context)
+#define command_opt_decl(_name) {"-" _name, ""}
+#define command_opt_arg_decl(_name) {"-" _name, "true"}
+
+/*
+ * Process command arguments.
  */
 using args_parser = args::ArgumentParser;
 using args_group = args::Group;
@@ -147,88 +303,63 @@ using args_int_flag = args::ValueFlag<int>;
 using args_size_flag = args::ValueFlag<size_t>;
 using args_string_flag = args::ValueFlag<std::string>;
 using args_strings_flag = args::ValueFlagList<std::string>;
-using args_command = std::string;
-using args_positional_list = args::PositionalList<args_command>;
-using args_commands = std::vector<args_command>;
-using args_commands_iter = args_commands::iterator;
-
-struct command_args {
-    xia::pixie::crate::module_crate& crate;
-    process_command_options& opts;
-    args_commands_iter ci;
-    args_commands_iter ce;
-
-    command_args(
-        xia::pixie::crate::module_crate& crate, process_command_options& opts,
-        args_commands_iter ci, args_commands_iter ce);
-};
-
-struct command {
-    using alias = std::vector<std::string>;
-    using ops = std::vector<std::string>;
-    using handler = void (*)(command_args& args);
-
-    std::string group;
-    std::string name;
-    handler call;
-    ops boot;
-    std::string help;
-    std::string help_cmd;
-
-    command() = default;
-
-    bool boot_op(const std::string op) const;
-};
-
-#define command_handler_decl(_name) static void _name(command_args& args)
-
-using commands = std::vector<command>;
+using args_positional_list = args::PositionalList<command::argument>;
 
 /*
  * The commands are sorted alphabetical
  */
 
 command_handler_decl(boot);
-static const command boot_cmd = {
+static const command_definition boot_cmd = {
     "Crate", "/crate/boot", boot,
     {"init", "probe"},
-    "Boots the module(s)",
-    "boot [modules(s) [comms] [fippi] [dsp]]"
+    0, 4, 0,
+    {},
+    "[modules(s) [comms] [fippi] [dsp]]",
+    "Boots the module(s)"
 };
 
 command_handler_decl(crate_report);
-static const command crate_cmd = {
+static const command_definition crate_cmd = {
     "Crate", "/crate/crate", crate_report,
     {"init", "probe"},
-    "Report the crate",
-    "crate"
+    0, 0, 0,
+    {},
+    "",
+    "Report the crate"
 };
 
 command_handler_decl(export_);
-static const command export_cmd = {
+static const command_definition export_cmd = {
     "Crate", "/crate/export", export_,
     {"init", "probe"},
-    "Export a configuration to a JSON file",
-    "export file"
+    1, 1, 0,
+    {},
+    "file",
+    "Export a configuration to a JSON file"
 };
 
 command_handler_decl(import);
-static const command import_cmd = {
+static const command_definition import_cmd = {
     "Crate", "/crate/import", import,
     {"init", "probe"},
-    "Import a JSON configuration file",
-    "import file"
+    1, 1, 0,
+    {},
+    "file",
+    "Import a JSON configuration file"
 };
 
 command_handler_decl(report);
-static const command report_cmd = {
+static const command_definition report_cmd = {
     "Crate", "/crate/report", report,
     {"init", "probe"},
-    "Report the crate's configuration",
-    "report file"
+    1, 1, 0,
+    {},
+    "file",
+    "Report the crate's configuration"
 };
 
-static const commands crate_commands = {
+static const command_definitions crate_commands = {
     boot_cmd,
     crate_cmd,
     export_cmd,
@@ -237,246 +368,306 @@ static const commands crate_commands = {
 };
 
 command_handler_decl(adc_acq);
-static const command adc_acq_cmd = {
+static const command_definition adc_acq_cmd = {
     "Module", "/module/adc-acq", adc_acq,
     {"init", "probe"},
-    "Acquire a module's ADC trace",
-    "adc-acq modules(s)"
+    0, 1, 0,
+    {},
+    "[modules(s)]",
+    "Acquire a module's ADC trace"
 };
 
 command_handler_decl(adc_save);
-static const command adc_save_cmd = {
+static const command_definition adc_save_cmd = {
     "Module", "/module/adc-save", adc_save,
     {"init", "probe"},
-    "Save a module's ADC trace to a file",
-    "adc-save modules(s) [channel(s) [length]]"
+    0, 3, 0,
+    {},
+    "[modules(s) [channel(s) [length]]]",
+    "Save a module's ADC trace to a file"
 };
 
 command_handler_decl(adj_off);
-static const command adj_off_cmd = {
+static const command_definition adj_off_cmd = {
     "Module", "/module/adj-off", adj_off,
     {"init", "probe"},
-    "Adjust the module's offsets",
-    "adj-off modules(s)"
+    0, 1, 0,
+    {},
+    "[modules(s)]",
+    "Adjust the module's offsets"
 };
 
 command_handler_decl(bl_acq);
-static const command bl_acq_cmd = {
+static const command_definition bl_acq_cmd = {
     "Module", "/module/bl-acq", bl_acq,
     {"init", "probe"},
-    "Acquire module baselines",
-    "bl-acq module(s)"
+    0, 1, 0,
+    {},
+    "[module(s)]",
+    "Acquire module baselines"
 };
 
 command_handler_decl(bl_save);
-static const command bl_save_cmd = {
+static const command_definition bl_save_cmd = {
     "Module", "/module/bl-save", bl_save,
     {"init", "probe"},
-    "Save the module's baselines",
-    "bl-save module(s) [channel(s)]"
+    0, 2, 0,
+    {},
+    "[module(s) [channel(s)]]",
+    "Save the module's baselines"
 };
 
 command_handler_decl(db);
-static const command db_cmd = {
+static const command_definition db_cmd = {
     "Module", "/module/db", db,
     {"init", "probe"},
-    "Daughter board control",
-    "db module(s) [channel(s)] [disable-swap]]"
+    1, 3, 0,
+    {},
+    "module(s) [channel(s)] [disable-swap]]",
+    "Daughter board control"
 };
 
 command_handler_decl(hist_resume);
-static const command hist_resume_cmd = {
+static const command_definition hist_resume_cmd = {
     "Module", "/module/hist-resume", hist_resume,
     {"init", "probe"},
-    "Resume module histograms",
-    "hist-resume module(s)"
+    1, 1, 0,
+    {},
+    "module(s)",
+    "Resume module histograms"
 };
 
 command_handler_decl(hist_save);
-static const command hist_save_cmd = {
+static const command_definition hist_save_cmd = {
     "Module", "/module/hist-save", hist_save,
     {"init", "probe"},
-    "Save a module's histogram to a file",
-    "hist-save [-b bins] module(s) [channel(s)]"
+    1, 2, 0,
+    {command_opt_arg_decl("b")},
+    "[-b bins] module(s) [channel(s)]",
+    "Save a module's histogram to a file"
 };
 
 command_handler_decl(hist_start);
-static const command hist_start_cmd = {
+static const command_definition hist_start_cmd = {
     "Module", "/module/hist-start", hist_start,
     {"init", "probe"},
-    "Start module histograms",
-    "hist-start module(s)"
+    1, 1, 0,
+    {},
+    "module(s)",
+    "Start module histograms"
 };
 
 command_handler_decl(list_mode);
-static const command list_mode_cmd = {
+static const command_definition list_mode_cmd = {
     "Module", "/module/list-mode", list_mode,
     {"init", "probe"},
-    "Run list mode saving the data to a file",
-    "list-mode module(s) secs file"
+    3, 3, 0,
+    {},
+    "module(s) secs file",
+    "Run list mode saving the data to a file"
 };
 
 command_handler_decl(list_resume);
-static const command list_resume_cmd = {
+static const command_definition list_resume_cmd = {
     "Module", "/module/list-resume", list_resume,
     {"init", "probe"},
+    1, 1, 0,
+    {},
+    "module(s)",
     "Resume module list mode",
-    "list-resume module(s)"
 };
 
 command_handler_decl(list_save);
-static const command list_save_cmd = {
+static const command_definition list_save_cmd = {
     "Module", "/module/list-save", list_save,
     {"init", "probe"},
-    "Save a module's list-mode data to a file",
-    "list-save module(s) secs file"
+    3, 3, 0,
+    {},
+    "module(s) secs file",
+    "Save a module's list-mode data to a file"
 };
 
 command_handler_decl(list_start);
-static const command list_start_cmd = {
+static const command_definition list_start_cmd = {
     "Module", "/module/list-start", list_start,
     {"init", "probe"},
-    "Start module list mode",
-    "list-start module(s)"
+    1, 1, 0,
+    {},
+    "module(s)",
+    "Start module list mode"
 };
 
 command_handler_decl(lset_import);
-static const command lset_import_cmd = {
+static const command_definition lset_import_cmd = {
     "Module", "/module/lset-import", lset_import,
     {"init", "probe"},
-    "Import a legacy settings file to a module",
-    "lset-import module(s) file [flush/sync]"
+    2, 3, 0,
+    {},
+    "module(s) file [flush/sync]",
+    "Import a legacy settings file to a module"
 };
 
 command_handler_decl(lset_load);
-static const command lset_load_cmd = {
+static const command_definition lset_load_cmd = {
     "Module", "/module/lset-load", lset_load,
     {"init", "probe"},
-    "Load a legacy settings file to a module's DSP memory",
-    "lset-load module(s) file [flush/sync]"
+    2, 3, 0,
+    {},
+    "module(s) file [flush/sync]",
+    "Load a legacy settings file to a modul's DSP memory"
 };
 
 command_handler_decl(lset_report);
-static const command lset_report_cmd = {
+static const command_definition lset_report_cmd = {
     "Module", "/module/lset-report", lset_report,
     {"init", "probe"},
-    "Output a legacy settings file in a readable format",
-    "lset-report module(s) file"
+    2, 2, 0,
+    {},
+    "module(s) file",
+    "Output a legacy settings fie in a readable format"
 };
 
 command_handler_decl(mod_offline);
-static const command mod_offline_cmd = {
+static const command_definition mod_offline_cmd = {
     "Module", "/module/mod-offline", mod_offline,
     {"init", "probe"},
-    "Set a module offline",
-    "mod-offline module(s)"
+    1, 1, 0,
+    {},
+    "module(s)",
+    "Set a module offline"
 };
 
 command_handler_decl(mod_online);
-static const command mod_online_cmd = {
+static const command_definition mod_online_cmd = {
     "Module", "/module/mod-online", mod_online,
     {"init", "probe"},
-    "Set a module online",
-    "mod-online module(s)"
+    1, 1, 0,
+    {},
+    "module(s)",
+    "Set a module online"
 };
 
 command_handler_decl(par_read);
-static const command par_read_cmd = {
+static const command_definition par_read_cmd = {
     "Module", "/module/par-read", par_read,
     {"init", "probe"},
-    "Read module/channel parameter",
-    "par-read module(s) [channel(s)] param"
+    2, 3, 0,
+    {},
+    "module(s) [channel(s)] param",
+    "Read module/channel parameter"
 };
 
 command_handler_decl(par_write);
-static const command par_write_cmd = {
+static const command_definition par_write_cmd = {
     "Module", "/module/par-write", par_write,
     {"init", "probe"},
-    "Write module/channel parameter",
-    "par-write module(s) [channel(s)] param value"
+    3, 4, 0,
+    {},
+    "module(s) [channel(s)] param value",
+    "Write module/channel parameter"
 };
 
 command_handler_decl(reg_read);
-static const command reg_read_cmd = {
+static const command_definition reg_read_cmd = {
     "Module", "/module/reg-read", reg_read,
     {"init"},
-    "Read from a register in a module or slot (-s) memory address",
-    "reg-read [-s] [-x] module/slot [address] [name] [memory:name]"
+    2, 2, 0,
+    {command_opt_decl("s"), command_opt_decl("x")},
+    "[-s] [-x] module/slot address/name/memory:name",
+    "Read from a register in a module or slot (-s) memory address"
 };
 
 command_handler_decl(reg_write);
-static const command reg_write_cmd = {
+static const command_definition reg_write_cmd = {
     "Module", "/module/reg-write", reg_write,
     {"init"},
-    "Write to a register in a module or slot (-s) memory address",
-    "reg-write [-s] module/slot [address] [name] [memory:name] [value]"
+    3, 3, 0,
+    {command_opt_decl("s")},
+    "[-s] module/slot address/name/memory:name [value]",
+    "Write to a register in a module or slot (-s) memory address"
 };
 
 command_handler_decl(run_active);
-static const command run_active_cmd = {
+static const command_definition run_active_cmd = {
     "Module", "/module/run-active", run_active,
     {"init", "probe"},
-    "Does the module have an active run?",
-    "run-active module(s)"
+    1, 1, 0,
+    {},
+    "module(s)",
+    "Does the module have an active run?"
 };
 
 command_handler_decl(run_end);
-static const command run_end_cmd = {
+static const command_definition run_end_cmd = {
     "Module", "/module/run-end", run_end,
     {"init", "probe"},
-    "End module run's",
-    "run-end module(s)"
+    1, 1, 0,
+    {},
+    "module(s)",
+    "End module run(s)"
 };
 
 command_handler_decl(set_dacs);
-static const command set_dacs_cmd = {
+static const command_definition set_dacs_cmd = {
     "Module", "/module/set-dacs", set_dacs,
     {"init", "probe"},
-    "Set the module's DACs",
-    "set-dacs modules(s)"
+    1, 1, 0,
+    {},
+    "modules(s)",
+    "Set the module's DAC"
 };
 
 command_handler_decl(stats);
-static const command stats_cmd = {
+static const command_definition stats_cmd = {
     "Module", "/module/stats", stats,
     {"init", "probe"},
-    "/module/channel stats",
-    "stats [-s stat (pe/ocr/rt/lt)] module(s) [channel(s)]"
+    1, 2, 0,
+    {command_opt_arg_decl("s")},
+    "[-s stat (pe/ocr/rt/lt)] module(s) [channel(s)]",
+    "module channel stats"
 };
 
 command_handler_decl(stats_rpt);
-static const command stats_rpt_cmd = {
+static const command_definition stats_rpt_cmd = {
     "Module", "/module/stats-rpt", stats_rpt,
     {"init", "probe"},
-    "/module/channel stats",
-    "stats-rpt module(s) filename"
+    2, 2, 0,
+    {},
+    "module(s) filename",
+    "module channel stats"
 };
 
 command_handler_decl(test);
-static const command test_cmd = {
+static const command_definition test_cmd = {
     "Module", "/module/test", test,
     {"init", "probe"},
-    "Test control, default mode is 'off'",
-    "test [-m mode (off/lmfifo)] module(s)"
+    1, 1, 0,
+    {command_opt_arg_decl("m")},
+    "[-m mode (off/lmfifo)] module(s)",
+    "Test control, default mode is 'off'"
 };
 
 command_handler_decl(var_read);
-static const command var_read_cmd = {
+static const command_definition var_read_cmd = {
     "Module", "/module/var-read", var_read,
     {"init", "probe"},
-    "Read module/channel variable. A channel references a channel variable.",
-    "var-read module(s) [channel(s)] param [offset(s)]"
+    2, 4, 0,
+    {},
+    "module(s) [channel(s)] param [offset(s)]",
+    "Read module/channel variable. A channel references a channel variable."
 };
 
 command_handler_decl(var_write);
-static const command var_write_cmd = {
+static const command_definition var_write_cmd = {
     "Module", "/module/var-write", var_write,
     {"init", "probe"},
-    "Write module/channel variable. A channel references a channel variable.",
-    "var-write module(s) [channel(s)] param [offset(s)] value"
+    3, 5, 0,
+    {},
+    "module(s) [channel(s)] param [offset(s)] value",
+    "Write module/channel variable. A channel references a channel variable."
 };
 
-static const commands module_commands = {
+static const command_definitions module_commands = {
     adc_acq_cmd,
     adc_save_cmd,
     adj_off_cmd,
@@ -510,22 +701,26 @@ static const commands module_commands = {
 };
 
 command_handler_decl(help);
-static const command help_cmd = {
+static const command_definition help_cmd = {
     "Utilities", "/util/help", help,
     {"none"},
-    "Command specific help. Add '-l' to list all commands",
-    "help [-l] [command]"
+    0, 1, 1,
+    {command_opt_decl("l")},
+    "[-l] [command]",
+    "Command specific help. Add '-l' to list all commands"
 };
 
 command_handler_decl(wait);
-static const command wait_cmd = {
+static const command_definition wait_cmd = {
     "Utilities", "/util/wait", wait,
     {"none"},
-    "wait a number of msecs; add 's' for seconds and 'm' for minutes",
-    "wait msecs"
+    1, 1, 0,
+    {},
+    "msecs",
+    "wait a number of msecs; add 's' for seconds and 'm' for minutes"
 };
 
-static const commands util_commands = {
+static const command_definitions util_commands = {
     help_cmd,
     wait_cmd
 };
@@ -533,7 +728,7 @@ static const commands util_commands = {
 /*
  * Commands are registered at start up
  */
-static commands ominitool_commands;
+static command_definitions ominitool_commands;
 
 /*
  * Command group labels.
@@ -624,7 +819,7 @@ static const json hardware = {
         {"ccsra_enarelay", 14}}}}}
 };
 
-void ominitool_register_commands(const commands& cmds) {
+void ominitool_register_commands(const command_definitions& cmds) {
     for (auto& cmd : cmds) {
         auto fi = std::find(command_groups.begin(), command_groups.end(), cmd.group);
         if (fi == command_groups.end()) {
@@ -640,7 +835,7 @@ void ominitool_register_commands(const commands& cmds) {
 }
 
 static bool starts_with(const std::string& s1, const std::string& s2) {
-    return s2.size () <= s1.size () && s1.compare (0, s2.size (), s2) == 0;
+    return s2.size() <= s1.size() && s1.compare(0, s2.size(), s2) == 0;
 }
 
 static void string_replace(
@@ -737,53 +932,34 @@ static std::vector<T> get_values(
     return values;
 }
 
-static void next(command_args& args) {
-    if (args.ci != args.ce) {
-        ++args.ci;
-    }
-}
-
-static const args_command& get_and_next(command_args& args) {
-    if (args.ci == args.ce) {
-        throw std::runtime_error("not enough arguments");
-    }
-    const args_command& opt = *args.ci;
-    next(args);
-    return opt;
-}
-
-static size_t args_count(command_args& args) {
-    return std::distance(args.ci, args.ce);
-}
-
-static commands::const_iterator no_command() {
+static command_definitions::const_iterator no_command() {
     return ominitool_commands.end();
 }
 
-static bool valid_command(commands::const_iterator ci) {
-    return ci != no_command();
+static bool valid_command(command_definitions::const_iterator cdi) {
+    return cdi != no_command();
 }
 
-static commands::const_iterator find_command(const args_command& opt) {
-    for (commands::const_iterator ci = ominitool_commands.begin();
-         ci != ominitool_commands.end();
-         ++ci) {
-        const command& cmd = *ci;
-        if (cmd.name == opt) {
-            return ci;
+static command_definitions::const_iterator find_command(const command::argument& arg) {
+    for (command_definitions::const_iterator cdi = ominitool_commands.begin();
+         cdi != ominitool_commands.end();
+         ++cdi) {
+        const auto& def = *cdi;
+        if (def.name == arg) {
+            return cdi;
         }
     }
     return no_command();
 }
 
-static commands::const_iterator find_command(
-    command_args& args, const args_command& opt) {
-    auto ci = find_command(opt);
+static command_definitions::const_iterator find_command(
+    const command::argument& arg, paths& path) {
+    auto ci = find_command(arg);
     if (valid_command(ci)) {
         return ci;
     }
-    for (auto& dir : args.opts.path) {
-        auto dci = find_command(dir + '/' + opt);
+    for (auto& dir : path) {
+        auto dci = find_command(dir + '/' + arg);
         if (valid_command(dci)) {
             return dci;
         }
@@ -791,58 +967,8 @@ static commands::const_iterator find_command(
     return no_command();
 }
 
-static bool valid_option(command_args& args, size_t count) {
-    bool valid = true;
-    if (args_count(args) < count) {
-        valid = false;
-    } else {
-        for (size_t i = 0; valid && i < count; ++i) {
-            valid = !valid_command(find_command(args, *(args.ci + i)));
-        }
-    }
-    return valid;
-}
-
-static args_command switch_option(
-    const std::string& opt_switch, command_args& args, bool has_opt = true) {
-    args_command sopt;
-    if (args.ci != args.ce) {
-        auto opt = *args.ci;
-        if (!valid_command(find_command(args, opt))) {
-            /*
-             * Check the start of the option for the option switch
-             */
-            if (starts_with(opt, opt_switch)) {
-                ++args.ci;
-                /*
-                 * Get next opt if separate else remove the switch
-                 */
-                if (opt == opt_switch) {
-                    if (has_opt) {
-                        if (args.ci == args.ce) {
-                            throw std::runtime_error(
-                                "no option with switch: " + opt_switch);
-                        }
-                        sopt = *args.ci++;
-                    }
-                } else {
-                    sopt = opt.substr(opt_switch.length());
-                    if (has_opt && sopt.empty()) {
-                        throw std::runtime_error(
-                            "no option with switch: " + opt_switch);
-                    }
-                }
-                if (!has_opt && sopt.empty()) {
-                    sopt = "true";
-                }
-            }
-        }
-    }
-    return sopt;
-}
-
 static void channels_option(
-    xia::pixie::channel::range& channels, const args_command& opt, size_t num_channels) {
+    channel_range& channels, const command::argument& opt, size_t num_channels) {
     if (opt.empty()) {
         channels.resize(num_channels);
         xia::pixie::channel::range_set(channels);
@@ -855,7 +981,7 @@ static void channels_option(
 }
 
 static void modules_option(
-    module_range& modules, const args_command& opt, size_t num_modules) {
+    module_range& modules, const command::argument& opt, size_t num_modules) {
     if (opt.empty()) {
         modules.resize(num_modules);
         std::iota(modules.begin(), modules.end(), 0);
@@ -920,23 +1046,233 @@ static void find_files(
     }
 }
 
-bool command::boot_op(const std::string op) const {
-    for (auto& o : boot) {
-        if (o == op) {
-            return true;
+process_options::process_options(std::ostream& out_)
+    : num_modules(-1), reg_trace(false), verbose(false), out(out_) {}
+
+std::string command_definition::formatted_help(const bool long_opt, const size_t max) const {
+    std::ostringstream oss;
+    if (long_opt) {
+        oss << ' '<< std::left << name << ": "
+            << std::endl
+            << "  " << help << std::endl;
+        if (min_args == max_args) {
+            if (min_args == 0) {
+                oss << "   - no arguments";
+            } else {
+                oss << "   - requires " << min_args << " argument";
+                if (min_args > 1) {
+                    oss << 's';
+                }
+            }
+        } else if (min_args < max_args) {
+            oss << "   - requires " << min_args << " to " << max_args << " arguments ";
+        } else {
+            throw std::runtime_error("invalid command args range: " + name);
         }
+        oss << std::endl
+            << "     # " << name << ' ' << help_cmd << std::endl;
+    } else {
+        oss << ' ' << std::left << std::setw(max + 1) << name
+            << " - " << help
+            << std::endl;
     }
-    return false;
+    return oss.str();
 }
 
-process_command_options::process_command_options(std::ostream& out_)
-    : num_modules(-1), reg_trace(false), verbose(false), out(out_),
-      path({"/crate", "/module", "/util"}) {}
+command_batch::operation::operation() : run_once(false) {}
 
-command_args::command_args(
-    xia::pixie::crate::module_crate& crate_, process_command_options& opts_,
-        args_commands_iter ci_, args_commands_iter ce_)
-    : crate(crate_), opts(opts_), ci(ci_), ce(ce_) {}
+command_batch::operation::operation(operation_func& handler_) : run_once(false), handler(handler_) {}
+
+void command_batch::operation::run(command_context& context) {
+    if (!run_once) {
+        run_once = true;
+        handler(context);
+    }
+}
+
+command::command(const command_definition& cmd) : def(cmd) {}
+
+void command::parse(command::arguments_iter& ai, command::arguments_iter& ae) {
+    while (ai != ae) {
+        auto& arg = *ai;
+        if (arg[0] != '-') {
+            break;
+        }
+        ++ai;
+        auto is_arg_option = [&arg](auto& o) {
+            return starts_with(arg, std::get<0>(o));
+        };
+        auto doi = std::find_if(def.opts.begin(), def.opts.end(), is_arg_option);
+        if (doi == def.opts.end()) {
+            throw std::runtime_error(
+                "option (" + arg + ") argument not found: " + def.name);
+        }
+        auto& opt_switch = std::get<0>(*doi);
+        auto opt_arg = !std::get<1>(*doi).empty();
+        auto is_option = [&opt_switch](auto& o) {
+            return opt_switch == std::get<0>(o);
+        };
+        auto oi = std::find_if(opts.begin(), opts.end(), is_option);
+        if (oi != opts.end()) {
+            throw std::runtime_error(
+                "command option used more than once: " +
+                opt_switch + " (" + def.name + ')');
+        }
+        if (opt_arg) {
+            if (ai == ae || (*ai)[0] == '-') {
+                throw std::runtime_error(
+                    "option (" + opt_switch + ") argument not found: " + def.name);
+            }
+            opts.push_back({opt_switch, *ai++});
+        } else {
+            opts.push_back({arg, "true"});
+        }
+    }
+    while (ai != ae) {
+        auto& arg = *ai++;
+        if (arg[0] == '-') {
+            throw std::runtime_error("command option after argument: " + def.name);
+        } else {
+            args.push_back(arg);
+        }
+    }
+    if (args.size() < def.min_args) {
+        throw std::runtime_error("not enough arguments: " + def.name);
+    }
+    if (args.size() > def.max_args) {
+        throw std::runtime_error("too many arguments: " + def.name);
+    }
+    while (args.size() < def.max_args) {
+        args.push_back({});
+    }
+}
+
+std::string command::get_arg() {
+    if (args.empty()) {
+        throw std::runtime_error("no arguments to get: " + def.name);
+    }
+    std::string arg = args.front();
+    args.erase(args.begin());
+    return arg;
+}
+
+bool command::has_arg() const {
+    return !args.empty();
+}
+
+std::string command::get_option(const command::argument& opt) const {
+    auto is_option = [&opt](auto& o) {
+        return opt == std::get<0>(o);
+    };
+    auto oi = std::find_if(opts.begin(), opts.end(), is_option);
+    if (oi == opts.end()) {
+        auto odef = std::find_if(def.opts.begin(), def.opts.end(), is_option);
+        if (odef == def.opts.end()) {
+            throw std::runtime_error("invalid option to get: " + opt + " (" + def.name + ')');
+        }
+    }
+    std::string opt_arg;
+    if (oi != opts.end()) {
+        opt_arg = std::get<1>(*oi);
+    }
+    return opt_arg;
+}
+
+bool command::option_true(const std::string& opt) const {
+    return opt == "true";
+}
+
+void command::run(command_context& context) {
+    def.call(context);
+}
+
+command_batch::command_batch() {
+    set_operation("none", [](command_context& ){});
+}
+
+void command_batch::set_operation(const std::string& name, operation_func func) {
+    auto check = ops.find(name);
+    if (check != ops.end()) {
+        throw std::runtime_error("operation aleady registered: " + name);
+    }
+    ops[name] = operation({func});
+}
+
+void command_batch::parse(command::arguments& args) {
+    auto ai = args.begin();
+    while (ai != args.end()) {
+        auto the_cmd = find_command(*ai++, path);
+        if (the_cmd == no_command()) {
+            throw std::runtime_error("invalid command: " + *ai);
+        }
+        command cmd(*the_cmd);
+        size_t forced = cmd.def.forced;
+        auto ae = ai;
+        while (ae != args.end()) {
+            if (forced == 0) {
+                auto next_cmd = find_command(*ae, path);
+                if (next_cmd != no_command()) {
+                    break;
+                }
+            } else {
+                --forced;
+            }
+            ++ae;
+        }
+        cmd.parse(ai, ae);
+        cmds.push_back(cmd);
+    }
+}
+
+void command_batch::execute(
+    xia::pixie::crate::module_crate& crate, process_options& opts) {
+    for (auto& cmd : cmds) {
+        command_context context(crate, opts, cmd);
+        for (auto& op : cmd.def.boot) {
+            run_operation(op, context);
+        }
+        cmd.run(context);
+    }
+}
+
+void command_batch::run_operation(const std::string& name, command_context& context) {
+    auto opi = ops.find(name);
+    if (opi == ops.end()) {
+        throw std::runtime_error("invalid operation: " + name);
+    }
+    auto& op = std::get<1>(*opi);
+    op.run(context);
+}
+
+void command_batch::report(std::ostream& out) {
+    out << "Total: " << cmds.size() << std::endl;
+    size_t count = 0;
+    for (auto& cmd : cmds) {
+        out << std::setw(4) << ++count
+            << ' ' << cmd.def.name
+            << " (" << cmd.def.group << ')' << std::endl
+            << "      args: total: " << cmd.args.size()
+            << " (max=" << cmd.def.max_args
+            << ", min=" << cmd.def.min_args
+            << ", forced=" << cmd.def.forced << ')' << std::endl;
+        size_t arg_count = 0;
+        for (auto& arg : cmd.args) {
+            out << "      " << std::setw(2) << ++arg_count << ": ";
+            if (arg.empty()) {
+                out << "  <empty>";
+            } else {
+                out << arg;
+            }
+            out << std::endl;
+        }
+        out << "      options: total: " << cmd.opts.size() << std::endl;
+        size_t opt_count = 0;
+        for (auto opt : cmd.opts) {
+            out << "      " << std::setw(2) << ++opt_count
+                << ": " << std::get<0>(opt) << ' ' << std::get<1>(opt) << std::endl;
+        }
+    }
+}
 
 firmware::firmware(
     const std::string& name, const std::string& dev, const std::string& fname) {
@@ -1064,13 +1400,14 @@ void load_crate_firmwares(
     }
 }
 
-static void firmware_load(
-    xia::pixie::crate::module_crate& crate, process_command_options& process_opts) {
+static void firmware_load(command_context& context) {
+    auto& crate = context.crate;
+    auto& opts = context.opts;
     /*
      * Load command line first, then crate files and then fill in any
      * gaps with the host files.
      */
-    for (auto& fwfile : process_opts.firmware_files) {
+    for (auto& fwfile : opts.firmware_files) {
         auto fw = xia::pixie::firmware::parse(fwfile, ':');
         if (xia::pixie::firmware::check(crate->firmware, fw)) {
             std::string what("duplicate firmware on command line: ");
@@ -1079,82 +1416,57 @@ static void firmware_load(
         }
         xia::pixie::firmware::add(crate->firmware, fw);
     }
-    for (auto& fwfile : process_opts.firmware_crate_files) {
+    for (auto& fwfile : opts.firmware_crate_files) {
         load_crate_firmwares(fwfile, crate->firmware);
     }
-    load_host_firmwares(process_opts.firmware_host_path, crate->firmware);
+    load_host_firmwares(opts.firmware_host_path, crate->firmware);
 }
 
-static void initialize(
-    xia::pixie::crate::module_crate& crate, process_command_options& process_opts) {
+static void initialize(command_context& context) {
+    auto& crate = context.crate;
+    auto& opts = context.opts;
     xia::util::timepoint tp;
-    if (process_opts.verbose) {
-        process_opts.out << "crate: initialize" << std::endl;
+    if (opts.verbose) {
+        opts.out << "crate: initialize" << std::endl;
         tp.start();
     }
-    crate->initialize(process_opts.reg_trace);
-    if (process_opts.verbose) {
+    crate->initialize(opts.reg_trace);
+    if (opts.verbose) {
         tp.end();
-        process_opts.out << "modules: detected=" << crate.num_modules
-                         << " time=" << tp << std::endl;
+        opts.out << "modules: detected=" << crate.num_modules
+                 << " time=" << tp << std::endl;
     }
-    if (process_opts.num_modules != 0 &&
-        crate.num_modules != process_opts.num_modules) {
+    if (opts.num_modules != 0 &&
+        crate.num_modules != opts.num_modules) {
         throw std::runtime_error("invalid number of modules detected: "
                                  "found " +
                                  std::to_string(crate.num_modules));
     }
-    if (!process_opts.slots.empty()) {
+    if (!opts.slots.empty()) {
         xia::pixie::module::number_slots slot_map;
-        for (auto s : process_opts.slots) {
+        for (auto s : opts.slots) {
             slot_map.emplace_back(std::make_pair(int(slot_map.size()), s));
         }
         crate.assign(slot_map);
     }
 }
 
-static void probe(
-    xia::pixie::crate::module_crate& crate, process_command_options& process_opts) {
+static void probe(command_context& context) {
+    auto& crate = context.crate;
+    auto& opts = context.opts;
     crate->set_firmware();
     crate->probe();
-    if (process_opts.verbose) {
-        process_opts.out << "modules: slots=" << crate->num_slots
-                         << " present=" << crate->num_present
-                         << " online=" << crate->num_online
-                         << " offline=" << crate->num_offline << std::endl;
-        process_opts.out << "module: assignment map: " << crate.format_module_map()
-                         << std::endl;
+    if (opts.verbose) {
+        opts.out << "modules: slots=" << crate->num_slots
+                 << " present=" << crate->num_present
+                 << " online=" << crate->num_online
+                 << " offline=" << crate->num_offline << std::endl
+                 << "module: assignment map: " << crate.format_module_map()
+                 << std::endl;
     }
 }
 
-static void process_commands(
-    xia::pixie::crate::module_crate& crate, process_command_options& process_opts,
-    args_commands& opts) {
-    bool init_done = false;
-    bool probe_done = false;
-    command_args args(crate, process_opts, opts.begin(), opts.end());
-    while (args.ci != args.ce) {
-        auto& opt = get_and_next(args);
-        auto fci = find_command(args, opt);
-        if (valid_command(fci)) {
-            const command& cmd = *fci;
-            if (!init_done && cmd.boot_op("init")) {
-                initialize(crate, process_opts);
-                init_done = true;
-            }
-            if (!probe_done && cmd.boot_op("probe")) {
-                firmware_load(crate, process_opts);
-                probe(crate, process_opts);
-                probe_done = true;
-            }
-            cmd.call(args);
-        } else {
-            throw std::runtime_error("invalid command: " + opt);
-        }
-    }
-}
-
-static void load_commands(const std::string& name, args_commands& cmds) {
+static void load_commands(const std::string& name, command::arguments& cmds) {
     std::ifstream in(name);
     if (!in) {
         throw std::runtime_error(
@@ -1176,7 +1488,7 @@ static void load_commands(const std::string& name, args_commands& cmds) {
 static void help_output(std::ostream& out) {
     auto ci = find_command("/util/help");
     if (valid_command(ci)) {
-        const command& cmd = *ci;
+        const command_definition& cmd = *ci;
         out << "  COMMANDS:" << std::endl;
         out << "      " << cmd.name << " - " << cmd.help << std::endl
             << "        eg '-- help -l'" << std::endl
@@ -1211,12 +1523,12 @@ static void output_value(std::ostream& out, const std::string& name, V value) {
 
 template<typename W>
 void module_threads(
-    command_args& args, std::vector<size_t>& mod_nums, std::vector<W>& workers,
+    command_context& context, module_range& mod_nums, std::vector<W>& workers,
     std::string error_message, bool show_performance = true) {
     if (workers.size() != mod_nums.size()) {
         throw std::runtime_error("workers and modules counts mismatch");
     }
-    auto& crate = args.crate;
+    auto& crate = context.crate;
     using promise_error = std::promise<error::code>;
     using future_error = std::future<error::code>;
     std::vector<promise_error> promises(mod_nums.size());
@@ -1226,10 +1538,10 @@ void module_threads(
         auto& module = crate[mod_nums[m]];
         auto& worker = workers[m];
         futures.push_back(future_error(promises[m].get_future()));
-        threads.push_back(std::thread([args, m, &promises, &module, &worker] {
+        threads.push_back(std::thread([&context, m, &promises, &module, &worker] {
             try {
                 worker.running = true;
-                worker.worker(args.opts, module);
+                worker.worker(context, module);
                 promises[m].set_value(error::code::success);
             } catch (xia::pixie::error::error& e) {
                 promises[m].set_value(e.type);
@@ -1257,9 +1569,9 @@ void module_threads(
                     workers[t].period.stop();
                     error::code e = future.get();
                     if (e != error::code::success) {
-                        args.opts.out << "module " << t << ": error: "
-                                      << xia::pixie::error::api_result_text(e)
-                                      << std::endl;
+                        context.opts.out << "module " << t << ": error: "
+                                         << xia::pixie::error::api_result_text(e)
+                                         << std::endl;
                     }
                     if (first_error == error::code::success) {
                         first_error = e;
@@ -1274,7 +1586,7 @@ void module_threads(
         if (show_performance && interval.secs() > show_secs) {
             auto secs = interval.secs();
             interval.restart();
-            args.opts.out << "running: " << threads.size() - finished << std::endl;
+            context.opts.out << "running: " << threads.size() - finished << std::endl;
             size_t all_total = 0;
             for (auto& w : workers) {
                 if (w.period.secs() > 0) {
@@ -1291,11 +1603,11 @@ void module_threads(
                         << xia::util::humanize(bytes) << " rate: " << std::setw(8)
                         << xia::util::humanize(rate) << " bytes/sec pci: bus=" << w.pci_bus
                         << " slot=" << w.pci_slot;
-                    args.opts.out << oss.str() << std::endl;
+                    context.opts.out << oss.str() << std::endl;
                     xia_log(xia::log::info) << oss.str();
                 } else {
-                    args.opts.out << ' ' << std::setw(2) << w.number
-                                  << ": not running" << std::endl;
+                    context.opts.out << ' ' << std::setw(2) << w.number
+                                     << ": not running" << std::endl;
                 }
             }
             all_total *= sizeof(xia::pixie::hw::word);
@@ -1303,7 +1615,7 @@ void module_threads(
             oss << " all: total: " << std::setw(8) << xia::util::humanize(all_total)
                 << " rate: " << std::setw(8)
                 << xia::util::humanize(double(all_total) / duration.secs()) << " bytes/sec";
-            args.opts.out << oss.str() << std::endl;
+            context.opts.out << oss.str() << std::endl;
             xia_log(xia::log::info) << oss.str();
         }
     }
@@ -1331,7 +1643,7 @@ void set_num_slot(xia::pixie::crate::module_crate& crate, std::vector<size_t>& m
 
 template<typename W>
 void performance_stats(
-    command_args& args, std::vector<W>& workers, bool show_workers = false) {
+    command_context& context, std::vector<W>& workers, bool show_workers = false) {
     size_t total = 0;
     size_t secs = 0;
     for (auto& w : workers) {
@@ -1345,7 +1657,7 @@ void performance_stats(
                 he_oss << "module: num:" << std::setw(2) << w.number
                        << " slot:" << std::setw(2)
                        << w.slot << ": has an error; check the log";
-                args.opts.out << he_oss.str() << std::endl;
+                context.opts.out << he_oss.str() << std::endl;
                 xia_log(xia::log::info) << he_oss.str();
             }
             std::stringstream dr_oss;
@@ -1357,7 +1669,7 @@ void performance_stats(
                    << " bytes (" << std::setw(9) << bytes << "), rate: " << std::setw(8)
                    << xia::util::humanize(rate) << " bytes/sec pci: bus=" << w.pci_bus
                    << " slot=" << w.pci_slot;
-            args.opts.out << dr_oss.str() << std::endl;
+            context.opts.out << dr_oss.str() << std::endl;
             xia_log(xia::log::info) << dr_oss.str();
         }
     }
@@ -1365,16 +1677,13 @@ void performance_stats(
     std::stringstream oss;
     oss << "data received: " << xia::util::humanize(total) << " bytes (" << total
         << "), rate: " << xia::util::humanize(double(total) / secs, " bytes/sec");
-    args.opts.out << oss.str() << std::endl;
+    context.opts.out << oss.str() << std::endl;
     xia_log(xia::log::info) << oss.str();
 }
 
-static void adc_acq(command_args& args) {
-    if (!valid_option(args, 1)) {
-        throw std::runtime_error("adj-acq: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
+static void adc_acq(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1382,20 +1691,11 @@ static void adc_acq(command_args& args) {
     }
 }
 
-static void adc_save(command_args& args) {
-    if (!valid_option(args, 1)) {
-        throw std::runtime_error("adj-save: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
-    args_command chans_opt;
-    args_command len_opt;
-    if (valid_option(args, 1)) {
-        chans_opt = get_and_next(args);
-    }
-    if (valid_option(args, 1)) {
-        len_opt = get_and_next(args);
-    }
+static void adc_save(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
+    auto chans_opt = context.cmd.get_arg();;
+    auto len_opt = context.cmd.get_arg();;
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     size_t length = xia::pixie::hw::max_adc_trace_length;
@@ -1434,12 +1734,9 @@ static void adc_save(command_args& args) {
     }
 }
 
-static void adj_off(command_args& args) {
-    if (!valid_option(args, 1)) {
-        throw std::runtime_error("adj-off: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
+static void adj_off(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1447,12 +1744,9 @@ static void adj_off(command_args& args) {
     }
 }
 
-static void bl_acq(command_args& args) {
-    if (!valid_option(args, 1)) {
-        throw std::runtime_error("bl-acq: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
+static void bl_acq(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1462,16 +1756,10 @@ static void bl_acq(command_args& args) {
     }
 }
 
-static void bl_save(command_args& args) {
-    if (!valid_option(args, 1)) {
-        throw std::runtime_error("bl-save: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
-    args_command chans_opt;
-    if (valid_option(args, 1)) {
-        chans_opt = get_and_next(args);
-    }
+static void bl_save(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
+    auto chans_opt = context.cmd.get_arg();
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1506,13 +1794,16 @@ static void bl_save(command_args& args) {
     }
 }
 
-static void boot(command_args& args) {
-    auto& crate = args.crate;
+static void boot(command_context& context) {
+    auto& crate = context.crate;
     xia::pixie::crate::crate::boot_params boot_params;
     bool first = true;
     bool clear_boots = true;
-    while (valid_option(args, 1)) {
-        auto opt = get_and_next(args);
+    while (context.cmd.has_arg()) {
+        auto opt = context.cmd.get_arg();
+        if (opt.empty()) {
+            break;
+        }
         if (first) {
             first = false;
             using range_type = xia::pixie::crate::crate::boot_params::range_type;
@@ -1539,63 +1830,54 @@ static void boot(command_args& args) {
         }
     }
     xia::util::timepoint tp;
-    if (args.opts.verbose) {
+    if (context.opts.verbose) {
         bool dsp_boot_forced = boot_params.boot_comms || boot_params.boot_fippi;
-        args.opts.out << std::boolalpha
-                      << "booting crate: comms=" << boot_params.boot_comms
-                      << " fippi=" << boot_params.boot_fippi
-                      << " dsp=" << boot_params.boot_dsp
-                      << " (forced=" << dsp_boot_forced
-                      << ") slots";
+        context.opts.out << std::boolalpha
+                         << "booting crate: comms=" << boot_params.boot_comms
+                         << " fippi=" << boot_params.boot_fippi
+                         << " dsp=" << boot_params.boot_dsp
+                         << " (forced=" << dsp_boot_forced
+                         << ") slots";
         if (boot_params.slots.empty()) {
-            args.opts.out << "=all";
+            context.opts.out << "=all";
         } else {
             char delimiter = '=';
             for (auto m : boot_params.slots) {
-                args.opts.out << delimiter << m;
+                context.opts.out << delimiter << m;
                 delimiter = ',';
             }
         }
-        args.opts.out << std::endl;
+        context.opts.out << std::endl;
         tp.start();
     }
     crate->boot(boot_params);
-    if (args.opts.verbose) {
+    if (context.opts.verbose) {
         tp.end();
-        args.opts.out << "boot time=" << tp << std::endl;
+        context.opts.out << "boot time=" << tp << std::endl;
     }
 }
 
-static void crate_report(command_args& args) {
-    auto& crate = args.crate;
-    args.opts.out << *crate << std::endl;
+static void crate_report(command_context& context) {
+    auto& crate = context.crate;
+    context.opts.out << *crate << std::endl;
 }
 
-static void db(command_args& args) {
+static void db(command_context& context) {
     auto check_cmd = [](auto& str) {
       return str == "show" ||
         str == "disable-swap";
     };
-    auto& crate = args.crate;
-    args_command mod_nums_opt;
-    args_command chans_opt;
-    args_command db_opt;
-    if (valid_option(args, 1)) {
-        db_opt = get_and_next(args);
-        if (!check_cmd(db_opt)) {
-            mod_nums_opt = db_opt;
-            db_opt.clear();
-        }
+    auto& crate = context.crate;
+    command::argument mod_nums_opt;
+    command::argument chans_opt;
+    auto db_opt = context.cmd.get_arg();
+    if (!check_cmd(db_opt)) {
+        mod_nums_opt = db_opt;
+        db_opt = context.cmd.get_arg();
     }
-    if (valid_option(args, 1)) {
-        db_opt = get_and_next(args);
-        if (!check_cmd(db_opt)) {
-            chans_opt = db_opt;
-            db_opt.clear();
-        }
-    }
-    if (valid_option(args, 1)) {
-        db_opt = get_and_next(args);
+    if (!check_cmd(db_opt)) {
+        chans_opt = db_opt;
+        db_opt = context.cmd.get_arg();
     }
     std::string db_command = "show";
     if (!db_opt.empty()) {
@@ -1624,9 +1906,9 @@ static void db(command_args& args) {
                     " channel: " + std::to_string(channel));
             }
             if (db_command == "show") {
-                std::cout << "DB: module:" << mod_num
-                          << " channel:" << channel << std::endl;
-                fixture->report(args.opts.out, " ");
+                context.opts.out << "DB: module:" << mod_num
+                                 << " channel:" << channel << std::endl;
+                fixture->report(context.opts.out, " ");
             } else if (db_command == "disable-swap") {
                 fixture->set("ADC_SWAP_DISABLE", true);
             }
@@ -1634,53 +1916,27 @@ static void db(command_args& args) {
     }
 }
 
-static void export_(command_args& args) {
-    if (!valid_option(args, 1)) {
-        throw std::runtime_error("export: not enough options");
-    }
-    auto& crate = args.crate;
-    auto file_opt = get_and_next(args);
+static void export_(command_context& context) {
+    auto& crate = context.crate;
+    auto file_opt = context.cmd.get_arg();
     xia::util::timepoint tp;
     tp.start();
     crate->export_config(file_opt);
     tp.end();
-    args.opts.out << "Modules export time=" << tp << std::endl;
+    context.opts.out << "Modules export time=" << tp << std::endl;
 }
 
-static void help_print(
-    command_args& args, const command& cmd, const std::string& long_opt,  const size_t max) {
-    if (long_opt == "true") {
-        args.opts.out << ' '<< std::left << cmd.name << ": ";
-        args.opts.out << std::endl
-                      << "  " << cmd.help << std::endl
-                      << "   # " << cmd.help_cmd << std::endl;
-    } else {
-        args.opts.out << ' ' << std::left << std::setw(max + 1) << cmd.name
-                      << " - " << cmd.help
-                      << std::endl;
-    }
-}
-
-static void help(command_args& args) {
-    auto long_opt = switch_option("-l", args, false);
-    args.opts.out << "Command help:" << std::endl
-                  << " 'modules(s)' and 'channel(s)' can be a number or series:" << std::endl
-                  << "   eg '0' or '3,4,6' or '3,4-5,10,20-22'" << std::endl;
-    args.opts.out << "Search path: " << std::endl << ' ';
-    bool first = true;
-    for (auto& p : args.opts.path) {
-        if (first) {
-            first = false;
-        } else {
-            args.opts.out << ':';
-        }
-        args.opts.out << p;
-    }
-    args.opts.out << std::endl;
-    args_command help_opt;
-    if (args_count(args) >= 1) {
-        help_opt = get_and_next(args);
-    }
+static void help(command_context& context) {
+    auto long_opt = context.cmd.get_option("-l");
+    context.opts.out << "Command help:" << std::endl
+                     << " 1. Command options and argument are required in the order help reports."
+                     << std::endl
+                     << " 2. Command options are '-' and flag, eg '-x', or option switch and argument, eg '-d 0'."
+                     << std::endl
+                     << " 3. 'modules(s)' and 'channel(s)' can be a number or series:"
+                     << std::endl
+                     << "     eg '0' or '3,4,6' or '3,4-5,10,20-22'" << std::endl;
+    auto help_opt = context.cmd.get_arg();
     auto mi = std::max_element(
         ominitool_commands.begin(), ominitool_commands.end(),
         [](auto& a, auto& b) {
@@ -1688,30 +1944,36 @@ static void help(command_args& args) {
         });
     size_t max = (*mi).name.size();
     if (!help_opt.empty()) {
-        auto ci = find_command(args, help_opt);
-        if (valid_command(ci)) {
-            help_print(args, *ci, long_opt, max);
+        auto is_command = [&help_opt](auto& cmd) {
+            if (help_opt == cmd.name) { return true; }
+            auto n = cmd.name.rfind('/');
+            if (n != std::string::npos) {
+                return cmd.name.compare(n + 1, cmd.name.size() - n, help_opt) == 0;
+            }
+            return false;
+        };
+        auto ci = std::find_if(
+            ominitool_commands.begin(), ominitool_commands.end(), is_command);
+        if (ci == ominitool_commands.end()) {
+            context.opts.out << "error: command not found: " << help_opt << std::endl;
         } else {
-            args.opts.out << "error: command not found: " << help_opt << std::endl;
+            context.opts.out << (*ci).formatted_help(true, max);
         }
     } else {
         for (auto& group : command_groups) {
-            args.opts.out << group << ':' << std::endl;
+            context.opts.out << group << ':' << std::endl;
             for (auto& cmd : ominitool_commands) {
                 if (cmd.group == group) {
-                    help_print(args, cmd, long_opt, max);
+                    context.opts.out << cmd.formatted_help(long_opt == "true", max);
                 }
             }
         }
     }
 }
 
-static void hist_resume(command_args& args) {
-    if (!valid_option(args, 1)) {
-        throw std::runtime_error("hist-resume: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
+static void hist_resume(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1720,17 +1982,11 @@ static void hist_resume(command_args& args) {
     }
 }
 
-static void hist_save(command_args& args) {
-    auto bins_opt = switch_option("-b", args);
-    if (!valid_option(args, 1)) {
-        throw std::runtime_error("hist-save: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
-    args_command chans_opt;
-    if (valid_option(args, 1)) {
-        chans_opt = get_and_next(args);
-    }
+static void hist_save(command_context& context) {
+    auto& crate = context.crate;
+    auto bins_opt = context.cmd.get_option("-b");
+    auto mod_nums_opt = context.cmd.get_arg();
+    auto chans_opt = context.cmd.get_arg();
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1769,12 +2025,9 @@ static void hist_save(command_args& args) {
     }
 }
 
-static void hist_start(command_args& args) {
-    if (!valid_option(args, 1)) {
-        throw std::runtime_error("hist-start: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
+static void hist_start(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1783,20 +2036,17 @@ static void hist_start(command_args& args) {
     }
 }
 
-static void import(command_args& args) {
-    if (!valid_option(args, 1)) {
-        throw std::runtime_error("import: not enough options");
-    }
-    auto& crate = args.crate;
-    auto path_opt = get_and_next(args);
+static void import(command_context& context) {
+    auto& crate = context.crate;
+    auto path_opt = context.cmd.get_arg();
     xia::util::timepoint tp;
     xia::pixie::module::number_slots modules;
     tp.start();
     crate->import_config(path_opt, modules);
     crate->initialize_afe();
     tp.end();
-    args.opts.out << "Modules imported: " << modules.size()
-                  << " time=" << tp << std::endl;
+    context.opts.out << "Modules imported: " << modules.size()
+                     << " time=" << tp << std::endl;
 }
 
 struct list_save_worker : public module_thread_worker {
@@ -1806,14 +2056,14 @@ struct list_save_worker : public module_thread_worker {
 
     list_save_worker();
     void worker(
-        process_command_options& process_opts,
+        command_context& context,
         xia::pixie::module::module& module);
 };
 
 list_save_worker::list_save_worker() : seconds(0) {}
 
 void list_save_worker::worker(
-    process_command_options& process_opts, xia::pixie::module::module& module) {
+    command_context& context, xia::pixie::module::module& module) {
     name += '-' + std::to_string(module.number) + ".lmd";
     std::ofstream out(name, std::ios::binary);
     if (!out) {
@@ -1849,7 +2099,7 @@ void list_save_worker::worker(
                 reinterpret_cast<char*>(lm.data()),
                 lm.size() * sizeof(xia::pixie::hw::word));
         }
-        process_opts.out << "list-mode: " << module.number
+        context.opts.out << "list-mode: " << module.number
                          << ": " << module.run_stats.output() << std::endl;
         if (module.run_stats.hw_overflows != 0) {
             throw std::runtime_error(
@@ -1867,14 +2117,11 @@ void list_save_worker::worker(
     period.end();
 }
 
-static void list_mode_command(command_args& args, bool run_task) {
-    if (!valid_option(args, 3)) {
-        throw std::runtime_error("list-[save,mode]: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
-    auto secs_opt = get_and_next(args);
-    auto name_opt = get_and_next(args);
+static void list_mode_command(command_context& context, bool run_task) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
+    auto secs_opt = context.cmd.get_arg();
+    auto name_opt = context.cmd.get_arg();
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     auto secs = get_value<size_t>(secs_opt);
@@ -1890,20 +2137,17 @@ static void list_mode_command(command_args& args, bool run_task) {
         s.seconds = secs;
         s.run_task = run_task;
     };
-    module_threads(args, mod_nums, saves, "list mode command error; see log");
-    performance_stats(args, saves);
+    module_threads(context, mod_nums, saves, "list mode command error; see log");
+    performance_stats(context, saves);
 }
 
-static void list_mode(command_args& args) {
-    list_mode_command(args, true);
+static void list_mode(command_context& context) {
+    list_mode_command(context, true);
 }
 
-static void list_resume(command_args& args) {
-    if (!valid_option(args, 1)) {
-        throw std::runtime_error("list-resume: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
+static void list_resume(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1912,16 +2156,13 @@ static void list_resume(command_args& args) {
     }
 }
 
-static void list_save(command_args& args) {
-    list_mode_command(args, false);
+static void list_save(command_context& context) {
+    list_mode_command(context, false);
 }
 
-static void list_start(command_args& args) {
-    if (!valid_option(args, 1)) {
-        throw std::runtime_error("list-start: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
+static void list_start(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -1936,18 +2177,15 @@ static void list_start(command_args& args) {
     }
 }
 
-static void lset_import(command_args& args) {
-    if (!valid_option(args, 2)) {
-        throw std::runtime_error("lset-import: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
-    auto settings_opt = get_and_next(args);
+static void lset_import(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
+    auto settings_opt = context.cmd.get_arg();
+    auto action_opt = context.cmd.get_arg();
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     std::string action;
-    if (valid_option(args, 1)) {
-        auto action_opt = get_and_next(args);
+    if (!action_opt.empty()) {
         if (action_opt == "flush" || action_opt == "sync") {
             action = action_opt;
         } else {
@@ -1971,18 +2209,15 @@ static void lset_import(command_args& args) {
     }
 }
 
-static void lset_load(command_args& args) {
-    if (!valid_option(args, 2)) {
-        throw std::runtime_error("lset-load: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
-    auto settings_opt = get_and_next(args);
+static void lset_load(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
+    auto settings_opt = context.cmd.get_arg();
+    auto action_opt = context.cmd.get_arg();
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     std::string action;
-    if (valid_option(args, 1)) {
-        auto action_opt = get_and_next(args);
+    if (!action_opt.empty()) {
         if (action_opt == "flush" || action_opt == "sync") {
             action = action_opt;
         } else {
@@ -2007,28 +2242,22 @@ static void lset_load(command_args& args) {
     }
 }
 
-static void lset_report(command_args& args) {
-    if (!valid_option(args, 2)) {
-        throw std::runtime_error("lset-report: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
-    auto settings_opt = get_and_next(args);
+static void lset_report(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
+    auto settings_opt = context.cmd.get_arg();
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
         xia::pixie::legacy::settings settings(crate[mod_num]);
         settings.load(settings_opt);
-        args.opts.out << settings;
+        context.opts.out << settings;
     }
 }
 
-static void mod_offline(command_args& args) {
-    if (!valid_option(args, 1)) {
-        throw std::runtime_error("mod-offline: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
+static void mod_offline(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -2036,12 +2265,9 @@ static void mod_offline(command_args& args) {
     }
 }
 
-static void mod_online(command_args& args) {
-    if (!valid_option(args, 1)) {
-        throw std::runtime_error("mod-online: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
+static void mod_online(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -2100,16 +2326,13 @@ static xia::pixie::hw::address get_address(
     return address;
 }
 
-static void reg_read(command_args& args) {
+static void reg_read(command_context& context) {
     const std::string label = "reg-read";
-    auto slot_opt = switch_option("-s", args, false);
-    auto hex_opt = switch_option("-x", args, false);
-    if (!valid_option(args, 2)) {
-        throw std::runtime_error("reg-read: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_slot_opt = get_and_next(args);
-    auto reg_opt = get_and_next(args);
+    auto& crate = context.crate;
+    auto slot_opt = context.cmd.get_option("-s");
+    auto hex_opt = context.cmd.get_option("-x");
+    auto mod_slot_opt = context.cmd.get_arg();
+    auto reg_opt = context.cmd.get_arg();
     size_t mod_slot = get_value<size_t>(mod_slot_opt);
     std::string mem;
     std::string reg;
@@ -2122,7 +2345,7 @@ static void reg_read(command_args& args) {
     auto& mod = crate[mod_slot];
     xia::pixie::hw::word value;
     if (mem == "sys") {
-        value =  mod.read_word(address);
+        value = mod.read_word(address);
     } else {
         xia::pixie::hw::fpga::comms comms(mod);
         if (!comms.done()) {
@@ -2137,24 +2360,21 @@ static void reg_read(command_args& args) {
         }
     }
     if (hex_opt == "true") {
-        args.opts.out << std::hex << "0x";
+        context.opts.out << std::hex << "0x";
     }
-    args.opts.out << value << std::endl;
+    context.opts.out << value << std::endl;
     if (hex_opt == "true") {
-        args.opts.out << std::dec;
+        context.opts.out << std::dec;
     }
 }
 
-static void reg_write(command_args& args) {
+static void reg_write(command_context& context) {
     const std::string label = "reg-write";
-    auto slot_opt = switch_option("-s", args, false);
-    if (!valid_option(args, 3)) {
-        throw std::runtime_error("reg-write: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_slot_opt = get_and_next(args);
-    auto reg_opt = get_and_next(args);
-    auto value_opt = get_and_next(args);
+    auto slot_opt = context.cmd.get_option("-s");
+    auto& crate = context.crate;
+    auto mod_slot_opt = context.cmd.get_arg();
+    auto reg_opt = context.cmd.get_arg();
+    auto value_opt = context.cmd.get_arg();
     size_t mod_slot = get_value<size_t>(mod_slot_opt);
     std::string mem;
     std::string reg;
@@ -2184,17 +2404,12 @@ static void reg_write(command_args& args) {
     }
 }
 
-static void par_read(command_args& args) {
-    if (!valid_option(args, 2)) {
-        throw std::runtime_error("par-write: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
-    auto chans_opt = get_and_next(args);
-    args_command param_opt;
-    if (valid_option(args, 1)) {
-        param_opt = get_and_next(args);
-    } else {
+static void par_read(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
+    auto chans_opt = context.cmd.get_arg();
+    auto param_opt = context.cmd.get_arg();
+    if (param_opt.empty()) {
         param_opt = chans_opt;
         chans_opt.clear();
     }
@@ -2202,13 +2417,13 @@ static void par_read(command_args& args) {
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
         if (chans_opt.empty()) {
-            args.opts.out << "# module param read: " << mod_num
-                          << ": " << param_opt << std::endl;
+            context.opts.out << "# module param read: " << mod_num
+                             << ": " << param_opt << std::endl;
             if (param_opt == "all") {
                 for (auto& par : xia::pixie::param::get_module_param_map()) {
                     try {
                         output_value(
-                            args.opts.out, par.first, crate[mod_num].read(par.second));
+                            context.opts.out, par.first, crate[mod_num].read(par.second));
                     } catch (error& e) {
                         if (e.type != error::code::module_param_disabled &&
                             e.type != error::code::module_param_writeonly) {
@@ -2218,20 +2433,20 @@ static void par_read(command_args& args) {
                 }
             } else {
                 output_value(
-                    args.opts.out, param_opt, crate[mod_num].read(param_opt));
+                    context.opts.out, param_opt, crate[mod_num].read(param_opt));
             }
         } else {
             xia::pixie::channel::range channels;
             channels_option(channels, chans_opt, crate[mod_num].num_channels);
             for (auto channel_num : channels) {
-                args.opts.out << "# channel param read: " << mod_num
-                              << ':' << channel_num << ": "
-                              << param_opt << std::endl;
+                context.opts.out << "# channel param read: " << mod_num
+                                 << ':' << channel_num << ": "
+                                 << param_opt << std::endl;
                 if (param_opt == "all") {
                     for (auto& par : xia::pixie::param::get_channel_param_map()) {
                         try {
                             output_value(
-                                args.opts.out, par.first, crate[mod_num].read(
+                                context.opts.out, par.first, crate[mod_num].read(
                                     par.second, channel_num));
                         } catch (error& e) {
                             if (e.type != error::code::channel_param_disabled &&
@@ -2242,7 +2457,7 @@ static void par_read(command_args& args) {
                     }
                 } else {
                     output_value(
-                        args.opts.out, param_opt,
+                        context.opts.out, param_opt,
                         crate[mod_num].read(param_opt, channel_num));
                 }
             }
@@ -2250,18 +2465,13 @@ static void par_read(command_args& args) {
     }
 }
 
-static void par_write(command_args& args) {
-    if (!valid_option(args, 3)) {
-        throw std::runtime_error("par-write: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
-    auto chans_opt = get_and_next(args);
-    auto param_opt = get_and_next(args);
-    args_command value_opt;
-    if (valid_option(args, 1)) {
-        value_opt = get_and_next(args);
-    } else {
+static void par_write(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
+    auto chans_opt = context.cmd.get_arg();
+    auto param_opt = context.cmd.get_arg();
+    auto value_opt = context.cmd.get_arg();
+    if (value_opt.empty()) {
       value_opt = param_opt;
       param_opt = chans_opt;
       chans_opt.clear();
@@ -2295,11 +2505,11 @@ static void par_write(command_args& args) {
     }
 }
 
-static void report(command_args& args) {
-    std::ostream* out= &std::cout;
+static void report(command_context& context) {
+    std::ostream* out= &context.opts.out;
     std::ofstream output_file;
-    if (valid_option(args, 1)) {
-        auto file_opt = get_and_next(args);
+    auto file_opt = context.cmd.get_arg();
+    if (!file_opt.empty()) {
         output_file.open(file_opt);
         if (!output_file) {
             throw std::runtime_error(
@@ -2307,30 +2517,24 @@ static void report(command_args& args) {
         }
         out = &output_file;
     }
-    auto& crate = args.crate;
+    auto& crate = context.crate;
     crate->report(*out);
 }
 
-static void run_active(command_args& args) {
-    if (!valid_option(args, 1)) {
-        throw std::runtime_error("run-active: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
+static void run_active(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
-        args.opts.out << "module=" << mod_num << " run-active=" << std::boolalpha
-                      << crate[mod_num].run_active() << std::endl;
+        context.opts.out << "module=" << mod_num << " run-active=" << std::boolalpha
+                         << crate[mod_num].run_active() << std::endl;
     }
 }
 
-static void run_end(command_args& args) {
-    if (!valid_option(args, 1)) {
-        throw std::runtime_error("run-end: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
+static void run_end(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -2338,12 +2542,9 @@ static void run_end(command_args& args) {
     }
 }
 
-static void set_dacs(command_args& args) {
-    if (!valid_option(args, 1)) {
-        throw std::runtime_error("set-dacs: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
+static void set_dacs(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
@@ -2351,20 +2552,11 @@ static void set_dacs(command_args& args) {
     }
 }
 
-static void stats(command_args& args) {
-    auto stat_opt = switch_option("-s", args);
-    if (!valid_option(args, 1)) {
-        throw std::runtime_error("stats: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
-    args_command chans_opt;
-    if (valid_option(args, 1)) {
-        mod_nums_opt = get_and_next(args);
-    }
-    if (valid_option(args, 1)) {
-        chans_opt = get_and_next(args);
-    }
+static void stats(command_context& context) {
+    auto& crate = context.crate;
+    auto stat_opt = context.cmd.get_option("-s");
+    auto mod_nums_opt = context.cmd.get_arg();
+    auto chans_opt = context.cmd.get_arg();
     std::string stat = "all";
     if (!stat_opt.empty()) {
         if (stat_opt == "all" ||
@@ -2383,48 +2575,45 @@ static void stats(command_args& args) {
         xia::pixie::stats::stats stats(crate[mod_num]);
         crate[mod_num].read_stats(stats);
         if (stat == "all" || stat == "pe") {
-            args.opts.out << "module " << mod_num
-                          << ": processed-events="
-                          << stats.mod.processed_events() << std::endl;
+            context.opts.out << "module " << mod_num
+                             << ": processed-events="
+                             << stats.mod.processed_events() << std::endl;
         }
         if (stat == "all" || stat == "icr") {
             for (auto channel : channels) {
-                args.opts.out << "module " << mod_num << " chan " << channel
-                              << ": input-count-rate="
-                              << stats.chans[channel].input_count_rate()
-                              << std::endl;
+                context.opts.out << "module " << mod_num << " chan " << channel
+                                 << ": input-count-rate="
+                                 << stats.chans[channel].input_count_rate()
+                                 << std::endl;
             }
         }
         if (stat == "all" || stat == "ocr") {
             for (auto channel : channels) {
-                args.opts.out << "module " << mod_num << " chan " << channel
-                              << ": output-count-rate="
-                              << stats.chans[channel].output_count_rate()
-                              << std::endl;
+                context.opts.out << "module " << mod_num << " chan " << channel
+                                 << ": output-count-rate="
+                                 << stats.chans[channel].output_count_rate()
+                                 << std::endl;
             }
         }
         if (stat == "all" || stat == "rt") {
-            args.opts.out << "module " << mod_num
-                          << ": real-time=" << stats.mod.real_time()
-                          << std::endl;
+            context.opts.out << "module " << mod_num
+                             << ": real-time=" << stats.mod.real_time()
+                             << std::endl;
         }
         if (stat == "all" || stat == "lt") {
             for (auto channel : channels) {
-                args.opts.out << "module " << mod_num << " chan " << channel
-                              << ": live-time="
-                              << stats.chans[channel].live_time() << std::endl;
+                context.opts.out << "module " << mod_num << " chan " << channel
+                                 << ": live-time="
+                                 << stats.chans[channel].live_time() << std::endl;
             }
         }
     }
 }
 
-static void stats_rpt(command_args& args) {
-    if (!valid_option(args, 2)) {
-        throw std::runtime_error("stats: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
-    auto file_opt = get_and_next(args);
+static void stats_rpt(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
+    auto file_opt = context.cmd.get_arg();
     std::stringstream rpt;
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
@@ -2445,16 +2634,17 @@ struct test_fifo_worker : public module_thread_worker {
 
     test_fifo_worker();
     void worker(
-        process_command_options& process_opts,
+        command_context& context,
         xia::pixie::module::module& module);
 };
 
 test_fifo_worker::test_fifo_worker() : length(0) {}
 
 void test_fifo_worker::worker(
-    process_command_options& , xia::pixie::module::module& module) {
+    command_context& , xia::pixie::module::module& module) {
     try {
-        std::ofstream out(list_mode_prefix + "-control-task-11.lmd", std::ios::out | std::ios::binary);
+        std::ofstream out(
+            list_mode_prefix + "-control-task-11.lmd", std::ios::out | std::ios::binary);
         module.start_test(xia::pixie::module::module::test::lm_fifo);
         const size_t poll_period_usecs = 10 * 1000;
         period.start();
@@ -2481,13 +2671,10 @@ void test_fifo_worker::worker(
     }
 }
 
-static void test(command_args& args) {
-    auto mode_opt = switch_option("-m", args);
-    if (!valid_option(args, 1)) {
-        throw std::runtime_error("test: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
+static void test(command_context& context) {
+    auto& crate = context.crate;
+    auto mode_opt = context.cmd.get_option("-m");
+    auto mod_nums_opt = context.cmd.get_arg();
     xia::pixie::module::module::test mode = xia::pixie::module::module::test::off;
     if (!mode_opt.empty()) {
         if (mode_opt == "lmfifo") {
@@ -2504,35 +2691,25 @@ static void test(command_args& args) {
     for (auto& t : tests) {
         t.length = (bytes) / sizeof(xia::pixie::hw::word);
     }
-    args.opts.out << "Test: " << mode_opt << " (" << int(mode)
-                  << ") length=" << xia::util::humanize(bytes)
-                  << std::endl;
-    module_threads(args, mod_nums, tests, "fifo test error; see log");
-    performance_stats(args, tests, true);
+    context.opts.out << "Test: " << mode_opt << " (" << int(mode)
+                     << ") length=" << xia::util::humanize(bytes)
+                     << std::endl;
+    module_threads(context, mod_nums, tests, "fifo test error; see log");
+    performance_stats(context, tests, true);
 }
 
-static void var_read(command_args& args) {
-    if (!valid_option(args, 2)) {
-        throw std::runtime_error("var-read: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
-    auto chans_opt = get_and_next(args);
-    args_command param_opt;
-    args_command offsets_opt = "0";
-    if (check_number(chans_opt)) {
-        if (valid_option(args, 1)) {
-            param_opt = get_and_next(args);
-            if (valid_option(args, 1)) {
-                offsets_opt = get_and_next(args);
-            }
-        }
-    } else {
+static void var_read(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
+    auto chans_opt = context.cmd.get_arg();
+    auto param_opt = context.cmd.get_arg();
+    auto offsets_opt = context.cmd.get_arg();
+    if (!check_number(chans_opt)) {
         param_opt = chans_opt;
         chans_opt.clear();
-        if (valid_option(args, 1)) {
-            offsets_opt = get_and_next(args);
-        }
+    }
+    if (offsets_opt.empty()) {
+        offsets_opt = "0";
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
@@ -2544,13 +2721,13 @@ static void var_read(command_args& args) {
                     param_opt, mod.module_var_descriptors);
             auto offsets = get_values<size_t>(offsets_opt, desc.size);
             if (param_opt == "all") {
-                args.opts.out << "# module var read: " << mod_num << ": "
-                              << param_opt << std::endl;
+                context.opts.out << "# module var read: " << mod_num << ": "
+                                 << param_opt << std::endl;
                 for (auto& var : mod.module_var_descriptors) {
                     for (auto offset : offsets) {
                         try {
                             output_value(
-                                args.opts.out, var.name, mod.read_var(var.par, offset));
+                                context.opts.out, var.name, mod.read_var(var.par, offset));
                         } catch (error& e) {
                             if (e.type != error::code::module_param_disabled &&
                                 e.type != error::code::module_param_writeonly) {
@@ -2562,7 +2739,7 @@ static void var_read(command_args& args) {
             } else {
                 for (auto offset : offsets) {
                     output_value(
-                        args.opts.out, param_opt, mod.read_var(param_opt, 0, offset));
+                        context.opts.out, param_opt, mod.read_var(param_opt, 0, offset));
                 }
             }
         } else {
@@ -2574,13 +2751,13 @@ static void var_read(command_args& args) {
                         param_opt, mod.channel_var_descriptors);
                 auto offsets = get_values<size_t>(offsets_opt, desc.size);
                 if (param_opt == "all") {
-                    args.opts.out << "# channel var read: " << mod_num << ':'
-                                  << channel << ": " << param_opt << std::endl;
+                    context.opts.out << "# channel var read: " << mod_num << ':'
+                                     << channel << ": " << param_opt << std::endl;
                     for (auto& var : mod.channel_var_descriptors) {
                         for (auto offset : offsets) {
                             try {
                                 output_value(
-                                    args.opts.out, var.name, mod.read_var(
+                                    context.opts.out, var.name, mod.read_var(
                                         var.par, channel, offset));
                             } catch (error& e) {
                                 if (e.type != error::code::channel_param_disabled &&
@@ -2593,7 +2770,7 @@ static void var_read(command_args& args) {
                 } else {
                     for (auto offset : offsets) {
                         output_value(
-                            args.opts.out, param_opt, mod.read_var(
+                            context.opts.out, param_opt, mod.read_var(
                                 param_opt, channel, offset));
                     }
                 }
@@ -2602,26 +2779,24 @@ static void var_read(command_args& args) {
     }
 }
 
-static void var_write(command_args& args) {
-    if (!valid_option(args, 3)) {
-        throw std::runtime_error("var-write: not enough options");
-    }
-    auto& crate = args.crate;
-    auto mod_nums_opt = get_and_next(args);
-    auto chans_opt = get_and_next(args);
-    auto param_opt = get_and_next(args);
-    args_command offsets_opt = "0";
-    args_command value_opt;
+static void var_write(command_context& context) {
+    auto& crate = context.crate;
+    auto mod_nums_opt = context.cmd.get_arg();
+    auto chans_opt = context.cmd.get_arg();
+    auto param_opt = context.cmd.get_arg();
+    auto offsets_opt = context.cmd.get_arg();
+    auto value_opt = context.cmd.get_arg();
     if (!check_number(chans_opt)) {
         value_opt = param_opt;
         param_opt = chans_opt;
         chans_opt.clear();
-    } else {
-        value_opt = get_and_next(args);
     }
-    if (valid_option(args, 1)) {
-        offsets_opt = value_opt;
-        value_opt = get_and_next(args);
+    if (value_opt.empty()) {
+        value_opt = offsets_opt;
+        offsets_opt.clear();
+    }
+    if (offsets_opt.empty()) {
+        offsets_opt = "0";
     }
     module_range mod_nums;
     modules_option(mod_nums, mod_nums_opt, crate.num_modules);
@@ -2684,11 +2859,8 @@ static void var_write(command_args& args) {
     }
 }
 
-static void wait(command_args& args) {
-    if (!valid_option(args, 1)) {
-        throw std::runtime_error("wait: not enough options");
-    }
-    auto period_opt = get_and_next(args);
+static void wait(command_context& context) {
+    auto period_opt = context.cmd.get_arg();
     size_t multipler = 1;
     switch (period_opt.back()) {
     case '0':
@@ -2714,8 +2886,8 @@ static void wait(command_args& args) {
     }
     auto msecs = get_value<size_t>(period_opt);
     msecs *= multipler;
-    if (args.opts.verbose) {
-        args.opts.out << "waiting " << msecs << " msecs" << std::endl;
+    if (context.opts.verbose) {
+        context.opts.out << "waiting " << msecs << " msecs" << std::endl;
     }
     xia::pixie::hw::wait(msecs * 1000);
 }
@@ -2785,6 +2957,9 @@ int main(int argc, char* argv[]) {
     args_strings_flag cmd_file_flag(
         option_group, "cmd_file_flag",
         "File of commands to execute.", {'c', "cmd"});
+    args_flag no_execute(
+        option_group, "no_execute", "Parse the command but do not execute.",
+        {'X', "no-execute"});
 
     args_group command_group(parser, "Commands");
     args_positional_list args_cmds(
@@ -2848,8 +3023,7 @@ int main(int argc, char* argv[]) {
             out = &output;
         }
 
-        process_command_options process_opts(*out);
-
+        process_options process_opts(*out);
         process_opts.verbose = !args::get(quiet_flag);
         process_opts.reg_trace = args::get(reg_trace);
         process_opts.num_modules = args::get(num_modules_flag);
@@ -2901,7 +3075,7 @@ int main(int argc, char* argv[]) {
             process_opts.firmware_host_path = system_firmware_path;
         }
 
-        args_commands cmds;
+        command::arguments cmds;
         for (auto& cmd : args_cmds) {
             cmds.push_back(cmd);
         }
@@ -2911,7 +3085,27 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        process_commands(crate, process_opts, cmds);
+        /*
+         * Execute the commands as a batch.
+         */
+        command_batch batch;
+        batch.path = {"/crate", "/module", "/util"};
+        batch.set_operation("init", [](command_context& context) {
+            initialize(context);
+        });
+        batch.set_operation("probe", [](command_context& context) {
+            firmware_load(context);
+            probe(context);
+        });
+        batch.parse(cmds);
+
+        bool execute = !args::get(no_execute);
+
+        if (execute) {
+            batch.execute(crate, process_opts);
+        } else {
+            batch.report(*out);
+        }
 
         run.end();
         if (process_opts.verbose) {
