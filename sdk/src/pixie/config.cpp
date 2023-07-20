@@ -325,9 +325,9 @@ void import_json(const std::string& filename, crate::crate& crate, module::numbe
              * Record the module had been loaded.
              */
             loaded.push_back(module::number_slot(module.number, module.slot));
+            ++ci;
         }
 
-        ++ci;
         if (ci == config.end()) {
             break;
         }
