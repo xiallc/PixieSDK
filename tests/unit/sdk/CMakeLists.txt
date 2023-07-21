@@ -10,7 +10,6 @@ add_executable(pixie_sdk_unit_test_runner $<TARGET_OBJECTS:BaseTestRunnerObjLib>
         test_pixie_error.cpp
         test_pixie_log.cpp
         test_pixie_util.cpp
-        test_pixie16.cpp
         test_pixie16_module.cpp
         )
 target_include_directories(pixie_sdk_unit_test_runner PUBLIC

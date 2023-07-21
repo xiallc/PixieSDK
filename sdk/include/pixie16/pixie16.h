@@ -31,19 +31,6 @@
 extern "C" {
 #endif
 
-#define CCSRA_ENARELAY 14
-#define CCSRA_GOOD 2
-#define CCSRA_POLARITY 5
-#define EXTERNAL_FIFO_LENGTH 131072
-#define LIST_MODE_RUN 0x100
-#define MAX_ADC_TRACE_LEN 8192
-#define MAX_HISTOGRAM_LENGTH 32768
-#define MAX_NUM_BASELINES 3640
-#define NEW_RUN 1
-#define NUMBER_OF_CHANNELS 16
-#define RESUME_RUN 0
-#define SYS_MAX_NUM_MODULES 32
-
 struct fifo_worker_config {
     size_t bandwidth_mb_per_sec;
     size_t buffers;
@@ -76,18 +63,6 @@ struct module_fifo_stats {
     size_t dropped;
     size_t hw_overflows;
 };
-
-PIXIE_EXPORT unsigned short PIXIE_API APP16_TstBit(unsigned short bit, unsigned short value);
-
-PIXIE_EXPORT unsigned short PIXIE_API APP16_SetBit(unsigned short bit, unsigned short value);
-
-PIXIE_EXPORT unsigned short PIXIE_API APP16_ClrBit(unsigned short bit, unsigned short value);
-
-PIXIE_EXPORT unsigned int PIXIE_API APP32_SetBit(unsigned short bit, unsigned int value);
-
-PIXIE_EXPORT unsigned int PIXIE_API APP32_ClrBit(unsigned short bit, unsigned int value);
-
-PIXIE_EXPORT unsigned int PIXIE_API APP32_TstBit(unsigned short bit, unsigned int value);
 
 PIXIE_EXPORT double PIXIE_API IEEEFloating2Decimal(unsigned int IEEEFloatingNumber);
 
@@ -138,9 +113,6 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeLiveTime(unsigned int* Statistics,
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeOutputCountRate(unsigned int* Statistics,
                                                             unsigned short ModNum,
                                                             unsigned short ChanNum);
-
-PIXIE_EXPORT double PIXIE_API Pixie16ComputeProcessedEvents(unsigned int* Statistics,
-                                                            unsigned short ModNum);
 
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeRawInputCount(unsigned int* Statistics,
                                                           unsigned short ModNum,
@@ -203,8 +175,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadStatisticsFromModule(unsigned int* Statist
                                                            unsigned short ModNum);
 
 PIXIE_EXPORT int PIXIE_API Pixie16SaveDSPParametersToFile(const char* FileName);
-
-PIXIE_EXPORT int PIXIE_API Pixie16SaveHistogramToFile(const char* FileName, unsigned short ModNum);
 
 PIXIE_EXPORT int PIXIE_API Pixie16SetDACs(unsigned short ModNum);
 

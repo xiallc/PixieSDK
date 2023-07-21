@@ -41,25 +41,17 @@ include(xia_configure_target)
 include(CMakeDependentOption)
 
 option(BUILD_EXAMPLES "Builds the example programs" ON)
-option(BUILD_LEGACY "Builds the legacy C API - Pixie16App.a" OFF)
 option(BUILD_SDK "Builds the base SDK library - PixieSdk.a" ON)
 option(BUILD_TESTS "Builds the test suites" ON)
 
 cmake_dependent_option(BUILD_INTEGRATION_TESTS "Builds integration tests" ON "BUILD_TESTS;BUILD_SDK" OFF)
-cmake_dependent_option(BUILD_LEGACY_UNIT_TESTS "Builds unit tests" ON "BUILD_TESTS;BUILD_LEGACY" OFF)
 cmake_dependent_option(BUILD_PIXIE16_API "Builds user API library - libPixie16Api.so" ON "BUILD_SDK" OFF)
 cmake_dependent_option(BUILD_SYSTEM_TESTS "Enables build of system tests" ON "BUILD_TESTS;BUILD_SDK" OFF)
 cmake_dependent_option(BUILD_SDK_UNIT_TESTS "Builds unit tests" ON "BUILD_TESTS;BUILD_SDK" OFF)
-cmake_dependent_option(USE_USLEEP "Adds the USE_USLEEP flag to Legacy builds" "OFF" "BUILD_LEGACY" OFF)
 
-add_subdirectory(bin)
 add_subdirectory(cmake)
 
-if (BUILD_LEGACY)
-    message(WARNING "The Legacy C API will be deprecated July 31, 2023. We recommend using Pixie16Api.so instead.")
-endif ()
-
-if (BUILD_SDK OR BUILD_LEGACY)
+if (BUILD_SDK)
     find_package(BroadcomAPI REQUIRED)
     IF (${CMAKE_VERSION} VERSION_LESS "3.13")
         link_directories(${PLX_LIBRARY_DIR})

@@ -215,30 +215,6 @@ T test_bit(const std::string& name, unsigned short& bit, T value) {
     return false;
 }
 
-PIXIE_EXPORT unsigned short PIXIE_API APP16_TstBit(unsigned short bit, unsigned short value) {
-    return test_bit("APP16_TstBit", bit, value);
-}
-
-PIXIE_EXPORT unsigned short PIXIE_API APP16_SetBit(unsigned short bit, unsigned short value) {
-    return set_bit("APP16_SetBit", bit, value, true);
-}
-
-PIXIE_EXPORT unsigned short PIXIE_API APP16_ClrBit(unsigned short bit, unsigned short value) {
-    return set_bit("APP16_ClrBit", bit, value, false);
-}
-
-PIXIE_EXPORT unsigned int PIXIE_API APP32_SetBit(unsigned short bit, unsigned int value) {
-    return set_bit("APP32_SetBit", bit, value, true);
-}
-
-PIXIE_EXPORT unsigned int PIXIE_API APP32_ClrBit(unsigned short bit, unsigned int value) {
-    return set_bit("APP32_ClrBit", bit, value, false);
-}
-
-PIXIE_EXPORT unsigned int PIXIE_API APP32_TstBit(unsigned short bit, unsigned int value) {
-    return test_bit("APP32_TstBit", bit, value);
-}
-
 PIXIE_EXPORT double PIXIE_API IEEEFloating2Decimal(unsigned int IEEEFloatingNumber) {
     return double(xia::util::ieee_float(IEEEFloatingNumber));
 }
@@ -741,14 +717,6 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeOutputCountRate(unsigned int* Statis
     }
 
     return result;
-}
-
-PIXIE_EXPORT double PIXIE_API Pixie16ComputeProcessedEvents(unsigned int* Statistics,
-                                                            unsigned short ModNum) {
-    xia_log(xia::log::debug) << "Pixie16ComputeProcessedEvents: ModNum=" << ModNum;
-    (void) Statistics;
-    (void) ModNum;
-    return not_supported();
 }
 
 PIXIE_EXPORT double PIXIE_API Pixie16ComputeRawInputCount(unsigned int* Statistics,
@@ -1441,13 +1409,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16SaveDSPParametersToFile(const char* FileName) 
     }
 
     return 0;
-}
-
-PIXIE_EXPORT int PIXIE_API Pixie16SaveHistogramToFile(const char* FileName, unsigned short ModNum) {
-    xia_log(xia::log::debug) << "Pixie16SaveHistogramToFile: ModNum=" << ModNum
-                             << " FileName=" << FileName;
-
-    return not_supported();
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16SetDACs(unsigned short ModNum) {

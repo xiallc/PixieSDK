@@ -39,6 +39,7 @@
 #include <nolhmann/json.hpp>
 
 #include <pixie16/pixie16.h>
+#include <pixie/pixie16/hw.hpp>
 
 #include <sys/types.h>
 
@@ -176,7 +177,7 @@ void read_config(const std::string& config_file_name, configuration& cfg) {
     nlohmann::json jf = nlohmann::json::parse(input);
     input.close();
 
-    if (jf.empty() || jf.size() > SYS_MAX_NUM_MODULES) {
+    if (jf.empty() || jf.size() > xia::pixie::hw::max_slots) {
         throw std::invalid_argument("invalid number of modules");
     }
 
@@ -444,7 +445,7 @@ bool execute_list_mode_run(unsigned int run_num, const configuration& cfg,
         return false;
 
     std::cout << LOG("INFO") << "Starting list-mode run." << std::endl;
-    if (!verify_api_return_value(Pixie16StartListModeRun(cfg.num_modules(), LIST_MODE_RUN, NEW_RUN),
+    if (!verify_api_return_value(Pixie16StartListModeRun(cfg.num_modules(), 0x100, 1),
                                  "Pixie16StartListModeRun"))
         return false;
 
@@ -652,7 +653,7 @@ bool execute_mca_run(unsigned int run_num, const configuration& cfg,
 
     std::cout << LOG("INFO") << "Starting MCA data run for " << runtime_in_seconds << " s."
               << std::endl;
-    if (!verify_api_return_value(Pixie16StartHistogramRun(cfg.num_modules(), NEW_RUN),
+    if (!verify_api_return_value(Pixie16StartHistogramRun(cfg.num_modules(), 1),
                                  "Pixie16StartHistogramRun"))
         return false;
 
