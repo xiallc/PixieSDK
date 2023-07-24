@@ -25,8 +25,6 @@
 
 #include <vector>
 
-#include <nolhmann/json.hpp>
-
 #include <pixie/param.hpp>
 
 #include <pixie/pixie16/hw.hpp>
