@@ -297,7 +297,7 @@ static void plx_mailbox_write(
 pci_bus_handle::pci_bus_handle() : device_number(-1) {
     ::memset(&key, PCI_FIELD_IGNORE, sizeof(PLX_DEVICE_KEY));
     ::memset(&dma, 0, sizeof(PLX_DMA_PROP));
-    std::memset(mailboxes, 0, sizeof(mailboxes));
+    ::memset(mailboxes, 0, sizeof(mailboxes));
     key.VendorId = vendor_id;
     key.DeviceId = device_id;
 }
