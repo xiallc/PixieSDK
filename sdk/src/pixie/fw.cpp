@@ -35,7 +35,9 @@
 #include <pixie/error.hpp>
 #include <pixie/fw.hpp>
 #include <pixie/log.hpp>
-#include <pixie/util.hpp>
+#include <pixie/utils/path.hpp>
+#include <pixie/utils/string.hpp>
+#include <pixie/utils/time.hpp>
 
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -145,7 +147,7 @@ std::string firmware::basename() const {
 void firmware::load() {
     lock_guard guard(lock);
     if (data.empty()) {
-        util::timepoint load_time(true);
+        util::time::timepoint load_time(true);
         /*
          * Use C and the standard file system interfaces. They are faster
          * than the C++ stream interface
@@ -331,12 +333,12 @@ firmware parse(const std::string fw_desc, const char delimiter) {
     std::string device;
     std::string filename;
 
-    util::strings fields;
-    util::split(fields, fw_desc, delimiter);
+    util::string::strings fields;
+    util::string::split(fields, fw_desc, delimiter);
 
     for (auto field : fields) {
-        util::strings label_value;
-        util::split(label_value, field, '=');
+        util::string::strings label_value;
+        util::string::split(label_value, field, '=');
         if (label_value.size() != 2) {
             throw error(error::code::invalid_value, "invalid firmware field: " + field);
         }
@@ -404,22 +406,22 @@ std::string system_firmware_path =
 
 static void find_firmwares(const std::string basepath, descriptions& fws) {
     files files_;
-    xia::util::find_files(basepath, files_, ".json");
+    util::path::find_files(basepath, files_, ".json");
     for (auto& f : files_) {
-        std::string bname = xia::util::basename(f);
-        std::string dir = xia::util::dirname(f);
+        std::string bname = util::path::basename(f);
+        std::string dir = util::path::dirname(f);
         files rev_files;
-        xia::util::find_files(dir, rev_files, ".ldr");
+        util::path::find_files(dir, rev_files, ".ldr");
         if (rev_files.size() != 1) {
             throw std::runtime_error("fimrware has more than one LDR file: " + bname);
         }
         fws.emplace_back(f, "dsp", rev_files.front());
-        xia::util::find_files(dir, rev_files, ".var");
+        util::path::find_files(dir, rev_files, ".var");
         if (rev_files.size() != 1) {
             throw std::runtime_error("fimrware has more than one VAR file: " + bname);
         }
         fws.emplace_back(f, "var", rev_files.front());
-        xia::util::find_files(dir, rev_files, ".bin");
+        util::path::find_files(dir, rev_files, ".bin");
         if (rev_files.size() != 2) {
             throw std::runtime_error("fimrware has more than two BIN files: " + bname);
         }
@@ -590,7 +592,7 @@ void system_fw_report(std::ostream& out, std::string basepath) {
 
 bool override_default_fw(module& firmwares, const std::string& filepath, std::string device) {
     if (device.empty()) {
-        auto ext = xia::util::extension(filepath);
+        auto ext = util::path::extension(filepath);
         if (ext == "ldr") {
             device = "dsp";
         } else if (ext == "bin") {

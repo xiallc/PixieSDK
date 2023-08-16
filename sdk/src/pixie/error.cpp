@@ -26,7 +26,7 @@
 
 #include <pixie/error.hpp>
 #include <pixie/log.hpp>
-#include <pixie/util.hpp>
+#include <pixie/utils/io.hpp>
 
 namespace xia {
 namespace pixie {
@@ -157,7 +157,7 @@ error::error(const code type_, const char* what) : runtime_error(what), type(typ
 }
 
 void error::output(std::ostream& out) {
-    util::ostream_guard flags(out);
+    util::io::ostream_guard flags(out);
     out << std::setfill(' ') << "error: code:" << std::setw(3) << result() << " : " << what();
 }
 

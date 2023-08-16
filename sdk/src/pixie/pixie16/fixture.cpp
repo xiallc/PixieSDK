@@ -25,7 +25,6 @@
 
 #include <pixie/error.hpp>
 #include <pixie/log.hpp>
-#include <pixie/util.hpp>
 
 #include <pixie/pixie16/channel.hpp>
 #include <pixie/pixie16/db.hpp>

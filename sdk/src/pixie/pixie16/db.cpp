@@ -25,7 +25,8 @@
 
 #include <pixie/error.hpp>
 #include <pixie/log.hpp>
-#include <pixie/util.hpp>
+#include <pixie/utils/numerics.hpp>
+#include <pixie/utils/time.hpp>
 
 #include <pixie/pixie16/channel.hpp>
 #include <pixie/pixie16/db.hpp>
@@ -231,7 +232,7 @@ void afe_dbs::boot() {
     log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")
                     << "boot";
 
-    util::timepoint tp(true);
+    util::time::timepoint tp(true);
 
     /*
      * Set the voffset for all channels to the low rail
@@ -383,7 +384,7 @@ void afe_dbs::adjust_offsets() {
     const int dac_linear_fit_samples = 2;
     const int runs = 30;
 
-    util::timepoint tp(true);
+    util::time::timepoint tp(true);
 
     /*
      * Remove any offset
@@ -403,7 +404,7 @@ void afe_dbs::adjust_offsets() {
         has_offset_dacs.push_back(has_offset_dac);
     }
 
-    using bl_linear_fit = util::linear_fit<int>;
+    using bl_linear_fit = util::numerics::linear_fit<int>;
     std::vector<bl_linear_fit> bl_fits(module_.num_channels);
     std::vector<bool> inverted(module_.num_channels, false);
 

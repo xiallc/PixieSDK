@@ -26,7 +26,9 @@
 #include <pixie/os_compat.hpp>
 
 #include <pixie/log.hpp>
-#include <pixie/util.hpp>
+#include <pixie/utils/io.hpp>
+#include <pixie/utils/numerics.hpp>
+#include <pixie/utils/time.hpp>
 
 #include <pixie/pixie16/channel.hpp>
 #include <pixie/pixie16/defs.hpp>
@@ -60,7 +62,7 @@ error::error(const int num, const hw::slot_type slot, const size_t channel, cons
     : pixie::error::error(type, make_what(num, slot, channel, what)) {}
 
 void error::output(std::ostream& out) {
-    util::ostream_guard flags(out);
+    util::io::ostream_guard flags(out);
     out << std::setfill(' ') << "error: code=" << std::setw(2) << result() << ' ' << what();
 }
 
@@ -91,7 +93,7 @@ void baseline::find_cut(size_t num) {
                             "baseline values size exceeds max");
     }
 
-    util::timepoint tp(true);
+    util::time::timepoint tp(true);
 
     param::values log2_bweight(channels.size());
     param::values current_bl_cut(channels.size());
@@ -189,7 +191,7 @@ void baseline::get(baseline::channels_values& chan_values, bool run) {
             auto chan = channels[c];
             values& chan_vals = chan_values[c];
             if (bl < chan_vals.size()) {
-                double baseline = util::ieee_float(buffer[offset + 2 + chan]);
+                double baseline = util::numerics::ieee_float(buffer[offset + 2 + chan]);
                 chan_vals[bl] = value(timestamp, baseline);
             }
         }
@@ -504,7 +506,7 @@ void channel::energy_risetime_flattop(param::channel_param par, double value) {
 
 double channel::autotau() {
     module::module& mod = module.get();
-    util::ieee_float auto_tau = mod.read_var(param::channel_var::AutoTau, number);
+    util::numerics::ieee_float auto_tau = mod.read_var(param::channel_var::AutoTau, number);
     if (auto_tau == 0xFFFFFFFF) {
         return -1.0;
     }
@@ -513,14 +515,14 @@ double channel::autotau() {
 
 double channel::tau() {
     module::module& mod = module.get();
-    util::ieee_float preamp_tau = mod.read_var(param::channel_var::PreampTau, number);
+    util::numerics::ieee_float preamp_tau = mod.read_var(param::channel_var::PreampTau, number);
     return preamp_tau;
 }
 
 void channel::tau(double value) {
     module::module& mod = module.get();
 
-    param::value_type preamp_tau = util::ieee_float(value);
+    param::value_type preamp_tau = util::numerics::ieee_float(value);
 
     mod.write_var(param::channel_var::PreampTau, preamp_tau, number);
 

@@ -31,7 +31,7 @@
 #include <pixie/fw.hpp>
 #include <pixie/log.hpp>
 #include <pixie/param.hpp>
-#include <pixie/util.hpp>
+#include <pixie/utils/io.hpp>
 
 #include <pixie/pixie16/channel.hpp>
 #include <pixie/pixie16/defs.hpp>
@@ -435,7 +435,7 @@ void address_map::range::set_size() {
 address_map::address_map() : vars(0), module_vars(0), channel_vars(0), vars_per_channel(0) {}
 
 void address_map::range::output(std::ostream& out) const {
-    util::ostream_guard guard(out);
+    util::io::ostream_guard guard(out);
     out << std::showbase << std::hex << '[' << start << ',' << end << std::dec << ")," << size;
 }
 

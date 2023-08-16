@@ -21,7 +21,8 @@
  */
 
 #include <pixie/error.hpp>
-#include <pixie/util.hpp>
+#include <pixie/utils/io.hpp>
+#include <pixie/utils/numerics.hpp>
 
 #include <pixie/data/list_mode.hpp>
 
@@ -155,7 +156,7 @@ bool record::operator>(const record& rhs) const {
 }
 
 void record::output(std::ostream& out) const {
-    util::ostream_guard flags(out);
+    util::io::ostream_guard flags(out);
     /*
      * We add the to_string on the time to ensure that the double value is not
      * truncated in the stream. See the "Verify streamed output" test case.
@@ -720,7 +721,7 @@ PIXIE_EXPORT void PIXIE_API decode_data_block(
                     evt.energy_sums.push_back(data[header_config.esums_offset + i]);
                 } else {
                     evt.filter_baseline =
-                        util::ieee_float(data[header_config.esums_offset + num_esum_words - 1]);
+                        util::numerics::ieee_float(data[header_config.esums_offset + num_esum_words - 1]);
                 }
             }
         }

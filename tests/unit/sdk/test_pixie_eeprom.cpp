@@ -25,6 +25,7 @@
 
 #include <doctest/doctest.h>
 #include <pixie/eeprom.hpp>
+#include <pixie/utils/string.hpp>
 
 using eeprom_error = xia::pixie::eeprom::error;
 
@@ -119,8 +120,8 @@ static void load(const std::string rev, xia::pixie::eeprom::eeprom& eeprom) {
         eeprom.clear();
         eeprom.data.resize(xia::pixie::hw::eeprom_block_size);
         for (auto& s : std::get<1>(*edi)) {
-            xia::util::strings ss;
-            xia::util::split(ss, s);
+            xia::util::string::strings ss;
+            xia::util::string::split(ss, s);
             if (ss.size() != 17) {
                 throw std::runtime_error("invalid EEPROM format: rev=" + rev);
             }
@@ -131,8 +132,8 @@ static void load(const std::string rev, xia::pixie::eeprom::eeprom& eeprom) {
             for (int b = 0; b < 7; ++b) {
                 eeprom.data[a + b] = get_value<uint8_t>(ss[b + 1], 16);
             }
-            xia::util::strings ss7_8;
-            xia::util::split(ss7_8, ss[8], '-');
+            xia::util::string::strings ss7_8;
+            xia::util::string::split(ss7_8, ss[8], '-');
             if (ss7_8.size() != 2) {
                 throw std::runtime_error("invalid EEPROM format: rev=" + rev);
             }

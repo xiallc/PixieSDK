@@ -28,7 +28,7 @@
 #include <vector>
 
 #include <pixie/error.hpp>
-#include <pixie/util.hpp>
+#include <pixie/utils/crc.hpp>
 
 #include <pixie/pixie16/hw.hpp>
 
@@ -159,7 +159,7 @@ struct eeprom {
     using db_assembles = xia::pixie::eeprom::db_assembles;
 
     contents data;
-    util::crc32 crc;
+    util::crc::crc32 crc;
 
     header hdr;
 

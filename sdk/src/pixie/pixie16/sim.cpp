@@ -25,7 +25,8 @@
 #include <fstream>
 
 #include <pixie/log.hpp>
-#include <pixie/util.hpp>
+#include <pixie/utils/string.hpp>
+#include <pixie/utils/time.hpp>
 
 #include <pixie/pixie16/sim.hpp>
 
@@ -182,9 +183,9 @@ void module::load_var_defaults(std::istream& input) {
     for (std::string line; std::getline(input, line);) {
         line = line.substr(0, line.find('#', 0));
         if (!line.empty()) {
-            util::trim(line);
-            util::strings label_value;
-            util::split(label_value, line, '=');
+            util::string::trim(line);
+            util::string::strings label_value;
+            util::string::split(label_value, line, '=');
             if (label_value.size() == 2) {
                 label_value[1] = label_value[1].substr(0, label_value[1].find('(', 0));
                 if (param::is_module_var(label_value[0])) {
@@ -268,14 +269,14 @@ void load_module_defs(std::istream& input) {
 }
 
 void add_module_def(const std::string mod_desc, const char delimiter) {
-    util::strings fields;
-    util::split(fields, mod_desc, delimiter);
+    util::string::strings fields;
+    util::string::split(fields, mod_desc, delimiter);
 
     module_def mod_def;
 
     for (auto field : fields) {
-        util::strings label_value;
-        util::split(label_value, field, '=');
+        util::string::strings label_value;
+        util::string::split(label_value, field, '=');
         if (label_value.size() != 2) {
             throw error(error::code::invalid_value, "invalid module definition: " + field);
         }

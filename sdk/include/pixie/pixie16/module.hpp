@@ -40,6 +40,7 @@
 #include <pixie/param.hpp>
 #include <pixie/stats.hpp>
 #include <pixie/sync.hpp>
+#include <pixie/utils/time.hpp>
 
 #include <pixie/pixie16/backplane.hpp>
 #include <pixie/pixie16/channel.hpp>
@@ -205,7 +206,7 @@ public:
     private:
         bool calc_bandwidth(bool update_min_max = true);
 
-        util::timepoint interval;
+        util::time::timepoint interval;
         uint64_t last_update;
         size_t last_dma_in;
     };
@@ -387,7 +388,7 @@ public:
     /*
      * Run stats, only updated when a run is active
      */
-    util::timepoint run_interval; /* Period of the run */
+    util::time::timepoint run_interval; /* Period of the run */
     fifo_stats run_stats;
 
     /**

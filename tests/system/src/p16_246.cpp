@@ -81,7 +81,7 @@ int main() {
 
         size_t last_fifo_val = 0;
         size_t fifo_change_timeout = 10;
-        xia::util::timepoint fifo_change_time;
+        xia::util::time::timepoint fifo_change_time;
         while (fifo_change_time.secs() < fifo_change_timeout) {
             auto level = fifo.level();
             xia_log(xia::log::level::info) << "On-board FIFO level: " << level;
@@ -101,7 +101,7 @@ int main() {
         xia_log(xia::log::level::info) << "On-board FIFO level hasn't changed in " << fifo_change_time << ". It's filled up!";
 
         static const size_t wait_in_seconds = 120;
-        xia::util::timepoint timepoint;
+        xia::util::time::timepoint timepoint;
         timepoint.start();
         while (timepoint.secs() < wait_in_seconds) {
             xia_log(xia::log::level::info)

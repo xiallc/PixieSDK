@@ -32,7 +32,9 @@
 
 #include <pixie/config.hpp>
 #include <pixie/log.hpp>
-#include <pixie/util.hpp>
+#include <pixie/utils/io.hpp>
+#include <pixie/utils/string.hpp>
+#include <pixie/utils/time.hpp>
 
 #include <pixie/pixie16/crate.hpp>
 #include <pixie/pixie16/legacy.hpp>
@@ -102,7 +104,7 @@ struct module_thread_worker {
 
     std::atomic_bool running;
     bool has_error;
-    xia::util::timepoint period;
+    xia::util::time::timepoint period;
     size_t total;
     size_t last_total;
 
@@ -897,11 +899,11 @@ static std::vector<T> get_values(
         values.resize(max_count);
         std::iota(values.begin(), values.end(), 0);
     } else {
-        xia::util::strings sc;
-        xia::util::split(sc, opt, ',');
+        xia::util::string::strings sc;
+        xia::util::string::split(sc, opt, ',');
         for (auto& slots : sc) {
-            xia::util::strings sd;
-            xia::util::split(sd, slots, '-');
+            xia::util::string::strings sd;
+            xia::util::string::split(sd, slots, '-');
             if (sd.size() == 1) {
                 T val = get_value<T>(sd[0]);
                 if (val < T(max_count)) {
@@ -1272,7 +1274,7 @@ static void firmware_load(command_context& context) {
 static void initialize(command_context& context) {
     auto& crate = context.crate;
     auto& opts = context.opts;
-    xia::util::timepoint tp;
+    xia::util::time::timepoint tp;
     if (opts.verbose) {
         opts.out << "crate: initialize" << std::endl;
         tp.start();
@@ -1324,8 +1326,8 @@ static void load_commands(const std::string& name, command::arguments& cmds) {
     while (getline(in, line)) {
         string_replace(line, '\r', ' ');
         string_replace(line, '\t', ' ');
-        xia::util::strings sc;
-        xia::util::split(sc, line);
+        xia::util::string::strings sc;
+        xia::util::string::split(sc, line);
         if (!sc.empty()) {
             cmds.insert(std::end(cmds), std::begin(sc), std::end(sc));
         }
@@ -1360,7 +1362,7 @@ static void module_check(xia::pixie::crate::module_crate& crate, std::vector<siz
 
 template<typename V>
 static void output_value(std::ostream& out, const std::string& name, V value) {
-    xia::util::ostream_guard oguard(out);
+    xia::util::io::ostream_guard oguard(out);
     out << name << " = " << value;
     if (!std::is_same<V, double>::value) {
         out << std::hex << " (0x" << value << ')';
@@ -1404,8 +1406,8 @@ void module_threads(
     error::code first_error = error::code::success;
     size_t finished = 0;
     size_t show_secs = 5;
-    xia::util::timepoint duration(true);
-    xia::util::timepoint interval(true);
+    xia::util::time::timepoint duration(true);
+    xia::util::time::timepoint interval(true);
     while (finished != threads.size()) {
         finished = threads.size();
         for (size_t t = 0; t < threads.size(); ++t) {
@@ -1447,8 +1449,8 @@ void module_threads(
                     std::ostringstream oss;
                     oss << ' ' << active << std::setw(2) << w.number
                         << ": total: " << std::setw(8)
-                        << xia::util::humanize(bytes) << " rate: " << std::setw(8)
-                        << xia::util::humanize(rate) << " bytes/sec pci: bus=" << w.pci_bus
+                        << xia::util::io::humanize(bytes) << " rate: " << std::setw(8)
+                        << xia::util::io::humanize(rate) << " bytes/sec pci: bus=" << w.pci_bus
                         << " slot=" << w.pci_slot;
                     context.opts.out << oss.str() << std::endl;
                     xia_log(xia::log::info) << oss.str();
@@ -1459,9 +1461,9 @@ void module_threads(
             }
             all_total *= sizeof(xia::pixie::hw::word);
             std::ostringstream oss;
-            oss << " all: total: " << std::setw(8) << xia::util::humanize(all_total)
+            oss << " all: total: " << std::setw(8) << xia::util::io::humanize(all_total)
                 << " rate: " << std::setw(8)
-                << xia::util::humanize(double(all_total) / duration.secs()) << " bytes/sec";
+                << xia::util::io::humanize(double(all_total) / duration.secs()) << " bytes/sec";
             context.opts.out << oss.str() << std::endl;
             xia_log(xia::log::info) << oss.str();
         }
@@ -1512,9 +1514,9 @@ void performance_stats(
             auto rate = double(bytes) / w.period.secs();
             dr_oss << "module: num:" << std::setw(2) << w.number << " slot:" << std::setw(2)
                    << w.slot << ": data received: "
-                   << std::setw(8) << xia::util::humanize(bytes)
+                   << std::setw(8) << xia::util::io::humanize(bytes)
                    << " bytes (" << std::setw(9) << bytes << "), rate: " << std::setw(8)
-                   << xia::util::humanize(rate) << " bytes/sec pci: bus=" << w.pci_bus
+                   << xia::util::io::humanize(rate) << " bytes/sec pci: bus=" << w.pci_bus
                    << " slot=" << w.pci_slot;
             context.opts.out << dr_oss.str() << std::endl;
             xia_log(xia::log::info) << dr_oss.str();
@@ -1522,8 +1524,8 @@ void performance_stats(
     }
     total *= sizeof(xia::pixie::hw::word);
     std::stringstream oss;
-    oss << "data received: " << xia::util::humanize(total) << " bytes (" << total
-        << "), rate: " << xia::util::humanize(double(total) / secs, " bytes/sec");
+    oss << "data received: " << xia::util::io::humanize(total) << " bytes (" << total
+        << "), rate: " << xia::util::io::humanize(double(total) / secs, " bytes/sec");
     context.opts.out << oss.str() << std::endl;
     xia_log(xia::log::info) << oss.str();
 }
@@ -1676,7 +1678,7 @@ static void boot(command_context& context) {
             throw std::runtime_error("boot: invalid option: " + opt);
         }
     }
-    xia::util::timepoint tp;
+    xia::util::time::timepoint tp;
     if (context.opts.verbose) {
         bool dsp_boot_forced = boot_params.boot_comms || boot_params.boot_fippi;
         context.opts.out << std::boolalpha
@@ -1805,7 +1807,7 @@ static void db(command_context& context) {
 static void export_(command_context& context) {
     auto& crate = context.crate;
     auto file_opt = context.cmd.get_arg();
-    xia::util::timepoint tp;
+    xia::util::time::timepoint tp;
     tp.start();
     crate->export_config(file_opt);
     tp.end();
@@ -1940,7 +1942,7 @@ static void hist_start(command_context& context) {
 static void import(command_context& context) {
     auto& crate = context.crate;
     auto path_opt = context.cmd.get_arg();
-    xia::util::timepoint tp;
+    xia::util::time::timepoint tp;
     xia::pixie::module::number_slots modules;
     tp.start();
     crate->import_config(path_opt, modules);
@@ -2228,8 +2230,8 @@ static void get_memory_reg(
     tolower(reg);
     auto has_mem_field = mem_reg.find(':') != std::string::npos;
     if (has_mem_field) {
-        xia::util::strings mr;
-        xia::util::split(mr, mem_reg, ':');
+        xia::util::string::strings mr;
+        xia::util::string::split(mr, mem_reg, ':');
         if (mr.size() != 2) {
             throw std::runtime_error(
                 label + ": invalid reg format: " + mem_reg);
@@ -2638,7 +2640,7 @@ static void test(command_context& context) {
         t.length = (bytes) / sizeof(xia::pixie::hw::word);
     }
     context.opts.out << "Test: " << mode_opt << " (" << int(mode)
-                     << ") length=" << xia::util::humanize(bytes)
+                     << ") length=" << xia::util::io::humanize(bytes)
                      << std::endl;
     module_threads(context, mod_nums, tests, "fifo test error; see log");
     performance_stats(context, tests, true);
@@ -2928,7 +2930,7 @@ int main(int argc, char* argv[]) {
     }
 
     try {
-        xia::util::timepoint run;
+        xia::util::time::timepoint run;
         run.start();
 
         std::string log;

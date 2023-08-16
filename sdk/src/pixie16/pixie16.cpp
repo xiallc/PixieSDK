@@ -31,7 +31,7 @@
 #include <pixie/log.hpp>
 #include <pixie/os_compat.hpp>
 #include <pixie/stats.hpp>
-#include <pixie/util.hpp>
+#include <pixie/utils/numerics.hpp>
 
 #include <pixie/pixie16/crate.hpp>
 #include <pixie/pixie16/legacy.hpp>
@@ -217,11 +217,11 @@ T test_bit(const std::string& name, unsigned short& bit, T value) {
 }
 
 PIXIE_EXPORT double PIXIE_API IEEEFloating2Decimal(unsigned int IEEEFloatingNumber) {
-    return double(xia::util::ieee_float(IEEEFloatingNumber));
+    return double(xia::util::numerics::ieee_float(IEEEFloatingNumber));
 }
 
 PIXIE_EXPORT unsigned int PIXIE_API Decimal2IEEEFloating(double DecimalNumber) {
-    return (unsigned int) (xia::util::ieee_float(DecimalNumber));
+    return (unsigned int) (xia::util::numerics::ieee_float(DecimalNumber));
 }
 
 PIXIE_EXPORT unsigned int PIXIE_API Pixie16GetStatisticsSize(void) {

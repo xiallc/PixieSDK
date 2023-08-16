@@ -28,7 +28,7 @@
 #include <sstream>
 
 #include <pixie/log.hpp>
-#include <pixie/util.hpp>
+#include <pixie/utils/io.hpp>
 
 #include <pixie/pixie16/channel.hpp>
 #include <pixie/pixie16/csr.hpp>
@@ -77,7 +77,7 @@ error::error(const int num, const hw::slot_type slot, const code type, const cha
     : pixie::error::error(type, make_what(num, slot, what)) {}
 
 void error::output(std::ostream& out) {
-    util::ostream_guard flags(out);
+    util::io::ostream_guard flags(out);
     out << std::setfill(' ') << "error: code=" << std::setw(2) << result() << ' ' << what();
 }
 
@@ -2170,7 +2170,7 @@ void module::select_port(const int port) {
 }
 
 void module::output(std::ostream& out) const {
-    util::ostream_guard flags(out);
+    util::io::ostream_guard flags(out);
     if (present()) {
         out << std::boolalpha;
         out << "slot: ";
@@ -2207,7 +2207,7 @@ char module::revision_label() const {
 }
 
 void module::report(std::ostream& out) const {
-    util::ostream_guard flags(out);
+    util::io::ostream_guard flags(out);
 
     out << std::fixed << std::setprecision(3) << std::boolalpha;
 
@@ -2301,7 +2301,7 @@ void module::dma_read(const hw::address source, hw::word_ptr values, const size_
         throw error(number, slot, error::code::device_dma_failure, "bus lock not held");
     }
 
-    util::timepoint tp;
+    util::time::timepoint tp;
     tp.start();
 
     PLX_DMA_PARAMS dma_params;
@@ -2884,7 +2884,7 @@ void module::fifo_worker() {
                      * queued. This can be used to verify the data received by the
                      * user API.
                      */
-                    util::crc32 crc;
+                    util::crc::crc32 crc;
                     if (logging::level_logging(log::debug)) {
                         crc.update(*buf);
                     }
@@ -3002,7 +3002,7 @@ void module::fifo_worker() {
 
 void module::calc_i2c_bus_speed() {
     const size_t count = 5000;
-    util::timepoint tp;
+    util::time::timepoint tp;
     {
         module::module::bus_guard guard(*this);
         size_t polls = count;
@@ -3028,7 +3028,7 @@ void module::calc_io_cpld_bus_speed() {
                         << "PCI io-cpld-rdcs-in=0x" << std::hex
                         << read_word(hw::device::CFG_RDCS);
     const size_t count = 5000;
-    util::timepoint tp;
+    util::time::timepoint tp;
     {
         module::module::bus_guard guard(*this);
         size_t polls = count;

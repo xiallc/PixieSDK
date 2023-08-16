@@ -21,7 +21,7 @@
  */
 
 #include <pixie/log.hpp>
-#include <pixie/util.hpp>
+#include <pixie/utils/time.hpp>
 
 #include <pixie/pixie16/csr.hpp>
 #include <pixie/pixie16/defs.hpp>
@@ -150,7 +150,7 @@ void start(module::module& module, run_mode mode, run_task run_tsk, control_task
 void end(module::module& module) {
     if (active(module)) {
         xia_log(log::debug) << module::module_label(module, "run") << "ending";
-        util::timepoint tp;
+        util::time::timepoint tp;
         int wait_msecs = 1000;
         int msecs = 0;
         module.run_task = run_task::run_stopping;
@@ -258,7 +258,7 @@ void control_run_on_dsp(module::module& module, control_task control_tsk, int wa
 void control(module::module& module, control_task control_tsk, int wait_msecs) {
     xia_log(log::debug) << module::module_label(module, "run")
                         << "control=" << control_task_labels(control_tsk) << " wait=" << wait_msecs;
-    util::timepoint tp;
+    util::time::timepoint tp;
     tp.start();
     if (control_task_prerun(module, control_tsk, wait_msecs)) {
         control_run_on_dsp(module, control_tsk, wait_msecs);

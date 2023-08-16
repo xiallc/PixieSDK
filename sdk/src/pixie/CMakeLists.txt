@@ -10,8 +10,11 @@ set(SDK_COMMON_SOURCES
         buffer.cpp
         error.cpp
         log.cpp
-        util.cpp
-        )
+        utils/crc.cpp
+        utils/numerics.cpp
+        utils/path.cpp
+        utils/string.cpp
+        utils/time.cpp)
 
 add_library(PixieSdkCommonObjLib OBJECT ${SDK_COMMON_SOURCES})
 set_property(TARGET PixieSdkCommonObjLib PROPERTY POSITION_INDEPENDENT_CODE 1)

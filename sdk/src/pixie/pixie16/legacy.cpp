@@ -29,7 +29,7 @@
 #include <sstream>
 
 #include <pixie/param.hpp>
-#include <pixie/util.hpp>
+#include <pixie/utils/io.hpp>
 
 #include <pixie/pixie16/hw.hpp>
 #include <pixie/pixie16/legacy.hpp>
@@ -194,7 +194,7 @@ size_t settings::address(const param::channel_var_desc& desc, int channel, size_
 }
 
 void settings::output(std::ostream& out) const {
-    util::ostream_guard guard(out);
+    util::io::ostream_guard guard(out);
     out << "num modules: " << num_modules() << " (" << dsp_mem.size() << ')' << std::left
         << std::endl;
     for (auto module = 0; module < num_modules(); ++module) {

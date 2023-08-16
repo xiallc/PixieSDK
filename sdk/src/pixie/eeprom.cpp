@@ -25,7 +25,7 @@
 
 #include <pixie/eeprom.hpp>
 #include <pixie/log.hpp>
-#include <pixie/util.hpp>
+#include <pixie/utils/numerics.hpp>
 
 namespace xia {
 namespace pixie {
@@ -454,7 +454,7 @@ double eeprom::get_float(const tag key, size_t count) {
         throw_bad_tag_type(key);
     }
     size_t offset = find(key, count);
-    return util::ieee_float(get32<util::ieee_float::value_type>(offset));
+    return util::numerics::ieee_float(get32<util::numerics::ieee_float::value_type>(offset));
 }
 
 mac_addr eeprom::get_mac(const tag key, size_t count) {
