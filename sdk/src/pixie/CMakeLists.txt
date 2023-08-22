@@ -12,6 +12,7 @@ set(SDK_COMMON_SOURCES
         error.cpp
         log.cpp
         utils/crc.cpp
+        utils/io.cpp
         utils/numerics.cpp
         utils/path.cpp
         utils/string.cpp

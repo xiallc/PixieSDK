@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 /*
- * Copyright 2021 XIA LLC, All rights reserved.
+ * Copyright 2023 XIA LLC, All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@
 #ifndef PIXIESDK_UTIL_IO_HPP
 #define PIXIESDK_UTIL_IO_HPP
 
+#include <atomic>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
@@ -39,6 +40,7 @@ namespace xia {
  */
 namespace util {
 namespace io {
+
 /**
  * @brief Save and restore the output stream's settings.
  */
@@ -202,6 +204,103 @@ std::string humanize(T value, const std::string suffix = "") {
     oss << std::setprecision(3) << std::fixed << num << *unit << suffix;
     return oss.str();
 }
+
+/**
+ * @brief Struct to represent file reading/writing
+ */
+struct file {
+    enum struct flag {
+        ro,
+        wr,
+        rw,
+        wr_trunc,
+        rw_trunc
+    };
+
+    enum struct seek_mode {
+        set,
+        cur,
+        end
+    };
+
+    using value_ptr = void*;
+    using const_value_ptr = const void*;
+
+    std::atomic_int handle;
+
+    file();
+    ~file();
+
+    /**
+     * Checks that the file has a valid file handle
+     */
+    bool valid() {
+        return handle >= 0;
+    }
+    /**
+     * Closes the file and resets the file handle.
+     */
+    void close();
+    /**
+     * Creates a file with the given filename/path. The file can be created with read-only, write-only,
+     * or read/write permissions depending on the flag.
+     */
+    void create(const std::string& filename, flag flag);
+    /**
+     * Opens a file with the given filename/path. The file can be opened with read-only, write-only,
+     * or read/write permissions depending on the flag.
+     */
+    void open(const std::string& filename, flag flag);
+    /**
+     * Performs lseek on the file. Mode determines where the file offset occurs:
+     * SEEK_SET = start + offset, SEEK_CUR = current + offset, SEEK_END = end + offset
+     */
+    template<typename S>
+    size_t seek(S offset, seek_mode mode) {
+        return seek(static_cast<int64_t>(offset), mode);
+    }
+    /**
+     * Reads a vector of data from the file.
+     */
+    template<typename D>
+    size_t read(std::vector<D>& data) {
+        return read(
+            reinterpret_cast<value_ptr>(data.data()),static_cast<size_t>(data.size()));
+    }
+    /**
+     * Reads a vector of data from the file.
+     */
+    template<typename D, typename S>
+    size_t read(std::vector<D>& data, S size) {
+        return read(
+            reinterpret_cast<value_ptr>(data.data()), static_cast<size_t>(size));
+    }
+    /**
+     * Writes a vector of data from the file.
+     */
+    template<typename D>
+    size_t write(const std::vector<D>& data) {
+        return write(
+            static_cast<const_value_ptr>(data.data()), static_cast<size_t>(data.size()));
+    }
+    /**
+     * Writes a vector of data from the file.
+     */
+    template<typename D, typename S>
+    size_t write(const std::vector<D>& data, S size) {
+        return write(
+            static_cast<const_value_ptr>(data.data()), static_cast<size_t>(size));
+    }
+
+private:
+    /*
+     * Declared here to resolve their respective template functions.
+     */
+    int64_t seek(int64_t offset, seek_mode mode);
+    size_t read(value_ptr data, size_t size);
+    size_t write(const_value_ptr data, size_t size);
+};
+
 } // namespace io
 } // namespace util
 } // namespace xia

@@ -439,6 +439,109 @@ TEST_SUITE("xia::util") {
               xia::pixie::error::code::success);
     }
 
+    TEST_CASE("file util") {
+        xia::util::io::file file;
+        CHECK(file.handle == -1);
+        CHECK(file.valid() == false);
+
+        const std::vector<uint8_t> data = {2, 3, 5};
+        const std::vector<char> data2 = {'A', 'B', 'C'};
+        std::vector<uint8_t> read;
+
+        CHECK_THROWS_WITH_AS(
+            file.write(data, data.size()), "io: file: write: not open",
+            xia::pixie::error::error);
+        CHECK_THROWS_WITH_AS(
+            file.read(read, data.size()), "io: file: read: not open",
+            xia::pixie::error::error);
+
+        std::string time = xia::util::time::datetime_iso8601();
+        xia::util::time::datetime_iso8601_as_filename(time);
+        std::string filename = "test_file_" + time + ".txt";
+        CHECK_THROWS_WITH_AS(
+            file.open(filename, file.flag::rw),
+            "io: file: open: No such file or directory",
+            xia::pixie::error::error);
+        CHECK_NOTHROW(file.create(filename, file.flag::rw));
+        CHECK(file.valid() == true);
+        CHECK_NOTHROW(file.close());
+        CHECK(file.valid() == false);
+
+        CHECK_NOTHROW(file.open(filename, file.flag::rw));
+        CHECK(file.valid() == true);
+
+
+        CHECK(file.write(data, data.size()) == data.size());
+        CHECK(file.seek(0, file.seek_mode::cur) == data.size());
+        CHECK(file.write(data) == data.size());
+        CHECK(file.seek(0, file.seek_mode::cur) == data.size() * 2);
+
+        CHECK(file.write(data2, data2.size()) == data2.size());
+
+        size_t full_size = data.size() * 2 + data2.size();
+
+        read.clear();
+        read.resize(full_size);
+
+        CHECK(file.seek(0, file.seek_mode::set) == 0);
+        CHECK(file.read(read) == full_size);
+        CHECK(read[0] == 2);
+        CHECK(read[1] == 3);
+        CHECK(read[2] == 5);
+        CHECK(read[3] == 2);
+        CHECK(read[4] == 3);
+        CHECK(read[5] == 5);
+        CHECK(read[6] == 'A');
+        CHECK(read[7] == 'B');
+        CHECK(read[8] == 'C');
+
+        read.clear();
+        read.resize(full_size);
+        CHECK(file.seek(0, file.seek_mode::set) == 0);
+        CHECK(file.read(read, full_size) == full_size);
+        CHECK(read[0] == 2);
+        CHECK(read[1] == 3);
+        CHECK(read[2] == 5);
+        CHECK(read[3] == 2);
+        CHECK(read[4] == 3);
+        CHECK(read[5] == 5);
+        CHECK(read[6] == 'A');
+        CHECK(read[7] == 'B');
+        CHECK(read[8] == 'C');
+
+        read.clear();
+        read.resize(full_size);
+        CHECK(file.seek(data.size(), file.seek_mode::set) == data.size());
+        CHECK(file.read(read, full_size) == data.size() + data2.size());
+        CHECK(read[0] == 2);
+        CHECK(read[1] == 3);
+        CHECK(read[2] == 5);
+        CHECK(read[3] == 'A');
+        CHECK(read[4] == 'B');
+        CHECK(read[5] == 'C');
+
+        CHECK_NOTHROW(file.close());
+        CHECK(file.valid() == false);
+
+        CHECK_NOTHROW(file.open(filename, file.flag::rw_trunc));
+        CHECK(file.valid() == true);
+        CHECK(file.seek(0, file.seek_mode::end) == 0);
+
+        xia::util::thread::workers threads;
+        for (size_t t = 0; t < 6; ++t) {
+            threads.emplace_back(
+                [&file]() {
+                    file.close();
+        });}
+        for (auto& t : threads) {
+            t.start();
+        }
+        CHECK(xia::util::thread::wait_until_finished(threads, 5) == xia::pixie::error::code::success);
+
+        CHECK(file.valid() == false);
+        CHECK(remove(filename.c_str()) == 0);
+    }
+
     TEST_CASE("version") {
         xia::util::version::version v1;
         CHECK(xia::util::version::to_string(v1) == "0.1.0");

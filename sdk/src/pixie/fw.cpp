@@ -35,20 +35,14 @@
 #include <pixie/error.hpp>
 #include <pixie/fw.hpp>
 #include <pixie/log.hpp>
+#include <pixie/utils/io.hpp>
 #include <pixie/utils/path.hpp>
 #include <pixie/utils/string.hpp>
 #include <pixie/utils/time.hpp>
 
 #include <sys/stat.h>
-#include <fcntl.h>
 
 using json = nlohmann::json;
-
-#ifdef XIA_PIXIE_WINDOWS
-    #include <io.h>
-#else
-    #include <unistd.h>
-#endif
 
 namespace xia {
 namespace pixie {
@@ -152,48 +146,26 @@ void firmware::load() {
          * Use C and the standard file system interfaces. They are faster
          * than the C++ stream interface
          */
-        int fd = -1;
+        util::io::file file;
         try {
-#ifdef XIA_PIXIE_WINDOWS
-            fd = ::_open(filename.c_str(), O_RDONLY);
-#else
-            fd = ::open(filename.c_str(), O_RDONLY);
-#endif
-            if (fd < 0) {
-                throw error(error::code::file_not_found,
-                            "firmware: image open: " + tag + ": " + std::strerror(errno));
-            }
+            file.open(filename, file.flag::ro);
             struct stat sb;
-            int r = ::fstat(fd, &sb);
-            if (r < 0) {
-                throw error(error::code::file_not_found,
-                            "firmware: image stat: " + tag + ": " + std::strerror(errno));
-            }
+            ::fstat(file.handle, &sb);
             size_t size = size_t(sb.st_size);
             data.resize(size);
-#ifdef XIA_PIXIE_WINDOWS
-            r = ::_read(fd, data.data(), static_cast<unsigned int>(size));
-#else
-            r = ::read(fd, data.data(), static_cast<unsigned int>(size));
-
-#endif
-            if (r < 0) {
-                throw error(error::code::file_not_found,
-                            "firmware: image read: " + tag + ": " + std::strerror(errno));
-            }
-#ifdef XIA_PIXIE_WINDOWS
-            ::_close(fd);
-#else
-            ::close(fd);
-#endif
+            file.read(data, size);
+            file.close();
             total_image_size += size;
+        } catch (pixie::error::error& e) {
+            if (file.valid()) {
+                file.close();
+            }
+            std::stringstream error_tag;
+            error_tag << e.what() <<  ": " << tag;
+            throw error(e.type, error_tag.str());
         } catch (...) {
-            if (fd >= 0) {
-#ifdef XIA_PIXIE_WINDOWS
-                ::_close(fd);
-#else
-                ::close(fd);
-#endif
+            if (file.valid()) {
+                file.close();
             }
             throw;
         }
