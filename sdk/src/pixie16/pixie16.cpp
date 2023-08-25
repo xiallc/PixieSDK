@@ -1950,3 +1950,13 @@ PIXIE_EXPORT int PIXIE_API PixieReadRunFifoStats(unsigned short mod_num,
     }
     return 0;
 }
+
+PIXIE_EXPORT const char* PIXIE_API PixieGetInstallationPath(const enum PIXIE_INSTALL_PATH opt, ...) {
+    switch (opt) {
+        case PIXIE_PATH_FIRMWARE_DEFAULT:
+            return xia::pixie::firmware::system_firmware_path;
+        default:
+            break;
+    }
+    return NULL;
+}

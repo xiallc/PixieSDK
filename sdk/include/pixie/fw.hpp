@@ -320,7 +320,7 @@ firmware parse(const std::string fw_desc, const char delimiter = ':');
 /**
  * @brief The default path for the location of firmware in the user's filesystem
  */
-extern std::string system_firmware_path;
+extern const char* system_firmware_path;
 
 /**
  * @brief Data structure holding the information of a firmware file from the filesystem

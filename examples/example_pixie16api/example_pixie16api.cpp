@@ -45,6 +45,8 @@
 
 #ifdef XIA_PIXIE_WINDOWS
 #include <isakbosman/dirent.h>
+#else
+#include <dirent.h>
 #endif
 
 std::string walltime_iso_string() {
@@ -101,7 +103,6 @@ struct configuration {
     unsigned short num_modules() const {
         return (unsigned short) (modules.size());
     }
-    bool auto_firmware = true;
 };
 
 std::string generate_filename(const std::string& type, const std::string& ext,
@@ -109,7 +110,7 @@ std::string generate_filename(const std::string& type, const std::string& ext,
     return dir + "pixie16api-" + type + "." + ext;
 }
 
-void verify_json_module(const nlohmann::json& mod, bool auto_fw) {
+void verify_json_module(const nlohmann::json& mod) {
     if (!mod.contains("slot")) {
         throw std::invalid_argument("Missing slot definition in configuration element.");
     }
@@ -121,21 +122,6 @@ void verify_json_module(const nlohmann::json& mod, bool auto_fw) {
     if (!mod["dsp"].contains("par")) {
         throw std::invalid_argument(
             "Missing dsp object in configuration element: par.");
-    }
-
-    if (!auto_fw) {
-        if (!mod["dsp"].contains("ldr") || !mod["dsp"].contains("var")) {
-            throw std::invalid_argument(
-                "Missing dsp object in configuration element: ldr, dsp, or par.");
-        }
-
-        if (!mod.contains("fpga")) {
-            throw std::invalid_argument("Missing fpga object in configuration element.");
-        }
-
-        if (!mod["fpga"].contains("fippi") || !mod["fpga"].contains("sys")) {
-            throw std::invalid_argument("Missing fpga firmware definition (fippi or sys).");
-        }
     }
 
     if (mod.contains("fw")) {
@@ -203,7 +189,7 @@ void read_config(const std::string& config_file_name, configuration& cfg) {
 
     cfg.slot_def.clear();
     for (const auto& module : jf) {
-        verify_json_module(module, cfg.auto_firmware);
+        verify_json_module(module);
 
         cfg.slot_def.push_back(module["slot"]);
 
@@ -1069,6 +1055,21 @@ bool register_firmware(const mod_cfg& mod) {
     return true;
 }
 
+bool is_directory(std::string& direc) {
+    struct stat info;
+    const char* dir = direc.c_str();
+    if (stat(dir, &info) != 0) {
+        std::cout << LOG("ERROR") << "cannot access " << dir << std::endl;
+        return false;
+    }
+    if ((info.st_mode & S_IFDIR) == 0) {
+        std::cout << LOG("ERROR") << dir << " is not a valid directory." << std::endl;
+        return false;
+    }
+    std::cout << LOG("INFO") << dir << " is a valid directory." << std::endl;
+    return true;
+}
+
 bool execute_boot(configuration& cfg, args::ValueFlag<std::string>& boot_flag,
                   args::ValueFlag<std::string>& add_cfg, args::ValueFlag<std::string>& basepath) {
     unsigned int boot_pattern = stoul(args::get(boot_flag), nullptr, 0);
@@ -1076,11 +1077,22 @@ bool execute_boot(configuration& cfg, args::ValueFlag<std::string>& boot_flag,
     if (add_cfg)
         boot_pattern = 0x70;
 
-    if (cfg.auto_firmware) {
-        int rc = Pixie16LoadModuleFirmware(basepath.Get().c_str());
+    std::string path = basepath.Get();
+    bool valid_path = true;
+    if (!is_directory(path)) {
+        path = PixieGetInstallationPath(PIXIE_PATH_FIRMWARE_DEFAULT);
+        if (!basepath || (basepath && !is_directory(path))) {
+            valid_path = false;
+            std::cout << LOG("ERROR") << "Given/default firmware paths do not exist"
+                      << std::endl;
+        }
+    }
+    if (valid_path) {
+        int rc = Pixie16LoadModuleFirmware(path.c_str());
         if (!verify_api_return_value(rc, "PixieLoadModuleFirmware", false))
             return false;
     }
+    std::cout << LOG("INFO") << "Getting firmware from configuration file:" << std::endl;
 
     for (const auto& mod : cfg.modules) {
         if (mod.has_firmware_files) {
@@ -1106,40 +1118,6 @@ bool execute_boot(configuration& cfg, args::ValueFlag<std::string>& boot_flag,
     if (!boot_crate(cfg.modules.front().dsp_par, boot_pattern))
         return false;
 
-    return true;
-}
-
-bool directory_check(args::ValueFlag<std::string>& direc) {
-    if (direc) {
-#if defined(_WIN64) || defined(_WIN32)
-        DIR* dir = nullptr;
-        try {
-            dir = ::opendir(direc.Get().c_str());
-            if (dir == nullptr) {
-                throw std::runtime_error("directory find path: " + direc.Get() + ": " +
-                                         std::strerror(errno));
-            }
-            ::closedir(dir);
-        } catch (...) {
-            if (dir != nullptr) {
-                ::closedir(dir);
-            }
-            return false;
-        }
-#else
-        struct stat info;
-        const char* dir = direc.Get().c_str();
-        if (stat(dir, &info) != 0) {
-            std::cout << LOG("ERROR") << "cannot access " << dir << std::endl;
-            return false;
-        } else if (info.st_mode & S_IFDIR) {
-            std::cout << LOG("INFO") << dir << " is a valid directory." << std::endl;
-        } else {
-            std::cout << LOG("ERROR") << dir << " is not a valid directory." << std::endl;
-            return false;
-        }
-#endif
-    }
     return true;
 }
 
@@ -1206,7 +1184,8 @@ int main(int argc, char** argv) {
     args::ValueFlag<std::string> directory(arguments, "directory",
                                            "The directory to write files to", {"output-dir"}, "");
     args::ValueFlag<std::string> firmware_path(arguments, "firmware_path",
-                                           "The path to retrieve firmware from", {'f', "firmware"});
+                                               "The path to retrieve firmware from", {'f', "firmware"},
+                                               PixieGetInstallationPath(PIXIE_PATH_FIRMWARE_DEFAULT));
     args::ValueFlag<unsigned int> module(arguments, "module", "The module to operate on.", {"mod"});
     args::ValueFlag<unsigned int> num_runs(
         arguments, "num_runs", "The number of runs to execute when taking list-mode or MCA data.",
@@ -1279,9 +1258,6 @@ int main(int argc, char** argv) {
 
     configuration cfg;
     int offline_mode = 0;
-    if (!firmware_path) {
-        cfg.auto_firmware = false;
-    }
 
     if (!is_offline) {
         if (conf_flag) {
@@ -1313,7 +1289,7 @@ int main(int argc, char** argv) {
               << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
               << std::endl;
 
-    if (!directory_check(directory))
+    if (directory && !is_directory(directory.Get()))
         return EXIT_FAILURE;
 
     std::string dir = directory.Get().c_str();

@@ -221,6 +221,12 @@ PIXIE_EXPORT int PIXIE_API PixieSetWorkerConfiguration(unsigned short mod_num,
 PIXIE_EXPORT int PIXIE_API PixieReadRunFifoStats(unsigned short mod_num,
                                                  struct module_fifo_stats* fifo_stats);
 
+enum PIXIE_INSTALL_PATH {
+    PIXIE_PATH_FIRMWARE_DEFAULT
+};
+
+PIXIE_EXPORT const char* PIXIE_API PixieGetInstallationPath(const enum PIXIE_INSTALL_PATH opt, ...);
+
 #ifdef __cplusplus
 }
 #endif

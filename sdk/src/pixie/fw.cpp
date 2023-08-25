@@ -397,7 +397,7 @@ firmware parse(const std::string fw_desc, const char delimiter) {
     return fw;
 }
 
-std::string system_firmware_path =
+const char* system_firmware_path =
 #ifdef XIA_PIXIE_WINDOWS
     "c:/xia/pixie-16/firmware";
 #else
@@ -525,9 +525,6 @@ void load_firmwares(
     crate& firmwares, std::string basepath) {
     descriptions all;
     descriptions latest;
-    if (basepath.empty()) {
-        basepath = system_firmware_path;
-    }
     find_firmwares(basepath, all);
     /*
      * Sort the firmwares found into the latest for each type of
