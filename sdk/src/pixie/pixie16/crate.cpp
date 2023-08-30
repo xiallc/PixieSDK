@@ -444,15 +444,6 @@ void crate::output(std::ostream& out) const {
     }
 }
 
-void crate::report(std::ostream& out) const {
-    for (auto& mod : slots) {
-        if (mod->present()) {
-            mod->report(out);
-            out << std::endl;
-        }
-    }
-}
-
 void crate::slot_event_func_set(slot_event_func& event_func) {
     lock_guard guard(lock_);
     slot_event_call = event_func;

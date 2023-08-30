@@ -262,11 +262,6 @@ struct config {
      * Clear the configuration
      */
     void clear();
-
-    /**
-     * Report the fixture's details
-     */
-    void report(std::ostream& out, const std::string& prefix = "") const;
 };
 
 typedef std::vector<config> configs;

@@ -72,11 +72,6 @@ void channel::read_adc(hw::adc_word* , size_t ) {
     unsupported_op("read ADC is using the DSP");
 }
 
-void channel::report(std::ostream& out, const std::string& prefix) const {
-    out << prefix << "Fixture        : " << label << std::endl;
-    config.report(out, prefix);
-}
-
 void channel::set(const std::string item, bool ) {
     unsupported_op("not set support: bool: " + item);
 }

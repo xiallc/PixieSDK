@@ -78,9 +78,6 @@ struct db : public channel {
     virtual void get(const std::string item, bool& value);
     virtual void get(const std::string item, int& value);
     virtual void get(const std::string item, double& value);
-
-    virtual void report(
-        std::ostream& out, const std::string& prefix = "") const override;
 };
 
 /**

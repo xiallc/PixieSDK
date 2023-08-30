@@ -1,5 +1,6 @@
 add_subdirectory(data)
 add_subdirectory(pixie16)
+add_subdirectory(reports)
 
 # These source files have some specificity to the Pixie-16 hardware. They'll eventually be
 # agnostic, but aren't yet. Ex. `eeprom.cpp` has a dependence on the "module" class.
@@ -22,7 +23,7 @@ set_property(TARGET PixieSdkCommonObjLib PROPERTY POSITION_INDEPENDENT_CODE 1)
 target_include_directories(PixieSdkCommonObjLib PUBLIC ${PROJECT_SOURCE_DIR}/sdk/include/ ${PROJECT_SOURCE_DIR}/externals/)
 xia_configure_target(TARGET PixieSdkCommonObjLib CONFIG_OBJ)
 
-add_library(PixieSdkObjLib OBJECT ${SDK_PIXIE16_SOURCES})
+add_library(PixieSdkObjLib OBJECT ${SDK_PIXIE16_SOURCES} ${SDK_REPORT_SOURCES})
 set_property(TARGET PixieSdkObjLib PROPERTY POSITION_INDEPENDENT_CODE 1)
 target_include_directories(PixieSdkObjLib PUBLIC ${PROJECT_SOURCE_DIR}/sdk/include/ ${PROJECT_SOURCE_DIR}/externals/)
 xia_configure_target(TARGET PixieSdkObjLib USE_PLX CONFIG_OBJ)

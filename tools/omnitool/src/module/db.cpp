@@ -22,6 +22,7 @@
 
 #include <pixie/pixie16/crate.hpp>
 #include <pixie/pixie16/module.hpp>
+#include <pixie/reports/reports.hpp>
 
 #include <omnitool-commands.hpp>
 
@@ -75,7 +76,7 @@ void db(command::context& context) {
             if (db_command == "show") {
                 context.opts.out << "DB: module:" << mod_num
                                  << " channel:" << channel << std::endl;
-                fixture->report(context.opts.out, " ");
+                reports::report(*fixture, context.opts.out, " ");
             } else if (db_command == "disable-swap") {
                 fixture->set("ADC_SWAP_DISABLE", true);
             }

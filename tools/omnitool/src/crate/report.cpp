@@ -25,6 +25,7 @@
 
 #include <pixie/pixie16/crate.hpp>
 #include <pixie/pixie16/module.hpp>
+#include <pixie/reports/reports.hpp>
 
 #include <omnitool-commands.hpp>
 
@@ -45,7 +46,7 @@ void report(command::context& context) {
         out = &output_file;
     }
     auto& crate = context.crate;
-    crate->report(*out);
+    reports::report(crate, *out);
 }
 
 bool report_comp(

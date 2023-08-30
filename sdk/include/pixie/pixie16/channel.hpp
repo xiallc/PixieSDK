@@ -283,11 +283,6 @@ struct channel {
 
     double reset_delay();
     void reset_delay(double value);
-
-    /**
-     * A report
-     */
-    void report(std::ostream& out) const;
 };
 
 /**

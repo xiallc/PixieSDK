@@ -24,6 +24,7 @@
 
 #include <pixie/pixie16/crate.hpp>
 #include <pixie/pixie16/module.hpp>
+#include <pixie/reports/reports.hpp>
 
 #include <omnitool-commands.hpp>
 
@@ -39,9 +40,9 @@ void stats_rpt(command::context& context) {
     command::modules_option(
         mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
-        xia::pixie::stats::stats stats(crate[mod_num]);
+        pixie::stats::stats stats(crate[mod_num]);
         crate[mod_num].read_stats(stats);
-        stats.report(crate[mod_num], rpt);
+        reports::stats_report(crate[mod_num], rpt);
         if (mod_num != mod_nums.back()) {
             rpt << ",\n";
         }

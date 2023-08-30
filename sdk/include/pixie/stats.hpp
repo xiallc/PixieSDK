@@ -96,7 +96,6 @@ struct stats {
     channels chans;
 
     stats(const pixie::module::module& module_);
-    void report(pixie::module::module& module_, std::stringstream& report);
 };
 
 void read(pixie::module::module& module_, stats& stats_);

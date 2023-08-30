@@ -71,15 +71,6 @@ void config::clear() {
     fpga_clk_mhz = 0;
 }
 
-void config::report(std::ostream& out, const std::string& prefix) const {
-    out << prefix << "DSP var offset : " << index << std::endl
-        << prefix << "ADC Bits       : " << adc_bits << std::endl
-        << prefix << "ADC Clock      : " << adc_msps << " MHz" << std::endl
-        << prefix << "FPGA Clock     : " << fpga_clk_mhz << " MHz" << std::endl
-        << prefix << "MCA max length : " << max_histogram_length << " words" << std::endl
-        << prefix << "ADC max trace  : " << max_adc_trace_length << " words" << std::endl;
-}
-
 module_fixture get_module_fixture(const std::string label) {
     for (auto& fixture : fixtures) {
         if (fixture.label == label) {

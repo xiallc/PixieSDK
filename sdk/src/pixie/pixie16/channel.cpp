@@ -1353,29 +1353,6 @@ void channel::reset_delay(double value) {
     hw::run::control(mod, hw::run::control_task::program_fippi);
 }
 
-void channel::report(std::ostream& out) const {
-    out << "Number         : " << number << std::endl;
-    fixture->report(out);
-    out << std::endl;
-    for (auto& var : vars) {
-        auto address = var.var.address + fixture->config.index;
-        std::ostringstream vartitle;
-        vartitle << var.var.name;
-        out << vartitle.str() << std::endl
-            << std::string(vartitle.str().length(), '-') << std::endl
-            << "Mode           : " << param::label(var.var.mode) << std::endl
-            << "Access         : " << param::label(var.var.state) << std::endl
-            << std::hex << std::setfill('0')
-            << "Address        : 0x"<< std::setw(8) << address
-            << " (0x" << var.var.address << " + " << fixture->config.index << ')'
-            << std::endl
-            << std::dec << std::setfill(' ')
-            << "Size           : " << var.var.size << std::endl
-            << "Index          : " << int(var.var.par) << std::endl
-            << std::endl;
-    }
-}
-
 }  // namespace channel
 }  // namespace pixie
 }  // namespace xia

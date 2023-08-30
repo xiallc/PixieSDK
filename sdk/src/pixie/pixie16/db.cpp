@@ -195,29 +195,6 @@ void db::get(const std::string item, double& value) {
     channel::get(item, value);
 }
 
-void db::report(std::ostream& out, const std::string& prefix) const {
-    channel::report(out, prefix);
-    out << prefix << "DB Number      : " << number << std::endl
-        << prefix << "DB Base        : " << base << std::endl
-        << prefix << "DB Offset      : " << offset << std::endl
-        << prefix << "ADC swap state : ";
-    switch (adc_state) {
-    case adc_swap_disabled:
-        out << "disabled (no swap)";
-        break;
-    case adc_boot_state:
-        out << "boot state";
-        break;
-    case adc_unswapped:
-        out << "not swapped";
-        break;
-    case adc_swapped:
-        out << "swapped";
-        break;
-    }
-    out << std::endl;
-}
-
 afe_dbs::afe_dbs(pixie::module::module& module__)
     : module(module__), adcctrl { } {
     log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")

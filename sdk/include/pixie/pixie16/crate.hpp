@@ -325,11 +325,6 @@ public:
     void output(std::ostream& out) const;
 
     /**
-     * @brief Report the crate details.
-     */
-    void report(std::ostream& out) const;
-
-    /**
      * @brief Set the crate event function.
      */
     void crate_event_func_set(crate_event_func& event_func);

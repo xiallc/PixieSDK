@@ -112,12 +112,6 @@ struct channel {
     virtual void get(const std::string item, hw::word& value);
 
     /**
-     * Report the fixture's details
-     */
-    virtual void report(
-        std::ostream& out, const std::string& prefix = "") const;
-
-    /**
      * Get the module.
      */
     module::module& get_module();
