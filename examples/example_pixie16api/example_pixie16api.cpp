@@ -1023,34 +1023,30 @@ bool boot_module(const mod_cfg& mod, unsigned int boot_pattern) {
     return true;
 }
 
-bool register_firmware(const mod_cfg& mod) {
-    std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number << ": sys"
-              << std::endl;
-    int rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps,
-                                   mod.fw.adc_bits, "sys", mod.sys_fpga, mod.number);
-    if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
-        return false;
+bool register_firmware(const mod_cfg& mod, const char* filepath, const char* device) {
+    if (strlen(filepath) > 0) {
+        std::cout << LOG("INFO")
+                  << "Calling Pixie16RegisterFirmware for Module "
+                  << mod.number << ": " << device << std::endl;
+        int rc = PixieRegisterCrateFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps,
+                                            mod.fw.adc_bits, device, filepath);
+        if (!verify_api_return_value(rc, "Pixie16RegisterFirmware", false))
+            return false;
+    }
 
-    std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number
-              << ": fippi" << std::endl;
-    rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps, mod.fw.adc_bits,
-                               "fippi", mod.sp_fpga, mod.number);
-    if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
-        return false;
+    return true;
+}
 
-    std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number << ": dsp"
-              << std::endl;
-    rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps, mod.fw.adc_bits,
-                               "dsp", mod.dsp_code, mod.number);
-    if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
-        return false;
-
-    std::cout << LOG("INFO") << "Calling PixieRegisterFirmware for Module " << mod.number << ": var"
-              << std::endl;
-    rc = PixieRegisterFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps, mod.fw.adc_bits,
-                               "var", mod.dsp_var, mod.number);
-    if (!verify_api_return_value(rc, "PixieRegisterFirmware", false))
-        return false;
+bool set_firmware(const mod_cfg& mod, const char* filepath, const char* device) {
+    if (strlen(filepath) > 0) {
+        std::cout << LOG("INFO")
+                  << "Calling PixieSetModuleFirmware for Module "
+                  << mod.number << ": " << device << std::endl;
+        if (!verify_api_return_value(
+                Pixie16SetModuleFirmware(mod.sys_fpga, mod.slot, device),
+                "Pixie16SetModuleFirmware", false))
+            return false;
+    }
 
     return true;
 }
@@ -1096,21 +1092,20 @@ bool execute_boot(configuration& cfg, args::ValueFlag<std::string>& boot_flag,
 
     for (const auto& mod : cfg.modules) {
         if (mod.has_firmware_files) {
-            if (mod.sys_fpga[0] != '\0') {
-                if (!verify_api_return_value(Pixie16SetModuleFirmware(mod.sys_fpga, mod.slot, "sys"), "Pixie16SetModuleFirmware", false))
+            if (mod.has_firmware_spec) {
+                if (!register_firmware(mod, mod.sys_fpga, "sys") ||
+                    !register_firmware(mod, mod.sp_fpga, "fippi") ||
+                    !register_firmware(mod, mod.dsp_code, "dsp") ||
+                    !register_firmware(mod, mod.dsp_var, "var")) {
                     return false;
-            }
-            if (mod.sp_fpga[0] != '\0') {
-                if (!verify_api_return_value(Pixie16SetModuleFirmware(mod.sp_fpga, mod.slot, "fippi"), "Pixie16SetModuleFirmware", false))
+                }
+            } else {
+                if (!set_firmware(mod, mod.sys_fpga, "sys") ||
+                    !set_firmware(mod, mod.sp_fpga, "fippi") ||
+                    !set_firmware(mod, mod.dsp_code, "dsp") ||
+                    !set_firmware(mod, mod.dsp_var, "var")) {
                     return false;
-            }
-            if (mod.dsp_code[0] != '\0') {
-                if (!verify_api_return_value(Pixie16SetModuleFirmware(mod.dsp_code, mod.slot, "dsp"), "Pixie16SetModuleFirmware", false))
-                    return false;
-            }
-            if (mod.dsp_var[0] != '\0') {
-                if (!verify_api_return_value(Pixie16SetModuleFirmware(mod.dsp_var, mod.slot, "var"), "Pixie16SetModuleFirmware", false))
-                    return false;
+                }
             }
         }
     }

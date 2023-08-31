@@ -210,6 +210,10 @@ PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file,
 PIXIE_EXPORT int PIXIE_API PixieGetWorkerConfiguration(unsigned short mod_num,
                                                        struct fifo_worker_config* worker_config);
 
+PIXIE_EXPORT int PIXIE_API PixieRegisterCrateFirmware(const unsigned int version, const int revision,
+                                                      const int adc_msps, const int adc_bits,
+                                                      const char* device, const char* path);
+
 PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version, const int revision,
                                                  const int adc_msps, const int adc_bits,
                                                  const char* device, const char* path,

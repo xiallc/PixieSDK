@@ -1853,6 +1853,37 @@ PIXIE_EXPORT int PIXIE_API PixieGetWorkerConfiguration(const unsigned short mod_
     return 0;
 }
 
+PIXIE_EXPORT int PIXIE_API PixieRegisterCrateFirmware(const unsigned int version, const int revision,
+                                                      const int adc_msps, const int adc_bits,
+                                                      const char* device, const char* path) {
+    xia_log(xia::log::debug) << "Pixie16RegisterFirmware: version=" << version
+                             << " revision=" << revision << " adc_msps=" << adc_msps
+                             << " adc_bits=" << adc_bits << " device=" << device << " path=" << path;
+
+    using firmware = xia::pixie::firmware::firmware;
+
+    try {
+        std::string ver_s = std::to_string(version);
+        std::string dev_s = device;
+        firmware fw(ver_s, revision, adc_msps, adc_bits, dev_s);
+        fw.filename = path;
+        xia::pixie::firmware::add(crate->firmware, fw);
+    } catch (xia_error& e) {
+        xia_log(xia::log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (std::exception& e) {
+        xia_log(xia::log::error) << "unknown error: " << e.what();
+        return xia::pixie::error::return_code_unknown_error();
+    } catch (...) {
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+
+    return 0;
+}
 
 PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version, const int revision,
                                                  const int adc_msps, const int adc_bits,
@@ -1866,19 +1897,14 @@ PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version, con
     using firmware = xia::pixie::firmware::firmware;
 
     try {
-        xia::pixie::hw::slot_type slot = xia::pixie::hw::slot_invalid;
-        if (ModNum != 0xACE) {
-            xia::pixie::crate::module_handle module(crate, ModNum,
-                                                    xia::pixie::module::check::open);
-            slot = module->slot;
-        }
+        xia::pixie::crate::module_handle module(crate, ModNum,
+                                                xia::pixie::module::check::open);
+        xia::pixie::hw::slot_type slot = module->slot;
         std::string ver_s = std::to_string(version);
         std::string dev_s = device;
         firmware fw(ver_s, revision, adc_msps, adc_bits, dev_s);
         fw.filename = path;
-        if (slot != xia::pixie::hw::slot_invalid) {
-            fw.slot.push_back(slot);
-        }
+        fw.slot.push_back(slot);
         xia::pixie::firmware::add(crate->firmware, fw);
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
