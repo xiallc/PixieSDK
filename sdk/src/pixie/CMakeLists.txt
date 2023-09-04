@@ -14,6 +14,7 @@ set(SDK_COMMON_SOURCES
         utils/numerics.cpp
         utils/path.cpp
         utils/string.cpp
+        utils/thread.cpp
         utils/time.cpp)
 
 add_library(PixieSdkCommonObjLib OBJECT ${SDK_COMMON_SOURCES})

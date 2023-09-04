@@ -28,6 +28,7 @@
 
 #include <pixie/config.hpp>
 #include <pixie/log.hpp>
+#include <pixie/utils/thread.hpp>
 
 #include <pixie/pixie16/backplane.hpp>
 #include <pixie/pixie16/crate.hpp>
@@ -297,12 +298,7 @@ void crate::boot(const crate::boot_params& params) {
 
     crate_event_call(crate_event::boot_begin);
 
-    typedef std::promise<error::code> promise_error;
-    typedef std::future<error::code> future_error;
-
-    std::vector<promise_error> promises(num_slots);
-    std::vector<future_error> futures;
-    std::vector<std::thread> threads;
+    util::thread::workers workers;
 
     for (auto slot : slot_nums) {
         auto module = slots[slot];
@@ -311,32 +307,14 @@ void crate::boot(const crate::boot_params& params) {
             continue;
         }
         slot_event_call(module->slot, slot_event::boot);
-        futures.push_back(future_error(promises[slot].get_future()));
-        threads.push_back(std::thread([slot, &params, &promises, module] {
-            try {
-                module->boot(params.boot_comms, params.boot_fippi, params.boot_dsp);
-                promises[slot].set_value(error::code::success);
-            } catch (pixie::error::error& e) {
-                promises[slot].set_value(e.type);
-            } catch (...) {
-                try {
-                    promises[slot].set_exception(std::current_exception());
-                } catch (...) {
-                    /* nothing */
-                }
-            }
-        }));
+        workers.emplace_back([&params, module]() {
+            module->boot(params.boot_comms, params.boot_fippi, params.boot_dsp);
+        });
     }
-
-    error::code first_error = error::code::success;
-
-    for (size_t t = 0; t < threads.size(); ++t) {
-        error::code e = futures[t].get();
-        if (first_error == error::code::success) {
-            first_error = e;
-        }
-        threads[t].join();
+    for (auto& w : workers) {
+        w.start();
     }
+    auto first_error = util::thread::wait_until_finished(workers, 20);
 
     backplane_reinit();
 
@@ -411,48 +389,20 @@ void crate::initialize_afe() {
     ready();
     lock_guard guard(lock_);
 
-    typedef std::promise<error::code> promise_error;
-    typedef std::future<error::code> future_error;
-
-    std::vector<promise_error> promises(num_slots);
-    std::vector<future_error> futures;
-    std::vector<std::thread> threads;
-
+    util::thread::workers workers;
     for (size_t slot = 0; slot < num_slots; ++slot) {
         auto module = slots[slot];
         if (!module->online()) {
             continue;
         }
-        futures.push_back(future_error(promises[slot].get_future()));
-        threads.push_back(std::thread([slot, &promises, module] {
-            try {
-                module->sync_hw();
-                promises[slot].set_value(error::code::success);
-            } catch (pixie::error::error& e) {
-                promises[slot].set_value(e.type);
-            } catch (...) {
-                try {
-                    promises[slot].set_exception(std::current_exception());
-                } catch (...) {
-                    /* nothing */
-                }
-            }
-        }));
+        workers.emplace_back([module] {
+            module->sync_hw();
+        });
     }
-
-    error::code first_error = error::code::success;
-
-    for (size_t t = 0; t < threads.size(); ++t) {
-        error::code e = futures[t].get();
-        if (first_error == error::code::success) {
-            first_error = e;
-        }
-        threads[t].join();
+    for (auto& w : workers) {
+        w.start();
     }
-
-    if (first_error != error::code::success) {
-        throw error(first_error, "crate AFE intialize error; see log");
-    }
+    util::thread::wait_until_finished(workers, 20, "crate AFE intialize error; see log");
 }
 
 void crate::backplane_reinit() {

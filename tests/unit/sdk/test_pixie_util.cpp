@@ -27,6 +27,7 @@
 #include <pixie/utils/numerics.hpp>
 #include <pixie/utils/path.hpp>
 #include <pixie/utils/string.hpp>
+#include <pixie/utils/thread.hpp>
 #include <pixie/utils/time.hpp>
 
 TEST_SUITE("xia::util") {
@@ -188,5 +189,78 @@ TEST_SUITE("xia::util") {
         CHECK(ext_good == "bin");
         CHECK(ext_bad == "testfile");
         CHECK(ext_bad == "testfile");
+    }
+
+    TEST_CASE("Thread Workers") {
+        using namespace std::chrono_literals;
+        std::srand(std::time(nullptr));
+        const size_t num_threads = 10;
+        xia::util::thread::workers threads;
+        for (size_t t = 0; t < num_threads; ++t) {
+            threads.emplace_back(
+                [t, period = std::rand() % 3000]() {
+                    std::this_thread::sleep_for(1ms * period);
+                    if (t == 3) {
+                        throw xia::pixie::error::error(
+                            xia::pixie::error::code::not_supported, "t 3");
+                    }
+                    if (t == 5) {
+                        throw xia::pixie::error::error(
+                            xia::pixie::error::code::invalid_value, "t 5");
+                    }
+                });
+        }
+        for (auto& t : threads) {
+            t.start();
+        }
+        bool waiter_called = false;
+        std::vector<bool> finished_threads(num_threads, false);
+        std::vector<xia::util::thread::error::code>
+            error_threads(num_threads, xia::util::thread::error::code::success);
+        xia::util::thread::waiter_func waiter =
+            [&waiter_called](xia::util::thread::workers::size_type running) {
+                CHECK(running != 0);
+                waiter_called = true;
+                std::this_thread::sleep_for(20ms);
+            };
+        xia::util::thread::finished_func thread_finished =
+            [&finished_threads](xia::util::thread::workers::size_type t) {
+                finished_threads[t] = true;
+            };
+        xia::util::thread::error_func thread_error =
+            [&error_threads](
+                xia::util::thread::workers::size_type t,
+                xia::util::thread::error::code e) {
+                error_threads[t] = e;
+            };
+        CHECK_THROWS_WITH_AS(
+            xia::util::thread::wait_until_finished(
+                threads, waiter, thread_finished, thread_error, "has errors"),
+            "has errors", xia::pixie::error::error);
+        CHECK(waiter_called == true);
+        for (auto f : finished_threads) {
+            CHECK(f == true);
+        }
+        CHECK(error_threads[3] == xia::pixie::error::code::not_supported);
+        CHECK(error_threads[5] == xia::pixie::error::code::invalid_value);
+        threads.clear();
+        threads.resize(num_threads);
+        for (size_t t = 0; t < threads.size(); ++t) {
+            threads[t].body =
+                [t, period = std::rand() % 3000]() {
+                    std::this_thread::sleep_for(1ms * period);
+                    if (t == 3) {
+                        throw xia::pixie::error::error(
+                            xia::pixie::error::code::not_supported, "t 3");
+                    }
+                    if (t == 5) {
+                        throw xia::pixie::error::error(
+                            xia::pixie::error::code::invalid_value, "t 5");
+                    }
+                };
+            threads[t].start();
+        }
+        CHECK(xia::util::thread::wait_until_finished(threads, 20) !=
+              xia::pixie::error::code::success);
     }
 }
