@@ -749,7 +749,7 @@ void module_crate::slot_event(hw::slot_type slot, crate::slot_event event) {
 }
 
 void module_crate::module_discovered(hw::slot_type slot) {
-    xia_log(log::error) << "module-crate: add module: " << slot;
+    xia_log(log::info) << "module-crate: add module: " << slot;
     lock_guard guard(lock_);
     check();
     auto mi = std::find_if(modules.begin(), modules.end(),
