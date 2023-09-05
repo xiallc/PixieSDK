@@ -2015,20 +2015,22 @@ void module::bl_get(channel::range& channels_, channel::baseline::channels_value
     bl.get(values, run);
 }
 
-void module::read_histogram(size_t channel, hw::words& values) {
-    xia_log(log::info) << module_label(*this) << "read-histogram: channel=" << channel
-                       << " length=" << values.size();
-    online_check();
-    lock_guard guard(lock_);
-    channels[channel].read_histogram(values);
-}
-
 void module::read_histogram(size_t channel, hw::word_ptr values, const size_t size) {
     xia_log(log::info) << module_label(*this) << "read-histogram: channel=" << channel
                        << " length=" << size;
     online_check();
     lock_guard guard(lock_);
     channels[channel].read_histogram(values, size);
+}
+
+void module::read_histogram(size_t channel, hw::words& values) {
+    xia_log(log::info) << module_label(*this) << "read-histogram: channel=" << channel
+                       << " length=" << values.size();
+    if (values.empty()) {
+        channel::channel& chan = channels[channel];
+        values.resize(chan.fixture->config.max_histogram_length);
+    }
+    read_histogram(channel, values.data(), values.size());
 }
 
 size_t module::read_list_mode_level() {

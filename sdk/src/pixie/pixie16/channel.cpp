@@ -278,10 +278,6 @@ void channel::read_histogram(hw::word_ptr values, const size_t size) {
     }
 }
 
-void channel::read_histogram(hw::words& values) {
-    read_histogram(values.data(), values.size());
-}
-
 void channel::update_fifo(param::value_type trace_delay) {
     xia_log(log::debug) << channel_label(*this) << "fifo update: trace-delay=" << trace_delay;
 
