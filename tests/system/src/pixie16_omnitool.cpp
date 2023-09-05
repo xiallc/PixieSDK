@@ -36,6 +36,7 @@
 #include <pixie/utils/numerics.hpp>
 #include <pixie/utils/string.hpp>
 #include <pixie/utils/time.hpp>
+#include <pixie/utils/thread.hpp>
 
 #include <pixie/pixie16/crate.hpp>
 #include <pixie/pixie16/legacy.hpp>
@@ -1402,123 +1403,87 @@ static void output_value(std::ostream& out, const std::string& name, V value) {
 }
 
 template<typename W>
+void module_thread_performance(
+    command_context& context, std::vector<W>& workers, bool& show_performance,
+    xia::util::time::timepoint& duration, xia::util::time::timepoint& interval,
+    size_t show_secs, size_t running) {
+    if (show_performance && interval.secs() > show_secs) {
+        auto secs = interval.secs();
+        interval.restart();
+        context.opts.out << "running: " << running << std::endl;
+        size_t all_total = 0;
+        for (auto& w : workers) {
+            if (w.period.secs() > 0) {
+                auto total = w.total;
+                auto bytes = (total - w.last_total) * sizeof(xia::pixie::hw::word);
+                auto rate = double(bytes) / secs;
+                all_total += total;
+                bytes = total * sizeof(xia::pixie::hw::word);
+                char active = w.running.load() ? '>' : ' ';
+                w.last_total = total;
+                std::ostringstream oss;
+                oss << ' ' << active << std::setw(2) << w.number
+                    << ": total: " << std::setw(8)
+                    << xia::util::io::humanize(bytes) << " rate: " << std::setw(8)
+                    << xia::util::io::humanize(rate) << " bytes/sec pci: bus=" << w.pci_bus
+                    << " slot=" << w.pci_slot;
+                context.opts.out << oss.str() << std::endl;
+                xia_log(xia::log::info) << oss.str();
+            } else {
+                context.opts.out << ' ' << std::setw(2) << w.number
+                                 << ": not running" << std::endl;
+            }
+        }
+        all_total *= sizeof(xia::pixie::hw::word);
+        std::ostringstream oss;
+        oss << " all: total: " << std::setw(8) << xia::util::io::humanize(all_total)
+            << " rate: " << std::setw(8)
+            << xia::util::io::humanize(double(all_total) / duration.secs()) << " bytes/sec";
+        context.opts.out << oss.str() << std::endl;
+        xia_log(xia::log::info) << oss.str();
+    }
+}
+
+template<typename W>
 void module_threads(
     command_context& context, module_range& mod_nums, std::vector<W>& workers,
     std::string error_message, bool show_performance = true) {
     if (workers.size() != mod_nums.size()) {
-        throw std::runtime_error("workers and modules counts mismatch");
+        throw std::runtime_error("workers and modules count mismatch");
     }
     auto& crate = context.crate;
-    using promise_error = std::promise<error::code>;
-    using future_error = std::future<error::code>;
-    std::vector<promise_error> promises(mod_nums.size());
-    std::vector<future_error> futures;
-    std::vector<std::thread> threads;
+    namespace thread = xia::util::thread;
+    thread::workers threads(mod_nums.size());
     for (size_t m = 0; m < mod_nums.size(); ++m) {
-        auto& module = crate[mod_nums[m]];
-        auto& worker = workers[m];
-        futures.push_back(future_error(promises[m].get_future()));
-        threads.push_back(std::thread([&context, m, &promises, &module, &worker] {
-            try {
-                worker.running = true;
-                worker.worker(context, module);
-                promises[m].set_value(error::code::success);
-            } catch (xia::pixie::error::error& e) {
-                promises[m].set_value(e.type);
-            } catch (...) {
-                try {
-                    promises[m].set_exception(std::current_exception());
-                } catch (...) {
-                }
-            }
-            worker.running = false;
-        }));
+        threads[m].body =
+            [&context, &module = crate[mod_nums[m]], &worker = workers[m]]() {
+            worker.worker(context, module);
+        };
+        threads[m].start();
     }
-    error::code first_error = error::code::success;
-    size_t finished = 0;
-    size_t show_secs = 5;
     xia::util::time::timepoint duration(true);
     xia::util::time::timepoint interval(true);
-    while (finished != threads.size()) {
-        finished = threads.size();
-        for (size_t t = 0; t < threads.size(); ++t) {
-            auto& future = futures[t];
-            if (future.valid()) {
-                auto zero = std::chrono::seconds(0);
-                if (future.wait_for(zero) == std::future_status::ready) {
-                    workers[t].period.stop();
-                    error::code e = future.get();
-                    if (e != error::code::success) {
-                        context.opts.out << "module " << t << ": error: "
-                                         << xia::pixie::error::api_result_text(e)
-                                         << std::endl;
-                    }
-                    if (first_error == error::code::success) {
-                        first_error = e;
-                    }
-                    threads[t].join();
-                } else {
-                    --finished;
-                }
-            }
-        }
-        xia::pixie::hw::wait(20 * 1000);
-        if (show_performance && interval.secs() > show_secs) {
-            auto secs = interval.secs();
-            interval.restart();
-            context.opts.out << "running: " << threads.size() - finished << std::endl;
-            size_t all_total = 0;
-            for (auto& w : workers) {
-                if (w.period.secs() > 0) {
-                    auto total = w.total;
-                    auto bytes = (total - w.last_total) * sizeof(xia::pixie::hw::word);
-                    auto rate = double(bytes) / secs;
-                    all_total += total;
-                    bytes = total * sizeof(xia::pixie::hw::word);
-                    char active = w.running.load() ? '>' : ' ';
-                    w.last_total = total;
-                    std::ostringstream oss;
-                    oss << ' ' << active << std::setw(2) << w.number
-                        << ": total: " << std::setw(8)
-                        << xia::util::io::humanize(bytes) << " rate: " << std::setw(8)
-                        << xia::util::io::humanize(rate) << " bytes/sec pci: bus=" << w.pci_bus
-                        << " slot=" << w.pci_slot;
-                    context.opts.out << oss.str() << std::endl;
-                    xia_log(xia::log::info) << oss.str();
-                } else {
-                    context.opts.out << ' ' << std::setw(2) << w.number
-                                     << ": not running" << std::endl;
-                }
-            }
-            all_total *= sizeof(xia::pixie::hw::word);
-            std::ostringstream oss;
-            oss << " all: total: " << std::setw(8) << xia::util::io::humanize(all_total)
-                << " rate: " << std::setw(8)
-                << xia::util::io::humanize(double(all_total) / duration.secs()) << " bytes/sec";
-            context.opts.out << oss.str() << std::endl;
-            xia_log(xia::log::info) << oss.str();
-        }
-    }
-    for (size_t t = 0; t < threads.size(); ++t) {
-        auto& future = futures[t];
-        if (future.valid()) {
-            auto zero = std::chrono::seconds(0);
-            if (future.wait_for(zero) == std::future_status::ready) {
-                error::code e = future.get();
-                if (e != error::code::success) {
-                    context.opts.out << "module " << t << ": error: "
-                                     << xia::pixie::error::api_result_text(e)
-                                     << std::endl;
-                }
-                if (first_error == error::code::success) {
-                    first_error = e;
-                }
-            }
-        }
-    }
-    if (first_error != error::code::success) {
-        throw error(first_error, error_message);
-    }
+    size_t show_secs = 5;
+    thread::waiter_func waiter =
+        [&context, &workers, &show_performance, &duration, &interval, &show_secs](
+            thread::workers::size_type running) {
+            xia::pixie::hw::wait(20 * 1000);
+            module_thread_performance(
+                context, workers, show_performance, duration, interval,
+                show_secs, running);
+        };
+    thread::finished_func thread_finished =
+        [&context, &workers](thread::workers::size_type t) {
+            workers[t].period.stop();
+        };
+    thread::error_func thread_error =
+        [&context](thread::workers::size_type t, error::code e) {
+            context.opts.out << "module " << t << ": error: "
+                             << xia::pixie::error::api_result_text(e)
+                             << std::endl;
+        };
+    thread::wait_until_finished(
+        threads, waiter, thread_finished, thread_error, error_message);
 }
 
 module_thread_worker::module_thread_worker()
