@@ -193,7 +193,7 @@ TEST_SUITE("xia::util") {
 
     TEST_CASE("Thread Workers") {
         using namespace std::chrono_literals;
-        std::srand(std::time(nullptr));
+        std::srand(static_cast<int>(std::time(nullptr)));
         const size_t num_threads = 10;
         xia::util::thread::workers threads;
         for (size_t t = 0; t < num_threads; ++t) {
