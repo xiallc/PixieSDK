@@ -89,10 +89,52 @@ void rtrim(std::string& s);
 void trim(std::string& s);
 
 /**
+ * @brief Replace a character in a string with another character
+ * @param[in,out] s the string that we'll replace characters in.
+ * @param[in] find the character to locate in the string and replace
+ * @param[in] replace the character to replace any foind characters
+ */
+void replace(std::string& target, const char find, const char replace);
+
+/**
+ * @brief Return true if a string starts with another string
+ * @param[in] s the string we string check to see if it starts with a string
+ * @param[in] check the string we check is at the start
+ * @return true if the string begins with the check string
+ */
+bool starts_with(const std::string& s, const std::string& check);
+
+/**
+ * @brief Convert a string to lower case
+ * @param[in,out] s the string we make lower case
+ */
+void tolower(std::string& s);
+
+/**
+ * @brief Convert a string to upper case
+ * @param[in,out] s the string we make upper case
+ */
+void toupper(std::string& s);
+
+/**
  * @brief Dequote a string
  * @param[in,out] s the string that we'll trim.
  */
 void dequote(std::string& s);
+
+/**
+ * @brief Check if a string is a number
+ * @param[in] s the string that we'll check.
+ * @return @true if the string is a number else @false
+ */
+bool check_number(const std::string& s);
+
+/**
+ * @brief Check if a string is a number or number range
+ * @param[in] s the string that we'll check.
+ * @return @true if the string is a number or number range else @false
+ */
+bool check_number_range(const std::string& s);
 
 } // namespace string
 } // namespace util

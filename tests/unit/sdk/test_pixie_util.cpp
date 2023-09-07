@@ -142,6 +142,51 @@ TEST_SUITE("xia::util") {
         }
     }
 
+    TEST_CASE("replace") {
+        std::string test = "1-2-3-4-5-6";
+        xia::util::string::replace(test, '-', '.');
+        CHECK(test == "1.2.3.4.5.6");
+    }
+
+    TEST_CASE("starts with") {
+        CHECK(xia::util::string::starts_with("check starts with", "check") == true);
+        CHECK(xia::util::string::starts_with("check starts with", "check starts with") == true);
+        CHECK(xia::util::string::starts_with("check starts with", "check starts with this") == false);
+        CHECK(xia::util::string::starts_with("check starts with", "do not check") == false);
+    }
+
+    TEST_CASE("tolower") {
+        std::string test = "Convert To LOWERcase";
+        xia::util::string::tolower(test);
+        CHECK(test == "convert to lowercase");
+    }
+
+    TEST_CASE("toupper") {
+        std::string test = "Convert To UPPERcase";
+        xia::util::string::toupper(test);
+        CHECK(test == "CONVERT TO UPPERCASE");
+    }
+
+    TEST_CASE("check number") {
+      CHECK(xia::util::string::check_number("0") == true);
+      CHECK(xia::util::string::check_number("-0") == true);
+      CHECK(xia::util::string::check_number("1234567890") == true);
+      CHECK(xia::util::string::check_number("-1234567890") == true);
+      CHECK(xia::util::string::check_number("1.234567890") == true);
+      CHECK(xia::util::string::check_number("-.1234") == true);
+      CHECK(xia::util::string::check_number(".1e-9") == true);
+      CHECK(xia::util::string::check_number("1e9") == true);
+      CHECK(xia::util::string::check_number("1e-9") == true);
+      CHECK(xia::util::string::check_number("-2e-9") == true);
+      CHECK(xia::util::string::check_number("1.23456789a") == false);
+      CHECK(xia::util::string::check_number("abc") == false);
+      CHECK(xia::util::string::check_number("12abc456") == false);
+      CHECK(xia::util::string::check_number_range("1") == true);
+      CHECK(xia::util::string::check_number_range("all") == true);
+      CHECK(xia::util::string::check_number_range("1-10") == true);
+      CHECK(xia::util::string::check_number_range("1-a") == false);
+    }
+
     TEST_CASE("crc32") {
         std::vector<unsigned char> vec_val = {'1', '2', '3', '4', '5', '6', '7', '8', '9'};
         const uint32_t expected = 0xcbf43926;

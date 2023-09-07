@@ -21,6 +21,7 @@
  */
 
 #include <algorithm>
+#include <regex>
 
 #include <pixie/error.hpp>
 #include <pixie/utils/string.hpp>
@@ -28,18 +29,6 @@
 namespace xia {
 namespace util {
 namespace string {
-void dequote(std::string& s) {
-    if (!s.empty()) {
-        char front = s[0];
-        char back = s[s.length() - 1];
-        if ((front == '"') || (front == '\'')) {
-            if (front != back)
-                throw std::runtime_error("invalid quoting: " + s);
-            s = s.substr(1, s.length() - (1 + 1));
-        }
-    }
-}
-
 void split(strings& split_string, const std::string& s, const char delimiter, size_t count,
            bool strip_whitespace, bool strip_quotes, bool empty) {
     std::stringstream ss(s);
@@ -73,6 +62,60 @@ void rtrim(std::string& s) {
 void trim(std::string& s) {
     ltrim(s);
     rtrim(s);
+}
+
+void replace(std::string& target, const char find, const char replace) {
+    while (true) {
+        auto pos = target.find_first_of(find);
+        if (pos == std::string::npos) {
+            break;
+        }
+        target.replace(pos, 1, 1, replace);
+    }
+}
+
+bool starts_with(const std::string& s, const std::string& check) {
+    return check.size() <= s.size() && s.compare(0, check.size(), check) == 0;
+}
+
+void tolower(std::string& s) {
+    std::transform(
+        s.cbegin(), s.cend(), s.begin(),
+        [](unsigned char c) { return std::tolower(c); });
+}
+
+void toupper(std::string& s) {
+    std::transform(
+        s.cbegin(), s.cend(), s.begin(),
+        [](unsigned char c) { return std::toupper(c); });
+}
+
+void dequote(std::string& s) {
+    if (!s.empty()) {
+        char front = s[0];
+        char back = s[s.length() - 1];
+        if ((front == '"') || (front == '\'')) {
+            if (front != back)
+                throw std::runtime_error("invalid quoting: " + s);
+            s = s.substr(1, s.length() - (1 + 1));
+        }
+    }
+}
+
+bool check_number(const std::string& s) {
+    return std::regex_match(
+        s, std::regex(("((\\+|-)?[0-9]+)?((\\+|-)?\\.[0-9]+)?([e|E](\\+|-)?[0-9]+)?")));
+}
+
+bool check_number_range(const std::string& s) {
+    strings sd;
+    split(sd, s, '-');
+    if (sd.size() == 1) {
+        return sd[0] == "all" || check_number(sd[0]);
+    } else if (sd.size() == 2) {
+        return check_number(sd[0]) && check_number(sd[1]);
+    }
+    throw std::runtime_error("invalid range: " + s);
 }
 }
 }
