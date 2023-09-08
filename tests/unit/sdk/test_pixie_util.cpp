@@ -37,6 +37,76 @@ TEST_SUITE("xia::util") {
         CHECK(ostream_guard.flags == expected);
     }
 
+    TEST_CASE("Getting values from options") {
+        SUBCASE("Get value") {
+            CHECK(xia::util::io::get_value<size_t>("100") == size_t(100));
+            CHECK(xia::util::io::get_value<size_t>("0100") == size_t(64));
+            CHECK(xia::util::io::get_value<size_t>("0x100") == size_t(256));
+            CHECK(xia::util::io::get_value<size_t>("-100") == size_t(-100));
+            CHECK(xia::util::io::get_value<int>("12345") == 12345);
+            CHECK(xia::util::io::get_value<int>("-12345") == -12345);
+            CHECK(xia::util::io::get_value<double>("1.2345") == double(1.2345));
+            CHECK(xia::util::io::get_value<double>("-1.2345e9") == double(-1.2345e9));
+            CHECK_THROWS_WITH_AS(
+                xia::util::io::get_value<int>("one-two-thread"),
+                "invalid number: one-two-thread", std::runtime_error);
+        }
+        SUBCASE("Get values") {
+            auto vi = xia::util::io::get_values<int>("0,1,2,3,4-8,9,10-19");
+            CHECK(vi.size() == 20);
+            for (int i = 0; i < int(vi.size()); ++i) {
+                CHECK(vi[i] == i);
+            }
+            CHECK_THROWS_WITH_AS(
+                xia::util::io::get_values<int>("2-1"),
+                "invalid range: 2-1", std::runtime_error);
+            vi = xia::util::io::get_values<int>("0-19", 20);
+            CHECK(vi.size() == 20);
+            for (int i = 0; i < int(vi.size()); ++i) {
+                CHECK(vi[i] == i);
+            }
+            CHECK_THROWS_WITH_AS(
+                xia::util::io::get_values<int>("0-19", 10);,
+                "value out of range: 19", std::runtime_error);
+            vi = xia::util::io::get_values<int>("0-19", 10, true);
+            CHECK(vi.size() == 0);
+            vi = xia::util::io::get_values<int>("0-19,9", 10, true);
+            CHECK(vi.size() == 1);
+            CHECK(vi[0] == 9);
+            vi = xia::util::io::get_values<int>("all", 10);
+            CHECK(vi.size() == 10);
+            for (int i = 0; i < int(vi.size()); ++i) {
+                CHECK(vi[i] == i);
+            }
+            vi = xia::util::io::get_values<int>("all,0-9", 10);
+            CHECK(vi.size() == 20);
+            for (int i = 0; i < 10; ++i) {
+                CHECK(vi[i] == i);
+                CHECK(vi[i + 10] == i);
+            }
+        }
+    }
+
+    TEST_CASE("Output value") {
+        std::ostringstream o1;
+        xia::util::io::output_value(o1, "name", 1, false);
+        CHECK(o1.str() == "name = 1 (0x1)");
+        std::ostringstream o2;
+        xia::util::io::output_value(o2, "name", 0100, false);
+        CHECK(o2.str() == "name = 64 (0x40)");
+        std::ostringstream o3;
+        xia::util::io::output_value(o3, "name", 1.2345, false);
+        CHECK(o3.str() == "name = 1.2345");
+    }
+
+    TEST_CASE("Humanize") {
+        CHECK(xia::util::io::humanize(100) == "100.000 ");
+        CHECK(xia::util::io::humanize(1024) == "1.000K");
+        CHECK(xia::util::io::humanize(1234) == "1.205K");
+        CHECK(xia::util::io::humanize(1234 * 1024) == "1.205M");
+        CHECK(xia::util::io::humanize(1234 * 1024 * 1024, "ABC") == "1.205GABC");
+    }
+
     TEST_CASE("ieee_float") {
         SUBCASE("Initialization") {
             CHECK(xia::util::numerics::ieee_float(0.5) == 0.5);
