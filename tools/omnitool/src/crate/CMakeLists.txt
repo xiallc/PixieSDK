@@ -1,0 +1,9 @@
+set(OMNITOOL_CRATE_SOURCES
+        crate/boot.cpp
+        crate/commands.cpp
+        crate/crate.cpp
+        crate/export.cpp
+        crate/fw-report.cpp
+        crate/import.cpp
+        crate/report.cpp
+        PARENT_SCOPE)

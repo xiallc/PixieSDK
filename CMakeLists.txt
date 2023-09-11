@@ -68,4 +68,5 @@ if (BUILD_SDK)
     endif ()
 
     add_subdirectory(externals)
+    add_subdirectory(tools)
 endif ()

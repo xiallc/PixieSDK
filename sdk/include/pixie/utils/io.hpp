@@ -65,7 +65,7 @@ static T get_value(const std::string& opt) {
         if (std::is_same<T, double>::value) {
             value = T(std::stod(opt, nullptr));
         } else {
-            value = T(std::stoul(opt, nullptr, 0));
+            value = T(std::stoull(opt, nullptr, 0));
         }
     } catch (std::invalid_argument& ) {
         throw std::runtime_error("invalid number: " + opt);
