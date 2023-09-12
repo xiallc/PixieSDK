@@ -795,7 +795,7 @@ bool execute_parameter_write(args::ValueFlag<std::string>& parameter,
             return false;
     }
 
-    std::cout << LOG("INFO") << "Verifying written value for value for " << parameter.Get()
+    std::cout << LOG("INFO") << "Verifying written value for " << parameter.Get()
               << std::endl;
     execute_parameter_read(parameter, crate, module.number, channel);
 
