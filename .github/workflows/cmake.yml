@@ -10,9 +10,44 @@ env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
   OPTIONS: -DBUILD_SDK=ON -DBUILD_TESTS=ON
+  BROADCOM_SDK_ZIP: https://github.com/xiallc/broadcom_pci_pcie_sdk/releases/download/8.23/xia-broadcom-8.23-64bit-ci-package.zip
 
 jobs:
-  build:
+  build-Windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ilammy/msvc-dev-cmd@v1.12.1
+        with:
+            arch: amd64
+
+      - name: PLX
+        run: |
+          $Env:ORIG_DIR="$pwd"
+          Invoke-WebRequest -Uri $Env:BROADCOM_SDK_ZIP -OutFile broadcom_sdk.zip
+          Expand-Archive -Path broadcom_sdk.zip
+          $Env:PLX_SDK_DIR="$pwd\broadcom_sdk\xia\ci\broadcom\plx\8.23"
+          echo "PLX_SDK_DIR: $Env:PLX_SDK_DIR"
+          echo "PLX_SDK_DIR=$Env:PLX_SDK_DIR" >> $Env:GITHUB_ENV
+          echo ";$Env:PLX_SDK_DIR\PlxApi\Release\" >> $Env:GITHUB_PATH
+  
+      - name: Configure
+        run: |
+          mkdir build
+          cd build
+          cmake ..\ $Env:OPTIONS
+
+      - name: Build
+        run: | 
+          cmake --build $Env:GITHUB_WORKSPACE/build
+      
+      - name: Test
+        run: |
+          & "$Env:GITHUB_WORKSPACE\build\tests\unit\sdk\Debug\pixie_sdk_unit_test_runner.exe"
+          & "$Env:GITHUB_WORKSPACE\build\tests\integration\Debug\pixie_sdk_integration_test_runner.exe"
+
+  build-Linux:
     # The CMake configure and build commands are platform agnostic and should work equally
     # well on Windows or Mac.  You can convert this to a matrix build if you need
     # cross-platform coverage.
@@ -20,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: PLX
         run: |
