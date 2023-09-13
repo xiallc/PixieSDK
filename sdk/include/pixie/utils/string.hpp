@@ -50,6 +50,9 @@ using strings = std::vector<std::string>;
 void split(strings& split_string, const std::string& s, const char delimiter = ' ',
            size_t count = 0, bool strip_whitespace = true, bool strip_quotes = true,
            bool empty = false);
+void split(strings& split_string, const char* s, const char delimiter = ' ',
+           size_t count = 0, bool strip_whitespace = true, bool strip_quotes = true,
+           bool empty = false);
 
 /**
  * @brief Join the strings into a single string.

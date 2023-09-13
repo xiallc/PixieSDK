@@ -29,7 +29,7 @@
 namespace xia {
 namespace util {
 namespace string {
-void split(strings& split_string, const std::string& s, const char delimiter, size_t count,
+void split(strings& split_string, const char* s, const char delimiter, size_t count,
            bool strip_whitespace, bool strip_quotes, bool empty) {
     std::stringstream ss(s);
     std::string e;
@@ -46,6 +46,11 @@ void split(strings& split_string, const std::string& s, const char delimiter, si
             }
         }
     }
+}
+
+void split(strings& split_string, const std::string& s, const char delimiter, size_t count,
+           bool strip_whitespace, bool strip_quotes, bool empty) {
+    return split(split_string, s.c_str(), delimiter, count, strip_whitespace, strip_quotes, empty);
 }
 
 void ltrim(std::string& s) {
