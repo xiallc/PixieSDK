@@ -272,12 +272,15 @@ TEST_SUITE("Crate: modules") {
         CHECK(crate->revision == -1);
         CHECK(crate->busy() == false);
         CHECK(crate->users() == 0);
+        CHECK(crate->count_present() == 0);
+        CHECK_NOTHROW(crate->check_active_run());
         CHECK_THROWS_WITH_AS(crate->probe(), "crate is not ready", crate_error);
         CHECK_THROWS_WITH_AS(crate->ready(), "crate is not ready", crate_error);
         CHECK_THROWS_WITH_AS(crate->probe(), "crate is not ready", crate_error);
         CHECK_THROWS_WITH_AS(crate->find(crate->num_slots), "module slot not found", crate_error);
         CHECK_THROWS_WITH_AS(crate[0], "module number out of range: 0", crate_error);
         CHECK_THROWS_WITH_AS(crate.find(0), "module slot not found", crate_error);
+        CHECK_NOTHROW(crate->shutdown());
     }
     TEST_CASE("initialize offline, boot") {
         using namespace xia::pixie;
@@ -287,12 +290,15 @@ TEST_SUITE("Crate: modules") {
         CHECK_NOTHROW(crate->initialize());
         CHECK(crate.num_modules == test_modules);
         CHECK(crate->num_offline == test_modules);
+        CHECK(crate->count_present() == test_modules);
+        CHECK_THROWS_WITH_AS(crate->initialize(), "create already initialised", crate_error);
         CHECK_NOTHROW(crate->probe());
         CHECK(crate.num_modules == test_modules);
         CHECK(crate->num_offline == test_modules);
         CHECK_NOTHROW(crate->boot());
         CHECK(crate->num_online == test_modules);
         CHECK(crate->num_offline == 0);
+        CHECK_NOTHROW(crate->check_active_run());
         firmware::release_type release;
         firmware::firmware_set::set_type type;
         crate[0].firmware_release(release, type);
@@ -315,6 +321,7 @@ TEST_SUITE("Crate: modules") {
         CHECK_THROWS_WITH_AS(
             crate[0].boot(params, fw_set_2),
             "module: num=0,slot=2: partial boot: firmware does not match resident firmware", crate_error);
+        CHECK_THROWS_WITH_AS(crate->shutdown(), "crate shutdown offline count not present count", crate_error);
     }
     TEST_CASE("initialize") {
         using namespace xia::pixie;
@@ -422,6 +429,22 @@ TEST_SUITE("Crate: modules") {
                                  "module: num=0,slot=2: fifo: bandwidth value out of range",
                                  crate_error);
         }
+    }
+    TEST_CASE("boot out of range slot") {
+        using namespace xia::pixie;
+        sim::crate sim_crate(false);
+        sim::load_firmware_sets(sim_crate.firmware, firmware_defs);
+        crate::view::module crate(sim_crate);
+        crate::crate::boot_params params;
+        params.boot_comms = true;
+        params.boot_fippi = true;
+        params.boot_dsp = true;
+        crate::crate::boot_params::range slots{31};
+        params.slots = slots;
+        CHECK_NOTHROW(crate->initialize());
+        CHECK_NOTHROW(crate->probe());
+        CHECK_THROWS_WITH_AS(crate->boot(params), "invalid boot slot number", crate_error);
+        CHECK(crate->num_online == 0);
     }
     TEST_CASE("open and close") {
         using namespace xia::pixie;
@@ -731,6 +754,20 @@ TEST_SUITE("Crate: modules") {
                 CHECK(export_json[mod]["channel"]["input"]["BLcut"][0] == 1);
                 CHECK(export_json[mod]["metadata"]["dsp"]["rev"] == crate[mod].revision);
             }
+        }
+        SUBCASE("move module") {
+            std::string cfg = '[' + long_config + ']';
+            CHECK_NOTHROW(xia::pixie::config::import_settings(cfg, crate, slots_loaded));
+            CHECK(crate[0].read("SlotID") == 2);
+            CHECK(crate[0].read("SLOW_FILTER_RANGE") == 6);
+            module::module mod = std::move(crate[0]);
+            CHECK(mod.read("SlotID") == 2);
+            CHECK(mod.read("SLOW_FILTER_RANGE") == 6);
+            CHECK(mod.slot == 2);
+            CHECK_NOTHROW(mod = std::move(crate[1]));
+            CHECK(mod.read("SlotID") == 6);
+            CHECK(mod.read("SLOW_FILTER_RANGE") == 3);
+            CHECK(mod.slot == 6);
         }
     }
     TEST_CASE("sim read/write") {

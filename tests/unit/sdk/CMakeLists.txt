@@ -11,6 +11,7 @@ add_executable(pixie_sdk_unit_test_runner $<TARGET_OBJECTS:BaseTestRunnerObjLib>
         test_pixie_firmware.cpp
         test_pixie_log.cpp
         test_pixie_mib.cpp
+        test_pixie_report.cpp
         test_pixie_util.cpp
         test_pixie16_module.cpp
         )

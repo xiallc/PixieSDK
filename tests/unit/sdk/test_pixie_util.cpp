@@ -660,4 +660,55 @@ TEST_SUITE("xia::util") {
         CHECK_NOTHROW(te4.remove("^test:"));
         CHECK(te4.tokens.empty() == true);
     }
+
+    TEST_CASE("linear fit") {
+        SUBCASE("k = 0 line") {
+            xia::util::numerics::linear_fit<double> fit;
+            fit.update(1.0, 1.0);
+            fit.update(2.0, 1.0);
+            fit.update(3.0, 1.0);
+            fit.calc();
+            CHECK(fit.y(1.0) == doctest::Approx(1.0).epsilon(0.001));
+            CHECK(fit.y(3.0) == doctest::Approx(1.0).epsilon(0.001));
+            CHECK(fit.y(5.0) == doctest::Approx(1.0).epsilon(0.001));
+            CHECK(fit.k == doctest::Approx(0.0).epsilon(0.001));
+            CHECK(fit.c == doctest::Approx(1.0).epsilon(0.001));
+        }
+        SUBCASE("k = 1 line") {
+            xia::util::numerics::linear_fit<double> fit;
+            fit.update(1.0, 1.0);
+            fit.update(2.0, 2.0);
+            fit.update(3.0, 3.0);
+            fit.calc();
+            CHECK(fit.y(1.0) == doctest::Approx(1.0).epsilon(0.001));
+            CHECK(fit.y(3.0) == doctest::Approx(3.0).epsilon(0.001));
+            CHECK(fit.y(5.0) == doctest::Approx(5.0).epsilon(0.001));
+            CHECK(fit.k == doctest::Approx(1.0).epsilon(0.001));
+            CHECK(fit.c == doctest::Approx(0.0).epsilon(0.001));
+        }
+        SUBCASE("k = 0.5 line") {
+            xia::util::numerics::linear_fit<double> fit;
+            fit.update(1.0, 1.0);
+            fit.update(2.0, 1.0);
+            fit.update(3.0, 2.0);
+            fit.calc();
+            CHECK(fit.y(3.0) == doctest::Approx(11.0/6.0).epsilon(0.001));
+            CHECK(fit.y(5.0) == doctest::Approx(17.0/6.0).epsilon(0.001));
+            CHECK(fit.y(7.0) == doctest::Approx(23.0/6.0).epsilon(0.001));
+            CHECK(fit.k == doctest::Approx(0.5).epsilon(0.001));
+            CHECK(fit.c == doctest::Approx(1.0/3.0).epsilon(0.001));
+        }
+        SUBCASE("k = -1 line") {
+            xia::util::numerics::linear_fit<double> fit;
+            fit.update(1.0, 3.0);
+            fit.update(2.0, 2.0);
+            fit.update(3.0, 1.0);
+            fit.calc();
+            CHECK(fit.y(1.0) == doctest::Approx(3.0).epsilon(0.001));
+            CHECK(fit.y(3.0) == doctest::Approx(1.0).epsilon(0.001));
+            CHECK(fit.y(5.0) == doctest::Approx(-1.0).epsilon(0.001));
+            CHECK(fit.k == doctest::Approx(-1.0).epsilon(0.001));
+            CHECK(fit.c == doctest::Approx(4.0).epsilon(0.001));
+        }
+    }
 }
