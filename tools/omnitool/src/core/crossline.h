@@ -106,9 +106,11 @@ extern void  crossline_history_clear (void);
 
 typedef struct crossline_completions_t crossline_completions_t;
 typedef void (*crossline_completion_callback) (const char *buf, crossline_completions_t *pCompletions);
+typedef void (*crossline_user_completion_callback) (void* user, const char *buf, crossline_completions_t *pCompletions);
 
 // Register completion callback
 extern void  crossline_completion_register (crossline_completion_callback pCbFunc);
+extern void  crossline_user_completion_register (crossline_user_completion_callback pCbFunc, void* user);
 
 // Add completion in callback. Word is must, help for word is optional.
 extern void  crossline_completion_add (crossline_completions_t *pCompletions, const char *word, const char *help);

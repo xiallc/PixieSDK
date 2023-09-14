@@ -203,6 +203,8 @@ static char 	s_history_buf[CROSS_HISTORY_MAX_LINE][CROSS_HISTORY_BUF_LEN];
 static uint32_t s_history_id = 0; // Increase always, wrap until UINT_MAX
 static char 	s_clip_buf[CROSS_HISTORY_BUF_LEN]; // Buf to store cut text
 static crossline_completion_callback s_completion_callback = NULL;
+static crossline_user_completion_callback s_user_completion_callback = NULL;
+static void* 	s_user_completion_user_data = NULL;
 static int		s_paging_print_line = 0; // For paging control
 static int		s_got_resize 		= 0; // Window size changed
 static crossline_color_e s_prompt_color = CROSSLINE_COLOR_DEFAULT;
@@ -415,6 +417,12 @@ int crossline_history_load (const char* filename)
 void crossline_completion_register (crossline_completion_callback pCbFunc)
 {
 	s_completion_callback = pCbFunc;
+}
+
+void crossline_user_completion_register (crossline_user_completion_callback pCbFunc, void* user)
+{
+	s_user_completion_callback = pCbFunc;
+	s_user_completion_user_data = user;
 }
 
 // Add completion in callback. Word is must, help for word is optional.
@@ -1032,7 +1040,7 @@ static int crossline_getkey (int *is_esc)
 }
 
 static void crossline_winchg_event (int arg)
-{ s_got_resize = 1; }
+{ (void) arg; s_got_resize = 1; }
 static void crossline_winchg_reg (void)
 {
 	struct sigaction sa;
@@ -1281,12 +1289,15 @@ static char* crossline_readline_edit (char *buf, int size, const char *prompt, i
 		case KEY_TAB:		// Autocomplete (same with CTRL_KEY('I'))
 		case ALT_KEY('='):	// List possible completions.
 		case ALT_KEY('?'):
-			if (in_his || (NULL == s_completion_callback) || (pos != num))
+			if (in_his || (NULL == s_completion_callback && NULL == s_user_completion_callback) || (pos != num))
 				{ break; }
 			buf[pos] = '\0';
 			completions.num = 0;
 			completions.hints[0] = '\0';
-			s_completion_callback (buf, &completions);
+			if (NULL != s_user_completion_callback)
+				s_user_completion_callback (s_user_completion_user_data, buf, &completions);
+			else if (NULL != s_completion_callback)
+				s_completion_callback (buf, &completions);
 			if (completions.num >= 1) {
 				if (KEY_TAB == ch) {
 					len2 = len = (int)strlen(completions.word[0]);
@@ -1313,6 +1324,7 @@ static char* crossline_readline_edit (char *buf, int size, const char *prompt, i
 /* History Commands */
 		case KEY_UP:		// Fetch previous line in history.
 			if (crossline_updown_move (prompt, &pos, &num, -1, 0)) { break; } // check multi line move up
+			/* FALLTHRU */
 		case CTRL_KEY('P'):
 			if (in_his) { break; }
 			if (!copy_buf)
@@ -1323,6 +1335,7 @@ static char* crossline_readline_edit (char *buf, int size, const char *prompt, i
 
 		case KEY_DOWN:		// Fetch next line in history.
 			if (crossline_updown_move (prompt, &pos, &num, 1, 0)) { break; } // check multi line move down
+			/* FALLTHRU */
 		case CTRL_KEY('N'):
 			if (in_his) { break; }
 			if (!copy_buf)
