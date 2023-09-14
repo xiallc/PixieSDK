@@ -116,6 +116,13 @@ void var_read(command::context& context) {
         }
     }
 }
+
+bool var_read_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
+}
 } // namespace module
 } // namespace omnitool
 } // namespace xia

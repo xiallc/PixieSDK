@@ -49,6 +49,13 @@ void stats_rpt(command::context& context) {
     std::ofstream output(file_opt);
     output << rpt.str();
 }
+
+bool stats_rpt_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
+}
 } // namespace module
 } // namespace omnitool
 } // namespace xia

@@ -32,11 +32,11 @@ namespace omnitool {
 namespace module {
 void copy(command::context& context) {
     auto& crate = context.crate;
-    command::command::argument filter_mask;
-    command::command::argument src_mod_opt;
-    command::command::argument dest_mod_opt;
-    command::command::argument src_chan_opt;
-    command::command::argument dest_chan_opt;
+    command::argument filter_mask;
+    command::argument src_mod_opt;
+    command::argument dest_mod_opt;
+    command::argument src_chan_opt;
+    command::argument dest_chan_opt;
     filter_mask = context.cmd.get_arg();
     src_mod_opt = context.cmd.get_arg();
     dest_mod_opt = context.cmd.get_arg();
@@ -72,6 +72,13 @@ void copy(command::context& context) {
       crate[dest_mod_nums[0]].module_vars);
     }
     crate[dest_mod_nums[0]].sync_vars();
+}
+
+bool copy_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
 }
 } // namespace module
 } // namespace omnitool

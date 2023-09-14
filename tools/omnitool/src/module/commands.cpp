@@ -27,7 +27,8 @@ namespace omnitool {
 namespace module {
 omnitool_command_handler_decl(adc_acq);
 static const xia::omnitool::command::definition adc_acq_cmd = {
-    "Module", "/module/adc-acq", adc_acq,
+    "Module", "/module/adc-acq",
+    omnitool_command_handers(adc_acq),
     {"init", "probe"},
     0, 1, 0,
     {},
@@ -37,7 +38,8 @@ static const xia::omnitool::command::definition adc_acq_cmd = {
 
 omnitool_command_handler_decl(adc_save);
 static const command::definition adc_save_cmd = {
-    "Module", "/module/adc-save", adc_save,
+    "Module", "/module/adc-save",
+    omnitool_command_handers(adc_save),
     {"init", "probe"},
     0, 3, 0,
     {},
@@ -47,7 +49,8 @@ static const command::definition adc_save_cmd = {
 
 omnitool_command_handler_decl(adj_off);
 static const command::definition adj_off_cmd = {
-    "Module", "/module/adj-off", adj_off,
+    "Module", "/module/adj-off",
+    omnitool_command_handers(adj_off),
     {"init", "probe"},
     0, 1, 0,
     {},
@@ -57,7 +60,8 @@ static const command::definition adj_off_cmd = {
 
 omnitool_command_handler_decl(bl_acq);
 static const command::definition bl_acq_cmd = {
-    "Module", "/module/bl-acq", bl_acq,
+    "Module", "/module/bl-acq",
+    omnitool_command_handers(bl_acq),
     {"init", "probe"},
     0, 1, 0,
     {},
@@ -67,7 +71,8 @@ static const command::definition bl_acq_cmd = {
 
 omnitool_command_handler_decl(bl_save);
 static const command::definition bl_save_cmd = {
-    "Module", "/module/bl-save", bl_save,
+    "Module", "/module/bl-save",
+    omnitool_command_handers(bl_save),
     {"init", "probe"},
     0, 2, 0,
     {},
@@ -77,7 +82,8 @@ static const command::definition bl_save_cmd = {
 
 omnitool_command_handler_decl(copy);
 static const command::definition copy_cmd = {
-    "Module", "/module/copy", copy,
+    "Module", "/module/copy",
+    omnitool_command_handers(copy),
     {"init", "probe"},
     3, 5, 0,
     {},
@@ -87,7 +93,8 @@ static const command::definition copy_cmd = {
 
 omnitool_command_handler_decl(db);
 static const command::definition db_cmd = {
-    "Module", "/module/db", db,
+    "Module", "/module/db",
+    omnitool_command_handers(db),
     {"init", "probe"},
     1, 3, 0,
     {},
@@ -97,7 +104,8 @@ static const command::definition db_cmd = {
 
 omnitool_command_handler_decl(hist_resume);
 static const command::definition hist_resume_cmd = {
-    "Module", "/module/hist-resume", hist_resume,
+    "Module", "/module/hist-resume",
+    omnitool_command_handers(hist_resume),
     {"init", "probe"},
     1, 1, 0,
     {},
@@ -107,7 +115,8 @@ static const command::definition hist_resume_cmd = {
 
 omnitool_command_handler_decl(hist_save);
 static const command::definition hist_save_cmd = {
-    "Module", "/module/hist-save", hist_save,
+    "Module", "/module/hist-save",
+    omnitool_command_handers(hist_save),
     {"init", "probe"},
     1, 2, 0,
     {omnitool_command_opt_arg_decl("b")},
@@ -117,7 +126,8 @@ static const command::definition hist_save_cmd = {
 
 omnitool_command_handler_decl(hist_start);
 static const command::definition hist_start_cmd = {
-    "Module", "/module/hist-start", hist_start,
+    "Module", "/module/hist-start",
+    omnitool_command_handers(hist_start),
     {"init", "probe"},
     1, 1, 0,
     {},
@@ -127,7 +137,8 @@ static const command::definition hist_start_cmd = {
 
 omnitool_command_handler_decl(list_mode);
 static const command::definition list_mode_cmd = {
-    "Module", "/module/list-mode", list_mode,
+    "Module", "/module/list-mode",
+    omnitool_command_handers(list_mode),
     {"init", "probe"},
     3, 3, 0,
     {},
@@ -137,7 +148,8 @@ static const command::definition list_mode_cmd = {
 
 omnitool_command_handler_decl(list_resume);
 static const command::definition list_resume_cmd = {
-    "Module", "/module/list-resume", list_resume,
+    "Module", "/module/list-resume",
+    omnitool_command_handers(list_resume),
     {"init", "probe"},
     1, 1, 0,
     {},
@@ -147,7 +159,8 @@ static const command::definition list_resume_cmd = {
 
 omnitool_command_handler_decl(list_save);
 static const command::definition list_save_cmd = {
-    "Module", "/module/list-save", list_save,
+    "Module", "/module/list-save",
+    omnitool_command_handers(list_save),
     {"init", "probe"},
     3, 3, 0,
     {},
@@ -157,7 +170,8 @@ static const command::definition list_save_cmd = {
 
 omnitool_command_handler_decl(list_start);
 static const command::definition list_start_cmd = {
-    "Module", "/module/list-start", list_start,
+    "Module", "/module/list-start",
+    omnitool_command_handers(list_start),
     {"init", "probe"},
     1, 1, 0,
     {},
@@ -167,7 +181,8 @@ static const command::definition list_start_cmd = {
 
 omnitool_command_handler_decl(lset_import);
 static const command::definition lset_import_cmd = {
-    "Module", "/module/lset-import", lset_import,
+    "Module", "/module/lset-import",
+    omnitool_command_handers(lset_import),
     {"init", "probe"},
     2, 3, 0,
     {},
@@ -177,7 +192,8 @@ static const command::definition lset_import_cmd = {
 
 omnitool_command_handler_decl(lset_load);
 static const command::definition lset_load_cmd = {
-    "Module", "/module/lset-load", lset_load,
+    "Module", "/module/lset-load",
+    omnitool_command_handers(lset_load),
     {"init", "probe"},
     2, 3, 0,
     {},
@@ -187,7 +203,8 @@ static const command::definition lset_load_cmd = {
 
 omnitool_command_handler_decl(lset_report);
 static const command::definition lset_report_cmd = {
-    "Module", "/module/lset-report", lset_report,
+    "Module", "/module/lset-report",
+    omnitool_command_handers(lset_report),
     {"init", "probe"},
     2, 2, 0,
     {},
@@ -197,7 +214,8 @@ static const command::definition lset_report_cmd = {
 
 omnitool_command_handler_decl(mod_offline);
 static const command::definition mod_offline_cmd = {
-    "Module", "/module/mod-offline", mod_offline,
+    "Module", "/module/mod-offline",
+    omnitool_command_handers(mod_offline),
     {"init", "probe"},
     1, 1, 0,
     {},
@@ -207,7 +225,8 @@ static const command::definition mod_offline_cmd = {
 
 omnitool_command_handler_decl(mod_online);
 static const command::definition mod_online_cmd = {
-    "Module", "/module/mod-online", mod_online,
+    "Module", "/module/mod-online",
+    omnitool_command_handers(mod_online),
     {"init", "probe"},
     1, 1, 0,
     {},
@@ -217,7 +236,8 @@ static const command::definition mod_online_cmd = {
 
 omnitool_command_handler_decl(mset_import);
 static const command::definition mset_import_cmd = {
-    "mset-import", "/module/mset-import", mset_import,
+    "mset-import", "/module/mset-import",
+    omnitool_command_handers(mset_import),
     {"init", "probe"},
     2, 3, 0,
     {},
@@ -227,7 +247,8 @@ static const command::definition mset_import_cmd = {
 
 omnitool_command_handler_decl(override_fw);
 static const command::definition override_fw_cmd = {
-    "Module", "/module/firmware/override", override_fw,
+    "Module", "/module/firmware/override",
+    omnitool_command_handers(override_fw),
     {"init", "probe"},
     2, 2, 0,
     {},
@@ -237,7 +258,8 @@ static const command::definition override_fw_cmd = {
 
 omnitool_command_handler_decl(par_read);
 static const command::definition par_read_cmd = {
-    "Module", "/module/par-read", par_read,
+    "Module", "/module/par-read",
+    omnitool_command_handers(par_read),
     {"init", "probe"},
     2, 3, 0,
     {},
@@ -247,7 +269,8 @@ static const command::definition par_read_cmd = {
 
 omnitool_command_handler_decl(par_write);
 static const command::definition par_write_cmd = {
-    "Module", "/module/par-write", par_write,
+    "Module", "/module/par-write",
+    omnitool_command_handers(par_write),
     {"init", "probe"},
     3, 4, 0,
     {},
@@ -257,7 +280,8 @@ static const command::definition par_write_cmd = {
 
 omnitool_command_handler_decl(reg_read);
 static const command::definition reg_read_cmd = {
-    "Module", "/module/reg-read", reg_read,
+    "Module", "/module/reg-read",
+    omnitool_command_handers(reg_read),
     {"init"},
     2, 2, 0,
     {omnitool_command_opt_decl("s"), omnitool_command_opt_decl("x")},
@@ -267,7 +291,8 @@ static const command::definition reg_read_cmd = {
 
 omnitool_command_handler_decl(reg_write);
 static const command::definition reg_write_cmd = {
-    "Module", "/module/reg-write", reg_write,
+    "Module", "/module/reg-write",
+    omnitool_command_handers(reg_write),
     {"init"},
     3, 3, 0,
     {omnitool_command_opt_decl("s")},
@@ -277,7 +302,8 @@ static const command::definition reg_write_cmd = {
 
 omnitool_command_handler_decl(run_active);
 static const command::definition run_active_cmd = {
-    "Module", "/module/run-active", run_active,
+    "Module", "/module/run-active",
+    omnitool_command_handers(run_active),
     {"init", "probe"},
     1, 1, 0,
     {},
@@ -287,7 +313,8 @@ static const command::definition run_active_cmd = {
 
 omnitool_command_handler_decl(run_end);
 static const command::definition run_end_cmd = {
-    "Module", "/module/run-end", run_end,
+    "Module", "/module/run-end",
+    omnitool_command_handers(run_end),
     {"init", "probe"},
     1, 1, 0,
     {},
@@ -297,7 +324,8 @@ static const command::definition run_end_cmd = {
 
 omnitool_command_handler_decl(set_dacs);
 static const command::definition set_dacs_cmd = {
-    "Module", "/module/set-dacs", set_dacs,
+    "Module", "/module/set-dacs",
+    omnitool_command_handers(set_dacs),
     {"init", "probe"},
     1, 1, 0,
     {},
@@ -307,7 +335,8 @@ static const command::definition set_dacs_cmd = {
 
 omnitool_command_handler_decl(stats);
 static const command::definition stats_cmd = {
-    "Module", "/module/stats", stats,
+    "Module", "/module/stats",
+    omnitool_command_handers(stats),
     {"init", "probe"},
     1, 2, 0,
     {omnitool_command_opt_arg_decl("s")},
@@ -317,7 +346,8 @@ static const command::definition stats_cmd = {
 
 omnitool_command_handler_decl(stats_rpt);
 static const command::definition stats_rpt_cmd = {
-    "Module", "/module/stats-rpt", stats_rpt,
+    "Module", "/module/stats-rpt",
+    omnitool_command_handers(stats_rpt),
     {"init", "probe"},
     2, 2, 0,
     {},
@@ -327,7 +357,8 @@ static const command::definition stats_rpt_cmd = {
 
 omnitool_command_handler_decl(test);
 static const command::definition test_cmd = {
-    "Module", "/module/test", test,
+    "Module", "/module/test",
+    omnitool_command_handers(test),
     {"init", "probe"},
     1, 1, 0,
     {omnitool_command_opt_arg_decl("m")},
@@ -337,7 +368,8 @@ static const command::definition test_cmd = {
 
 omnitool_command_handler_decl(var_read);
 static const command::definition var_read_cmd = {
-    "Module", "/module/var-read", var_read,
+    "Module", "/module/var-read",
+    omnitool_command_handers(var_read),
     {"init", "probe"},
     2, 4, 0,
     {},
@@ -347,7 +379,8 @@ static const command::definition var_read_cmd = {
 
 omnitool_command_handler_decl(var_write);
 static const command::definition var_write_cmd = {
-    "Module", "/module/var-write", var_write,
+    "Module", "/module/var-write",
+    omnitool_command_handers(var_write),
     {"init", "probe"},
     3, 5, 0,
     {},

@@ -42,6 +42,13 @@ void lset_report(command::context& context) {
         context.opts.out << settings;
     }
 }
+
+bool lset_report_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
+}
 } // namespace module
 } // namespace omnitool
 } // namespace xia

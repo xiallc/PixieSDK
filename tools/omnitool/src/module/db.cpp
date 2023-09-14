@@ -34,8 +34,8 @@ void db(command::context& context) {
         str == "disable-swap";
     };
     auto& crate = context.crate;
-    command::command::argument mod_nums_opt;
-    command::command::argument chans_opt;
+    command::argument mod_nums_opt;
+    command::argument chans_opt;
     auto db_opt = context.cmd.get_arg();
     if (!check_cmd(db_opt)) {
         mod_nums_opt = db_opt;
@@ -81,6 +81,13 @@ void db(command::context& context) {
             }
         }
     }
+}
+
+bool db_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
 }
 } // namespace module
 } // namespace omnitool

@@ -37,6 +37,13 @@ void adj_off(command::context& context) {
         crate[mod_num].adjust_offsets();
     }
 }
+
+bool adj_off_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
+}
 } // namespace module
 } // namespace omnitool
 } // namespace xia

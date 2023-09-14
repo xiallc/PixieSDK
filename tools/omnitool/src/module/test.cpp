@@ -100,6 +100,13 @@ void test(command::context& context) {
         context, mod_nums, tests, "fifo test error; see log");
     performance_stats(context, tests, true);
 }
+
+bool test_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
+}
 } // namespace module
 } // namespace omnitool
 } // namespace xia

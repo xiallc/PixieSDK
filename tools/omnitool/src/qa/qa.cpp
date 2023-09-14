@@ -27,7 +27,8 @@ namespace omnitool {
 namespace qa {
 omnitool_command_handler_decl(offset_sweep);
 static const command::definition offset_sweep_cmd = {
-    "QA", "/qa/afe/offset-sweep", offset_sweep,
+    "QA", "/qa/afe/offset-sweep",
+    omnitool_command_handers(offset_sweep),
     {"init", "probe"},
     0, 2, 0,
     {omnitool_command_opt_decl("p"), omnitool_command_opt_arg_decl("s"),

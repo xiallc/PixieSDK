@@ -42,6 +42,13 @@ void override_fw(command::context& context) {
             crate[mod_num].firmware, fwfile_opt);
     }
 }
+
+bool override_fw_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
+}
 } // namespace module
 } // namespace omnitool
 } // namespace xia

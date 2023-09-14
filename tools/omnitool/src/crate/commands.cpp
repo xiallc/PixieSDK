@@ -27,7 +27,8 @@ namespace omnitool {
 namespace crate {
 omnitool_command_handler_decl(boot);
 static const xia::omnitool::command::definition boot_cmd = {
-    "Crate", "/crate/boot", boot,
+    "Crate", "/crate/boot",
+    omnitool_command_handers(boot),
     {"init", "probe"},
     0, 4, 0,
     {},
@@ -37,7 +38,8 @@ static const xia::omnitool::command::definition boot_cmd = {
 
 omnitool_command_handler_decl(crate_report);
 static const xia::omnitool::command::definition crate_cmd = {
-    "Crate", "/crate/crate", crate_report,
+    "Crate", "/crate/crate",
+    omnitool_command_handers(crate_report),
     {"init", "probe"},
     0, 0, 0,
     {},
@@ -47,7 +49,8 @@ static const xia::omnitool::command::definition crate_cmd = {
 
 omnitool_command_handler_decl(export_);
 static const xia::omnitool::command::definition export_cmd = {
-    "Crate", "/crate/export", export_,
+    "Crate", "/crate/export",
+    omnitool_command_handers(export_),
     {"init", "probe"},
     1, 1, 0,
     {},
@@ -57,7 +60,8 @@ static const xia::omnitool::command::definition export_cmd = {
 
 omnitool_command_handler_decl(fw_report);
 static const xia::omnitool::command::definition fw_report_cmd = {
-    "Crate", "/crate/firmware/report", fw_report,
+    "Crate", "/crate/firmware/report",
+    omnitool_command_handers(fw_report),
     {"init", "probe"},
     1, 1, 0,
     {},
@@ -67,7 +71,8 @@ static const xia::omnitool::command::definition fw_report_cmd = {
 
 omnitool_command_handler_decl(import);
 static const xia::omnitool::command::definition import_cmd = {
-    "Crate", "/crate/import", import,
+    "Crate", "/crate/import",
+    omnitool_command_handers(import),
     {"init", "probe"},
     1, 1, 0,
     {},
@@ -77,7 +82,8 @@ static const xia::omnitool::command::definition import_cmd = {
 
 omnitool_command_handler_decl(report);
 static const xia::omnitool::command::definition report_cmd = {
-    "Crate", "/crate/report", report,
+    "Crate", "/crate/report",
+    omnitool_command_handers(report),
     {"init", "probe"},
     1, 1, 0,
     {},

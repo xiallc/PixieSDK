@@ -47,6 +47,13 @@ void fw_report(command::context& context) {
     pixie::firmware::system_fw_report(
       *out, pixie::firmware::system_firmware_path);
 }
+
+bool fw_report_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
+}
 } // namespace crate
 } // namespace omnitool
 } // namespace xia

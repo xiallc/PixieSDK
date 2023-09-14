@@ -94,6 +94,13 @@ void boot(command::context& context) {
         context.opts.out << "boot time=" << tp << std::endl;
     }
 }
+
+bool boot_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
+}
 } // namespace crate
 } // namespace omnitool
 } // namespace xia

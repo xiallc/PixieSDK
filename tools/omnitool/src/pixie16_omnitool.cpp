@@ -19,7 +19,7 @@
 /**
  * @brief A General Purpose Tool for Pixie16
  *
- * Named after an all-purpose tool in the Mass Effect video game.
+ * Named after an all purpose tool in the Mass Effect's video game.
  */
 
 #include <cstring>
@@ -82,6 +82,17 @@ static void firmware_load(xia::omnitool::command::context& context) {
     load_firmwares(crate->firmware, opts.firmware_host_path.c_str());
 }
 
+static void status(xia::omnitool::command::context& context) {
+    auto& crate = context.crate;
+    auto& opts = context.opts;
+    std::ostringstream oss;
+    oss << "s:" << crate->num_slots
+        << " p:" << crate->num_present
+        << " +" << crate->num_online
+        << " -" << crate->num_offline;
+    opts.status = oss.str();
+}
+
 static void initialize(xia::omnitool::command::context& context) {
     auto& crate = context.crate;
     auto& opts = context.opts;
@@ -141,7 +152,7 @@ using args_int_flag = args::ValueFlag<int>;
 using args_size_flag = args::ValueFlag<size_t>;
 using args_string_flag = args::ValueFlag<std::string>;
 using args_strings_flag = args::ValueFlagList<std::string>;
-using args_positional_list = args::PositionalList<xia::omnitool::command::command::argument>;
+using args_positional_list = args::PositionalList<xia::omnitool::command::argument>;
 
 int main(int argc, char* argv[]) {
     xia::omnitool::crate::register_commands();
@@ -210,6 +221,10 @@ int main(int argc, char* argv[]) {
     args_strings_flag cmd_file_flag(
         option_group, "cmd_file_flag",
         "File of commands to execute.", {'c', "cmd"});
+    args_string_flag cmd_path(
+        option_group, "cmd_path",
+        "Command search path (':' separated) prepended to the default path, default: '/util'.",
+        {'p', "path"});
     args_flag no_execute(
         option_group, "no_execute", "Parse the command but do not execute.",
         {'n', "no-execute"});
@@ -337,7 +352,7 @@ int main(int argc, char* argv[]) {
             session_opts.firmware_host_path = xia::pixie::firmware::system_firmware_path;
         }
 
-        xia::omnitool::command::command::arguments cmds;
+        xia::omnitool::command::arguments cmds;
         for (auto& cmd : args_cmds) {
             cmds.push_back(cmd);
         }
@@ -348,21 +363,38 @@ int main(int argc, char* argv[]) {
         }
 
         /*
+         * Default path is /util and users can prepend a path, for example:
+         *   /crate:/module
+         */
+        session_opts.path = {"/util"};
+        if (cmd_path) {
+            xia::util::string::strings user_path;
+            xia::util::string::split(user_path, args::get(cmd_path), ':');
+            session_opts.path.insert(
+                session_opts.path.begin(), user_path.begin(), user_path.end());
+        }
+
+        session_opts.ops.set("status", [](xia::omnitool::command::context& context) {
+            status(context);
+        }, false);
+        session_opts.ops.set("init", [](xia::omnitool::command::context& context) {
+            initialize(context);
+        }, true);
+        session_opts.ops.set("probe", [](xia::omnitool::command::context& context) {
+            firmware_load(context);
+            probe(context);
+        }, true);
+
+        /*
+         * Execute the command or just list them for debugging.
+         */
+        bool execute = !args::get(no_execute);
+
+        /*
          * Execute the commands as a batch.
          */
         xia::omnitool::command::batch batch;
-        batch.path = {"/crate", "/module", "/util"};
-        batch.set_operation("init", [](xia::omnitool::command::context& context) {
-            initialize(context);
-        });
-        batch.set_operation("probe", [](xia::omnitool::command::context& context) {
-            firmware_load(context);
-            probe(context);
-        });
-        batch.parse(cmds);
-
-        bool execute = !args::get(no_execute);
-
+        batch.parse(cmds, session_opts.path);
         if (execute) {
             batch.execute(crate, session_opts);
         } else {

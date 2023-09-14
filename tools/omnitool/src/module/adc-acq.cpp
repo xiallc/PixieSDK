@@ -37,6 +37,13 @@ void adc_acq(command::context& context) {
         crate[mod_num].get_traces();
     }
 }
+
+bool adc_acq_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
+}
 } // namespace module
 } // namespace omnitool
 } // namespace xia

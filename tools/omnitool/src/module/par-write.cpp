@@ -70,6 +70,13 @@ void par_write(command::context& context) {
         }
     }
 }
+
+bool par_write_comp(
+    command::context& context, command::command_completion& completion) {
+    (void) context;
+    (void) completion;
+    return false;
+}
 } // namespace module
 } // namespace omnitool
 } // namespace xia

@@ -42,6 +42,13 @@ void import(command::context& context) {
     context.opts.out << "Modules imported: " << modules.size()
                      << " time=" << tp << std::endl;
 }
+
+bool import_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
+}
 } // namespace crate
 } // namespace omnitool
 } // namespace xia

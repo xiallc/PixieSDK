@@ -38,6 +38,13 @@ void list_resume(command::context& context) {
         crate[mod_num].start_listmode(mode);
     }
 }
+
+bool list_resume_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
+}
 } // namespace module
 } // namespace omnitool
 } // namespace xia

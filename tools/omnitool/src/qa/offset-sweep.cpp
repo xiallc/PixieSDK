@@ -508,6 +508,13 @@ void offset_sweep(command::context& context) {
     module_threads(
         context, mod_nums, offset_sweeps, "offset sweep test error; see log", false);
 }
+
+bool offset_sweep_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
+}
 }
 }
 }

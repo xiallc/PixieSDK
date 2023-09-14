@@ -44,6 +44,13 @@ void list_start(command::context& context) {
         crate[mod_num].start_listmode(mode);
     }
 }
+
+bool list_start_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
+}
 } // namespace module
 } // namespace omnitool
 } // namespace xia

@@ -115,6 +115,13 @@ void var_write(command::context& context) {
         }
     }
 }
+
+bool var_write_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
+}
 } // namespace module
 } // namespace omnitool
 } // namespace xia

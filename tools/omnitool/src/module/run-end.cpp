@@ -38,6 +38,13 @@ void run_end(command::context& context) {
         crate[mod_num].run_end();
     }
 }
+
+bool run_end_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
+}
 } // namespace module
 } // namespace omnitool
 } // namespace xia

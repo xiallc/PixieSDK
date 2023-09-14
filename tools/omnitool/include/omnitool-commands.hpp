@@ -24,6 +24,7 @@
 #define ONMITOOL_COMMANDS_HPP
 
 #include <iostream>
+#include <mutex>
 #include <numeric>
 #include <string>
 #include <vector>
@@ -38,26 +39,89 @@ namespace xia {
 namespace omnitool {
 namespace command {
 /*
- * Command line options
+ * Pixie command option types
  */
 using slot_range = std::vector<int>;
 using module_range = std::vector<size_t>;
-using channel_range = xia::pixie::channel::range;
+using channel_range = pixie::channel::range;
+
+/*
+ * Command arguments and options
+ */
+using argument = std::string;
+using arguments = std::vector<argument>;
+using arguments_iter = arguments::iterator;
+using option = std::pair<argument, argument>;
+using options = std::vector<option>;
 using files = std::vector<std::string>;
 using paths = std::vector<std::string>;
+
+/*
+ * Forward decls
+ */
+struct context;
+struct command;
+struct command_completion;
+
+/**
+ * @brief Named Operations are name functions to perform custom
+ *        functions.
+ *
+ * The command preconditions are named operations a command can
+ * specify that must run before the command is run. The operations are
+ * global to the session.
+ */
+struct named_operations {
+    using operation_func = std::function<void(context& )>;
+    struct operation {
+        bool run_once;
+        operation_func handler;
+        std::once_flag done;
+        operation(operation_func& handler_, bool run_once);
+        operation(const operation& orig);
+        operation();
+        operation& operator=(const operation& orig);
+        void run(context& context_);
+    };
+    using operations = std::map<std::string, operation>;
+
+    /**
+     * Named operations
+     */
+    operations ops;
+
+    named_operations();
+
+    /**
+     * @brief Set a operation
+     */
+    void set(const std::string& name, operation_func func, bool run_once);
+
+    /**
+     * @brief Run the operation
+     */
+    void run(const std::string& name, context& context_);
+};
 
 /**
  * @brief Session options set externally
  */
 struct session_options {
+    std::string status;
+
     slot_range slots;
     slot_range excluded_slots;
     std::string firmware_host_path;
     files firmware_crate_files;
     files firmware_files;
     bool reg_trace;
+
+    named_operations ops;
+
     bool verbose;
     std::ostream& out;
+    paths path;
+    size_t command_depth;
 
     session_options(std::ostream& out);
 };
@@ -65,15 +129,15 @@ struct session_options {
 /**
  * @brief Command context
  */
-struct command;
 struct context {
-    xia::pixie::crate::module_crate& crate;
+    pixie::crate::module_crate& crate;
     session_options& opts;
     command& cmd;
+
     context(
-        xia::pixie::crate::module_crate& crate_,
-        session_options& opts_,
-        command& cmd_) : crate(crate_), opts(opts_), cmd(cmd_) {}
+        pixie::crate::module_crate& crate_,
+        session_options& opts_, command& cmd_) :
+        crate(crate_), opts(opts_), cmd(cmd_) {}
 };
 
 /**
@@ -81,20 +145,16 @@ struct context {
  *        when executed
  */
 struct definition {
-    using argument = std::string;
-    using arguments = std::vector<argument>;
-    using arguments_iter = arguments::iterator;
-    using option = std::pair<argument, argument>;
-    using options = std::vector<option>;
-    using operation = argument;
-    using operations = arguments;
+    using preconditions = arguments;
     using handler = void (*)(context& );
+    using completion_handler = bool (*)(context& , command_completion& );
 
     std::string group;
     std::string name;
 
     handler call;
-    operations boot;
+    completion_handler completion;
+    preconditions preconds;
 
     size_t min_args;
     size_t max_args;
@@ -115,12 +175,6 @@ using definitions = std::vector<definition>;
  * @brief A command is an instance of the command to executed
  */
 struct command {
-    using argument = definition::argument;
-    using arguments = definition::arguments;
-    using arguments_iter = definition::arguments_iter;
-    using option = definition::option;
-    using options = definition::options;
-
     const definition& def;
     options opts;
     arguments args;
@@ -165,27 +219,14 @@ using commands = std::vector<command>;
  * @brief A batch of commands are executed in sequence
  */
 struct batch {
-    using operation_func = std::function<void(context& )>;
-    struct operation {
-        bool run_once;
-        operation_func handler;
-        operation(operation_func& handler_);
-        operation();
-        void run(context& context_);
-    };
-    using operations = std::map<std::string, operation>;
-
     commands cmds;
-    paths path;
-
-    operations ops;
 
     batch();
 
     /**
-     * @brief Set a operation
+     * @brief Clear the command
      */
-    void set_operation(const std::string& name, operation_func func);
+    void clear();
 
     /**
      * @brief Parse a set of arguments into commands.
@@ -194,17 +235,12 @@ struct batch {
      * them. It checks options are valid and argument counts are
      * within range.
      */
-    void parse(command::arguments& cmds);
+    void parse(arguments& cmds, const paths& path);
 
     /**
      * @brief Execute the batch of commands
      */
-    void execute(xia::pixie::crate::module_crate& crate, session_options& opts);
-
-    /**
-     * @brief Run the operation
-     */
-    void run_operation(const std::string& name, context& context_);
+    void execute(pixie::crate::module_crate& crate, session_options& opts);
 
     /**
      * @brief Report the parsed commands
@@ -212,7 +248,82 @@ struct batch {
     void report(std::ostream& out);
 };
 
-#define omnitool_command_handler_decl(_name) void _name(xia::omnitool::command::context& )
+/**
+ * @brief A command definition listing entry
+ */
+struct command_entry {
+    enum struct node {
+        command,
+        directory,
+        path
+    };
+    node type;
+    std::string name;
+    std::string group;
+    std::string help;
+    std::string path;
+    size_t count;
+
+    command_entry(
+        node type, const std::string& name, const std::string& group,
+        const std::string& help, const std::string& path);
+
+    bool isdir() const;
+    bool iscommand() const;
+};
+
+using command_entries = std::vector<command_entry>;
+
+/**
+ * @brief Completions data
+ */
+struct command_completion {
+    const bool incomplete;
+    arguments args;
+    command_entries entries;
+
+    command_completion(const char* buf);
+
+    inline bool has_args() const;
+    inline bool no_args() const;
+
+    inline size_t argc() const;
+    inline const argument& argv(const size_t index) const;
+
+    inline void add(command_entry entry);
+
+    bool partial_match(
+        const std::string& name, const std::string& cmd) const;
+};
+
+inline bool command_completion::has_args() const {
+    return !args.empty();
+}
+
+inline bool command_completion::no_args() const {
+    return args.empty();
+}
+
+inline size_t command_completion::argc() const {
+    return args.size();
+}
+
+inline const argument& command_completion::argv(const size_t index) const {
+    if (index >= args.size()) {
+        throw std::range_error("command_completion: arg index out of range");
+    }
+    return args[index];
+}
+
+inline void command_completion::add(command_entry entry) {
+    entries.push_back(entry);
+}
+
+#define omnitool_command_handler_decl(_name) \
+   void _name(xia::omnitool::command::context& ); \
+   bool _name ## _comp(xia::omnitool::command::context& , \
+                       xia::omnitool::command::command_completion& )
+#define omnitool_command_handers(_name) _name, _name ## _comp
 #define omnitool_command_opt_decl(_name) {"-" _name, ""}
 #define omnitool_command_opt_arg_decl(_name) {"-" _name, "true"}
 
@@ -229,32 +340,38 @@ bool valid_command(definitions::const_iterator cdi);
 /**
  * Find the command given the absolute command path.
  */
-definitions::const_iterator find_command(const command::argument& arg);
+definitions::const_iterator find_command(const argument& arg);
 
 /**
  * Find the command from the command set. Search the provided path if
  * not absolute.
  */
-definitions::const_iterator find_command(const command::argument& arg, paths& path);
+definitions::const_iterator find_command(
+    const argument& arg, const paths& path);
 
 /**
  * Populate the channels from the option. Defaults to all channels if
  * there is no option.
  */
 void channels_option(
-    channel_range& channels, const command::argument& opt, size_t num_channels);
+    channel_range& channels, const argument& opt, size_t num_channels);
 
 /**
  * Populate the module's from the option. Defaults to all modules if
  * there is no option.
  */
 void modules_option(
-    module_range& modules, const command::argument& opt, size_t num_modules);
+    module_range& modules, const argument& opt, size_t num_modules);
 
 /**
  * Load the commands from a file.
  */
-void load_commands(const std::string& name, command::arguments& cmds);
+void load_commands(const std::string& name, arguments& cmds);
+
+/**
+ * List the command in a path
+ */
+void list_commands(const std::string& path, command_entries& entries);
 
 /**
  * Register commands

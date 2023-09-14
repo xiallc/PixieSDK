@@ -38,6 +38,13 @@ void set_dacs(command::context& context) {
         crate[mod_num].set_dacs();
     }
 }
+
+bool set_dacs_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
+}
 } // namespace module
 } // namespace omnitool
 } // namespace xia

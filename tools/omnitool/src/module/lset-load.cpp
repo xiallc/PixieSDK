@@ -61,6 +61,13 @@ void lset_load(command::context& context) {
         }
     }
 }
+
+bool lset_load_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
+}
 } // namespace module
 } // namespace omnitool
 } // namespace xia

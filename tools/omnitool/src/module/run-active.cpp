@@ -39,6 +39,13 @@ void run_active(command::context& context) {
                          << crate[mod_num].run_active() << std::endl;
     }
 }
+
+bool run_active_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
+}
 } // namespace module
 } // namespace omnitool
 } // namespace xia

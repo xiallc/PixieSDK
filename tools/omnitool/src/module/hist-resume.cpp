@@ -38,6 +38,13 @@ void hist_resume(command::context& context) {
         crate[mod_num].start_histograms(mode);
     }
 }
+
+bool hist_resume_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
+}
 } // namespace module
 } // namespace omnitool
 } // namespace xia

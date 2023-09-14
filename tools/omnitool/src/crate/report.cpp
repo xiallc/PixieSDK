@@ -47,6 +47,13 @@ void report(command::context& context) {
     auto& crate = context.crate;
     crate->report(*out);
 }
+
+bool report_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
+}
 } // namespace crate
 } // namespace omnitool
 } // namespace xia

@@ -37,6 +37,13 @@ void mod_offline(command::context& context) {
         crate->set_offline(crate[mod_num]);
     }
 }
+
+bool mod_offline_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
+}
 } // namespace module
 } // namespace omnitool
 } // namespace xia

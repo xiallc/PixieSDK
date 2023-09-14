@@ -210,6 +210,13 @@ void reg_read(command::context& context) {
     }
 }
 
+bool reg_read_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
+}
+
 void reg_write(command::context& context) {
     const std::string label = "reg-write";
     auto slot_opt = context.cmd.get_option("-s");
@@ -244,6 +251,13 @@ void reg_write(command::context& context) {
             dsp.write(address, value);
         }
     }
+}
+
+bool reg_write_comp(
+    command::context& context, command::command_completion& completions) {
+    (void) context;
+    (void) completions;
+    return false;
 }
 } // namespace module
 } // namespace omnitool
