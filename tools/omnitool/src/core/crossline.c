@@ -190,6 +190,7 @@ enum {
 
 typedef struct crossline_completions_t {
 	int		num;
+	char		separator;
 	char	word[CROSS_COMPLET_MAX_LINE][CROSS_COMPLET_WORD_LEN];
 	char	help[CROSS_COMPLET_MAX_LINE][CROSS_COMPLET_HELP_LEN];
 	char	hints[CROSS_COMPLET_HINT_LEN];
@@ -442,9 +443,19 @@ void  crossline_completion_add_color (crossline_completions_t *pCompletions, con
 		pCompletions->num++;
 	}
 }
+void crossline_completion_add_incomplete_color (crossline_completions_t *pCompletions, const char *word,
+											crossline_color_e wcolor, const char *help, crossline_color_e hcolor, char separator)
+{
+	if (NULL != pCompletions) { pCompletions->separator = separator; }
+	crossline_completion_add_color (pCompletions, word, wcolor, help, hcolor);
+}
 void crossline_completion_add (crossline_completions_t *pCompletions, const char *word, const char *help)
 {
 	crossline_completion_add_color (pCompletions, word, CROSSLINE_COLOR_DEFAULT, help, CROSSLINE_COLOR_DEFAULT);
+}
+void crossline_completion_add_incomplete (crossline_completions_t *pCompletions, const char *word, const char *help, char separator)
+{
+	crossline_completion_add_incomplete_color (pCompletions, word, CROSSLINE_COLOR_DEFAULT, help, CROSSLINE_COLOR_DEFAULT, separator);
 }
 
 // Set syntax hints in callback.
@@ -1293,6 +1304,7 @@ static char* crossline_readline_edit (char *buf, int size, const char *prompt, i
 				{ break; }
 			buf[pos] = '\0';
 			completions.num = 0;
+			completions.separator = ' ';
 			completions.hints[0] = '\0';
 			if (NULL != s_user_completion_callback)
 				s_user_completion_callback (s_user_completion_user_data, buf, &completions);
@@ -1311,7 +1323,7 @@ static char* crossline_readline_edit (char *buf, int size, const char *prompt, i
 						new_pos = num - len2;
 						if (new_pos+i+1 < size) {
 							for (i = 0; i < len; ++i) { buf[new_pos+i] = completions.word[0][i]; }
-							if (1 == completions.num) { buf[new_pos + (i++)] = ' '; }
+							if (1 == completions.num) { buf[new_pos + (i++)] = completions.separator; }
 							crossline_refreash (prompt, buf, &pos, &num, new_pos+i, new_pos+i, 1);
 						}
 					}

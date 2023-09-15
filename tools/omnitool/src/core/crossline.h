@@ -119,6 +119,13 @@ extern void  crossline_completion_add (crossline_completions_t *pCompletions, co
 extern void  crossline_completion_add_color (crossline_completions_t *pCompletions, const char *word, 
 														crossline_color_e wcolor, const char *help, crossline_color_e hcolor);
 
+// Add an incomplete completion in callback. Word is must, help for word is optional.
+extern void  crossline_completion_add_incomplete (crossline_completions_t *pCompletions, const char *word, const char *help, char separator);
+
+// Add completion with color.
+extern void  crossline_completion_add_incomplete_color (crossline_completions_t *pCompletions, const char *word,
+														crossline_color_e wcolor, const char *help, crossline_color_e hcolor, char separator);
+
 // Set syntax hints in callback
 extern void  crossline_hints_set (crossline_completions_t *pCompletions, const char *hints);
 
