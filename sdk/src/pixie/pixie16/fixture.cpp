@@ -217,6 +217,7 @@ channel_ptr make(pixie::channel::channel& module_channel, const hw::config& conf
     channel_ptr chan_fixture;
     switch (config.fixture) {
     case hw::module_fixture::DB04:
+    case hw::module_fixture::DB05:
         chan_fixture = std::make_shared<db04>(module_channel, config);
         break;
     default:

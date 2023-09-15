@@ -205,6 +205,7 @@ enum struct module_fixture {
     DB01,
     DB02,
     DB04,
+    DB05,
     DB06,
     DB07
 };
