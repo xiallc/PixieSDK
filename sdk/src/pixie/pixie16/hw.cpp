@@ -37,7 +37,8 @@ struct module_fixture_rec {
 static const std::vector<module_fixture_rec> fixtures = {
     {"mainboard", module_fixture::mainboard}, {"DB01", module_fixture::DB01},
     {"DB02", module_fixture::DB02},           {"DB04", module_fixture::DB04},
-    {"DB06", module_fixture::DB06},           {"DB07", module_fixture::DB07}};
+    {"DB05", module_fixture::DB05},           {"DB06", module_fixture::DB06},
+    {"DB07", module_fixture::DB07}};
 
 config::config(size_t histogram_length, size_t adc_trace_length, size_t num_baselines,
                int adc_bits_, int adc_msps_, int adc_clk_div_, int fpga_clk_mhz_)
