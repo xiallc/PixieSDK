@@ -87,7 +87,7 @@ void stats_report(pixie::module::module& module, std::ostream& out);
  */
 template <class T, class S>
 void subreport(T& obj, std::ostream& out, S num_obj) {
-    for (int s = 0; s < num_obj; ++s) {
+    for (S s = 0; s < num_obj; ++s) {
         auto& sub_obj = obj[s];
         report(sub_obj, out);
         out << std::endl;
