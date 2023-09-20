@@ -79,8 +79,11 @@ void report(pixie::module::module& module, std::ostream& out) {
             var_report(module.module_vars, out);
 
             out << "Channels" << std::endl << "--------" << std::endl << std::endl;
-            subreport(module.channels, out, module.num_channels);
+            for (auto& chan : module.channels) {
+                report(chan, out);
+            }
         }
+        out << std::endl;
     }
 }
 

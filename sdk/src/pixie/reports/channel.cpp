@@ -35,6 +35,7 @@ void report(pixie::channel::channel& channel, std::ostream& out) {
     report(*channel.fixture, out);
     out << std::endl;
     var_report(channel.vars, out, channel.fixture->config.index);
+    out << std::endl;
 }
 
 }

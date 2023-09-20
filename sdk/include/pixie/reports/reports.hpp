@@ -35,6 +35,8 @@
 #include <pixie/pixie16/hw.hpp>
 #include <pixie/pixie16/module.hpp>
 
+using error = xia::pixie::error::error;
+
 namespace xia {
 namespace reports {
 /**
@@ -89,38 +91,25 @@ void report(pixie::crate::crate& crate, std::ostream& out);
  */
 void report(pixie::crate::crate& crate, pixie::format::json& out);
 /**
+ * A report for a crate object
+ * @param crate The crate to read from
+ * @param out The stream to write the report to
+ * @param slots The slots in the crate to report on. If empty, report on all slots
+ */
+void report(pixie::crate::crate& crate, std::ostream& out, pixie::hw::slot_numbers& slots);
+/**
+ * A report for a crate object
+ * @param crate The crate to read from
+ * @param out The JSON object to populate the report to
+ * @param slots The slots in the crate to report on. If empty, report on all slots
+ */
+void report(pixie::crate::crate& crate, pixie::format::json& out, pixie::hw::slot_numbers& slots);
+/**
  * A report for a module's stats object
  * @param module The module to read stats from
  * @param out The stream to write the report to
  */
 void stats_report(pixie::module::module& module, std::ostream& out);
-
-/**
- * Used to iterate through and report on the subobjects of a given object
- */
-template <class T, class S>
-void subreport(T& obj, std::ostream& out, S num_obj) {
-    for (S s = 0; s < num_obj; ++s) {
-        auto& sub_obj = obj[s];
-        report(sub_obj, out);
-        out << std::endl;
-    }
-}
-
-/**
- * Used to iterate through and report on the subobjects of a given object
- */
-template <class T, class S>
-void subreport(T& obj, pixie::format::json& out, S num_obj) {
-    for (S s = 0; s < num_obj; ++s) {
-        pixie::format::json sub_json;
-        auto& sub_obj = obj[s];
-        report(sub_obj, sub_json);
-        if (sub_json != nullptr) {
-            out.push_back(sub_json);
-        }
-    }
-}
 
 /*
  * Serialises a JSON object into std::string
@@ -129,6 +118,16 @@ template <class T>
 void report(T& obj, std::string& out) {
     pixie::format::json json_rpt;
     report(obj, json_rpt);
+    out = json_rpt.dump();
+}
+
+/*
+ * Serialises a JSON object into std::string for chosen slots
+ */
+template <class T>
+void report(T& obj, std::string& out, pixie::hw::slot_numbers& slots) {
+    pixie::format::json json_rpt;
+    report(obj, json_rpt, slots);
     out = json_rpt.dump();
 }
 

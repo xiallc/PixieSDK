@@ -27,11 +27,53 @@ namespace xia {
 namespace reports {
 
 void report(pixie::crate::crate& crate, std::ostream& out) {
-    subreport(crate, out, crate.num_slots);
+    for (size_t s = 0; s < crate.num_slots; ++s) {
+        auto& mod = crate[s];
+        report(mod, out);
+    }
+}
+
+void report(pixie::crate::crate& crate, std::ostream& out, pixie::hw::slot_numbers& slots) {
+    if (slots.empty()) {
+        report(crate, out);
+    } else {
+        for (auto s : slots) {
+            if (s >= crate.num_slots) {
+                throw error(error::code::module_invalid_slot, "provided slot is out of range");
+            }
+            auto& mod = crate[s];
+            report(mod, out);
+        }
+    }
 }
 
 void report(pixie::crate::crate& crate, pixie::format::json& out) {
-    subreport(crate, out, crate.num_slots);
+    for (size_t s = 0; s < crate.num_slots; ++s) {
+        pixie::format::json mod_json;
+        auto& mod = crate[s];
+        report(mod, mod_json);
+        if (mod_json != nullptr) {
+            out.push_back(mod_json);
+        }
+    }
+}
+
+void report(pixie::crate::crate& crate, pixie::format::json& out, pixie::hw::slot_numbers& slots) {
+    if (slots.empty()) {
+        report(crate, out);
+    } else {
+        for (auto s : slots) {
+            if (s >= crate.num_slots) {
+                throw error(error::code::module_invalid_slot, "provided slot is out of range");
+            }
+            pixie::format::json mod_json;
+            auto& mod = crate[s];
+            report(mod, mod_json);
+            if (mod_json != nullptr) {
+                out.push_back(mod_json);
+            }
+        }
+    }
 }
 
 }
