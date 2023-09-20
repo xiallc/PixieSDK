@@ -455,6 +455,7 @@ void list_commands(const std::string& path, command_entries& entries) {
                 std::string help;
                 if (cmd_parts.size() > path_parts.size() + 1) {
                     type = command_entry::node::directory;
+                    help = "more commands...";
                 } else {
                     help = cmd.help + " - " +
                         util::path::basename(cmd.name) + ' ' +
