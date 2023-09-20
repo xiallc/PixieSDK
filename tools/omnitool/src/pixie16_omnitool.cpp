@@ -391,6 +391,13 @@ int main(int argc, char* argv[]) {
         bool execute = !args::get(no_execute);
 
         /*
+         * By default run the shell if the user passes no options.
+         */
+        if (cmds.empty()) {
+            cmds.push_back("shell");
+        }
+
+        /*
          * Execute the commands as a batch.
          */
         xia::omnitool::command::batch batch;
