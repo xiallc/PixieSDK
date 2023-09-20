@@ -35,20 +35,25 @@ void stats_rpt(command::context& context) {
     auto& crate = context.crate;
     auto mod_nums_opt = context.cmd.get_arg();
     auto file_opt = context.cmd.get_arg();
-    std::stringstream rpt;
+    std::ostream* output = &context.opts.out;
+    std::ofstream output_file;
+    if (!file_opt.empty()) {
+        output_file.open(file_opt);
+        output = &output_file;
+    }
     command::module_range mod_nums;
     command::modules_option(
         mod_nums, mod_nums_opt, crate.num_modules);
+    std::stringstream rpt;
     for (auto mod_num : mod_nums) {
         pixie::stats::stats stats(crate[mod_num]);
         crate[mod_num].read_stats(stats);
         reports::stats_report(crate[mod_num], rpt);
         if (mod_num != mod_nums.back()) {
-            rpt << ",\n";
+            rpt << "," << std::endl;
         }
     }
-    std::ofstream output(file_opt);
-    output << rpt.str();
+    *output << rpt.str();
 }
 
 bool stats_rpt_comp(

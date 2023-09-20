@@ -349,7 +349,7 @@ static const command::definition stats_rpt_cmd = {
     "Module", "/module/stats-rpt",
     omnitool_command_handers(stats_rpt),
     {"init", "probe"},
-    2, 2, 0,
+    1, 2, 0,
     {},
     "module(s) filename",
     "module channel stats"
