@@ -44,8 +44,7 @@ void fw_report(command::context& context) {
         }
         out = &output_file;
     }
-    pixie::firmware::system_fw_report(
-      *out, pixie::firmware::system_firmware_path);
+    pixie::firmware::system_fw_report(*out, context.opts.firmware_host_path);
 }
 
 bool fw_report_comp(

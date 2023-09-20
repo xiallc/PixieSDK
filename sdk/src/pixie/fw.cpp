@@ -415,7 +415,7 @@ static void find_firmwares(const std::string basepath, descriptions& fws) {
         if (rev_files.size() != 1) {
             throw std::runtime_error("fimrware has more than one LDR file: " + bname);
         }
-        fws.emplace_back(f, "dsp", rev_files.front());
+        fws.emplace_back(f, "ldr", rev_files.front());
         util::path::find_files(dir, rev_files, ".var");
         if (rev_files.size() != 1) {
             throw std::runtime_error("fimrware has more than one VAR file: " + bname);
@@ -451,12 +451,12 @@ description::description(const std::string& name, const std::string& dev, const 
         std::ifstream input(name, std::ios::in);
         json jf = json::parse(input);
         filename = fname;
-        date = jf["date"];
+        date = jf["release"]["date"];
 
         std::string v = jf["files"][dev]["version"];
         version = std::stoi(v);
 
-        std::string mtag = jf["module_tag"];
+        std::string mtag = jf["product"]["module_tag"];
         auto d = mtag.find_first_of('-');
         mod_revision = std::stoi(mtag.substr(0, d));
 
@@ -465,7 +465,11 @@ description::description(const std::string& name, const std::string& dev, const 
         mod_adc_msps = std::stoi(end_tag.substr(0, d));
         mod_adc_bits = std::stoi(end_tag.substr(d + 1, end_tag.size() - d - 1));
 
-        device = dev;
+        if (dev == "ldr") {
+            device = "dsp";
+        } else {
+            device = dev;
+        }
         crc32 = jf["files"][dev]["crc32"];
     } catch (json::exception& e) {
         std::string what = e.what();
