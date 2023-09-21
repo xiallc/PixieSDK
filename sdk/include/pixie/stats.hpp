@@ -40,9 +40,6 @@ class module;
 namespace stats {
 /**
  * @brief A data structure holding channel statistics read from the module.
- *
- * The channel and module stats cannot contain any containers while they
- * are used in the legacy API.
  */
 struct channel {
     param::value_type fast_peaks_a;
@@ -70,9 +67,6 @@ typedef std::vector<channel> channels;
 
 /**
  * @brief A data structure holding module statistics read from the module.
- *
- * The channel and module stats cannot contain any containers while they
- * are used in the legacy API.
  */
 struct module {
     param::value_type num_events_a;

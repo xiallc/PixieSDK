@@ -41,10 +41,6 @@ in all relevant Release Notes.
 * [Broadcom PCI/PCIe SDK 8.00+](https://github.com/xiallc/broadcom_pci_pcie_sdk)
     * You should have `PLX_SDK_DIR` exported in your environment before building.
 
-> **Note**: The Legacy code can be used with much older compilers (ex. GCC 4.5+) and older versions
-> of the Broadcom PCI/PCIe SDK (ex. 7.11). You'll still need CMake 3.10+ to generate the build
-> files.
-
 For more detailed 
 [installation instructions please see the documentation](https://docs.pixie16.xia.com/user/installation/index.html).
 

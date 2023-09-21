@@ -1043,7 +1043,7 @@ bool set_firmware(const mod_cfg& mod, const char* filepath, const char* device) 
                   << "Calling PixieSetModuleFirmware for Module "
                   << mod.number << ": " << device << std::endl;
         if (!verify_api_return_value(
-                Pixie16SetModuleFirmware(mod.sys_fpga, mod.slot, device),
+                Pixie16SetModuleFirmware(filepath, mod.slot, device),
                 "Pixie16SetModuleFirmware", false))
             return false;
     }

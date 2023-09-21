@@ -22,9 +22,6 @@
 # PIXIESDK_INCLUDE_DIR -> Full path to the PixieSDK include directory.
 # PIXIESDK_LIBRARY -> Full path to the PixieSDK library.
 # PIXIESDK_LIBRARIES -> Library definition with dependencies for use when linking.
-# PIXIESDK_LEGACY_LIBRARY -> Full path to the legacy C API library: Pixie16App.a.
-# PIXIESDK_LEGACY_LIBRARIES -> Library definition with dependencies for use when linking.
-# PIXIESDK_LEGACY_INCLUDE_DIR -> Full path legacy C API headers.
 # PIXIESDK_PIXIE16_LIBRARY -> Full path to the C++ compatibility wrapper: Pixie16Api.so.
 # PIXIESDK_PIXIE16_LIBRARIES -> Library definition with dependencies for use when linking.
 #
@@ -38,7 +35,7 @@ find_path(PIXIESDK_LIBRARY_DIR
         )
 
 find_path(PIXIESDK_INCLUDE_DIR
-        NAMES pixie legacy
+        NAMES pixie
         HINTS $ENV{XIA_PIXIE_SDK}
         PATHS ${PIXIESDK_LIBRARY_DIR}/../
         PATH_SUFFIXES include
@@ -49,20 +46,6 @@ find_library(PIXIESDK_LIBRARY
         NAMES PixieSDK
         HINTS $ENV{XIA_PIXIE_SDK}/lib ${PIXIESDK_LIBRARY_DIR}
         DOC "Full path to the PixieSDK library."
-        )
-
-find_library(PIXIESDK_LEGACY_LIBRARY
-        NAMES Pixie16App
-        HINTS $ENV{XIA_PIXIE_SDK}/lib ${PIXIESDK_LIBRARY_DIR}
-        DOC "Full path to the legacy C API library: Pixie16App.a."
-        )
-
-find_path(PIXIESDK_LEGACY_INCLUDE_DIR
-        NAMES pixie16app_defs.h
-        HINTS $ENV{XIA_PIXIE_SDK}/include
-        PATHS ${PIXIESDK_INCLUDE_DIR}
-        PATH_SUFFIXES legacy
-        DOC "Full path legacy C API headers."
         )
 
 find_library(PIXIESDK_PIXIE16_LIBRARY
@@ -79,10 +62,8 @@ if (PixieSDK_FOUND OR PIXIESDK_FOUND)
     if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
         set(PIXIESDK_LIBRARIES PixieSDK dl m pthread)
         set(PIXIESDK_PIXIE16_LIBRARIES Pixie16Api PixieSDK dl m pthread)
-        set(PIXIESDK_LEGACY_LIBRARIES Pixie16App dl m)
     elseif (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         set(PIXIESDK_LIBRARIES PixieSDK)
         set(PIXIESDK_PIXIE16_LIBRARIES Pixie16Api PixieSDK)
-        set(PIXIESDK_LEGACY_LIBRARIES Pixie16App winmm)
     endif ()
 endif ()

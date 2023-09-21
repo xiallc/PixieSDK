@@ -10,23 +10,15 @@ batch:
     - identifier: All
       env:
         variables:
-          BUILD_OPTIONS: -DBUILD_LEGACY=ON -DBUILD_SDK=ON -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
+          BUILD_OPTIONS: -DBUILD_SDK=ON -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
     - identifier: SDK_with_examples_and_tests
       env:
         variables:
-          BUILD_OPTIONS: -DBUILD_LEGACY=OFF -DBUILD_SDK=ON -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
+          BUILD_OPTIONS: -DBUILD_SDK=ON -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
     - identifier: SDK_without_examples_and_tests
       env:
         variables:
-          BUILD_OPTIONS: -DBUILD_LEGACY=OFF -DBUILD_SDK=ON -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF
-    - identifier: Legacy_with_examples_and_tests
-      env:
-        variables:
-          BUILD_OPTIONS: -DBUILD_LEGACY=ON -DBUILD_SDK=OFF -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
-    - identifier: Legacy_without_examples_and_tests
-      env:
-        variables:
-          BUILD_OPTIONS: -DBUILD_LEGACY=ON -DBUILD_SDK=OFF -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF
+          BUILD_OPTIONS: -DBUILD_SDK=ON -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF
 
 phases:
   install:
@@ -72,22 +64,6 @@ phases:
         ./tests/unit/sdk/pixie_sdk_unit_test_runner || exit 5;
         echo Executing pixie_sdk_integration_test_runner;
         ./tests/integration/pixie_sdk_integration_test_runner || exit 6;
-        fi;
-        fi;
-      - >
-        if [[ ${BUILD_OPTIONS} == *"BUILD_LEGACY=ON"* ]];
-        then
-        echo Checking for libPixie16App.a;
-        test -e ./sdk/src/legacy/libPixie16App.a || exit 20;
-        if [[ ${BUILD_OPTIONS} == *"BUILD_EXAMPLES=ON"* ]];
-        then
-        echo Checking for example_pixie16app;
-        test -e ./examples/example_pixie16app/example_pixie16app || exit 21;
-        fi;
-        if [[ ${BUILD_OPTIONS} == *"BUILD_TESTS=ON"* ]];
-        then
-        echo Executing legacy_unit_test_runner;
-        ./tests/unit/legacy/legacy_unit_test_runner || exit 22;
         fi;
         fi;
     finally:

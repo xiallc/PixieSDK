@@ -34,7 +34,6 @@
 #include <pixie/utils/numerics.hpp>
 
 #include <pixie/pixie16/crate.hpp>
-#include <pixie/pixie16/legacy.hpp>
 #include <pixie/pixie16/run.hpp>
 #include <pixie/pixie16/sim.hpp>
 
@@ -169,28 +168,6 @@ void stats_legacy::validate() const {
 
 static int not_supported() {
     return xia::pixie::error::return_code_not_supported();
-}
-
-static void load_settings_file(
-  xia::pixie::module::module& module, const std::string& filename) {
-    try {
-        xia::pixie::legacy::settings settings(module);
-        settings.load(filename);
-        settings.import(module);
-        settings.write(module);
-        module.sync_vars();
-    } catch (xia::pixie::error::error& err) {
-        if (err.type == xia::pixie::error::code::module_total_invalid ||
-            err.type == xia::pixie::error::code::channel_number_invalid) {
-            xia_log(xia::log::info)
-                << "Settings file binary format not recognized. Will try JSON fallback.";
-            xia::pixie::module::number_slots modules;
-            ///TODO: Not super efficient if we're calling module-by-module.
-            crate->import_config(filename, modules);
-        } else {
-            throw;
-        }
-    }
 }
 
 template<class T>
@@ -486,7 +463,7 @@ static void PixieBootModule(xia::pixie::module::module& module, const char* ComF
                 pattern.test(BOOTPATTERN_DSPCODE_BIT));
 
     if (pattern.test(BOOTPATTERN_DSPPAR_BIT)) {
-        load_settings_file(module, DSPParFile);
+        xia::pixie::config::import_json(DSPParFile, module);
     }
 
     module.sync_hw(pattern.test(BOOTPATTERN_PROGFIPPI_BIT), pattern.test(BOOTPATTERN_SETDACS_BIT));
@@ -505,7 +482,7 @@ static void PixieBootModule(xia::pixie::module::module& module,
                 pattern.test(BOOTPATTERN_DSPCODE_BIT));
 
     if (pattern.test(BOOTPATTERN_DSPPAR_BIT)) {
-        load_settings_file(module, DSPParFile);
+        xia::pixie::config::import_json(DSPParFile, module);
     }
 
     module.sync_hw(
@@ -941,7 +918,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16LoadDSPParametersFromFile(const char* FileName
         xia::pixie::crate::crate::user user(crate);
         for (size_t mod_num = 0; mod_num < crate.modules.num_modules; ++mod_num) {
             xia::pixie::crate::module_handle module(crate, mod_num);
-            load_settings_file(*module, FileName);
+            xia::pixie::config::import_json(FileName, *module);
             xia::pixie::hw::run::control(
               *module, xia::pixie::hw::run::control_task::program_fippi);
             module->set_dacs();
