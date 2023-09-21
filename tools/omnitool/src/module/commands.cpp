@@ -102,6 +102,41 @@ static const command::definition db_cmd = {
     "Daughter board control"
 };
 
+omnitool_command_handler_decl(fifo_config_read);
+static const command::definition fifo_config_read_cmd = {
+    "Module", "/module/fifo/config/read",
+    omnitool_command_handers(fifo_config_read),
+    {"init", "probe"},
+    1, 2, 0,
+    {},
+    "module(s) [bw/bf/dma/hold/iw/rw]\n"
+    "bw = bandwidth, bf = buffers, dma = dma trigger, hold = hold time (usecs), iw = idle wait (usecs), rw = run wait (usecs)",
+    "Read a variable from the module(s) fifo config"
+};
+
+omnitool_command_handler_decl(fifo_config_write);
+static const command::definition fifo_config_write_cmd = {
+    "Module", "/module/fifo/config/write",
+    omnitool_command_handers(fifo_config_write),
+    {"init", "probe"},
+    3, 3, 0,
+    {},
+    "module(s) bw/dma/hold/iw/rw value\n"
+    "bw = bandwidth, dma = dma trigger, hold = hold time (usecs), iw = idle wait (usecs), rw = run wait (usecs)",
+    "Write a variable to module(s) fifo config"
+};
+
+omnitool_command_handler_decl(fifo_status);
+static const command::definition fifo_status_cmd = {
+    "Module", "/module/fifo/stats",
+    omnitool_command_handers(fifo_status),
+    {"init", "probe"},
+    0, 1, 0,
+    {},
+    "[module(s)]",
+    "Check the current module(s) fifo stats"
+};
+
 omnitool_command_handler_decl(hist_resume);
 static const command::definition hist_resume_cmd = {
     "Module", "/module/hist-resume",
@@ -396,6 +431,9 @@ static const command::definitions commands = {
     bl_save_cmd,
     copy_cmd,
     db_cmd,
+    fifo_config_read_cmd,
+    fifo_config_write_cmd,
+    fifo_status_cmd,
     hist_resume_cmd,
     hist_save_cmd,
     hist_start_cmd,

@@ -6,6 +6,9 @@ set(OMNITOOL_MODULE_SOURCES
         module/bl-save.cpp
         module/copy.cpp
         module/db.cpp
+        module/fifo-config-read.cpp
+        module/fifo-config-write.cpp
+        module/fifo-status.cpp
         module/hist-resume.cpp
         module/hist-save.cpp
         module/hist-start.cpp

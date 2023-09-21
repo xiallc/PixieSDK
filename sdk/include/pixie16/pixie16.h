@@ -31,6 +31,9 @@
 extern "C" {
 #endif
 
+/**
+ * @note This object will be deprecated on November 30, 2024
+ */
 struct fifo_worker_config {
     size_t bandwidth_mb_per_sec;
     size_t buffers;
@@ -53,6 +56,15 @@ struct module_config {
     unsigned int serial_number;
     unsigned short slot;
     char sp_fpga[PIXIE16_API_MOD_CONFIG_MAX_STRING];
+};
+
+struct module_fifo_config {
+    size_t bandwidth_mb_per_sec;
+    size_t buffers;
+    size_t dma_trigger_level_bytes;
+    size_t hold_usecs;
+    size_t idle_wait_usecs;
+    size_t run_wait_usecs;
 };
 
 struct module_fifo_stats {
@@ -207,8 +219,14 @@ enum PIXIE_BOOT_MODE {
 PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file,
                                           const enum PIXIE_BOOT_MODE boot_mode);
 
+/**
+ * @note This API call will be deprecated on November 30, 2024
+ */
 PIXIE_EXPORT int PIXIE_API PixieGetWorkerConfiguration(unsigned short mod_num,
                                                        struct fifo_worker_config* worker_config);
+
+PIXIE_EXPORT int PIXIE_API PixieGetFifoConfiguration(unsigned short mod_num,
+                                                     struct module_fifo_config* fifo_config);
 
 PIXIE_EXPORT int PIXIE_API PixieRegisterCrateFirmware(const unsigned int version, const int revision,
                                                       const int adc_msps, const int adc_bits,
@@ -219,8 +237,14 @@ PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version, con
                                                  const char* device, const char* path,
                                                  unsigned short ModNum);
 
+/**
+ * @note This API call will be deprecated on November 30, 2024
+ */
 PIXIE_EXPORT int PIXIE_API PixieSetWorkerConfiguration(unsigned short mod_num,
                                                        struct fifo_worker_config* worker_config);
+
+PIXIE_EXPORT int PIXIE_API PixieSetFifoConfiguration(unsigned short mod_num,
+                                                     struct module_fifo_config* fifo_config);
 
 PIXIE_EXPORT int PIXIE_API PixieReadRunFifoStats(unsigned short mod_num,
                                                  struct module_fifo_stats* fifo_stats);

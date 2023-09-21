@@ -89,8 +89,8 @@ struct firmware_spec {
 struct mod_cfg : module_config {
     firmware_spec fw;
     std::string dsp_par;
-    fifo_worker_config worker_config;
-    bool has_worker_cfg;
+    module_fifo_config fifo_config;
+    bool has_fifo_cfg;
     bool has_firmware_spec;
     bool has_firmware_files;
 };
@@ -237,16 +237,16 @@ void read_config(const std::string& config_file_name, configuration& cfg) {
             mcfg.has_firmware_spec = false;
         }
         if (module.contains("worker")) {
-            mcfg.worker_config.bandwidth_mb_per_sec = module["worker"]["bandwidth_mb_per_sec"];
-            mcfg.worker_config.buffers = module["worker"]["buffers"];
-            mcfg.worker_config.dma_trigger_level_bytes =
+            mcfg.fifo_config.bandwidth_mb_per_sec = module["worker"]["bandwidth_mb_per_sec"];
+            mcfg.fifo_config.buffers = module["worker"]["buffers"];
+            mcfg.fifo_config.dma_trigger_level_bytes =
                 module["worker"]["dma_trigger_level_bytes"];
-            mcfg.worker_config.hold_usecs = module["worker"]["hold_usecs"];
-            mcfg.worker_config.idle_wait_usecs = module["worker"]["idle_wait_usecs"];
-            mcfg.worker_config.run_wait_usecs = module["worker"]["run_wait_usecs"];
-            mcfg.has_worker_cfg = true;
+            mcfg.fifo_config.hold_usecs = module["worker"]["hold_usecs"];
+            mcfg.fifo_config.idle_wait_usecs = module["worker"]["idle_wait_usecs"];
+            mcfg.fifo_config.run_wait_usecs = module["worker"]["run_wait_usecs"];
+            mcfg.has_fifo_cfg = true;
         } else {
-            mcfg.has_worker_cfg = false;
+            mcfg.has_fifo_cfg = false;
         }
         cfg.modules.push_back(mcfg);
     }
@@ -905,22 +905,22 @@ double calculate_duration_in_seconds(const std::chrono::system_clock::time_point
     return std::chrono::duration<double>(end - start).count();
 }
 
-void output_module_worker_info(const unsigned short& mod_num) {
-    fifo_worker_config worker_config;
-    if (!verify_api_return_value(PixieGetWorkerConfiguration(mod_num, &worker_config),
-                                 "PixieGetWorkerConfiguration", false))
-        throw std::runtime_error("Could not get worker information for Module " +
+void output_module_fifo_info(const unsigned short& mod_num) {
+    module_fifo_config fifo_config;
+    if (!verify_api_return_value(PixieGetFifoConfiguration(mod_num, &fifo_config),
+                                 "PixieGetFifoConfiguration", false))
+        throw std::runtime_error("Could not get FIFO information for Module " +
                                  std::to_string(mod_num));
     std::cout << LOG("INFO") << "Begin List-Mode FIFO worker information for Module " << mod_num
               << std::endl;
-    std::cout << LOG("INFO") << "Bandwidth (MB/sec): " << worker_config.bandwidth_mb_per_sec
+    std::cout << LOG("INFO") << "Bandwidth (MB/sec): " << fifo_config.bandwidth_mb_per_sec
               << std::endl;
-    std::cout << LOG("INFO") << "Buffers : " << worker_config.buffers << std::endl;
-    std::cout << LOG("INFO") << "DMA Trigger Level (B): " << worker_config.dma_trigger_level_bytes
+    std::cout << LOG("INFO") << "Buffers : " << fifo_config.buffers << std::endl;
+    std::cout << LOG("INFO") << "DMA Trigger Level (B): " << fifo_config.dma_trigger_level_bytes
               << std::endl;
-    std::cout << LOG("INFO") << "Hold (usec): " << worker_config.hold_usecs << std::endl;
-    std::cout << LOG("INFO") << "Idle wait (usec): " << worker_config.idle_wait_usecs << std::endl;
-    std::cout << LOG("INFO") << "Run wait (usec): " << worker_config.run_wait_usecs << std::endl;
+    std::cout << LOG("INFO") << "Hold (usec): " << fifo_config.hold_usecs << std::endl;
+    std::cout << LOG("INFO") << "Idle wait (usec): " << fifo_config.idle_wait_usecs << std::endl;
+    std::cout << LOG("INFO") << "Run wait (usec): " << fifo_config.run_wait_usecs << std::endl;
     std::cout << LOG("INFO") << "End List-Mode FIFO worker information for Module " << mod_num
               << std::endl;
 }
@@ -988,17 +988,17 @@ bool init_system(configuration& cfg, int offline_mode) {
     return true;
 }
 
-bool set_workers(configuration& cfg) {
+bool set_fifo_configs(configuration& cfg) {
     try {
         for (auto& mod : cfg.modules) {
-            if (mod.has_worker_cfg) {
+            if (mod.has_fifo_cfg) {
                 if (!verify_api_return_value(
-                        PixieSetWorkerConfiguration(mod.number, &mod.worker_config),
-                        "PixieSetWorkerConfiguration", false))
+                        PixieSetFifoConfiguration(mod.number, &mod.fifo_config),
+                        "PixieSetFifoConfiguration", false))
                     return false;
             }
             output_module_info(mod);
-            output_module_worker_info(mod.number);
+            output_module_fifo_info(mod.number);
         }
     } catch (std::runtime_error& error) {
         std::cout << LOG("ERROR") << error.what() << std::endl;
@@ -1273,7 +1273,7 @@ int main(int argc, char** argv) {
             mcfg.number = m;
             mcfg.dsp_par = is_offline.Get();
             mcfg.has_firmware_spec = false;
-            mcfg.has_worker_cfg = false;
+            mcfg.has_fifo_cfg = false;
             cfg.modules.push_back(mcfg);
         }
         cfg.slot_def = {2, 3, 4, 5};
@@ -1291,7 +1291,7 @@ int main(int argc, char** argv) {
     if (dir != "" && dir.back() != '/')
         dir = dir + "/";
 
-    if (!init_system(cfg, offline_mode) || !set_workers(cfg))
+    if (!init_system(cfg, offline_mode) || !set_fifo_configs(cfg))
         return EXIT_FAILURE;
 
     if (init) {

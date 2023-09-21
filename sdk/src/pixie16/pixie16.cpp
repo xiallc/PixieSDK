@@ -1853,6 +1853,38 @@ PIXIE_EXPORT int PIXIE_API PixieGetWorkerConfiguration(const unsigned short mod_
     return 0;
 }
 
+PIXIE_EXPORT int PIXIE_API PixieGetFifoConfiguration(const unsigned short mod_num,
+                                                     module_fifo_config* fifo_config) {
+    xia_log(xia::log::debug) << "PixieGetFifoConfiguration: Module=" << mod_num;
+
+    try {
+        if (!fifo_config) {
+            throw xia::pixie::error::error(
+                xia::pixie::error::code::module_info_failure,
+                "FIFO configuration object was null. Please provide a structure to populate.");
+        }
+        crate->ready();
+        xia::pixie::crate::module_handle module(crate, mod_num,
+                                                xia::pixie::module::check::open);
+        fifo_config->bandwidth_mb_per_sec = module->fifo_bandwidth;
+        fifo_config->buffers = module->fifo_buffers;
+        fifo_config->dma_trigger_level_bytes = module->fifo_dma_trigger_level;
+        fifo_config->hold_usecs = module->fifo_hold_usecs;
+        fifo_config->idle_wait_usecs = module->fifo_idle_wait_usecs;
+        fifo_config->run_wait_usecs = module->fifo_run_wait_usecs;
+    } catch (xia_error& e) {
+        xia_log(xia::log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (...) {
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+    return 0;
+}
+
 PIXIE_EXPORT int PIXIE_API PixieRegisterCrateFirmware(const unsigned int version, const int revision,
                                                       const int adc_msps, const int adc_bits,
                                                       const char* device, const char* path) {
@@ -1936,6 +1968,37 @@ PIXIE_EXPORT int PIXIE_API PixieSetWorkerConfiguration(const unsigned short mod_
         module->set_fifo_hold(worker_config->hold_usecs);
         module->set_fifo_idle_wait(worker_config->idle_wait_usecs);
         module->set_fifo_run_wait(worker_config->run_wait_usecs);
+    } catch (xia_error& e) {
+        xia_log(xia::log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (...) {
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+    return 0;
+}
+
+PIXIE_EXPORT int PIXIE_API PixieSetFifoConfiguration(const unsigned short mod_num,
+                                                     module_fifo_config* fifo_config) {
+    xia_log(xia::log::debug) << "PixieSetFifoConfiguration: Module=" << mod_num;
+
+    try {
+        if (!fifo_config) {
+            throw xia::pixie::error::error(
+                xia::pixie::error::code::module_info_failure,
+                "FIFO configuration object was null. Please provide a structure to read from.");
+        }
+        crate->ready();
+        xia::pixie::crate::module_handle module(crate, mod_num, xia::pixie::module::check::open);
+        module->set_fifo_bandwidth(fifo_config->bandwidth_mb_per_sec);
+        module->set_fifo_buffers(fifo_config->buffers);
+        module->set_fifo_dma_trigger_level(fifo_config->dma_trigger_level_bytes);
+        module->set_fifo_hold(fifo_config->hold_usecs);
+        module->set_fifo_idle_wait(fifo_config->idle_wait_usecs);
+        module->set_fifo_run_wait(fifo_config->run_wait_usecs);
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
         return e.return_code();
