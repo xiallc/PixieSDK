@@ -885,6 +885,8 @@ static void shell_completion(
                 colour = CROSSLINE_FGCOLOR_MAGENTA;
             } else if (entry.group == "Module") {
                 colour = CROSSLINE_FGCOLOR_GREEN;
+            } else if (entry.group == "Utilities") {
+                colour = CROSSLINE_FGCOLOR_BLUE;
             } else if (entry.group == "QA") {
                 colour = CROSSLINE_FGCOLOR_CYAN;
             }

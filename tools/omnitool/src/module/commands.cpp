@@ -236,7 +236,7 @@ static const command::definition mod_online_cmd = {
 
 omnitool_command_handler_decl(mset_import);
 static const command::definition mset_import_cmd = {
-    "mset-import", "/module/mset-import",
+    "Module", "/module/mset-import",
     omnitool_command_handers(mset_import),
     {"init", "probe"},
     2, 3, 0,
