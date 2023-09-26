@@ -24,7 +24,7 @@ function(xia_configure_target)
     cmake_parse_arguments(XIA_CT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
     if (NOT XIA_CT_CXX_STD)
-        set(XIA_CT_CXX_STD 14)
+        set(XIA_CT_CXX_STD 17)
     endif ()
 
     if (${CMAKE_VERSION} VERSION_GREATER "3.0.2")
