@@ -625,11 +625,15 @@ void shell_session::execute() {
         try {
             if (!builtins()) {
                 auto& cmd = args[0];
+                paths search_path;
                 if (!cmd.empty() && cmd[0] != '/') {
-                    cmd = path + '/' + cmd;
+                    search_path.push_back(path);
                 }
+                search_path.insert(
+                    search_path.end(), context_.opts.path.begin(),
+                    context_.opts.path.end());
                 cmd_set.clear();
-                cmd_set.parse(args, context_.opts.path);
+                cmd_set.parse(args, search_path);
                 cmd_set.execute(context_.crate, context_.opts);
             }
         } catch (error& e) {
