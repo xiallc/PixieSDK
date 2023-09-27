@@ -711,6 +711,16 @@ void shell_session::builtin_completions(command_completion& completions) {
                 {command_entry::node::command, "exit", "Shell",
                  "exit the current shell session - exit", "exit"});
         }
+    } else if (completions.argc() == 0) {
+        completions.add(
+            {command_entry::node::command, "builtins", "Shell",
+             "builtins help - builtins", "builtins"});
+        completions.add(
+            {command_entry::node::command, "pwd", "Shell",
+             "current command directory - pwd", "pwd"});
+        completions.add(
+            {command_entry::node::command, "exit", "Shell",
+             "exit the current shell session - exit", "exit"});
     }
 }
 
