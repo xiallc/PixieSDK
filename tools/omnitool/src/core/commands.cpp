@@ -591,6 +591,8 @@ struct shell_session {
 
     bool builtins();
     void builtin_completions(command_completion& completions);
+    void builtin_path_completion(command_completion& completions,
+        std::string cmd, command_entry completion);
 
     bool builtin_ls();
     void builtin_ls_completion(command_completion& completions);
@@ -712,6 +714,44 @@ void shell_session::builtin_completions(command_completion& completions) {
     }
 }
 
+void shell_session::builtin_path_completion(
+    command_completion& completions, std::string cmd,
+    command_entry completion) {
+
+    if (completions.argc() == 0) {
+        completions.add(completion);
+    } else {
+        auto& user_cmd = completions.argv(0);
+        if (completions.argc() == 1 &&
+            completions.partial_match(cmd, user_cmd)) {
+            completions.add(completion);
+        } else if (user_cmd == cmd &&
+            (completions.argc() != 1 || !completions.incomplete)) {
+            std::string dir_path = path;
+            std::string dir;
+            if (completions.argc() == 2) {
+                auto& arg = completions.argv(1);
+                if (arg.find('/') != std::string::npos) {
+                    dir_path = util::path::dirname(arg);
+                    if (dir_path[0] != '/') {
+                        dir_path = path + '/' + dir_path;
+                    }
+                }
+                dir = util::path::basename(arg);
+            }
+            command_entries entries;
+            list_commands(dir_path, entries);
+            for (auto& entry : entries) {
+                if (entry.isdir() &&
+                    (dir.empty() ||
+                     completions.partial_match(entry.name, dir))) {
+                    completions.add(entry);
+                }
+            }
+        }
+    }
+}
+
 bool shell_session::builtin_ls() {
     paths search_paths;
     bool list_long = false;
@@ -777,15 +817,9 @@ bool shell_session::builtin_ls() {
 }
 
 void shell_session::builtin_ls_completion(command_completion& completions) {
-    if (completions.argc() == 1 && completions.incomplete) {
-        auto& cmd = completions.argv(0);
-        if (cmd == "ls" || completions.partial_match("ls", cmd)) {
-            completions.add(
-                {command_entry::node::command, "ls", "Shell",
-                 "list command directory - ls [-l] [path..]", "ls"});
-        }
-    } else {
-    }
+    builtin_path_completion(completions, "ls",
+            {command_entry::node::command, "ls", "Shell",
+             "list command directory - ls [-l] [path..]", "ls"});
 }
 
 bool shell_session::builtin_cd() {
@@ -841,36 +875,9 @@ bool shell_session::builtin_cd() {
 }
 
 void shell_session::builtin_cd_completion(command_completion& completions) {
-    if (completions.argc() == 1 && completions.incomplete) {
-        auto& cmd = completions.argv(0);
-        if (cmd == "cd" || completions.partial_match("cd", cmd)) {
-            completions.add(
-                {command_entry::node::command, "cd", "Shell",
-                 "change directory - cd [path]", "cd"});
-        }
-    } else {
-        std::string dir_path = path;
-        std::string dir;
-        if (completions.argc() == 2) {
-            auto& arg = completions.argv(1);
-            if (arg.find('/') != std::string::npos) {
-                dir_path = util::path::dirname(arg);
-                if (dir_path[0] != '/') {
-                    dir_path = path + '/' + dir_path;
-                }
-            }
-            dir = util::path::basename(arg);
-        }
-        command_entries entries;
-        list_commands(dir_path, entries);
-        for (auto& entry : entries) {
-            if (entry.isdir() &&
-                (dir.empty() ||
-                 completions.partial_match(entry.name, dir))) {
-                completions.add(entry);
-            }
-        }
-    }
+    builtin_path_completion(completions, "cd",
+            {command_entry::node::command, "cd", "Shell",
+             "change directory - cd [path]", "cd"});
 }
 
 static void shell_completion(
