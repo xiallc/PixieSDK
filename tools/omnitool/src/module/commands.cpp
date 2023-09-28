@@ -98,7 +98,7 @@ static const command::definition db_cmd = {
     {"init", "probe"},
     1, 3, 0,
     {},
-    "module(s) [channel(s)] [disable-swap]]",
+    "module(s) [channel(s)] [disable-swap]",
     "Daughter board control"
 };
 
