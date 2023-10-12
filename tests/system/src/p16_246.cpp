@@ -38,29 +38,36 @@ int main() {
     xia::pixie::crate::crate phys_crate;
     xia::pixie::crate::module_crate crate(phys_crate);
 
-    static const std::vector<std::string> firmware_list = {
+    static const std::vector<std::string> firmware_list_1 = {
         "version=r33341, revision=15, adc-msps=500, adc-bits=14, device=sys, file=/usr/local/xia/pixie/firmware/revf_general_14b500m_r35207/firmware/syspixie16_revfgeneral_adc500mhz_r33341.bin",
         "version=r34687, revision=15, adc-msps=500, adc-bits=14, device=fippi, file=/usr/local/xia/pixie/firmware/revf_general_14b500m_r35207/firmware/fippixie16_revfgeneral_14b500m_r34687.bin",
         "version=r35207, revision=15, adc-msps=500, adc-bits=14, device=dsp, file=/usr/local/xia/pixie/firmware/revf_general_14b500m_r35207/dsp/Pixie16DSP_revfgeneral_14b500m_r35207.ldr",
-        "version=r35207, revision=15, adc-msps=500, adc-bits=14, device=var, file=/usr/local/xia/pixie/firmware/revf_general_14b500m_r35207/dsp/Pixie16DSP_revfgeneral_14b500m_r35207.var",
+        "version=r35207, revision=15, adc-msps=500, adc-bits=14, device=var, file=/usr/local/xia/pixie/firmware/revf_general_14b500m_r35207/dsp/Pixie16DSP_revfgeneral_14b500m_r35207.var"};
+
+    static const std::vector<std::string> firmware_list_2 = {
         "version=r33339, revision=15, adc-msps=250, adc-bits=14, device=sys, file=/usr/local/xia/pixie/firmware/revf_general_14b250m_r33356/firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin",
         "version=r33332, revision=15, adc-msps=250, adc-bits=14, device=fippi, file=/usr/local/xia/pixie/firmware/revf_general_14b250m_r33356/firmware/fippixie16_revfgeneral_14b250m_r33332.bin",
         "version=r33356, revision=15, adc-msps=250, adc-bits=14, device=dsp, file=/usr/local/xia/pixie/firmware/revf_general_14b250m_r33356/dsp/Pixie16DSP_revfgeneral_14b250m_r33356.ldr",
         "version=r33356, revision=15, adc-msps=250, adc-bits=14, device=var, file=/usr/local/xia/pixie/firmware/revf_general_14b250m_r33356/dsp/Pixie16DSP_revfgeneral_14b250m_r33356.var"};
 
-    for (auto& firmware : firmware_list) {
-        auto fw = xia::pixie::firmware::parse(firmware, ',');
-        if (xia::pixie::firmware::check(crate->firmware, fw)) {
-            std::string what("duplicate firmware: ");
-            what += firmware;
-            throw std::runtime_error(what);
-        }
-        xia::pixie::firmware::add(crate->firmware, fw);
+    xia::pixie::firmware::firmware_set fw_set_1("1.2.3", "1/1/2034");
+    for (auto& firmware : firmware_list_1) {
+        xia::pixie::firmware::release_type release;
+        auto fw = xia::pixie::firmware::parse(release, firmware, ',');
+        fw_set_1.add(fw);
     }
+    xia::pixie::firmware::add(crate->firmware, fw_set_1);
+
+    xia::pixie::firmware::firmware_set fw_set_2;
+    for (auto& firmware : firmware_list_2) {
+        xia::pixie::firmware::release_type release;
+        auto fw = xia::pixie::firmware::parse(release, firmware, ',');
+        fw_set_2.add(fw);
+    }
+    xia::pixie::firmware::add(crate->firmware, fw_set_2);
 
     try {
         crate->initialize(false);
-        crate->set_firmware();
         crate->probe();
         crate->boot();
 

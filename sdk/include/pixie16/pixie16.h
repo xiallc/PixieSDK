@@ -44,12 +44,16 @@ struct fifo_worker_config {
 };
 
 #define PIXIE16_API_MOD_CONFIG_MAX_STRING (256)
+#define PIXIE16_API_MOD_CONFIG_MAX_DEVICES (6)
+#define PIXIE16_API_MOD_CONFIG_MAX_DEVICE_STRING (16)
 struct module_config {
     unsigned short adc_bit_resolution;
     unsigned short adc_sampling_frequency;
-    char sys_fpga[PIXIE16_API_MOD_CONFIG_MAX_STRING];
-    char dsp_code[PIXIE16_API_MOD_CONFIG_MAX_STRING];
-    char dsp_var[PIXIE16_API_MOD_CONFIG_MAX_STRING];
+    char fw_revision[PIXIE16_API_MOD_CONFIG_MAX_STRING];
+    char fw_tag[PIXIE16_API_MOD_CONFIG_MAX_STRING];
+    char fw_type[PIXIE16_API_MOD_CONFIG_MAX_STRING];
+    char fw_device[PIXIE16_API_MOD_CONFIG_MAX_DEVICES][PIXIE16_API_MOD_CONFIG_MAX_DEVICE_STRING];
+    char fw_device_file[PIXIE16_API_MOD_CONFIG_MAX_DEVICES][PIXIE16_API_MOD_CONFIG_MAX_STRING];
     unsigned short number;
     unsigned short number_of_channels;
     unsigned short revision;

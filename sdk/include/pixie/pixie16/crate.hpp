@@ -184,7 +184,7 @@ public:
     /**
      * Firmware for the crate.
      */
-    firmware::crate firmware;
+    firmware::system firmware;
 
     crate();
     virtual ~crate();
@@ -291,12 +291,7 @@ public:
      *
      * @param params The crate boot parameters
      */
-    void boot(const boot_params& params = boot_params());
-
-    /**
-     * @brief Associates the firmware with modules in the crate.
-     */
-    void set_firmware();
+    void boot(const boot_params params = boot_params());
 
     /**
      * @brief Import a configuration. Returning a list of loaded modules.
@@ -329,6 +324,11 @@ public:
      * @brief Output the crate details.
      */
     void output(std::ostream& out) const;
+
+    /**
+     * @brief Output the crate firmware details.
+     */
+    void output_firmware(std::ostream& out) const;
 
     /**
      * @brief Set the crate event function.

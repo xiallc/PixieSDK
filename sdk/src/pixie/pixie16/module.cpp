@@ -178,13 +178,19 @@ struct pci_bus_handle {
     enum struct mailbox {
         flags,
         config,
-        fw_crc,
-        reservered_3,
-        reservered_4,
+        fw_1,
+        fw_2,
+        fw_3,
         reservered_5,
         reservered_6,
         opens
     };
+
+    static constexpr uint32_t revision_base = 0;
+    static constexpr uint32_t revision_mask = 0xf;
+    static constexpr uint32_t release_base = 28;
+    static constexpr uint32_t release_mask = 0xf;
+
     static constexpr size_t num_mailboxes = 8;
     static constexpr int version = 1;
 
@@ -233,14 +239,19 @@ struct pci_bus_handle {
     size_t opens() const;
 
     /*
-     * Get the formware CRC32
+     * Firmware
      */
+    void firmware_release(
+        firmware::release_type& release, firmware::firmware_set::set_type& type) const;
     uint32_t fimware_crc() const;
 
     /*
      * Set the mail box values
      */
     void set_config(hw::slot_type slot, int serial_num, int revision);
+    void set_firmware_release(
+        hw::slot_type slot, const firmware::release_type& release,
+        const firmware::firmware_set::set_type& type);
     void set_firmware_crc(hw::slot_type slot, uint32_t crc32);
     void update_opens(hw::slot_type slot);
 
@@ -347,21 +358,64 @@ size_t pci_bus_handle::opens() const {
     return static_cast<size_t>(get(mailbox::opens));
 }
 
+void pci_bus_handle::firmware_release(
+    firmware::release_type& release, firmware::firmware_set::set_type& type) const {
+    uint32_t flags = get(mailbox::flags);
+    uint32_t fw_1 = get(mailbox::fw_1);
+    uint32_t fw_2 = get(mailbox::fw_2);
+    release.major = (fw_1 >> 16) & 0xffff;
+    release.minor = fw_1 & 0xffff;
+    release.patch = (fw_2 >> 16) & 0xffff;
+    uint32_t prerelease_number = fw_2 & 0xffff;
+    if (prerelease_number != 0) {
+        release.prerelease_number = prerelease_number;
+    }
+    release.prerelease_type =
+        static_cast<util::version::prerelease>((flags >> release_base) & 3);
+    type =
+        static_cast<firmware::firmware_set::set_type>((flags >> (release_base + 2)) & 3);
+}
+
 uint32_t pci_bus_handle::fimware_crc() const {
-    return get(mailbox::fw_crc);
+    return get(mailbox::fw_3);
 }
 
 void pci_bus_handle::set_config(hw::slot_type slot, int serial_num, int revision) {
     set(mailbox::config, (serial_num << 16) | ((revision & 0xff) << 8) | (slot & 0xff));
-    int mb = int(mailbox::config);
-    plx_mailbox_write(*this, slot, 0, version);
+    uint32_t flags = get(mailbox::flags) & ~(revision_mask << revision_base);
+    flags |= (version & revision_mask) << revision_base;
+    int mb = int(mailbox::flags);
+    plx_mailbox_write(*this, slot, mb, flags);
+    mb = int(mailbox::config);
     plx_mailbox_write(*this, slot, mb, get(mailbox::config));
 }
 
+void pci_bus_handle::set_firmware_release(
+    hw::slot_type slot, const firmware::release_type& release,
+    const firmware::firmware_set::set_type& type) {
+    set(mailbox::fw_1, (release.major << 16) | release.minor);
+    uint32_t prerelease_number = 0;
+    if (release.prerelease_number.has_value()) {
+        prerelease_number = release.prerelease_number.value();
+    }
+    set(mailbox::fw_2, (release.patch << 16) | (prerelease_number & 0xffff));
+    uint32_t flags = get(mailbox::flags) & ~(release_mask << release_base);
+    flags |=
+        ((uint32_t(type) & 3) << (release_base + 2)) |
+        ((uint32_t(release.prerelease_type) & 3) << release_base);
+    set(mailbox::flags, flags);
+    int mb = int(mailbox::flags);
+    plx_mailbox_write(*this, slot, mb, get(mailbox::flags));
+    mb = int(mailbox::fw_1);
+    plx_mailbox_write(*this, slot, mb, get(mailbox::fw_1));
+    mb = int(mailbox::fw_2);
+    plx_mailbox_write(*this, slot, mb, get(mailbox::fw_2));
+}
+
 void pci_bus_handle::set_firmware_crc(hw::slot_type slot, uint32_t crc32) {
-    set(mailbox::fw_crc, crc32);
-    int mb = int(mailbox::fw_crc);
-    plx_mailbox_write(*this, slot, mb, get(mailbox::fw_crc));
+    set(mailbox::fw_3, crc32);
+    int mb = int(mailbox::fw_3);
+    plx_mailbox_write(*this, slot, mb, get(mailbox::fw_3));
 }
 
 void pci_bus_handle::update_opens(hw::slot_type slot) {
@@ -407,6 +461,10 @@ void module::reg_trace_guard::disable() {
 
 module::fifo_stats::fifo_stats() {
     clear();
+}
+
+module::boot_params::boot_params()
+    : boot_comms(false), boot_fippi(false), boot_dsp(false) {
 }
 
 module::fifo_stats::fifo_stats(const module::fifo_stats& s)
@@ -552,9 +610,9 @@ module::module(backplane::backplane& backplane_)
       io_cpld_version_old(false), fifo_worker_running(false), fifo_worker_finished(false),
       fifo_worker_req(fifo_worker_working), fifo_worker_resp(fifo_worker_working), in_use(0),
       opened_(false), online_(false), forced_offline_(false), pause_fifo_worker(true),
-      comms_fpga(false), comms_loaded(false), fippi_fpga(false), fippi_loaded(false),
-      dsp_online(false), dsp_loaded(false), have_hardware(false), vars_loaded(false),
-      cfg_ctrlcs(0xaaa), device(std::make_unique<pci_bus_handle>()), test_mode(test::off) {}
+      comms_fpga(false), fippi_fpga(false), dsp_online(false), have_hardware(false),
+      vars_loaded(false), cfg_ctrlcs(0xaaa), device(std::make_unique<pci_bus_handle>()),
+      test_mode(test::off) {}
 
 module::module(module&& m)
     : slot(m.slot), number(m.number), serial_num(m.serial_num), revision(m.revision),
@@ -563,7 +621,7 @@ module::module(module&& m)
       module_var_descriptors(std::move(m.module_var_descriptors)),
       module_vars(std::move(m.module_vars)),
       channel_var_descriptors(std::move(m.channel_var_descriptors)),
-      channels(std::move(m.channels)), firmware(std::move(m.firmware)), run_task(m.run_task.load()),
+      channels(std::move(m.channels)), run_task(m.run_task.load()),
       control_task(m.control_task.load()), fifo_buffers(m.fifo_buffers),
       fifo_run_wait_usecs(m.fifo_run_wait_usecs.load()),
       fifo_idle_wait_usecs(m.fifo_idle_wait_usecs.load()),
@@ -576,10 +634,9 @@ module::module(module&& m)
       fifo_worker_req(fifo_worker_working), fifo_worker_resp(fifo_worker_working),
       in_use(0), opened_(m.opened_.load()), online_(m.online_.load()),
       forced_offline_(m.forced_offline_.load()), pause_fifo_worker(m.pause_fifo_worker.load()),
-      comms_fpga(m.comms_fpga), comms_loaded(m.comms_loaded), fippi_fpga(m.fippi_fpga),
-      fippi_loaded(m.fippi_loaded), dsp_online(m.dsp_online), dsp_loaded(m.dsp_loaded),
-      have_hardware(m.have_hardware), vars_loaded(false), cfg_ctrlcs(0xaaa), device(std::move(m.device)),
-      test_mode(m.test_mode.load()) {
+      comms_fpga(m.comms_fpga), fippi_fpga(m.fippi_fpga), dsp_online(m.dsp_online),
+      have_hardware(m.have_hardware), vars_loaded(false), cfg_ctrlcs(0xaaa),
+      device(std::move(m.device)), test_mode(m.test_mode.load()) {
     m.slot = hw::slot_invalid;
     m.number = -1;
     m.serial_num = 0;
@@ -612,11 +669,8 @@ module::module(module&& m)
     m.forced_offline_ = false;
     m.pause_fifo_worker = true;
     m.comms_fpga = false;
-    m.comms_loaded = false;
     m.fippi_fpga = false;
-    m.fippi_loaded = false;
     m.dsp_online = false;
-    m.dsp_loaded = false;
     m.have_hardware = false;
     m.vars_loaded = false;
     m.cfg_ctrlcs = 0xaaa;
@@ -677,11 +731,8 @@ module& module::operator=(module&& m) {
     forced_offline_ = m.forced_offline_.load();
     pause_fifo_worker = m.pause_fifo_worker.load();
     comms_fpga = m.comms_fpga;
-    comms_loaded = m.comms_loaded;
     fippi_fpga = m.fippi_fpga;
-    fippi_loaded = m.fippi_loaded;
     dsp_online = m.dsp_online;
-    dsp_loaded = m.dsp_loaded;
     have_hardware = m.have_hardware;
     vars_loaded = m.vars_loaded;
     cfg_ctrlcs = m.cfg_ctrlcs;
@@ -719,11 +770,8 @@ module& module::operator=(module&& m) {
     m.forced_offline_ = false;
     m.pause_fifo_worker = true;
     m.comms_fpga = false;
-    m.comms_loaded = false;
     m.fippi_fpga = false;
-    m.fippi_loaded = false;
     m.dsp_online = false;
-    m.dsp_loaded = false;
     m.have_hardware = false;
     m.vars_loaded = false;
     m.cfg_ctrlcs = 0xaaa;
@@ -750,22 +798,6 @@ bool module::opened() const {
 
 bool module::online() const {
     return online_.load() && !forced_offline_.load();
-}
-
-bool module::fw_verified() const {
-    return comms_loaded && fippi_loaded && dsp_loaded;
-}
-
-bool module::fw_comms_verified() const {
-    return comms_loaded;
-}
-
-bool module::fw_fippi_verified() const {
-    return fippi_loaded;
-}
-
-bool module::fw_dsp_verified() const {
-    return dsp_loaded;
 }
 
 void module::open(size_t device_number) {
@@ -954,6 +986,13 @@ void module::open(size_t device_number) {
         start_fifo_services();
 
         fixtures->open();
+
+        firmware::release_type fw_release;
+        firmware::firmware_set::set_type fw_type;
+        device->firmware_release(fw_release, fw_type);
+        xia_log(log::info) << module_label(*this)
+                           << "resident release: " << fw_release
+                           << " type: " << firmware::set_type_label(fw_type);
     }
 }
 
@@ -1004,11 +1043,8 @@ void module::close() {
         ps_close = ::PlxPci_DeviceClose(&device->handle);
 
         comms_fpga = false;
-        comms_loaded = false;
         fippi_fpga = false;
-        fippi_loaded = false;
         dsp_online = false;
-        dsp_loaded = false;
 
         number = -1;
 
@@ -1091,7 +1127,14 @@ void module::check_channel_num(T num) {
     }
 }
 
-void module::probe() {
+void module::probe(const firmware::system& firmwares) {
+    lock_guard guard(lock_);
+    firmware::firmware_set firmware;
+    firmware_get(firmware, firmwares);
+    probe(firmware);
+}
+
+void module::probe(const firmware::firmware_set& firmware) {
     lock_guard guard(lock_);
 
     if (!opened()) {
@@ -1100,23 +1143,28 @@ void module::probe() {
 
     online_ = dsp_online = fippi_fpga = comms_fpga = false;
 
-    load_vars();
+    firmware_change_log(firmware.release);
+
+    load_vars(firmware);
     erase_values();
     erase_channels();
 
-    hw::fpga::comms comms(*this);
-    comms_fpga = comms.done();
+    if (firmware_resident(firmware.release)) {
+        hw::fpga::comms comms(*this);
+        comms_fpga = comms.done();
 
-    if (comms_fpga) {
-        hw::fpga::fippi fippi(*this);
-        fippi_fpga = fippi.done();
+        if (comms_fpga) {
+            hw::fpga::fippi fippi(*this);
+            fippi_fpga = fippi.done();
 
-        hw::dsp::dsp dsp(*this);
-        dsp_online = dsp.init_done();
+            hw::dsp::dsp dsp(*this);
+            dsp_online = dsp.init_done();
+        }
     }
 
     xia_log(log::info) << std::boolalpha << module_label(*this) << "probe: sys=" << comms_fpga
-                       << " fippi=" << fippi_fpga << " dsp=" << dsp_online;
+                       << " fippi=" << fippi_fpga << " dsp=" << dsp_online
+                       << " release=" << firmware.release.to_string();
 
     if (fippi_fpga) {
         init_values();
@@ -1130,7 +1178,16 @@ void module::probe() {
     }
 }
 
-void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
+void module::boot(
+  const boot_params& params, const firmware::system& firmwares) {
+    lock_guard guard(lock_);
+    firmware::firmware_set firmware;
+    firmware_get(firmware, firmwares);
+    boot(params, firmware);
+}
+
+void module::boot(
+    const boot_params& params, const firmware::firmware_set& firmware) {
     lock_guard guard(lock_);
 
     if (!opened()) {
@@ -1141,11 +1198,21 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
         xia_log(log::warning) << "module forced offline";
     }
 
-    if (online() && (boot_comms || boot_fippi || boot_dsp)) {
+    if (online() &&
+        (params.boot_comms || params.boot_fippi || params.boot_dsp)) {
         xia_log(log::warning) << "booting online module";
     }
 
     online_ = false;
+
+    firmware_change_log(firmware.release);
+
+    auto boot_comms = params.boot_comms;
+    auto boot_fippi = params.boot_fippi;
+    auto boot_dsp = params.boot_dsp;
+
+    auto boot_all = boot_comms && boot_fippi && boot_dsp;
+    auto boot_some = boot_comms || boot_fippi || boot_dsp;
 
     /*
      * Load the DSP if the COMMS or FIPPI are loaded. There is no DSP
@@ -1160,21 +1227,28 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
       }
     }
 
+    if (!firmware_resident(firmware.release) && (!boot_comms || !boot_fippi || !boot_dsp)) {
+        throw error(number, slot, error::code::module_initialize_failure,
+                    "partial boot: firmware does not match resident firmware");
+    }
+
     stop_fifo_services();
 
-    load_vars();
+    load_vars(firmware);
 
     int io_cpld_backoff = io_cpld_version_old ? 2 : 0;
+
+    util::crc::crc32 crc;
 
     if (boot_comms) {
         if (comms_fpga) {
             xia_log(log::info) << module_label(*this) << "comms already loaded";
         }
-        firmware::firmware_ref fw = get("sys");
+        firmware::firmware_ref fw = firmware.get("sys");
         hw::fpga::comms comms(*this);
         comms_fpga = false;
         fw->load();
-        comms_loaded = true;
+        fw->update_crc(crc);
         comms.boot(fw->data, io_cpld_backoff);
         comms_fpga = comms.done();
         if (comms_fpga) {
@@ -1190,11 +1264,11 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
             throw error(number, slot, error::code::module_initialize_failure,
                         "fippi boot needs comms booted");
         }
-        firmware::firmware_ref fw = get("fippi");
+        firmware::firmware_ref fw = firmware.get("fippi");
         hw::fpga::fippi fippi(*this);
         fippi_fpga = false;
         fw->load();
-        fippi_loaded = true;
+        fw->update_crc(crc);
         fippi.boot(fw->data, io_cpld_backoff);
         fippi_fpga = fippi.done();
         if (fippi_fpga) {
@@ -1210,16 +1284,35 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
             throw error(number, slot, error::code::module_initialize_failure,
                         "dsp needs comms and fippi booted");
         }
-        firmware::firmware_ref fw = get("dsp");
+        firmware::firmware_ref fw = firmware.get("dsp");
         hw::dsp::dsp dsp(*this);
         dsp_online = false;
         fw->load();
-        dsp_loaded = true;
+        fw->update_crc(crc);
         dsp.boot(fw->data);
         dsp_online = dsp.init_done();
         if (dsp_online) {
             fixtures->dsp_loaded();
         }
+    }
+
+    /*
+     * The module's resident firmware CRC can be only be calculated
+     * when all devices are loaded. If some are loaded we clear the
+     * CRC value because a partial loaded cannot include the parts
+     * already resident. If none are loaded do not update the value.
+     */
+    util::crc::crc32::value_type mod_crc = 0;
+    if (boot_all) {
+        mod_crc = crc.value;
+    }
+
+    /*
+     * Update the mailbox with the firmware configuration
+     */
+    device->set_firmware_release(slot, firmware.release, firmware.type());
+    if (boot_some) {
+        device->set_firmware_crc(slot, mod_crc);
     }
 
     if (fippi_fpga) {
@@ -1229,7 +1322,8 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
 
     start_fifo_services();
 
-    xia_log(log::info) << module_label(*this) << std::boolalpha << "boot: sys-fpga=" << comms_fpga
+    xia_log(log::info) << std::boolalpha
+                       << module_label(*this) << "boot: sys-fpga=" << comms_fpga
                        << " fippi-fpga=" << fippi_fpga << " dsp=" << dsp_online;
 
     online_ = comms_fpga && fippi_fpga && dsp_online;
@@ -1247,49 +1341,43 @@ void module::initialize() {
     }
 }
 
-void module::add(firmware::module& fw) {
+void module::firmware_get(
+    firmware::firmware_set& firmware, const firmware::system& firmwares) {
     lock_guard guard(lock_);
-    if (online()) {
-        xia_log(log::warning) << module_label(*this)
-                              << "module already online, do not need to add firmware";
-    } else {
-        for (auto fp : fw) {
-            bool found = false;
-            for (auto fm : firmware) {
-                if (fm == fp) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                xia_log(log::debug) << module_label(*this) << "add module firmware: " << fp->tag
-                                    << " device: " << fp->device;
-                firmware.push_back(fp);
-            }
+    auto fw_tag = get_fw_tag();
+    firmware::release_type fw_release = firmware::not_released;
+    firmware::firmware_set::set_type fw_type;
+    firmware_release(fw_release, fw_type);
+    /*
+     * If a release is resident check if it is present in the system
+     * firmwares else get the latest release.
+     */
+    if (fw_release != firmware::not_released) {
+        if (!firmware::check(firmwares, fw_tag, fw_release, slot)) {
+            fw_release = firmware::not_released;
         }
     }
+    xia_log(log::debug) << module_label(*this)
+                        << "firmware get: tag=" << fw_tag
+                        << " release=" << fw_release
+                        << " slot=" << slot;
+    firmware::find_filter filter(fw_tag, fw_release, slot);
+    firmware::find(firmware, firmwares, filter);
 }
 
-firmware::firmware_ref module::get(const std::string device) {
-    lock_guard guard(lock_);
-    /*
-     * First check if a slot assigned firmware exists for this
-     * device. If not, then see if a default is available.
-     */
-    for (auto& fwr : firmware) {
-        if (fwr->device == device) {
-            return fwr;
-        }
+void module::firmware_release(
+    firmware::release_type& release_, firmware::firmware_set::set_type& type) {
+    if (!opened()) {
+        throw error(number, slot, error::code::module_offline, "module not open");
     }
-    if (firmware.empty()) {
-        throw error(
-            number, slot, error::code::module_invalid_firmware,
-            "crate has no firmware");
-    }
-    std::ostringstream oss;
-    oss << "firmware not found: slot=" << slot << ": device=" << device
-        << " firmwares=" << firmware.size();
-    throw error(number, slot, error::code::module_invalid_firmware, oss.str());
+    device->firmware_release(release_, type);
+}
+
+bool module::firmware_resident(const firmware::release_type& release) {
+    firmware::release_type hw_release;
+    firmware::firmware_set::set_type hw_type;
+    firmware_release(hw_release, hw_type);
+    return release == hw_release;
 }
 
 param::value_type module::read(const std::string& par) {
@@ -2174,8 +2262,11 @@ void module::select_port(const int port) {
 void module::output(std::ostream& out) const {
     util::io::ostream_guard flags(out);
     if (present()) {
-        out << std::boolalpha;
-        out << "slot: ";
+        firmware::release_type fw_release;
+        firmware::firmware_set::set_type fw_type;
+        device->firmware_release(fw_release, fw_type);
+        out << std::boolalpha
+            << "slot: ";
         if (slot_valid()) {
             out << std::setw(2) << slot;
         } else {
@@ -2188,7 +2279,7 @@ void module::output(std::ostream& out) const {
             << " open:" << opened_.load() << " online:" << online_.load()
             << " forced-offline:" << forced_offline_.load() << " serial:" << serial_num
             << " rev:" << revision_label() << " (" << revision << ") vaddr:" << vmaddr
-            << " fw: " << firmware.size() << " max-channels: " << max_channels
+            << " fw: " << fw_release.to_string() << " max-channels: " << max_channels
             << " num-channels: " << num_channels;
     } else {
         out << "not-present";
@@ -2283,6 +2374,10 @@ bool module::operator>(const hw::rev_tag rev) const {
     return revision > int(rev);
 }
 
+firmware::tag_type module::get_fw_tag() const {
+    return firmware::tag(revision, eeprom.configs);
+}
+
 void module::online_check() const {
     if (forced_offline_.load()) {
         throw error(number, slot, error::code::module_offline, "module is forced offline");
@@ -2362,9 +2457,9 @@ int module::get_bus_device_number() const {
     return device->device_number;
 }
 
-void module::load_vars() {
+void module::load_vars(const firmware::firmware_set& firmware) {
     if (!vars_loaded) {
-        firmware::firmware_ref vars = get("var");
+        firmware::firmware_ref vars = firmware.get("var");
         vars->load();
         param::load(vars, module_var_descriptors, channel_var_descriptors);
         param_addresses.set(max_channels, module_var_descriptors, channel_var_descriptors);
@@ -2424,6 +2519,17 @@ void module::init_channels() {
     }
     if (fixtures) {
         fixtures->init_channels();
+    }
+}
+
+void module::firmware_change_log(const firmware::release_type& release) {
+    firmware::release_type hw_release;
+    firmware::firmware_set::set_type hw_type;
+    device->firmware_release(hw_release, hw_type);
+    if (hw_release != firmware::not_released && release != hw_release) {
+        xia_log(log::warning) << module_label(*this) << "firmware: change from "
+                              << hw_release.to_string()
+                              << " to " << release.to_string();
     }
 }
 
@@ -3082,7 +3188,7 @@ void check_module(const module& module_, check check_) {
 
 module_state::module_state(const module& m)
     : present(m.present()), open(m.opened()), online(m.online()), slot_valid(m.slot_valid()),
-      fw_verified(m.fw_verified()), serial_num(m.serial_num), num_channels(m.num_channels),
+      serial_num(m.serial_num), num_channels(m.num_channels),
       number(m.number), slot(m.slot), opens(m.open_count) {
 }
 
@@ -3093,7 +3199,6 @@ void module_state::output(std::ostream& out) const {
         << " open=" << open
         << " online=" << online
         << " slot_valid=" << slot_valid
-        << " fw-verified=" << fw_verified
         << " serial-num=" << serial_num
         << " num-channels=" << num_channels
         << " number=" << number

@@ -36,6 +36,12 @@
 namespace xia {
 namespace pixie {
 namespace crate {
+static void check_firmware(const firmware::system& firmware, const firmware::tag_type& tag) {
+    if (!firmware::check(firmware, tag)) {
+        throw error(error::code::module_invalid_firmware, "firmware not found: " + tag);
+    }
+}
+
 crate::guard::guard(crate& crate_) : lock_(crate_.lock_), guard_(lock_) {}
 
 crate::user::user(crate& crate__) : crate_(crate__) {
@@ -245,12 +251,11 @@ bool crate::probe() {
     num_offline = 0;
     crate_event_call(crate_event::probe_begin);
     for (auto& module : slots) {
-        xia_log(log::debug) << "crate: probe: " << *module;
         if (module->present()) {
             ++num_present;
             slot_event_call(module->slot, slot_event::present);
             if (module->opened()) {
-                module->probe();
+                module->probe(firmware);
                 if (module->online()) {
                     ++num_online;
                     slot_event_call(module->slot, slot_event::online);
@@ -276,7 +281,7 @@ int crate::count_present() {
     return num;
 }
 
-void crate::boot(const crate::boot_params& params) {
+void crate::boot(const crate::boot_params params) {
     xia_log(log::info) << "crate: boot: force=" << std::boolalpha << params.force
                        << " comms=" << params.boot_comms << " fippi=" << params.boot_fippi
                        << " dsp=" << params.boot_dsp;
@@ -312,9 +317,15 @@ void crate::boot(const crate::boot_params& params) {
             (!params.force && module->online())) {
             continue;
         }
+        auto fw_tag = module->get_fw_tag();
+        check_firmware(firmware, fw_tag);
         slot_event_call(module->slot, slot_event::boot);
-        workers.emplace_back([&params, module]() {
-            module->boot(params.boot_comms, params.boot_fippi, params.boot_dsp);
+        workers.emplace_back([&self = *this, module, fw_tag = fw_tag, &params]() {
+            module::module::boot_params mod_params;
+            mod_params.boot_comms = params.boot_comms;
+            mod_params.boot_fippi = params.boot_fippi;
+            mod_params.boot_dsp = params.boot_dsp;
+            module->boot(mod_params, self.firmware);
         });
     }
     for (auto& w : workers) {
@@ -343,33 +354,6 @@ void crate::boot(const crate::boot_params& params) {
 
     if (first_error != error::code::success) {
         throw error(first_error, "crate boot error; see log");
-    }
-}
-
-void crate::set_firmware() {
-    xia_log(log::info) << "crate: set firmware";
-    ready();
-    lock_guard guard(lock_);
-    for (auto& module : slots) {
-        if (module->opened()) {
-            for (auto& config : module->eeprom.configs) {
-                std::string tag = firmware::tag(module->revision, config.adc_msps, config.adc_bits);
-                auto mod_fw = firmware.find(tag);
-                if (mod_fw != firmware.end()) {
-                    module->add(firmware[tag]);
-                } else {
-                    if (firmware::revision_tag_check(tag, module->revision, config, firmware)) {;
-                        module->add(firmware[tag]);
-                    } else {
-                        xia_log(log::warning) << module::module_label(*module)
-                                              << "crate: module firmware not found: " << tag;
-                    }
-                }
-            }
-            if (module->firmware.size() == 0) {
-                xia_log(log::warning) << module::module_label(*module) << "no firmware set";
-            }
-        }
     }
 }
 
@@ -428,13 +412,6 @@ void crate::output(std::ostream& out) const {
         out << "not initialized";
         return;
     }
-    out << "fw: tags: " << firmware.size() << std::endl;
-    int c = 0;
-    for (auto fw_rev : firmware) {
-        for (auto& fw : std::get<1>(fw_rev)) {
-            out << ' ' << std::setw(3) << ++c << ". " << ' ' << *fw << std::endl;
-        }
-    }
     out << "slots:" << num_slots << " present: " << num_present
         << " online: " << num_online << " offline: " << num_offline  << std::endl;
     bool first = true;
@@ -446,6 +423,21 @@ void crate::output(std::ostream& out) const {
                 out << std::endl;
             }
             out << ' ' << *mod;
+        }
+    }
+}
+
+void crate::output_firmware(std::ostream& out) const {
+    if (!ready_.load()) {
+        out << "not initialized";
+        return;
+    }
+    out << "fw: tags: " << firmware.size() << std::endl;
+    int c = 0;
+    for (auto fw_rev : firmware) {
+        for (auto& fw : std::get<1>(fw_rev)) {
+            out << ' ' << std::setw(3) << ++c << ". tag:" << std::get<0>(fw_rev)
+                << ' ' << std::setw(7) << *fw << std::endl;
         }
     }
 }
@@ -685,7 +677,12 @@ void module_crate::assign(const module::number_slots& numbers) {
                                 std::to_string(slot));
                 }
             }
-            module.probe();
+            auto fw_tag = module.get_fw_tag();
+            check_firmware(pcrate.firmware, fw_tag);
+            firmware::firmware_set fw_set;
+            firmware::find_filter filter(fw_tag, module.slot);
+            firmware::find(fw_set, pcrate.firmware, filter);
+            module.probe(fw_set);
         }
     }
     for (auto slot : current_modules) {

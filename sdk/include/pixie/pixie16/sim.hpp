@@ -36,7 +36,7 @@ namespace pixie {
  * @brief Collects tools for simulating the Pixie-16 hardware.
  */
 namespace sim {
-typedef xia::pixie::error::error error;
+using error = xia::pixie::error::error;
 
 /**
  * @brief A Simulated a module derived from the module class.
@@ -45,16 +45,18 @@ class module : public xia::pixie::module::module {
 public:
     static const size_t pci_addr_space_size = 8 * 1024 * 1024;
 
-    typedef xia::pixie::module::error error;
+    using error = xia::pixie::module::error;
 
     module(backplane::backplane& backplane);
     ~module() override;
 
     void open(size_t device_number) override;
     void close() override;
-    void probe() override;
-    void boot(bool boot_comms = true, bool boot_fippi = true, bool boot_dsp = true) override;
+    void probe(const firmware::firmware_set& firmware) override;
+    void boot(const boot_params& params, const firmware::firmware_set& firmware) override;
     void initialize() override;
+    void firmware_release(
+        firmware::release_type& release, firmware::firmware_set::set_type& type) override;
     void init_values() override;
 
     void load_var_defaults(const std::string& file);
@@ -62,6 +64,9 @@ public:
 
     std::unique_ptr<uint8_t[]> pci_memory;
     std::string var_defaults;
+
+    firmware::release_type fw_release;
+    firmware::firmware_set::set_type fw_type;
 
     bool init_online;
 };
@@ -71,7 +76,7 @@ public:
  */
 class crate : public xia::pixie::crate::crate {
 public:
-    typedef xia::pixie::crate::error error;
+    using error = xia::pixie::module::error;
 
     crate(bool init_online = true);
     ~crate() override;
@@ -80,6 +85,14 @@ public:
 
     bool init_online;
 };
+
+/**
+ * @brief Firmware sets for simulation
+ */
+using firmware_set_def = std::vector<std::string>;
+using firmware_set_defs = std::vector<firmware_set_def>;
+
+void load_firmware_sets(firmware::system& firmwares, const firmware_set_defs& sets);
 
 /**
  * @brief Module definition used to set up the simulation.
@@ -99,7 +112,7 @@ struct module_def {
     module_def();
 };
 
-typedef std::vector<module_def> module_defs;
+using module_defs = std::vector<module_def>;
 
 extern module_defs mod_defs;
 

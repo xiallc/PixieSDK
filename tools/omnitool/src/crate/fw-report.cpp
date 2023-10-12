@@ -32,19 +32,19 @@ namespace xia {
 namespace omnitool {
 namespace crate {
 void fw_report(command::context& context) {
-    std::ostream* out= &std::cout;
-    std::ofstream output_file;
+    auto& crate = context.crate;
     auto file_opt = context.cmd.get_arg();
     if (!file_opt.empty()) {
-        output_file.open(file_opt);
-        if (!output_file) {
+        std::ofstream out(file_opt);
+        if (!out) {
             throw std::runtime_error(
                 std::string(
-		  "opening report: " + file_opt + ": " + std::strerror(errno)));
+                    "opening report: " + file_opt + ": " + std::strerror(errno)));
         }
-        out = &output_file;
+        pixie::firmware::system_fw_report(out, crate->firmware);
+    } else {
     }
-    pixie::firmware::system_fw_report(*out, context.opts.firmware_host_path);
+    crate->output_firmware(context.opts.out);
 }
 
 void fw_report_comp(command::context& , command::completion& ) {

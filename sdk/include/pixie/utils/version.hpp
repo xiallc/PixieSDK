@@ -32,6 +32,10 @@ namespace xia {
 namespace util {
 namespace version {
 using namespace semver;
+/**
+ * Not released is our default version.
+ */
+inline constexpr auto not_released = version::version{0, 0, 0};
 } // namespace version
 } // namespace util
 } // namespace xia

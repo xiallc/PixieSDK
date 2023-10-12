@@ -25,6 +25,8 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <map>
+#include <utility>
 
 #include <pixie/error.hpp>
 #include <pixie/log.hpp>
@@ -40,8 +42,20 @@
 
 #include <args/args.hxx>
 
-void load_crate_firmwares(
-    const std::string& file, xia::pixie::firmware::crate& fws) {
+using firmware_sets = std::map<std::string, xia::pixie::firmware::firmware_set>;
+
+static void firmware_line_parse(
+    firmware_sets& fw_sets, std::string& line, const char delimiter) {
+    xia::pixie::firmware::release_type release;
+    auto fw = xia::pixie::firmware::parse(release, line, delimiter);
+    auto rel_str = release.to_string();
+    if (fw_sets.find(rel_str) == std::end(fw_sets)) {
+        fw_sets.emplace(rel_str, xia::pixie::firmware::firmware_set(release, "undefined"));
+    }
+    fw_sets[rel_str].add(fw);
+}
+
+static void load_crate_firmwares(firmware_sets& fw_sets, const std::string& file) {
     std::ifstream input(file, std::ios::in | std::ios::binary);
     if (!input) {
         throw std::runtime_error(std::string("crate firmware file open: ") + file + ": " +
@@ -49,14 +63,14 @@ void load_crate_firmwares(
     }
     for (std::string line; std::getline(input, line);) {
         if (!line.empty()) {
-            auto fw = xia::pixie::firmware::parse(line, ',');
-            if (xia::pixie::firmware::check(fws, fw)) {
-                std::string what("duplicate firmware option: ");
-                what += line;
-                throw std::runtime_error(what);
-            }
-            xia::pixie::firmware::add(fws, fw);
+            firmware_line_parse(fw_sets, line, ',');
         }
+    }
+}
+
+static void firmwares_add(xia::pixie::firmware::system& fws, firmware_sets& fw_sets) {
+    for (auto& fw_set : fw_sets) {
+        xia::pixie::firmware::add(fws, fw_set.second);
     }
 }
 
@@ -67,19 +81,25 @@ static void firmware_load(xia::omnitool::command::context& context) {
      * Load command line first, then crate files and then fill in any
      * gaps with the host files.
      */
-    for (auto& fwfile : opts.firmware_files) {
-        auto fw = xia::pixie::firmware::parse(fwfile, ':');
-        if (xia::pixie::firmware::check(crate->firmware, fw)) {
-            std::string what("duplicate firmware on command line: ");
-            what += fwfile;
-            throw std::runtime_error(what);
+    firmware_sets fw_sets;
+    if (!opts.firmware_files.empty()) {
+        for (auto& fwfile : opts.firmware_files) {
+            firmware_line_parse(fw_sets, fwfile,  ':');
         }
-        xia::pixie::firmware::add(crate->firmware, fw);
     }
-    for (auto& fwfile : opts.firmware_crate_files) {
-        load_crate_firmwares(fwfile, crate->firmware);
+    if (!opts.firmware_crate_files.empty()) {
+        for (auto& fwfile : opts.firmware_crate_files) {
+            load_crate_firmwares(fw_sets, fwfile);
+        }
     }
-    load_firmwares(crate->firmware, opts.firmware_host_path.c_str());
+    if (!fw_sets.empty()) {
+        firmwares_add(crate->firmware, fw_sets);
+    }
+    if (!opts.firmware_host_path.empty()) {
+        load_firmwares(crate->firmware, opts.firmware_host_path);
+    } else {
+        xia::pixie::firmware::load_system_firmwares(crate->firmware);
+    }
 }
 
 static void status(xia::omnitool::command::context& context) {
@@ -121,7 +141,6 @@ static void probe(xia::omnitool::command::context& context) {
     auto& crate = context.crate;
     auto& opts = context.opts;
     xia::logging::log_level_guard log_guard(xia::log::debug);
-    crate->set_firmware();
     crate->probe();
     if (opts.verbose) {
         opts.out << "modules: slots=" << crate->num_slots
@@ -350,8 +369,6 @@ int main(int argc, char* argv[]) {
 
         if (fw_host_path_flag) {
             session_opts.firmware_host_path = args::get(fw_host_path_flag);
-        } else {
-            session_opts.firmware_host_path = xia::pixie::firmware::system_firmware_path;
         }
 
         xia::omnitool::command::arguments cmds;
@@ -380,10 +397,10 @@ int main(int argc, char* argv[]) {
             status(context);
         }, false);
         session_opts.ops.set("init", [](xia::omnitool::command::context& context) {
+            firmware_load(context);
             initialize(context);
         }, true);
         session_opts.ops.set("probe", [](xia::omnitool::command::context& context) {
-            firmware_load(context);
             probe(context);
         }, true);
 

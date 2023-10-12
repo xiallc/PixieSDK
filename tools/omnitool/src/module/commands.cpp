@@ -280,17 +280,6 @@ static const command::definition mset_import_cmd = {
     "Import a settings file to a module"
 };
 
-omnitool_command_handler_decl(override_fw);
-static const command::definition override_fw_cmd = {
-    "Module", "/module/firmware/override",
-    omnitool_command_handers(override_fw),
-    {"init", "probe"},
-    2, 2, 0,
-    {},
-    "module fwfile",
-    "Override a firmware file for a module"
-};
-
 omnitool_command_handler_decl(par_read);
 static const command::definition par_read_cmd = {
     "Module", "/module/par-read",
@@ -447,7 +436,6 @@ static const command::definitions commands = {
     mod_offline_cmd,
     mod_online_cmd,
     mset_import_cmd,
-    override_fw_cmd,
     par_read_cmd,
     par_write_cmd,
     reg_read_cmd,

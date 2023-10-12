@@ -23,7 +23,6 @@ set(OMNITOOL_MODULE_SOURCES
         module/commands.cpp
         module/mod-online.cpp
         module/mset-import.cpp
-        module/override-fw.cpp
         module/par-read.cpp
         module/par-write.cpp
         module/reg-read-write.cpp

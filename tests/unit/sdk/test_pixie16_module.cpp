@@ -41,9 +41,60 @@ static const std::vector<std::string> module_def = {
 
 static const size_t test_modules = module_def.size();
 
+static const xia::pixie::sim::firmware_set_defs firmware_defs = {
+    {"version=r33330, revision=15, adc-msps=250, adc-bits=12, " \
+     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin",
+     "version=r42070, revision=15, adc-msps=250, adc-bits=12, " \
+     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_12b250m_r42081.bin",
+     "version=r41807, revision=15, adc-msps=250, adc-bits=12, " \
+     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
+     "version=r41840, revision=15, adc-msps=250, adc-bits=12, " \
+     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.var"},
+    {"release=1.1.1, version=r33339, revision=15, adc-msps=250, adc-bits=12, " \
+     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin",
+     "release=1.1.1, version=r42081, revision=15, adc-msps=250, adc-bits=12, " \
+     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_12b250m_r42081.bin",
+     "release=1.1.1, version=r41847, revision=15, adc-msps=250, adc-bits=12, " \
+     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
+     "release=1.1.1, version=r41847, revision=15, adc-msps=250, adc-bits=12, " \
+     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.var"},
+    {"release=1.1.1, version=r33339, revision=15, adc-msps=500, adc-bits=14, " \
+     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin",
+     "release=1.1.1, version=r42081, revision=15, adc-msps=500, adc-bits=14, " \
+     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_12b250m_r42081.bin",
+     "release=1.1.1, version=r41847, revision=15, adc-msps=500, adc-bits=14, " \
+     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
+     "release=1.1.1, version=r41847, revision=15, adc-msps=500, adc-bits=14, " \
+     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.var"},
+    {"release=1.2.3, version=r33339, revision=15, adc-msps=500, adc-bits=14, " \
+     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc500mhz_r33339.bin",
+     "release=1.2.3, version=r42081, revision=15, adc-msps=500, adc-bits=14, " \
+     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_14b500m_r42081.bin",
+     "release=1.2.3, version=r41847, revision=15, adc-msps=500, adc-bits=14, " \
+     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_14b500m_r41847.ldr",
+     "release=1.2.3, version=r41847, revision=15, adc-msps=500, adc-bits=14, " \
+     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_14b500m_r41847.var"},
+    {"release=1.1.4, version=r33339, revision=15, adc-msps=500, adc-bits=14, " \
+     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin",
+     "release=1.1.4, version=r42081, revision=15, adc-msps=500, adc-bits=14, " \
+     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_12b250m_r42081.bin",
+     "release=1.1.4, version=r41847, revision=15, adc-msps=500, adc-bits=14, " \
+     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
+     "release=1.1.4, version=r41847, revision=15, adc-msps=500, adc-bits=14, " \
+     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.var"},
+    {"release=2.2.2, version=r133339, revision=17, adc-msps=500, adc-bits=14, " \
+     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc500mhz_r33339.bin",
+     "release=2.2.2, version=r42081, revision=17, adc-msps=500, adc-bits=14, " \
+     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_14b500m_r42081.bin",
+     "release=2.2.2, version=r41847, revision=17, adc-msps=500, adc-bits=14, " \
+     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_14b500m_r41847.ldr",
+     "release=2.2.2, version=r41847, revision=17, adc-msps=500, adc-bits=14, " \
+     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_14b500m_r41847.var"}
+};
+
 static void test_setup() {
-    xia::logging::start("log", "stdout", false);
-    xia::logging::set_level(xia::log::level::off);
+    xia::logging::start("log", "test-module.txt", false);
+    xia::logging::set_level(xia::log::level::info);
     for (auto& def : module_def) {
         xia::pixie::sim::add_module_def(def);
     }
@@ -56,6 +107,7 @@ TEST_SUITE("Crate: modules") {
     TEST_CASE("empty") {
         using namespace xia::pixie;
         sim::crate sim_crate;
+        sim::load_firmware_sets(sim_crate.firmware, firmware_defs);
         crate::module_crate crate(sim_crate);
         CHECK(crate.num_modules == 0);
         CHECK(crate.modules.size() == 0);
@@ -72,6 +124,7 @@ TEST_SUITE("Crate: modules") {
     TEST_CASE("initialize offline, boot") {
         using namespace xia::pixie;
         sim::crate sim_crate(false);
+        sim::load_firmware_sets(sim_crate.firmware, firmware_defs);
         crate::module_crate crate(sim_crate);
         CHECK_NOTHROW(crate->initialize());
         CHECK(crate.num_modules == test_modules);
@@ -82,13 +135,37 @@ TEST_SUITE("Crate: modules") {
         CHECK_NOTHROW(crate->boot());
         CHECK(crate->num_online == test_modules);
         CHECK(crate->num_offline == 0);
+        firmware::release_type release;
+        firmware::firmware_set::set_type type;
+        crate[0].firmware_release(release, type);
+        CHECK(release.to_string() == "1.2.3");
+        CHECK(type == firmware::firmware_set::set_type::release);
+        module::module::boot_params params;
+        params.boot_comms = false;
+        params.boot_fippi = false;
+        params.boot_dsp = true;
+        firmware::firmware_set fw_set_1(release, "n/a");
+        xia::pixie::firmware::find_filter filter(crate[0].get_fw_tag(), crate[0].slot);
+        CHECK_NOTHROW(firmware::find(fw_set_1, crate->firmware, filter));
+        CHECK(fw_set_1.valid() == true);
+        CHECK_NOTHROW(crate[0].boot(params, fw_set_1));
+        firmware::firmware_set fw_set_2;
+        filter.set_release("1.1.4");
+        CHECK_NOTHROW(firmware::find(fw_set_2, crate->firmware, filter));
+        CHECK(fw_set_2.valid() == true);
+        CHECK(fw_set_1.release != fw_set_2.release);
+        CHECK_THROWS_WITH_AS(
+            crate[0].boot(params, fw_set_2),
+            "module: num=0,slot=2: partial boot: firmware does not match resident firmware", crate_error);
     }
     TEST_CASE("initialize") {
         using namespace xia::pixie;
         sim::crate sim_crate;
+        sim::load_firmware_sets(sim_crate.firmware, firmware_defs);
         crate::module_crate crate(sim_crate);
         CHECK_NOTHROW(crate->initialize());
         CHECK_NOTHROW(crate->probe());
+        CHECK_NOTHROW(crate->boot());
         CHECK(crate->num_online == test_modules);
         CHECK(crate->num_offline == 0);
         SUBCASE("Finding and offline") {
@@ -191,6 +268,7 @@ TEST_SUITE("Crate: modules") {
     TEST_CASE("open and close") {
         using namespace xia::pixie;
         sim::crate sim_crate;
+        sim::load_firmware_sets(sim_crate.firmware, firmware_defs);
         crate::module_crate crate(sim_crate);
         CHECK_NOTHROW(crate->initialize());
         CHECK_NOTHROW(crate->probe());
@@ -207,6 +285,7 @@ TEST_SUITE("Crate: modules") {
     TEST_CASE("assign slots") {
         using namespace xia::pixie;
         sim::crate sim_crate;
+        sim::load_firmware_sets(sim_crate.firmware, firmware_defs);
         crate::module_crate crate(sim_crate);
         CHECK_NOTHROW(crate->initialize());
         CHECK_NOTHROW(crate->probe());
@@ -261,6 +340,7 @@ TEST_SUITE("Crate: modules") {
     TEST_CASE("run") {
         using namespace xia::pixie;
         sim::crate sim_crate;
+        sim::load_firmware_sets(sim_crate.firmware, firmware_defs);
         crate::module_crate crate(sim_crate);
         CHECK_NOTHROW(crate->initialize());
         CHECK_NOTHROW(crate->probe());
@@ -275,6 +355,7 @@ TEST_SUITE("Crate: modules") {
         using namespace xia::pixie;
         using namespace xia::pixie::param;
         sim::crate sim_crate;
+        sim::load_firmware_sets(sim_crate.firmware, firmware_defs);
         crate::module_crate crate(sim_crate);
         CHECK_NOTHROW(crate->initialize());
         CHECK_NOTHROW(crate->probe());

@@ -29,6 +29,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <thread>
 #include <vector>
 
@@ -58,9 +59,13 @@ namespace module {
  */
 struct error : public pixie::error::error {
     typedef pixie::error::code code;
-    explicit error(const int num, const hw::slot_type slot, const code type, const std::ostringstream& what);
-    explicit error(const int num, const hw::slot_type slot, const code type, const std::string& what);
-    explicit error(const int num, const hw::slot_type slot, const code type, const char* what);
+    explicit error(
+        const int num, const hw::slot_type slot, const code type,
+        const std::ostringstream& what);
+    explicit error(
+        const int num, const hw::slot_type slot, const code type, const std::string& what);
+    explicit error(
+        const int num, const hw::slot_type slot, const code type, const char* what);
     virtual void output(std::ostream& out);
 
 private:
@@ -160,6 +165,23 @@ public:
         ~reg_trace_guard();
         void enable();
         void disable();
+    };
+
+    /**
+     * Boot parameters
+     *
+     * Defaults to all true and all slots.
+     */
+    struct boot_params {
+        /**
+         * If true (the default) boot all the slots else only boot the
+         * offline slots.
+         */
+        bool boot_comms; /** Clear and load the COMM FPGA */
+        bool boot_fippi; /** Clear and load the FIPPI FPGA */
+        bool boot_dsp; /** Reset and load the DSP */
+
+        boot_params();
     };
 
     /*
@@ -320,11 +342,6 @@ public:
      */
     param::address_map param_addresses;
 
-    /**
-     * Firmware
-     */
-    firmware::module firmware;
-
     /*
      * Run and control task states.
      */
@@ -450,26 +467,6 @@ public:
     bool online() const;
 
     /**
-     * Is the firmware is verified?
-     */
-    bool fw_verified() const;
-
-    /**
-     * Is the COMMS firmware is verified?
-     */
-    bool fw_comms_verified() const;
-
-    /**
-     * Is the FIPPI firmware is verified?
-     */
-    bool fw_fippi_verified() const;
-
-    /**
-     * Is the DSP firmware is verified?
-     */
-    bool fw_dsp_verified() const;
-
-    /**
      * Open the module and find the device on the bus.
      */
     virtual void open(size_t device_number);
@@ -501,14 +498,28 @@ public:
     void check_channel_num(T number);
 
     /**
-     * Probe the board to see what is running.
+     * Probe the board selecting a suitable firmware set to see what
+     * is running.
      */
-    virtual void probe();
+    virtual void probe(const firmware::system& firmwares);
 
     /**
-     * Boot the module. If successful it will be online.
+     * Probe the board with a set of firmware to see what is running.
      */
-    virtual void boot(bool boot_comms = true, bool boot_fippi = true, bool boot_dsp = true);
+    virtual void probe(const firmware::firmware_set& firmware);
+
+    /**
+     * Boot the module selecting a suitable firmware set. If
+     * successful it will be online.
+     */
+    virtual void boot(
+        const boot_params& params, const firmware::system& firmwares);
+
+    /**
+     * Boot the module with a set of firmware. If successful it will be online.
+     */
+    virtual void boot(
+        const boot_params& params, const firmware::firmware_set& firmware);
 
     /**
      * Initialise the module ready for use.
@@ -516,10 +527,21 @@ public:
     virtual void initialize();
 
     /**
-     * Add or get the firmware.
+     * Get the firmware set for this module
      */
-    void add(firmware::module& fw);
-    firmware::firmware_ref get(const std::string device);
+    virtual void firmware_get(
+        firmware::firmware_set& firmware, const firmware::system& firmwares);
+
+    /**
+     * Firmware revision and type
+     */
+    virtual void firmware_release(
+        firmware::release_type& release, firmware::firmware_set::set_type& type);
+
+    /**
+     * Does firmware version match the resident version?
+     */
+    virtual bool firmware_resident(const firmware::release_type& release);
 
     /**
      * Range checking operator to index channels based on various index
@@ -713,6 +735,11 @@ public:
     bool operator>(const hw::rev_tag rev) const;
 
     /*
+     * Firmware tag.
+     */
+    firmware::tag_type get_fw_tag() const;
+
+    /*
      * Checks, throws errors.
      */
     void online_check() const;
@@ -775,7 +802,7 @@ protected:
     /*
      * Load the variable address map.
      */
-    virtual void load_vars();
+    virtual void load_vars(const firmware::firmware_set& firmware);
 
     /*
      * Initialise abs rease the values.
@@ -788,6 +815,11 @@ protected:
      */
     virtual void erase_channels();
     virtual void init_channels();
+
+    /*
+     * Firmware change logging
+     */
+    virtual void firmware_change_log(const firmware::release_type& release);
 
     /*
      * Module parameter handlers.
@@ -894,11 +926,8 @@ protected:
      * System, FIPPI and DSP online.
      */
     bool comms_fpga;
-    bool comms_loaded;
     bool fippi_fpga;
-    bool fippi_loaded;
     bool dsp_online;
-    bool dsp_loaded;
 
     /*
      * Have hardware?
@@ -957,7 +986,6 @@ struct module_state {
     const bool open;
     const bool online;
     const bool slot_valid;
-    const bool fw_verified;
 
     const int serial_num;
 

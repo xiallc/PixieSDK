@@ -734,7 +734,7 @@ void load(firmware::firmware_ref& firmware, module_var_descs& module_var_descrip
 
     xia_log(log::info) << "firmware: load vars: " << *firmware;
 
-    if (firmware->device != "var") {
+    if (firmware->device.name != "var") {
         throw error(error::code::device_image_failure, "invalid image type");
     }
     if (firmware->data.empty()) {

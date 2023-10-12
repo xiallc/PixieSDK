@@ -25,6 +25,7 @@
 
 #include <pixie/config.hpp>
 #include <pixie/format.hpp>
+#include <pixie/utils/path.hpp>
 
 namespace xia {
 namespace pixie {
@@ -348,7 +349,7 @@ void import_json(const std::string& filename, module::module& mod) {
     } catch (format::json::exception& e) {
         throw_json_error(e, "parse config");
     }
-    
+
     auto ci = config.begin();
 
     if (!mod.online()) {
@@ -363,11 +364,11 @@ void import_json(const std::string& filename, module::module& mod) {
 static format::json json_firmware(const firmware::firmware_ref fw) {
     format::json jfw;
     jfw["tag"] = fw->tag;
-    jfw["file"] = fw->basename();
+    jfw["file"] = util::path::basename(fw->filename);
     jfw["version"] = fw->version;
-    jfw["rev"] = fw->mod_revision;
-    jfw["adc_msps"] = fw->mod_adc_msps;
-    jfw["adc_bits"] = fw->mod_adc_bits;
+    jfw["rev"] = fw->device.mod_revision;
+    jfw["adc_msps"] = fw->device.mod_adc_msps;
+    jfw["adc_bits"] = fw->device.mod_adc_bits;
     return jfw;
 }
 
@@ -386,6 +387,8 @@ void export_json(const std::string& filename, crate::crate& crate) {
          */
         mod.sync_vars(module::module::sync_from_dsp);
 
+        auto fw_tag = mod.get_fw_tag();
+
         format::json metadata;
         char rv[2] = {mod.revision_label(), '\0'};
         metadata["number"] = mod.number;
@@ -393,10 +396,19 @@ void export_json(const std::string& filename, crate::crate& crate) {
         metadata["serial-num"] = mod.serial_num;
         metadata["hardware_revision"] = rv;
         metadata["num-channels"] = mod.num_channels;
-        metadata["sys"] = json_firmware(mod.get("sys"));
-        metadata["fippi"] = json_firmware(mod.get("fippi"));
-        metadata["dsp"] = json_firmware(mod.get("dsp"));
-        metadata["var"] = json_firmware(mod.get("var"));
+        metadata["firmware-tag"] = fw_tag;
+        if (firmware::check(crate.firmware, fw_tag)) {
+            firmware::firmware_set fw_set;
+            firmware::find_filter filter(fw_tag, mod.slot);
+            firmware::find(fw_set, crate.firmware, filter);
+            metadata["firmware-release"] = fw_set.release.to_string();
+            metadata["sys"] = json_firmware(fw_set.get("sys"));
+            metadata["fippi"] = json_firmware(fw_set.get("fippi"));
+            metadata["dsp"] = json_firmware(fw_set.get("dsp"));
+            metadata["var"] = json_firmware(fw_set.get("var"));
+        } else {
+            metadata["firmware-revision"] = "unknown";
+        }
         metadata["fifo"]["buffers"] = mod.fifo_buffers;
         metadata["fifo"]["run-wait"] = mod.fifo_run_wait_usecs.load();
         metadata["fifo"]["idle-wait"] = mod.fifo_idle_wait_usecs.load();

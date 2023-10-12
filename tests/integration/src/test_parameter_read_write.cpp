@@ -39,23 +39,35 @@ static xia::pixie::crate::module_crate crate(sim_crate);
 
 
 static const std::vector<std::string> module_defs = {
-    "device-number=0,slot=2, revision=13, eeprom-format=1, serial-num=250, num-channels=16, adc-msps=100, adc-bits=16, adc-clk-div=1",
-    "device-number=1,slot=3, revision=15, eeprom-format=1, serial-num=1000, num-channels=16, adc-msps=250, adc-bits=16, adc-clk-div=2",
-    "device-number=2,slot=4, revision=15, eeprom-format=1, serial-num=1001, num-channels=16, adc-msps=500, adc-bits=14, adc-clk-div=5"};
+    "device-number=0 slot=2  revision=13 eeprom-format=1 serial-num=250 num-channels=16 adc-msps=100 adc-bits=16 adc-clk-div=1",
+    "device-number=1 slot=3  revision=15 eeprom-format=1 serial-num=1000 num-channels=16 adc-msps=250 adc-bits=16 adc-clk-div=2",
+    "device-number=2 slot=4  revision=15 eeprom-format=1 serial-num=1001 num-channels=16 adc-msps=500 adc-bits=14 adc-clk-div=5"};
 
-static const std::vector<std::string> firmware_def_template = {
-    "version=sim, revision=13, adc-msps=100, adc-bits=16, device=sys, file=",
-    "version=sim, revision=13, adc-msps=100, adc-bits=16, device=fippi, file=",
-    "version=sim, revision=13, adc-msps=100, adc-bits=16, device=dsp, file=",
-    "version=sim, revision=13, adc-msps=100, adc-bits=16, device=var, file=",
-    "version=sim, revision=15, adc-msps=250, adc-bits=16, device=sys, file=",
-    "version=sim, revision=15, adc-msps=250, adc-bits=16, device=fippi, file=",
-    "version=sim, revision=15, adc-msps=250, adc-bits=16, device=dsp, file=",
-    "version=sim, revision=15, adc-msps=250, adc-bits=16, device=var, file=",
-    "version=sim, revision=15, adc-msps=500, adc-bits=14, device=sys, file=",
-    "version=sim, revision=15, adc-msps=500, adc-bits=14, device=fippi, file=",
-    "version=sim, revision=15, adc-msps=500, adc-bits=14, device=dsp, file=",
-    "version=sim, revision=15, adc-msps=500, adc-bits=14, device=var, file=",
+static const xia::pixie::sim::firmware_set_defs firmware_defs = {
+    {"version=sim, revision=13, adc-msps=100, adc-bits=16, " \
+     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc100mhz_rsim.bin",
+     "version=sim, revision=13, adc-msps=100, adc-bits=16, " \
+     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_16b100m_rsim.bin",
+     "version=sim, revision=13, adc-msps=100, adc-bits=16, " \
+     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_16b100m_rsim.ldr",
+     "version=sim, revision=13, adc-msps=100, adc-bits=16, " \
+     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_16b100m_rsim.var"},
+    {"version=sim, revision=15, adc-msps=250, adc-bits=16, " \
+     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc250mhz_rsim.bin",
+     "version=sim, revision=15, adc-msps=250, adc-bits=16, " \
+     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_16b250m_rsim.bin",
+     "version=sim, revision=15, adc-msps=250, adc-bits=16, " \
+     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_16b250m_rsim.ldr",
+     "version=sim, revision=15, adc-msps=250, adc-bits=16, " \
+     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_16b250m_rsim.var"},
+    {"version=sim, revision=15, adc-msps=500, adc-bits=14, " \
+     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc500mhz_rsim.bin",
+     "version=sim, revision=15, adc-msps=500, adc-bits=14, " \
+     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_16b250m_rsim.bin",
+     "version=sim, revision=15, adc-msps=500, adc-bits=14, " \
+     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_14b500m_rsim.ldr",
+     "version=sim, revision=15, adc-msps=500, adc-bits=14, " \
+     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_14b500m_rsim.var"}
 };
 
 static const uint32_t max_fifo_length = 16380;
@@ -67,15 +79,14 @@ void setup_simulation() {
     xia::logging::set_level(xia::log::level::debug);
     xia_log(xia::log::level::info) << "Logging for test_parameter_read_write integration tests.";
 
-    std::stringstream def;
-    for (const auto& mod_def : module_defs) {
-        def << mod_def << std::endl;
+    for (auto& mod_def : module_defs) {
+        xia::pixie::sim::add_module_def(mod_def);
     }
-    xia::pixie::sim::load_module_defs(def);
+
+    xia::pixie::sim::load_firmware_sets(crate->firmware, firmware_defs);
 
     crate->initialize(false);
     crate->probe();
-    crate->set_firmware();
 
     for (size_t m = 0; m < crate.num_modules; ++m) {
         xia::pixie::module::module& mod = crate[m];

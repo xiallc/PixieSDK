@@ -446,41 +446,59 @@ static void PixieBootModule(xia::pixie::module::module& module, const char* ComF
                             const char* SPFPGAConfigFile, const char* DSPCodeFile,
                             const char* DSPParFile, const char* DSPVarFile,
                             unsigned short BootPattern) {
+    using firmware_set = xia::pixie::firmware::firmware_set;
+    using device_detail = xia::pixie::firmware::device_detail;
     using firmware = xia::pixie::firmware::firmware;
     using hw_config = xia::pixie::hw::config;
 
     hw_config& config = module.eeprom.configs[0];
 
-    firmware comm_fw("n/a", module.revision, config.adc_msps, config.adc_bits, "sys");
-    firmware fippi_fw("n/a", module.revision, config.adc_msps, config.adc_bits, "fippi");
-    firmware dsp_fw("n/a", module.revision, config.adc_msps, config.adc_bits, "dsp");
-    firmware dsp_var("n/a", module.revision, config.adc_msps, config.adc_bits, "var");
+    firmware_set user_fw;
+
+    device_detail device;
+    device.mod_revision = module.revision;
+    device.mod_adc_msps = config.adc_msps;
+    device.mod_adc_bits = config.adc_bits;
+
+    device.name = "sys";
+    firmware comm_fw(device, "n/a", 1);
+    device.name = "fippi";
+    firmware fippi_fw(device, "n/a", 1);
+    device.name = "dsp";
+    firmware dsp_fw(device, "n/a", 1);
+    device.name = "var";
+    firmware dsp_var(device, "n/a", 1);
+
+    user_fw.slot.push_back(module.slot);
 
     comm_fw.filename = ComFPGAConfigFile;
-    comm_fw.slot.push_back(module.slot);
-    xia::pixie::firmware::add(crate->firmware, comm_fw);
+    user_fw.add(comm_fw);
 
     fippi_fw.filename = SPFPGAConfigFile;
-    fippi_fw.slot.push_back(module.slot);
-    xia::pixie::firmware::add(crate->firmware, fippi_fw);
+    user_fw.add(fippi_fw);
 
     dsp_fw.filename = DSPCodeFile;
-    dsp_fw.slot.push_back(module.slot);
-    xia::pixie::firmware::add(crate->firmware, dsp_fw);
+    user_fw.add(dsp_fw);
 
     dsp_var.filename = DSPVarFile;
-    dsp_var.slot.push_back(module.slot);
-    xia::pixie::firmware::add(crate->firmware, dsp_var);
+    user_fw.add(dsp_var);
 
-    crate->set_firmware();
-    xia::pixie::firmware::load(crate->firmware);
+    xia::pixie::firmware::add(crate->firmware, user_fw);
 
     const auto num_bits = std::numeric_limits<unsigned short>::digits;
     auto pattern = std::bitset<num_bits>(BootPattern);
 
-    module.probe();
-    module.boot(pattern.test(BOOTPATTERN_COMFPGA_BIT), pattern.test(BOOTPATTERN_SPFPGA_BIT),
-                pattern.test(BOOTPATTERN_DSPCODE_BIT));
+    xia::pixie::module::module::boot_params boot_params;
+    boot_params.boot_comms = pattern.test(BOOTPATTERN_COMFPGA_BIT);
+    boot_params.boot_fippi = pattern.test(BOOTPATTERN_SPFPGA_BIT);
+    boot_params.boot_dsp = pattern.test(BOOTPATTERN_DSPCODE_BIT);
+
+    firmware_set fw_set;
+    xia::pixie::firmware::find_filter filter(module.get_fw_tag(), module.slot);
+    xia::pixie::firmware::find(fw_set, crate->firmware, filter);
+
+    module.probe(fw_set);
+    module.boot(boot_params, fw_set);
 
     if (pattern.test(BOOTPATTERN_DSPPAR_BIT)) {
         xia::pixie::config::import_json(DSPParFile, module);
@@ -491,15 +509,22 @@ static void PixieBootModule(xia::pixie::module::module& module, const char* ComF
 
 static void PixieBootModule(xia::pixie::module::module& module,
                             const char* DSPParFile, unsigned short BootPattern) {
-    crate->set_firmware();
-    xia::pixie::firmware::load(crate->firmware);
+    using firmware_set = xia::pixie::firmware::firmware_set;
 
     const auto num_bits = std::numeric_limits<unsigned short>::digits;
     auto pattern = std::bitset<num_bits>(BootPattern);
 
-    module.probe();
-    module.boot(pattern.test(BOOTPATTERN_COMFPGA_BIT), pattern.test(BOOTPATTERN_SPFPGA_BIT),
-                pattern.test(BOOTPATTERN_DSPCODE_BIT));
+    xia::pixie::module::module::boot_params boot_params;
+    boot_params.boot_comms = pattern.test(BOOTPATTERN_COMFPGA_BIT);
+    boot_params.boot_fippi = pattern.test(BOOTPATTERN_SPFPGA_BIT);
+    boot_params.boot_dsp = pattern.test(BOOTPATTERN_DSPCODE_BIT);
+
+    firmware_set fw_set;
+    xia::pixie::firmware::find_filter filter(module.get_fw_tag(), module.slot);
+    xia::pixie::firmware::find(fw_set, crate->firmware, filter);
+
+    module.probe(fw_set);
+    module.boot(boot_params, fw_set);
 
     if (pattern.test(BOOTPATTERN_DSPPAR_BIT)) {
         xia::pixie::config::import_json(DSPParFile, module);
@@ -507,16 +532,6 @@ static void PixieBootModule(xia::pixie::module::module& module,
 
     module.sync_hw(
       pattern.test(BOOTPATTERN_PROGFIPPI_BIT), pattern.test(BOOTPATTERN_SETDACS_BIT));
-
-    if (!module.fw_comms_verified()) {
-        xia_log(xia::log::warning) << "COMM firmware ready loaded; not verified";
-    }
-    if (!module.fw_fippi_verified()) {
-        xia_log(xia::log::warning) << "FIPPI firmware ready loaded; not verified";
-    }
-    if (!module.fw_dsp_verified()) {
-        xia_log(xia::log::warning) << "DSP firmware ready loaded; not verified; variables may not match";
-    }
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
@@ -1044,8 +1059,8 @@ PIXIE_EXPORT int PIXIE_API Pixie16ExitSystem(unsigned short ModNum) {
 }
 
 PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(
-  unsigned short NumModules, unsigned short* PXISlotMap,
-  unsigned short OfflineMode) {
+    unsigned short NumModules, unsigned short* PXISlotMap,
+    unsigned short OfflineMode) {
     /*
      * Create a log file. The environment can change the level of logging.
      */
@@ -1080,13 +1095,10 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(
                             << " PXISlotMap=" << PXISlotMap << " OfflineMode=" << OfflineMode;
 
     try {
-        xia::pixie::module::number_slots numbers;
-        for (int i = 0; i < int(NumModules); ++i) {
-            using number_slot = xia::pixie::module::number_slot;
-            xia_log(xia::log::info)
-                << "Pixie16InitSystem: slot map: " << PXISlotMap[i] << " => " << i;
-            numbers.push_back(number_slot(i, PXISlotMap[i]));
-        }
+        /*
+         * Load the system firmware into the crate
+         */
+        xia::pixie::firmware::load_system_firmwares(crate->firmware);
 
         crate->initialize();
 
@@ -1097,19 +1109,27 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(
         }
 
         /*
+         * If the number of modules requested is greater than the number
+         * of modules in the crate, then it is an error.
+         */
+        if (NumModules > crate.modules.num_modules) {
+            crate->shutdown();
+            throw xia_error(xia_error::code::module_total_invalid,
+                            "module count does not match user supplied "
+                            "number of modules");
+        }
+
+        /*
          * Only handle the index to slot assignment if the user supplied the
          * number of modules (ie the length of the array) and the array.
          */
         if (NumModules > 0 && PXISlotMap != nullptr) {
-            /*
-             * If the number of modules requested is greater than the number
-             * of modules in the crate, then it is an error.
-             */
-            if (NumModules > crate.modules.num_modules) {
-                crate->shutdown();
-                throw xia_error(xia_error::code::module_total_invalid,
-                                "module count does not match user supplied "
-                                "number of modules");
+            xia::pixie::module::number_slots numbers;
+            for (int i = 0; i < int(NumModules); ++i) {
+                using number_slot = xia::pixie::module::number_slot;
+                xia_log(xia::log::info)
+                    << "Pixie16InitSystem: slot map: " << PXISlotMap[i] << " => " << i;
+                numbers.push_back(number_slot(i, PXISlotMap[i]));
             }
             crate.modules.assign(numbers);
         }
@@ -1153,7 +1173,6 @@ PIXIE_EXPORT int PIXIE_API Pixie16LoadModuleFirmware(const char* SearchPath) {
             crate->check_active_run();
         }
         xia::pixie::firmware::load_firmwares(crate->firmware, SearchPath);
-        crate->set_firmware();
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
         return e.return_code();
@@ -1172,20 +1191,27 @@ PIXIE_EXPORT int PIXIE_API Pixie16LoadModuleFirmware(const char* SearchPath) {
 
 PIXIE_EXPORT int PIXIE_API Pixie16SetModuleFirmware(const char* FwFile, unsigned int ModSlot, const char* Device) {
     try {
+        using firmware = xia::pixie::firmware::firmware;
+        using firmware_set = xia::pixie::firmware::firmware_set;
+        using device_detail = xia::pixie::firmware::device_detail;
+        using hw_config = xia::pixie::hw::config;
         crate->ready();
         if (!crate.run_check_override) {
             crate->check_active_run();
         }
         xia::pixie::module::module_ptr module = crate->find(ModSlot);
-        if (!xia::pixie::firmware::override_default_fw(module->firmware, FwFile, Device)) {
-            using firmware = xia::pixie::firmware::firmware;
-            using hw_config = xia::pixie::hw::config;
-            hw_config config = module->eeprom.configs[0];
-            firmware fw("n/a", module->revision, config.adc_msps, config.adc_bits, Device);
-            fw.filename = FwFile;
-            fw.slot.push_back(ModSlot);
-            xia::pixie::firmware::add(crate->firmware, fw);
-        };
+        hw_config config = module->eeprom.configs[0];
+        device_detail dev;
+        dev.name = Device;
+        dev.mod_revision = module->revision;
+        dev.mod_adc_msps = config.adc_msps;
+        dev.mod_adc_bits = config.adc_bits;
+        firmware fw(dev, "unknown", 1);
+        fw.filename = FwFile;
+        firmware_set fw_set;
+        fw_set.add(fw);
+        fw_set.slot.push_back(ModSlot);
+        xia::pixie::firmware::add(crate->firmware, fw_set);
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
         return e.return_code();
@@ -1334,6 +1360,8 @@ PIXIE_EXPORT int PIXIE_API PixieGetModuleInfo(unsigned short mod_num, module_con
         crate->ready();
         xia::pixie::crate::module_handle module(crate, mod_num, xia::pixie::module::check::open);
 
+        std::memset(cfg, 0, sizeof(*cfg));
+
         cfg->adc_bit_resolution = module->eeprom.configs[0].adc_bits;
         cfg->adc_sampling_frequency = module->eeprom.configs[0].adc_msps;
         cfg->number = module->number;
@@ -1341,23 +1369,32 @@ PIXIE_EXPORT int PIXIE_API PixieGetModuleInfo(unsigned short mod_num, module_con
         cfg->revision = module->revision;
         cfg->serial_number = module->serial_num;
         cfg->slot = static_cast<unsigned short>(module->slot);
-        for (const auto& fw : module->firmware) {
-            if (fw->device == "sys") {
-                std::memset(cfg->sys_fpga, 0, sizeof(cfg->sys_fpga));
-                std::strncpy(cfg->sys_fpga, fw->filename.c_str(), sizeof(cfg->sys_fpga) - 1);
-            }
-            if (fw->device == "fippi") {
-                std::memset(cfg->sp_fpga, 0, sizeof(cfg->sp_fpga));
-                std::strncpy(cfg->sp_fpga, fw->filename.c_str(), sizeof(cfg->sp_fpga) - 1);
-            }
-            if (fw->device == "dsp") {
-                std::memset(cfg->dsp_code, 0, sizeof(cfg->dsp_code));
-                std::strncpy(cfg->dsp_code, fw->filename.c_str(), sizeof(cfg->dsp_code) - 1);
-            }
-            if (fw->device == "var") {
-                std::memset(cfg->dsp_var, 0, sizeof(cfg->dsp_var));
-                std::strncpy(cfg->dsp_var, fw->filename.c_str(), sizeof(cfg->dsp_var) - 1);
-            }
+
+        using firmware_set = xia::pixie::firmware::firmware_set;
+
+        firmware_set fw_set;
+        module->firmware_get(fw_set, crate->firmware);
+
+        if (fw_set.device_count() > PIXIE16_API_MOD_CONFIG_MAX_DEVICES) {
+            throw xia_error(
+                xia_error::code::internal_failure, "Too many devices in firmware set");
+        }
+
+        std::ostringstream oss;
+        oss << fw_set.release;
+        std::strncpy(cfg->fw_revision, oss.str().c_str(), sizeof(cfg->fw_revision) - 1);
+        std::strncpy(cfg->fw_tag, fw_set.tag().c_str(), sizeof(cfg->fw_tag) - 1);
+        std::strncpy(
+            cfg->fw_type, xia::pixie::firmware::set_type_label(fw_set.type()),
+            sizeof(cfg->fw_type) - 1);
+        for (size_t dev = 0; dev < fw_set.device_count(); ++dev) {
+            auto& dev_name = fw_set.get_devices()[dev];
+            auto fw = fw_set.get(dev_name);
+            std::strncpy(
+                cfg->fw_device[dev], dev_name.c_str(), sizeof(cfg->fw_device[dev]) - 1);
+            std::strncpy(
+                cfg->fw_device_file[dev], fw->filename.c_str(),
+                sizeof(cfg->fw_device_file[dev]) - 1);
         }
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
@@ -1838,7 +1875,6 @@ PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file,
         if (!crate.run_check_override) {
             crate->check_active_run();
         }
-        crate->set_firmware();
 
         bool import_settings;
         bool boot;
@@ -1964,17 +2000,25 @@ PIXIE_EXPORT int PIXIE_API PixieRegisterCrateFirmware(const unsigned int version
                              << " revision=" << revision << " adc_msps=" << adc_msps
                              << " adc_bits=" << adc_bits << " device=" << device << " path=" << path;
 
+    using firmware_set = xia::pixie::firmware::firmware_set;
     using firmware = xia::pixie::firmware::firmware;
+    using device_detail = xia::pixie::firmware::device_detail;
 
     try {
         if (!crate.run_check_override) {
             crate->check_active_run();
         }
         std::string ver_s = std::to_string(version);
-        std::string dev_s = device;
-        firmware fw(ver_s, revision, adc_msps, adc_bits, dev_s);
+        firmware_set partial_fw;
+        device_detail dev;
+        dev.name = device;
+        dev.mod_revision = revision;
+        dev.mod_adc_msps = adc_msps;
+        dev.mod_adc_bits = adc_bits;
+        firmware fw(dev, ver_s, 1);
         fw.filename = path;
-        xia::pixie::firmware::add(crate->firmware, fw);
+        partial_fw.add(fw);
+        xia::pixie::firmware::add(crate->firmware, partial_fw);
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
         return e.return_code();
@@ -2001,9 +2045,11 @@ PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version, con
                              << " adc_bits=" << adc_bits << " device=" << device << " path=" << path
                              << " ModNum=" << ModNum;
 
-    using firmware = xia::pixie::firmware::firmware;
 
     try {
+        using firmware_set = xia::pixie::firmware::firmware_set;
+        using firmware = xia::pixie::firmware::firmware;
+        using device_detail = xia::pixie::firmware::device_detail;
         xia::pixie::crate::module_handle module(crate, ModNum,
                                                 xia::pixie::module::check::open);
         if (!crate.run_check_override) {
@@ -2011,11 +2057,17 @@ PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version, con
         }
         xia::pixie::hw::slot_type slot = module->slot;
         std::string ver_s = std::to_string(version);
-        std::string dev_s = device;
-        firmware fw(ver_s, revision, adc_msps, adc_bits, dev_s);
+        device_detail dev;
+        dev.name = device;
+        dev.mod_revision = revision;
+        dev.mod_adc_msps = adc_msps;
+        dev.mod_adc_bits = adc_bits;
+        firmware fw(dev, ver_s, 1);
         fw.filename = path;
-        fw.slot.push_back(slot);
-        xia::pixie::firmware::add(crate->firmware, fw);
+        firmware_set fw_set;
+        fw_set.add(fw);
+        fw_set.slot.push_back(slot);
+        xia::pixie::firmware::add(crate->firmware, fw_set);
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
         return e.return_code();

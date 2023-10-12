@@ -85,7 +85,8 @@ void fixture::adjust_offsets() {}
 void fixture::tau_finder() {}
 
 module::module(xia::pixie::backplane::backplane& backplane_)
-    : xia::pixie::module::module(backplane_), init_online(true) {
+    : xia::pixie::module::module(backplane_), fw_release(firmware::not_released),
+      fw_type(firmware::firmware_set::set_type::undefined), init_online(true) {
 }
 
 module::~module() {}
@@ -137,7 +138,7 @@ void module::close() {
     pci_memory.release();
 }
 
-void module::probe() {
+void module::probe(const firmware::firmware_set& firmware) {
     xia_log(log::info) << "sim: module: probe";
     online_ = dsp_online = fippi_fpga = comms_fpga = false;
     erase_values();
@@ -148,11 +149,24 @@ void module::probe() {
     if (online_) {
         fixtures->online();
     }
+    fw_release = firmware.release;
+    fw_type = firmware.type();
 }
 
-void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
-    xia_log(log::info) << "sim: module: boot";
+void module::boot(const boot_params& params, const firmware::firmware_set& firmware) {
+    xia_log(log::info) << "sim: module: boot: slot=" << slot << " release=" << fw_release.to_string()
+                       << " firmware.release=" << firmware.release.to_string();
+    if (fw_release != firmware::not_released) {
+        if (!firmware_resident(firmware.release) &&
+            (!params.boot_comms || !params.boot_fippi || !params.boot_dsp)) {
+            throw error(number, slot, error::code::module_initialize_failure,
+                        "partial boot: firmware does not match resident firmware");
+        }
+    }
     online_ = false;
+    auto boot_comms = params.boot_comms;
+    auto boot_fippi = params.boot_fippi;
+    auto boot_dsp = params.boot_dsp;
     if (boot_comms) {
         comms_fpga = true;
         fixtures->fpga_comms_loaded();
@@ -168,9 +182,17 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
     init_values();
     init_channels();
     online_ = comms_fpga && fippi_fpga && dsp_online;
+    fw_release = firmware.release;
+    fw_type = firmware.type();
 }
 
 void module::initialize() {}
+
+void module::firmware_release(
+    firmware::release_type& release_, firmware::firmware_set::set_type& type) {
+    release_ = fw_release;
+    type = fw_type;
+}
 
 void module::init_values() {
     pixie::module::module::init_values();
@@ -217,8 +239,9 @@ void module::load_var_defaults(const std::string& file) {
 
     std::ifstream input(file, std::ios::in | std::ios::binary);
     if (!input) {
-        throw error(number, slot, error::code::file_read_failure,
-                    std::string("module var defaults open: ") + file + ": " + std::strerror(errno));
+        throw error(
+            number, slot, error::code::file_read_failure,
+            std::string("module var defaults open: ") + file + ": " + std::strerror(errno));
     }
 
     load_var_defaults(input);
@@ -248,12 +271,29 @@ module_def::module_def()
     : device_number(0), slot(0), revision(0), eeprom_format(0), serial_num(0), num_channels(0),
       adc_bits(0), adc_msps(0), adc_clk_div(0) {}
 
+void load_firmware_sets(firmware::system& firmwares, const firmware_set_defs& set_defs) {
+    xia::pixie::firmware::release_type release;
+    for (auto& fw_set_def : set_defs) {
+        xia::pixie::firmware::firmware_set fw_set(release, "release date");
+        for (auto& fw_def : fw_set_def) {
+            auto fw = xia::pixie::firmware::parse(release, fw_def, ',');
+            if (release == xia::pixie::firmware::not_released && fw.release != release) {
+                release = fw.release;
+            }
+            fw_set.add(fw);
+        }
+        fw_set.release = release;
+        xia::pixie::firmware::add(firmwares, fw_set);
+    }
+}
+
 void load_module_defs(const std::string mod_def_file) {
     xia_log(log::info) << "sim: load module defs: " << mod_def_file;
     std::ifstream input(mod_def_file, std::ios::in | std::ios::binary);
     if (!input) {
-        throw error(error::code::file_read_failure, std::string("module def file open: ") +
-                                                        mod_def_file + ": " + std::strerror(errno));
+        throw error(
+            error::code::file_read_failure, std::string("module def file open: ") +
+            mod_def_file + ": " + std::strerror(errno));
     }
     load_module_defs(input);
     input.close();
