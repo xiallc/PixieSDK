@@ -29,6 +29,7 @@
 #include <pixie/utils/string.hpp>
 #include <pixie/utils/thread.hpp>
 #include <pixie/utils/time.hpp>
+#include <pixie/utils/version.hpp>
 
 TEST_SUITE("xia::util") {
     TEST_CASE("Verify ostream_guard") {
@@ -377,5 +378,20 @@ TEST_SUITE("xia::util") {
         }
         CHECK(xia::util::thread::wait_until_finished(threads, 20) !=
               xia::pixie::error::code::success);
+    }
+
+    TEST_CASE("version") {
+        xia::util::version::version v1;
+        CHECK(xia::util::version::to_string(v1) == "0.1.0");
+        xia::util::version::version v2;
+        {
+            using namespace xia::util::version;
+            v2 = "1.2.3"_version;
+        }
+        CHECK(xia::util::version::to_string(v2) == "1.2.3");
+        CHECK(v1 != v2);
+        CHECK(v1 < v2);
+        v1.from_string("5.6.7");
+        CHECK(v1 > v2);
     }
 }
