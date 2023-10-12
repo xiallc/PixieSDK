@@ -335,7 +335,9 @@ TEST_SUITE("xia::util") {
             error_threads(num_threads, xia::util::thread::error::code::success);
         xia::util::thread::waiter_func waiter =
             [&waiter_called](xia::util::thread::workers::size_type running) {
-                CHECK(running != 0);
+                if (running == 0) {
+                    CHECK(running != 0);
+                }
                 waiter_called = true;
                 std::this_thread::sleep_for(20ms);
             };
