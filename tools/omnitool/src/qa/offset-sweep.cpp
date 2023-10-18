@@ -155,7 +155,7 @@ void offset_sweep_worker::plot_generate(
     std::ofstream out(fout, std::ios::out | std::ios::binary);
     plot_header(out);
     for (const auto& chan_results : mod_results) {
-        if (chan_results.error.empty() && chan_results.results.size() > 0) {
+        if (chan_results.results.size() > 0) {
             for (const auto& result : mod_results[0].results) {
                 out << "offsets += [" << result.offset << ']' << std::endl;
             }
