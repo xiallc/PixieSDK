@@ -87,7 +87,7 @@ static const command::definition copy_cmd = {
     {"init", "probe"},
     3, 5, 0,
     {},
-    "filter-mask src-module dest-module [src-channel] [dest-channel]",
+    "filter-mask src-module dest-module [src-channel dest-channel]",
     "Copy parameters from one module to another"
 };
 
