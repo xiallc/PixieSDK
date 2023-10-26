@@ -45,9 +45,11 @@ namespace io {
 struct ostream_guard {
     std::ostream& o;
     std::ios_base::fmtflags flags;
-    ostream_guard(std::ostream& o_) : o(o_), flags(o_.flags()) {}
+    char fill;
+    ostream_guard(std::ostream& o_) : o(o_), flags(o_.flags()), fill(o_.fill()) {}
     ~ostream_guard() {
         o.flags(flags);
+        o.fill(fill);
     }
 };
 

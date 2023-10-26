@@ -34,9 +34,18 @@
 
 TEST_SUITE("xia::util") {
     TEST_CASE("Verify ostream_guard") {
-        std::ios_base::fmtflags expected(std::cout.flags());
-        xia::util::io::ostream_guard ostream_guard(std::cout);
-        CHECK(ostream_guard.flags == expected);
+        auto expected_flags(std::cout.flags());
+        auto expected_fill = std::cout.fill();
+        {
+            xia::util::io::ostream_guard ostream_guard(std::cout);
+            std::cout << std::hex << std::setfill('0');
+            CHECK(ostream_guard.flags == expected_flags);
+            CHECK(ostream_guard.fill == expected_fill);
+            CHECK(std::cout.flags() != expected_flags);
+            CHECK(std::cout.fill() != expected_fill);
+        }
+        CHECK(std::cout.flags() == expected_flags);
+        CHECK(std::cout.fill() == expected_fill);
     }
 
     TEST_CASE("Getting values from options") {
