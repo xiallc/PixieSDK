@@ -304,7 +304,7 @@ TEST_SUITE("xia::util") {
         std::string ext_end = xia::util::path::extension(test_end);
         CHECK(ext_good == "bin");
         CHECK(ext_bad == "testfile");
-        CHECK(ext_bad == "testfile");
+        CHECK(ext_end == "");
     }
 
     TEST_CASE("Thread Workers") {
