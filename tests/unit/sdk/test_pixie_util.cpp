@@ -22,6 +22,7 @@
 
 
 #include <doctest/doctest.h>
+#include <pixie/os_compat.hpp>
 #include <pixie/utils/crc.hpp>
 #include <pixie/utils/io.hpp>
 #include <pixie/utils/numerics.hpp>
@@ -295,16 +296,63 @@ TEST_SUITE("xia::util") {
         }
     }
 
-    TEST_CASE("extension") {
-        std::string test_good = "testfile.bin";
-        std::string test_bad = "testfile";
-        std::string test_end = "testfile.";
-        std::string ext_good = xia::util::path::extension(test_good);
-        std::string ext_bad = xia::util::path::extension(test_bad);
-        std::string ext_end = xia::util::path::extension(test_end);
-        CHECK(ext_good == "bin");
-        CHECK(ext_bad == "testfile");
-        CHECK(ext_end == "");
+    TEST_CASE("Path") {
+        SUBCASE("basename") {
+            CHECK(xia::util::path::basename(__FILE__) == "test_pixie_util.cpp");
+        }
+        SUBCASE("dirname") {
+            CHECK(xia::util::path::basename(xia::util::path::dirname(__FILE__)) == "sdk");
+        }
+        SUBCASE("join") {
+#ifdef XIA_PIXIE_WINDOWS
+            #define ROOT "c:"
+            const char* j_1 = "\\1\\2\\3\\4";
+            const char* j_2 = "c:c\\d";
+            const char* j_3 = "XYZ\\1\\2\\3\\4";
+            const char* j_4 = "EFG\\1\\2\\3\\";
+#else /* XIA_PIXIE_WINDOWS */
+            #define ROOT "/"
+            const char* j_1 = "/1/2/3/4";
+            const char* j_2 = "/c/d";
+            const char* j_3 = "XYZ/1/2/3/4";
+            const char* j_4 = "EFG/1/2/3/";
+#endif /* XIA_PIXIE_WINDOWS */
+            std::string j;
+            j = xia::util::path::join("", {"1", "2", "3", "4"});
+            CHECK(j == j_1);
+            j = xia::util::path::join("", {"a", "b", ROOT "c", "d"});
+            CHECK(j == j_2);
+            j = xia::util::path::join("XYZ", {"1", "2", "3", "4"});
+            CHECK(j == j_3);
+            j = xia::util::path::join("EFG", {"1", "2", "3", ""});
+            CHECK(j == j_4);
+        }
+        SUBCASE("extension") {
+            std::string test_good = "testfile.bin";
+            std::string test_bad = "testfile";
+            std::string test_end = "testfile.";
+            std::string ext_good = xia::util::path::extension(test_good);
+            std::string ext_bad = xia::util::path::extension(test_bad);
+            std::string ext_end = xia::util::path::extension(test_end);
+            CHECK(ext_good == "bin");
+            CHECK(ext_bad == "testfile");
+            CHECK(ext_end == "");
+        }
+        SUBCASE("exists") {
+            CHECK(!xia::util::path::exists("/x/x/x/x/x/x"));
+            CHECK(xia::util::path::exists(__FILE__));
+            CHECK(xia::util::path::exists(xia::util::path::dirname(__FILE__)));
+        }
+        SUBCASE("isfile") {
+            CHECK(!xia::util::path::isfile("/x/x/x/x/x/x"));
+            CHECK(xia::util::path::isfile(__FILE__));
+            CHECK(!xia::util::path::isfile(xia::util::path::dirname(__FILE__)));
+        }
+        SUBCASE("isdir") {
+            CHECK(!xia::util::path::isdir("/x/x/x/x/x/x"));
+            CHECK(!xia::util::path::isdir(__FILE__));
+            CHECK(xia::util::path::isdir(xia::util::path::dirname(__FILE__)));
+        }
     }
 
     TEST_CASE("Thread Workers") {

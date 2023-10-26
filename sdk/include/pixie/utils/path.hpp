@@ -26,6 +26,8 @@
 #include <string>
 #include <vector>
 
+#include <pixie/utils/string.hpp>
+
 namespace xia {
 /**
  * @brief Utilities to accomplish various needs in the SDK.
@@ -33,7 +35,12 @@ namespace xia {
 namespace util {
 namespace path {
 
-using strings = std::vector<std::string>;
+using paths = string::strings;
+
+/**
+ * @brief Path separattor
+ */
+extern const char path_sep;
 
 /**
  * @brief Look for a file at the given path and store the filename
@@ -43,11 +50,11 @@ using strings = std::vector<std::string>;
  * @param ext The type of file extension as a string
  * @param depth The depth at which the deepest file found is
 */
-void find_files(const std::string path, strings& files_, const std::string& ext, size_t depth = 0);
+void find_files(const std::string path, paths& files_, const std::string& ext, size_t depth = 0);
 
 /**
  * @brief Returns the base filename of a given filename string
-*/
+ */
 const std::string basename(const std::string& name);
 
 /**
@@ -59,6 +66,38 @@ const std::string dirname(const std::string& name);
  * @brief Returns the extension for the given filepath
 */
 const std::string extension(const std::string& name);
+
+/**
+ * @brief Returns the path and paths joined as a single path. If path
+ * is empty the path separator is prepended and if the last paths
+ * element is empty the path separator is appended. If a paths element
+ * is absolute the path is generated from that element to the end and
+ * path argument is ignored.
+ *
+ * An absolute path on Windows is `d:` and on POSIX `/`.
+ *
+ * This call is similar to Python's os.path.join() call.
+ *
+ * @param path A path prefixed to the joined path
+ * @param paths A list of paths join together
+ * @return The joined path
+ */
+const std::string join(const std::string path, const paths& paths);
+
+/**
+ * @brief Returns true if the path is valid and exists
+*/
+bool exists(const std::string& path);
+
+/**
+ * @brief Returns true if the path is a file
+*/
+bool isfile(const std::string& path);
+
+/**
+ * @brief Returns true if the path is a directory
+*/
+bool isdir(const std::string& path);
 
 } // namespace path
 } // namespace util

@@ -65,7 +65,7 @@ template<typename T>
 std::string join(T& ss, const char c = ' ') {
     std::string ns;
     for (auto& s : ss) {
-        if (!ss.empty()) {
+        if (!ns.empty()) {
             ns += c;
         }
         ns += s;
