@@ -27,6 +27,8 @@
 #include <pixie/pixie16/module.hpp>
 
 #include <omnitool-commands.hpp>
+#include <omnitool-completions.hpp>
+#include <omnitool-crate.hpp>
 
 namespace xia {
 namespace omnitool {
@@ -97,8 +99,22 @@ void boot(command::context& context) {
 
 void boot_comp(
     command::context& context, command::completion& completions) {
-    (void) context;
-    (void) completions;
+    auto boot_cmd = context.cmd.def;
+
+    command::completions::modules_completions(context, boot_cmd.name,
+        1, completions);
+
+    command::completions::argument_completion(
+        {command::completion_entry::node::argument, "comms", boot_cmd.name, "", "comms"},
+        2, 4, completions);
+
+    command::completions::argument_completion(
+        {command::completion_entry::node::argument, "fippi", boot_cmd.name, "", "fippi"},
+        2, 4, completions);
+
+    command::completions::argument_completion(
+        {command::completion_entry::node::argument, "dsp", boot_cmd.name, "", "dsp"},
+        2, 4, completions);
 }
 } // namespace crate
 } // namespace omnitool

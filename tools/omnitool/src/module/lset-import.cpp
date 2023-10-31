@@ -25,6 +25,8 @@
 #include <pixie/pixie16/module.hpp>
 
 #include <omnitool-commands.hpp>
+#include <omnitool-completions.hpp>
+#include <omnitool-module.hpp>
 
 namespace xia {
 namespace omnitool {
@@ -63,8 +65,19 @@ void lset_import(command::context& context) {
 
 void lset_import_comp(
     command::context& context, command::completion& completions) {
-    (void) context;
-    (void) completions;
+    auto lset_import_cmd = context.cmd.def;
+
+    command::completions::modules_completions(
+        context, lset_import_cmd.name, 1, completions);
+
+    command::completion_entries entries;
+    entries.push_back({command::completion_entry::node::argument, "flush",
+                        lset_import_cmd.name, "", "flush"});
+    entries.push_back({command::completion_entry::node::argument, "sync",
+                        lset_import_cmd.name, "", "sync"});
+
+    command::completions::multiargument_completion(
+        entries, 3, 3, completions);
 }
 } // namespace module
 } // namespace omnitool

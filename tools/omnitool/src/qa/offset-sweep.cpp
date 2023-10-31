@@ -26,6 +26,7 @@
 #include <pixie/utils/numerics.hpp>
 
 #include <omnitool-commands.hpp>
+#include <omnitool-completions.hpp>
 #include <omnitool-threads.hpp>
 
 #include <omnitool-qa.hpp>
@@ -511,8 +512,38 @@ void offset_sweep(command::context& context) {
 
 void offset_sweep_comp(
     command::context& context, command::completion& completions) {
-    (void) context;
-    (void) completions;
+    auto offset_sweep_cmd = context.cmd.def;
+
+    command::completions::flag_handler flags_func =
+        [&context, &completions, &offset_sweep_cmd](auto flag) {
+        completions.add({command::completion_entry::node::argument,
+            offset_sweep_cmd.name, offset_sweep_cmd.group,
+            offset_sweep_cmd.help_cmd, offset_sweep_cmd.name});
+        if (flag == "-s") {
+            completions.add({command::completion_entry::node::argument,
+                "-s", offset_sweep_cmd.name, "msec", "-s"});
+        } else if (flag == "-o") {
+            completions.add({command::completion_entry::node::argument,
+                "-o", offset_sweep_cmd.name, "start,[stop,[step]]", "-o"});
+        } else if (flag == "-t") {
+            completions.add({command::completion_entry::node::argument,
+                "-t", offset_sweep_cmd.name, "threshold-multiplier", "-t"});
+        }
+    };
+
+    auto not_completed = !command::completions::flag_completion(flags_func,
+        offset_sweep_cmd.name, completions);
+    if (not_completed) {
+        auto off = command::completions::get_pos_arg_offset(
+            offset_sweep_cmd.name, completions);
+        if (off != 0) {
+            command::completions::modules_completions(context, offset_sweep_cmd.name,
+                off, completions);
+
+            command::completions::channels_completions(context, offset_sweep_cmd.name,
+                off, off + 1, completions);
+        }
+    }
 }
 }
 }

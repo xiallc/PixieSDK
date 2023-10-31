@@ -24,6 +24,8 @@
 #include <pixie/pixie16/module.hpp>
 
 #include <omnitool-commands.hpp>
+#include <omnitool-completions.hpp>
+#include <omnitool-module.hpp>
 
 namespace xia {
 namespace omnitool {
@@ -89,8 +91,48 @@ void stats(command::context& context) {
 
 void stats_comp(
     command::context& context, command::completion& completions) {
-    (void) context;
-    (void) completions;
+    auto stats_cmd = context.cmd.def;
+
+    command::completions::flag_handler flags_func =
+      [&context, &completions, &stats_cmd](auto flag) {
+        if (flag == "-s") {
+            command::completion_entries entries;
+            entries.push_back({command::completion_entry::node::argument, "pe",
+                stats_cmd.name, "processed-events", "pe"});
+            entries.push_back({command::completion_entry::node::argument, "ocr",
+                stats_cmd.name, "output-count-rate", "ocr"});
+            entries.push_back({command::completion_entry::node::argument, "rt",
+                stats_cmd.name, "real-time", "rt"});
+            entries.push_back({command::completion_entry::node::argument, "lt",
+                stats_cmd.name, "live-time", "lt"});
+
+            if (!completions.incomplete) {
+                for (auto entry : entries) {
+                    completions.add(entry);
+                }
+            } else {
+                auto arg = completions.argv(completions.argc() - 1);
+                for (auto entry : entries) {
+                    if (completions.partial_match(entry.name, arg)) {
+                        completions.add(entry);
+                    }
+                }
+            }
+        }
+    };
+
+    auto not_completed = !command::completions::flag_completion(flags_func,
+        stats_cmd.name, completions);
+    if (not_completed) {
+        auto off = command::completions::get_pos_arg_offset(stats_cmd.name, completions);
+        if (off != 0) {
+            command::completions::modules_completions(context, stats_cmd.name,
+                off, completions);
+
+            command::completions::channels_completions(context, stats_cmd.name,
+                off, off + 1, completions);
+        }
+    }
 }
 } // namespace module
 } // namespace omnitool

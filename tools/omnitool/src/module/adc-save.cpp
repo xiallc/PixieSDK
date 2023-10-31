@@ -29,7 +29,9 @@
 #include <pixie/pixie16/module.hpp>
 
 #include <omnitool-commands.hpp>
+#include <omnitool-completions.hpp>
 #include <omnitool-defs.hpp>
+#include <omnitool-module.hpp>
 
 namespace xia {
 namespace omnitool {
@@ -80,8 +82,13 @@ void adc_save(command::context& context) {
 
 void adc_save_comp(
     command::context& context, command::completion& completions) {
-    (void) context;
-    (void) completions;
+    auto adc_save_cmd = context.cmd.def;
+
+    command::completions::modules_completions(context, adc_save_cmd.name,
+        1, completions);
+
+    command::completions::channels_completions(context, adc_save_cmd.name,
+        1, 2, completions);
 }
 } // namespace module
 } // namespace omnitool

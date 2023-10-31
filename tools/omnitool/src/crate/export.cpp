@@ -40,10 +40,7 @@ void export_(command::context& context) {
     context.opts.out << "Modules export time=" << tp << std::endl;
 }
 
-void export__comp(
-    command::context& context, command::completion& completions) {
-    (void) context;
-    (void) completions;
+void export__comp(command::context& , command::completion& ) {
 }
 } // namespace crate
 } // namespace omnitool

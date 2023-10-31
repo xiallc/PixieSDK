@@ -49,10 +49,7 @@ void report(command::context& context) {
     reports::report(crate, *out);
 }
 
-void report_comp(
-    command::context& context, command::completion& completions) {
-    (void) context;
-    (void) completions;
+void report_comp(command::context& , command::completion& ) {
 }
 } // namespace crate
 } // namespace omnitool

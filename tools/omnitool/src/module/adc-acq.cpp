@@ -24,6 +24,8 @@
 #include <pixie/pixie16/module.hpp>
 
 #include <omnitool-commands.hpp>
+#include <omnitool-completions.hpp>
+#include <omnitool-module.hpp>
 
 namespace xia {
 namespace omnitool {
@@ -40,8 +42,8 @@ void adc_acq(command::context& context) {
 
 void adc_acq_comp(
     command::context& context, command::completion& completions) {
-    (void) context;
-    (void) completions;
+    command::completions::modules_completions(
+        context, context.cmd.def.name, 1, completions);
 }
 } // namespace module
 } // namespace omnitool

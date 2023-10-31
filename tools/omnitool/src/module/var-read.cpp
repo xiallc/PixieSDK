@@ -26,6 +26,8 @@
 #include <pixie/pixie16/module.hpp>
 
 #include <omnitool-commands.hpp>
+#include <omnitool-completions.hpp>
+#include <omnitool-module.hpp>
 
 namespace xia {
 namespace omnitool {
@@ -119,8 +121,48 @@ void var_read(command::context& context) {
 
 void var_read_comp(
     command::context& context, command::completion& completions) {
-    (void) context;
-    (void) completions;
+    auto var_read_cmd = context.cmd.def;
+    command::completion_entries entries;
+
+    command::completions::modules_completions(
+        context, var_read_cmd.name, 1, completions);
+
+    command::completions::channels_completions(
+        context, var_read_cmd.name, 1, 2, completions);
+
+    command::completion_entries module_entries;
+    for (auto& var : pixie::param::get_module_var_descriptors()) {
+        if (var.mode != pixie::param::wr) {
+            module_entries.push_back({command::completion_entry::node::argument,
+                var.name, var_read_cmd.name, "", var.name});
+        }
+    }
+
+    command::completions::multiargument_completion(
+        module_entries, 2, 2, completions);
+
+    command::completion_entries channel_entries;
+    for (auto& var : pixie::param::get_channel_var_descriptors()) {
+        if (var.mode != pixie::param::wr) {
+            channel_entries.push_back({command::completion_entry::node::argument,
+                var.name, var_read_cmd.name, "", var.name});
+        }
+    }
+
+    entries.push_back({command::completion_entry::node::argument, var_read_cmd.name,
+        var_read_cmd.group, var_read_cmd.help_cmd, var_read_cmd.name});
+    entries.push_back({command::completion_entry::node::argument, "offset(s)",
+        var_read_cmd.name, "The offset(s) (Optional)", "offset(s)"});
+
+    if (command::completions::valid_channels_check(context, 1, 2, completions)) {
+        command::completions::multiargument_completion(
+            channel_entries, 3, 3, completions);
+        command::completions::help_argument_completion(entries, 4,
+            completions);
+    } else {
+        command::completions::help_argument_completion(entries, 3,
+            completions);
+    }
 }
 } // namespace module
 } // namespace omnitool

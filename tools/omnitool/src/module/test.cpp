@@ -26,7 +26,9 @@
 #include <pixie/pixie16/module.hpp>
 
 #include <omnitool-commands.hpp>
+#include <omnitool-completions.hpp>
 #include <omnitool-defs.hpp>
+#include <omnitool-module.hpp>
 #include <omnitool-threads.hpp>
 
 namespace xia {
@@ -103,8 +105,42 @@ void test(command::context& context) {
 
 void test_comp(
     command::context& context, command::completion& completions) {
-    (void) context;
-    (void) completions;
+    auto test_cmd = context.cmd.def;
+
+    command::completions::flag_handler flags_func =
+    [&context, &completions, &test_cmd](auto flag) {
+        if (flag == "-m") {
+            command::completion_entries entries;
+            entries.push_back({command::completion_entry::node::argument, "off",
+                test_cmd.name, "", "off"});
+            entries.push_back({command::completion_entry::node::argument, "lmfifo",
+                test_cmd.name, "", "lmfifo"});
+
+            if (!completions.incomplete) {
+                for (auto entry : entries) {
+                    completions.add(entry);
+                }
+            } else {
+                auto arg = completions.argv(completions.argc() - 1);
+                for (auto entry : entries) {
+                    if (completions.partial_match(entry.name, arg)) {
+                        completions.add(entry);
+                    }
+                }
+            }
+        }
+    };
+
+    auto not_completed = command::completions::flag_completion(flags_func,
+        test_cmd.name, completions);
+    if (not_completed) {
+        auto off = command::completions::get_pos_arg_offset(
+            test_cmd.name, completions);
+        if (off != 0) {
+            command::completions::modules_completions(
+                context, test_cmd.name, off, completions);
+        }
+    }
 }
 } // namespace module
 } // namespace omnitool

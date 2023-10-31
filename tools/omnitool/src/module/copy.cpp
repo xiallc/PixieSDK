@@ -26,6 +26,8 @@
 #include <pixie/pixie16/module.hpp>
 
 #include <omnitool-commands.hpp>
+#include <omnitool-completions.hpp>
+#include <omnitool-module.hpp>
 
 namespace xia {
 namespace omnitool {
@@ -76,8 +78,19 @@ void copy(command::context& context) {
 
 void copy_comp(
     command::context& context, command::completion& completions) {
-    (void) context;
-    (void) completions;
+    auto copy_cmd = context.cmd.def;
+
+    command::completions::modules_completions(context, copy_cmd.name,
+        2, completions);
+
+    command::completions::modules_completions(context, copy_cmd.name,
+        3, completions);
+
+    command::completions::channels_completions(context, copy_cmd.name,
+        2, 4, completions);
+
+    command::completions::channels_completions(context, copy_cmd.name,
+        3, 5, completions);
 }
 } // namespace module
 } // namespace omnitool

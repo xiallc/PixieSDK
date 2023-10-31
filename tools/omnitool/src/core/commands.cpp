@@ -561,9 +561,22 @@ void help(xia::omnitool::command::context& context) {
     }
 }
 
-void help_comp(context& context, completion& completions) {
-    (void) context;
-    (void) completions;
+void help_comp(context&, completion& completions) {
+    if (completions.argc() == 1 && !completions.incomplete) {
+        completions.add(
+            {completion_entry::node::argument, "-l", "util/help/arguments", "List all", "-l"});
+        for (auto& cmd : command_set) {
+            completions.add({completion_entry::node::argument, cmd.name, cmd.group, "", cmd.name});
+        }
+    } else if (completions.argc() >= 2) {
+        auto& user_cmd = completions.argv(completions.argc() - 1);
+        for (auto& cmd : command_set) {
+            if (completions.partial_match(cmd.name, user_cmd)) {
+                completions.add({completion_entry::node::command,
+                    cmd.name, cmd.group, "", cmd.name});
+            }
+        }
+    }
 }
 
 struct shell_session {
@@ -1059,9 +1072,24 @@ void wait(xia::omnitool::command::context& context) {
     xia::pixie::hw::wait(msecs * 1000);
 }
 
-void wait_comp(context& context, completion& completions) {
-    (void) context;
-    (void) completions;
+void wait_comp(context&, completion& completions) {
+    if (completions.argc() == 1 && !completions.incomplete) {
+        completions.add({completion_entry::node::argument, "milliseconds", "util/wait/arguments",
+                         "wait a number of msecs", "milliseconds"});
+        completions.add({completion_entry::node::argument, "seconds", "util/wait/arguments",
+                         "add 's' for seconds", "seconds"});
+        completions.add({completion_entry::node::argument, "minutes", "util/wait/arguments",
+                         "add 'm' for minutes", "minutes"});
+    }
+
+    if (completions.argc() == 2 && completions.incomplete &&
+        (completions.argv(1).back() != 's' && completions.argv(1).back() != 'm')) {
+
+        completions.add({completion_entry::node::argument, "s", "util/wait/arguments",
+                         "add 's' for seconds", "s"});
+        completions.add({completion_entry::node::argument, "m", "util/wait/arguments",
+                         "add 'm' for minutes", "m"});
+    }
 }
 
 static void commands_registration(const definitions& cmds) {

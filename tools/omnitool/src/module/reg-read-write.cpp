@@ -29,6 +29,8 @@
 #include <pixie/pixie16/module.hpp>
 
 #include <omnitool-commands.hpp>
+#include <omnitool-completions.hpp>
+#include <omnitool-module.hpp>
 
 #include <nolhmann/json.hpp>
 
@@ -212,8 +214,29 @@ void reg_read(command::context& context) {
 
 void reg_read_comp(
     command::context& context, command::completion& completions) {
-    (void) context;
-    (void) completions;
+    auto reg_read_cmd = context.cmd.def;
+
+    auto not_completed = !command::completions::flag_completion(
+        NULL, reg_read_cmd.name, completions);
+
+    if (not_completed) {
+        auto off = command::completions::get_pos_arg_offset(
+            reg_read_cmd.name, completions);
+        if (off != 0) {
+            command::completions::module_completions(context,
+                reg_read_cmd.name, off, completions);
+
+            command::completion_entries entries;
+            auto &regs = hardware["memory"]["sys"];
+            for (auto it = regs.begin(); it != regs.end(); ++it) {
+                entries.push_back({command::completion_entry::node::argument,
+                                    it.key(), reg_read_cmd.name, "", it.key()});
+            }
+
+            command::completions::multiargument_completion(entries,
+                off + 1, off + 1, completions);
+        }
+    }
 }
 
 void reg_write(command::context& context) {
@@ -254,8 +277,29 @@ void reg_write(command::context& context) {
 
 void reg_write_comp(
     command::context& context, command::completion& completions) {
-    (void) context;
-    (void) completions;
+    auto reg_write_cmd = context.cmd.def;
+
+    auto not_completed = !command::completions::flag_completion(
+        NULL, reg_write_cmd.name, completions);
+
+    if (not_completed) {
+        auto off = command::completions::get_pos_arg_offset(
+            reg_write_cmd.name, completions);
+        if (off != 0) {
+        command::completions::module_completions(context,
+            reg_write_cmd.name, off, completions);
+
+        command::completion_entries entries;
+        auto &regs = hardware["memory"]["sys"];
+        for (auto it = regs.begin(); it != regs.end(); ++it) {
+            entries.push_back({command::completion_entry::node::argument,
+                                it.key(), reg_write_cmd.name, "", it.key()});
+        }
+
+        command::completions::multiargument_completion(entries,
+            off + 1, off + 1, completions);
+        }
+    }
 }
 } // namespace module
 } // namespace omnitool

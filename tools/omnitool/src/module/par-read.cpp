@@ -26,6 +26,8 @@
 #include <pixie/pixie16/module.hpp>
 
 #include <omnitool-commands.hpp>
+#include <omnitool-completions.hpp>
+#include <omnitool-module.hpp>
 
 namespace xia {
 namespace omnitool {
@@ -95,8 +97,33 @@ void par_read(command::context& context) {
 
 void par_read_comp(
     command::context& context, command::completion& completions) {
-    (void) context;
-    (void) completions;
+    auto par_read_cmd = context.cmd.def;
+
+    command::completions::modules_completions(
+        context, par_read_cmd.name, 1, completions);
+
+    command::completions::channels_completions(
+        context, par_read_cmd.name, 1, 2, completions);
+
+    command::completion_entries module_entries;
+    for (auto& par : pixie::param::get_module_param_map()) {
+        module_entries.push_back({command::completion_entry::node::argument,
+            std::get<0>(par), par_read_cmd.name, "", std::get<0>(par)});
+    }
+
+    command::completions::multiargument_completion(
+        module_entries, 2, 2, completions);
+
+    if (command::completions::valid_channels_check(context, 1, 2, completions)) {
+        command::completion_entries channel_entries;
+        for (auto& par : pixie::param::get_channel_param_map()) {
+            channel_entries.push_back({command::completion_entry::node::argument,
+                std::get<0>(par), par_read_cmd.name, "", std::get<0>(par)});
+        }
+
+        command::completions::multiargument_completion(
+            channel_entries, 3, 3, completions);
+    }
 }
 } // namespace module
 } // namespace omnitool

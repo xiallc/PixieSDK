@@ -24,6 +24,7 @@
 #include <pixie/pixie16/module.hpp>
 
 #include <omnitool-commands.hpp>
+#include <omnitool-completions.hpp>
 
 namespace xia {
 namespace omnitool {
@@ -47,8 +48,8 @@ void list_start(command::context& context) {
 
 void list_start_comp(
     command::context& context, command::completion& completions) {
-    (void) context;
-    (void) completions;
+    command::completions::modules_completions(
+        context, context.cmd.def.name, 1, completions);
 }
 } // namespace module
 } // namespace omnitool

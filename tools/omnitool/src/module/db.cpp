@@ -25,6 +25,8 @@
 #include <pixie/reports/reports.hpp>
 
 #include <omnitool-commands.hpp>
+#include <omnitool-completions.hpp>
+#include <omnitool-module.hpp>
 
 namespace xia {
 namespace omnitool {
@@ -86,8 +88,18 @@ void db(command::context& context) {
 
 void db_comp(
     command::context& context, command::completion& completions) {
-    (void) context;
-    (void) completions;
+    auto db_cmd = context.cmd.def;
+
+    command::completions::modules_completions(
+        context, db_cmd.name, 1, completions);
+
+    command::completions::channels_completions(
+        context, db_cmd.name, 1, 2, completions);
+
+    command::completions::argument_completion(
+        {command::completion_entry::node::argument, "disable-swap",
+        db_cmd.name, "", "disable-swap"},
+        2, 3, completions);
 }
 } // namespace module
 } // namespace omnitool

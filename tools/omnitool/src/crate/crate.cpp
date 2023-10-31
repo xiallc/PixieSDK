@@ -33,10 +33,7 @@ void crate_report(command::context& context) {
     context.opts.out << *crate << std::endl;
 }
 
-void crate_report_comp(
-    command::context& context, command::completion& completions) {
-    (void) context;
-    (void) completions;
+void crate_report_comp(command::context& , command::completion& ) {
 }
 } // namespace crate
 } // namespace omnitool
