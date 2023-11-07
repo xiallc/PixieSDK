@@ -101,11 +101,10 @@ void test(command::context& context) {
     performance_stats(context, tests, true);
 }
 
-bool test_comp(
-    command::context& context, command::command_completion& completions) {
+void test_comp(
+    command::context& context, command::completion& completions) {
     (void) context;
     (void) completions;
-    return false;
 }
 } // namespace module
 } // namespace omnitool

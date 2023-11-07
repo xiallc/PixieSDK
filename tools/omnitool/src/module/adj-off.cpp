@@ -38,11 +38,10 @@ void adj_off(command::context& context) {
     }
 }
 
-bool adj_off_comp(
-    command::context& context, command::command_completion& completions) {
+void adj_off_comp(
+    command::context& context, command::completion& completions) {
     (void) context;
     (void) completions;
-    return false;
 }
 } // namespace module
 } // namespace omnitool

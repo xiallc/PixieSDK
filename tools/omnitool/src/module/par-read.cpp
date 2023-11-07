@@ -93,11 +93,10 @@ void par_read(command::context& context) {
     }
 }
 
-bool par_read_comp(
-    command::context& context, command::command_completion& completions) {
+void par_read_comp(
+    command::context& context, command::completion& completions) {
     (void) context;
     (void) completions;
-    return false;
 }
 } // namespace module
 } // namespace omnitool

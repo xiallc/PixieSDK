@@ -38,11 +38,10 @@ void adc_acq(command::context& context) {
     }
 }
 
-bool adc_acq_comp(
-    command::context& context, command::command_completion& completions) {
+void adc_acq_comp(
+    command::context& context, command::completion& completions) {
     (void) context;
     (void) completions;
-    return false;
 }
 } // namespace module
 } // namespace omnitool

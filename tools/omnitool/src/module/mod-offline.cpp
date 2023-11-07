@@ -38,11 +38,10 @@ void mod_offline(command::context& context) {
     }
 }
 
-bool mod_offline_comp(
-    command::context& context, command::command_completion& completions) {
+void mod_offline_comp(
+    command::context& context, command::completion& completions) {
     (void) context;
     (void) completions;
-    return false;
 }
 } // namespace module
 } // namespace omnitool

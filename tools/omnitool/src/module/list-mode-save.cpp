@@ -142,22 +142,20 @@ void list_mode(command::context& context) {
     list_mode_command(context, true);
 }
 
-bool list_mode_comp(
-    command::context& context, command::command_completion& completions) {
+void list_mode_comp(
+    command::context& context, command::completion& completions) {
     (void) context;
     (void) completions;
-    return false;
 }
 
 void list_save(command::context& context) {
     list_mode_command(context, false);
 }
 
-bool list_save_comp(
-    command::context& context, command::command_completion& completions) {
+void list_save_comp(
+    command::context& context, command::completion& completions) {
     (void) context;
     (void) completions;
-    return false;
 }
 } // namespace module
 } // namespace omnitool

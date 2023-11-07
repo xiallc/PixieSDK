@@ -210,11 +210,10 @@ void reg_read(command::context& context) {
     }
 }
 
-bool reg_read_comp(
-    command::context& context, command::command_completion& completions) {
+void reg_read_comp(
+    command::context& context, command::completion& completions) {
     (void) context;
     (void) completions;
-    return false;
 }
 
 void reg_write(command::context& context) {
@@ -253,11 +252,10 @@ void reg_write(command::context& context) {
     }
 }
 
-bool reg_write_comp(
-    command::context& context, command::command_completion& completions) {
+void reg_write_comp(
+    command::context& context, command::completion& completions) {
     (void) context;
     (void) completions;
-    return false;
 }
 } // namespace module
 } // namespace omnitool

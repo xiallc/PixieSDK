@@ -78,11 +78,10 @@ void adc_save(command::context& context) {
     }
 }
 
-bool adc_save_comp(
-    command::context& context, command::command_completion& completions) {
+void adc_save_comp(
+    command::context& context, command::completion& completions) {
     (void) context;
     (void) completions;
-    return false;
 }
 } // namespace module
 } // namespace omnitool

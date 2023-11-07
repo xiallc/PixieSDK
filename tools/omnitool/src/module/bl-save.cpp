@@ -71,11 +71,10 @@ void bl_save(command::context& context) {
     }
 }
 
-bool bl_save_comp(
-    command::context& context, command::command_completion& completions) {
+void bl_save_comp(
+    command::context& context, command::completion& completions) {
     (void) context;
     (void) completions;
-    return false;
 }
 } // namespace module
 } // namespace omnitool

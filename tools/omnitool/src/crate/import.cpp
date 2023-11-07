@@ -43,11 +43,10 @@ void import(command::context& context) {
                      << " time=" << tp << std::endl;
 }
 
-bool import_comp(
-    command::context& context, command::command_completion& completions) {
+void import_comp(
+    command::context& context, command::completion& completions) {
     (void) context;
     (void) completions;
-    return false;
 }
 } // namespace crate
 } // namespace omnitool

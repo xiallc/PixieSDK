@@ -61,7 +61,7 @@ using paths = std::vector<std::string>;
  */
 struct context;
 struct command;
-struct command_completion;
+struct completion;
 
 /**
  * @brief Named Operations are name functions to perform custom
@@ -147,7 +147,7 @@ struct context {
 struct definition {
     using preconditions = arguments;
     using handler = void (*)(context& );
-    using completion_handler = bool (*)(context& , command_completion& );
+    using completion_handler = void (*)(context& , completion& );
 
     std::string group;
     std::string name;
@@ -249,13 +249,14 @@ struct batch {
 };
 
 /**
- * @brief A command definition listing entry
+ * @brief A completion entry
  */
-struct command_entry {
+struct completion_entry {
     enum struct node {
         command,
         directory,
-        path
+        path,
+        argument
     };
     node type;
     std::string name;
@@ -264,7 +265,7 @@ struct command_entry {
     std::string path;
     size_t count;
 
-    command_entry(
+    completion_entry(
         node type, const std::string& name, const std::string& group,
         const std::string& help, const std::string& path);
 
@@ -272,17 +273,17 @@ struct command_entry {
     bool iscommand() const;
 };
 
-using command_entries = std::vector<command_entry>;
+using completion_entries = std::vector<completion_entry>;
 
 /**
  * @brief Completions data
  */
-struct command_completion {
+struct completion {
     const bool incomplete;
     arguments args;
-    command_entries entries;
+    completion_entries entries;
 
-    command_completion(const char* buf);
+    completion(const char* buf);
 
     inline bool has_args() const;
     inline bool no_args() const;
@@ -290,39 +291,39 @@ struct command_completion {
     inline size_t argc() const;
     inline const argument& argv(const size_t index) const;
 
-    inline void add(command_entry entry);
+    inline void add(completion_entry entry);
 
     bool partial_match(
         const std::string& name, const std::string& cmd) const;
 };
 
-inline bool command_completion::has_args() const {
+inline bool completion::has_args() const {
     return !args.empty();
 }
 
-inline bool command_completion::no_args() const {
+inline bool completion::no_args() const {
     return args.empty();
 }
 
-inline size_t command_completion::argc() const {
+inline size_t completion::argc() const {
     return args.size();
 }
 
-inline const argument& command_completion::argv(const size_t index) const {
+inline const argument& completion::argv(const size_t index) const {
     if (index >= args.size()) {
-        throw std::range_error("command_completion: arg index out of range");
+        throw std::range_error("completion: arg index out of range");
     }
     return args[index];
 }
 
-inline void command_completion::add(command_entry entry) {
+inline void completion::add(completion_entry entry) {
     entries.push_back(entry);
 }
 
 #define omnitool_command_handler_decl(_name) \
    void _name(xia::omnitool::command::context& ); \
-   bool _name ## _comp(xia::omnitool::command::context& , \
-                       xia::omnitool::command::command_completion& )
+   void _name ## _comp(xia::omnitool::command::context& , \
+                       xia::omnitool::command::completion& )
 #define omnitool_command_handers(_name) _name, _name ## _comp
 #define omnitool_command_opt_decl(_name) {"-" _name, ""}
 #define omnitool_command_opt_arg_decl(_name) {"-" _name, "true"}
@@ -371,7 +372,7 @@ void load_commands(const std::string& name, arguments& cmds);
 /**
  * List the command in a path
  */
-void list_commands(const std::string& path, command_entries& entries);
+void list_commands(const std::string& path, completion_entries& entries);
 
 /**
  * Register commands

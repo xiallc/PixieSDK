@@ -74,11 +74,10 @@ void copy(command::context& context) {
     crate[dest_mod_nums[0]].sync_vars();
 }
 
-bool copy_comp(
-    command::context& context, command::command_completion& completions) {
+void copy_comp(
+    command::context& context, command::completion& completions) {
     (void) context;
     (void) completions;
-    return false;
 }
 } // namespace module
 } // namespace omnitool

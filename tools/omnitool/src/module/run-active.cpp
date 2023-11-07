@@ -40,11 +40,10 @@ void run_active(command::context& context) {
     }
 }
 
-bool run_active_comp(
-    command::context& context, command::command_completion& completions) {
+void run_active_comp(
+    command::context& context, command::completion& completions) {
     (void) context;
     (void) completions;
-    return false;
 }
 } // namespace module
 } // namespace omnitool

@@ -39,11 +39,10 @@ void set_dacs(command::context& context) {
     }
 }
 
-bool set_dacs_comp(
-    command::context& context, command::command_completion& completions) {
+void set_dacs_comp(
+    command::context& context, command::completion& completions) {
     (void) context;
     (void) completions;
-    return false;
 }
 } // namespace module
 } // namespace omnitool

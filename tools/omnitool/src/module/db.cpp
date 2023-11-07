@@ -84,11 +84,10 @@ void db(command::context& context) {
     }
 }
 
-bool db_comp(
-    command::context& context, command::command_completion& completions) {
+void db_comp(
+    command::context& context, command::completion& completions) {
     (void) context;
     (void) completions;
-    return false;
 }
 } // namespace module
 } // namespace omnitool

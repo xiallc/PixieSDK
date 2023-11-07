@@ -43,11 +43,10 @@ void override_fw(command::context& context) {
     }
 }
 
-bool override_fw_comp(
-    command::context& context, command::command_completion& completions) {
+void override_fw_comp(
+    command::context& context, command::completion& completions) {
     (void) context;
     (void) completions;
-    return false;
 }
 } // namespace module
 } // namespace omnitool

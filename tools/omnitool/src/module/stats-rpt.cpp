@@ -56,11 +56,10 @@ void stats_rpt(command::context& context) {
     *output << rpt.str();
 }
 
-bool stats_rpt_comp(
-    command::context& context, command::command_completion& completions) {
+void stats_rpt_comp(
+    command::context& context, command::completion& completions) {
     (void) context;
     (void) completions;
-    return false;
 }
 } // namespace module
 } // namespace omnitool

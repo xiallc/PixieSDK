@@ -60,11 +60,10 @@ void mset_import(command::context& context) {
     }
 }
 
-bool mset_import_comp(
-    command::context& context, command::command_completion& completions) {
+void mset_import_comp(
+    command::context& context, command::completion& completions) {
     (void) context;
     (void) completions;
-    return false;
 }
 } // namespace module
 } // namespace omnitool

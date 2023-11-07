@@ -308,17 +308,17 @@ void batch::report(std::ostream& out) {
     }
 }
 
-command_entry::command_entry(
+completion_entry::completion_entry(
     node type_, const std::string& name_, const std::string& group_,
     const std::string& help_, const std::string& path_)
     : type(type_), name(name_), group(group_), help(help_), path(path_), count(1) {
 }
 
-bool command_entry::isdir() const {
+bool completion_entry::isdir() const {
     return type == node::directory;
 }
 
-bool command_entry::iscommand() const {
+bool completion_entry::iscommand() const {
     return type == node::command;
 }
 
@@ -330,12 +330,12 @@ static bool is_last_char_a_space(const char* buf) {
     return false;
 }
 
-command_completion::command_completion(const char* buf)
+completion::completion(const char* buf)
     : incomplete(!is_last_char_a_space(buf)) {
     util::string::split(args, buf);
 }
 
-bool command_completion::partial_match(
+bool completion::partial_match(
     const std::string& name, const std::string& cmd) const {
     return name.size() != cmd.size() && util::string::starts_with(name, cmd);
 };
@@ -369,6 +369,9 @@ definitions::const_iterator find_command(
     }
     for (auto& dir : path) {
         auto dci = find_command(dir + '/' + arg);
+        if (dir == "/") {
+            dci = find_command(dir + arg);
+        }
         if (valid_command(dci)) {
             return dci;
         }
@@ -418,7 +421,7 @@ void load_commands(const std::string& name, arguments& cmds) {
     }
 }
 
-void list_commands(const std::string& path, command_entries& entries) {
+void list_commands(const std::string& path, completion_entries& entries) {
     /*
      * Spliting is not fast but simple. If this is a performance issue
      * we can look at faster ways to do this.
@@ -451,10 +454,10 @@ void list_commands(const std::string& path, command_entries& entries) {
                 }
             }
             if (!found) {
-                auto type = command_entry::node::command;
+                auto type = completion_entry::node::command;
                 std::string help;
                 if (cmd_parts.size() > path_parts.size() + 1) {
-                    type = command_entry::node::directory;
+                    type = completion_entry::node::directory;
                     help = "more commands...";
                 } else {
                     help = cmd.help + " - " +
@@ -558,10 +561,9 @@ void help(xia::omnitool::command::context& context) {
     }
 }
 
-bool help_comp(context& context, command_completion& completions) {
+void help_comp(context& context, completion& completions) {
     (void) context;
     (void) completions;
-    return false;
 }
 
 struct shell_session {
@@ -587,17 +589,21 @@ struct shell_session {
 
     void execute();
 
-    void get_completions(command_completion& completions);
+    void get_completions(completion& completions);
 
     bool builtins();
-    void builtin_completions(command_completion& completions);
-    void builtin_path_completion(command_completion& completions,
-        std::string cmd, command_entry completion);
+    void builtin_completions(completion& completions);
+
+    void builtin_path_completion(completion& completions,
+        std::string cmd, completion_entry completion);
 
     bool builtin_ls();
-    void builtin_ls_completion(command_completion& completions);
+    void builtin_ls_completion(completion& completions);
     bool builtin_cd();
-    void builtin_cd_completion(command_completion& completions);
+    void builtin_cd_completion(completion& completions);
+
+    void command_completions(completion& completions);
+    void command_path_completion(completion& completions);
 };
 
 shell_session::shell_session(context& context__)
@@ -650,15 +656,16 @@ void shell_session::execute() {
     }
 }
 
-void shell_session::get_completions(command_completion& completions) {
+void shell_session::get_completions(completion& completions) {
     builtin_completions(completions);
-    command_entries entries;
-    list_commands(path, entries);
-    if (completions.no_args()) {
-        for (auto& search_path : context_.opts.path) {
-            list_commands(search_path, entries);
-        }
+    command_completions(completions);
+    command_path_completion(completions);
+
+    completion_entries entries;
+    for (auto& search_path : context_.opts.path) {
+        list_commands(search_path, entries);
     }
+
     for (auto& entry : entries) {
         if (completions.no_args() ||
             (!entry.isdir() &&
@@ -693,40 +700,40 @@ bool shell_session::builtins() {
     return r;
 }
 
-void shell_session::builtin_completions(command_completion& completions) {
+void shell_session::builtin_completions(completion& completions) {
     builtin_ls_completion(completions);
     builtin_cd_completion(completions);
     if (completions.argc() == 1 && completions.incomplete) {
         auto& cmd = completions.argv(0);
         if (completions.partial_match("builtins", cmd)) {
             completions.add(
-                {command_entry::node::command, "builtins", "Shell",
+                {completion_entry::node::command, "builtins", "Shell",
                  "builtins help - builtins", "builtins"});
         } else if (completions.partial_match("pwd", cmd)) {
             completions.add(
-                {command_entry::node::command, "pwd", "Shell",
+                {completion_entry::node::command, "pwd", "Shell",
                  "current command directory - pwd", "pwd"});
         } else if (completions.partial_match("exit", cmd)) {
             completions.add(
-                {command_entry::node::command, "exit", "Shell",
+                {completion_entry::node::command, "exit", "Shell",
                  "exit the current shell session - exit", "exit"});
         }
     } else if (completions.argc() == 0) {
         completions.add(
-            {command_entry::node::command, "builtins", "Shell",
+            {completion_entry::node::command, "builtins", "Shell",
              "builtins help - builtins", "builtins"});
         completions.add(
-            {command_entry::node::command, "pwd", "Shell",
+            {completion_entry::node::command, "pwd", "Shell",
              "current command directory - pwd", "pwd"});
         completions.add(
-            {command_entry::node::command, "exit", "Shell",
+            {completion_entry::node::command, "exit", "Shell",
              "exit the current shell session - exit", "exit"});
     }
 }
 
 void shell_session::builtin_path_completion(
-    command_completion& completions, std::string cmd,
-    command_entry completion) {
+    completion& completions, std::string cmd,
+    completion_entry completion) {
 
     if (completions.argc() == 0) {
         completions.add(completion);
@@ -749,7 +756,7 @@ void shell_session::builtin_path_completion(
                 }
                 dir = util::path::basename(arg);
             }
-            command_entries entries;
+            completion_entries entries;
             list_commands(dir_path, entries);
             for (auto& entry : entries) {
                 if (entry.isdir() &&
@@ -757,6 +764,34 @@ void shell_session::builtin_path_completion(
                      completions.partial_match(entry.name, dir))) {
                     completions.add(entry);
                 }
+            }
+        }
+    }
+}
+
+void shell_session::command_path_completion(completion& completions) {
+    if (completions.argc() == 0) {
+        completion_entries entries;
+        list_commands(path, entries);
+        for (auto& entry : entries) {
+            completions.add(entry);
+        }
+    } else if (completions.argc() == 1 && completions.incomplete) {
+        auto& user_cmd = completions.argv(0);
+        std::string dir_path = path;
+        std::string dir;
+        if (user_cmd.find('/') != std::string::npos) {
+            dir_path = util::path::dirname(user_cmd);
+            if (dir_path[0] != '/') {
+                dir_path = path + '/' + dir_path;
+            }
+        }
+        dir = util::path::basename(user_cmd);
+        completion_entries entries;
+        list_commands(dir_path, entries);
+        for (auto& entry : entries) {
+            if (completions.partial_match(entry.name, dir)) {
+                completions.add(entry);
             }
         }
     }
@@ -790,7 +825,7 @@ bool shell_session::builtin_ls() {
     if (search_paths.empty()) {
         search_paths.push_back(path);
     }
-    command_entries entries;
+    completion_entries entries;
     for (auto& search_path : search_paths) {
         list_commands(search_path, entries);
     }
@@ -798,7 +833,7 @@ bool shell_session::builtin_ls() {
     std::cout << "total: " << entries.size() << std::endl;
     if (list_long) {
         for (auto& entry : entries) {
-            char t = entry.type == command_entry::node::directory ? 'd' : 'c';
+            char t = entry.type == completion_entry::node::directory ? 'd' : 'c';
             std::cout << std::right << std::setw(4) << entry.count
                       << ' ' << t << ' '
                       << std::left << entry.name << std::endl;
@@ -826,9 +861,9 @@ bool shell_session::builtin_ls() {
     return true;
 }
 
-void shell_session::builtin_ls_completion(command_completion& completions) {
+void shell_session::builtin_ls_completion(completion& completions) {
     builtin_path_completion(completions, "ls",
-            {command_entry::node::command, "ls", "Shell",
+            {completion_entry::node::command, "ls", "Shell",
              "list command directory - ls [-l] [path..]", "ls"});
 }
 
@@ -854,7 +889,7 @@ bool shell_session::builtin_cd() {
                         new_path = "/";
                     }
                 } else {
-                    command_entries entries;
+                    completion_entries entries;
                     list_commands(new_path, entries);
                     bool found = false;
                     for (auto& entry : entries) {
@@ -884,17 +919,60 @@ bool shell_session::builtin_cd() {
     return true;
 }
 
-void shell_session::builtin_cd_completion(command_completion& completions) {
+void shell_session::builtin_cd_completion(completion& completions) {
     builtin_path_completion(completions, "cd",
-            {command_entry::node::command, "cd", "Shell",
+            {completion_entry::node::command, "cd", "Shell",
              "change directory - cd [path]", "cd"});
 }
 
+void shell_session::command_completions(completion& completions) {
+    if (completions.argc() != 0) {
+        /*
+         * Search absolute path for command
+         */
+        auto the_cmd = find_command(completions.argv(0));
+        if (the_cmd != no_command()) {
+            command cmd(*the_cmd);
+            omnitool::command::context context(
+                context_.crate, context_.opts, cmd);
+            cmd.def.completion(context, completions);
+            return;
+        }
+
+        /*
+         * Search current path for command
+         */
+        paths dir;
+        dir.push_back(path);
+        the_cmd = find_command(completions.argv(0), dir);
+        if (the_cmd != no_command()) {
+            command cmd(*the_cmd);
+            omnitool::command::context context(
+                context_.crate, context_.opts, cmd);
+            cmd.def.completion(context, completions);
+            return;
+        }
+
+        /*
+         * Search search path for command
+         */
+        for (auto& search_path : context_.opts.path) {
+            the_cmd = find_command(search_path + "/" + completions.argv(0));
+            if (the_cmd != no_command()) {
+                command cmd(*the_cmd);
+                omnitool::command::context context(
+                    context_.crate, context_.opts, cmd);
+                cmd.def.completion(context, completions);
+            }
+        }
+    }
+}
+
 static void shell_completion(
-    void* user, char const* buf, crossline_completions_t* completion) {
+    void* user, char const* buf, crossline_completions_t* completion_) {
     shell_session* ssession = static_cast<shell_session*>(user);
     try {
-        command_completion completions(buf);
+        completion completions(buf);
         ssession->get_completions(completions);
         for (auto& entry : completions.entries) {
             crossline_color_e colour = CROSSLINE_FGCOLOR_WHITE;
@@ -915,10 +993,10 @@ static void shell_completion(
             colour = crossline_color_e(CROSSLINE_FGCOLOR_BRIGHT | colour);
             if (entry.isdir()) {
                 ::crossline_completion_add_incomplete_color(
-                    completion, name.c_str(), colour, entry.help.c_str(), colour, '/');
+                    completion_, name.c_str(), colour, entry.help.c_str(), colour, '/');
             } else {
                 ::crossline_completion_add_color(
-                    completion, name.c_str(), colour, entry.help.c_str(), colour);
+                    completion_, name.c_str(), colour, entry.help.c_str(), colour);
             }
         }
     } catch (...) {};
@@ -945,10 +1023,7 @@ void shell(context& context_) {
     ::crossline_user_completion_register(nullptr, nullptr);
 }
 
-bool shell_comp(context& context, command_completion& completions) {
-    (void) context;
-    (void) completions;
-    return false;
+void shell_comp(context& , completion& ) {
 }
 
 void wait(xia::omnitool::command::context& context) {
@@ -984,10 +1059,9 @@ void wait(xia::omnitool::command::context& context) {
     xia::pixie::hw::wait(msecs * 1000);
 }
 
-bool wait_comp(context& context, command_completion& completions) {
+void wait_comp(context& context, completion& completions) {
     (void) context;
     (void) completions;
-    return false;
 }
 
 static void commands_registration(const definitions& cmds) {

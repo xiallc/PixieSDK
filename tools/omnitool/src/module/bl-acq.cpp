@@ -40,11 +40,10 @@ void bl_acq(command::context& context) {
     }
 }
 
-bool bl_acq_comp(
-    command::context& context, command::command_completion& completions) {
+void bl_acq_comp(
+    command::context& context, command::completion& completions) {
     (void) context;
     (void) completions;
-    return false;
 }
 } // namespace module
 } // namespace omnitool
