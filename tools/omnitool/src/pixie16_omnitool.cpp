@@ -33,6 +33,7 @@
 #include <pixie/utils/io.hpp>
 
 #include <pixie/pixie16/crate.hpp>
+#include <pixie/pixie16/crate-view.hpp>
 #include <pixie/pixie16/sim.hpp>
 
 #include <omnitool-commands.hpp>
@@ -335,7 +336,7 @@ int main(int argc, char* argv[]) {
         /*
          * The logical module crate
          */
-        xia::pixie::crate::module_crate crate(*crate_selection);
+        xia::pixie::crate::view::module crate(*crate_selection);
 
         if (fw_file_flag) {
             for (const auto& fw : args::get(fw_file_flag)) {

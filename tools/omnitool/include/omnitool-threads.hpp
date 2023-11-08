@@ -29,6 +29,7 @@
 #include <pixie/utils/time.hpp>
 
 #include <pixie/pixie16/crate.hpp>
+#include <pixie/pixie16/crate-view.hpp>
 #include <pixie/pixie16/hw.hpp>
 #include <pixie/pixie16/module.hpp>
 
@@ -214,7 +215,7 @@ void set_num_slot(pixie::module::module& module, W& worker) {
  */
 template<typename W>
 void set_num_slot(
-    xia::pixie::crate::module_crate& crate, std::vector<size_t>& mod_nums,
+    xia::pixie::crate::view::module& crate, std::vector<size_t>& mod_nums,
     std::vector<W>& workers) {
     for (size_t m = 0; m < mod_nums.size(); ++m) {
         auto& module = crate[mod_nums[m]];

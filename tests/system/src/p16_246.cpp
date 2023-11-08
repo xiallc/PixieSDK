@@ -29,6 +29,7 @@
 #include <vector>
 
 #include <pixie/pixie16/crate.hpp>
+#include <pixie/pixie16/crate-view.hpp>
 #include <pixie/pixie16/memory.hpp>
 
 int main() {
@@ -36,7 +37,7 @@ int main() {
     xia::logging::set_level(xia::log::level::info);
 
     xia::pixie::crate::crate phys_crate;
-    xia::pixie::crate::module_crate crate(phys_crate);
+    xia::pixie::crate::view::module crate(phys_crate);
 
     static const std::vector<std::string> firmware_list_1 = {
         "version=r33341, revision=15, adc-msps=500, adc-bits=14, device=sys, file=/usr/local/xia/pixie/firmware/revf_general_14b500m_r35207/firmware/syspixie16_revfgeneral_adc500mhz_r33341.bin",

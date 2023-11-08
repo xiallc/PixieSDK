@@ -266,7 +266,7 @@ void batch::parse(arguments& args, const paths& path) {
 }
 
 void batch::execute(
-    xia::pixie::crate::module_crate& crate, session_options& opts) {
+    xia::pixie::crate::view::module& crate, session_options& opts) {
     ++opts.command_depth;
     for (auto& cmd : cmds) {
         omnitool::command::context context(crate, opts, cmd);

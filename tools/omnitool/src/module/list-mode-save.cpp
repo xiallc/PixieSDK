@@ -26,6 +26,7 @@
 #include <pixie/utils/io.hpp>
 
 #include <pixie/pixie16/crate.hpp>
+#include <pixie/pixie16/crate-view.hpp>
 #include <pixie/pixie16/module.hpp>
 
 #include <omnitool-commands.hpp>
@@ -36,7 +37,7 @@
 namespace xia {
 namespace omnitool {
 namespace module {
-static void module_check(pixie::crate::module_crate& crate, std::vector<size_t> mod_nums) {
+static void module_check(pixie::crate::view::module& crate, std::vector<size_t> mod_nums) {
     for (auto mod_num : mod_nums) {
         if (mod_num > crate.num_modules) {
             throw std::runtime_error(

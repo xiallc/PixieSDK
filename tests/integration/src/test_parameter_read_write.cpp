@@ -31,11 +31,12 @@
 #include <pixie/log.hpp>
 
 #include <pixie/pixie16/channel.hpp>
+#include <pixie/pixie16/crate-view.hpp>
 #include <pixie/pixie16/sim.hpp>
 
 
 static xia::pixie::sim::crate sim_crate;
-static xia::pixie::crate::module_crate crate(sim_crate);
+static xia::pixie::crate::view::module crate(sim_crate);
 
 
 static const std::vector<std::string> module_defs = {

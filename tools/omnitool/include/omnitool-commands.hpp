@@ -34,6 +34,7 @@
 
 #include <pixie/pixie16/channel.hpp>
 #include <pixie/pixie16/crate.hpp>
+#include <pixie/pixie16/crate-view.hpp>
 
 namespace xia {
 namespace omnitool {
@@ -130,12 +131,12 @@ struct session_options {
  * @brief Command context
  */
 struct context {
-    pixie::crate::module_crate& crate;
+    pixie::crate::view::module& crate;
     session_options& opts;
     command& cmd;
 
     context(
-        pixie::crate::module_crate& crate_,
+        pixie::crate::view::module& crate_,
         session_options& opts_, command& cmd_) :
         crate(crate_), opts(opts_), cmd(cmd_) {}
 };
@@ -240,7 +241,7 @@ struct batch {
     /**
      * @brief Execute the batch of commands
      */
-    void execute(pixie::crate::module_crate& crate, session_options& opts);
+    void execute(pixie::crate::view::module& crate, session_options& opts);
 
     /**
      * @brief Report the parsed commands

@@ -24,6 +24,7 @@
 #ifndef PIXIESDK_UTIL_IO_HPP
 #define PIXIESDK_UTIL_IO_HPP
 
+#include <algorithm>
 #include <atomic>
 #include <iomanip>
 #include <iostream>
@@ -155,6 +156,76 @@ static std::vector<T> get_values(
         }
     }
     return values;
+}
+
+/**
+ * @brief Get a set of valid values from the option. The option can be
+ *        a number, a range or a list of numbers and ranges. A number
+ *        can be `0` or `1`. A range is numbers separate by `-` and
+ *        a list is delimited by `,`.
+ *        For example:
+ *           100
+ *           4-7
+ *           100,4-7,109-200
+ * @tparam T The type of values to return
+ * @param[out] values The set of valid values from the option.
+ * @param[in] opt The option to extract the values from
+ * @param[in] valid_values A vector of all possible values that opt can define.
+ *                      Defaults to empty vector
+ * @param[in] no_error If true no error is raise. Defaults to false.
+ * @returns A vector of type T of values from the option
+ */
+template<typename T>
+static void get_values_in_set(
+    std::vector<T>& values, const std::string& opt,
+    std::vector<T> valid_values = {}, bool no_error = false) {
+    if (valid_values.size() == 0) {
+        throw std::runtime_error("range `all` invalid, valid set unknown");
+    }
+    if (opt == "all") {
+        values = valid_values;
+    } else {
+        values.clear();
+        string::strings sc;
+        string::split(sc, opt, ',');
+        for (auto& slots : sc) {
+            xia::util::string::strings sd;
+            xia::util::string::split(sd, slots, '-');
+            if (sd.size() == 1) {
+                if (sd[0] == "all") {
+                    values = valid_values;
+                } else {
+                    values.push_back(get_value<T>(sd[0]));
+                }
+            } else if (sd.size() == 2) {
+                size_t start = get_value<T>(sd[0]);
+                size_t end = get_value<T>(sd[1]);
+                if (start > end) {
+                    if (!no_error) {
+                        throw std::runtime_error("invalid range: " + opt);
+                    }
+                    values.clear();
+                    break;
+                }
+                for (T s = T(start); s <= T(end); ++s) {
+                    values.push_back(s);
+                }
+            } else {
+                if (!no_error) {
+                    throw std::runtime_error("invalid range: " + opt);
+                }
+                values.clear();
+                break;
+            }
+        }
+    }
+    for (auto value : values) {
+        if (std::find(begin(valid_values), end(valid_values), value)
+              == valid_values.end() && !no_error) {
+            throw std::runtime_error(
+                "value not in valid set: " + std::to_string(value));
+        }
+    }
 }
 
 /**

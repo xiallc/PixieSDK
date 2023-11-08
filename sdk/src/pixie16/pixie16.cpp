@@ -34,6 +34,8 @@
 #include <pixie/utils/numerics.hpp>
 
 #include <pixie/pixie16/crate.hpp>
+#include <pixie/pixie16/crate-view.hpp>
+#include <pixie/pixie16/legacy.hpp>
 #include <pixie/pixie16/run.hpp>
 #include <pixie/pixie16/sim.hpp>
 
@@ -95,7 +97,7 @@ struct api_crate {
     /*
      * Module crate handles logical mapping unique the to legacy API.
      */
-    xia::pixie::crate::module_crate modules;
+    xia::pixie::crate::view::module modules;
 
     std::atomic<bool> run_check_override;
 
@@ -106,7 +108,7 @@ struct api_crate {
 
     xia::pixie::crate::crate* operator->();
     operator xia::pixie::crate::crate&();
-    operator xia::pixie::crate::module_crate&();
+    operator xia::pixie::crate::view::module&();
 
     /*
      * Simulation module definitions. Currently this is hard coded.
@@ -136,7 +138,7 @@ api_crate::operator xia::pixie::crate::crate&() {
     return *modules;
 }
 
-api_crate::operator xia::pixie::crate::module_crate&() {
+api_crate::operator xia::pixie::crate::view::module&() {
     return modules;
 }
 
@@ -212,7 +214,7 @@ PIXIE_EXPORT int PIXIE_API PixieGetHistogramLength(const unsigned short mod_num,
                                                    unsigned int* hist_length) {
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(crate, mod_num);
+        xia::pixie::crate::view::module_handle module(crate, mod_num);
         module->channel_check(chan_num);
         *hist_length = static_cast<unsigned int>(
             module->channels[chan_num].fixture->config.max_histogram_length);
@@ -237,7 +239,7 @@ PIXIE_EXPORT int PIXIE_API PixieGetTraceLength(const unsigned short mod_num,
                                                unsigned int* trace_length) {
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(crate, mod_num);
+        xia::pixie::crate::view::module_handle module(crate, mod_num);
         module->channel_check(chan_num);
         *trace_length = static_cast<unsigned int>(
             module->channels[chan_num].fixture->config.max_adc_trace_length);
@@ -262,7 +264,7 @@ PIXIE_EXPORT int PIXIE_API PixieGetMaxNumBaselines(const unsigned short mod_num,
                                                    unsigned int* max_num_baselines) {
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(crate, mod_num);
+        xia::pixie::crate::view::module_handle module(crate, mod_num);
         module->channel_check(chan_num);
         auto mxl = module->channels[chan_num].fixture->config.max_num_baselines;
         *max_num_baselines = static_cast<unsigned int>(mxl);
@@ -299,7 +301,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16AcquireADCTrace(unsigned short ModNum) {
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(crate, ModNum);
+        xia::pixie::crate::view::module_handle module(crate, ModNum);
         if (!crate.run_check_override) {
             module->run_check();
         }
@@ -331,14 +333,14 @@ PIXIE_EXPORT int PIXIE_API Pixie16AcquireBaselines(unsigned short ModNum) {
                 crate->check_active_run();
             }
             for (size_t mod_num = 0; mod_num < crate.modules.num_modules; mod_num++) {
-                xia::pixie::crate::module_handle module(crate, mod_num);
+                xia::pixie::crate::view::module_handle module(crate, mod_num);
                 if (*module == xia::pixie::hw::rev_H) {
                     return not_supported();
                 }
                 module->acquire_baselines();
             }
         } else {
-            xia::pixie::crate::module_handle module(crate, ModNum);
+            xia::pixie::crate::view::module_handle module(crate, ModNum);
             if (!crate.run_check_override) {
                 module->run_check();
             }
@@ -374,11 +376,11 @@ PIXIE_EXPORT int PIXIE_API Pixie16AdjustOffsets(unsigned short ModNum) {
                 crate->check_active_run();
             }
             for (size_t mod_num = 0; mod_num < crate.modules.num_modules; mod_num++) {
-                xia::pixie::crate::module_handle module(crate, mod_num);
+                xia::pixie::crate::view::module_handle module(crate, mod_num);
                 module->adjust_offsets();
             }
         } else {
-            xia::pixie::crate::module_handle module(crate, ModNum);
+            xia::pixie::crate::view::module_handle module(crate, ModNum);
             if (!crate.run_check_override) {
                 module->run_check();
             }
@@ -411,7 +413,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16BLcutFinder(unsigned short ModNum, unsigned sh
             throw xia_error(xia_error::code::invalid_value, "BLcut is NULL");
         }
         crate->ready();
-        xia::pixie::crate::module_handle module(crate, ModNum);
+        xia::pixie::crate::view::module_handle module(crate, ModNum);
         if (!crate.run_check_override) {
             module->run_check();
         }
@@ -654,7 +656,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckExternalFIFOStatus(unsigned int* nFIFOWor
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(crate, ModNum);
+        xia::pixie::crate::view::module_handle module(crate, ModNum);
         *nFIFOWords = static_cast<unsigned int>(module->read_list_mode_level());
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
@@ -680,7 +682,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckRunStatus(unsigned short ModNum) {
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(crate, ModNum);
+        xia::pixie::crate::view::module_handle module(crate, ModNum);
         if (module->run_active()) {
             result = 1;
         }
@@ -917,12 +919,12 @@ PIXIE_EXPORT int PIXIE_API Pixie16CopyDSPParameters(unsigned short BitMask,
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle source(crate, SourceModule);
+        xia::pixie::crate::view::module_handle source(crate, SourceModule);
         if (!crate.run_check_override) {
             crate->check_active_run();
         }
         for (size_t dest_mod = 0; dest_mod < crate.modules.num_modules; dest_mod++) {
-            xia::pixie::crate::module_handle dest_handle(crate, dest_mod);
+            xia::pixie::crate::view::module_handle dest_handle(crate, dest_mod);
 
             if (SourceChannel < dest_handle->num_channels) {
                 for (size_t dest_chan = 0; dest_chan < dest_handle->num_channels; dest_chan++) {
@@ -969,7 +971,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16LoadDSPParametersFromFile(const char* FileName
         }
         xia::pixie::crate::crate::user user(crate);
         for (size_t mod_num = 0; mod_num < crate.modules.num_modules; ++mod_num) {
-            xia::pixie::crate::module_handle module(crate, mod_num);
+            xia::pixie::crate::view::module_handle module(crate, mod_num);
             xia::pixie::config::import_json(FileName, *module);
             xia::pixie::hw::run::control(
               *module, xia::pixie::hw::run::control_task::program_fippi);
@@ -997,11 +999,11 @@ PIXIE_EXPORT int PIXIE_API Pixie16EndRun(unsigned short ModNum) {
         crate->ready();
         if (ModNum == crate.modules.num_modules) {
             for (size_t mod_num = 0; mod_num < crate.modules.num_modules; mod_num++) {
-                xia::pixie::crate::module_handle module(crate, mod_num);
+                xia::pixie::crate::view::module_handle module(crate, mod_num);
                 module->run_end();
             }
         } else {
-            xia::pixie::crate::module_handle module(crate, ModNum);
+            xia::pixie::crate::view::module_handle module(crate, ModNum);
             module->run_end();
         }
     } catch (xia_error& e) {
@@ -1031,12 +1033,12 @@ PIXIE_EXPORT int PIXIE_API Pixie16ExitSystem(unsigned short ModNum) {
                 crate->check_active_run();
             }
             for (size_t mod_num = 0; mod_num < crate.modules.num_modules; mod_num++) {
-                xia::pixie::crate::module_handle
+                xia::pixie::crate::view::module_handle
                   module(crate, mod_num, xia::pixie::module::check::open);
                 module->close();
             }
         } else {
-            xia::pixie::crate::module_handle
+            xia::pixie::crate::view::module_handle
               module(crate, ModNum, xia::pixie::module::check::open);
             module->run_check();
             module->close();
@@ -1237,7 +1239,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(crate, ModNum);
+        xia::pixie::crate::view::module_handle module(crate, ModNum);
 
         xia::pixie::hw::words data(nFIFOWords);
         auto copied = module->read_list_mode(data);
@@ -1276,7 +1278,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(crate, ModNum);
+        xia::pixie::crate::view::module_handle module(crate, ModNum);
         module->channel_check(ChanNum);
         auto& chan = module->channels[ChanNum];
         auto read_words = NumWords;
@@ -1323,7 +1325,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(crate, ModNum,
+        xia::pixie::crate::view::module_handle module(crate, ModNum,
                                                 xia::pixie::module::check::open);
         if (ModRev)
             *ModRev = module->revision;
@@ -1358,7 +1360,8 @@ PIXIE_EXPORT int PIXIE_API PixieGetModuleInfo(unsigned short mod_num, module_con
         }
 
         crate->ready();
-        xia::pixie::crate::module_handle module(crate, mod_num, xia::pixie::module::check::open);
+        xia::pixie::crate::view::module_handle module(crate, mod_num,
+            xia::pixie::module::check::open);
 
         std::memset(cfg, 0, sizeof(*cfg));
 
@@ -1419,7 +1422,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buff
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(crate, ModNum);
+        xia::pixie::crate::view::module_handle module(crate, ModNum);
         if (!crate.run_check_override) {
             module->run_check();
         }
@@ -1458,7 +1461,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanBaselines(double* Baselines, double
         }
 
         crate->ready();
-        xia::pixie::crate::module_handle module(crate, ModNum);
+        xia::pixie::crate::view::module_handle module(crate, ModNum);
         if (!crate.run_check_override) {
             module->run_check();
         }
@@ -1497,7 +1500,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanPar(const char* ChanParName, double
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(crate, ModNum);
+        xia::pixie::crate::view::module_handle module(crate, ModNum);
         if (!crate.run_check_override) {
             module->run_check();
         }
@@ -1531,7 +1534,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglModPar(const char* ModParName, unsigned
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(crate, ModNum);
+        xia::pixie::crate::view::module_handle module(crate, ModNum);
         if (!crate.run_check_override) {
             module->run_check();
         }
@@ -1565,7 +1568,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadStatisticsFromModule(unsigned int* Statist
             throw xia_error(xia_error::code::invalid_value, "statistics pointer is NULL");
         }
         crate->ready();
-        xia::pixie::crate::module_handle module(crate, ModNum);
+        xia::pixie::crate::view::module_handle module(crate, ModNum);
         stats_legacy_ptr legacy_stats = new (Statistics) stats_legacy(module->eeprom.configs);
         legacy_stats->validate();
         xia::pixie::stats::stats stats(*module);
@@ -1621,11 +1624,11 @@ PIXIE_EXPORT int PIXIE_API Pixie16SetDACs(unsigned short ModNum) {
                 crate->check_active_run();
             }
             for (size_t mod_num = 0; mod_num < crate.modules.num_modules; mod_num++) {
-                xia::pixie::crate::module_handle module(crate, mod_num);
+                xia::pixie::crate::view::module_handle module(crate, mod_num);
                 module->set_dacs();
             }
         } else {
-            xia::pixie::crate::module_handle module(crate, ModNum);
+            xia::pixie::crate::view::module_handle module(crate, ModNum);
             if (!crate.run_check_override) {
                 module->run_check();
             }
@@ -1671,11 +1674,11 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartHistogramRun(unsigned short ModNum, unsig
                 crate->check_active_run();
             }
             for (size_t mod_num = 0; mod_num < crate.modules.num_modules; mod_num++) {
-                xia::pixie::crate::module_handle module(crate, mod_num);
+                xia::pixie::crate::view::module_handle module(crate, mod_num);
                 module->start_histograms(run_mode);
             }
         } else {
-            xia::pixie::crate::module_handle module(crate, ModNum);
+            xia::pixie::crate::view::module_handle module(crate, ModNum);
             if (!crate.run_check_override) {
                 module->run_check();
             }
@@ -1727,11 +1730,11 @@ PIXIE_EXPORT int PIXIE_API Pixie16StartListModeRun(unsigned short ModNum, unsign
                 crate->check_active_run();
             }
             for (size_t mod_num = 0; mod_num < crate.modules.num_modules; mod_num++) {
-                xia::pixie::crate::module_handle module(crate, mod_num);
+                xia::pixie::crate::view::module_handle module(crate, mod_num);
                 module->start_listmode(run_mode);
             }
         } else {
-            xia::pixie::crate::module_handle module(crate, ModNum);
+            xia::pixie::crate::view::module_handle module(crate, ModNum);
             if (!crate.run_check_override) {
                 module->run_check();
             }
@@ -1759,7 +1762,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16TauFinder(unsigned short ModNum, double* Tau) 
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(crate, ModNum);
+        xia::pixie::crate::view::module_handle module(crate, ModNum);
         if (!crate.run_check_override) {
             module->run_check();
         }
@@ -1794,7 +1797,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglChanPar(const char* ChanParName, doubl
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(crate, ModNum);
+        xia::pixie::crate::view::module_handle module(crate, ModNum);
         if (!crate.run_check_override) {
             module->run_check();
         }
@@ -1828,7 +1831,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglModPar(const char* ModParName, unsigne
         if (ModNum == crate.modules.num_modules) {
             bcast = true;
         } else {
-            xia::pixie::crate::module_handle module(crate, ModNum);
+            xia::pixie::crate::view::module_handle module(crate, ModNum);
             if (!crate.run_check_override) {
                 module->run_check();
             }
@@ -1841,7 +1844,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglModPar(const char* ModParName, unsigne
             xia::pixie::crate::crate::user user(crate);
             for (size_t mod_num = 0; mod_num < crate.modules.num_modules; ++mod_num) {
                 if (ModNum != mod_num) {
-                    xia::pixie::crate::module_handle module(crate, mod_num);
+                    xia::pixie::crate::view::module_handle module(crate, mod_num);
                     if (module->online()) {
                         module->write(ModParName, ModParData);
                     }
@@ -1940,7 +1943,7 @@ PIXIE_EXPORT int PIXIE_API PixieGetWorkerConfiguration(const unsigned short mod_
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(crate, mod_num,
+        xia::pixie::crate::view::module_handle module(crate, mod_num,
                                                 xia::pixie::module::check::open);
         worker_config->bandwidth_mb_per_sec = module->fifo_bandwidth;
         worker_config->buffers = module->fifo_buffers;
@@ -1972,7 +1975,7 @@ PIXIE_EXPORT int PIXIE_API PixieGetFifoConfiguration(const unsigned short mod_nu
                 "FIFO configuration object was null. Please provide a structure to populate.");
         }
         crate->ready();
-        xia::pixie::crate::module_handle module(crate, mod_num,
+        xia::pixie::crate::view::module_handle module(crate, mod_num,
                                                 xia::pixie::module::check::open);
         fifo_config->bandwidth_mb_per_sec = module->fifo_bandwidth;
         fifo_config->buffers = module->fifo_buffers;
@@ -2050,7 +2053,7 @@ PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version, con
         using firmware_set = xia::pixie::firmware::firmware_set;
         using firmware = xia::pixie::firmware::firmware;
         using device_detail = xia::pixie::firmware::device_detail;
-        xia::pixie::crate::module_handle module(crate, ModNum,
+        xia::pixie::crate::view::module_handle module(crate, ModNum,
                                                 xia::pixie::module::check::open);
         if (!crate.run_check_override) {
             module->run_check();
@@ -2091,7 +2094,8 @@ PIXIE_EXPORT int PIXIE_API PixieSetWorkerConfiguration(const unsigned short mod_
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(crate, mod_num, xia::pixie::module::check::open);
+        xia::pixie::crate::view::module_handle module(crate,
+            mod_num, xia::pixie::module::check::open);
         if (!crate.run_check_override) {
             module->run_check();
         }
@@ -2125,7 +2129,7 @@ PIXIE_EXPORT int PIXIE_API PixieSetFifoConfiguration(const unsigned short mod_nu
                 "FIFO configuration object was null. Please provide a structure to read from.");
         }
         crate->ready();
-        xia::pixie::crate::module_handle module(crate, mod_num, xia::pixie::module::check::open);
+        xia::pixie::crate::view::module_handle module(crate, mod_num, xia::pixie::module::check::open);
         if (!crate.run_check_override) {
             module->run_check();
         }
@@ -2154,7 +2158,8 @@ PIXIE_EXPORT int PIXIE_API PixieReadRunFifoStats(unsigned short mod_num,
 
     try {
         crate->ready();
-        xia::pixie::crate::module_handle module(crate, mod_num, xia::pixie::module::check::open);
+        xia::pixie::crate::view::module_handle module(crate,
+            mod_num, xia::pixie::module::check::open);
         xia::pixie::module::module::fifo_stats snapshot;
         snapshot = module->run_stats;
         fifo_stats->in = snapshot.get_in_bytes();

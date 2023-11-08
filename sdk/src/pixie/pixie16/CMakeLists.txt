@@ -3,6 +3,7 @@ set(SDK_PIXIE16_SOURCES
         pixie16/baseline.cpp
         pixie16/channel.cpp
         pixie16/crate.cpp
+        pixie16/crate-view.cpp
         pixie16/csr.cpp
         pixie16/db.cpp
         pixie16/dsp.cpp

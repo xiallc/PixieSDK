@@ -98,6 +98,46 @@ TEST_SUITE("xia::util") {
         }
     }
 
+    TEST_CASE("Getting values in set from options") {
+        std::vector<size_t> test_set = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        std::vector<size_t> ret_set;
+        xia::util::io::get_values_in_set<size_t>(ret_set, "1-10", test_set);
+        CHECK(ret_set == test_set);
+        ret_set.clear();
+        xia::util::io::get_values_in_set<size_t>(ret_set, "1,2,3,4,5,6,7,8,9,10", test_set);
+        CHECK(ret_set == test_set);
+        ret_set.clear();
+        xia::util::io::get_values_in_set<size_t>(ret_set, "all", test_set);
+        CHECK(ret_set == test_set);
+        ret_set.clear();
+        xia::util::io::get_values_in_set<size_t>(ret_set, "1-5,6-10", test_set);
+        CHECK(ret_set == test_set);
+        ret_set.clear();
+        xia::util::io::get_values_in_set<size_t>(ret_set, "1-4,5,6-10", test_set);
+        CHECK(ret_set == test_set);
+        ret_set.clear();
+        test_set = {1, 2, 3, 4, 7, 8, 9, 10};
+        ret_set = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        xia::util::io::get_values_in_set<size_t>(ret_set, "1-4,7-10", test_set);
+        CHECK(ret_set == test_set);
+        ret_set.clear();
+        xia::util::io::get_values_in_set<size_t>(ret_set, "all", test_set);
+        CHECK(ret_set == test_set);
+        ret_set.clear();
+        CHECK_THROWS_WITH_AS(
+            xia::util::io::get_values_in_set<size_t>(ret_set, "1-10", test_set);,
+            "value not in valid set: 5", std::runtime_error);
+        ret_set.clear();
+        xia::util::io::get_values_in_set<size_t>(ret_set, "1-4", test_set);
+        for (size_t i = 1; i <= 4; i++) {
+            CHECK(ret_set[i-1] == i);
+        }
+        ret_set.clear();
+        CHECK_THROWS_WITH_AS(
+            xia::util::io::get_values_in_set<size_t>(ret_set, "2-1", test_set),
+            "invalid range: 2-1", std::runtime_error);
+    }
+
     TEST_CASE("Output value") {
         std::ostringstream o1;
         xia::util::io::output_value(o1, "name", 1, false);

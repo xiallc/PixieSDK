@@ -25,6 +25,7 @@
 #include <pixie/error.hpp>
 #include <pixie/log.hpp>
 
+#include <pixie/pixie16/crate-view.hpp>
 #include <pixie/pixie16/defs.hpp>
 #include <pixie/pixie16/module.hpp>
 #include <pixie/pixie16/sim.hpp>
@@ -118,7 +119,7 @@ TEST_SUITE("Crate: modules") {
         using namespace xia::pixie;
         sim::crate sim_crate;
         sim::load_firmware_sets(sim_crate.firmware, firmware_defs);
-        crate::module_crate crate(sim_crate);
+        crate::view::module crate(sim_crate);
         CHECK(crate.num_modules == 0);
         CHECK(crate.modules.size() == 0);
         CHECK(crate->revision == -1);
@@ -135,7 +136,7 @@ TEST_SUITE("Crate: modules") {
         using namespace xia::pixie;
         sim::crate sim_crate(false);
         sim::load_firmware_sets(sim_crate.firmware, firmware_defs);
-        crate::module_crate crate(sim_crate);
+        crate::view::module crate(sim_crate);
         CHECK_NOTHROW(crate->initialize());
         CHECK(crate.num_modules == test_modules);
         CHECK(crate->num_offline == test_modules);
@@ -172,7 +173,7 @@ TEST_SUITE("Crate: modules") {
         using namespace xia::pixie;
         sim::crate sim_crate;
         sim::load_firmware_sets(sim_crate.firmware, firmware_defs);
-        crate::module_crate crate(sim_crate);
+        crate::view::module crate(sim_crate);
         CHECK_NOTHROW(crate->initialize());
         CHECK_NOTHROW(crate->probe());
         CHECK_NOTHROW(crate->boot());
@@ -279,7 +280,7 @@ TEST_SUITE("Crate: modules") {
         using namespace xia::pixie;
         sim::crate sim_crate;
         sim::load_firmware_sets(sim_crate.firmware, firmware_defs);
-        crate::module_crate crate(sim_crate);
+        crate::view::module crate(sim_crate);
         CHECK_NOTHROW(crate->initialize());
         CHECK_NOTHROW(crate->probe());
         CHECK_THROWS_WITH_AS(crate[0].open(0),
@@ -298,7 +299,7 @@ TEST_SUITE("Crate: modules") {
         using namespace xia::pixie;
         sim::crate sim_crate;
         sim::load_firmware_sets(sim_crate.firmware, firmware_defs);
-        crate::module_crate crate(sim_crate);
+        crate::view::module crate(sim_crate);
         CHECK_NOTHROW(crate->initialize());
         CHECK_NOTHROW(crate->probe());
         CHECK_THROWS_WITH_AS(crate.assign(module::number_slots{{0, 2}, {6, 6}}),
@@ -360,7 +361,7 @@ TEST_SUITE("Crate: modules") {
         using namespace xia::pixie;
         sim::crate sim_crate;
         sim::load_firmware_sets(sim_crate.firmware, firmware_defs);
-        crate::module_crate crate(sim_crate);
+        crate::view::module crate(sim_crate);
         CHECK_NOTHROW(crate->initialize());
         CHECK_NOTHROW(crate->probe());
         CHECK_NOTHROW(crate[0].start_histograms(hw::run::run_mode::new_run));
@@ -377,7 +378,7 @@ TEST_SUITE("Crate: modules") {
         using namespace xia::pixie::param;
         sim::crate sim_crate;
         sim::load_firmware_sets(sim_crate.firmware, firmware_defs);
-        crate::module_crate crate(sim_crate);
+        crate::view::module crate(sim_crate);
         CHECK_NOTHROW(crate->initialize());
         CHECK_NOTHROW(crate->probe());
         SUBCASE("wired-or trigger pullup") {
