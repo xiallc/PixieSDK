@@ -37,8 +37,9 @@ void stats(command::context& context) {
     auto chans_opt = context.cmd.get_arg();
     std::string stat = "all";
     if (!stat_opt.empty()) {
-        if (stat_opt == "all" ||
-            stat_opt == "pe" || stat_opt == "ocr" ||
+        if (stat_opt == "all" || stat_opt == "pe" ||
+            stat_opt == "ocr" || stat_opt == "oc" ||
+            stat_opt == "icr" || stat_opt == "ic" ||
             stat_opt == "rt" || stat_opt == "lt") {
             stat = stat_opt;
         } else {
@@ -66,11 +67,27 @@ void stats(command::context& context) {
                                  << std::endl;
             }
         }
+        if (stat == "all" || stat == "ic") {
+            for (auto channel : channels) {
+                context.opts.out << "module " << mod_num << " chan " << channel
+                                 << ": input-count="
+                                 << stats.chans[channel].input_counts()
+                                 << std::endl;
+            }
+        }
         if (stat == "all" || stat == "ocr") {
             for (auto channel : channels) {
                 context.opts.out << "module " << mod_num << " chan " << channel
                                  << ": output-count-rate="
                                  << stats.chans[channel].output_count_rate()
+                                 << std::endl;
+            }
+        }
+        if (stat == "all" || stat == "oc") {
+            for (auto channel : channels) {
+                context.opts.out << "module " << mod_num << " chan " << channel
+                                 << ": output-count="
+                                 << stats.chans[channel].output_counts()
                                  << std::endl;
             }
         }
@@ -98,13 +115,19 @@ void stats_comp(
         if (flag == "-s") {
             command::completion_entries entries;
             entries.push_back({command::completion_entry::node::argument, "pe",
-                stats_cmd.name, "processed-events", "pe"});
+                stats_cmd.name, "", "pe"});
             entries.push_back({command::completion_entry::node::argument, "ocr",
-                stats_cmd.name, "output-count-rate", "ocr"});
+                stats_cmd.name, "", "ocr"});
+            entries.push_back({command::completion_entry::node::argument, "oc",
+                stats_cmd.name, "", "oc"});
+            entries.push_back({command::completion_entry::node::argument, "icr",
+                stats_cmd.name, "", "icr"});
+            entries.push_back({command::completion_entry::node::argument, "ic",
+                stats_cmd.name, "", "icr"});
             entries.push_back({command::completion_entry::node::argument, "rt",
-                stats_cmd.name, "real-time", "rt"});
+                stats_cmd.name, "", "rt"});
             entries.push_back({command::completion_entry::node::argument, "lt",
-                stats_cmd.name, "live-time", "lt"});
+                stats_cmd.name, "", "lt"});
 
             if (!completions.incomplete) {
                 for (auto entry : entries) {

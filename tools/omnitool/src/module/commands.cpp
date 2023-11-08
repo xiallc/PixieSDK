@@ -340,7 +340,7 @@ static const command::definition stats_cmd = {
     {"init", "probe"},
     1, 2, 0,
     {omnitool_command_opt_arg_decl("s")},
-    "[-s stat (pe/ocr/rt/lt)] module(s) [channel(s)]",
+    "[-s stat (pe/ocr/oc/icr/ic/rt/lt)] module(s) [channel(s)]",
     "module channel stats"
 };
 
