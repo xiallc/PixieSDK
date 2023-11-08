@@ -1180,7 +1180,7 @@ bool is_directory(std::string& direc) {
 }
 
 bool execute_boot(configuration& cfg, args::ValueFlag<std::string>& boot_flag,
-                  args::ValueFlag<std::string>& add_cfg, args::ValueFlag<std::string>& basepath) {
+                  args::ValueFlag<std::string>& add_cfg) {
     unsigned int boot_pattern = stoul(args::get(boot_flag), nullptr, 0);
 
     if (add_cfg) {
