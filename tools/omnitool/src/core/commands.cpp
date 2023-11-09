@@ -1022,6 +1022,7 @@ void shell(context& context_) {
     shell_session ssession(context_);
     ::crossline_user_completion_register(
         shell_completion, static_cast<void*>(&ssession));
+    crossline_history_load(".omni_history");
     std::cout << "Pixie16 Shell (enter 'builtins' for shell help, tab to complete)"
               << std::endl;
     while (ssession.running) {
@@ -1033,6 +1034,7 @@ void shell(context& context_) {
         }
         ssession.execute();
     };
+    crossline_history_save(".omni_history");
     ::crossline_user_completion_register(nullptr, nullptr);
 }
 
