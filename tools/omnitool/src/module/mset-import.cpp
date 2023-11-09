@@ -48,7 +48,7 @@ void mset_import(command::context& context) {
                             action_opt));
         }
     }
-    command::modules_option(mod_nums, mod_nums_opt, crate.num_modules);
+    command::modules_option(mod_nums, mod_nums_opt, crate.get_modules());
     for (auto mod_num : mod_nums) {
         crate[mod_num].run_check();
     }

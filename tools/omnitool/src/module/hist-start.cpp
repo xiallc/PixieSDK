@@ -34,7 +34,7 @@ void hist_start(command::context& context) {
     auto& crate = context.crate;
     auto mod_nums_opt = context.cmd.get_arg();
     command::module_range mod_nums;
-    command::modules_option(mod_nums, mod_nums_opt, crate.num_modules);
+    command::modules_option(mod_nums, mod_nums_opt, crate.get_modules());
     for (auto mod_num : mod_nums) {
         crate[mod_num].run_check();
     }

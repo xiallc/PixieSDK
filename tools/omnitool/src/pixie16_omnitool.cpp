@@ -126,7 +126,7 @@ static void initialize(xia::omnitool::command::context& context) {
     crate->initialize(opts.reg_trace);
     if (opts.verbose) {
         tp.end();
-        opts.out << "modules: detected=" << crate.num_modules
+        opts.out << "modules: detected=" << crate.get_num_modules()
                  << " time=" << tp << std::endl;
     }
     if (!opts.slots.empty()) {
@@ -250,6 +250,9 @@ int main(int argc, char* argv[]) {
     args_flag no_execute(
         option_group, "no_execute", "Parse the command but do not execute.",
         {'n', "no-execute"});
+    args_flag logical_map_flag(
+        option_group, "logical_map_flag", "Use a logical mapping instead of slot mapping.",
+        {'m', "logical-map"}, false);
 
     args_group command_group(parser, "Commands");
     args_positional_list args_cmds(
@@ -336,7 +339,8 @@ int main(int argc, char* argv[]) {
         /*
          * The logical module crate
          */
-        xia::pixie::crate::view::module crate(*crate_selection);
+        xia::pixie::crate::view::module mod_crate(*crate_selection);
+        xia::omnitool::command::omnitool_crate crate(mod_crate, logical_map_flag);
 
         if (fw_file_flag) {
             for (const auto& fw : args::get(fw_file_flag)) {
@@ -353,7 +357,7 @@ int main(int argc, char* argv[]) {
         if (slot_map_flag) {
             for (const auto& slot : args::get(slot_map_flag)) {
                 xia::omnitool::command::slot_range ss =
-                    xia::util::io::get_values<int>(slot, xia::pixie::hw::max_slots);
+                    xia::util::io::get_values<size_t>(slot, xia::pixie::hw::max_slots);
                 session_opts.slots.insert(
                     std::end(session_opts.slots), std::begin(ss), std::end(ss));
             }
@@ -362,7 +366,7 @@ int main(int argc, char* argv[]) {
         if (slot_exclude_map_flag) {
             for (const auto& slot : args::get(slot_exclude_map_flag)) {
                 xia::omnitool::command::slot_range ss =
-                    xia::util::io::get_values<int>(slot, xia::pixie::hw::max_slots);
+                    xia::util::io::get_values<size_t>(slot, xia::pixie::hw::max_slots);
                 session_opts.excluded_slots.insert(
                     std::end(session_opts.excluded_slots), std::begin(ss), std::end(ss));
             }

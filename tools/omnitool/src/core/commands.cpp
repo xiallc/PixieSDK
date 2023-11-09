@@ -266,7 +266,7 @@ void batch::parse(arguments& args, const paths& path) {
 }
 
 void batch::execute(
-    xia::pixie::crate::view::module& crate, session_options& opts) {
+    omnitool_crate& crate, session_options& opts) {
     ++opts.command_depth;
     for (auto& cmd : cmds) {
         omnitool::command::context context(crate, opts, cmd);
@@ -393,12 +393,11 @@ void channels_option(
 }
 
 void modules_option(
-    module_range& modules, const argument& opt, size_t num_modules) {
+    module_range& modules, const argument& opt, module_range valid_modules) {
     if (opt.empty()) {
-        modules.resize(num_modules);
-        std::iota(modules.begin(), modules.end(), 0);
+        modules = valid_modules;
     } else {
-        modules = util::io::get_values<size_t>(opt, num_modules);
+        util::io::get_values_in_set<size_t>(modules, opt, valid_modules);
     }
 }
 

@@ -49,7 +49,7 @@ static void module_modules_completions(
     module_range mod_nums;
 
     try {
-        modules_option(mod_nums, "all", crate.num_modules);
+        modules_option(mod_nums, "all", crate.get_modules());
     } catch (...) {
         return;
     }
@@ -113,7 +113,7 @@ void channels_completions(
 
     try {
         if (completions.argc() > module_arg_idx) {
-            modules_option(mod_nums, completions.argv(module_arg_idx), crate.num_modules);
+            modules_option(mod_nums, completions.argv(module_arg_idx), crate.get_modules());
         } else {
             return;
         }
@@ -182,7 +182,7 @@ bool valid_channels_check(
 
     try {
         if (completions.argc() > module_arg_idx) {
-            modules_option(mod_nums, completions.argv(module_arg_idx), crate.num_modules);
+            modules_option(mod_nums, completions.argv(module_arg_idx), crate.get_modules());
             channels_option(shared_channels, completions.argv(channel_arg_idx),
                 crate[mod_nums[0]].num_channels);
         } else {

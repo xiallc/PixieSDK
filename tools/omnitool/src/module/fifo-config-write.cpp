@@ -34,7 +34,7 @@ void fifo_config_write(command::context& context) {
     auto param_opt = context.cmd.get_arg();
     auto value_opt = context.cmd.get_arg();
     command::module_range mod_nums;
-    command::modules_option(mod_nums, mod_nums_opt, crate.num_modules);
+    command::modules_option(mod_nums, mod_nums_opt, crate.get_modules());
     auto value = util::io::get_value<pixie::param::value_type>(value_opt);
     for (auto mod_num : mod_nums) {
         crate[mod_num].run_check();

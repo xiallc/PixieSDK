@@ -47,10 +47,10 @@ void copy(command::context& context) {
         dest_chan_opt = context.cmd.get_arg();
     }
     command::module_range src_mod_nums;
-    command::modules_option(src_mod_nums, src_mod_opt, crate.num_modules);
+    command::modules_option(src_mod_nums, src_mod_opt, crate.get_modules());
     command::module_range dest_mod_nums;
     command::modules_option(
-        dest_mod_nums, dest_mod_opt, crate.num_modules);
+        dest_mod_nums, dest_mod_opt, crate.get_modules());
     if (src_mod_nums.size() > 1 || dest_mod_nums.size() > 1) {
         throw std::runtime_error("can only copy from one module to one module");
     }

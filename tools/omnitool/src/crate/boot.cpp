@@ -47,8 +47,8 @@ void boot(command::context& context) {
         if (first) {
             first = false;
             using range_type = pixie::crate::crate::boot_params::range_type;
-            boot_params.slots =
-                util::io::get_values<range_type>(opt, crate.num_modules);
+            util::io::get_values_in_set<range_type>(boot_params.slots, opt,
+                crate.get_modules());
             for (auto mod : boot_params.slots) {
                 crate[mod].run_check();
             }

@@ -33,14 +33,16 @@ void list_start(command::context& context) {
     auto& crate = context.crate;
     auto mod_nums_opt = context.cmd.get_arg();
     command::module_range mod_nums;
-    command::modules_option(mod_nums, mod_nums_opt, crate.num_modules);
+    command::modules_option(mod_nums, mod_nums_opt, crate.get_modules());
     for (auto mod_num : mod_nums) {
         crate[mod_num].run_check();
     }
     for (auto mod_num : mod_nums) {
         const auto mode = pixie::hw::run::run_mode::new_run;
         if (crate[mod_num].read("SYNCH_WAIT") == 1) {
-            for (size_t m = 0; m < crate.num_modules; ++m) {
+            command::module_range ms;
+            command::modules_option(ms, "all", crate.get_modules());
+            for (auto m : ms) {
                 crate[m].start_listmode(mode);
             }
             break;

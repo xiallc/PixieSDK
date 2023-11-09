@@ -35,7 +35,7 @@ void run_active(command::context& context) {
     auto mod_nums_opt = context.cmd.get_arg();
     command::module_range mod_nums;
     command::modules_option(
-        mod_nums, mod_nums_opt, crate.num_modules);
+        mod_nums, mod_nums_opt, crate.get_modules());
     for (auto mod_num : mod_nums) {
         context.opts.out << "module=" << mod_num << " run-active=" << std::boolalpha
                          << crate[mod_num].run_active() << std::endl;

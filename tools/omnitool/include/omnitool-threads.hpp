@@ -215,7 +215,7 @@ void set_num_slot(pixie::module::module& module, W& worker) {
  */
 template<typename W>
 void set_num_slot(
-    xia::pixie::crate::view::module& crate, std::vector<size_t>& mod_nums,
+    command::omnitool_crate& crate, std::vector<size_t>& mod_nums,
     std::vector<W>& workers) {
     for (size_t m = 0; m < mod_nums.size(); ++m) {
         auto& module = crate[mod_nums[m]];

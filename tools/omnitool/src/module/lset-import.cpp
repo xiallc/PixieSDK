@@ -37,7 +37,7 @@ void lset_import(command::context& context) {
     auto settings_opt = context.cmd.get_arg();
     auto action_opt = context.cmd.get_arg();
     command::module_range mod_nums;
-    command::modules_option(mod_nums, mod_nums_opt, crate.num_modules);
+    command::modules_option(mod_nums, mod_nums_opt, crate.get_modules());
     std::string action;
     xia::logging::log_level_guard log_guard(xia::log::debug);
     for (auto mod_num : mod_nums) {

@@ -34,7 +34,7 @@ void fifo_config_read(command::context& context) {
     auto param_opt = context.cmd.get_arg();
     std::string par = "all";
     command::module_range mod_nums;
-    command::modules_option(mod_nums, mod_nums_opt, crate.num_modules);
+    command::modules_option(mod_nums, mod_nums_opt, crate.get_modules());
     for (auto mod_num : mod_nums) {
         auto& mod = crate[mod_num];
         if (!param_opt.empty()) {

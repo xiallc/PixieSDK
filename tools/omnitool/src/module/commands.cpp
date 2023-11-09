@@ -308,9 +308,9 @@ static const command::definition reg_read_cmd = {
     omnitool_command_handers(reg_read),
     {"init"},
     2, 2, 0,
-    {omnitool_command_opt_decl("s"), omnitool_command_opt_decl("x")},
-    "[-s] [-x] module/slot address/name/memory:name",
-    "Read from a register in a module or slot (-s) memory address"
+    {omnitool_command_opt_decl("x")},
+    "[-x] module address/name/memory:name",
+    "Read from a register in a module memory address"
 };
 
 omnitool_command_handler_decl(reg_write);
@@ -319,9 +319,9 @@ static const command::definition reg_write_cmd = {
     omnitool_command_handers(reg_write),
     {"init"},
     3, 3, 0,
-    {omnitool_command_opt_decl("s")},
-    "[-s] module/slot address/name/memory:name [value]",
-    "Write to a register in a module or slot (-s) memory address"
+    {},
+    "module address/name/memory:name [value]",
+    "Write to a register in a module memory address"
 };
 
 omnitool_command_handler_decl(run_active);

@@ -35,7 +35,7 @@ void run_end(command::context& context) {
     auto mod_nums_opt = context.cmd.get_arg();
     command::module_range mod_nums;
     command::modules_option(
-        mod_nums, mod_nums_opt, crate.num_modules);
+        mod_nums, mod_nums_opt, crate.get_modules());
     for (auto mod_num : mod_nums) {
         crate[mod_num].run_end();
     }

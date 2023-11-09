@@ -40,9 +40,14 @@ namespace xia {
 namespace omnitool {
 namespace command {
 /*
+ * Define omnitool_crate
+ */
+using omnitool_crate = pixie::crate::view::slot_module;
+
+/*
  * Pixie command option types
  */
-using slot_range = std::vector<int>;
+using slot_range = std::vector<size_t>;
 using module_range = std::vector<size_t>;
 using channel_range = pixie::channel::range;
 
@@ -131,12 +136,12 @@ struct session_options {
  * @brief Command context
  */
 struct context {
-    pixie::crate::view::module& crate;
+    omnitool_crate& crate;
     session_options& opts;
     command& cmd;
 
     context(
-        pixie::crate::view::module& crate_,
+        omnitool_crate& crate_,
         session_options& opts_, command& cmd_) :
         crate(crate_), opts(opts_), cmd(cmd_) {}
 };
@@ -241,7 +246,7 @@ struct batch {
     /**
      * @brief Execute the batch of commands
      */
-    void execute(pixie::crate::view::module& crate, session_options& opts);
+    void execute(omnitool_crate& crate, session_options& opts);
 
     /**
      * @brief Report the parsed commands
@@ -363,7 +368,7 @@ void channels_option(
  * there is no option.
  */
 void modules_option(
-    module_range& modules, const argument& opt, size_t num_modules);
+    module_range& modules, const argument& opt, module_range num_modules);
 
 /**
  * Load the commands from a file.

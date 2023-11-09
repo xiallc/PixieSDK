@@ -30,7 +30,7 @@ void fifo_status(command::context& context) {
     auto& crate = context.crate;
     auto mod_nums_opt = context.cmd.get_arg();
     command::module_range mod_nums;
-    command::modules_option(mod_nums, mod_nums_opt, crate.num_modules);
+    command::modules_option(mod_nums, mod_nums_opt, crate.get_modules());
     for (auto mod_num : mod_nums) {
         auto& mod = crate[mod_num];
         context.opts.out << "slot " << mod.slot << ": " << mod.run_stats.output() << std::endl;

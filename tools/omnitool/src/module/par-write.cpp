@@ -44,7 +44,7 @@ void par_write(command::context& context) {
         chans_opt.clear();
     }
     command::module_range mod_nums;
-    command::modules_option(mod_nums, mod_nums_opt, crate.num_modules);
+    command::modules_option(mod_nums, mod_nums_opt, crate.get_modules());
     const auto value = util::io::get_value<double>(value_opt);
     for (auto mod_num : mod_nums) {
         crate[mod_num].run_check();
@@ -54,7 +54,9 @@ void par_write(command::context& context) {
             bool bcast = crate[mod_num].write(param_opt, pixie::param::value_type(value));
             if (bcast) {
                 pixie::crate::crate::user user(crate);
-                for (size_t m = 0; m < crate.num_modules; ++m) {
+                command::module_range ms;
+                command::modules_option(ms, mod_nums_opt, crate.get_modules());
+                for (auto m : ms) {
                     if (mod_num != m) {
                         auto& module = crate[m];
                         if (module.online()) {

@@ -45,7 +45,7 @@ void stats_rpt(command::context& context) {
     }
     command::module_range mod_nums;
     command::modules_option(
-        mod_nums, mod_nums_opt, crate.num_modules);
+        mod_nums, mod_nums_opt, crate.get_modules());
     std::stringstream rpt;
     for (auto mod_num : mod_nums) {
         pixie::stats::stats stats(crate[mod_num]);

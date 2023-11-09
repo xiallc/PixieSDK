@@ -42,7 +42,7 @@ void hist_save(command::context& context) {
     auto mod_nums_opt = context.cmd.get_arg();
     auto chans_opt = context.cmd.get_arg();
     command::module_range mod_nums;
-    command::modules_option(mod_nums, mod_nums_opt, crate.num_modules);
+    command::modules_option(mod_nums, mod_nums_opt, crate.get_modules());
     for (auto mod_num : mod_nums) {
         pixie::channel::range channels;
         command::channels_option(

@@ -168,7 +168,6 @@ static pixie::hw::address get_address(
 void reg_read(command::context& context) {
     const std::string label = "reg-read";
     auto& crate = context.crate;
-    auto slot_opt = context.cmd.get_option("-s");
     auto hex_opt = context.cmd.get_option("-x");
     auto mod_slot_opt = context.cmd.get_arg();
     auto reg_opt = context.cmd.get_arg();
@@ -177,10 +176,6 @@ void reg_read(command::context& context) {
     std::string reg;
     get_memory_reg(reg_opt, mem, reg, label);
     pixie::hw::address address = get_address(mem, reg, label);
-    if (slot_opt == "true") {
-        auto mod = crate.find(mod_slot);
-        mod_slot = mod->number;
-    }
     auto& mod = crate[mod_slot];
     pixie::hw::word value;
     if (mem == "sys") {
@@ -236,7 +231,6 @@ void reg_read_comp(
 
 void reg_write(command::context& context) {
     const std::string label = "reg-write";
-    auto slot_opt = context.cmd.get_option("-s");
     auto& crate = context.crate;
     auto mod_slot_opt = context.cmd.get_arg();
     auto reg_opt = context.cmd.get_arg();
@@ -246,10 +240,6 @@ void reg_write(command::context& context) {
     std::string reg;
     get_memory_reg(reg_opt, mem, reg, label);
     pixie::hw::address address = get_address(mem, reg, label);
-    if (slot_opt == "true") {
-        auto mod = crate.find(mod_slot);
-        mod_slot = mod->number;
-    }
     auto& mod = crate[mod_slot];
     mod.run_check();
     pixie::hw::word value =

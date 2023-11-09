@@ -37,9 +37,11 @@
 namespace xia {
 namespace omnitool {
 namespace module {
-static void module_check(pixie::crate::view::module& crate, std::vector<size_t> mod_nums) {
+static void module_check(command::omnitool_crate& crate, std::vector<size_t> mod_nums) {
     for (auto mod_num : mod_nums) {
-        if (mod_num > crate.num_modules) {
+        command::module_range ms;
+        command::modules_option(ms, "all", crate.get_modules());
+        if (std::find(begin(ms), end(ms), mod_num) == end(ms)) {
             throw std::runtime_error(
                 std::string("invalid module number: " + std::to_string(mod_num)));
         }
@@ -122,7 +124,7 @@ static void list_mode_command(command::context& context, bool run_task) {
     auto secs_opt = context.cmd.get_arg();
     auto name_opt = context.cmd.get_arg();
     command::module_range mod_nums;
-    command::modules_option(mod_nums, mod_nums_opt, crate.num_modules);
+    command::modules_option(mod_nums, mod_nums_opt, crate.get_modules());
     auto secs = util::io::get_value<size_t>(secs_opt);
     auto name = name_opt;
     module_check(crate, mod_nums);
