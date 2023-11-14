@@ -131,7 +131,7 @@ void test_comp(
         }
     };
 
-    auto not_completed = command::completions::flag_completion(flags_func,
+    auto not_completed = !command::completions::flag_completion(flags_func,
         test_cmd.name, completions);
     if (not_completed) {
         auto off = command::completions::get_pos_arg_offset(
