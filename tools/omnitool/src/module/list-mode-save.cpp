@@ -146,20 +146,10 @@ void list_mode(command::context& context) {
 
 void list_mode_comp(
     command::context& context, command::completion& completions) {
-    command::completion_entries entries;
     auto list_mode_cmd = context.cmd.def;
 
     command::completions::modules_completions(
         context, list_mode_cmd.name, 1, completions);
-
-    entries.push_back({command::completion_entry::node::argument, list_mode_cmd.name,
-        list_mode_cmd.group, list_mode_cmd.help_cmd,
-        list_mode_cmd.name});
-    entries.push_back({command::completion_entry::node::argument, "secs",
-        list_mode_cmd.name, "seconds", "secs"});
-
-    command::completions::help_argument_completion(entries, 2,
-        completions);
 }
 
 void list_save(command::context& context) {
@@ -168,20 +158,10 @@ void list_save(command::context& context) {
 
 void list_save_comp(
     command::context& context, command::completion& completions) {
-    command::completion_entries entries;
     auto list_save_cmd = context.cmd.def;
 
     command::completions::modules_completions(
         context, list_save_cmd.name, 1, completions);
-
-    entries.push_back({command::completion_entry::node::argument, list_save_cmd.name,
-        list_save_cmd.group, list_save_cmd.help_cmd,
-        list_save_cmd.name});
-    entries.push_back({command::completion_entry::node::argument, "secs",
-        list_save_cmd.name, "seconds", "secs"});
-
-    command::completions::help_argument_completion(entries, 2,
-        completions);
 }
 } // namespace module
 } // namespace omnitool

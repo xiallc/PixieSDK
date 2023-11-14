@@ -76,7 +76,6 @@ void par_write(command::context& context) {
 void par_write_comp(
     command::context& context, command::completion& completions) {
     auto par_write_cmd = context.cmd.def;
-    command::completion_entries entries;
 
     command::completions::modules_completions(
         context, par_write_cmd.name, 1, completions);
@@ -93,11 +92,6 @@ void par_write_comp(
     command::completions::multiargument_completion(module_entries, 2, 2,
         completions);
 
-    entries.push_back({command::completion_entry::node::argument, par_write_cmd.name,
-        par_write_cmd.group, par_write_cmd.help_cmd, par_write_cmd.name});
-    entries.push_back({command::completion_entry::node::argument, "value",
-        par_write_cmd.name, "The value to be written", "value"});
-
     if (command::completions::valid_channels_check(context, 1, 2, completions)) {
         command::completion_entries channel_entries;
         for (auto& par : pixie::param::get_channel_param_map()) {
@@ -107,12 +101,6 @@ void par_write_comp(
 
         command::completions::multiargument_completion(channel_entries,
             3, 3, completions);
-
-        command::completions::help_argument_completion(entries, 4,
-            completions);
-    } else {
-        command::completions::help_argument_completion(entries, 3,
-            completions);
     }
 }
 } // namespace module

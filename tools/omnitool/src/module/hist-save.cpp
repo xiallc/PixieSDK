@@ -84,19 +84,8 @@ void hist_save_comp(
     command::context& context, command::completion& completions) {
     const std::string cmd = context.cmd.def.name;
 
-    command::completions::flag_handler flags_func =
-        [&context, &completions, &cmd](auto flag) {
-        if (flag == "-b") {
-            completions.add({command::completion_entry::node::argument,
-                            context.cmd.def.name, context.cmd.def.group,
-                            context.cmd.def.help_cmd, context.cmd.def.name});
-            completions.add(
-                {command::completion_entry::node::argument, "-b", cmd, "bins", "-b"});
-        }
-    };
-
-    auto not_completed = command::completions::flag_completion(
-        flags_func, cmd, completions);
+    auto not_completed = !command::completions::flag_completion(
+        NULL, cmd, completions);
     if (not_completed) {
         auto off = command::completions::get_pos_arg_offset(cmd, completions);
         if (off != 0) {

@@ -564,7 +564,7 @@ void help(xia::omnitool::command::context& context) {
 void help_comp(context&, completion& completions) {
     if (completions.argc() == 1 && !completions.incomplete) {
         completions.add(
-            {completion_entry::node::argument, "-l", "util/help/arguments", "List all", "-l"});
+            {completion_entry::node::argument, "-l", "util/help/arguments", "", "-l"});
         for (auto& cmd : command_set) {
             completions.add({completion_entry::node::argument, cmd.name, cmd.group, "", cmd.name});
         }
@@ -1075,22 +1075,13 @@ void wait(xia::omnitool::command::context& context) {
 }
 
 void wait_comp(context&, completion& completions) {
-    if (completions.argc() == 1 && !completions.incomplete) {
-        completions.add({completion_entry::node::argument, "milliseconds", "util/wait/arguments",
-                         "wait a number of msecs", "milliseconds"});
-        completions.add({completion_entry::node::argument, "seconds", "util/wait/arguments",
-                         "add 's' for seconds", "seconds"});
-        completions.add({completion_entry::node::argument, "minutes", "util/wait/arguments",
-                         "add 'm' for minutes", "minutes"});
-    }
-
     if (completions.argc() == 2 && completions.incomplete &&
         (completions.argv(1).back() != 's' && completions.argv(1).back() != 'm')) {
 
         completions.add({completion_entry::node::argument, "s", "util/wait/arguments",
-                         "add 's' for seconds", "s"});
+                         "", "s"});
         completions.add({completion_entry::node::argument, "m", "util/wait/arguments",
-                         "add 'm' for minutes", "m"});
+                         "", "m"});
     }
 }
 

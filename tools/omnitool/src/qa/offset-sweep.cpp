@@ -514,24 +514,7 @@ void offset_sweep_comp(
     command::context& context, command::completion& completions) {
     auto offset_sweep_cmd = context.cmd.def;
 
-    command::completions::flag_handler flags_func =
-        [&context, &completions, &offset_sweep_cmd](auto flag) {
-        completions.add({command::completion_entry::node::argument,
-            offset_sweep_cmd.name, offset_sweep_cmd.group,
-            offset_sweep_cmd.help_cmd, offset_sweep_cmd.name});
-        if (flag == "-s") {
-            completions.add({command::completion_entry::node::argument,
-                "-s", offset_sweep_cmd.name, "msec", "-s"});
-        } else if (flag == "-o") {
-            completions.add({command::completion_entry::node::argument,
-                "-o", offset_sweep_cmd.name, "start,[stop,[step]]", "-o"});
-        } else if (flag == "-t") {
-            completions.add({command::completion_entry::node::argument,
-                "-t", offset_sweep_cmd.name, "threshold-multiplier", "-t"});
-        }
-    };
-
-    auto not_completed = !command::completions::flag_completion(flags_func,
+    auto not_completed = !command::completions::flag_completion(NULL,
         offset_sweep_cmd.name, completions);
     if (not_completed) {
         auto off = command::completions::get_pos_arg_offset(

@@ -283,7 +283,9 @@ bool flag_completion(
         auto flag_arg_it =
             std::find_if(begin(cmd_obj.def.opts), end(cmd_obj.def.opts), flag_has_arg);
         if (flag_arg_it != end(cmd_obj.def.opts)) {
-            handle_flags(std::get<0>(*flag_arg_it));
+            if (handle_flags) {
+                handle_flags(std::get<0>(*flag_arg_it));
+            }
             return true;
         }
     }
