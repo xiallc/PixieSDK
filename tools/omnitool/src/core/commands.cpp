@@ -561,10 +561,10 @@ void help(xia::omnitool::command::context& context) {
     }
 }
 
-void help_comp(context&, completion& completions) {
+void help_comp(context& context, completion& completions) {
     if (completions.argc() == 1 && !completions.incomplete) {
         completions.add(
-            {completion_entry::node::argument, "-l", "util/help/arguments", "", "-l"});
+            {completion_entry::node::argument, "-l", context.cmd.def.name, "", "-l"});
         for (auto& cmd : command_set) {
             completions.add({completion_entry::node::argument, cmd.name, cmd.group, "", cmd.name});
         }
@@ -1074,13 +1074,13 @@ void wait(xia::omnitool::command::context& context) {
     xia::pixie::hw::wait(msecs * 1000);
 }
 
-void wait_comp(context&, completion& completions) {
+void wait_comp(context& context, completion& completions) {
     if (completions.argc() == 2 && completions.incomplete &&
         (completions.argv(1).back() != 's' && completions.argv(1).back() != 'm')) {
 
-        completions.add({completion_entry::node::argument, "s", "util/wait/arguments",
+        completions.add({completion_entry::node::argument, "s", context.cmd.def.name,
                          "", "s"});
-        completions.add({completion_entry::node::argument, "m", "util/wait/arguments",
+        completions.add({completion_entry::node::argument, "m", context.cmd.def.name,
                          "", "m"});
     }
 }
