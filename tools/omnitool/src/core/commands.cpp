@@ -492,7 +492,7 @@ omnitool_command_handler_decl(shell);
 static const definition shell_cmd = {
     "Utilities", "/util/shell",
     omnitool_command_handers(shell),
-    {},
+    {"init"},
     0, 0, 0,
     {},
     "",
