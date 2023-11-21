@@ -307,6 +307,11 @@ struct firmware {
      *        loaded the crc value passed in remains unchanged.
      */
     void update_crc(util::crc::crc32& crc);
+    /**
+     * @brief Load firmware and check calculated CRC matches provided CRC.
+     *        Unload firmware if CRCs do not match.
+     */
+    bool validate_firmware();
 
     /**
      * @brief We only compare the device details.

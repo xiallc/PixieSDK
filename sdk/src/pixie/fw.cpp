@@ -309,12 +309,11 @@ void firmware::load() {
 
         util::crc::crc32 crc_;
         crc_.update(data);
-        crc = crc_.value;
 
         xia_log(log::debug) << "firmware: load: tag=" << tag
                             << " release=" << release.to_string()
                             << std::hex << std::showbase << std::internal
-                            << " crc=" << crc
+                            << " crc=" << crc_.value
                             << " time=" << load_time
                             << " total=" << total_image_size.load();
     }
@@ -342,6 +341,18 @@ void firmware::update_crc(util::crc::crc32& crc_) {
     lock_guard guard(lock);
     if (!data.empty()) {
         crc_.update(data);
+    }
+}
+
+bool firmware::validate_firmware() {
+    util::crc::crc32 cal_crc;
+    load();
+    update_crc(cal_crc);
+    if (cal_crc.value == crc) {
+        return true;
+    } else {
+        unload();
+        return false;
     }
 }
 

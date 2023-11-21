@@ -243,7 +243,7 @@ struct pci_bus_handle {
      */
     void firmware_release(
         firmware::release_type& release, firmware::firmware_set::set_type& type) const;
-    uint32_t fimware_crc() const;
+    uint32_t firmware_crc() const;
 
     /*
      * Set the mail box values
@@ -376,7 +376,7 @@ void pci_bus_handle::firmware_release(
         static_cast<firmware::firmware_set::set_type>((flags >> (release_base + 2)) & 3);
 }
 
-uint32_t pci_bus_handle::fimware_crc() const {
+uint32_t pci_bus_handle::firmware_crc() const {
     return get(mailbox::fw_3);
 }
 
@@ -1226,7 +1226,47 @@ void module::probe(const firmware::firmware_set& firmware) {
         init_channels();
     }
 
-    online_ = comms_fpga && fippi_fpga && dsp_online;
+    auto crc_match = true;
+    if (firmware.type() == firmware::firmware_set::set_type::release) {
+        util::crc::crc32 crc;
+        if (comms_fpga) {
+            firmware::firmware_ref fw = firmware.get("sys");
+            fw->load();
+            fw->update_crc(crc);
+            crc_match = fw->validate_firmware() && crc_match;
+        }
+        if (fippi_fpga) {
+            firmware::firmware_ref fw = firmware.get("fippi");
+            fw->load();
+            fw->update_crc(crc);
+            crc_match = fw->validate_firmware() && crc_match;
+        }
+        if (dsp_online) {
+            firmware::firmware_ref fw = firmware.get("dsp");
+            fw->load();
+            fw->update_crc(crc);
+            crc_match = fw->validate_firmware() && crc_match;
+        }
+
+        if (device->firmware_crc() != crc.value) {
+            xia_log(log::warning) << std::boolalpha << module_label(*this) << "Firmware: "
+                                  << "Firmware CRCs do not match. Mailbox-CRC=0x"
+                                  << std::hex << device->firmware_crc();
+        } else if (!crc_match) {
+            xia_log(log::warning) << std::boolalpha << module_label(*this) << "Firmware: "
+                                  << "Provided firmware CRC and calculated CRC do not "
+                                  << "match. Mailbox-CRC=0x"
+                                  << std::hex << device->firmware_crc();
+        } else {
+            xia_log(log::info) << std::boolalpha << module_label(*this) << "Firmware: "
+                                  << "Firmware CRCs match. Mailbox-CRC=0x"
+                                  << std::hex << device->firmware_crc();
+        }
+
+        crc_match = (device->firmware_crc() == crc.value) && crc_match;
+    }
+
+    online_ = comms_fpga && fippi_fpga && dsp_online && crc_match;
 
     if (online_) {
         mib_enable();
@@ -1290,6 +1330,27 @@ void module::boot(
     if (!firmware_resident(firmware.release) && (!boot_comms || !boot_fippi || !boot_dsp)) {
         throw error(number, slot, error::code::module_initialize_failure,
                     "partial boot: firmware does not match resident firmware");
+    }
+
+
+    if (firmware.type() == firmware::firmware_set::set_type::release) {
+        auto valid_crcs = true;
+        if (boot_comms && valid_crcs) {
+            firmware::firmware_ref fw = firmware.get("sys");
+            valid_crcs = fw->validate_firmware() && valid_crcs;
+        }
+        if (boot_fippi && valid_crcs) {
+            firmware::firmware_ref fw = firmware.get("fippi");
+            valid_crcs = fw->validate_firmware() && valid_crcs;
+        }
+        if (boot_dsp && valid_crcs) {
+            firmware::firmware_ref fw = firmware.get("dsp");
+            valid_crcs = fw->validate_firmware() && valid_crcs;
+        }
+        if (!valid_crcs) {
+            throw error(number, slot, error::code::module_invalid_firmware,
+                        "Firmware CRCs do not match");
+        }
     }
 
     stop_fifo_services();
