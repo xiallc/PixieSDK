@@ -1212,6 +1212,7 @@ int main(int argc, char** argv) {
     dacs.Add(conf_flag);
     dacs.Add(boot_pattern_flag);
     dacs.Add(module);
+    init.Add(conf_flag);
     list_mode.Add(directory);
     list_mode.Add(num_runs);
     mca.Add(directory);
