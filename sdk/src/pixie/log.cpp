@@ -274,6 +274,10 @@ bool level_logging(log::level level) {
     return false;
 }
 
+log::level get_logging_level(void) {
+    return log_level.load();
+}
+
 void memdump(log::level level, const std::string label, const void* addr, size_t length,
              size_t size, size_t line_length, size_t offset) {
     if (level_logging(level) && length > 0) {

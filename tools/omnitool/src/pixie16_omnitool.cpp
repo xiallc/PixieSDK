@@ -97,6 +97,7 @@ static void initialize(xia::omnitool::command::context& context) {
     auto& crate = context.crate;
     auto& opts = context.opts;
     xia::util::time::timepoint tp;
+    xia::logging::log_level_guard log_guard(xia::log::debug);
     if (opts.verbose) {
         opts.out << "crate: initialize" << std::endl;
         tp.start();
@@ -119,6 +120,7 @@ static void initialize(xia::omnitool::command::context& context) {
 static void probe(xia::omnitool::command::context& context) {
     auto& crate = context.crate;
     auto& opts = context.opts;
+    xia::logging::log_level_guard log_guard(xia::log::debug);
     crate->set_firmware();
     crate->probe();
     if (opts.verbose) {
@@ -260,7 +262,7 @@ int main(int argc, char* argv[]) {
             log = "pixie16-omnitool.log";
         }
 
-        auto log_level = xia::log::debug;
+        auto log_level = xia::log::info;
         if (log_level_flag) {
             std::string level = args::get(log_level_flag);
             if (level == "off") {

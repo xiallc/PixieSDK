@@ -35,6 +35,7 @@ void import(command::context& context) {
     auto path_opt = context.cmd.get_arg();
     util::time::timepoint tp;
     pixie::module::number_slots modules;
+    xia::logging::log_level_guard log_guard(xia::log::debug);
     tp.start();
     crate->import_config(path_opt, modules);
     crate->initialize_afe();

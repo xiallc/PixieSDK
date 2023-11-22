@@ -103,6 +103,23 @@ void set_line_numbers(const std::string name, bool line_numbers);
  * Check the currently active logging level
  */
 bool level_logging(log::level level);
+log::level get_logging_level(void);
+
+/*
+ * Guard to temporally change the logging level
+ */
+struct log_level_guard {
+    log::level level;
+    log_level_guard(log::level new_level) {
+        level = xia::logging::get_logging_level();
+        if (!xia::logging::level_logging(new_level)) {
+            xia::logging::set_level(new_level);
+        }
+    }
+    ~log_level_guard() {
+        xia::logging::set_level(level);
+    }
+};
 
 /**
  * @brief Outputs a memory segment as hex values.
