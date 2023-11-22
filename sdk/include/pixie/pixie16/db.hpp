@@ -100,7 +100,7 @@ struct afe_dbs : public module {
 
     afe_dbs(pixie::module::module& module_);
 
-    virtual void fgpa_fippi_loaded() override;
+    virtual void fpga_fippi_loaded() override;
     virtual void boot() override;
     virtual void init_channels() override;
 

@@ -43,8 +43,8 @@ struct fixture : public xia::pixie::fixture::module {
     virtual void initialize() override;
     virtual void online() override;
     virtual void forced_offline() override;
-    virtual void fgpa_comms_loaded() override;
-    virtual void fgpa_fippi_loaded() override;
+    virtual void fpga_comms_loaded() override;
+    virtual void fpga_fippi_loaded() override;
     virtual void dsp_loaded() override;
     virtual void boot() override;
     virtual void erase_values() override;
@@ -69,8 +69,8 @@ void fixture::close() {}
 void fixture::initialize() {}
 void fixture::online() {}
 void fixture::forced_offline() {}
-void fixture::fgpa_comms_loaded() {}
-void fixture::fgpa_fippi_loaded() {}
+void fixture::fpga_comms_loaded() {}
+void fixture::fpga_fippi_loaded() {}
 void fixture::dsp_loaded() {}
 void fixture::boot() {}
 void fixture::erase_values() {}
@@ -155,11 +155,11 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
     online_ = false;
     if (boot_comms) {
         comms_fpga = true;
-        fixtures->fgpa_comms_loaded();
+        fixtures->fpga_comms_loaded();
     }
     if (boot_fippi) {
         fippi_fpga = true;
-        fixtures->fgpa_fippi_loaded();
+        fixtures->fpga_fippi_loaded();
     }
     if (boot_dsp) {
         dsp_online = true;

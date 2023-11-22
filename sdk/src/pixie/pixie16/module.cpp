@@ -1178,7 +1178,7 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
         comms.boot(fw->data, io_cpld_backoff);
         comms_fpga = comms.done();
         if (comms_fpga) {
-            fixtures->fgpa_comms_loaded();
+            fixtures->fpga_comms_loaded();
         }
     }
 
@@ -1198,7 +1198,7 @@ void module::boot(bool boot_comms, bool boot_fippi, bool boot_dsp) {
         fippi.boot(fw->data, io_cpld_backoff);
         fippi_fpga = fippi.done();
         if (fippi_fpga) {
-            fixtures->fgpa_fippi_loaded();
+            fixtures->fpga_fippi_loaded();
         }
     }
 

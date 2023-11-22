@@ -201,7 +201,7 @@ afe_dbs::afe_dbs(pixie::module::module& module__)
                     << "create";
 }
 
-void afe_dbs::fgpa_fippi_loaded() {
+void afe_dbs::fpga_fippi_loaded() {
     adcctrl = { };
 }
 

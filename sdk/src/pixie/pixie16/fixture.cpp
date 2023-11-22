@@ -147,11 +147,11 @@ void module::forced_offline() {
     /* Do nothing */
 }
 
-void module::fgpa_comms_loaded() {
+void module::fpga_comms_loaded() {
     /* Do nothing */
 }
 
-void module::fgpa_fippi_loaded() {
+void module::fpga_fippi_loaded() {
     /* Do nothing */
 }
 

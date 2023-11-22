@@ -180,13 +180,13 @@ struct module {
     /**
      * The COMMS FPGA has been loaded. Only this FPGA is loaded.
      */
-    virtual void fgpa_comms_loaded();
+    virtual void fpga_comms_loaded();
 
     /**
      * The FIPPI FPGAs have been loaded. Only assume the COMMS and FIPPI FPGAs
      * are loaded.
      */
-    virtual void fgpa_fippi_loaded();
+    virtual void fpga_fippi_loaded();
 
     /**
      * The DSP has been loaded and can be accessed. The COMMS and FIPPI FPGAs
