@@ -22,8 +22,7 @@
 
 #include <algorithm>
 
-#include <nolhmann/json.hpp>
-
+#include <pixie/format.hpp>
 #include <pixie/stats.hpp>
 
 #include <pixie/pixie16/memory.hpp>

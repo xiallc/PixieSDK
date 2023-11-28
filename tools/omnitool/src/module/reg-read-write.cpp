@@ -22,6 +22,7 @@
 
 #include <pixie/utils/io.hpp>
 
+#include <pixie/format.hpp>
 #include <pixie/pixie16/crate.hpp>
 #include <pixie/pixie16/fpga_comms.hpp>
 #include <pixie/pixie16/fpga_fippi.hpp>
@@ -32,17 +33,11 @@
 #include <omnitool-completions.hpp>
 #include <omnitool-module.hpp>
 
-#include <nolhmann/json.hpp>
-
 namespace xia {
 namespace omnitool {
 namespace module {
-/*
- * JSON support
- */
-using json = nlohmann::json;
 
-static const json hardware = {
+static const pixie::format::json hardware = {
     {"memory",
      {{"sys",
        {{"cfg_datacs", 0x00},

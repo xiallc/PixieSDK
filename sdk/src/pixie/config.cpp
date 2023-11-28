@@ -24,15 +24,13 @@
 #include <fstream>
 
 #include <pixie/config.hpp>
-
-#include <nolhmann/json.hpp>
+#include <pixie/format.hpp>
 
 namespace xia {
 namespace pixie {
 namespace config {
-using json = nlohmann::json;
 
-static void throw_json_error(json::exception& e, const std::string& what) {
+static void throw_json_error(format::json::exception& e, const std::string& what) {
     throw error(error::code::config_json_error, what + ": " + e.what());
 }
 
@@ -41,7 +39,7 @@ static void throw_json_error(json::exception& e, const std::string& what) {
  * Default values maybe applied to all modules. Do not set values
  * that can only reside in a single module.
  */
-static const json default_config = {
+static const format::json default_config = {
     {"channel",
      {{"input",
        {{"BLcut", {3}},
@@ -118,7 +116,7 @@ static const json default_config = {
         {"U00", {0, 0, 0, 0, 0, 0, 0}},
         {"UserIn", {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}}}}}};
         
-static void fill_config(module::module& module, nlohmann::json& settings) {
+static void fill_config(module::module& module, format::json& settings) {
     if (!settings.contains("metadata")) {
         throw error(error::code::config_json_error, "'metadata' not found");
     }
@@ -149,7 +147,7 @@ static void fill_config(module::module& module, nlohmann::json& settings) {
             xia_log(log::warning) << "config module " << module.number << " (rev " << rev
                                   << ") loading on to " << module.revision_label();
         }
-    } catch (json::exception& e) {
+    } catch (format::json::exception& e) {
         throw_json_error(e, "config rev");
     }
 
@@ -159,7 +157,7 @@ static void fill_config(module::module& module, nlohmann::json& settings) {
             xia_log(log::warning) << "config module " << module.number << " (slot " << slot
                                   << ") has moved to slot " << module.slot;
         }
-    } catch (json::exception& e) {
+    } catch (format::json::exception& e) {
         throw_json_error(e, "config slot-id");
     }
 
@@ -187,7 +185,7 @@ static void fill_config(module::module& module, nlohmann::json& settings) {
                         for (size_t v = 0; v < desc.size; ++v) {
                             try {
                                 module.write_var(var, el.value()[v], v, false);
-                            } catch (json::exception& e) {
+                            } catch (format::json::exception& e) {
                                 auto s = el.key() + ": " + std::string(el.value());
                                 throw_json_error(e, s);
                             }
@@ -201,7 +199,7 @@ static void fill_config(module::module& module, nlohmann::json& settings) {
                             } else {
                                 module.write_var(var, el.value(), 0, false);
                             }
-                        } catch (json::exception& e) {
+                        } catch (format::json::exception& e) {
                             auto s = el.key() + ": " + std::string(el.value());
                             throw_json_error(e, s);
                         }
@@ -267,7 +265,7 @@ static void fill_config(module::module& module, nlohmann::json& settings) {
                             try {
                                 module.write_var(var, el.value()[vbase + v], channel, v,
                                                  false);
-                            } catch (json::exception& e) {
+                            } catch (format::json::exception& e) {
                                 auto s =
                                     el.key() + ": " + std::string(el.value()[vbase + v]);
                                 throw_json_error(e, s);
@@ -293,11 +291,11 @@ void import_json(const std::string& filename, crate::crate& crate, module::numbe
                     "opening json config: " + filename + ": " + std::strerror(errno));
     }
 
-    json config;
+    format::json config;
 
     try {
-        config = json::parse(input_json);
-    } catch (json::exception& e) {
+        config = format::json::parse(input_json);
+    } catch (format::json::exception& e) {
         throw_json_error(e, "parse config");
     }
 
@@ -343,11 +341,11 @@ void import_json(const std::string& filename, module::module& mod) {
                     "opening json config: " + filename + ": " + std::strerror(errno));
     }
 
-    json config;
+    format::json config;
 
     try {
-        config = json::parse(input_json);
-    } catch (json::exception& e) {
+        config = format::json::parse(input_json);
+    } catch (format::json::exception& e) {
         throw_json_error(e, "parse config");
     }
     
@@ -362,8 +360,8 @@ void import_json(const std::string& filename, module::module& mod) {
     }
 }
 
-static json json_firmware(const firmware::firmware_ref fw) {
-    json jfw;
+static format::json json_firmware(const firmware::firmware_ref fw) {
+    format::json jfw;
     jfw["tag"] = fw->tag;
     jfw["file"] = fw->basename();
     jfw["version"] = fw->version;
@@ -374,7 +372,7 @@ static json json_firmware(const firmware::firmware_ref fw) {
 }
 
 void export_json(const std::string& filename, crate::crate& crate) {
-    json config;
+    format::json config;
 
     for (size_t m = 0; m < crate.num_slots; ++m) {
         module::module& mod = crate[m];
@@ -388,7 +386,7 @@ void export_json(const std::string& filename, crate::crate& crate) {
          */
         mod.sync_vars(module::module::sync_from_dsp);
 
-        json metadata;
+        format::json metadata;
         char rv[2] = {mod.revision_label(), '\0'};
         metadata["number"] = mod.number;
         metadata["slot"] = mod.slot;
@@ -403,9 +401,9 @@ void export_json(const std::string& filename, crate::crate& crate) {
         metadata["fifo"]["run-wait"] = mod.fifo_run_wait_usecs.load();
         metadata["fifo"]["idle-wait"] = mod.fifo_idle_wait_usecs.load();
         metadata["fifo"]["hold"] = mod.fifo_hold_usecs.load();
-        metadata["config"] = json::array();
+        metadata["config"] = format::json::array();
         for (auto& chan : mod.channels) {
-            json cfg;
+            format::json cfg;
             cfg["adc_bits"] = chan.fixture->config.adc_bits;
             cfg["adc_msps"] = chan.fixture->config.adc_msps;
             cfg["adc_clk_div"] = chan.fixture->config.adc_clk_div;
@@ -413,14 +411,14 @@ void export_json(const std::string& filename, crate::crate& crate) {
             metadata["config"].push_back(cfg);
         }
 
-        json module;
+        format::json module;
         for (auto& var : mod.module_vars) {
             auto& desc = var.var;
             if (desc.mode != param::ro) {
                 if (desc.size == 1) {
                     module[desc.name] = var.value[0].value;
                 } else {
-                    json value;
+                    format::json value;
                     for (auto v : var.value) {
                         value.push_back(v.value);
                     }
@@ -429,10 +427,10 @@ void export_json(const std::string& filename, crate::crate& crate) {
             }
         }
 
-        json channel;
+        format::json channel;
         for (auto& desc : mod.channel_var_descriptors) {
             if (desc.mode != param::ro) {
-                json values;
+                format::json values;
                 for (auto& chan : mod.channels) {
                     for (auto& v : chan.vars[int(desc.par)].value) {
                         values.push_back(v.value);
@@ -442,7 +440,7 @@ void export_json(const std::string& filename, crate::crate& crate) {
             }
         }
 
-        json mod_config;
+        format::json mod_config;
         mod_config["metadata"] = metadata;
         mod_config["module"] = {{"input", module}};
         mod_config["channel"] = {{"input", channel}};

@@ -30,9 +30,9 @@
 #include <sstream>
 #include <utility>
 
-#include <nolhmann/json.hpp>
 
 #include <pixie/error.hpp>
+#include <pixie/format.hpp>
 #include <pixie/fw.hpp>
 #include <pixie/log.hpp>
 #include <pixie/utils/io.hpp>
@@ -41,8 +41,6 @@
 #include <pixie/utils/time.hpp>
 
 #include <sys/stat.h>
-
-using json = nlohmann::json;
 
 namespace xia {
 namespace pixie {
@@ -421,7 +419,7 @@ description::description() {
 description::description(const std::string& name, const std::string& dev, const std::string& fname) {
     try {
         std::ifstream input(name, std::ios::in);
-        json jf = json::parse(input);
+        format::json jf = format::json::parse(input);
         filename = fname;
         date = jf["release"]["date"];
 
@@ -443,7 +441,7 @@ description::description(const std::string& name, const std::string& dev, const 
             device = dev;
         }
         crc32 = jf["files"][dev]["crc32"];
-    } catch (json::exception& e) {
+    } catch (format::json::exception& e) {
         std::string what = e.what();
         throw error(error::code::config_json_error, "parse firmware file: " + what);
     } catch (...) {
@@ -547,10 +545,10 @@ void load_firmwares(
 void system_fw_report(std::ostream& out, std::string basepath) {
     descriptions all;
     find_firmwares(basepath, all);
-    json json_out = json::array();
+    format::json json_out = format::json::array();
 
     for (auto& fw : all) {
-        json fw_info;
+        format::json fw_info;
         fw_info["version"] = fw.version;
         fw_info["revision"] = fw.mod_revision;
         fw_info["adc-msps"] = fw.mod_adc_msps;

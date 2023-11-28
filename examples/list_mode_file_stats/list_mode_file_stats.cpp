@@ -30,9 +30,12 @@
 #include <vector>
 
 #include <args/args.hxx>
-#include <nolhmann/json.hpp>
+
+#include <pixie/format.hpp>
 
 #include "pixie/data/list_mode.hpp"
+
+using json = xia::pixie::format::json;
 
 struct LOG {
     explicit LOG(const std::string& type) {
@@ -86,8 +89,8 @@ struct channel_info {
     double trace_length_ave;
 };
 
-void to_json(nlohmann::json& j, const channel_info& ch) {
-    j = nlohmann::json{
+void to_json(json& j, const channel_info& ch) {
+    j = json{
         {"id", ch.id},
         {"count", ch.count},
         {"count_per_second", ch.cps},
@@ -102,7 +105,7 @@ void to_json(nlohmann::json& j, const channel_info& ch) {
 using channel_id = size_t;
 using channel_stats = std::map<channel_id, channel_info>;
 
-void verify_json_slot(const nlohmann::json& node) {
+void verify_json_slot(const json& node) {
     if (!node.contains("slot")) {
         throw std::invalid_argument("Missing slot definition in configuration element.");
     }
@@ -126,7 +129,7 @@ void read_config(const std::string& file, configs& cfgs) {
         throw std::ios_base::failure("open: " + file + ": " + std::strerror(errno));
     }
 
-    nlohmann::json jf = nlohmann::json::parse(input);
+    json jf = json::parse(input);
     input.close();
 
     for (const auto& element : jf) {
@@ -327,7 +330,7 @@ int main(int argc, char** argv) {
                 ch->header_length_ave /= double(ch->count);
                 ch->trace_length_ave /= double(ch->count);
                 ch->event_length_ave /= double(ch->count);
-                nlohmann::json j = *ch;
+                json j = *ch;
                 std::cout << LOG("INFO") << j.dump() << std::endl;
             }
 

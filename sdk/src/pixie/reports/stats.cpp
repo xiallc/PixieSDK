@@ -20,8 +20,8 @@
  * @brief Implements functions and data structures related to stats reporting
  */
 
-#include <nolhmann/json.hpp>
 
+#include <pixie/format.hpp>
 #include <pixie/stats.hpp>
 
 #include <pixie/reports/reports.hpp>
@@ -36,7 +36,7 @@ void stats_report(pixie::module::module& module_, std::ostream& out) {
     pixie::module::module::fifo_stats snapshot;
     snapshot = module_.run_stats;
 
-    nlohmann::json json_out = {{"module_id", module_.slot},
+    pixie::format::json json_out = {{"module_id", module_.slot},
                                {"stats_time", std::chrono::duration_cast<std::chrono::milliseconds>(
                                                   std::chrono::system_clock::now().time_since_epoch())
                                                   .count()},
@@ -50,7 +50,7 @@ void stats_report(pixie::module::module& module_, std::ostream& out) {
                                  {"min_bandwidth", snapshot.min_bandwidth.load()},
                                  {"max_bandwidth", snapshot.max_bandwidth.load()},
                                  {"bandwidth", snapshot.bandwidth.load()}}},
-                               {"hardware", nlohmann::json::array()}};
+                               {"hardware", pixie::format::json::array()}};
 
     for (auto& ch : stats.chans) {
         double output_efficiency = 0;
@@ -58,7 +58,7 @@ void stats_report(pixie::module::module& module_, std::ostream& out) {
             output_efficiency = ch.output_counts() / ch.input_counts();
         }
         json_out["hardware"].emplace_back(
-            nlohmann::json({{"channel_number", ch.config.index},
+            pixie::format::json({{"channel_number", ch.config.index},
                             {"live_time", ch.live_time()},
                             {"dead_time", 1. - ch.live_time() / stats.mod.real_time()},
                             {"input_counts", ch.input_counts()},

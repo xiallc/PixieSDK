@@ -21,12 +21,12 @@
  */
 
 #include <pixie/error.hpp>
+#include <pixie/format.hpp>
 #include <pixie/utils/io.hpp>
 #include <pixie/utils/numerics.hpp>
 
 #include <pixie/data/list_mode.hpp>
 
-#include <nolhmann/json.hpp>
 
 namespace xia {
 namespace pixie {
@@ -40,8 +40,6 @@ static constexpr uint32_t num_esum_words = 4;
 static constexpr uint32_t num_ext_ts_words = 2;
 static constexpr uint32_t min_slot_id = 2;
 static constexpr uint32_t max_slot_id = 14;
-
-using json = nlohmann::json;
 
 /**
  * @brief Describes the elements that need to be decoded out of a list-mode event
@@ -72,7 +70,7 @@ PIXIE_EXPORT void PIXIE_API json_to_record(const std::string& json_string, recor
      */
     double dummy;
     try {
-        json val = json::parse(json_string);
+        format::json val = format::json::parse(json_string);
         val.at("cfd_forced_trigger").get_to(rec.cfd_forced_trigger);
 
         val.at("cfd_fractional_time").get_to(dummy);
@@ -103,7 +101,7 @@ PIXIE_EXPORT void PIXIE_API json_to_record(const std::string& json_string, recor
 
         val.at("trace_out_of_range").get_to(rec.trace_out_of_range);
         val.at("trace").get_to(rec.trace);
-    } catch (json::exception& ex) {
+    } catch (format::json::exception& ex) {
         throw xia::pixie::error::error(xia::pixie::error::code::invalid_value,
                                        "could not convert JSON string to record: " +
                                            std::string(ex.what()));
@@ -111,7 +109,8 @@ PIXIE_EXPORT void PIXIE_API json_to_record(const std::string& json_string, recor
 }
 
 PIXIE_EXPORT void PIXIE_API record_to_json(const record& evt, std::string& str) {
-    json val = {{"cfd_forced_trigger", evt.cfd_forced_trigger},
+    format::json val = {
+                {"cfd_forced_trigger", evt.cfd_forced_trigger},
                 {"cfd_fractional_time", evt.cfd_fractional_time.count()},
                 {"cfd_trigger_source", evt.cfd_trigger_source},
                 {"channel_number", evt.channel_number},

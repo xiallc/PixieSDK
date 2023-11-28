@@ -36,9 +36,9 @@
 #include <vector>
 
 #include <args/args.hxx>
-#include <nolhmann/json.hpp>
 
 #include <pixie16/pixie16.h>
+#include <pixie/format.hpp>
 
 #include <sys/stat.h>
 
@@ -52,7 +52,7 @@
 #define MSG_SIZE 1024
 #define TIME_SIZE 80
 
-using json = nlohmann::json;
+using json = xia::pixie::format::json;
 
 /*
  * List-mode/MCA run data types
