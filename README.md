@@ -31,8 +31,15 @@ in all relevant Release Notes.
 
 | Operating System | CMake Version | Compiler | Compiler Version |
 |------------------|---------------|----------|------------------|
+| Windows 11       | 3.25.2        | MSVC     | 14.35.32215      |
 | Windows 10       | 3.20.2        | MSVC     | 14.28.29333      |
-| CentOS 8         | 3.11.4        | GCC      | 8.3.1            |
+| Debian 11        | 3.18.4        | GCC      | 10.2.1           |
+| Debian 10        | 3.13.4        | GCC      | 8.3.0            |
+
+End of life for Windows 10 (Oct 14 2025)
+End of life for Debian 10 (Jun 30 2024)
+
+Ubuntu should work as well as it is a Debian variant, but we can not guarantee this.
 
 ## Dependencies and Prerequisites
 
