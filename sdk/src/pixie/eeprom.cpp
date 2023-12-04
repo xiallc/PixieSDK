@@ -382,6 +382,19 @@ void eeprom::process_dbs()
         db.label = db_find_label(db.index);
         dbs.push_back(db);
     }
+    /*
+     * All DBs must match.
+     */
+    if (!dbs.empty()) {
+        auto matching =
+            std::all_of(std::begin(dbs), std::end(dbs), [index = dbs[0].index](auto& db) {
+                return db.index == index;
+            });
+        if (!matching) {
+            throw error(error::code::device_eeprom_failure,
+                        "daughter board configuration error: mixture of DBs");
+        }
+    }
 }
 
 int eeprom::db_find(const int channel) const {
