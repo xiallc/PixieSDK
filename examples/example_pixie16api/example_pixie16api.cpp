@@ -120,25 +120,18 @@ std::ostream& operator<<(std::ostream& os, const logging& log) {
     return os;
 }
 
-struct firmware_spec {
-    unsigned int version;
-    int revision;
-    int adc_msps;
-    int adc_bits;
-
-    firmware_spec() : version(0), revision(0), adc_msps(0), adc_bits(0) {}
-};
-
 struct mod_cfg {
     ::module_config cfg;
-    firmware_spec fw;
     std::string dsp_par;
     module_fifo_config fifo_config;
-    bool has_fifo_cfg;
     bool has_firmware_spec;
     bool has_firmware_files;
+    bool has_fifo_cfg;
 
-    mod_cfg() : has_fifo_cfg(false), has_firmware_spec(false), has_firmware_files(false) {}
+    mod_cfg() : has_firmware_spec(false), has_firmware_files(false), has_fifo_cfg(false) {
+        std::memset(&cfg, 0, sizeof(cfg));
+        std::memset(&fifo_config, 0, sizeof(fifo_config));
+    }
 };
 
 using module_configs = std::vector<mod_cfg>;
@@ -169,15 +162,6 @@ void verify_json_module(const json& mod) {
     if (!dsp.contains("par")) {
         throw std::invalid_argument(
             "Missing dsp object in configuration element: par.");
-    }
-
-    if (mod.contains("fw")) {
-        auto& fw = mod["fw"];
-        if (!fw.contains("version") || !fw.contains("revision") ||
-            !fw.contains("adc_msps") || !fw.contains("adc_bits")) {
-            throw std::invalid_argument(
-                "Missing firmware (fw) definition (version, revision, adc_msps or adc_bits).");
-        }
     }
 
     if (mod.contains("fifo_config")) {
@@ -237,7 +221,9 @@ void read_config(const std::string& config_file_name, configuration& cfg) {
         throw std::invalid_argument("invalid number of modules");
     }
 
+    cfg.modules.clear();
     cfg.slot_def.clear();
+
     for (const auto& module : jf) {
         verify_json_module(module);
 
@@ -246,52 +232,49 @@ void read_config(const std::string& config_file_name, configuration& cfg) {
         mod_cfg mcfg;
         mcfg.cfg.slot = module["slot"];
         mcfg.cfg.number = static_cast<unsigned short>(cfg.slot_def.size() - 1);
-        mcfg.has_firmware_files = false;
-        if (module.contains("fpga")) {
-            auto& fpga = module["fpga"];
-            if (fpga.contains("sys")) {
-                auto sys = fpga["sys"].get<std::string>();
-                if (sys.length() > sizeof(mcfg.cfg.sys_fpga)) {
-                    throw std::invalid_argument("sys firmware filename length is too large.");
-                }
-                std::strncpy(mcfg.cfg.sys_fpga, sys.c_str(), sys.length());
-            }
-            if (fpga.contains("fippi")) {
-                auto fippi = fpga["fippi"].get<std::string>();
-                if (fippi.length() > sizeof(mcfg.cfg.sp_fpga)) {
-                    throw std::invalid_argument("fippi firmware filename length is too large.");
-                }
-                std::strncpy(mcfg.cfg.sp_fpga, fippi.c_str(), fippi.length());
-            }
-            mcfg.has_firmware_files = true;
-        }
-        auto& dsp = module["dsp"];
-        mcfg.dsp_par = dsp["par"];
-        if (dsp.contains("ldr")) {
-            auto ldr = dsp["ldr"].get<std::string>();
-            if (ldr.length() > sizeof(mcfg.cfg.dsp_code)) {
-                throw std::invalid_argument("ldr firmware filename length is too large.");
-            }
-            std::strncpy(mcfg.cfg.dsp_code, ldr.c_str(), ldr.length());
-            mcfg.has_firmware_files = true;
-        }
-        if (dsp.contains("var")) {
-            auto var = dsp["var"].get<std::string>();
-            if (var.length() > sizeof(mcfg.cfg.dsp_var)) {
-                throw std::invalid_argument("var firmware filename length is too large.");
-            }
-            std::strncpy(mcfg.cfg.dsp_var, var.c_str(), var.length());
-            mcfg.has_firmware_files = true;
-        }
         if (module.contains("fw")) {
-            auto& fw = module["fw"];
-            mcfg.fw.version = fw["version"];
-            mcfg.fw.revision = fw["revision"];
-            mcfg.fw.adc_msps = fw["adc_msps"];
-            mcfg.fw.adc_bits = fw["adc_bits"];
+            auto& jfw = module["fw"];
+            std::strncpy(
+                mcfg.cfg.fw_revision,
+                jfw["revision"].template get<std::string>().c_str(),
+                sizeof(mcfg.cfg.fw_revision) - 1);
+            if (jfw.contains("adc_msps")) {
+                mcfg.cfg.adc_sampling_frequency = jfw["adc_msps"];
+            }
+            if (jfw.contains("adc_bits")) {
+                mcfg.cfg.adc_bit_resolution = jfw["adc_bits"];
+            }
+            if (jfw.contains("tag")) {
+                std::strncpy(
+                    mcfg.cfg.fw_tag,
+                    jfw["tag"].template get<std::string>().c_str(),
+                    sizeof(mcfg.cfg.fw_tag) - 1);
+            }
+            if (jfw.contains("type")) {
+                std::strncpy(
+                    mcfg.cfg.fw_type,
+                    jfw["type"].template get<std::string>().c_str(),
+                    sizeof(mcfg.cfg.fw_type) - 1);
+            }
+            if (jfw.contains("fw_set")) {
+                size_t dev = 0;
+                for (const auto& fw : jfw["fw_set"].items()) {
+                    std::strncpy(
+                        mcfg.cfg.fw_device[dev],
+                        fw.key().c_str(),
+                        sizeof(mcfg.cfg.fw_device[dev]) - 1);
+                    std::strncpy(
+                        mcfg.cfg.fw_device_file[dev],
+                        fw.value().template get<std::string>().c_str(),
+                        sizeof(mcfg.cfg.fw_device_file[dev]) - 1);
+                    ++dev;
+                    if (dev == PIXIE16_API_MOD_CONFIG_MAX_DEVICES) {
+                        break;
+                    }
+                }
+                mcfg.has_firmware_files = true;
+            }
             mcfg.has_firmware_spec = true;
-        } else {
-            mcfg.has_firmware_spec = false;
         }
         if (module.contains("fifo_config")) {
             auto& fifo_config = module["fifo_config"];
@@ -303,11 +286,64 @@ void read_config(const std::string& config_file_name, configuration& cfg) {
             mcfg.fifo_config.idle_wait_usecs = fifo_config["idle_wait_usecs"];
             mcfg.fifo_config.run_wait_usecs = fifo_config["run_wait_usecs"];
             mcfg.has_fifo_cfg = true;
-        } else {
-            mcfg.has_fifo_cfg = false;
         }
         cfg.modules.push_back(mcfg);
     }
+}
+
+bool write_config(
+    const std::string& config_file_name, const std::string& par_file_name, unsigned int num_mods) {
+    configuration config;
+    for (unsigned int mod = 0; mod < num_mods; ++mod) {
+        mod_cfg cfg;
+        if (!verify_api_return_value(::PixieGetModuleInfo(mod, &cfg.cfg), "PixieGetModuleInfo", false)) {
+            return false;
+        }
+        if (!verify_api_return_value(
+                ::PixieGetFifoConfiguration(mod, &cfg.fifo_config), "PixieGetFifoConfiguration", false)) {
+            return false;
+        }
+        cfg.has_fifo_cfg = true;
+        config.modules.push_back(cfg);
+    }
+    json j;
+    for (auto& mod : config.modules) {
+        json jm;
+        jm["slot"] = mod.cfg.slot;
+        json jdsp;
+        jdsp["par"] = par_file_name;
+        jm["dsp"] = jdsp;
+        json jfw;
+        jfw["revision"] = mod.cfg.fw_revision;
+        jfw["tag"] = mod.cfg.fw_tag;
+        jfw["type"] = mod.cfg.fw_type;
+        jfw["adc_msps"] = mod.cfg.adc_sampling_frequency;
+        jfw["adc_bits"] = mod.cfg.adc_bit_resolution;
+        json jfw_set;
+        for (size_t dev = 0;
+             dev < PIXIE16_API_MOD_CONFIG_MAX_DEVICES && mod.cfg.fw_device[dev] != nullptr;
+             ++dev) {
+            jfw_set[mod.cfg.fw_device[dev]] = mod.cfg.fw_device_file[dev];
+        }
+        jfw["fw_set"] = jfw_set;
+        jm["fw"] = jfw;
+        json jfc;
+        jfc["bandwidth_mb_per_sec"] = mod.fifo_config.bandwidth_mb_per_sec;
+        jfc["buffers"] = mod.fifo_config.buffers;
+        jfc["dma_trigger_level_bytes"] = mod.fifo_config.dma_trigger_level_bytes;
+        jfc["hold_usecs"] = mod.fifo_config.hold_usecs;
+        jfc["idle_wait_usecs"] = mod.fifo_config.idle_wait_usecs;
+        jfc["run_wait_usecs"] = mod.fifo_config.run_wait_usecs;
+        jm["fifo_config"] = jfc;
+        j.push_back(jm);
+    }
+    std::ofstream output(config_file_name, std::ios::out);
+    if (output.fail()) {
+        throw std::ios_base::failure("open: " + config_file_name + ": " + std::strerror(errno));
+    }
+    output << std::setw(4) << j;
+    output.close();
+    return true;
 }
 
 std::string generate_hardware_statistics_header() {
@@ -1072,11 +1108,30 @@ bool boot_crate(const std::string& par_file, unsigned int boot_pattern) {
             boot_mode = PIXIE_BOOT_RESET_LOAD;
     }
 
-    int rc = ::PixieBootCrate(par_file.c_str(), boot_mode);
+    int rc;
+    if (!par_file.empty()) {
+        rc = ::PixieBootCrate(par_file.c_str(), boot_mode);
+    } else {
+        rc = ::PixieBootCrate(nullptr, boot_mode);
+    }
     if (!verify_api_return_value(rc, "PixieBootCrate", false)) {
         return false;
     }
     std::cout << logging("INFO") << "Finished PixieBootCrate in "
+              << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
+              << std::endl;
+    return true;
+}
+
+bool init_system(unsigned int num_mods, int offline_mode) {
+    auto start = std::chrono::system_clock::now();
+    std::cout << logging("INFO") << "Calling Pixie16InitSystem." << std::endl;
+    if (!verify_api_return_value(
+            Pixie16InitSystem(num_mods, nullptr, offline_mode),
+            "Pixie16InitSystem", false))
+        return false;
+
+    std::cout << logging("INFO") << "Finished Pixie16InitSystem in "
               << calculate_duration_in_seconds(start, std::chrono::system_clock::now()) << " s."
               << std::endl;
     return true;
@@ -1123,9 +1178,11 @@ bool boot_module(const mod_cfg& mod, unsigned int boot_pattern) {
               << " with boot pattern: " << std::showbase << std::hex << boot_pattern << std::dec
               << std::endl;
 
-    if (!verify_api_return_value(::Pixie16BootModuleFirmware(mod.dsp_par.c_str(), mod.cfg.number,
-                                                   boot_pattern),
-                                 "Pixie16BootModuleFirmware", "Finished booting!")) {
+    if (!verify_api_return_value(
+            ::Pixie16BootModuleFirmware(
+                mod.dsp_par.c_str(), mod.cfg.number,
+                boot_pattern),
+            "Pixie16BootModuleFirmware", "Finished booting!")) {
         return false;
     }
     std::cout << logging("INFO") << "Finished Pixie16BootModule for Module " << mod.cfg.number << " in "
@@ -1139,8 +1196,9 @@ bool register_firmware(const mod_cfg& mod, const char* filepath, const char* dev
         std::cout << logging("INFO")
                   << "Calling Pixie16RegisterFirmware for Module "
                   << mod.cfg.number << ": " << device << std::endl;
-        int rc = PixieRegisterCrateFirmware(mod.fw.version, mod.fw.revision, mod.fw.adc_msps,
-                                            mod.fw.adc_bits, device, filepath);
+        int rc = ::PixieRegisterFirmware(
+            0, mod.cfg.revision, mod.cfg.adc_sampling_frequency,
+            mod.cfg.adc_bit_resolution, device, filepath, mod.cfg.number);
         if (!verify_api_return_value(rc, "Pixie16RegisterFirmware", false)) {
             return false;
         }
@@ -1180,25 +1238,15 @@ bool is_directory(std::string& direc) {
 }
 
 bool execute_boot(configuration& cfg, args::ValueFlag<std::string>& boot_flag,
-                  args::ValueFlag<std::string>& add_cfg) {
+                  args::ValueFlag<std::string>& add_cfg, args::ValueFlag<std::string>& basepath) {
     unsigned int boot_pattern = stoul(args::get(boot_flag), nullptr, 0);
 
     if (add_cfg) {
         boot_pattern = 0x70;
     }
 
-    std::string path = basepath.Get();
-    bool valid_path = true;
-    if (!is_directory(path)) {
-        path = ::PixieGetInstallationPath(PIXIE_PATH_FIRMWARE_DEFAULT);
-        if (!basepath || (basepath && !is_directory(path))) {
-            valid_path = false;
-            std::cout << logging("ERROR") << "Given/default firmware paths do not exist"
-                      << std::endl;
-        }
-    }
-    if (valid_path) {
-        int rc = ::Pixie16LoadModuleFirmware(path.c_str());
+    if (basepath) {
+        int rc = ::Pixie16LoadModuleFirmware(basepath.Get().c_str());
         if (!verify_api_return_value(rc, "PixieLoadModuleFirmware", false)) {
             return false;
         }
@@ -1208,18 +1256,20 @@ bool execute_boot(configuration& cfg, args::ValueFlag<std::string>& boot_flag,
     for (const auto& mod : cfg.modules) {
         if (mod.has_firmware_files) {
             if (mod.has_firmware_spec) {
-                if (!register_firmware(mod, mod.cfg.sys_fpga, "sys") ||
-                    !register_firmware(mod, mod.cfg.sp_fpga, "fippi") ||
-                    !register_firmware(mod, mod.cfg.dsp_code, "dsp") ||
-                    !register_firmware(mod, mod.cfg.dsp_var, "var")) {
-                    return false;
+                for (size_t dev = 0;
+                     dev < PIXIE16_API_MOD_CONFIG_MAX_DEVICES && mod.cfg.fw_device[dev] != nullptr;
+                     ++dev) {
+                    if (!register_firmware(mod, mod.cfg.fw_device_file[dev], mod.cfg.fw_device[dev])) {
+                        return false;
+                    }
                 }
             } else {
-                if (!set_firmware(mod, mod.cfg.sys_fpga, "sys") ||
-                    !set_firmware(mod, mod.cfg.sp_fpga, "fippi") ||
-                    !set_firmware(mod, mod.cfg.dsp_code, "dsp") ||
-                    !set_firmware(mod, mod.cfg.dsp_var, "var")) {
-                    return false;
+                for (size_t dev = 0;
+                     dev < PIXIE16_API_MOD_CONFIG_MAX_DEVICES && mod.cfg.fw_device[dev] != nullptr;
+                     ++dev) {
+                    if (!set_firmware(mod, mod.cfg.fw_device_file[dev], mod.cfg.fw_device[dev])) {
+                        return false;
+                    }
                 }
             }
         }
@@ -1241,6 +1291,9 @@ int main(int argc, char** argv) {
     args::Group commands(parser, "commands");
     args::Command boot(commands, "boot", "Boots the crate of modules.");
     args::Command copy(commands, "copy", "Copies DSP parameters from source to destination.");
+    args::Command export_config(
+        commands, "export-config",
+        "Writes the configuration  to the file defined in the cfg option.");
     args::Command export_settings(
         commands, "export-settings",
         "Boots the system and dumps the settings to the file defined in the config.");
@@ -1263,7 +1316,7 @@ int main(int argc, char** argv) {
 
     args::Group arguments(parser, "arguments", args::Group::Validators::AtLeastOne,
                           args::Options::Global);
-    args::ValueFlag<std::string> conf_flag(arguments, "cfg", "The configuration file to load.",
+    args::ValueFlag<std::string> conf_flag(arguments, "cfg", "The configuration file to read or write.",
                                            {'c', "config"});
     args::ValueFlag<std::string> additional_cfg_flag(
         arguments, "cfg", "The configuration file to load.", {"additional-config"});
@@ -1311,6 +1364,12 @@ int main(int argc, char** argv) {
         list_mode, "in_synch",
         "InSynch = 0 to reset clocks prior to starting a run. (default)\nInSynch = 1 to take no clock action.",
         {"in-synch"}, static_cast<unsigned int>(0));
+    args::ValueFlag<unsigned int> num_mods(
+        arguments, "num_mods", "The number of modules to initialise.",
+        {"num-mods"}, (unsigned int) (0));
+    args::ValueFlag<std::string> par_file(
+        arguments, "par", "The parameter file to write.",
+        {'p', "par"});
 
     adjust_offsets.Add(conf_flag);
     adjust_offsets.Add(boot_pattern_flag);
@@ -1355,6 +1414,8 @@ int main(int argc, char** argv) {
     write.Add(crate);
     write.Add(module);
     write.Add(channel);
+    export_config.Add(num_mods);
+    export_config.Add(par_file);
 
     try {
         parser.ParseCLI(argc, argv);
@@ -1369,7 +1430,30 @@ int main(int argc, char** argv) {
     }
 
     configuration cfg;
+    unsigned int num_modules = num_mods.Get();
     int offline_mode = 0;
+
+    if (export_config) {
+        if (!par_file) {
+            std::cout << logging("ERROR") << "no par file provided" << std::endl;
+            return EXIT_FAILURE;
+        }
+        if (!init_system(num_modules, offline_mode)) {
+            return EXIT_FAILURE;
+        }
+        std::string empty;
+        if (!boot_crate(empty, 0x00)) {
+            return EXIT_FAILURE;
+        }
+        if (!save_dsp_pars(par_file.Get())) {
+            return EXIT_FAILURE;
+        }
+        if (!write_config(conf_flag.Get(), par_file.Get(), num_modules)) {
+            return EXIT_FAILURE;
+        }
+        execute_close_module_connection(cfg.num_modules());
+        return EXIT_SUCCESS;
+    }
 
     if (!is_offline) {
         if (conf_flag) {
@@ -1395,6 +1479,10 @@ int main(int argc, char** argv) {
         }
         cfg.slot_def = {2, 3, 4, 5};
         boot_pattern_flag.ParseValue({"0x70"});
+    }
+
+    if (cfg.num_modules() != 0) {
+        num_modules = cfg.num_modules();
     }
 
     std::cout << logging("INFO") << "Finished reading config in "
