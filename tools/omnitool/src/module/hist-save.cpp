@@ -41,6 +41,11 @@ void hist_save(command::context& context) {
     auto bins_opt = context.cmd.get_option("-b");
     auto mod_nums_opt = context.cmd.get_arg();
     auto chans_opt = context.cmd.get_arg();
+    auto name_opt = context.cmd.get_arg();
+    if (name_opt.empty()) {
+        name_opt = chans_opt;
+        chans_opt.clear();
+    }
     command::module_range mod_nums;
     command::modules_option(mod_nums, mod_nums_opt, crate.get_modules());
     for (auto mod_num : mod_nums) {
@@ -58,7 +63,7 @@ void hist_save(command::context& context) {
             histos.push_back(histogram);
         }
         std::ostringstream name;
-        name << omnitool::histogram_prefix
+        name << name_opt << '-' << omnitool::histogram_prefix
              << std::setfill('0') << '-' << std::setw(2) << mod_num << ".csv";
         std::ofstream out(name.str());
         out << "bin,";

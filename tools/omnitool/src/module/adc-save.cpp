@@ -39,8 +39,21 @@ namespace module {
 void adc_save(command::context& context) {
     auto& crate = context.crate;
     auto mod_nums_opt = context.cmd.get_arg();
-    auto chans_opt = context.cmd.get_arg();;
-    auto len_opt = context.cmd.get_arg();;
+    auto chans_opt = context.cmd.get_arg();
+    auto len_opt = context.cmd.get_arg();
+    auto name_opt = context.cmd.get_arg();
+    if (name_opt.empty()) {
+        name_opt = len_opt;
+        len_opt.clear();
+        if (name_opt.empty()) {
+            name_opt = chans_opt;
+            chans_opt.clear();
+            if (name_opt.empty()) {
+                name_opt = mod_nums_opt;
+                mod_nums_opt.clear();
+            }
+        }
+    }
     command::module_range mod_nums;
     command::modules_option(mod_nums, mod_nums_opt, crate.get_modules());
     size_t length = pixie::hw::max_adc_trace_length;
@@ -61,7 +74,7 @@ void adc_save(command::context& context) {
             traces.push_back(adc_trace);
         }
         std::ostringstream name;
-        name << std::setfill('0') << omnitool::adc_prefix
+        name << name_opt << '-' << std::setfill('0') << omnitool::adc_prefix
              << '-' << std::setw(2) << mod_num << ".csv";
         std::ofstream out(name.str());
         out << "bin,";

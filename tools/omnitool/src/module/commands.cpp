@@ -41,9 +41,9 @@ static const command::definition adc_save_cmd = {
     "Module", "/module/adc-save",
     omnitool_command_handers(adc_save),
     {"init", "probe"},
-    0, 3, 0,
+    1, 4, 0,
     {},
-    "[modules(s) [channel(s) [length]]]",
+    "[modules(s) [channel(s) [length]]] file",
     "Save a module's ADC trace to a file"
 };
 
@@ -74,9 +74,9 @@ static const command::definition bl_save_cmd = {
     "Module", "/module/bl-save",
     omnitool_command_handers(bl_save),
     {"init", "probe"},
-    0, 2, 0,
+    1, 3, 0,
     {},
-    "[module(s) [channel(s)]]",
+    "[module(s) [channel(s)]] file",
     "Save the module's baselines"
 };
 
@@ -153,9 +153,9 @@ static const command::definition hist_save_cmd = {
     "Module", "/module/hist-save",
     omnitool_command_handers(hist_save),
     {"init", "probe"},
-    1, 2, 0,
+    2, 3, 0,
     {omnitool_command_opt_arg_decl("b")},
-    "[-b bins] module(s) [channel(s)]",
+    "[-b bins] module(s) [channel(s)] file",
     "Save a module's histogram to a file"
 };
 
