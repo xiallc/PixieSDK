@@ -31,17 +31,21 @@
 extern "C" {
 #endif
 
-/**
- * @note This object will be deprecated on November 30, 2024
- */
-struct fifo_worker_config {
+#ifdef XIA_PIXIE_WINDOWS
+#define DEPRECATED(x, y, z) __pragma(message("warning: " y " will be deprecated on " z)) x
+#else
+#define DO_PRAGMA(m) _Pragma (#m)
+#define DEPRECATED(x, y, z) DO_PRAGMA(message ("warning: " y " will be deprecated on " z)) x
+#endif
+
+DEPRECATED(struct fifo_worker_config {
     size_t bandwidth_mb_per_sec;
     size_t buffers;
     size_t dma_trigger_level_bytes;
     size_t hold_usecs;
     size_t idle_wait_usecs;
     size_t run_wait_usecs;
-};
+}, "fifo_worker_config", "November 30, 2024");
 
 #define PIXIE16_API_MOD_CONFIG_MAX_STRING (256)
 #define PIXIE16_API_MOD_CONFIG_MAX_DEVICES (6)
@@ -222,11 +226,10 @@ enum PIXIE_BOOT_MODE {
 PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file,
                                           const enum PIXIE_BOOT_MODE boot_mode);
 
-/**
- * @note This API call will be deprecated on November 30, 2024
- */
+DEPRECATED(
 PIXIE_EXPORT int PIXIE_API PixieGetWorkerConfiguration(unsigned short mod_num,
-                                                       struct fifo_worker_config* worker_config);
+                                                       struct fifo_worker_config* worker_config),
+    "PixieGetWorkerConfiguration", "November 30, 2024");
 
 PIXIE_EXPORT int PIXIE_API PixieGetFifoConfiguration(unsigned short mod_num,
                                                      struct module_fifo_config* fifo_config);
@@ -240,11 +243,10 @@ PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version, con
                                                  const char* device, const char* path,
                                                  unsigned short ModNum);
 
-/**
- * @note This API call will be deprecated on November 30, 2024
- */
+DEPRECATED(
 PIXIE_EXPORT int PIXIE_API PixieSetWorkerConfiguration(unsigned short mod_num,
-                                                       struct fifo_worker_config* worker_config);
+                                                       struct fifo_worker_config* worker_config),
+    "PixieSetWorkerConfiguration", "November 30, 2024");
 
 PIXIE_EXPORT int PIXIE_API PixieSetFifoConfiguration(unsigned short mod_num,
                                                      struct module_fifo_config* fifo_config);
