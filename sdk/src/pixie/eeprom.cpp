@@ -87,7 +87,7 @@ static const std::vector<v2_config> v2_configs = {
     {1,  4, hw::config(hw::small_histogram_length, hw::max_adc_trace_length, hw::max_small_num_baselines, 14, 125, 2, 125 / 2), "DB01"},
     {2,  8, hw::config(hw::small_histogram_length, hw::max_adc_trace_length, hw::max_small_num_baselines, 12, 250, 2, 250 / 2), "DB02"},
     {4,  8, hw::config(hw::small_histogram_length, hw::max_adc_trace_length, hw::max_small_num_baselines, 14, 250, 2, 250 / 2), "DB04"},
-    {5,  8, hw::config(hw::small_histogram_length, hw::max_adc_trace_length, hw::max_small_num_baselines, 14, 125, 2, 125 / 1), "DB05"},
+    {5,  8, hw::config(hw::small_histogram_length, hw::max_adc_trace_length, hw::max_small_num_baselines, 14, 125, 1, 125 / 1), "DB05"},
     {6,  4, hw::config(hw::small_histogram_length, hw::max_adc_trace_length, hw::max_small_num_baselines, 16, 250, 2, 250 / 2), "DB06"},
     {7,  4, hw::config(hw::small_histogram_length, hw::max_adc_trace_length, hw::max_small_num_baselines, 14, 500, 5, 500 / 5), "DB07"},
     {10, 4, hw::config(hw::small_histogram_length, hw::max_adc_trace_length, hw::max_small_num_baselines, 12, 500, 4, 500 / 4), "DB10"}
