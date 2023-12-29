@@ -1106,21 +1106,35 @@ void output_module_info(mod_cfg& mod) {
               << logging("INFO") << "End module information for Module " << mcfg.number << std::endl;
 }
 
+/**
+ * Fast boots can be done the old way (Pixie16Boot), we are working on exposing similar
+ * functionality for crate boots.
+ */
 bool boot_crate(const std::string& par_file, unsigned int boot_pattern) {
     auto start = std::chrono::system_clock::now();
     std::cout << logging("INFO") << "Calling PixieBootCrate with settings: " << par_file << std::endl;
+    if (par_file.empty()) {
+        std::cout << logging("WARN") << "No settings file provided" << std::endl;
+    }
 
     PIXIE_BOOT_MODE boot_mode;
     switch (boot_pattern) {
-        case 0x00:
-            boot_mode = PIXIE_BOOT_PROBE;
-            break;
-        case 0x70:
-            boot_mode = PIXIE_BOOT_SETTINGS_LOAD;
-            break;
+        case 0x0F:
         case 0x7F:
-        default:
             boot_mode = PIXIE_BOOT_RESET_LOAD;
+            break;
+        case 0x00:
+        case 0x70:
+        default:
+            std::cout << logging("ERROR") << "boot mode " << boot_pattern << " not supported"
+                      << std::endl;
+            return false;
+    }
+
+    if (boot_pattern == 0x7F && par_file.empty()) {
+        std::cout << logging("ERROR") << "settings file required for boot pattern: 0x"
+                  << std::hex << boot_pattern << std::endl;
+        return false;
     }
 
     int rc;
@@ -1129,6 +1143,7 @@ bool boot_crate(const std::string& par_file, unsigned int boot_pattern) {
     } else {
         rc = ::PixieBootCrate(nullptr, boot_mode);
     }
+
     if (!verify_api_return_value(rc, "PixieBootCrate", false)) {
         return false;
     }

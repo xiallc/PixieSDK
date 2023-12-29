@@ -1882,29 +1882,30 @@ PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file,
         bool import_settings;
         bool boot;
         bool force;
+        bool probe = crate->probe();
 
         switch (boot_mode) {
             case PIXIE_BOOT_SETTINGS_LOAD:
-                if (settings_file == nullptr) {
+                if (settings_file == nullptr || strlen(settings_file) == 0) {
                     throw xia_error(xia_error::code::invalid_value,
-                                    "settings file pointer is NULL");
+                                    "settings file pointer is NULL or empty");
                 }
                 import_settings = true;
                 boot = false;
                 force = false;
-                if (!crate->probe()) {
+                if (!probe) {
                     throw xia_error(xia_error::code::module_offline,
                                     "fast boot not available with offline modules");
                 }
                 break;
             case PIXIE_BOOT_RESET_LOAD:
-                import_settings = settings_file != nullptr;
+                import_settings = settings_file != nullptr && strlen(settings_file) > 0;
                 boot = true;
                 force = true;
                 break;
             default:
                 import_settings = false;
-                boot = !crate->probe();
+                boot = !probe;
                 force = false;
                 break;
         }
