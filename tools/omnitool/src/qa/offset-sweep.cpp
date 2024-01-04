@@ -141,7 +141,7 @@ void offset_sweep_worker::csv_generate(
                 return a.stddev < b.stddev;
             });
         auto& max_stddev = *msdi;
-        out << channel << ','
+        out << chan_results.channel << ','
             << max_stddev.stddev << ','
             << chan_results.slope_k << ','
             << chan_results.slope_c
@@ -173,7 +173,7 @@ void offset_sweep_worker::plot_generate(
             avg_stddev.update(result.stddev);
         }
         avg_stddev.calc();
-        out << "slopes[" << channel
+        out << "slopes[" << chan_results.channel
             << "] = [" << chan_results.results[chan_results.slope_start].offset
             << ", " << chan_results.results[chan_results.slope_end].offset
             << ", " << chan_results.results[chan_results.slope_start].mean
@@ -280,7 +280,7 @@ void offset_sweep_worker::find_slope(
         find_channel_mean_min_max(chan_results, max, max_index, min, min_index);
         if (min_index >= max_index || (max_index - min_index) <= window) {
             xia_log(xia::log::error) << "invalid signal: serial-num=" << serial_num
-                                     << " channel=" << channel;
+                                     << " channel=" << chan_results.channel;
             chan_results.error = "Invalid signal, no slope found";
             continue;
         }
@@ -302,7 +302,7 @@ void offset_sweep_worker::find_slope(
         }
         if (min_index >= max_index - window) {
             xia_log(xia::log::error) << "slope start not found: serial-num=" << serial_num
-                                     << " channel=" << channel
+                                     << " channel=" << chan_results.channel
                                      << " min-index=" << min_index << " (" << min << ')'
                                      << " min-detla=" << chan_results.results[min_index].delta
                                      << " max_index=" << max_index << " (" << max << ')'
@@ -328,7 +328,7 @@ void offset_sweep_worker::find_slope(
         }
         if (max_index <= min_index + window) {
             xia_log(xia::log::error) << "slope end not found: serial-num=" << serial_num
-                                     << " channel=" << channel;
+                                     << " channel=" << chan_results.channel;
             chan_results.error = "Invalid signal, slope end not found";
             continue;
         }
@@ -402,8 +402,8 @@ void offset_sweep_worker::worker(
     try {
         pixie::hw::adc_trace adc_trace(pixie::hw::max_adc_trace_length);
         module_results mod_results(channels.size());
-        for (auto chan : channels) {
-            mod_results[chan].channel = chan;
+        for (size_t idx = 0; idx < channels.size(); idx++) {
+            mod_results[idx].channel = channels[idx];
         }
         period.start();
         for (auto channel : channels) {
@@ -424,11 +424,11 @@ void offset_sweep_worker::worker(
              */
             pixie::hw::wait(dac_settle_usec);
             module.get_traces();
-            for (auto channel : channels) {
-                module.read_adc(channel, adc_trace, false);
+            for (size_t idx = 0; idx < channels.size(); idx++) {
+                module.read_adc(channels[idx], adc_trace, false);
                 auto mean = adc_mean(adc_trace);
                 auto stddev = adc_stddev(adc_trace, mean);
-                mod_results[channel].results.emplace_back(offset, mean, stddev);
+                mod_results[idx].results.emplace_back(offset, mean, stddev);
             }
         }
         set_module_mean_deltas(mod_results);
