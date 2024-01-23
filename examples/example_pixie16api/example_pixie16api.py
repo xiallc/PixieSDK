@@ -40,6 +40,51 @@ class BootCodes(enum.Enum):
     PIXIE_BOOT_SETTINGS_LOAD = 2
 
 
+class ModuleConfig(ctypes.Structure):
+    _fields_ = [("adc_bit_resolution", ctypes.c_ushort),
+                ("adc_sampling_frequency", ctypes.c_ushort),
+                ("fw_revision", ctypes.c_char * 256),
+                ("fw_tag", ctypes.c_char * 256),
+                ("fw_type", ctypes.c_char * 256),
+                ("fw_device", (ctypes.c_char * 16) * 6),
+                ("fw_device_file", (ctypes.c_char * 256) * 6),
+                ("number", ctypes.c_ushort),
+                ("number_of_channels", ctypes.c_ushort),
+                ("revision", ctypes.c_ushort),
+                ("serial_number", ctypes.c_uint),
+                ("slot", ctypes.c_ushort)]
+
+
+class ModuleFifoConfig(ctypes.Structure):
+    _fields_ = [("bandwidth_mb_per_sec", ctypes.c_size_t),
+                ("buffers", ctypes.c_size_t),
+                ("dma_trigger_level_bytes", ctypes.c_size_t),
+                ("hold_usecs", ctypes.c_size_t),
+                ("idle_wait_usecs", ctypes.c_size_t),
+                ("run_wait_usecs", ctypes.c_size_t)]
+
+
+class ModuleFifoStats(ctypes.Structure):
+    _fields_ = [("bytes_in", ctypes.c_size_t),
+                ("bytes_out", ctypes.c_size_t),
+                ("dma_in", ctypes.c_size_t),
+                ("overflows", ctypes.c_size_t),
+                ("dropped", ctypes.c_size_t),
+                ("hw_overflows", ctypes.c_size_t)]
+
+
+def fifo_stats_to_json(fifo_stats):
+    fifo_json = {
+        "in": fifo_stats.bytes_in,
+        "out": fifo_stats.bytes_out,
+        "dma_in": fifo_stats.dma_in,
+        "overflows": fifo_stats.overflows,
+        "dropped": fifo_stats.dropped,
+        "hw_overflows": fifo_stats.hw_overflows
+    }
+    return json.dumps(fifo_json)
+
+
 def adc(cfg, sdk):
     """
     Collects ADC traces from all modules in the configuration file and outputs them to CSV.
@@ -53,7 +98,7 @@ def adc(cfg, sdk):
         check_return_code(sdk, rc, "Pixie16AcquireADCTrace")
 
         traces = list()
-        for ch in range(cfg[mod]['info']['num_channels']):
+        for ch in range(cfg[mod]['info']['number_of_channels']):
             trc_length = ctypes.c_uint(0)
             rc = sdk.PixieGetTraceLength(mod, ch, ctypes.byref(trc_length))
             check_return_code(sdk, rc, "PixieGetTraceLength")
@@ -100,7 +145,7 @@ def baseline(cfg, sdk):
         baselines = list()
         timestamps = list()
         max_num_baselines = ctypes.c_uint(0)
-        for ch in range(cfg[mod]['info']['num_channels']):
+        for ch in range(cfg[mod]['info']['number_of_channels']):
             rc = sdk.PixieGetMaxNumBaselines(mod, ch, ctypes.byref(max_num_baselines))
             check_return_code(sdk, rc, "PixieGetMaxNumBaselines")
 
@@ -132,7 +177,7 @@ def blcut(cfg, sdk):
     for mod in range(len(cfg)):
         logging.info(f"Starting to get BL cuts for Module {mod}.")
         vals = list()
-        for ch in range(cfg[mod]['info']['num_channels']):
+        for ch in range(cfg[mod]['info']['number_of_channels']):
             val = ctypes.c_uint32(0)
             rc = sdk.Pixie16BLcutFinder(mod, ch, ctypes.byref(val))
             check_return_code(sdk, rc, "Pixie16BLcutFinder")
@@ -166,6 +211,39 @@ def check_return_code(sdk, return_code, function):
             f"{cbuf_to_string(msg)}.")
 
 
+def copy(args, cfg, sdk):
+    masks = list()
+    if args.copy_mask and args.dest_module:
+        logging.info(f"Starting to copy for Module {args.mod} and Module {args.dest_module}.")
+        for mod in range(len(cfg)):
+            if args.ch and args.dest_channel:
+                for ch in range(cfg[mod]['info']['number_of_channels']):
+                    if mod == args.dest_module and ch == args.dest_channel:
+                        masks.append(1)
+                    else:
+                        masks.append(0)
+            else:
+                if mod == args.dest_module:
+                    masks.append(1)
+                else:
+                    masks.append(0)
+
+        pymasks = (ctypes.c_ushort * len(masks))()
+        for mask in range(len(masks)):
+            pymasks[mask] = masks[mask]
+
+        if args.ch and args.dest_channel:
+            rc = sdk.Pixie16CopyDSPParameters(args.copy_mask, args.mod, args.ch,
+                                              ctypes.byref(pymasks))
+        else:
+            rc = sdk.Pixie16CopyDSPParameters(args.copy_mask, args.mod,
+                                              cfg[args.mod]['info']['number_of_channels'],
+                                              ctypes.byref(pymasks))
+        check_return_code(sdk, rc, "Pixie16CopyDSPParameters")
+        logging.info(f"Finished copying for Module {args.mod} and Module {args.dest_module}.")
+        export_settings(cfg, sdk)
+
+
 def data_runs(args, cfg, sdk, func):
     """
     Executes N many data runs based on the number requested by the user.
@@ -195,7 +273,8 @@ def export_csv(mod, desc, header, data):
     :return: Nothing
     """
     if len(header) - 1 != len(data):
-        raise RuntimeError("The provided CSV header doesn't match with the number of data columns.")
+        raise RuntimeError("The provided CSV header doesn't match "
+                           "with the number of data columns.")
 
     with open(generate_filename(mod, desc, "csv"), 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
@@ -220,9 +299,9 @@ def export_stats(args, cfg, sdk, desc):
 
     stats_labels = ("real_time", "live_time", "input_counts", "input_count_rate",
                     "output_counts", "output_count_rate")
-    stats = [[0] * cfg[args.mod]['info']['num_channels'] for x in range(len(stats_labels))]
+    stats = [[0] * cfg[args.mod]['info']['number_of_channels'] for x in range(len(stats_labels))]
 
-    for ch in range(cfg[args.mod]['info']['num_channels']):
+    for ch in range(cfg[args.mod]['info']['number_of_channels']):
         stats[0][ch] = sdk.Pixie16ComputeRealTime(bin_stats, args.mod)
         stats[1][ch] = sdk.Pixie16ComputeLiveTime(bin_stats, args.mod, ch)
         stats[2][ch] = sdk.Pixie16ComputeRawInputCount(bin_stats, args.mod, ch)
@@ -250,7 +329,7 @@ def export_settings(cfg, sdk):
     check_return_code(sdk, rc, "Pixie16SaveDSPParametersToFile")
 
 
-def export_list_mode_data(cfg, sdk, output):
+def export_list_mode_data(cfg, sdk, output, fifo_output):
     """
     Serially processes list-mode data from the Worker FIFO and outputs it into the data
     file.
@@ -272,6 +351,11 @@ def export_list_mode_data(cfg, sdk, output):
                 ctypes.cast(buf, ctypes.POINTER(ctypes.c_ushort * 1)), num_words, mod)
             for chunk in buf:
                 output[mod].write(struct.pack("I", chunk))
+
+        fifo_stats = ModuleFifoStats()
+        rc = sdk.PixieReadRunFifoStats(mod, ctypes.byref(fifo_stats))
+        check_return_code(sdk, rc, "PixieReadRunFifoStats")
+        fifo_output[mod].write(fifo_stats_to_json(fifo_stats) + '\n')
 
 
 def generate_filename(module, description, extension):
@@ -300,7 +384,8 @@ def list_mode(run_num, args, cfg, sdk):
 
     logging.info(f'Writing SYNCH_WAIT = {args.synch_wait}')
     check_return_code(sdk,
-                      sdk.Pixie16WriteSglModPar(ctypes.c_char_p(b"SYNCH_WAIT"), args.synch_wait, 0),
+                      sdk.Pixie16WriteSglModPar(ctypes.c_char_p(b"SYNCH_WAIT"),
+                                                args.synch_wait, 0),
                       "Pixie16WriteSglModPar")
 
     logging.info(f'Writing IN_SYNCH = {args.in_synch}')
@@ -314,6 +399,8 @@ def list_mode(run_num, args, cfg, sdk):
 
     output = [open(generate_filename(mod, f"list-mode-run{run_num}", "lmd"), 'wb') for mod in
               range(len(cfg))]
+    fifo_output = [open(generate_filename(mod, f"list-mode-run{run_num}-fifo", "jsonl"), 'w')
+                   for mod in range(len(cfg))]
 
     run_start_time = datetime.now()
     check_time = 0
@@ -343,7 +430,7 @@ def list_mode(run_num, args, cfg, sdk):
         for that module. The Worker FIFOs do not have any limitations on how often you can poll 
         them for data.
         """
-        export_list_mode_data(cfg, sdk, output)
+        export_list_mode_data(cfg, sdk, output, fifo_output)
 
         """
         Check the run status of the Director module (num=0) to see if the run has been stopped.
@@ -370,7 +457,7 @@ def list_mode(run_num, args, cfg, sdk):
                            f"failed to finalize their runs properly.")
 
     logging.info("Reading the final words from the External FIFO and getting run stats.")
-    export_list_mode_data(cfg, sdk, output)
+    export_list_mode_data(cfg, sdk, output, fifo_output)
     export_stats(args, cfg, sdk, f"list-mode-stats-run{run_num}")
 
 
@@ -384,8 +471,7 @@ def load_sdk(path):
     sdk = ctypes.cdll.LoadLibrary(path)
     for func in [sdk.Pixie16ComputeRealTime, sdk.Pixie16ComputeInputCountRate,
                  sdk.Pixie16ComputeLiveTime, sdk.Pixie16ComputeOutputCountRate,
-                 sdk.Pixie16ComputeProcessedEvents, sdk.Pixie16ComputeRawInputCount,
-                 sdk.Pixie16ComputeRawOutputCount]:
+                 sdk.Pixie16ComputeRawInputCount, sdk.Pixie16ComputeRawOutputCount]:
         func.restype = ctypes.c_double
     logging.info(f"Finished loading Pixie16API.")
     return sdk
@@ -451,7 +537,7 @@ def mca(run_num, args, cfg, sdk):
         logging.info(f"finished in Module {args.mod}.")
 
     hists = list()
-    for ch in range(cfg[args.mod]['info']['num_channels']):
+    for ch in range(cfg[args.mod]['info']['number_of_channels']):
         hist_len = ctypes.c_uint(0)
         rc = sdk.PixieGetHistogramLength(args.mod, ch, ctypes.byref(hist_len))
         check_return_code(sdk, rc, "PixieGetHistogramLength")
@@ -477,16 +563,16 @@ def parse_firmware(cfg, sdk):
     """
     logging.info("Beginning firmware registration.")
     for mod in cfg:
-        objects = {**mod['dsp'], **mod['fpga']}
-        for device, path in [(k, v) for k, v in objects.items() if k != 'par']:
-            if device == "ldr":
-                device = "dsp"
-            rc = sdk.PixieRegisterFirmware(mod['fw']['version'], mod['fw']['revision'],
-                                           mod['fw']['adc_msps'], mod['fw']['adc_bits'],
-                                           ctypes.c_char_p(device.encode()),
-                                           ctypes.c_char_p(path.encode()), cfg.index(mod))
-            if rc < 0:
-                raise RuntimeError(f"Firmware registration failed with Error Code {rc}.")
+        if 'fw' in mod:
+            objects = {**mod['fw']['fw_set']}
+            for device, path in [(k, v) for k, v in objects.items()]:
+                if (device != ''):
+                    rc = sdk.PixieRegisterFirmware(0, mod['fw']['revision'],
+                                                   mod['fw']['adc_msps'], mod['fw']['adc_bits'],
+                                                   ctypes.c_char_p(device.encode()),
+                                                   ctypes.c_char_p(path.encode()), cfg.index(mod))
+                    if rc < 0:
+                        raise RuntimeError(f"Firmware registration failed with Error Code {rc}.")
     logging.info("Finished firmware registration.")
 
 
@@ -499,7 +585,8 @@ def read(args, sdk):
     """
     if args.ch:
         logging.info(
-            f'Pixie16ReadSglChanPar reading {args.name} from Module {args.mod} Channel {args.ch}.')
+            f'Pixie16ReadSglChanPar reading {args.name} from Module {args.mod}'
+            f'Channel {args.ch}.')
         val = ctypes.c_double()
         rc = sdk.Pixie16ReadSglChanPar(ctypes.c_char_p(args.name.encode()), ctypes.byref(val),
                                        args.mod, args.ch)
@@ -525,7 +612,7 @@ def find_tau(cfg, sdk):
     """
     for mod in range(len(cfg)):
         logging.info(f"Starting to find taus for Module {mod}.")
-        taus = (ctypes.c_double * cfg[mod]['info']['num_channels'])()
+        taus = (ctypes.c_double * cfg[mod]['info']['number_of_channels'])()
         rc = sdk.Pixie16TauFinder(mod, ctypes.cast(taus, ctypes.POINTER(ctypes.c_double * 1)))
         check_return_code(sdk, rc, "Pixie16BLcutFinder")
         export_csv(mod, 'taus', ['channel', 'taus'], [taus])
@@ -598,12 +685,11 @@ def validate_config(cfg):
     """
     cfg_errors = {}
     expected_nodes = {
-        'root': {'slot', 'dsp', 'fpga', 'fw'},
-        'dsp': {'ldr', 'par', 'var'},
-        'fpga': {'fippi', 'sys'},
-        'fw': {'version', 'revision', 'adc_msps', 'adc_bits'},
-        'worker': {"bandwidth_mb_per_sec", "buffers", "dma_trigger_level_bytes", "hold_usecs",
-                   "idle_wait_usecs", "run_wait_usecs"}
+        'root': {'slot', 'dsp', 'fifo_config'},
+        'dsp': {'par'},
+        'fifo_config': {"bandwidth_mb_per_sec", "buffers", "dma_trigger_level_bytes",
+                        "hold_usecs", "idle_wait_usecs", "run_wait_usecs"},
+        'fw': {'adc_bits', 'adc_msps', 'fw_revision', 'fw_set', 'revision', 'type'}
     }
     for idx, item in enumerate(cfg):
         node_errors = dict()
@@ -611,6 +697,9 @@ def validate_config(cfg):
 
         for key in [x for x in item.keys() if x != 'slot']:
             check_node(key, item[key].keys(), expected_nodes[key], node_errors)
+
+        if 'fw' in cfg:
+            check_node('fw', item['fw'].keys(), expected_nodes['fw'], node_errors)
 
         if node_errors:
             cfg_errors[f"Element {idx}"] = node_errors
@@ -631,36 +720,58 @@ def example_pixie16api(args, cfg):
     logging.info(f"Initializing the system.")
     rc = pixie16_api.Pixie16InitSystem(ctypes.c_short(len(cfg)),
                                        ctypes.cast(
-                                           (ctypes.c_ushort * len(cfg))(*[x['slot'] for x in cfg]),
+                                           (ctypes.c_ushort * len(cfg))
+                                           (*[x['slot'] for x in cfg]),
                                            ctypes.POINTER(ctypes.c_short * 1)), 0)
     check_return_code(pixie16_api, rc, "Pixie16InitSystem")
     logging.info(f"Finished initialization.")
 
     if args.cmd == 'mca' and args.mod > len(cfg):
-        raise RuntimeError(f'You requested Module {args.mod} but we only have {len(cfg)} modules.')
+        raise RuntimeError(f'You requested Module {args.mod} but we only have {len(cfg)} '
+                           f'modules.')
 
     for mod in range(len(cfg)):
-        sn = ctypes.c_uint()
-        rev = ctypes.c_ushort()
-        adc_bits = ctypes.c_ushort()
-        adc_msps = ctypes.c_ushort()
-        num_channels = ctypes.c_ushort()
+        if 'fifo_config' in cfg[mod]:
+            logging.info(f"Setting FIFO config for Module {mod}")
+            fifo_config = ModuleFifoConfig(cfg[mod]['fifo_config']["bandwidth_mb_per_sec"],
+                                           cfg[mod]['fifo_config']["buffers"],
+                                           cfg[mod]['fifo_config']["dma_trigger_level_bytes"],
+                                           cfg[mod]['fifo_config']["hold_usecs"],
+                                           cfg[mod]['fifo_config']["idle_wait_usecs"],
+                                           cfg[mod]['fifo_config']["run_wait_usecs"])
+            rc = pixie16_api.PixieSetFifoConfiguration(mod, ctypes.byref(fifo_config))
+            check_return_code(pixie16_api, rc, "PixieSetFifoConfiguration")
+            logging.info(f"Finished setting FIFO config for Module {mod}")
 
-        rc = pixie16_api.Pixie16ReadModuleInfo(mod, ctypes.byref(rev), ctypes.byref(sn),
-                                               ctypes.byref(adc_bits), ctypes.byref(adc_msps),
-                                               ctypes.byref(num_channels))
-        check_return_code(pixie16_api, rc, "Pixie16ReadModuleInfo")
+        module_info = ModuleConfig()
+
+        rc = pixie16_api.PixieGetModuleInfo(mod, ctypes.byref(module_info))
+        check_return_code(pixie16_api, rc, "PixieGetModuleInfo")
         logging.info(f"Begin Module {mod} information.")
-        cfg[mod]['info'] = {"number": mod, "sn": sn.value, "rev": rev.value,
-                            "adc_msps": adc_msps.value, "adc_bits": adc_bits.value,
-                            "num_channels": num_channels.value}
+        cfg[mod]['info'] = {"adc_bit_resolution": module_info.adc_bit_resolution,
+                            "adc_sampling_frequency": module_info.adc_sampling_frequency,
+                            "number": module_info.number,
+                            "number_of_channels": module_info.number_of_channels,
+                            "revision": module_info.revision,
+                            "serial_number": module_info.serial_number, "slot": module_info.slot}
         logging.info(cfg[mod]['info'])
         logging.info(f"End Module {mod} information.")
 
+        fifo_config = ModuleFifoConfig()
+        rc = pixie16_api.PixieGetFifoConfiguration(mod, ctypes.byref(fifo_config))
+        check_return_code(pixie16_api, rc, "PixieGetFifoConfiguration")
+        logging.info(f"Begin Module {mod} FIFO information.")
+        cfg[mod]['fifo_config'] = {"bandwidth_mb_per_sec": fifo_config.bandwidth_mb_per_sec,
+                                   "buffers": fifo_config.buffers,
+                                   "dma_trigger_level_bytes": fifo_config.dma_trigger_level_bytes,
+                                   "hold_usecs": fifo_config.hold_usecs,
+                                   "idle_wait_usecs": fifo_config.idle_wait_usecs,
+                                   "run_wait_usecs": fifo_config.run_wait_usecs}
+        logging.info(cfg[mod]['fifo_config'])
+        logging.info(f"End Module {mod} FIFO information")
+
     if args.cmd == 'init':
         return
-
-    parse_firmware(cfg, pixie16_api)
 
     logging.info(f"Booting the crate with boot code {hex(args.boot_code)}")
 
@@ -671,12 +782,27 @@ def example_pixie16api(args, cfg):
     else:
         boot_code = 1
 
+    if args.additional_config:
+        boot_code = 2
+
+    if args.firmware_path:
+        rc = pixie16_api.Pixie16LoadModuleFirmware(ctypes.c_char_p(args.firmware_path.encode()))
+        check_return_code(pixie16_api, rc, "Pixie16LoadModuleFirmware")
+
+    parse_firmware(cfg, pixie16_api)
+
     rc = pixie16_api.PixieBootCrate(ctypes.c_char_p(cfg[0]['dsp']['par'].encode()), boot_code)
     check_return_code(pixie16_api, rc, "Pixie16BootCrate")
     logging.info("Finished booting the crate.")
 
     if args.cmd == 'boot':
         return
+
+    if args.additional_config:
+        logging.info(f"Loading additional config from {args.additional_config}")
+        rc = pixie16_api.Pixie16LoadDSPParametersFromFile(ctypes.c_char_p(
+                                                              args.additional_config.encode()))
+        check_return_code(pixie16_api, rc, "Pixie16LoadDSPParametersFromFile")
 
     if args.cmd == 'adc':
         adc(cfg, pixie16_api)
@@ -708,6 +834,12 @@ def example_pixie16api(args, cfg):
     if args.cmd == 'write':
         write(args, cfg, pixie16_api)
 
+    if args.cmd == 'copy':
+        copy(args, cfg, pixie16_api)
+
+    if args.cmd == 'export-settings':
+        export_settings(cfg, pixie16_api)
+
     pixie16_api.Pixie16ExitSystem(len(cfg))
 
 
@@ -720,6 +852,8 @@ if __name__ == '__main__':
                                    help='The YAML configuration file')
         parent_parser.add_argument('-l', '--lib', type=str, required=True,
                                    help='Path to the Pixie16Api.so.')
+        parent_parser.add_argument('-a', '--additional_config', type=str,
+                                   help='Additional YAML configuration file')
 
         subparsers = PARSER.add_subparsers(title="commands", help='Commands', dest='cmd')
 
@@ -730,13 +864,21 @@ if __name__ == '__main__':
                                      "we'll execute against all modules. Default: %(default)s")
 
         init_parser = subparsers.add_parser("init", add_help=False, parents=[parent_parser],
-                                            help="Initializes the SDK and prints module information")
+                                            help="Initializes the SDK and prints module "
+                                                 "information")
 
         boot_parser = subparsers.add_parser("boot", add_help=False, parents=[parent_parser],
                                             help="Boots the modules found in the config.")
         boot_parser.add_argument('-b', '--boot_code', type=int, default=0x7F,
                                  help='The boot code passed to the boot function. '
                                       'Default: %(default)s')
+        boot_parser.add_argument('--firmware_path', type=str,
+                                 help='The system path to load firmware from.')
+
+        export_parser = subparsers.add_parser("export-settings", add_help=False,
+                                              parents=[boot_parser],
+                                              help="Boots the system, dumps the settings to file "
+                                                   "defined in config.")
 
         ao_parser = subparsers.add_parser("adjust-offsets", add_help=False,
                                           parents=[boot_parser],
@@ -757,6 +899,18 @@ if __name__ == '__main__':
         write_parser.add_argument('-v', '--value', type=float,
                                   help="The value of the parameter to write.")
 
+        copy_parser = subparsers.add_parser('copy', add_help=False, parents=[read_parser],
+                                             help="Copies DSP parameters from source to "
+                                                  "destination.")
+        copy_parser.add_argument('--copy_mask', type=int, default=None,
+                                 help="An integer representing the set of parameters to copy")
+        copy_parser.add_argument('--dest_mask', type=int, default=None,
+                                 help="An integer representing the destination channels")
+        copy_parser.add_argument('--dest_channel', type=int, default=None,
+                                 help="An integer representing the destination channel")
+        copy_parser.add_argument('--dest_module', type=int, default=None,
+                                 help="An integer representing the destination module")
+
         adc_parser = subparsers.add_parser("adc", add_help=False, parents=[boot_parser],
                                            help="Collects ADC traces from all modules.")
 
@@ -764,7 +918,8 @@ if __name__ == '__main__':
                                              help="Executes BL cut control task for all modules.")
 
         tau_parser = subparsers.add_parser("find-tau", add_help=False, parents=[boot_parser],
-                                           help="Executes tau finder control task for all modules.")
+                                           help="Executes tau finder control task for all "
+                                                "modules.")
 
         dac_parser = subparsers.add_parser("set-dacs", add_help=False, parents=[boot_parser],
                                            help="Executes set DACs control task for all modules.")
@@ -772,7 +927,8 @@ if __name__ == '__main__':
         baseline_parser = subparsers.add_parser("baseline", add_help=False, parents=[boot_parser],
                                                 help="Collects baselines from all modules.")
 
-        mca_parser = subparsers.add_parser("mca", add_help=False, parents=[adc_parser, mod_parser],
+        mca_parser = subparsers.add_parser("mca", add_help=False, parents=[adc_parser,
+                                                                           mod_parser],
                                            help="Executes an MCA run for the provided module.")
         mca_parser.add_argument('-n', '--num', type=int, default=1,
                                 help='The number of data runs to execute. Default: %(default)s')
