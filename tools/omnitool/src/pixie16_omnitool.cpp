@@ -48,11 +48,11 @@ static void firmware_line_parse(
     firmware_sets& fw_sets, std::string& line, const char delimiter) {
     xia::pixie::firmware::release_type release;
     auto fw = xia::pixie::firmware::parse(release, line, delimiter);
-    auto rel_str = release.to_string();
-    if (fw_sets.find(rel_str) == std::end(fw_sets)) {
-        fw_sets.emplace(rel_str, xia::pixie::firmware::firmware_set(release, "undefined"));
+    auto fw_tag = fw.tag;
+    if (fw_sets.find(fw_tag) == std::end(fw_sets)) {
+        fw_sets.emplace(fw_tag, xia::pixie::firmware::firmware_set(release, "undefined"));
     }
-    fw_sets[rel_str].add(fw);
+    fw_sets[fw_tag].add(fw);
 }
 
 static void load_crate_firmwares(firmware_sets& fw_sets, const std::string& file) {

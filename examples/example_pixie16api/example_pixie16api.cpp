@@ -164,6 +164,16 @@ void verify_json_module(const json& mod) {
             "Missing dsp object in configuration element: par.");
     }
 
+    if (mod.contains("fw")) {
+        auto& fw = mod["fw"];
+        if (!fw.contains("adc_bits") || !fw.contains("adc_msps") || !fw.contains("fw_revision") ||
+            !fw.contains("fw_set") || !fw.contains("revision") || !fw.contains("type")) {
+            throw std::invalid_argument(
+                "Missing firmware configuration (fw) definition (adc_bits, adc_msps, fw_set,"
+                " revision, tag, type).");
+        }
+    }
+
     if (mod.contains("fifo_config")) {
         auto& fifo_config = mod["fifo_config"];
         if (!fifo_config.contains("bandwidth_mb_per_sec") || !fifo_config.contains("buffers") ||
@@ -236,7 +246,7 @@ void read_config(const std::string& config_file_name, configuration& cfg) {
             auto& jfw = module["fw"];
             std::strncpy(
                 mcfg.cfg.fw_revision,
-                jfw["revision"].template get<std::string>().c_str(),
+                jfw["fw_revision"].template get<std::string>().c_str(),
                 sizeof(mcfg.cfg.fw_revision) - 1);
             if (jfw.contains("adc_msps")) {
                 mcfg.cfg.adc_sampling_frequency = jfw["adc_msps"];
@@ -244,11 +254,8 @@ void read_config(const std::string& config_file_name, configuration& cfg) {
             if (jfw.contains("adc_bits")) {
                 mcfg.cfg.adc_bit_resolution = jfw["adc_bits"];
             }
-            if (jfw.contains("tag")) {
-                std::strncpy(
-                    mcfg.cfg.fw_tag,
-                    jfw["tag"].template get<std::string>().c_str(),
-                    sizeof(mcfg.cfg.fw_tag) - 1);
+            if (jfw.contains("revision")) {
+                mcfg.cfg.revision = jfw["revision"];
             }
             if (jfw.contains("type")) {
                 std::strncpy(
@@ -314,8 +321,8 @@ bool write_config(
         jdsp["par"] = par_file_name;
         jm["dsp"] = jdsp;
         json jfw;
-        jfw["revision"] = mod.cfg.fw_revision;
-        jfw["tag"] = mod.cfg.fw_tag;
+        jfw["fw_revision"] = mod.cfg.fw_revision;
+        jfw["revision"] = mod.cfg.revision;
         jfw["type"] = mod.cfg.fw_type;
         jfw["adc_msps"] = mod.cfg.adc_sampling_frequency;
         jfw["adc_bits"] = mod.cfg.adc_bit_resolution;
@@ -1075,20 +1082,24 @@ void output_module_info(mod_cfg& mod) {
         throw std::runtime_error("Could not get module information for Module " +
                                  std::to_string(mod.cfg.number));
     }
-    mod.cfg.adc_bit_resolution = mcfg.adc_bit_resolution;
-    mod.cfg.adc_sampling_frequency = mcfg.adc_sampling_frequency;
-    mod.cfg.number = mcfg.number;
+    if (!mod.cfg.adc_bit_resolution) {
+        mod.cfg.adc_bit_resolution = mcfg.adc_bit_resolution;
+    }
+    if (!mod.cfg.adc_sampling_frequency) {
+        mod.cfg.adc_sampling_frequency = mcfg.adc_sampling_frequency;
+    }
     mod.cfg.number_of_channels = mcfg.number_of_channels;
-    mod.cfg.revision = mcfg.revision;
+    if (!mod.cfg.revision) {
+        mod.cfg.revision = mcfg.revision;
+    }
     mod.cfg.serial_number = mcfg.serial_number;
-    mod.cfg.slot = mcfg.slot;
-    std::cout << logging("INFO") << "Begin module information for Module " << mod.cfg.number << std::endl
-              << logging("INFO") << "Serial Number: " << mod.cfg.serial_number << std::endl
-              << logging("INFO") << "Revision: " << mod.cfg.revision << std::endl
-              << logging("INFO") << "ADC Bits: " << mod.cfg.adc_bit_resolution << std::endl
-              << logging("INFO") << "ADC MSPS: " << mod.cfg.adc_sampling_frequency << std::endl
-              << logging("INFO") << "Num Channels: " << mod.cfg.number_of_channels << std::endl
-              << logging("INFO") << "End module information for Module " << mod.cfg.number << std::endl;
+    std::cout << logging("INFO") << "Begin module information for Module " << mcfg.number << std::endl
+              << logging("INFO") << "Serial Number: " << mcfg.serial_number << std::endl
+              << logging("INFO") << "Revision: " << mcfg.revision << std::endl
+              << logging("INFO") << "ADC Bits: " << mcfg.adc_bit_resolution << std::endl
+              << logging("INFO") << "ADC MSPS: " << mcfg.adc_sampling_frequency << std::endl
+              << logging("INFO") << "Num Channels: " << mcfg.number_of_channels << std::endl
+              << logging("INFO") << "End module information for Module " << mcfg.number << std::endl;
 }
 
 bool boot_crate(const std::string& par_file, unsigned int boot_pattern) {

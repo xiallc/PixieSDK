@@ -59,7 +59,6 @@ struct module_config {
     unsigned short revision;
     unsigned int serial_number;
     unsigned short slot;
-    char sp_fpga[PIXIE16_API_MOD_CONFIG_MAX_STRING];
 };
 
 struct module_fifo_config {

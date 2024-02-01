@@ -700,18 +700,16 @@ extern const char* system_firmware_path;
  *
  * @param name The JSON file to parse and load
  * @param no_throw If true log the error and do not throw an error.
- * @return firmware_set The firmware set
 */
-firmware_set load_firmware_set(const std::string name, bool no_throw = false);
+void load_firmware_set(system& firmwares, const std::string name, bool no_throw = false);
 
 /**
  * @brief Load firmware sets from the file
  *
  * @param name The JSON file to parse and load
  * @param no_throw If true log the error and do not throw an error.
- * @return firmware_set The firmware set
 */
-firmware_set load_firmware_set(const char* name, bool no_throw = false);
+void load_firmware_set(system& firmwares, const char* name, bool no_throw = false);
 
 /**
  * @brief Load system firmware sets from the system firmware path into

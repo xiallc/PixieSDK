@@ -87,7 +87,7 @@ T strtonum(const std::string& s, const std::string msg) {
 }
 
 template<typename T>
-T strtonum(const json::value_type& j, const std::string msg) {
+T strtonum(const format::json::value_type& j, const std::string msg) {
     return strtonum<T>(std::string(j), msg);
 }
 
@@ -129,8 +129,7 @@ struct firmware_device {
 using firmware_devices = std::vector<firmware_device>;
 
 static const firmware_devices device_map = {
-    { false, { 10, 14, 15, 16, 17 }, { "sys", "fippi", "dsp", "var" }},
-    { true, { 11, 12, 13 }, { "sys", "fippi", "dsp", "var" }}
+    { false, { 10, 11, 12, 13, 14, 15, 16, 17 }, { "sys", "fippi", "dsp", "var" }}
 };
 
 static const firmware_device& firmware_device_find(const int hw_revision) {
@@ -144,7 +143,7 @@ static const firmware_device& firmware_device_find(const int hw_revision) {
     throw error(
         error::code::module_invalid_firmware,
         "firmware: device: no device map for hw revision: " +
-        std::to_string(hw_revision));
+            std::to_string(hw_revision));
 }
 
 static size_t firmware_device_size(const int hw_revision) {
@@ -158,29 +157,7 @@ static size_t firmware_device_size(const int hw_revision) {
     throw error(
         error::code::module_invalid_firmware,
         "firmware: device: no device map for hw revision: " +
-        std::to_string(hw_revision));
-}
-
-static void firmware_device_tag(util::string::strings& tags, const tag_type tag_) {
-    tags.clear();
-    util::string::strings fields;
-    util::string::split(fields, tag_, '-');
-    if (fields.size() != 3) {
-        throw error(
-            error::code::module_invalid_firmware,
-            "firmware: device: invalid tag alias: " + tag_);
-    }
-    int hw_rev = strtonum<int>(fields[0], "tag field not a number");
-    int adc_msps = strtonum<int>(fields[1], "tag field not a number");
-    int adc_bits = strtonum<int>(fields[2], "tag field not a number");
-    const auto& dm = firmware_device_find(hw_rev);
-    if (dm.shared) {
-        for (auto rev : dm.revisions) {
-            tags.push_back(tag(rev, adc_msps, adc_bits));
-        }
-    } else {
-        tags.push_back(tag_);
-    }
+            std::to_string(hw_revision));
 }
 
 reader::reader(const image& img_, const size_t default_word_size_)
@@ -716,7 +693,7 @@ firmware_set& firmware_set::operator=(const firmware_set& other) {
 
 bool firmware_set::operator==(const firmware_set& other) const {
     if (release != other.release ||
-        release_date != release_date ||
+        release_date != other.release_date ||
         firmwares.size() != other.firmwares.size()) {
         return false;
     }
@@ -878,11 +855,11 @@ void add(system& firmwares, firmware_set& set) {
      * are not released. A released partial set is invalid and
      * generates an error.
      *
-     * A complete unrelased firmware set is a user firmware set.
+     * A complete unreleased firmware set is a user firmware set.
      *
      * A complete released firmware is a released firmware set.
      *
-     * A firmware system is a collection of firmware sets, one for a
+     * A firmware system is a collection of firmware sets, one for each
      * module tag.
      *
      * A module tag set of firmware must have unique partial, user
@@ -925,109 +902,108 @@ void add(system& firmwares, firmware_set& set) {
             "firmware: set: add: released set not complete: module:" + set.tag() +
             " release:" + set.release.to_string());
     }
-    /*
-     * Firmware can be shared between different module types. It is
-     * done this way until the metadata for the firmware is able to
-     * handle this.
-     */
-    util::string::strings tags;
-    firmware_device_tag(tags, set.tag());
-    for (auto& tag : tags) {
-        auto mi = firmwares.find(tag);
-        if (mi == std::end(firmwares)) {
-            firmwares[tag] = firmware_set_refs();
-        }
-        auto& firmware_sets = firmwares[tag];
-        /*
-         * Not release means partial or user else it is a released
-         * firmware set.
-         */
-        if (set.release == not_released) {
-            auto pi = std::find_if(
-                std::begin(firmware_sets), std::end(firmware_sets), [](const auto& fw) {
-                    return fw->type() == firmware_set::set_type::partial;
-                });
-            auto ui = std::find_if(
-                std::begin(firmware_sets), std::end(firmware_sets), [](const auto& fw) {
-                    return fw->type() == firmware_set::set_type::user;
-                });
-            auto have_partial = pi != std::end(firmware_sets);
-            auto have_user = ui != std::end(firmware_sets);
-            auto set_type = set.type();
-            switch (set_type) {
-            case firmware_set::set_type::partial:
-                /*
-                 * If the provided set is partial and we already have
-                 * a partial set merge them. If the result is a user
-                 * set check if we already have a user set. It is an
-                 * error if there already is one.
-                 */
-                if (have_partial) {
-                    auto& partial = *(*pi);
-                    auto new_set = partial;
-                    new_set.merge(set);
-                    if (have_user && new_set.type() != firmware_set::set_type::partial) {
-                        throw error(
-                            error::code::module_invalid_firmware,
-                            "firmware: set: add: partial set creates user set and a user set" \
-                            " already exists: module:" + tag);
-                    }
-                    /*
-                     * Replace the partial slot and firmwares.
-                     */
-                    partial.slot = new_set.slot;
-                    partial.firmwares = new_set.firmwares;
-                    return;
-                }
-                break;
-            case firmware_set::set_type::user:
-                /*
-                 * If the set is user and we already have a user set
-                 * see if the sets match. If they match merge the
-                 * slots else it is an error.
-                 */
-                if (have_user) {
-                    auto& user = *(*ui);
-                    if (set != user) {
-                        throw error(
-                            error::code::module_invalid_firmware,
-                            "firmware: set: add: user set already exists: module:" + tag);
-                    }
-                    user.merge_slots(set);
-                    return;
-                }
-                break;
-            default:
-                throw error(
-                    error::code::internal_failure,
-                    "firmware: set: add: undefined firmware set: module:" + tag);
-            }
-        } else {
-            /*
-             * The set is released. If there is a released set and
-             * they are the same verson merge the slots else it is an
-             * error.
-             */
-            auto ri = std::find_if(
-                std::begin(firmware_sets), std::end(firmware_sets),
-                [&release = set.release](const auto& fw) {
-                    return release == fw->release;
-                });
-            auto have_release = ri != std::end(firmware_sets);
-            if (have_release) {
-                auto& release = *(*ri);
-                if (release == set) {
-                    release.merge_slots(set);
-                    return;
-                }
-                throw error(
-                    error::code::module_invalid_firmware,
-                    "firmware: set: add: released set already exists: module:" + tag +
-                    " release:" + set.release.to_string());
-            }
-        }
-        firmwares[tag].push_back(std::make_shared<firmware_set>(set));
+
+    auto tag = set.tag();
+    auto mi = firmwares.find(tag);
+    if (mi == std::end(firmwares)) {
+        firmwares[tag] = firmware_set_refs();
     }
+    auto& firmware_sets = firmwares[tag];
+    /*
+     * Not release means partial or user else it is a released
+     * firmware set.
+     */
+    if (set.release == not_released) {
+        auto pi = std::find_if(
+            std::begin(firmware_sets), std::end(firmware_sets), [](const auto& fw) {
+                return fw->type() == firmware_set::set_type::partial;
+            });
+        auto ui = std::find_if(
+            std::begin(firmware_sets), std::end(firmware_sets), [](const auto& fw) {
+                return fw->type() == firmware_set::set_type::user;
+            });
+        auto have_partial = pi != std::end(firmware_sets);
+        auto have_user = ui != std::end(firmware_sets);
+        auto set_type = set.type();
+        switch (set_type) {
+        case firmware_set::set_type::partial:
+            /*
+             * If the provided set is partial and we already have
+             * a partial set merge them. If the result is a user
+             * set check if we already have a user set. It is an
+             * error if there already is one.
+             */
+            if (have_partial) {
+                auto& partial = *(*pi);
+                auto new_set = partial;
+                new_set.merge(set);
+                if (have_user && new_set.type() != firmware_set::set_type::partial) {
+                    auto& user = *(*ui);
+                    if (new_set != user) {
+                        throw error(
+                            error::code::module_invalid_firmware,
+                            "firmware: set: add: partial set creates user set and a different "
+                            "user set already exists: module:" + tag);
+                    }
+                    user.merge_slots(new_set);
+                    firmware_sets.erase(pi);
+                    return;
+                }
+                /*
+                 * Replace the partial slot and firmwares.
+                 */
+                partial.slot = new_set.slot;
+                partial.firmwares = new_set.firmwares;
+                return;
+            }
+            break;
+        case firmware_set::set_type::user:
+            /*
+             * If the set is user and we already have a user set
+             * see if the sets match. If they match merge the
+             * slots else it is an error.
+             */
+            if (have_user) {
+                auto& user = *(*ui);
+                if (set != user) {
+                    throw error(
+                        error::code::module_invalid_firmware,
+                        "firmware: set: add: different user set already exists: module:" + tag);
+                }
+                user.merge_slots(set);
+                return;
+            }
+            break;
+        default:
+            throw error(
+                error::code::internal_failure,
+                "firmware: set: add: undefined firmware set: module:" + tag);
+        }
+    } else {
+        /*
+         * The set is released. If there is a released set and
+         * they are the same verson merge the slots else it is an
+         * error.
+         */
+        auto ri = std::find_if(
+            std::begin(firmware_sets), std::end(firmware_sets),
+            [&release = set.release](const auto& fw) {
+                return release == fw->release;
+            });
+        auto have_release = ri != std::end(firmware_sets);
+        if (have_release) {
+            auto& release = *(*ri);
+            if (release == set) {
+                release.merge_slots(set);
+                return;
+            }
+            throw error(
+                error::code::module_invalid_firmware,
+                "firmware: set: add: released set already exists: module:" + tag +
+                " release:" + set.release.to_string());
+        }
+    }
+    firmwares[tag].push_back(std::make_shared<firmware_set>(set));
 }
 
 find_filter::find_filter(const tag_type& tag_, const size_t slot_)
@@ -1242,80 +1218,87 @@ firmware parse(release_type& release, const std::string fw_desc, const char deli
     return fw;
 }
 
-firmware_set load_firmware_set(const std::string name, bool no_throw) {
-    return load_firmware_set(name.c_str(), no_throw);
+void load_firmware_set(system& firmwares, const std::string name, bool no_throw) {
+    return load_firmware_set(firmwares, name.c_str(), no_throw);
 }
 
-firmware_set load_firmware_set(const char* name, bool no_throw) {
+void load_firmware_set(system& firmwares, const char* name, bool no_throw) {
     try {
         xia_log(log::debug) << "firmware: load: parse: " << name;
         std::ifstream input(name, std::ios::in);
         format::json jfs = format::json::parse(input);
-        auto module_tag = jfs["product"]["module_tag"];
+        auto module_tags = jfs["product"]["module_tag"];
         auto& jrel = jfs["release"];
         auto& jdevices = jfs["device"];
 
-        util::string::strings tag_fields;
-        util::string::split(tag_fields, module_tag, '-');
-        if (tag_fields.size() != 3) {
-            throw error(
-                error::code::config_json_error, "invalid tag format: "  + std::string(name));
-        }
+        /*
+         * Firmware can be shared between different module types. It is
+         * done this way until the metadata for the firmware is able to
+         * handle this.
+         */
+        for (auto& module_tag : module_tags) {
+            util::string::strings tag_fields;
+            util::string::split(tag_fields, module_tag, '-');
+            if (tag_fields.size() != 3) {
+                throw error(error::code::config_json_error,
+                            "invalid tag format: " + std::string(name));
+            }
 
-        device_detail device;
-        device.mod_revision = strtonum<int>(tag_fields[0], "load: revision not a number");
-        device.mod_adc_msps = strtonum<int>(tag_fields[1], "load: ADC MSPS not a number");
-        device.mod_adc_bits = strtonum<int>(tag_fields[2], "load: ADC BITS not a number");
+            device_detail device;
+            device.mod_revision = strtonum<int>(tag_fields[0], "load: revision not a number");
+            device.mod_adc_msps = strtonum<int>(tag_fields[1], "load: ADC MSPS not a number");
+            device.mod_adc_bits = strtonum<int>(tag_fields[2], "load: ADC BITS not a number");
 
-        std::string release = jrel["version"];
-        firmware_set fw_set(release, jrel["date"]);
+            std::string release = jrel["version"];
+            firmware_set fw_set(release, jrel["date"]);
 
-        auto fw_path = util::path::dirname(name);
-        const auto& dm = firmware_device_find(device.mod_revision);
-        for (const auto& dev : dm.devices) {
-            device.name = dev;
-            auto& jdev = jdevices[dev];
-            if (jdev.is_array()) {
-                size_t instance = 0;
-                for (auto& jdev_i : jdev.items()) {
-                    auto& jdev_i_v = jdev_i.value();
-                    std::string version = jdev_i_v["version"];
-                    firmware::mask_type mask;
-                    if (jdev_i_v.contains("mask")) {
-                        mask = strtonum<firmware::mask_type>(
-                            jdev_i_v["mask"], "load: mask not a number");
-                    } else {
-                         mask = 1;
+            auto fw_path = util::path::dirname(name);
+            const auto& dm = firmware_device_find(device.mod_revision);
+            for (const auto& dev : dm.devices) {
+                device.name = dev;
+                auto& jdev = jdevices[dev];
+                if (jdev.is_array()) {
+                    size_t instance = 0;
+                    for (auto& jdev_i : jdev.items()) {
+                        auto& jdev_i_v = jdev_i.value();
+                        std::string version = jdev_i_v["version"];
+                        firmware::mask_type mask;
+                        if (jdev_i_v.contains("mask")) {
+                            mask = strtonum<firmware::mask_type>(jdev_i_v["mask"],
+                                                                 "load: mask not a number");
+                        } else {
+                            mask = 1;
+                        }
+                        firmware fw(device, release, version, mask, instance++);
+                        fw.filename = util::path::join(fw_path, {jdev_i_v["filename"]});
+                        fw.crc =
+                            strtonum<firmware::crc_type>(jdev_i_v["crc32"], "load: crc not a number");
+                        fw_set.add(fw);
                     }
-                    firmware fw(device, release, version, mask, instance++);
-                    fw.filename = util::path::join(fw_path, {jdev_i_v["filename"]});
-                    fw.crc = strtonum<firmware::crc_type>(
-                        jdev_i_v["crc32"], "load: crc not a number");
+                } else {
+                    std::string version = jdev["version"];
+                    firmware::mask_type mask;
+                    if (jdev.contains("mask")) {
+                        mask = jdev["mask"];
+                    } else {
+                        mask = 1;
+                    }
+                    firmware fw(device, release, version, mask);
+                    fw.filename = util::path::join(fw_path, {jdev["filename"]});
+                    fw.crc = strtonum<firmware::crc_type>(jdev["crc32"], "load: crc not a number");
                     fw_set.add(fw);
                 }
-            } else {
-                std::string version = jdev["version"];
-                firmware::mask_type mask;
-                if (jdev.contains("mask")) {
-                    mask = jdev["mask"];
-                } else {
-                    mask = 1;
-                }
-                firmware fw(device, release, version, mask);
-                fw.filename = util::path::join(fw_path, {jdev["filename"]});
-                fw.crc = strtonum<firmware::crc_type>(
-                    jdev["crc32"], "load: crc not a number");;
-                fw_set.add(fw);
+            }
+
+            xia_log(log::info) << "firmware: load: parse set: release:"
+                               << " tag=" << fw_set.tag()
+                               << " version=" << fw_set.release.to_string()
+                               << " date=" << fw_set.release_date
+                               << " firmwares=" << fw_set.firmwares.size();
+            if (fw_set.valid()) {
+                add(firmwares, fw_set);
             }
         }
-
-        xia_log(log::info) << "firmware: load: parse set: release:"
-                           << " tag=" << fw_set.tag()
-                           << " version=" << fw_set.release.to_string()
-                           << " date=" << fw_set.release_date
-                           << " firmwares=" << fw_set.firmwares.size();
-
-        return fw_set;
     } catch (error& ) {
         throw;
     } catch (format::json::exception& e) {
@@ -1335,7 +1318,6 @@ firmware_set load_firmware_set(const char* name, bool no_throw) {
             throw error(error::code::config_json_error, "invalid firmware spec file");
         }
     }
-    return firmware_set();
 }
 
 void load_system_firmwares(system& firmwares) {
@@ -1355,10 +1337,7 @@ void load_firmwares(system& firmwares, const char* path, bool no_throw) {
     files metadata;
     util::path::find_files(path, metadata, ".json");
     for (auto& md : metadata) {
-        auto fw_set = load_firmware_set(md, no_throw);
-        if (fw_set.valid()) {
-            add(firmwares, fw_set);
-        }
+        load_firmware_set(firmwares, md, no_throw);
     }
 }
 
