@@ -146,7 +146,13 @@ static void list_mode_command(command::context& context, bool run_task) {
 }
 
 void list_mode(command::context& context) {
-    list_mode_command(context, true);
+    auto thread = std::thread(
+        [context_ = context]() {
+        omnitool::command::context context(
+            context_.crate, context_.opts, context_.cmd);
+        list_mode_command(context, true);
+    });
+    thread.detach();
 }
 
 void list_mode_comp(
@@ -158,7 +164,13 @@ void list_mode_comp(
 }
 
 void list_save(command::context& context) {
-    list_mode_command(context, false);
+    auto thread = std::thread(
+        [context_ = context]() {
+        omnitool::command::context context(
+            context_.crate, context_.opts, context_.cmd);
+        list_mode_command(context, false);
+    });
+    thread.detach();
 }
 
 void list_save_comp(
