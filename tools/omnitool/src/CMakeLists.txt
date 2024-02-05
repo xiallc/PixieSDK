@@ -7,6 +7,7 @@ add_executable(pixie16_omnitool
         pixie16_omnitool.cpp
         $<TARGET_OBJECTS:PixieSdkObjLib>
         $<TARGET_OBJECTS:PixieSdkCommonObjLib>
+        $<TARGET_OBJECTS:CrosslineObj>
         ${OMNITOOL_CRATE_SOURCES}
         ${OMNITOOL_MODULE_SOURCES}
         ${OMNITOOL_QA_SOURCES}
@@ -16,7 +17,8 @@ add_executable(pixie16_omnitool
 target_include_directories(pixie16_omnitool PUBLIC
         ${PROJECT_SOURCE_DIR}/tools/omnitool/include/
         ${PROJECT_SOURCE_DIR}/sdk/include
-        ${PROJECT_SOURCE_DIR}/externals/)
+        ${PROJECT_SOURCE_DIR}/externals/
+        ${PROJECT_SOURCE_DIR}/externals/crossline/include)
 
 xia_configure_target(TARGET pixie16_omnitool USE_PLX)
 
