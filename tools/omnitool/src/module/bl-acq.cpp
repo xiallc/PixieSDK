@@ -36,6 +36,9 @@ void bl_acq(command::context& context) {
     command::module_range mod_nums;
     command::modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
+        crate[mod_num].run_check();
+    }
+    for (auto mod_num : mod_nums) {
         if (crate[mod_num] < pixie::hw::rev_H) {
             crate[mod_num].acquire_baselines();
         }

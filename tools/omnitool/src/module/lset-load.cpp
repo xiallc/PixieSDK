@@ -39,6 +39,9 @@ void lset_load(command::context& context) {
     command::module_range mod_nums;
     command::modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     std::string action;
+    for (auto mod_num : mod_nums) {
+        crate[mod_num].run_check();
+    }
     if (!action_opt.empty()) {
         if (action_opt == "flush" || action_opt == "sync") {
             action = action_opt;

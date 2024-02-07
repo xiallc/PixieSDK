@@ -251,6 +251,7 @@ void reg_write(command::context& context) {
         mod_slot = mod->number;
     }
     auto& mod = crate[mod_slot];
+    mod.run_check();
     pixie::hw::word value =
         util::io::get_value<pixie::hw::word>(value_opt);
     if (mem == "sys") {

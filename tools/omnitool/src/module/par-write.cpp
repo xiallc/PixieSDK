@@ -47,6 +47,9 @@ void par_write(command::context& context) {
     command::modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     const auto value = util::io::get_value<double>(value_opt);
     for (auto mod_num : mod_nums) {
+        crate[mod_num].run_check();
+    }
+    for (auto mod_num : mod_nums) {
         if (chans_opt.empty()) {
             bool bcast = crate[mod_num].write(param_opt, pixie::param::value_type(value));
             if (bcast) {

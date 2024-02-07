@@ -44,6 +44,9 @@ void par_read(command::context& context) {
     command::module_range mod_nums;
     command::modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
+        crate[mod_num].run_check();
+    }
+    for (auto mod_num : mod_nums) {
         if (chans_opt.empty()) {
             context.opts.out << "# module param read: " << mod_num
                              << ": " << param_opt << std::endl;

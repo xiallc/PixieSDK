@@ -40,6 +40,9 @@ void override_fw(command::context& context) {
         throw std::runtime_error("override_report: too many modules");
     }
     for (auto mod_num : mod_nums) {
+        crate[mod_num].run_check();
+    }
+    for (auto mod_num : mod_nums) {
         pixie::firmware::override_default_fw(
             crate[mod_num].firmware, fwfile_opt);
     }

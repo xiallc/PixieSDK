@@ -48,6 +48,9 @@ void adc_save(command::context& context) {
         length = util::io::get_value<size_t>(len_opt);
     }
     for (auto mod_num : mod_nums) {
+        crate[mod_num].run_check();
+    }
+    for (auto mod_num : mod_nums) {
         pixie::channel::range channels;
         command::channels_option(
             channels, chans_opt, crate[mod_num].num_channels);

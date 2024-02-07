@@ -36,6 +36,7 @@ void import(command::context& context) {
     util::time::timepoint tp;
     pixie::module::number_slots modules;
     xia::logging::log_level_guard log_guard(xia::log::debug);
+    crate->check_active_run();
     tp.start();
     crate->import_config(path_opt, modules);
     crate->initialize_afe();

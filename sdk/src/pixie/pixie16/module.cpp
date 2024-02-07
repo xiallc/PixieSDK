@@ -2299,6 +2299,13 @@ void module::channel_check(const size_t channel) const {
     }
 }
 
+void module::run_check() {
+    if (!forced_offline_.load() && online() && run_active()) {
+        throw error(number, slot, error::code::module_data_run_active,
+                    "invalid action while run active");
+    }
+}
+
 int module::pci_bus() {
     lock_guard guard(lock_);
     if (device) {

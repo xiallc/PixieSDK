@@ -717,6 +717,7 @@ public:
      */
     void online_check() const;
     void channel_check(const size_t channel) const;
+    void run_check();
 
     /*
      * PCI bus.

@@ -89,6 +89,9 @@ void test(command::context& context) {
     }
     command::module_range mod_nums;
     command::modules_option(mod_nums, mod_nums_opt, crate.num_modules);
+    for (auto mod_num : mod_nums) {
+        crate[mod_num].run_check();
+    }
     size_t bytes = 500 * 1024 * 1000;
     auto tests = std::vector<test_fifo_worker>(mod_nums.size());
     thread::set_num_slot(crate, mod_nums, tests);

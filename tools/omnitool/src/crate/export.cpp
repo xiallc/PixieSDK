@@ -34,6 +34,7 @@ void export_(command::context& context) {
     auto& crate = context.crate;
     auto file_opt = context.cmd.get_arg();
     util::time::timepoint tp;
+    crate->check_active_run();
     tp.start();
     crate->export_config(file_opt);
     tp.end();

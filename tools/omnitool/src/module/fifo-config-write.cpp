@@ -37,6 +37,9 @@ void fifo_config_write(command::context& context) {
     command::modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     auto value = util::io::get_value<pixie::param::value_type>(value_opt);
     for (auto mod_num : mod_nums) {
+        crate[mod_num].run_check();
+    }
+    for (auto mod_num : mod_nums) {
         auto& mod = crate[mod_num];
         if (param_opt == "bf") {
             throw std::runtime_error("can not write to non-atomic fifo parameter: " + param_opt);

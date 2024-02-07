@@ -125,6 +125,11 @@ static void list_mode_command(command::context& context, bool run_task) {
     auto secs = util::io::get_value<size_t>(secs_opt);
     auto name = name_opt;
     module_check(crate, mod_nums);
+    if (run_task) {
+        for (auto mod_num : mod_nums) {
+            crate[mod_num].run_check();
+        }
+    }
     if (secs == 0) {
         throw std::runtime_error(std::string("list mode run/save period is 0"));
     }

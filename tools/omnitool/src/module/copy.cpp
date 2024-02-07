@@ -54,6 +54,8 @@ void copy(command::context& context) {
     if (src_mod_nums.size() > 1 || dest_mod_nums.size() > 1) {
         throw std::runtime_error("can only copy from one module to one module");
     }
+    crate[src_mod_nums[0]].run_check();
+    crate[dest_mod_nums[0]].run_check();
     std::string string_mask = filter_mask;
     int mask = util::io::get_value<int>(string_mask);
     if (src_chan_opt.empty() || dest_chan_opt.empty()) {

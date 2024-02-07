@@ -208,6 +208,12 @@ public:
     int users() const;
 
     /**
+     * @brief Checks if there is a run active on any module.
+     * @throws pixie::error::code::module_data_run_active
+     */
+    void check_active_run();
+
+    /**
      * @brief Return a module indexed by a slot.
      * @tparam T The template for various ways to determine the slot.
      * @param slot The physical slot in the crate that we'd like to access.

@@ -40,6 +40,9 @@ void lset_import(command::context& context) {
     command::modules_option(mod_nums, mod_nums_opt, crate.num_modules);
     std::string action;
     xia::logging::log_level_guard log_guard(xia::log::debug);
+    for (auto mod_num : mod_nums) {
+        crate[mod_num].run_check();
+    }
     if (!action_opt.empty()) {
         if (action_opt == "flush" || action_opt == "sync") {
             action = action_opt;

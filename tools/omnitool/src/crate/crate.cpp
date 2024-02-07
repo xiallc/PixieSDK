@@ -30,6 +30,7 @@ namespace omnitool {
 namespace crate {
 void crate_report(command::context& context) {
     auto& crate = context.crate;
+    crate->check_active_run();
     context.opts.out << *crate << std::endl;
 }
 

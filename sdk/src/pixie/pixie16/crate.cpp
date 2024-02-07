@@ -72,6 +72,12 @@ int crate::users() const {
     return users_.load();
 }
 
+void crate::check_active_run() {
+    for (auto mod : slots) {
+        mod->run_check();
+    }
+}
+
 void crate::initialize(bool reg_trace) {
     xia_log(log::info) << "crate: initialise";
 

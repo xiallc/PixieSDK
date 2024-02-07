@@ -1019,6 +1019,7 @@ void shell(context& context_) {
     if (context_.opts.command_depth > 1) {
         throw std::runtime_error("shell: already running");
     }
+    context_.crate->check_active_run();
     shell_session ssession(context_);
     ::crossline_user_completion_register(
         shell_completion, static_cast<void*>(&ssession));

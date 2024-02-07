@@ -58,6 +58,9 @@ void var_write(command::context& context) {
     auto value =
         util::io::get_value<pixie::param::value_type>(value_opt);
     for (auto mod_num : mod_nums) {
+        crate[mod_num].run_check();
+    }
+    for (auto mod_num : mod_nums) {
         auto& mod = crate[mod_num];
         if (chans_opt.empty()) {
             const auto& desc =

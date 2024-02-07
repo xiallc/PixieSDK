@@ -37,6 +37,9 @@ void mod_online(command::context& context) {
     command::modules_option(
         mod_nums, mod_nums_opt, crate.num_modules);
     for (auto mod_num : mod_nums) {
+        crate[mod_num].run_check();
+    }
+    for (auto mod_num : mod_nums) {
         crate->set_online(crate[mod_num]);
     }
 }

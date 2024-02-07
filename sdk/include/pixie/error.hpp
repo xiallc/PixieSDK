@@ -147,6 +147,10 @@ enum struct code {
      * @brief 217
      */
     module_test_invalid,
+    /**
+     * @brief 218
+     */
+    module_data_run_active,
     /*
      * Channel
      */

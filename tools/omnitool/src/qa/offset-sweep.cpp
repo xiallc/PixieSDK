@@ -460,6 +460,9 @@ void offset_sweep(command::context& context) {
         throw std::runtime_error(
             "test: offset sweep: too modules for test; max 6, select fewer");
     }
+    for (auto mod_num : mod_nums) {
+        crate[mod_num].run_check();
+    }
     size_t dac_settle_msec = offset_sweep_worker::default_dac_settle_msec;
     if (!dac_settle_opt.empty()) {
         dac_settle_msec = util::io::get_value<size_t>(dac_settle_opt);
