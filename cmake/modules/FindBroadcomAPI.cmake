@@ -26,18 +26,22 @@
 #
 # TODO: We will need to update this so that we find the proper libraries based on architecture.
 #
+set(LIBRARY_PATH "Output/x64/Release")
+if (BUILD_32BIT)
+    set(LIBRARY_PATH "Release")
+endif ()
 
 find_path(PLX_LIBRARY_DIR
         NAMES PlxApi.a PlxApi.lib
         HINTS $ENV{PLX_SDK_DIR}
         PATHS /usr/local/broadcom/current /usr/src/PlxSdk C:/Plx/PlxSdk
-        PATH_SUFFIXES PlxApi/Library Linux/PlxApi/Library PlxApi/Release)
+        PATH_SUFFIXES PlxApi/Library Linux/PlxApi/Library PlxApi/${LIBRARY_PATH})
 
 find_library(PLX_STATIC_LIBRARY_PATH
         NAMES PlxApi.a PlxApi.lib
         HINTS ${PLX_LIBRARY_DIR}
         PATHS /usr/local/broadcom/current /usr/src/PlxSdk C:/Plx/PlxSdk
-        PATH_SUFFIXES PlxApi/Library Linux/PlxApi/Library PlxApi/Release
+        PATH_SUFFIXES PlxApi/Library Linux/PlxApi/Library PlxApi/${LIBRARY_PATH}
         )
 
 find_path(PLX_INCLUDE_DIR

@@ -43,6 +43,7 @@ include(CMakeDependentOption)
 option(BUILD_EXAMPLES "Builds the example programs" ON)
 option(BUILD_SDK "Builds the base SDK library - PixieSdk.a" ON)
 option(BUILD_TESTS "Builds the test suites" ON)
+option(BUILD_32BIT "Tells system that we're in a 32-bit build environment" OFF)
 
 cmake_dependent_option(BUILD_INTEGRATION_TESTS "Builds integration tests" ON "BUILD_TESTS;BUILD_SDK" OFF)
 cmake_dependent_option(BUILD_PIXIE16_API "Builds user API library - libPixie16Api.so" ON "BUILD_SDK" OFF)
