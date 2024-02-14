@@ -363,7 +363,7 @@ void crate::import_config(const std::string json_file, module::number_slots& loa
     lock_guard guard(lock_);
     crate_event_call(crate_event::import_config_begin);
     loaded.clear();
-    config::import_json(json_file, *this, loaded);
+    config::import_settings_file(json_file, *this, loaded);
     for (auto& module : slots) {
         if (module->online()) {
             module->sync_vars();
@@ -403,7 +403,7 @@ void crate::export_config(const std::string json_file) {
     xia_log(log::info) << "crate: export configuration";
     lock_guard guard(lock_);
     crate_event_call(crate_event::export_config_begin);
-    config::export_json(json_file, *this);
+    config::export_settings_file(json_file, *this);
     crate_event_call(crate_event::export_config_end);
 }
 

@@ -285,21 +285,9 @@ static void fill_config(module::module& module, format::json& settings) {
     }
 }
 
-void import_json(const std::string& filename, crate::crate& crate, module::number_slots& loaded) {
-    std::ifstream input_json(filename);
-    if (!input_json) {
-        throw error(pixie::error::code::file_open_failure,
-                    "opening json config: " + filename + ": " + std::strerror(errno));
-    }
-
-    format::json config;
-
-    try {
-        config = format::json::parse(input_json);
-    } catch (format::json::exception& e) {
-        throw_json_error(e, "parse config");
-    }
-
+static void import_json_obj(format::json& config, crate::crate& crate,
+                            module::number_slots& loaded)
+{
     if (config.size() > crate.num_online) {
         xia_log(log::warning) << "too many module configs (" << config.size() << "), crate only has "
                               << crate.num_online << " modules ";
@@ -335,7 +323,21 @@ void import_json(const std::string& filename, crate::crate& crate, module::numbe
     }
 }
 
-void import_json(const std::string& filename, module::module& mod) {
+static void import_json_obj(format::json& config, module::module& mod) {
+    auto ci = config.begin();
+
+    if (!mod.online()) {
+        xia_log(log::warning) << "module " << mod.number << " not online, skipping";
+    } else {
+        auto& settings = *ci;
+        fill_config(mod, settings);
+        mod.sync_vars();
+    }
+}
+
+void import_settings_file(const std::string& filename, crate::crate& crate,
+                 module::number_slots& loaded)
+{
     std::ifstream input_json(filename);
     if (!input_json) {
         throw error(pixie::error::code::file_open_failure,
@@ -350,15 +352,51 @@ void import_json(const std::string& filename, module::module& mod) {
         throw_json_error(e, "parse config");
     }
 
-    auto ci = config.begin();
+    import_json_obj(config, crate, loaded);
+}
 
-    if (!mod.online()) {
-        xia_log(log::warning) << "module " << mod.number << " not online, skipping";
-    } else {
-        auto& settings = *ci;
-        fill_config(mod, settings);
-        mod.sync_vars();
+void import_settings(std::string& config, crate::crate& crate,
+                 module::number_slots& loaded)
+{
+    format::json config_obj;
+
+    try {
+        config_obj = format::json::parse(config);
+    } catch (format::json::exception& e) {
+        throw_json_error(e, "parse config");
     }
+
+    import_json_obj(config_obj, crate, loaded);
+}
+
+void import_settings_file(const std::string& filename, module::module& mod) {
+    std::ifstream input_json(filename);
+    if (!input_json) {
+        throw error(pixie::error::code::file_open_failure,
+                    "opening json config: " + filename + ": " + std::strerror(errno));
+    }
+
+    format::json config;
+
+    try {
+        config = format::json::parse(input_json);
+    } catch (format::json::exception& e) {
+        throw_json_error(e, "parse config");
+    }
+
+    import_json_obj(config, mod);
+}
+
+void import_settings(std::string& config, module::module& mod) {
+    format::json config_obj;
+
+    try {
+        config_obj = format::json::parse(config);
+    } catch (format::json::exception& e) {
+        throw_json_error(e, "parse config");
+    }
+
+    import_json_obj(config_obj, mod);
 }
 
 static format::json json_firmware(const firmware::firmware_ref fw) {
@@ -372,9 +410,7 @@ static format::json json_firmware(const firmware::firmware_ref fw) {
     return jfw;
 }
 
-void export_json(const std::string& filename, crate::crate& crate) {
-    format::json config;
-
+static void export_json(format::json& config, crate::crate& crate) {
     for (size_t m = 0; m < crate.num_slots; ++m) {
         module::module& mod = crate[m];
 
@@ -459,6 +495,12 @@ void export_json(const std::string& filename, crate::crate& crate) {
 
         config.push_back(mod_config);
     }
+}
+
+void export_settings_file(const std::string& filename, crate::crate& crate) {
+    format::json config;
+
+    export_json(config, crate);
 
     std::ofstream output_json(filename);
     if (!output_json) {
@@ -467,6 +509,14 @@ void export_json(const std::string& filename, crate::crate& crate) {
     }
 
     output_json << std::setw(4) << config << std::endl;
+}
+
+void export_settings(std::string& config, crate::crate& crate) {
+    format::json config_obj;
+
+    export_json(config_obj, crate);
+
+    config = config_obj.dump();
 }
 
 }  // namespace config

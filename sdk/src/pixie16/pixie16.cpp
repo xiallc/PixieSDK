@@ -503,7 +503,7 @@ static void PixieBootModule(xia::pixie::module::module& module, const char* ComF
     module.boot(boot_params, fw_set);
 
     if (pattern.test(BOOTPATTERN_DSPPAR_BIT)) {
-        xia::pixie::config::import_json(DSPParFile, module);
+        xia::pixie::config::import_settings_file(DSPParFile, module);
     }
 
     module.sync_hw(pattern.test(BOOTPATTERN_PROGFIPPI_BIT), pattern.test(BOOTPATTERN_SETDACS_BIT));
@@ -529,7 +529,7 @@ static void PixieBootModule(xia::pixie::module::module& module,
     module.boot(boot_params, fw_set);
 
     if (pattern.test(BOOTPATTERN_DSPPAR_BIT)) {
-        xia::pixie::config::import_json(DSPParFile, module);
+        xia::pixie::config::import_settings_file(DSPParFile, module);
     }
 
     module.sync_hw(
@@ -972,7 +972,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16LoadDSPParametersFromFile(const char* FileName
         xia::pixie::crate::crate::user user(crate);
         for (size_t mod_num = 0; mod_num < crate.modules.num_modules; ++mod_num) {
             xia::pixie::crate::view::module_handle module(crate, mod_num);
-            xia::pixie::config::import_json(FileName, *module);
+            xia::pixie::config::import_settings_file(FileName, *module);
             xia::pixie::hw::run::control(
               *module, xia::pixie::hw::run::control_task::program_fippi);
             module->set_dacs();
@@ -1599,7 +1599,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16SaveDSPParametersToFile(const char* FileName) 
         if (!crate.run_check_override) {
             crate->check_active_run();
         }
-        xia::pixie::config::export_json(FileName, crate);
+        xia::pixie::config::export_settings_file(FileName, crate);
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
     } catch (std::bad_alloc& e) {

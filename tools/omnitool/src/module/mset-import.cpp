@@ -54,7 +54,7 @@ void mset_import(command::context& context) {
     }
     for (auto mod_num : mod_nums) {
         pixie::module::module& module = crate[mod_num];
-        pixie::config::import_json(settings_opt, module);
+        pixie::config::import_settings_file(settings_opt, module);
         if (module.online() && !action.empty()) {
             if (action == "flush") {
                 module.sync_vars();

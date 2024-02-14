@@ -26,6 +26,7 @@
 #include <string>
 
 #include <pixie/error.hpp>
+#include <pixie/format.hpp>
 #include <pixie/os_compat.hpp>
 
 #include <pixie/pixie16/crate.hpp>
@@ -45,21 +46,44 @@ typedef pixie::error::error error;
  * @param[in] crate The crate object that we're going to load this configuration into.
  * @param[in] loaded List of modules that will receive the configuration.
  */
-void import_json(const std::string& filename, crate::crate& crate, module::number_slots& loaded);
+void import_settings_file(const std::string& filename, crate::crate& crate,
+    module::number_slots& loaded);
 
 /**
  * @brief Import a JSON configuration for a module
  * @param[in] filename The name of the file with the relative or absolute path.
  * @param[in] mod The module object that we're going to load this configuration into.
  */
-void import_json(const std::string& filename, module::module& mod);
+void import_settings_file(const std::string& filename, module::module& mod);
+
+/**
+ * @brief Import a JSON configuration into a crate's internal variables.
+ * @param[in] config The JSON string to import.
+ * @param[in] crate The crate object that we're going to load this configuration into.
+ * @param[in] loaded List of modules that will receive the configuration.
+ */
+void import_settings(std::string& config, crate::crate& crate, module::number_slots& loaded);
+
+/**
+ * @brief Import a JSON configuration for a module.
+ * @param[in] config The JSON string to import.
+ * @param[in] mod The module object that we're going to load this configuration into.
+ */
+void import_settings(std::string& config, module::module& mod);
 
 /**
  * @brief Export the active module configurations to a JSON file.
  * @param[in] filename The name of the JSON output file used for the export.
  * @param[in] crate The crate object holding the modules to be exported.
  */
-void export_json(const std::string& filename, crate::crate& crate);
+void export_settings_file(const std::string& filename, crate::crate& crate);
+
+/**
+ * @brief Export the active module configurations in JSON format.
+ * @param[in] config The string the JSON object data is exported to.
+ * @param[in] crate The crate object holding the modules to be exported.
+ */
+void export_settings(std::string& config, crate::crate& crate);
 
 }  // namespace config
 }  // namespace pixie
