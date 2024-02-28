@@ -31,7 +31,6 @@ void report(pixie::fixture::channel& fixture, std::ostream& out, const std::stri
     report(fixture.config, out, prefix);
 }
 
-
 void report(pixie::fixture::db db, std::ostream& out, const std::string& prefix) {
     report((pixie::fixture::channel&) db, out, prefix);
     out << prefix << "DB Number      : " << db.number << std::endl

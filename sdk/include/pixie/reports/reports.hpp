@@ -25,6 +25,7 @@
 
 #include <iostream>
 
+#include <pixie/format.hpp>
 #include <pixie/param.hpp>
 
 #include <pixie/pixie16/channel.hpp>
@@ -70,11 +71,23 @@ void report(pixie::channel::channel& channel, std::ostream& out);
  */
 void report(pixie::module::module& module, std::ostream& out);
 /**
+ * A report for a module object
+ * @param module The module to read from
+ * @param out The JSON object to populate the report to
+ */
+void report(pixie::module::module& module, pixie::format::json& out);
+/**
  * A report for a crate object
  * @param crate The crate to read from
  * @param out The stream to write the report to
  */
 void report(pixie::crate::crate& crate, std::ostream& out);
+/**
+ * A report for a crate object
+ * @param crate The crate to read from
+ * @param out The JSON object to populate the report to
+ */
+void report(pixie::crate::crate& crate, pixie::format::json& out);
 /**
  * A report for a module's stats object
  * @param module The module to read stats from
@@ -92,6 +105,31 @@ void subreport(T& obj, std::ostream& out, S num_obj) {
         report(sub_obj, out);
         out << std::endl;
     }
+}
+
+/**
+ * Used to iterate through and report on the subobjects of a given object
+ */
+template <class T, class S>
+void subreport(T& obj, pixie::format::json& out, S num_obj) {
+    for (S s = 0; s < num_obj; ++s) {
+        pixie::format::json sub_json;
+        auto& sub_obj = obj[s];
+        report(sub_obj, sub_json);
+        if (sub_json != nullptr) {
+            out.push_back(sub_json);
+        }
+    }
+}
+
+/*
+ * Serialises a JSON object into std::string
+ */
+template <class T>
+void report(T& obj, std::string& out) {
+    pixie::format::json json_rpt;
+    report(obj, json_rpt);
+    out = json_rpt.dump();
 }
 
 /**

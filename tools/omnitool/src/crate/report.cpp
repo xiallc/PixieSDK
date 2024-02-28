@@ -23,16 +23,19 @@
 #include <cstring>
 #include <fstream>
 
+#include <pixie/format.hpp>
 #include <pixie/pixie16/crate.hpp>
 #include <pixie/pixie16/module.hpp>
 #include <pixie/reports/reports.hpp>
 
 #include <omnitool-commands.hpp>
+#include <omnitool-completions.hpp>
 
 namespace xia {
 namespace omnitool {
 namespace crate {
 void report(command::context& context) {
+    auto json_opt = context.cmd.get_option("-j");
     std::ostream* out= &context.opts.out;
     std::ofstream output_file;
     auto file_opt = context.cmd.get_arg();
@@ -41,15 +44,25 @@ void report(command::context& context) {
         if (!output_file) {
             throw std::runtime_error(
                 std::string(
-		  "opening report: " + file_opt + ": " + std::strerror(errno)));
+                    "opening report: " + file_opt + ": " + std::strerror(errno)));
         }
         out = &output_file;
     }
     auto& crate = context.crate;
-    reports::report(crate, *out);
+    if (json_opt == "true") {
+        std::string report_str;
+        reports::report(crate, report_str);
+        *out << report_str;
+    } else {
+        reports::report(crate, *out);
+    }
 }
 
-void report_comp(command::context& , command::completion& ) {
+void report_comp(command::context& context, command::completion& completions) {
+    auto reg_read_cmd = context.cmd.def;
+
+    command::completions::flag_completion(NULL, reg_read_cmd.name,
+        completions);
 }
 } // namespace crate
 } // namespace omnitool

@@ -30,5 +30,9 @@ void report(pixie::crate::crate& crate, std::ostream& out) {
     subreport(crate, out, crate.num_slots);
 }
 
+void report(pixie::crate::crate& crate, pixie::format::json& out) {
+    subreport(crate, out, crate.num_slots);
+}
+
 }
 }

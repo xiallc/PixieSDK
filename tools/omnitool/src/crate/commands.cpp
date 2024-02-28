@@ -85,9 +85,9 @@ static const xia::omnitool::command::definition report_cmd = {
     "Crate", "/crate/report",
     omnitool_command_handers(report),
     {"init", "probe"},
-    1, 1, 0,
-    {},
-    "file",
+    1, 2, 0,
+    {omnitool_command_opt_decl("j")},
+    "[-j] file",
     "Report the crate's configuration"
 };
 
