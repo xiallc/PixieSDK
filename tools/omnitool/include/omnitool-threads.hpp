@@ -58,6 +58,8 @@ struct module_worker {
     size_t last_total;
 
     module_worker();
+    module_worker(const module_worker& orig);
+    module_worker(module_worker&& orig);
 
     virtual void worker(
         command::context& context,

@@ -25,6 +25,18 @@ module_worker::module_worker()
     : number(-1), slot(xia::pixie::hw::slot_invalid), revision(-1),
       pci_bus(-1), pci_slot(-1), running(false), has_error(false),
       total(0), last_total(0) {}
+
+module_worker::module_worker(const module_worker& orig)
+    : number(orig.number), slot(orig.slot), revision(orig.revision),
+      pci_bus(orig.pci_bus), pci_slot(orig.pci_slot), running(orig.running.load()),
+      has_error(orig.has_error), period(orig.period),
+      total(orig.total), last_total(orig.last_total) {}
+
+module_worker::module_worker(module_worker&& orig)
+    : number(orig.number), slot(orig.slot), revision(orig.revision),
+      pci_bus(orig.pci_bus), pci_slot(orig.pci_slot), running(orig.running.load()),
+      has_error(orig.has_error), period(orig.period),
+      total(orig.total), last_total(orig.last_total) {}
 } // namespace thread
 } // namespace omnitool
 } // namespace xia

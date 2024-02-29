@@ -58,10 +58,18 @@ struct list_save_worker : public thread::module_worker {
     bool run_task;
 
     list_save_worker();
+    list_save_worker(const list_save_worker& orig);
+    list_save_worker(list_save_worker&& orig);
     void worker(command::context& context, pixie::module::module& module);
 };
 
 list_save_worker::list_save_worker() : seconds(0) {}
+
+list_save_worker::list_save_worker(const list_save_worker& orig) : module_worker(orig),
+    name(orig.name), seconds(orig.seconds), run_task(orig.run_task) {}
+
+list_save_worker::list_save_worker(list_save_worker&& orig) : module_worker(orig),
+    name(orig.name), seconds(orig.seconds), run_task(orig.run_task) {}
 
 void list_save_worker::worker(
     command::context& context, pixie::module::module& module) {
@@ -143,19 +151,17 @@ static void list_mode_command(command::context& context, bool run_task) {
         s.seconds = secs;
         s.run_task = run_task;
     };
-    thread::module_threads(
-        context, mod_nums, saves, "list mode command error; see log");
-    thread::performance_stats(context, saves);
+    auto thread = std::thread(
+        [context, mod_nums, saves]() mutable {
+        thread::module_threads(
+            context, mod_nums, saves, "list mode command error; see log");
+        thread::performance_stats(context, saves);
+    });
+    thread.detach();
 }
 
 void list_mode(command::context& context) {
-    auto thread = std::thread(
-        [context_ = context]() {
-        omnitool::command::context context(
-            context_.crate, context_.opts, context_.cmd);
-        list_mode_command(context, true);
-    });
-    thread.detach();
+    list_mode_command(context, true);
 }
 
 void list_mode_comp(
@@ -167,13 +173,7 @@ void list_mode_comp(
 }
 
 void list_save(command::context& context) {
-    auto thread = std::thread(
-        [context_ = context]() {
-        omnitool::command::context context(
-            context_.crate, context_.opts, context_.cmd);
-        list_mode_command(context, false);
-    });
-    thread.detach();
+    list_mode_command(context, false);
 }
 
 void list_save_comp(
