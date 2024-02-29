@@ -65,7 +65,7 @@ list_save_worker::list_save_worker() : seconds(0) {}
 
 void list_save_worker::worker(
     command::context& context, pixie::module::module& module) {
-    name += '-' + std::to_string(module.number) + ".lmd";
+    name += '-' + std::to_string(module.slot) + ".lmd";
     std::ofstream out(name, std::ios::binary);
     if (!out) {
         throw std::runtime_error(
@@ -100,7 +100,7 @@ void list_save_worker::worker(
                 reinterpret_cast<char*>(lm.data()),
                 lm.size() * sizeof(pixie::hw::word));
         }
-        context.opts.out << "list-mode: " << module.number
+        context.opts.out << "list-mode: " << module.slot
                          << ": " << module.run_stats.output() << std::endl;
         if (module.run_stats.hw_overflows != 0) {
             throw std::runtime_error(
