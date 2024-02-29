@@ -87,7 +87,7 @@ void module_performance(
                 char active = w.running.load() ? '>' : ' ';
                 w.last_total = total;
                 std::ostringstream oss;
-                oss << ' ' << active << std::setw(2) << w.number
+                oss << ' ' << active << std::setw(2) << w.slot
                     << ": total: " << std::setw(8)
                     << util::io::humanize(bytes) << " rate: " << std::setw(8)
                     << util::io::humanize(rate) << " bytes/sec pci: bus=" << w.pci_bus
@@ -95,7 +95,7 @@ void module_performance(
                 context.opts.out << oss.str() << std::endl;
                 xia_log(log::info) << oss.str();
             } else {
-                context.opts.out << ' ' << std::setw(2) << w.number
+                context.opts.out << ' ' << std::setw(2) << w.slot
                                  << ": not running" << std::endl;
             }
         }
