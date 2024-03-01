@@ -242,6 +242,10 @@ void read_config(const std::string& config_file_name, configuration& cfg) {
         mod_cfg mcfg;
         mcfg.cfg.slot = module["slot"];
         mcfg.cfg.number = static_cast<unsigned short>(cfg.slot_def.size() - 1);
+        if (module.contains("dsp")) {
+            auto& jdsp = module["dsp"];
+            mcfg.dsp_par = jdsp["par"];
+        }
         if (module.contains("fw")) {
             auto& jfw = module["fw"];
             std::strncpy(
