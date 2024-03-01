@@ -1229,11 +1229,11 @@ firmware parse(release_type& release, const std::string fw_desc, const char deli
     return fw;
 }
 
-void load_firmware_set(system& firmwares, const std::string name, bool no_throw) {
-    return load_firmware_set(firmwares, name.c_str(), no_throw);
+void load_firmware_set(system& firmwares, const std::string name, bool ignore_error) {
+    return load_firmware_set(firmwares, name.c_str(), ignore_error);
 }
 
-void load_firmware_set(system& firmwares, const char* name, bool no_throw) {
+void load_firmware_set(system& firmwares, const char* name, bool ignore_error) {
     try {
         xia_log(log::debug) << "firmware: load: parse: " << name;
         std::ifstream input(name, std::ios::in);
@@ -1313,7 +1313,7 @@ void load_firmware_set(system& firmwares, const char* name, bool no_throw) {
     } catch (error& ) {
         throw;
     } catch (format::json::exception& e) {
-        if (no_throw) {
+        if (ignore_error) {
             xia_log(log::warning) << "firmware: load: parse firmware file: " << name
                                   << ": " << e.what();
         } else {
@@ -1322,7 +1322,7 @@ void load_firmware_set(system& firmwares, const char* name, bool no_throw) {
                 std::string(e.what()));
         }
     } catch (...) {
-        if (no_throw) {
+        if (ignore_error) {
             xia_log(log::warning) << "firmware: load: parse firmware file: " << name
                                   << ": invalid firmware spec file";
         } else {
@@ -1331,24 +1331,29 @@ void load_firmware_set(system& firmwares, const char* name, bool no_throw) {
     }
 }
 
+bool has_system_firmware_path() {
+    return xia::util::path::exists(system_firmware_path);
+}
+
 void load_system_firmwares(system& firmwares) {
     auto sys_fw_path_env = std::getenv("PIXIE_SYSTEM_FIRMWARE_PATH");
     if (sys_fw_path_env != nullptr) {
         system_firmware_path = sys_fw_path_env;
     }
-    xia_log(log::info) << "firmware: system: loading from "  << system_firmware_path;
+    xia_log(log::info) << "firmware: system: loading from " << system_firmware_path;
     load_firmwares(firmwares, system_firmware_path, true);
 }
 
-void load_firmwares(system& firmwares, const std::string path, bool no_throw) {
-    load_firmwares(firmwares, path.c_str(), no_throw);
+void load_firmwares(system& firmwares, const std::string path, bool ignore_error) {
+    xia_log(log::info) << "firmware: system: loading from "  << path;
+    load_firmwares(firmwares, path.c_str(), ignore_error);
 }
 
-void load_firmwares(system& firmwares, const char* path, bool no_throw) {
+void load_firmwares(system& firmwares, const char* path, bool ignore_error) {
     files metadata;
-    util::path::find_files(path, metadata, ".json");
+    util::path::find_files(path, metadata, ".json", ignore_error);
     for (auto& md : metadata) {
-        load_firmware_set(firmwares, md, no_throw);
+        load_firmware_set(firmwares, md, ignore_error);
     }
 }
 

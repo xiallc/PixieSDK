@@ -32,6 +32,7 @@
 #include <pixie/os_compat.hpp>
 #include <pixie/stats.hpp>
 #include <pixie/utils/numerics.hpp>
+#include <pixie/utils/path.hpp>
 
 #include <pixie/pixie16/crate.hpp>
 #include <pixie/pixie16/crate-view.hpp>
@@ -1373,31 +1374,31 @@ PIXIE_EXPORT int PIXIE_API PixieGetModuleInfo(unsigned short mod_num, module_con
         cfg->serial_number = module->serial_num;
         cfg->slot = static_cast<unsigned short>(module->slot);
 
-        using firmware_set = xia::pixie::firmware::firmware_set;
+        if (xia::pixie::firmware::has_system_firmware_path()) {
+            using firmware_set = xia::pixie::firmware::firmware_set;
 
-        firmware_set fw_set;
-        module->firmware_get(fw_set, crate->firmware);
+            firmware_set fw_set;
+            module->firmware_get(fw_set, crate->firmware);
 
-        if (fw_set.device_count() > PIXIE16_API_MOD_CONFIG_MAX_DEVICES) {
-            throw xia_error(
-                xia_error::code::internal_failure, "Too many devices in firmware set");
-        }
+            if (fw_set.device_count() > PIXIE16_API_MOD_CONFIG_MAX_DEVICES) {
+                throw xia_error(xia_error::code::internal_failure,
+                                "Too many devices in firmware set");
+            }
 
-        std::ostringstream oss;
-        oss << fw_set.release;
-        std::strncpy(cfg->fw_revision, oss.str().c_str(), sizeof(cfg->fw_revision) - 1);
-        std::strncpy(cfg->fw_tag, fw_set.tag().c_str(), sizeof(cfg->fw_tag) - 1);
-        std::strncpy(
-            cfg->fw_type, xia::pixie::firmware::set_type_label(fw_set.type()),
-            sizeof(cfg->fw_type) - 1);
-        for (size_t dev = 0; dev < fw_set.device_count(); ++dev) {
-            auto& dev_name = fw_set.get_devices()[dev];
-            auto fw = fw_set.get(dev_name);
-            std::strncpy(
-                cfg->fw_device[dev], dev_name.c_str(), sizeof(cfg->fw_device[dev]) - 1);
-            std::strncpy(
-                cfg->fw_device_file[dev], fw->filename.c_str(),
-                sizeof(cfg->fw_device_file[dev]) - 1);
+            std::ostringstream oss;
+            oss << fw_set.release;
+            std::strncpy(cfg->fw_revision, oss.str().c_str(), sizeof(cfg->fw_revision) - 1);
+            std::strncpy(cfg->fw_tag, fw_set.tag().c_str(), sizeof(cfg->fw_tag) - 1);
+            std::strncpy(cfg->fw_type, xia::pixie::firmware::set_type_label(fw_set.type()),
+                         sizeof(cfg->fw_type) - 1);
+            for (size_t dev = 0; dev < fw_set.device_count(); ++dev) {
+                auto& dev_name = fw_set.get_devices()[dev];
+                auto fw = fw_set.get(dev_name);
+                std::strncpy(cfg->fw_device[dev], dev_name.c_str(),
+                             sizeof(cfg->fw_device[dev]) - 1);
+                std::strncpy(cfg->fw_device_file[dev], fw->filename.c_str(),
+                             sizeof(cfg->fw_device_file[dev]) - 1);
+            }
         }
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;

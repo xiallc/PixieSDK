@@ -704,17 +704,22 @@ extern const char* system_firmware_path;
  * @brief Load firmware sets from the file
  *
  * @param name The JSON file to parse and load
- * @param no_throw If true log the error and do not throw an error.
+ * @param ignore_error If true log the error and do not throw an error.
 */
-void load_firmware_set(system& firmwares, const std::string name, bool no_throw = false);
+void load_firmware_set(system& firmwares, const std::string name, bool ignore_error = false);
 
 /**
  * @brief Load firmware sets from the file
  *
  * @param name The JSON file to parse and load
- * @param no_throw If true log the error and do not throw an error.
+ * @param ignore_error If true log the error and do not throw an error.
 */
-void load_firmware_set(system& firmwares, const char* name, bool no_throw = false);
+void load_firmware_set(system& firmwares, const char* name, bool ignore_error = false);
+
+/**
+ * @brief Returns if the system firmware path exists
+ */
+bool has_system_firmware_path();
 
 /**
  * @brief Load system firmware sets from the system firmware path into
@@ -729,19 +734,19 @@ void load_system_firmwares(system& firmwares);
  *
  * @param firmwares The system firmware the firmware sets are loaded into
  * @param path The path firmware sets are search under for
- * @param no_throw If true log the error and do not throw an error.
+ * @param ignore_error If true ignore any error
 */
 void load_firmwares(
-    system& firmwares, const std::string path, bool no_throw = false);
+    system& firmwares, const std::string path, bool ignore_error = false);
 
 /**
  * @brief Load the firmware sets from the path into the system firmwares
  *
  * @param firmwares The system firmware the firmware sets are loaded into
  * @param path The path firmware sets are search under for
- * @param no_throw If true log the error and do not throw an error.
+ * @param ignore_error If true ignore any error
 */
-void load_firmwares(system& firmwares, const char* path, bool no_throw = false);
+void load_firmwares(system& firmwares, const char* path, bool ignore_error = false);
 
 /**
  * @brief Get a report of all the firmware files in the system

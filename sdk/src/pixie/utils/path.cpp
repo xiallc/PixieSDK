@@ -46,9 +46,12 @@ const char path_sep =  '/';
 #endif
 
 void find_files(
-    const std::string path, paths& files_, const std::string& ext, size_t depth) {
+    const std::string path, paths& files_, const std::string& ext, bool ignore_error, size_t depth) {
     if (depth > 100) {
-        throw std::runtime_error("file find path too deep: " + path);
+        if (!ignore_error) {
+            throw std::runtime_error("file find path too deep: " + path);
+        }
+        return;
     }
     if (depth == 0) {
         files_.clear();
@@ -72,7 +75,7 @@ void find_files(
                 }
             } else if (ent->d_type == DT_DIR && name != "." && name != "..") {
                 std::string child = path + '/' + name;
-                find_files(child, files_, ext, depth + 1);
+                find_files(child, files_, ext, ignore_error, depth + 1);
             }
         }
         ::closedir(dir);
@@ -80,7 +83,9 @@ void find_files(
         if (dir != nullptr) {
             ::closedir(dir);
         }
-        throw;
+        if (!ignore_error) {
+            throw;
+        }
     }
 }
 

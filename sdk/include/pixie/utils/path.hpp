@@ -48,9 +48,11 @@ extern const char path_sep;
  * @param path The filepath as a string
  * @param files A string vector to store filenames in
  * @param ext The type of file extension as a string
+ * @param ignore_error If true ignore any error
  * @param depth The depth at which the deepest file found is
 */
-void find_files(const std::string path, paths& files_, const std::string& ext, size_t depth = 0);
+void find_files(const std::string path, paths& files_, const std::string& ext,
+                bool ignore_error = false, size_t depth = 0);
 
 /**
  * @brief Returns the base filename of a given filename string
