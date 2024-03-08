@@ -636,7 +636,8 @@ module::module(module&& m)
       forced_offline_(m.forced_offline_.load()), pause_fifo_worker(m.pause_fifo_worker.load()),
       comms_fpga(m.comms_fpga), fippi_fpga(m.fippi_fpga), dsp_online(m.dsp_online),
       have_hardware(m.have_hardware), vars_loaded(false), cfg_ctrlcs(0xaaa),
-      device(std::move(m.device)), test_mode(m.test_mode.load()) {
+      device(std::move(m.device)), test_mode(m.test_mode.load()), persistent(std::move(m.persistent)),
+      mibs_size_t_rw(std::move(m.mibs_size_t_rw)), mibs_double_rw(std::move(m.mibs_double_rw)) {
     m.slot = hw::slot_invalid;
     m.number = -1;
     m.serial_num = 0;
@@ -675,6 +676,8 @@ module::module(module&& m)
     m.vars_loaded = false;
     m.cfg_ctrlcs = 0xaaa;
     m.test_mode = test::off;
+    m.mibs_size_t_rw.clear();
+    m.mibs_double_rw.clear();
 }
 
 module::~module() {
@@ -776,6 +779,9 @@ module& module::operator=(module&& m) {
     m.vars_loaded = false;
     m.cfg_ctrlcs = 0xaaa;
     m.test_mode = test::off;
+    m.persistent = m.persistent;
+    m.mibs_size_t_rw = std::move(m.mibs_size_t_rw);
+    m.mibs_double_rw = std::move(m.mibs_double_rw);
 
     return *this;
 }
@@ -993,6 +999,53 @@ void module::open(size_t device_number) {
         xia_log(log::info) << module_label(*this)
                            << "resident release: " << fw_release
                            << " type: " << firmware::set_type_label(fw_type);
+
+        std::string mod_mib = "module." + std::to_string(slot) + '.';
+
+        /*
+         * Read-only, never disabled
+         */
+        mib::add_ro_int(mod_mib + "slot", slot);
+        mib::add_ro_int(mod_mib + "num-channels", num_channels);
+        mib::add_ro_int(mod_mib + "max-channels", max_channels);
+        mib::add_ro_int(mod_mib + "serial-num", serial_num);
+        mib::add_ro_int(mod_mib + "revision", revision);
+
+        mib::add_ro_int(mod_mib + "eeprom.revision.major", eeprom.major_revision);
+        mib::add_ro_int(mod_mib + "eeprom.revision.minor", eeprom.minor_revision);
+        mib::add_ro_int(mod_mib + "eeprom.format", eeprom.format);
+
+        mib::add_ro_int(mod_mib + "pci.device-num", device_number);
+        mib::add_ro_int(mod_mib + "pci.domain", device->pci_domain());
+        mib::add_ro_int(mod_mib + "pci.bus", device->pci_bus());
+        mib::add_ro_int(mod_mib + "pci.slot", device->pci_slot());
+        mib::add_ro_int(mod_mib + "pci.reset", device->reset());
+
+        mib::add_ro_int(mod_mib + "pci.plx.driver.major", drv_major);
+        mib::add_ro_int(mod_mib + "pci.plx.driver.minor", drv_minor);
+        mib::add_ro_int(mod_mib + "pci.plx.chip.type", chip_type);
+        mib::add_ro_int(mod_mib + "pci.plx.chip.revision", chip_rev);
+
+        mib::add_ro_int(mod_mib + "pci.mbox.version", device->get_version());
+        mib::add_ro_int(mod_mib + "pci.mbox.slot", device->slot());
+        mib::add_ro_int(mod_mib + "pci.mbox.serial-num", device->serial_num());
+        mib::add_ro_int(mod_mib + "pci.mbox.revision", device->revision());
+        mib::add_ro_int(mod_mib + "pci.mbox.opens", device->opens());
+        mib::add_ro_int(mod_mib + "pci.mbox.fw.type", int(fw_type));
+        mib::add_ro_str(mod_mib + "pci.mbox.fw.release", fw_release.to_string());
+
+        /*
+         * Active, disabled when off line
+         */
+        mibs_size_t_rw.emplace_back(mod_mib + "run.in", run_stats.in);
+        mibs_size_t_rw.emplace_back(mod_mib + "run.out", run_stats.out);
+        mibs_size_t_rw.emplace_back(mod_mib + "run.dma_in", run_stats.dma_in);
+        mibs_size_t_rw.emplace_back(mod_mib + "run.overflows", run_stats.overflows);
+        mibs_size_t_rw.emplace_back(mod_mib + "run.dropped", run_stats.dropped);
+        mibs_size_t_rw.emplace_back(mod_mib + "run.hw-overflows", run_stats.hw_overflows);
+        mibs_double_rw.emplace_back(mod_mib + "run.bandwidth", run_stats.bandwidth);
+        mibs_double_rw.emplace_back(mod_mib + "run.max-bandwidth", run_stats.max_bandwidth);
+        mibs_double_rw.emplace_back(mod_mib + "run.min-bandwidth", run_stats.min_bandwidth);
     }
 }
 
@@ -1087,6 +1140,7 @@ void module::force_online() {
                         fixtures->forced_online();
                     }
                     start_fifo_services();
+                    mib_enable();
                     forced_offline_ = false;
                 } else {
                     xia_log(log::error) << module_label(*this)
@@ -1116,6 +1170,7 @@ void module::force_offline() {
         stop_fifo_services();
         forced_offline_ = true;
         backplane.offline(*this);
+        mib_disable();
     }
 }
 
@@ -1174,7 +1229,10 @@ void module::probe(const firmware::firmware_set& firmware) {
     online_ = comms_fpga && fippi_fpga && dsp_online;
 
     if (online_) {
+        mib_enable();
         fixtures->online();
+    } else {
+        mib_disable();
     }
 }
 
@@ -1204,6 +1262,8 @@ void module::boot(
     }
 
     online_ = false;
+
+    mib_disable();
 
     firmware_change_log(firmware.release);
 
@@ -1332,6 +1392,7 @@ void module::boot(
         hw::run::control(*this, hw::run::control_task::program_fippi);
         fixtures->boot();
         fixtures->online();
+        mib_enable();
     }
 }
 
@@ -2530,6 +2591,24 @@ void module::firmware_change_log(const firmware::release_type& release) {
         xia_log(log::warning) << module_label(*this) << "firmware: change from "
                               << hw_release.to_string()
                               << " to " << release.to_string();
+    }
+}
+
+void module::mib_enable() {
+    for (auto& m : mibs_size_t_rw) {
+        m->enable();
+    }
+    for (auto& m : mibs_double_rw) {
+        m->enable();
+    }
+}
+
+void module::mib_disable() {
+    for (auto& m : mibs_size_t_rw) {
+        m->disable();
+    }
+    for (auto& m : mibs_double_rw) {
+        m->disable();
     }
 }
 

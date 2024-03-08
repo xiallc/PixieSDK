@@ -498,6 +498,17 @@ static const definition shell_cmd = {
     "start an interactive shell session"
 };
 
+omnitool_command_handler_decl(sys_control);
+static const definition sys_control_cmd = {
+    "Module", "/util/sysctl",
+    omnitool_command_handers(sys_control),
+    {"init", "probe"},
+    0, 3, 0,
+    {},
+    "[mib]",
+    "System control read/write of the MIB"
+};
+
 omnitool_command_handler_decl(wait);
 static const definition wait_cmd = {
     "Utilities", "/util/wait",
@@ -512,6 +523,7 @@ static const definition wait_cmd = {
 static const definitions util_commands = {
     help_cmd,
     shell_cmd,
+    sys_control_cmd,
     wait_cmd
 };
 

@@ -11,6 +11,7 @@ set(SDK_COMMON_SOURCES
         buffer.cpp
         error.cpp
         log.cpp
+        mib.cpp
         utils/crc.cpp
         utils/io.cpp
         utils/numerics.cpp

@@ -38,6 +38,7 @@
 #include <pixie/error.hpp>
 #include <pixie/fw.hpp>
 #include <pixie/log.hpp>
+#include <pixie/mib.hpp>
 #include <pixie/param.hpp>
 #include <pixie/stats.hpp>
 #include <pixie/sync.hpp>
@@ -115,6 +116,12 @@ class module {
      * path. For example 'fixture.channel.3.adc_swap_disabled'.
      */
     using data_store = std::map<std::string, std::string>;
+
+    /*
+     * Construct the MIB once we know the slot. Use a vector to hold them.
+     */
+    using mib_size_t_nodes = std::vector<mib::read_write<std::atomic_size_t>>;
+    using mib_double_nodes = std::vector<mib::read_write<std::atomic<double>>>;
 
 public:
     /**
@@ -822,6 +829,12 @@ protected:
     virtual void firmware_change_log(const firmware::release_type& release);
 
     /*
+     * MIB control
+     */
+    virtual void mib_enable();
+    virtual void mib_disable();
+
+    /*
      * Module parameter handlers.
      */
     void module_csrb(param::value_type value, size_t offset = 0, bool io = true);
@@ -961,6 +974,12 @@ protected:
      * boot.
      */
     data_store persistent;
+
+    /*
+     * MIB
+     */
+    mib_size_t_nodes mibs_size_t_rw;
+    mib_double_nodes mibs_double_rw;
 };
 
 /**

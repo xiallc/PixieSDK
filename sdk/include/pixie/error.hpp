@@ -361,6 +361,10 @@ enum struct code {
      */
     bad_allocation,
     /**
+     * @brief 903
+     */
+    read_only,
+    /**
      * @brief 990
      */
     bad_error_code,

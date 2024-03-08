@@ -137,6 +137,7 @@ static const std::map<code, result_code> result_codes = {
     {code::unknown_error, {900, "unknown error"}},
     {code::internal_failure, {901, "internal failure"}},
     {code::bad_allocation, {902, "bad allocation"}},
+    {code::read_only, {903, "read only"}},
     {code::bad_error_code, {990, "bad error code"}},
 };
 
