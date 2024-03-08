@@ -25,6 +25,8 @@
 #include <pixie/error.hpp>
 #include <pixie/log.hpp>
 
+#include <pixie/config.hpp>
+#include <pixie/format.hpp>
 #include <pixie/pixie16/crate-view.hpp>
 #include <pixie/pixie16/defs.hpp>
 #include <pixie/pixie16/module.hpp>
@@ -102,6 +104,151 @@ static const xia::pixie::sim::firmware_set_defs firmware_defs = {
      "release=0.9.1, version=r30918, revision=12, adc-msps=100, adc-bits=12, " \
      "device=var, mask=1, file=Pixie16DSP_revdgeneral_12b100m_r30918.var"}
 };
+
+static xia::pixie::format::json short_config = {
+    {"channel",
+     {{"input",
+       {{"BLcut", {1}},
+        {"BaselinePercent", {20}},
+        {"CFDDelay", {8}},
+        {"CFDScale", {0}},
+        {"CFDThresh", {100}},
+        {"ChanCSRa", {4}},
+        {"ChanCSRb", {0}},
+        {"ChanTrigStretch", {0}},
+        {"DigGain", {10}},
+        {"EnergyLow", {0}},
+        {"ExtTrigStretch", {300}},
+        {"ExternDelayLen", {10}},
+        {"FastGap", {20}},
+        {"FastLength", {40}},
+        {"FastThresh", {500}},
+        {"FastTrigBackLen", {10}},
+        {"FtrigoutDelay", {0}},
+        {"GainDAC", {0}},
+        {"Integrator", {0}},
+        {"Log2Bweight", {4294967294}},
+        {"Log2Ebin", {4294967295}},
+        {"MultiplicityMaskH", {0}},
+        {"MultiplicityMaskL", {0}},
+        {"OffsetDAC", {34952}},
+        {"PAFlength", {191}},
+        {"PSAlength", {0}},
+        {"PSAoffset", {0}},
+        {"PeakSample", {42}},
+        {"PreampTau", {1112014848}},
+        {"QDCLen0", {30}},
+        {"QDCLen1", {63}},
+        {"QDCLen2", {88}},
+        {"QDCLen3", {113}},
+        {"QDCLen4", {138}},
+        {"QDCLen5", {163}},
+        {"QDCLen6", {188}},
+        {"QDCLen7", {213}},
+        {"ResetDelay", {10}},
+        {"SlowGap", {19}},
+        {"SlowLength", {50}},
+        {"ThreshWidth", {0}},
+        {"TraceLength", {248}},
+        {"TrigOutLen", {0}},
+        {"TriggerDelay", {88}},
+        {"VetoStretch", {30}},
+        {"Xavg", {0}},
+        {"Xwait", {8}}}}}},
+    {"metadata", {{"hardware_revision", "DEFAULT"}, {"slot", 99}}},
+    {"module",
+     {{"input",
+       {{"CoincPattern", 0},
+        {"CoincWait", 0},
+        {"ControlTask", 4},
+        {"CrateID", 0},
+        {"FastFilterRange", 0},
+        {"FastTrigBackplaneEna", 0},
+        {"HostIO", {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}},
+        {"HostRunTimePreset", 1092616192},
+        {"InSynch", 1},
+        {"MaxEvents", 0},
+        {"ModCSRA", 0},
+        {"ModCSRB", 0},
+        {"ModFormat", 0},
+        {"ModID", 0},
+        {"ModNum", 0},
+        {"Resume", 1},
+        {"RunTask", 0},
+        {"SlotID", 2},
+        {"SlowFilterRange", 6},
+        {"SynchWait", 0},
+        {"TrigConfig", {0, 0, 0, 0}},
+        {"U00", {0, 0, 0, 0, 0, 0, 0}},
+        {"UserIn", {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}}}}}};
+
+static std::string long_config =
+    "{\"channel\":{\"input\":{\"BLcut\":[1,1,1,1,1,0,1,1,1,0,1,1,1,1,1,3],\"BaselinePercent\":"
+    "[10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10],\"CFDDelay\":[8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8],"
+    "\"CFDScale\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"CFDThresh\":[120,120,120,120,120,120,120,120,"
+    "120,120,120,120,120,120,120,120],\"ChanCSRa\":[292,292,292,292,292,292,292,292,292,292,292,292,"
+    "292,292,292,292],\"ChanCSRb\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"ChanTrigStretch\":[0,0,0,0,0,"
+    "0,0,0,0,0,0,0,0,0,0,0],\"DigGain\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"EnergyLow\":[0,0,0,0,0,"
+    "0,0,0,0,0,0,0,0,0,0,0],\"ExtTrigStretch\":[150,150,150,150,150,150,150,150,150,150,150,150,150,"
+    "150,150,150],\"ExternDelayLen\":[20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20],\"FastGap\":"
+    "[10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10],\"FastLength\":[20,20,20,20,20,20,20,20,20,20,"
+    "20,20,20,20,20,20],\"FastThresh\":[20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20],"
+    "\"FastTrigBackLen\":[10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10],\"FtrigoutDelay\":[0,0,0,"
+    "0,0,0,0,0,0,0,0,0,0,0,0,0],\"GainDAC\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"Integrator\":[0,0,0,"
+    "0,0,0,0,0,0,0,0,0,0,0,0,0],\"Log2Bweight\":[4294967294,4294967294,4294967294,4294967294,"
+    "4294967294,4294967294,4294967294,4294967294,4294967294,4294967294,4294967294,4294967294,"
+    "4294967294,4294967294,4294967294,4294967294],\"Log2Ebin\":[4294967295,4294967295,4294967295,"
+    "4294967295,4294967295,4294967295,4294967295,4294967295,4294967295,4294967295,4294967295,"
+    "4294967295,4294967295,4294967295,4294967295,4294967295],\"MultiplicityMaskH\":[0,0,0,0,0,0,0,0,"
+    "0,0,0,0,0,0,0,0],\"MultiplicityMaskL\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"OffsetDAC\":[25056,"
+    "25184,24736,24800,24864,24608,24608,24608,24608,24608,24608,24608,23200,23776,24608,24608],"
+    "\"PAFlength\":[1344,1344,1344,1344,1344,1344,1344,1344,1344,1344,1344,1344,1344,1344,1344,1344],"
+    "\"PSAlength\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"PSAoffset\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"
+    "\"PeakSample\":[42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42],\"PeakSep\":[44,44,44,44,44,"
+    "44,44,44,44,44,44,44,44,44,44,44],\"PreampTau\":[1126105088,1126105088,1126105088,1126105088,"
+    "1126105088,1126105088,1126105088,1126105088,1126105088,1126105088,1126105088,1126105088,"
+    "1126105088,1126105088,1126105088,1126105088],\"QDCLen0\":[30,30,30,30,30,30,30,30,30,30,30,30,"
+    "30,30,30,30],\"QDCLen1\":[63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,63],\"QDCLen2\":[88,88,"
+    "88,88,88,88,88,88,88,88,88,88,88,88,88,88],\"QDCLen3\":[113,113,113,113,113,113,113,113,113,"
+    "113,113,113,113,113,113,113],\"QDCLen4\":[138,138,138,138,138,138,138,138,138,138,138,138,138,"
+    "138,138,138],\"QDCLen5\":[163,163,163,163,163,163,163,163,163,163,163,163,163,163,163,163],"
+    "\"QDCLen6\":[188,188,188,188,188,188,188,188,188,188,188,188,188,188,188,188],\"QDCLen7\":"
+    "[213,213,213,213,213,213,213,213,213,213,213,213,213,213,213,213],\"ResetDelay\":[0,0,0,0,0,0,"
+    "0,0,0,0,0,0,0,0,0,0],\"SlowGap\":[19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19],"
+    "\"SlowLength\":[25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25],\"ThreshWidth\":[0,0,0,0,0,0,"
+    "0,0,0,0,0,0,0,0,0,0],\"TraceLength\":[500,500,500,500,500,500,500,500,500,500,500,500,500,500,"
+    "500,500],\"TrigOutLen\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"TriggerDelay\":[344,344,344,344,344,"
+    "344,344,344,344,344,344,344,344,344,344,344],\"VetoStretch\":[30,30,30,30,30,30,30,30,30,30,30,"
+    "30,30,30,30,30],\"Xavg\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"Xwait\":[6,8,8,8,8,8,8,8,8,8,8,8,"
+    "8,8,8,8]}},\"metadata\":{\"config\":[{\"adc_bits\":14,\"adc_clk_div\":5,\"adc_msps\":500,"
+    "\"fpga_clk_mhz\":100},{\"adc_bits\":14,\"adc_clk_div\":5,\"adc_msps\":500,\"fpga_clk_mhz\":100},"
+    "{\"adc_bits\":14,\"adc_clk_div\":5,\"adc_msps\":500,\"fpga_clk_mhz\":100},{\"adc_bits\":14,"
+    "\"adc_clk_div\":5,\"adc_msps\":500,\"fpga_clk_mhz\":100},{\"adc_bits\":14,\"adc_clk_div\":5,"
+    "\"adc_msps\":500,\"fpga_clk_mhz\":100},{\"adc_bits\":14,\"adc_clk_div\":5,\"adc_msps\":500,"
+    "\"fpga_clk_mhz\":100},{\"adc_bits\":14,\"adc_clk_div\":5,\"adc_msps\":500,\"fpga_clk_mhz\":100},"
+    "{\"adc_bits\":14,\"adc_clk_div\":5,\"adc_msps\":500,\"fpga_clk_mhz\":100},{\"adc_bits\":14,"
+    "\"adc_clk_div\":5,\"adc_msps\":500,\"fpga_clk_mhz\":100},{\"adc_bits\":14,\"adc_clk_div\":5,"
+    "\"adc_msps\":500,\"fpga_clk_mhz\":100},{\"adc_bits\":14,\"adc_clk_div\":5,\"adc_msps\":500,"
+    "\"fpga_clk_mhz\":100},{\"adc_bits\":14,\"adc_clk_div\":5,\"adc_msps\":500,\"fpga_clk_mhz\":100},"
+    "{\"adc_bits\":14,\"adc_clk_div\":5,\"adc_msps\":500,\"fpga_clk_mhz\":100},{\"adc_bits\":14,"
+    "\"adc_clk_div\":5,\"adc_msps\":500,\"fpga_clk_mhz\":100},{\"adc_bits\":14,\"adc_clk_div\":5,"
+    "\"adc_msps\":500,\"fpga_clk_mhz\":100},{\"adc_bits\":14,\"adc_clk_div\":5,\"adc_msps\":500,"
+    "\"fpga_clk_mhz\":100}],\"dsp\":{\"adc_bits\":14,\"adc_msps\":500,\"file\":"
+    "\"Pixie16DSP_revfgeneral_14b500m_r41847.ldr\",\"rev\":15,\"tag\":\"15-500-14\",\"version\":"
+    "\"r41847\"},\"fifo\":{\"buffers\":100,\"hold\":10000,\"idle-wait\":150000,\"run-wait\":5000},"
+    "\"fippi\":{\"adc_bits\":14,\"adc_msps\":500,\"file\":\"fippixie16_revfgeneral_14b500m_r42081.bin\","
+    "\"rev\":15,\"tag\":\"15-500-14\",\"version\":\"r42081\"},\"firmware-release\":\"1.2.3\","
+    "\"firmware-tag\":\"15-500-14\",\"hardware_revision\":\"F\",\"num-channels\":16,\"number\":0,"
+    "\"serial-num\":1034,\"slot\":2,\"sys\":{\"adc_bits\":14,\"adc_msps\":500,\"file\":"
+    "\"syspixie16_revfgeneral_adc500mhz_r33339.bin\",\"rev\":15,\"tag\":\"15-500-14\",\"version\":"
+    "\"r33339\"},\"var\":{\"adc_bits\":14,\"adc_msps\":500,\"file\":"
+    "\"Pixie16DSP_revfgeneral_14b500m_r41847.var\",\"rev\":15,\"tag\":\"15-500-14\",\"version\":"
+    "\"r41847\"}},\"module\":{\"input\":{\"ChanNum\":0,\"CoincPattern\":0,\"CoincWait\":0,"
+    "\"ControlTask\":7,\"CrateID\":0,\"FIFOLength\":20470,\"FastFilterRange\":0,"
+    "\"FastTrigBackplaneEna\":0,\"HostIO\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"HostRunTimePreset\":0,"
+    "\"InSynch\":0,\"MaxEvents\":0,\"ModCSRA\":0,\"ModCSRB\":65,\"ModFormat\":0,\"ModID\":0,"
+    "\"ModNum\":0,\"Resume\":1,\"RunTask\":0,\"SlotID\":2,\"SlowFilterRange\":6,\"SynchWait\":0,"
+    "\"TrigConfig\":[0,0,0,0],\"U00\":[0,0,0,0,0,0,0],\"UserIn\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}}}";
 
 static void test_setup() {
     xia::logging::start("log", "test-module.txt", false);
@@ -476,6 +623,114 @@ TEST_SUITE("Crate: modules") {
                 crate[0].write(module_param::module_csrb, 1 << hw::bit::MODCSRB_CHASSISMASTER));
             CHECK_NOTHROW(crate[0].start_histograms(hw::run::run_mode::new_run));
             CHECK_NOTHROW(crate[0].run_end());
+        }
+    }
+    TEST_CASE("config") {
+        using namespace xia::pixie;
+        using namespace xia::pixie::param;
+        sim::crate sim_crate;
+        sim::load_firmware_sets(sim_crate.firmware, firmware_defs);
+        crate::view::module crate(sim_crate);
+        CHECK_NOTHROW(crate->initialize());
+        CHECK_NOTHROW(crate->probe());
+        CHECK_NOTHROW(crate->boot());
+        xia::pixie::module::number_slots slots_loaded;
+        SUBCASE("empty config") {
+            std::string empty_cfg;
+            CHECK_THROWS_WITH_AS(xia::pixie::config::import_settings(empty_cfg, crate[0]),
+                                 "parse config: [json.exception.parse_error.101] parse error at "
+                                 "line 1, column 1: syntax error while parsing value - unexpected "
+                                 "end of input; expected '[', '{', or a literal", crate_error);
+            CHECK_THROWS_WITH_AS(xia::pixie::config::import_settings(empty_cfg, crate, slots_loaded),
+                                 "parse config: [json.exception.parse_error.101] parse error at "
+                                 "line 1, column 1: syntax error while parsing value - unexpected "
+                                 "end of input; expected '[', '{', or a literal", crate_error);
+        }
+        SUBCASE("single module load - shortened config") {
+            std::string cfg = '[' + short_config.dump() + ']';
+            CHECK(crate[0].read("SlotID") == 0);
+            CHECK(crate[1].read("SlotID") == 0);
+            CHECK(crate[0].read("SLOW_FILTER_RANGE") == 0);
+            CHECK(crate[1].read("SLOW_FILTER_RANGE") == 0);
+            CHECK(crate[0].read("BLCUT", 0) == 0);
+            CHECK(crate[1].read("BLCUT", 0) == 0);
+            CHECK_NOTHROW(xia::pixie::config::import_settings(cfg, crate[0]));
+            CHECK(crate[0].read("SlotID") == 2);
+            CHECK(crate[1].read("SlotID") == 0);
+            CHECK(crate[0].read("SLOW_FILTER_RANGE") == 6);
+            CHECK(crate[1].read("SLOW_FILTER_RANGE") == 0);
+            CHECK(crate[0].read("BLCUT", 0) == 1);
+            CHECK(crate[1].read("BLCUT", 0) == 0);
+        }
+        SUBCASE("single module load - full config") {
+            std::string cfg = '[' + long_config + ']';
+            CHECK(crate[0].read("SlotID") == 0);
+            CHECK(crate[1].read("SlotID") == 0);
+            CHECK(crate[0].read("SLOW_FILTER_RANGE") == 0);
+            CHECK(crate[1].read("SLOW_FILTER_RANGE") == 0);
+            CHECK(crate[0].read("BLCUT", 0) == 0);
+            CHECK(crate[1].read("BLCUT", 0) == 0);
+            CHECK_NOTHROW(xia::pixie::config::import_settings(cfg, crate[0]));
+            CHECK(crate[0].read("SlotID") == 2);
+            CHECK(crate[1].read("SlotID") == 0);
+            CHECK(crate[0].read("SLOW_FILTER_RANGE") == 6);
+            CHECK(crate[1].read("SLOW_FILTER_RANGE") == 0);
+            CHECK(crate[0].read("BLCUT", 0) == 1);
+            CHECK(crate[1].read("BLCUT", 0) == 0);
+        }
+        SUBCASE("single module load - crate") {
+            slots_loaded.clear();
+            std::string cfg = '[' + long_config + ']';
+            CHECK(crate[0].read("SlotID") == 0);
+            CHECK(crate[1].read("SlotID") == 0);
+            CHECK(crate[0].read("SLOW_FILTER_RANGE") == 0);
+            CHECK(crate[1].read("SLOW_FILTER_RANGE") == 0);
+            CHECK(crate[0].read("BLCUT", 0) == 0);
+            CHECK(crate[1].read("BLCUT", 0) == 0);
+            CHECK_NOTHROW(xia::pixie::config::import_settings(cfg, crate, slots_loaded));
+            CHECK(slots_loaded.size() == 4);
+            CHECK(crate[0].read("SlotID") == 2);
+            CHECK(crate[1].read("SlotID") == 6);
+            CHECK(crate[0].read("SLOW_FILTER_RANGE") == 6);
+            CHECK(crate[1].read("SLOW_FILTER_RANGE") == 3);
+            CHECK(crate[0].read("BLCUT", 0) == 1);
+            CHECK(crate[1].read("BLCUT", 0) == 3);
+        }
+        SUBCASE("full crate load + export") {
+            slots_loaded.clear();
+            std::string crate_config = long_config;
+            for (size_t mod = 1; mod < crate.num_modules; mod++) {
+                crate_config += ',';
+                crate_config += long_config;
+            }
+            std::string cfg = '[' + crate_config + ']';
+            CHECK(crate[0].read("SlotID") == 0);
+            CHECK(crate[1].read("SlotID") == 0);
+            CHECK(crate[0].read("SLOW_FILTER_RANGE") == 0);
+            CHECK(crate[1].read("SLOW_FILTER_RANGE") == 0);
+            CHECK(crate[0].read("BLCUT", 0) == 0);
+            CHECK(crate[1].read("BLCUT", 0) == 0);
+            CHECK_NOTHROW(xia::pixie::config::import_settings(cfg, crate, slots_loaded));
+            CHECK(slots_loaded.size() == 4);
+            CHECK(crate[0].read("SlotID") == 2);
+            CHECK(crate[1].read("SlotID") == 6);
+            CHECK(crate[0].read("SLOW_FILTER_RANGE") == 6);
+            CHECK(crate[1].read("SLOW_FILTER_RANGE") == 6);
+            CHECK(crate[0].read("BLCUT", 0) == 1);
+            CHECK(crate[1].read("BLCUT", 0) == 1);
+            std::string export_config;
+            CHECK_NOTHROW(xia::pixie::config::export_settings(export_config, crate));
+            CHECK(export_config.substr(0, long_config.length() + 1) ==
+                  cfg.substr(0, long_config.length() + 1));
+            auto export_json = xia::pixie::format::json::parse(export_config);
+            auto config_json = xia::pixie::format::json::parse(long_config);
+            CHECK(export_json[0] == config_json);
+            for (size_t mod = 0; mod < export_json.size(); mod++) {
+                CHECK(export_json[mod]["module"]["input"]["SlotID"] == crate[mod].slot);
+                CHECK(export_json[mod]["module"]["input"]["SlowFilterRange"] == 6);
+                CHECK(export_json[mod]["channel"]["input"]["BLcut"][0] == 1);
+                CHECK(export_json[mod]["metadata"]["dsp"]["rev"] == crate[mod].revision);
+            }
         }
     }
     TEST_CASE("TEARDOWN") {
