@@ -26,34 +26,14 @@
 #include <pixie/error.hpp>
 #include <pixie/log.hpp>
 #include <pixie/utils/numerics.hpp>
-#include <pixie/utils/time.hpp>
 
-#include <pixie/pixie16/channel.hpp>
-#include <pixie/pixie16/db.hpp>
-#include <pixie/pixie16/defs.hpp>
+#include <pixie/pixie16/db/afe.hpp>
 #include <pixie/pixie16/memory.hpp>
 #include <pixie/pixie16/module.hpp>
 
 namespace xia {
 namespace pixie {
 namespace fixture {
-
-/**
- * UserIn save to hold and restore UserIn variables.
- */
-struct userin_save {
-    hw::memory::dsp dsp;
-    hw::address address;
-
-    hw::word userin_0;
-    hw::word userin_1;
-
-    userin_save(pixie::module::module& module);
-
-    void update(const hw::word& db_index, const hw::word& db_channel);
-
-    ~userin_save();
-};
 
 static void wait_dac_settle_period(pixie::module::module& mod) {
     /*
@@ -81,118 +61,6 @@ static void set_channel_voffset(pixie::module::module& mod, double voffset, int 
     }
     mod.set_dacs();
     wait_dac_settle_period(mod);
-}
-
-userin_save::userin_save(pixie::module::module& module) : dsp(module) {
-    address = module.module_var_descriptors[int(param::module_var::UserIn)].address;
-    userin_0 = dsp.read(0, address);
-    userin_1 = dsp.read(1, address);
-}
-
-void userin_save::update(const hw::word& db_index, const hw::word& db_channel) {
-    dsp.write(0, address, db_index);
-    dsp.write(1, address, db_channel);
-}
-
-userin_save::~userin_save() {
-    dsp.write(0, address, userin_0);
-    dsp.write(1, address, userin_1);
-}
-
-db::db(pixie::channel::channel& module_channel_, const hw::config& config_)
-    : channel(module_channel_, config_) {
-    pixie::module::module& mod = get_module();
-    label = hw::get_module_fixture_label(config_.fixture);
-    number = mod.eeprom.db_find(module_channel.number);
-    base =  mod.eeprom.db_channel_base(number);
-    offset = static_cast<int>(module_channel.number) - base;
-    auto key = persistent_key("adc_swap_disabled");
-    if (mod.persistent_has(key)) {
-        auto& val = mod.persistent_get(key);
-        adc_state = val == "true" ? adc_swap_disabled : adc_boot_state;
-    } else {
-        adc_state = adc_boot_state;
-    }
-}
-
-void db::acquire_adc() {
-    pixie::module::module& module = get_module();
-    {
-        userin_save userins(module);
-        userins.update(number, offset);
-        hw::run::control_run_on_dsp(module, hw::run::control_task::get_traces);
-    }
-    /*
-     * Make sure the buffer is the maximum size a user can ask for. The
-     * allocation is only done if the buffer is used and it cannot be released
-     * because the user can ask to read it at any time.
-     */
-    const size_t size = module_channel.fixture->config.max_adc_trace_length;
-    if (module_channel.adc_trace.size() != size) {
-        module_channel.adc_trace.resize(size);
-    }
-    hw::memory::dsp dsp(module);
-    hw::adc_trace_buffer adc_trace;
-    dsp.read(hw::memory::IO_BUFFER_ADDR, adc_trace, size / 2);
-    for (size_t w = 0; w < size / 2; ++w) {
-        module_channel.adc_trace[w * 2] = hw::adc_word(adc_trace[w] & 0xffff);
-        module_channel.adc_trace[w * 2 + 1] = hw::adc_word((adc_trace[w] >> 16) & 0xffff);
-    }
-}
-
-void db::read_adc(hw::adc_word* buffer, size_t size) {
-    const size_t copy_size =
-        (size < module_channel.adc_trace.size() ?
-         size : module_channel.adc_trace.size()) * sizeof(hw::adc_word);
-    memcpy(buffer, module_channel.adc_trace.data(), copy_size);
-}
-
-void db::set(const std::string item, bool value) {
-    if (item == "ADC_SWAP_DISABLE") {
-        auto& mod = get_module();
-        auto key = persistent_key("adc_swap_disabled");
-        mod.persistent_set(key, value ? "true" : "false");
-        if (adc_state == adc_swap_disabled || adc_state == adc_boot_state) {
-            adc_state = value ? adc_swap_disabled : adc_boot_state;
-        } else {
-            auto& mod = get_module();
-            throw pixie::module::error(
-                mod.number, mod.slot, pixie::module::error::code::invalid_value,
-                "DB swap state already set");
-        }
-    } else if (item == "ADC_SWAP") {
-        if (adc_state == adc_boot_state) {
-            adc_state = value ? adc_swapped : adc_unswapped;
-        }
-    } else {
-        channel::set(item, value);
-    }
-}
-
-void db::get(const std::string item, bool& value) {
-    if (item == "ADC_SWAP_DISABLE") {
-        value = (adc_state == adc_swap_disabled);
-    } else if (item == "ADC_SWAP") {
-        value = (adc_state == adc_swapped);
-    } else {
-        channel::get(item, value);
-    }
-}
-
-void db::get(const std::string item, int& value) {
-    if (item == "DB_NUMBER") {
-        value = number;
-    } else if (item == "DB_OFFSET") {
-        value = offset;
-    } else if (item == "DAC_SETTLE_PERIOD") {
-        value = 0;
-    } else {
-        channel::get(item, value);
-    }
-}
-
-void db::get(const std::string item, double& value) {
-    channel::get(item, value);
 }
 
 afe_dbs::afe_dbs(pixie::module::module& module__)
@@ -515,91 +383,6 @@ void afe_dbs::analyze_channel_baselines(
         log(log::debug) << pixie::module::module_label(module_, "afe-dbs: analyze-baselines")
                         << "channel=" << bl.number
                         << " baseline=" << bl.baseline;
-    }
-}
-
-db04::db04(pixie::channel::channel& module_channel_, const hw::config& config_)
-    : db(module_channel_, config_) {
-}
-
-void db04::set_dac(param::value_type value) {
-    pixie::module::module& mod = get_module();
-    if (value > 65535) {
-        throw error::error(error::code::invalid_value,
-                           pixie::module::module_label(mod, "DB04") + "invalid DAC offset: channel=" +
-                           std::to_string(module_channel.number));
-    }
-    /*
-     * Select the module port
-     */
-    mod.select_port(number + 1);
-    /*
-     * Address bit 1 selects DAC for the upper 4 channels. Clear bit 0 and set
-     * bit 1 if the DB channel offset is less than 4.
-     */
-    hw::word dac_addr = 0x20 | ((offset < 4 ? 1 : 0) << 1);
-    /*
-     * Compensate for PCB ADC swapping:
-     *
-     * Channel offset DAC Output
-     *     0, 4           B (1)
-     *     1, 5           C (2)
-     *     2, 6           A (0)
-     *     3, 7           D (3)
-     */
-    hw::word dac_ctrl = 0x30;
-    switch (offset) {
-    case 0:
-    case 4:
-        dac_ctrl += 1;
-        break;
-    case 1:
-    case 5:
-        dac_ctrl += 2;
-        break;
-    case 2:
-    case 6:
-        dac_ctrl += 0;
-        break;
-    case 3:
-    case 7:
-        dac_ctrl += 3;
-        break;
-    default:
-        break;
-    }
-    /*
-     * CFG_DAC expacts [addr(8), ctrl(8), data(16)]
-     */
-    const hw::word dac = (dac_addr << 24) | (dac_ctrl << 16) | value;
-    log(log::debug) << pixie::module::module_label(mod, "fixture: db04")
-                    << "db=" << number
-                    << " db_channel=" << offset
-                    << std::hex
-                    << " dac_addr=0x" << dac_addr
-                    << " dac_ctrl=0x" << dac_ctrl
-                    << " dac_value=0x" << value
-                    << " write=0x" << dac;
-    mod.write_word(hw::device::CFG_DAC, dac);
-     /*
-     * It takes about 4ms to clock out the 32 bits
-     */
-    hw::wait(6000);
-}
-
-void db04::get(const std::string item, bool& value) {
-    if (item == "HAS_OFFSET_DAC") {
-        value = true;
-    } else {
-        db::get(item, value);
-    }
-}
-
-void db04::get(const std::string item, int& value) {
-    if (item == "DAC_SETTLE_PERIOD") {
-        value = dac_settle_time_ms;
-    } else {
-        db::get(item, value);
     }
 }
 

@@ -5,7 +5,9 @@ set(SDK_PIXIE16_SOURCES
         pixie16/crate.cpp
         pixie16/crate-view.cpp
         pixie16/csr.cpp
-        pixie16/db.cpp
+        pixie16/db/afe.cpp
+        pixie16/db/db.cpp
+        pixie16/db/db04.cpp
         pixie16/dsp.cpp
         pixie16/fpga.cpp
         pixie16/fixture.cpp

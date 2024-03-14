@@ -30,7 +30,7 @@
 
 #include <pixie/pixie16/channel.hpp>
 #include <pixie/pixie16/crate.hpp>
-#include <pixie/pixie16/db.hpp>
+#include <pixie/pixie16/db/db.hpp>
 #include <pixie/pixie16/fixture.hpp>
 #include <pixie/pixie16/hw.hpp>
 #include <pixie/pixie16/module.hpp>

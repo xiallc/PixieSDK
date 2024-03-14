@@ -20,10 +20,9 @@
  * @brief Defines daughter board fixtures
  */
 
-#ifndef PIXIE_DB_H
-#define PIXIE_DB_H
+#ifndef PIXIE_DB_DB_H
+#define PIXIE_DB_DB_H
 
-#include <pixie/pixie16/baseline.hpp>
 #include <pixie/pixie16/fixture.hpp>
 
 namespace xia {
@@ -79,59 +78,8 @@ struct db : public channel {
     virtual void get(const std::string item, int& value);
     virtual void get(const std::string item, double& value);
 };
-
-/**
- * @brief Pixie16 module's have AFE daughter board fixtures
- */
-struct afe_dbs : public module {
-    enum limits {
-        max_dbs = 4
-    };
-
-    static constexpr int baseline_noise_bins = 30;
-    static constexpr double baseline_noise_margin = 0.5; /* % */
-
-    /*
-     * These are development modes.
-     */
-    const bool adc_swap_verify = true;
-
-    std::array<hw::word, max_dbs> adcctrl;
-
-    afe_dbs(pixie::module::module& module_);
-
-    virtual void fpga_fippi_loaded() override;
-    virtual void boot() override;
-    virtual void init_channels() override;
-
-    virtual void set_dacs() override;
-    virtual void get_traces() override;
-    virtual void adjust_offsets() override;
-
-    void analyze_channel_baselines(
-        baseline::channels& baselines, const int traces = 1);
-};
-
-/**
- * @brief DB04 fixture
- */
-struct db04 : public db {
-    /*
-     * The DAC output has a filter with an RC 1/e settling time of 47
-     * ms. Lets wait a after setting it for the signal to settle.
-     */
-    const int dac_settle_time_ms = 250;
-
-    db04(pixie::channel::channel& module_channel_, const hw::config& config_);
-
-    virtual void set_dac(param::value_type value) override;
-
-    virtual void get(const std::string item, bool& value);
-    virtual void get(const std::string item, int& value);
-};
-
 }  // namespace fixture
 }  // namespace pixie
 }  // namespace xia
 
-#endif  // PIXIE_DB_H
+#endif  // PIXIE_DB_DB_H

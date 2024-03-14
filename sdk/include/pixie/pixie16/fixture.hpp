@@ -23,6 +23,7 @@
 #ifndef PIXIE_FIXTURE_H
 #define PIXIE_FIXTURE_H
 
+#include <pixie/param.hpp>
 #include <pixie/pixie16/hw.hpp>
 
 namespace xia {

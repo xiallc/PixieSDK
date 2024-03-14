@@ -27,7 +27,9 @@
 #include <pixie/log.hpp>
 
 #include <pixie/pixie16/channel.hpp>
-#include <pixie/pixie16/db.hpp>
+#include <pixie/pixie16/db/db.hpp>
+#include <pixie/pixie16/db/afe.hpp>
+#include <pixie/pixie16/db/db04.hpp>
 #include <pixie/pixie16/fixture.hpp>
 #include <pixie/pixie16/module.hpp>
 
