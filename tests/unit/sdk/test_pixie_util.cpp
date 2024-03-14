@@ -124,18 +124,25 @@ TEST_SUITE("xia::util") {
         xia::util::io::get_values_in_set<size_t>(ret_set, "all", test_set);
         CHECK(ret_set == test_set);
         ret_set.clear();
-        CHECK_THROWS_WITH_AS(
-            xia::util::io::get_values_in_set<size_t>(ret_set, "1-10", test_set);,
-            "value not in valid set: 5", std::runtime_error);
+        CHECK_NOTHROW(xia::util::io::get_values_in_set<size_t>(ret_set, "1-10", test_set));
+        CHECK(ret_set == test_set);
         ret_set.clear();
         xia::util::io::get_values_in_set<size_t>(ret_set, "1-4", test_set);
         for (size_t i = 1; i <= 4; i++) {
             CHECK(ret_set[i-1] == i);
         }
         ret_set.clear();
-        CHECK_THROWS_WITH_AS(
-            xia::util::io::get_values_in_set<size_t>(ret_set, "2-1", test_set),
-            "invalid range: 2-1", std::runtime_error);
+        CHECK_NOTHROW(xia::util::io::get_values_in_set<size_t>(ret_set, "2-1", test_set));
+        CHECK(ret_set.empty());
+        ret_set.clear();
+        CHECK_NOTHROW(xia::util::io::get_values_in_set<size_t>(ret_set, "1-4,5,7-10", test_set));
+        CHECK(ret_set == test_set);
+        ret_set.clear();
+        CHECK_NOTHROW(xia::util::io::get_values_in_set<size_t>(ret_set, "1-4,2-1,7-10", test_set));
+        CHECK(ret_set == test_set);
+        test_set.clear();
+        CHECK_NOTHROW(xia::util::io::get_values_in_set<size_t>(ret_set, "1-10", test_set));
+        CHECK(ret_set.empty());
     }
 
     TEST_CASE("Output value") {
