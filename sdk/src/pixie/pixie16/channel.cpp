@@ -249,11 +249,18 @@ channel& channel::operator=(const channel& c) {
     return *this;
 }
 
+mib::name_type channel::get_mib_base() const {
+    module::module& mod = module.get();
+    return mod.mib_base + "channel" + mib::mibsep + std::to_string(number) + mib::mibsep;
+}
+
 void channel::read_adc(hw::adc_word* buffer, size_t size) {
     module::module& mod = module.get();
     if (mod.run_config.dsp_get_traces) {
         const hw::address addr =
-           hw::memory::IO_BUFFER_ADDR + static_cast<hw::address>(number * (fixture->config.max_adc_trace_length / 2));
+            static_cast<hw::address>(
+                hw::memory::IO_BUFFER_ADDR +
+                (number * (fixture->config.max_adc_trace_length / 2)));
 
         hw::memory::dsp dsp(module);
         hw::adc_trace_buffer adc_trace;
@@ -272,7 +279,9 @@ void channel::read_adc(hw::adc_word* buffer, size_t size) {
 void channel::read_histogram(hw::word_ptr values, const size_t size) {
     if (size != 0) {
         const hw::address addr =
-            hw::memory::HISTOGRAM_MEMORY + static_cast<hw::address>(number * fixture->config.max_histogram_length);
+            static_cast<hw::address>(
+                hw::memory::HISTOGRAM_MEMORY +
+                (number * fixture->config.max_histogram_length));
         hw::memory::mca mca(module);
         mca.read(addr, values, size);
     }

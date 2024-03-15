@@ -27,6 +27,7 @@
 #include <vector>
 
 #include <pixie/error.hpp>
+#include <pixie/mib.hpp>
 #include <pixie/param.hpp>
 
 #include <pixie/pixie16/fixture.hpp>
@@ -165,6 +166,12 @@ struct channel {
     ~channel() = default;
 
     channel& operator=(const channel& c);
+
+    /**
+     * Get the channel's MIB base. The channel MIB base is based on
+     * the module's MIB base.
+     */
+    mib::name_type get_mib_base() const;
 
     /**
      * @brief Reads an ADC trace from the channel.

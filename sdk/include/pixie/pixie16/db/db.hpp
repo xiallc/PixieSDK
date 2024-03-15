@@ -23,6 +23,8 @@
 #ifndef PIXIE_DB_DB_H
 #define PIXIE_DB_DB_H
 
+#include <pixie/mib.hpp>
+
 #include <pixie/pixie16/fixture.hpp>
 
 namespace xia {
@@ -31,42 +33,47 @@ namespace pixie {
  * @brief Collects Pixie-16 specific daughter board fixtures.
  */
 namespace fixture {
+struct db;
+/**
+ * DB MIB
+ */
+struct db_mib {
+    std::string item;
+    mib::node node;
+    db_mib();
+    void register_mib(db& db_, const std::string& mib_name, mib::type type = mib::type::integer);
+    void register_ro_mib(const std::string& name, int value);
+    void setter(db& db_, mib::type type, mib::data_type& data);
+    void getter(db& db_, mib::type type, mib::data_type& data);
+    mib::node& operator*() { return node; }
+    mib::node* operator->() { return &node; }
+};
+
 /**
  * @brief Daughter Board fixture
  */
 struct db : public channel {
     /**
-     * ADC swapped state.
-     *
-     * If the DSP is not loaded the swap state is unknown.
-     */
-    enum adc_swap_state {
-        adc_swap_disabled,
-        adc_boot_state,
-        adc_unswapped,
-        adc_swapped
-    };
-    /**
      * The number is the position. The DBs are sorted by position so
      * asking for the index by channel returns the DB number.
      */
-    int number;
+    db_mib number;
 
     /**
      * Base channel for the daughter board
      */
-    int base;
+    db_mib base;
 
     /**
      * Channel offset relative to the fixture.
      */
-    int offset;
+    db_mib offset;
 
     /**
      * Dual ADC swapped state. This is true if the data is being clocked
      * on the wrong edge.
      */
-    adc_swap_state adc_state;
+    db_mib adc_state;
 
     db(pixie::channel::channel& module_channel_, const hw::config& config_);
 

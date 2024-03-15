@@ -441,9 +441,14 @@ public:
     double i2c_read_period;
 
     /*
-     * Does the board has an old CPLD version?
+     * Does the board have an old CPLD version?
      */
     bool io_cpld_version_old;
+
+    /*
+     * MIB base name
+     */
+    std::string mib_base;
 
     /**
      * Modules are created by the crate.

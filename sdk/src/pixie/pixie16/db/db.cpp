@@ -25,12 +25,10 @@
 
 #include <pixie/error.hpp>
 #include <pixie/log.hpp>
-//#include <pixie/utils/numerics.hpp>
-//#include <pixie/utils/time.hpp>
+#include <pixie/utils/string.hpp>
 
 #include <pixie/pixie16/channel.hpp>
 #include <pixie/pixie16/db/db.hpp>
-//#include <pixie/pixie16/defs.hpp>
 #include <pixie/pixie16/memory.hpp>
 #include <pixie/pixie16/module.hpp>
 
@@ -71,19 +69,62 @@ userin_save::~userin_save() {
     dsp.write(1, address, userin_1);
 }
 
+db_mib::db_mib() {
+}
+
+void db_mib::register_mib(db& db_, const std::string& name, mib::type type) {
+    mib::event_func set =
+        [&self = *this, &db_ = db_](mib::event , mib::type type, mib::data_type& data) {
+            self.setter(db_, type, data);
+        };
+    mib::event_func get =
+        [&self = *this, &db_ = db_](mib::event , mib::type type, mib::data_type& data) {
+            self.getter(db_, type, data);
+        };
+    mib::add(name, type);
+    node = mib::find(name);
+    node.set_event_func(mib::event::set, set);
+    node.set_event_func(mib::event::get, get);
+}
+
+void db_mib::register_ro_mib(const std::string& name, int value) {
+    mib::add_ro_int(name, value);
+    node = mib::find(name);
+}
+
+void db_mib::setter(db& db_, mib::type type, mib::data_type& data) {
+    (void) db_;
+    (void) type;
+    (void) data;
+}
+
+void db_mib::getter(db& db_, mib::type type, mib::data_type& data) {
+    (void) db_;
+    (void) type;
+    (void) data;
+}
+
+
 db::db(pixie::channel::channel& module_channel_, const hw::config& config_)
     : channel(module_channel_, config_) {
     pixie::module::module& mod = get_module();
     label = hw::get_module_fixture_label(config_.fixture);
-    number = mod.eeprom.db_find(module_channel.number);
-    base =  mod.eeprom.db_channel_base(number);
-    offset = static_cast<int>(module_channel.number) - base;
+    auto db_number = mod.eeprom.db_find(module_channel.number);
+    std::string ll = label;
+    util::string::tolower(ll);
+    std:: ostringstream oss;
+    oss << module_channel.get_mib_base() << ll << mib::mibsep << db_number << mib::mibsep;
+    number.register_ro_mib(oss.str() + "number", db_number);
+    base.register_ro_mib(oss.str() + "base", mod.eeprom.db_channel_base(db_number));
+    offset.register_ro_mib(
+        oss.str() + "offset", static_cast<int>(module_channel.number) - base->get<int>());
+    adc_state.register_mib(*this, oss.str() + "adc-state", mib::type::string);
     auto key = persistent_key("adc_swap_disabled");
     if (mod.persistent_has(key)) {
         auto& val = mod.persistent_get(key);
-        adc_state = val == "true" ? adc_swap_disabled : adc_boot_state;
+        *adc_state = val == "true" ? "disabled" : "boot";
     } else {
-        adc_state = adc_boot_state;
+        *adc_state = "boot";
     }
 }
 
@@ -91,7 +132,7 @@ void db::acquire_adc() {
     pixie::module::module& module = get_module();
     {
         userin_save userins(module);
-        userins.update(number, offset);
+        userins.update(number->get<int>(), offset->get<int>());
         hw::run::control_run_on_dsp(module, hw::run::control_task::get_traces);
     }
     /*
@@ -124,8 +165,8 @@ void db::set(const std::string item, bool value) {
         auto& mod = get_module();
         auto key = persistent_key("adc_swap_disabled");
         mod.persistent_set(key, value ? "true" : "false");
-        if (adc_state == adc_swap_disabled || adc_state == adc_boot_state) {
-            adc_state = value ? adc_swap_disabled : adc_boot_state;
+        if (*adc_state == "disabled" || *adc_state == "boot") {
+            *adc_state = value ? "disabled" : "boot";
         } else {
             auto& mod = get_module();
             throw pixie::module::error(
@@ -133,8 +174,8 @@ void db::set(const std::string item, bool value) {
                 "DB swap state already set");
         }
     } else if (item == "ADC_SWAP") {
-        if (adc_state == adc_boot_state) {
-            adc_state = value ? adc_swapped : adc_unswapped;
+        if (*adc_state == "boot") {
+            *adc_state = value ? "swapped" : "unswapped";
         }
     } else {
         channel::set(item, value);
@@ -143,9 +184,9 @@ void db::set(const std::string item, bool value) {
 
 void db::get(const std::string item, bool& value) {
     if (item == "ADC_SWAP_DISABLE") {
-        value = (adc_state == adc_swap_disabled);
+        value = (*adc_state == "disabled");
     } else if (item == "ADC_SWAP") {
-        value = (adc_state == adc_swapped);
+        value = (*adc_state == "swapped");
     } else {
         channel::get(item, value);
     }
@@ -153,9 +194,9 @@ void db::get(const std::string item, bool& value) {
 
 void db::get(const std::string item, int& value) {
     if (item == "DB_NUMBER") {
-        value = number;
+        value = *number;
     } else if (item == "DB_OFFSET") {
-        value = offset;
+        value = *offset;
     } else if (item == "DAC_SETTLE_PERIOD") {
         value = 0;
     } else {

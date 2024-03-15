@@ -45,15 +45,17 @@ void db04::set_dac(param::value_type value) {
                            pixie::module::module_label(mod, "DB04") + "invalid DAC offset: channel=" +
                            std::to_string(module_channel.number));
     }
+    int num = *number;
+    int off = *offset;
     /*
      * Select the module port
      */
-    mod.select_port(number + 1);
+    mod.select_port(num + 1);
     /*
      * Address bit 1 selects DAC for the upper 4 channels. Clear bit 0 and set
      * bit 1 if the DB channel offset is less than 4.
      */
-    hw::word dac_addr = 0x20 | ((offset < 4 ? 1 : 0) << 1);
+    hw::word dac_addr = 0x20 | ((off < 4 ? 1 : 0) << 1);
     /*
      * Compensate for PCB ADC swapping:
      *
@@ -64,7 +66,7 @@ void db04::set_dac(param::value_type value) {
      *     3, 7           D (3)
      */
     hw::word dac_ctrl = 0x30;
-    switch (offset) {
+    switch (off) {
     case 0:
     case 4:
         dac_ctrl += 1;
@@ -89,8 +91,8 @@ void db04::set_dac(param::value_type value) {
      */
     const hw::word dac = (dac_addr << 24) | (dac_ctrl << 16) | value;
     log(log::debug) << pixie::module::module_label(mod, "fixture: db04")
-                    << "db=" << number
-                    << " db_channel=" << offset
+                    << "db=" << num
+                    << " db_channel=" << off
                     << std::hex
                     << " dac_addr=0x" << dac_addr
                     << " dac_ctrl=0x" << dac_ctrl

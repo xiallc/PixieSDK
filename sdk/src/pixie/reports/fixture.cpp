@@ -33,25 +33,10 @@ void report(pixie::fixture::channel& fixture, std::ostream& out, const std::stri
 
 void report(pixie::fixture::db db, std::ostream& out, const std::string& prefix) {
     report((pixie::fixture::channel&) db, out, prefix);
-    out << prefix << "DB Number      : " << db.number << std::endl
-        << prefix << "DB Base        : " << db.base << std::endl
-        << prefix << "DB Offset      : " << db.offset << std::endl
-        << prefix << "ADC swap state : ";
-    switch (db.adc_state) {
-        case db.adc_swap_disabled:
-            out << "disabled (no swap)";
-            break;
-        case db.adc_boot_state:
-            out << "boot state";
-            break;
-        case db.adc_unswapped:
-            out << "not swapped";
-            break;
-        case db.adc_swapped:
-            out << "swapped";
-            break;
-    }
-    out << std::endl;
+    out << prefix << "DB Number      : " << db.number->get<int>() << std::endl
+        << prefix << "DB Base        : " << db.base->get<int>() << std::endl
+        << prefix << "DB Offset      : " << db.offset->get<int>() << std::endl
+        << prefix << "ADC swap state : " << db.adc_state->get<std::string>() << std::endl;
 }
 
 }
