@@ -28,6 +28,7 @@
 
 #include <pixie/log.hpp>
 #include <pixie/mib.hpp>
+#include <pixie/utils/string.hpp>
 
 namespace xia {
 namespace mib {
@@ -41,7 +42,27 @@ namespace mib {
 struct mib_nodes {
     struct name_cmp {
         bool operator()(const name_type& lhs, const name_type& rhs) const {
-            return lhs < rhs;
+            util::string::strings lhss;
+            util::string::strings rhss;
+            util::string::split(lhss, lhs, mib::mibsep);
+            util::string::split(rhss, rhs, mib::mibsep);
+            auto pieces = std::min(lhss.size(), rhss.size());
+            for (size_t p = 0; p < pieces; ++p) {
+                if (lhss[p] != rhss[p]) {
+                    bool l_isnum = util::string::check_number(lhss[p]);
+                    bool r_isnum = util::string::check_number(rhss[p]);
+                    if (!l_isnum && !r_isnum) {
+                        return lhss[p] < rhss[p];
+                    } else if (l_isnum && r_isnum) {
+                        return std::stoi(lhss[p]) < std::stoi(rhss[p]);
+                    } else if (l_isnum) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            }
+            return lhss.size() < rhss.size();
         }
     };
 
@@ -389,6 +410,10 @@ node::node(const char* name)
 
 node::node()
     : base(nullptr) {
+}
+
+node::node(const node& orig)
+    : base(orig.base) {
 }
 
 node::node(node_base& base_)

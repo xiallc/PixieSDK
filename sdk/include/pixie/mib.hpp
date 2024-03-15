@@ -503,6 +503,10 @@ struct node {
      */
     node();
     /**
+     * Copy
+     */
+    node(const node& node);
+    /**
      * Internal
      */
     node(node_base& base);

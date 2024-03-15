@@ -447,6 +447,54 @@ TEST_SUITE("xia::pixie::mib") {
             CHECK(n == std::string(mib_list[np++]));
         }
     }
+    TEST_CASE("MIB: alphanumeric sort") {
+        CHECK_NOTHROW(xia::mib::add_ro_str("2.2", "alphanum sort"));
+        CHECK_NOTHROW(xia::mib::node("2.1", xia::mib::type::boolean));
+        CHECK_NOTHROW(xia::mib::add_ro_int("1.1", 200));
+        CHECK_NOTHROW(xia::mib::node("a.0", xia::mib::type::uinteger));
+        CHECK_NOTHROW(xia::mib::add_ro_uint("a.a", 4000U));
+        CHECK_NOTHROW(xia::mib::node("r.2", xia::mib::type::real));
+        CHECK_NOTHROW(xia::mib::add_ro_real("r.3", 6.66666));
+        std::vector<std::string> mibs;
+        xia::mib::mib_walk_func walker =
+            [&mibs](xia::mib::node& nod) {
+                mibs.push_back(nod.name());
+            };
+        CHECK_NOTHROW(xia::mib::walk(walker));
+        const char* mib_list[] = {
+            "1.1",
+            "2.1",
+            "2.2",
+            "a.0",
+            "a.1",
+            "a.2",
+            "a.a",
+            "b.1",
+            "b.2.ro",
+            "i.1",
+            "i.2.ro",
+            "r.1",
+            "r.2",
+            "r.2.ro",
+            "r.3",
+            "s.1",
+            "s.2.ro",
+            "t.1",
+            "t.2.ro",
+            "u.1",
+            "u.2.ro"
+        };
+        const size_t npc = sizeof(mib_list) / sizeof(mib_list[0]);
+        CHECK(npc == mibs.size());
+        size_t np = 0;
+        for (auto& n : mibs) {
+            CHECK(np < npc);
+            if (np >= npc) {
+                break;
+            }
+            CHECK(n == std::string(mib_list[np++]));
+        }
+    }
     TEST_CASE("MIB: read/write") {
         size_t v = 0;
         auto rw1 = xia::mib::read_write("rw.1", v, xia::mib::rw_mode::rw);
