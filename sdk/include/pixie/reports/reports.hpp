@@ -59,7 +59,7 @@ void report(pixie::fixture::channel& channel, std::ostream& out, const std::stri
  * @param out The stream to write the report to
  * @param prefix
  */
-void report(pixie::fixture::db& db, std::ostream& out, const std::string& prefix = "");
+void report(pixie::fixture::db::db& db, std::ostream& out, const std::string& prefix = "");
 /**
  * A report for a channel object
  * @param channel The channel to read from

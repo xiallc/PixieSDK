@@ -25,13 +25,13 @@
 
 #include <pixie/error.hpp>
 #include <pixie/log.hpp>
+#include <pixie/utils/string.hpp>
 
 #include <pixie/pixie16/channel.hpp>
-#include <pixie/pixie16/db/db.hpp>
-#include <pixie/pixie16/db/afe.hpp>
-#include <pixie/pixie16/db/db04.hpp>
 #include <pixie/pixie16/fixture.hpp>
 #include <pixie/pixie16/module.hpp>
+
+#include <pixie/pixie16/db/module.hpp>
 
 namespace xia {
 namespace pixie {
@@ -41,9 +41,173 @@ static void unsupported_op(const std::string what) {
     throw error::error(error::code::internal_failure, "invalid fixture op: " + what);
 }
 
-channel::channel(pixie::channel::channel& module_channel_, const hw::config& config_)
-    : module_channel(module_channel_), label("motherboard"),
-      config(config_) {
+assembly::assembly(pixie::module::module& module__, std::string label_)
+    : label(label_), module_(module__) {
+    /* Do nothing */
+}
+
+assembly::~assembly() {
+    /* Do nothing */
+}
+
+std::string assembly::get_mib_base() {
+    std::ostringstream oss;
+    std::string ll = label;
+    util::string::tolower(ll);
+    oss << "module" << mib::mibsep << module_.slot << mib::mibsep << ll << mib::mibsep;
+    return oss.str();
+}
+
+void assembly::open() {
+    for (auto assembly_ : subassemblies) {
+        assembly_->open();
+    }
+}
+
+void assembly::close() {
+    for (auto assembly_ : subassemblies) {
+        assembly_->close();
+    }
+}
+
+void assembly::initialize() {
+    for (auto assembly_ : subassemblies) {
+        assembly_->initialize();
+    }
+}
+
+void assembly::online() {
+    for (auto assembly_ : subassemblies) {
+        assembly_->online();
+    }
+}
+
+void assembly::forced_online() {
+    for (auto assembly_ : subassemblies) {
+        assembly_->forced_online();
+    }
+}
+
+void assembly::forced_offline() {
+    for (auto assembly_ : subassemblies) {
+        assembly_->forced_offline();
+    }
+}
+
+void assembly::fpga_comms_loaded() {
+    for (auto assembly_ : subassemblies) {
+        assembly_->fpga_comms_loaded();
+    }
+}
+
+void assembly::fpga_fippi_loaded() {
+    for (auto assembly_ : subassemblies) {
+        assembly_->fpga_comms_loaded();
+    }
+}
+
+void assembly::dsp_loaded() {
+    for (auto assembly_ : subassemblies) {
+        assembly_->dsp_loaded();
+    }
+}
+
+void assembly::boot() {
+    for (auto assembly_ :  subassemblies) {
+        assembly_->boot();
+    }
+}
+
+void assembly::erase_values() {
+    for (auto assembly_ :  subassemblies) {
+        assembly_->erase_values();
+    }
+}
+
+void assembly::init_values() {
+    for (auto assembly_ : subassemblies) {
+        assembly_->init_values();
+    }
+}
+
+void assembly::erase_channels() {
+    for (auto assembly_ : subassemblies) {
+        assembly_->erase_channels();
+    }
+}
+
+void assembly::init_assemblies() {
+    /*
+     * Assume the derived class has overloaded this and created the
+     * subassemblies and this is used to then get each subassembly to
+     * initialise
+     */
+    for (auto assembly_ : subassemblies) {
+        assembly_->init_assemblies();
+    }
+}
+
+void assembly::init_channels() {
+    /*
+     * If there are no subassemblies the channel hardware is on the
+     * base assembly. Support channel initialisation here saving the
+     * need to create module subassembly with this initialisation.
+     */
+    if (subassemblies.empty()) {
+        log(log::info) << module::module_label(module_, "fixture: assembly")
+                        << label << ": init-channels: create channel fixtures";
+        for (int chan = 0; chan < static_cast<int>(module_.num_channels); ++chan) {
+            auto& mod_chan = module_.channels[chan];
+            auto& config = module_.eeprom.configs[chan];
+            mod_chan.fixture = std::make_shared<channel>(mod_chan, *this, config);
+        }
+    } else {
+        for (auto assembly_ : subassemblies) {
+            assembly_->init_channels();
+        }
+    }
+}
+
+void assembly::sync_hw() {
+    for (auto assembly_ : subassemblies) {
+        assembly_->sync_hw();
+    }
+}
+
+void assembly::sync_vars(const param::sync_mode sync_mode) {
+    for (auto assembly_ : subassemblies) {
+        assembly_->sync_vars(sync_mode);
+    }
+}
+
+void assembly::set_dacs() {
+    unsupported_op("set DACs is using the DSP");
+}
+
+void assembly::get_traces() {
+    unsupported_op("get traces is using the DSP");
+}
+
+void assembly::adjust_offsets() {
+    unsupported_op("adjust offsets is using the DSP");
+}
+
+void assembly::tau_finder() {
+    unsupported_op("tau finder is using the DSP");
+}
+
+bool assembly::has_test(const std::string ) {
+    return false;
+}
+
+void assembly::run_test(const std::string , bool& , log_output& ) {
+    unsupported_op("no test for assembly");
+}
+
+channel::channel(
+    pixie::channel::channel& module_channel_, assembly& assembly__, const hw::config& config_)
+    : module_channel(module_channel_), assembly_(assembly__),
+      config(config_), label("motherboard") {
 }
 
 channel::~channel() {
@@ -56,6 +220,15 @@ void channel::open() {
 
 void channel::close() {
     /* Do nothing */
+}
+
+void channel::online() {
+}
+
+void channel::forced_online() {
+}
+
+void channel::forced_offline() {
 }
 
 void channel::set_dac(param::value_type ) {
@@ -74,11 +247,15 @@ void channel::read_adc(hw::adc_word* , size_t ) {
     unsupported_op("read ADC is using the DSP");
 }
 
-void channel::set(const std::string item, bool ) {
-    unsupported_op("not set support: bool: " + item);
+void channel::event(const std::string name) {
+    unsupported_op("no event support: " + name);
 }
 
-void channel::set(const std::string item, int ) {
+void channel::set(const std::string item, bool ) {
+    unsupported_op("no set support: bool: " + item);
+}
+
+void channel::set(const std::string item, unsigned int ) {
     unsupported_op("no set support: int: " + item);
 }
 
@@ -86,24 +263,16 @@ void channel::set(const std::string item, double ) {
     unsupported_op("no set support: double: " + item);
 }
 
-void channel::set(const std::string item, hw::word ) {
-    unsupported_op("no set support: hw::word: " + item);
+void channel::get(const std::string , bool& value) {
+    value = false;
 }
 
-void channel::get(const std::string item, bool& ) {
-    unsupported_op("no get support: bool: " + item);
-}
-
-void channel::get(const std::string item, int& ) {
-    unsupported_op("no get support: int: " + item);
+void channel::get(const std::string item, unsigned int& ) {
+    unsupported_op("no get support: unsigned int: " + item);
 }
 
 void channel::get(const std::string item, double& ) {
     unsupported_op("no get support: double: " + item);
-}
-
-void channel::get(const std::string item, hw::word& ) {
-    unsupported_op("no get support: hw::word: " + item);
 }
 
 pixie::module::module& channel::get_module() {
@@ -116,126 +285,17 @@ const std::string channel::persistent_key(const std::string& item) const {
         std::to_string(module_channel.number) + '.' + label + '.' + item;
 }
 
-module::module(pixie::module::module& module__)
-    : module_(module__), label("none") {
-    /* Do nothing */
-}
-
-module::~module() {
-    /* Do nothing */
-}
-
-void module::open() {
-    /* Do nothing */
-}
-
-void module::close() {
-    /* Do nothing */
-}
-
-void module::initialize() {
-    /* Do nothing */
-}
-
-void module::online() {
-    /* Do nothing */
-}
-
-void module::forced_online() {
-    /* Do nothing */
-}
-
-void module::forced_offline() {
-    /* Do nothing */
-}
-
-void module::fpga_comms_loaded() {
-    /* Do nothing */
-}
-
-void module::fpga_fippi_loaded() {
-    /* Do nothing */
-}
-
-void module::dsp_loaded() {
-    /* Do nothing */
-}
-
-void module::boot() {
-    /* Do nothing */
-}
-
-void module::erase_values() {
-    /* Do nothing */
-}
-
-void module::init_values() {
-    /* Do nothing */
-}
-
-void module::erase_channels() {
-    /* Do nothing */
-}
-
-void module::init_channels() {
-    log(log::info) << pixie::module::module_label(module_, "fixture: module")
-                    << "init-channels: create channel fixtures";
-    for (size_t chan = 0; chan < module_.num_channels; ++chan) {
-        module_.channels[chan].fixture =
-            fixture::make(module_.channels[chan], module_.eeprom.configs[chan]);
-    }
-}
-
-void module::sync_hw() {
-    /* Do nothing */
-}
-
-void module::sync_vars() {
-    /* Do nothing */
-}
-
-void module::set_dacs() {
-    unsupported_op("set DACs is using the DSP");
-}
-
-void module::get_traces() {
-    unsupported_op("get traces is using the DSP");
-}
-
-void module::adjust_offsets() {
-    unsupported_op("adjust offsets is using the DSP");
-}
-
-void module::tau_finder() {
-    unsupported_op("tau finder is using the DSP");
-}
-
-channel_ptr make(pixie::channel::channel& module_channel, const hw::config& config) {
-    channel_ptr chan_fixture;
-    switch (config.fixture) {
-    case hw::module_fixture::DB04:
-    case hw::module_fixture::DB05:
-        chan_fixture = std::make_shared<db04>(module_channel, config);
-        break;
-    default:
-        chan_fixture = std::make_shared<channel>(module_channel, config);
-        break;
-    }
-    chan_fixture->open();
-    return chan_fixture;
-}
-
-module_ptr make(pixie::module::module& module_) {
-    module_ptr mod_fixtures;
+assembly_ptr make(pixie::module::module& module_) {
+    assembly_ptr assembly_;
     switch (module_.get_rev_tag()) {
     case hw::rev_tag::rev_H:
-        mod_fixtures = std::make_shared<afe_dbs>(module_);
+        assembly_ = std::make_shared<db::module>(module_);
         break;
     default:
-        mod_fixtures = std::make_shared<module>(module_);
+        assembly_ = std::make_shared<assembly>(module_);
         break;
     }
-    return mod_fixtures;
+    return assembly_;
 }
 
 };  // namespace fixture

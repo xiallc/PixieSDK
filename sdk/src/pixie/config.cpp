@@ -116,7 +116,7 @@ static const format::json default_config = {
         {"TrigConfig", {0, 0, 0, 0}},
         {"U00", {0, 0, 0, 0, 0, 0, 0}},
         {"UserIn", {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}}}}}};
-        
+
 static void fill_config(module::module& module, format::json& settings) {
     if (!settings.contains("metadata")) {
         throw error(error::code::config_json_error, "'metadata' not found");
@@ -421,7 +421,7 @@ static void export_json(format::json& config, crate::crate& crate) {
         /*
          * Refresh the vairables from the DSP before exporting
          */
-        mod.sync_vars(module::module::sync_from_dsp);
+        mod.sync_vars(param::sync_mode::from_hw);
 
         auto fw_tag = mod.get_fw_tag();
 

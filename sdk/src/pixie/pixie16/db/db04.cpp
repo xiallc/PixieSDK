@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-/** @file fixture.cpp
- * @brief Implements per channel hardware specific support for the Pixie-16 modules.
+/** @file db04.cpp
+ * @brief Implements DB04
  */
 
 #include <algorithm>
@@ -26,27 +26,46 @@
 #include <pixie/error.hpp>
 #include <pixie/log.hpp>
 
-#include <pixie/pixie16/db/db04.hpp>
 #include <pixie/pixie16/defs.hpp>
 #include <pixie/pixie16/module.hpp>
+
+#include <pixie/pixie16/db/db04.hpp>
 
 namespace xia {
 namespace pixie {
 namespace fixture {
+namespace db {
 
-db04::db04(pixie::channel::channel& module_channel_, const hw::config& config_)
-    : db(module_channel_, config_) {
+db04::db04(
+    pixie::module::module& module_, const hw::db_assembly& db_assembly)
+    : db(module_, db_assembly) {
 }
 
-void db04::set_dac(param::value_type value) {
+db04::~db04() {
+}
+
+void db04::init_channels() {
+    init_db_channels<db04_channel>(*this);
+}
+
+db04_channel::db04_channel(
+    pixie::channel::channel& mod_chan, db& board, const hw::config& config_)
+    : channel(mod_chan, board, config_) {
+}
+
+db04_channel::~db04_channel() {
+}
+
+void db04_channel::set_dac(param::value_type value) {
     pixie::module::module& mod = get_module();
-    if (value > 65535) {
-        throw error::error(error::code::invalid_value,
-                           pixie::module::module_label(mod, "DB04") + "invalid DAC offset: channel=" +
-                           std::to_string(module_channel.number));
+    if (value >= (1 << 16)) {
+        throw error::error(
+            error::code::invalid_value,
+            pixie::module::module_label(mod, "DB04") + "invalid DAC offset: channel=" +
+            std::to_string(board.base.get<size_t>() + offset.get<size_t>()));
     }
-    int num = *number;
-    int off = *offset;
+    int num = board.number.get<int>();
+    int off = offset.get<int>();
     /*
      * Select the module port
      */
@@ -105,22 +124,23 @@ void db04::set_dac(param::value_type value) {
     hw::wait(6000);
 }
 
-void db04::get(const std::string item, bool& value) {
-    if (item == "HAS_OFFSET_DAC") {
+void db04_channel::get(const std::string item, bool& value) {
+    if (item == "dac.has.offset") {
         value = true;
     } else {
-        db::get(item, value);
+        channel::get(item, value);
     }
 }
 
-void db04::get(const std::string item, int& value) {
-    if (item == "DAC_SETTLE_PERIOD") {
-        value = dac_settle_time_ms;
+void db04_channel::get(const std::string item, unsigned int& value) {
+    if (item == "dac.settle-period") {
+        value = db04::dac_settle_time_ms;
     } else {
-        db::get(item, value);
+        channel::get(item, value);
     }
 }
 
+}   // namespace db
 };  // namespace fixture
 };  // namespace pixie
 };  // namespace xia

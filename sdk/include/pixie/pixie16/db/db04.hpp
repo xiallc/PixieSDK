@@ -27,28 +27,38 @@
 
 namespace xia {
 namespace pixie {
-/**
- * @brief Collects Pixie-16 specific daughter board fixtures.
- */
 namespace fixture {
+namespace db {
 /**
  * @brief DB04 fixture
  */
-struct db04 : public db {
+struct db04 : public fixture::db::db {
     /*
      * The DAC output has a filter with an RC 1/e settling time of 47
      * ms. Lets wait a after setting it for the signal to settle.
      */
-    const int dac_settle_time_ms = 250;
+    static constexpr int dac_settle_time_ms = 250;
 
-    db04(pixie::channel::channel& module_channel_, const hw::config& config_);
+    db04(pixie::module::module& module_, const hw::db_assembly& db_assembly);
+    virtual ~db04();
+
+    virtual void init_channels() override;
+};
+
+/**
+ * @brief DB04 fixture
+ */
+struct db04_channel : public fixture::db::channel {
+    db04_channel(
+        pixie::channel::channel& module_channel, db& board, const hw::config& config_);
+    virtual ~db04_channel();
 
     virtual void set_dac(param::value_type value) override;
 
-    virtual void get(const std::string item, bool& value);
-    virtual void get(const std::string item, int& value);
+    virtual void get(const std::string item, bool& value) override;
+    virtual void get(const std::string item, unsigned int& value) override;
 };
-
+}  // namespace db
 }  // namespace fixture
 }  // namespace pixie
 }  // namespace xia

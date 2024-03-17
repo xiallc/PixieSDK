@@ -35,9 +35,9 @@ namespace pixie {
 namespace sim {
 module_defs mod_defs;
 
-struct fixture : public xia::pixie::fixture::module {
-    fixture(xia::pixie::module::module& module_);
-    virtual ~fixture() override;
+struct assembly : public xia::pixie::fixture::assembly {
+    assembly(xia::pixie::module::module& module_);
+    virtual ~assembly() override;
     virtual void open() override;
     virtual void close() override;
     virtual void initialize() override;
@@ -52,37 +52,36 @@ struct fixture : public xia::pixie::fixture::module {
     virtual void erase_channels() override;
     virtual void init_channels() override;
     virtual void sync_hw() override;
-    virtual void sync_vars() override;
+    virtual void sync_vars(const param::sync_mode sync_mode) override;
     virtual void set_dacs() override;
     virtual void get_traces() override;
     virtual void adjust_offsets() override;
     virtual void tau_finder() override;
 };
 
-fixture::fixture(xia::pixie::module::module& module__)
-    : xia::pixie::fixture::module(module__) {
-    label = "sim";
+assembly::assembly(xia::pixie::module::module& module__)
+    : xia::pixie::fixture::assembly(module__, "sim") {
 }
-fixture::~fixture() {}
-void fixture::open() {}
-void fixture::close() {}
-void fixture::initialize() {}
-void fixture::online() {}
-void fixture::forced_offline() {}
-void fixture::fpga_comms_loaded() {}
-void fixture::fpga_fippi_loaded() {}
-void fixture::dsp_loaded() {}
-void fixture::boot() {}
-void fixture::erase_values() {}
-void fixture::init_values() {}
-void fixture::erase_channels() {}
-void fixture::init_channels() { xia::pixie::fixture::module::init_channels(); }
-void fixture::sync_hw() {}
-void fixture::sync_vars() {}
-void fixture::set_dacs() {}
-void fixture::get_traces() {}
-void fixture::adjust_offsets() {}
-void fixture::tau_finder() {}
+assembly::~assembly() {}
+void assembly::open() {}
+void assembly::close() {}
+void assembly::initialize() {}
+void assembly::online() {}
+void assembly::forced_offline() {}
+void assembly::fpga_comms_loaded() {}
+void assembly::fpga_fippi_loaded() {}
+void assembly::dsp_loaded() {}
+void assembly::boot() {}
+void assembly::erase_values() {}
+void assembly::init_values() {}
+void assembly::erase_channels() {}
+void assembly::init_channels() { xia::pixie::fixture::assembly::init_channels(); }
+void assembly::sync_hw() {}
+void assembly::sync_vars(const param::sync_mode ) {}
+void assembly::set_dacs() {}
+void assembly::get_traces() {}
+void assembly::adjust_offsets() {}
+void assembly::tau_finder() {}
 
 module::module(xia::pixie::backplane::backplane& backplane_)
     : xia::pixie::module::module(backplane_), fw_release(firmware::not_released),
@@ -122,7 +121,7 @@ void module::open(size_t device_number) {
 
             var_defaults = mod_def.var_defaults;
 
-            fixtures = std::make_shared<fixture>(*this);
+            fixtures = std::make_shared<assembly>(*this);
 
             opened_ = true;
             return;

@@ -23,9 +23,14 @@
 #ifndef PIXIE_DB_DB_H
 #define PIXIE_DB_DB_H
 
+#include <functional>
+
+#include <pixie/log.hpp>
 #include <pixie/mib.hpp>
 
 #include <pixie/pixie16/fixture.hpp>
+#include <pixie/pixie16/db/fippi-reg.hpp>
+#include <pixie/pixie16/module.hpp>
 
 namespace xia {
 namespace pixie {
@@ -33,58 +38,140 @@ namespace pixie {
  * @brief Collects Pixie-16 specific daughter board fixtures.
  */
 namespace fixture {
-struct db;
+namespace db {
+
 /**
- * DB MIB
+ * @brief Daughter Board fixture
  */
-struct db_mib {
-    std::string item;
-    mib::node node;
-    db_mib();
-    void register_mib(db& db_, const std::string& mib_name, mib::type type = mib::type::integer);
-    void register_ro_mib(const std::string& name, int value);
-    void setter(db& db_, mib::type type, mib::data_type& data);
-    void getter(db& db_, mib::type type, mib::data_type& data);
-    mib::node& operator*() { return node; }
-    mib::node* operator->() { return &node; }
+struct db : public fixture::assembly {
+
+    /**
+     * The number is the position. The DBs are sorted by position so
+     * asking for the index by channel returns the DB number.
+     */
+    mib::node number;
+
+    /**
+     * Base channel for the daughter board
+     */
+    mib::node base;
+
+    /**
+     * The number of channels the DB supports
+     */
+    mib::node channels;
+
+    /**
+     * FIPPI Registers
+     */
+    fippi::regs fippi_regs;
+
+    db(pixie::module::module& module_, const hw::db_assembly& db_assembly);
+    virtual ~db();
+
+    virtual std::string get_mib_base() override;
+
+    virtual void online() override;
+    virtual void forced_online() override;
+    virtual void forced_offline() override;
+
+    template<typename T, typename B = db> void init_db_channels(B& board);
+
+    virtual void enable_mibs();
+    virtual void disable_mibs();
 };
 
 /**
  * @brief Daughter Board fixture
  */
-struct db : public channel {
+struct channel : public fixture::channel {
+    enum struct adc_test_mode {
+        off,              /**< Disable test modes, default */
+        fs_plus,          /**< +FS or +ve full scale */
+        fs_minus,         /**< -FS or -ve full scale */
+        midscale,         /**< Midscale of the range */
+        checkerboard,     /**< Checkerboard or zero/one data */
+        pn23,             /**< PN23 longitudinal test */
+        pn9,              /**< PN9 longitudinal test */
+        one_zero          /**< One/zero alternating data words */
+    };
     /**
-     * The number is the position. The DBs are sorted by position so
-     * asking for the index by channel returns the DB number.
+     * The daughter board the channel is on
      */
-    db_mib number;
-
-    /**
-     * Base channel for the daughter board
-     */
-    db_mib base;
+    db& board;
 
     /**
      * Channel offset relative to the fixture.
      */
-    db_mib offset;
+    mib::node offset;
 
     /**
-     * Dual ADC swapped state. This is true if the data is being clocked
+     * Dual ADC swapped state. This is `swapped` if the data is being clocked
      * on the wrong edge.
      */
-    db_mib adc_state;
+    mib::node adc_swap;
 
-    db(pixie::channel::channel& module_channel_, const hw::config& config_);
+    channel(
+        pixie::channel::channel& module_channel, db& board,
+        const hw::config& config_);
+    virtual ~channel();
+
+    virtual std::string get_mib_base();
+
+    virtual void online() override;
+    virtual void forced_online() override;
+    virtual void forced_offline() override;
+
+    virtual void enable_mibs();
+    virtual void disable_mibs();
 
     virtual void acquire_adc() override;
     virtual void read_adc(hw::adc_word* buffer, size_t size);
 
     virtual void set(const std::string item, bool value);
     virtual void get(const std::string item, bool& value);
-    virtual void get(const std::string item, int& value);
-    virtual void get(const std::string item, double& value);
+    virtual void get(const std::string item, unsigned int& value);
+
+    /**
+     * Helpers for the ADC test mode and the `unsigned int` set
+     * interface.
+     */
+    adc_test_mode get_adc_test_mode(unsigned int mode_value);
+    bool check_adc_test_mode(unsigned int mode_value);
+    const char* adc_mode_label(adc_test_mode mode);
+
 };
+
+/**
+ * Uniform DB label for logging
+ */
+static inline std::string db_label(db& board) {
+    return
+        pixie::module::module_label(board.module_, "fixture") +
+        board.label + '.' +
+        std::to_string(board.number.get<int>()) + ": ";
+}
+/**
+ * Uniform channel label for logging
+ */
+static inline std::string channel_label(channel& chan) {
+    return
+        chan.label + '.' +
+        std::to_string(chan.board.number.get<int>()) + '.' +
+        std::to_string(chan.module_channel.number) + ": ";
+}
+
+template<typename T, typename B> void db::init_db_channels(B& board) {
+    log(log::debug) << db_label(board) << "init-channels: create channel fixtures";
+    auto db_chans = channels.get<size_t>();
+    auto db_base = base.get<size_t>();
+    for (size_t db_chan = 0; db_chan < db_chans; ++db_chan) {
+        auto& chan = module_.channels[db_base + db_chan];
+        auto& config = module_.eeprom.configs[chan.number];
+        chan.fixture = std::make_shared<T>(chan, board, config);
+    }
+}
+}  // namespace db
 }  // namespace fixture
 }  // namespace pixie
 }  // namespace xia

@@ -420,27 +420,27 @@ std::string eeprom::db_find_label(const int prom_id) const {
     return find_v2_config(prom_id).label;
 }
 
-int eeprom::db_channel_base(const int index) const {
-    if (index >= 0 && index < static_cast<int>(dbs.size())) {
+size_t eeprom::db_channel_base(const size_t index) const {
+    if (index < dbs.size()) {
         int base = 0;
-        for (int db = 0; db < index; ++db) {
+        for (size_t db = 0; db < index; ++db) {
             auto db_config = find_v2_config(dbs[db].prom_id);
             base += db_config.channels;
         }
         return base;
     }
-    return -1;
+    return hw::max_channels;
 }
 
-int eeprom::db_channel_count(const int index) const {
-    if (index >= 0 && index < static_cast<int>(dbs.size())) {
+size_t eeprom::db_channel_count(const size_t index) const {
+    if (index < dbs.size()) {
         try {
             auto db_config = find_v2_config(dbs[index].prom_id);
             return db_config.channels;
         } catch (...) {
         }
     }
-    return -1;
+    return hw::max_channels;
 }
 
 hw::config eeprom::db_config(const std::string label) const {

@@ -223,17 +223,19 @@ struct eeprom {
      * Get the DB channel base.
      *
      * @param index The DB index
-     * @returns int Return -1 if the index of out of range
+     * @returns size_t Return hw::max_channels if the index of out of
+     *                 range
      */
-    int db_channel_base(const int index) const;
+    size_t db_channel_base(const size_t index) const;
 
     /**
      * Get the DB channel count.
      *
      * @param index The DB index
-     * @returns int Return -1 if the index of out of range
+     * @returns size_t Return hw::max_channels if the index of out of
+     *                 range
      */
-    int db_channel_count(const int index) const;
+    size_t db_channel_count(const size_t index) const;
 
     /*
      * Tag queries.

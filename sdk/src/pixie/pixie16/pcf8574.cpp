@@ -43,6 +43,17 @@ uint8_t pcf8574::read_a_byte(size_t i2c_addr) {
 
     return value;
 }
+
+void pcf8574::write_a_byte(size_t i2c_addr, uint8_t value) {
+    module::module::bus_guard guard(module);
+
+    start();
+    write_ack(static_cast<uint8_t>(i2c_addr), "pcf8574::write_a_byte: no ACK after DevSel");
+    write_ack(value, "pcf8574::write_a_byte: no ACK after latch write");
+
+    stop();
+}
+
 };  // namespace i2c
 };  // namespace hw
 };  // namespace pixie

@@ -78,19 +78,73 @@ struct fippi {
     /*
      * Device selection
      */
-    static const address select_bit = 12;
-    static const address select_mask = 0xf;
+    static constexpr address select_bit = 12;
+    static constexpr address channel_select_bit = 6;
+    static constexpr address select_mask = 0xf;
     /*
-     * Addresses
+     * DSP visible registers
      */
-    static const address CSRIN = 0x00800400;
-    static const address COINCPATTERN = 0x00800402;
-    static const address ADCCTRL = 0x00800404;
-    static const address HOSTCLR = 0x00800408;
-    static const address ADCSPI = 0x0080040a;
-    static const address BITSLIP = 0x0080040c;
-    static const address HDR_IDS = 0x00800412;
-    static const address ADCFIFOCTRL = 0x00800418;
+    static constexpr address CSRIN = 0x00800400;
+    static constexpr address COINCPATTERN = 0x00800402;
+    static constexpr address ADCCTRL = 0x00800404;
+    static constexpr address HOSTCLR = 0x00800408;
+    static constexpr address ADCSPI = 0x0080040a;
+    static constexpr address BITSLIP = 0x0080040c;
+    static constexpr address HDR_IDS = 0x00800412;
+    static constexpr address ADCFIFOCTRL = 0x00800418;
+    static constexpr address GROUPMODE_ABCD = 0x0080041a;
+    static constexpr address GROUPMODE_EFGH = 0x0080041c;
+    static constexpr address GROUPMODE_FIP = 0x0080041e;
+    static constexpr address VALID_WINDOW = 0x00800420;
+    /*
+     * Input/Output registers are 64bit wide.
+     *
+     * The host uses the LSB of the address to access each half of the
+     * 64 register.
+     */
+    static constexpr address P16_00_L = 0x00800001;  /* RW */
+    static constexpr address P16_00_H = 0x00800000;  /* RW */
+    static constexpr address P16_01_L = 0x00800003;  /* RW */
+    static constexpr address P16_01_H = 0x00800002;  /* RW */
+    static constexpr address P16_02_L = 0x00800005;  /*  W */
+    static constexpr address P16_02_H = 0x00800004;  /*  W */
+    static constexpr address P16_03_L = 0x00800007;  /*  W */
+    static constexpr address P16_05_L = 0x0080000b;  /*  W */
+    static constexpr address P16_05_H = 0x0080000a;  /*  W */
+    static constexpr address P16_06_L = 0x0080000d;  /*  W */
+    static constexpr address P16_06_H = 0x0080000c;  /*  W */
+    static constexpr address P16_07_L = 0x0080000f;  /*  W */
+    static constexpr address P16_07_H = 0x0080000e;  /*  W */
+    static constexpr address P16_08_L = 0x00800011;  /* R  */
+    static constexpr address P16_08_H = 0x00800010;  /* R  */
+    static constexpr address P16_09_L = 0x00800013;  /* R  */
+    static constexpr address P16_09_H = 0x00800013;  /* R  */
+    static constexpr address P16_10_L = 0x00800015;  /* R  */
+    static constexpr address P16_10_H = 0x00800014;  /* R  */
+    static constexpr address P16_11_L = 0x00800017;  /* R  */
+    static constexpr address P16_11_H = 0x00800016;  /* R  */
+    static constexpr address P16_12_L = 0x00800019;  /* R  */
+    static constexpr address P16_12_H = 0x00800018;  /* R  */
+    static constexpr address P16_13_L = 0x0080001b;  /*  W */
+    static constexpr address P16_17_U = 0x00800022;  /*  W */
+    static constexpr address P16_23_L = 0x0080002f;  /*  W */
+    static constexpr address P16_23_H = 0x0080002e;  /*  W */
+    static constexpr address P16_24_L = 0x00800031;  /*  W */
+    static constexpr address P16_24_H = 0x00800030;  /*  W */
+    static constexpr address P16_25_L = 0x00800033;  /* R  */
+    static constexpr address P16_25_H = 0x00800032;  /* R  */
+    static constexpr address P16_26_L = 0x00800035;  /* R  */
+    static constexpr address P16_26_H = 0x00800034;  /* R  */
+    static constexpr address P16_27_L = 0x00800037;  /* R  */
+    static constexpr address P16_27_H = 0x00800036;  /* R  */
+    static constexpr address P16_28_L = 0x00800039;  /* R  */
+    static constexpr address P16_28_H = 0x00800038;  /* R  */
+    static constexpr address P16_29_L = 0x0080003b;  /* R  */
+    static constexpr address P16_29_H = 0x0080003a;  /* R  */
+    /*
+     * Logical mappings of the I/O registers
+     */
+    static constexpr address FIPPI_DAC = P16_03_L;
 };
 /**
  * @brief Return the host bus address for a FIPPI register given
@@ -98,6 +152,15 @@ struct fippi {
  */
 static inline address fippi_addr(int device, address reg) {
     return reg | ((device & fippi::select_mask) << fippi::select_bit);
+}
+/**
+ * @brief Return the host bus address for a FIPPI register given
+ *          the FIPPI device to address, the channel and the register.
+ */
+static inline address fippi_addr(int device, int channel, address reg) {
+    return reg |
+        ((device & fippi::select_mask) << fippi::select_bit) |
+        ((channel & fippi::select_mask) << fippi::channel_select_bit);
 }
 /**
  * @brief Defines various bit numbers used to decode/encode data from the hw.
@@ -314,8 +377,8 @@ struct mask {
 struct i2c_device {
     static constexpr size_t mb_eeprom = 0xa0;
     static constexpr size_t mb_config_pio = 0x42;
-    static constexpr size_t mb_gain_pio_0 = 0x22;
-    static constexpr size_t mb_gain_pio_1 = 0x24;
+    static constexpr size_t mb_gain_pio_0 = 0x44;
+    static constexpr size_t mb_gain_pio_1 = 0x48;
 };
 
 /**

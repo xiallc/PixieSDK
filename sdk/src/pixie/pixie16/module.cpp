@@ -999,8 +999,10 @@ void module::open(size_t device_number) {
         erase_values();
         erase_channels();
 
-        fixtures = fixture::make(*this);
         run_config = hw::run::make(*this);
+
+        fixtures = fixture::make(*this);
+        fixtures->init_assemblies();
 
         start_fifo_services();
 
@@ -2005,10 +2007,12 @@ void module::write_var(param::channel_var var, param::value_type value, size_t c
     }
 }
 
-void module::sync_vars(const sync_var_mode sync_mode) {
+  void module::sync_vars(const param::sync_mode sync_mode) {
     online_check();
+    const char* sync_mode_label =
+        (char*) (sync_mode == param::sync_mode::to_hw ? "to hardware" : "from hardware");
     xia_log(log::info) << module_label(*this) << "sync variables: mode: "
-                       << (char*) (sync_mode == sync_to_dsp ? "to dsp" : "from dsp");
+                       << sync_mode_label;
     if (!hardware_accessible()) {
         return;
     }
@@ -2019,7 +2023,7 @@ void module::sync_vars(const sync_var_mode sync_mode) {
         if (desc.state == param::enable && desc.mode != param::ro) {
             for (size_t v = 0; v < var.value.size(); ++v) {
                 auto& value = var.value[v];
-                if (sync_mode == sync_to_dsp) {
+                if (sync_mode == param::sync_mode::to_hw) {
                     if (value.dirty) {
                         hw::word word;
                         hw::convert(value.value, word);
@@ -2038,7 +2042,7 @@ void module::sync_vars(const sync_var_mode sync_mode) {
             if (desc.state == param::enable && desc.mode != param::ro) {
                 for (size_t v = 0; v < var.value.size(); ++v) {
                     auto& value = var.value[v];
-                    if (sync_mode == sync_to_dsp) {
+                    if (sync_mode == param::sync_mode::to_hw) {
                         if (value.dirty) {
                             hw::word word;
                             hw::convert(value.value, word);
@@ -2052,7 +2056,7 @@ void module::sync_vars(const sync_var_mode sync_mode) {
             }
         }
     }
-    fixtures->sync_vars();
+    fixtures->sync_vars(sync_mode);
 }
 
 void module::sync_hw(const bool program_fippi, const bool program_dacs) {

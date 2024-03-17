@@ -276,6 +276,7 @@ void node_base::set_value(const std::string& val) {
 }
 
 void node_base::set_value(const char* val) {
+    lock_guard guard(lock);
     std::istringstream iss(val);
     iss >> std::skipws;
     iss.exceptions(std::ifstream::failbit);
@@ -382,6 +383,7 @@ void node_base::set_value(const char* val) {
             error::code::invalid_value,
             "mib::node: set: invalid value: " + name + ": " + val);
     }
+    call_set_event_func();
 }
 
 void node_base::check(const type type__) {

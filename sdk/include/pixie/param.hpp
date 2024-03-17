@@ -581,6 +581,14 @@ enum enabledisable { enable, disable };
  */
 enum addressing { dsp_reg, fpga_reg, composite };
 
+/**
+ * @brief Variable synchronising direction with the hardware
+ */
+enum struct sync_mode {
+    to_hw,
+    from_hw
+};
+
 /*
  * Value type.
  */

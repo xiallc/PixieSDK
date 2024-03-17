@@ -37,8 +37,20 @@ static const command::definition offset_sweep_cmd = {
     "Channel offset sweep test, optionally create a plot (-p)"
 };
 
+omnitool_command_handler_decl(adc_sweet_spot);
+static const command::definition adc_sweet_spot_cmd = {
+    "QA", "/qa/afe/adc-sweet-spot",
+    omnitool_command_handers(adc_sweet_spot),
+    {"init", "probe"},
+    0, 1, 0,
+    {},
+    "[module(s)]",
+    "Channel ADC sweet spot test"
+};
+
 static const command::definitions commands = {
-    offset_sweep_cmd
+    offset_sweep_cmd,
+    adc_sweet_spot_cmd
 };
 
 void register_commands() {

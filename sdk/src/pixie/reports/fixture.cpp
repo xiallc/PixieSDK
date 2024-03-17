@@ -31,12 +31,11 @@ void report(pixie::fixture::channel& fixture, std::ostream& out, const std::stri
     report(fixture.config, out, prefix);
 }
 
-void report(pixie::fixture::db db, std::ostream& out, const std::string& prefix) {
+void report(pixie::fixture::db::db db, std::ostream& out, const std::string& prefix) {
     report((pixie::fixture::channel&) db, out, prefix);
-    out << prefix << "DB Number      : " << db.number->get<int>() << std::endl
-        << prefix << "DB Base        : " << db.base->get<int>() << std::endl
-        << prefix << "DB Offset      : " << db.offset->get<int>() << std::endl
-        << prefix << "ADC swap state : " << db.adc_state->get<std::string>() << std::endl;
+    out << prefix << "DB Number      : " << db.number.get<int>() << std::endl
+        << prefix << "DB Base        : " << db.base.get<int>() << std::endl
+        << prefix << "DB Channels    : " << db.channels.get<int>() << std::endl;
 }
 
 }
