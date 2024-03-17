@@ -40,9 +40,10 @@ struct pcf8574 : public bitbash {
 
     /**
      * @brief Read a byte.
+     * @param[in] i2c_addr The I2C device address
      * @returns the byte that was read.
      */
-    uint8_t read_a_byte();
+    uint8_t read_a_byte(size_t i2c_addr);
 };
 }  // namespace i2c
 }  // namespace hw

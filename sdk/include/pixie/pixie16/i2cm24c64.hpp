@@ -47,17 +47,19 @@ struct i2cm24c64 : public bitbash {
 
     /**
      * @brief Read the EEPROM.
+     * @param[in] i2c_addr The I2C device address
      * @param[in] address The starting address that you'd like to read.
      * @param[in] length How much data to read
      * @param[out] data A data structure to hold the contents of the read
      */
-    void read(int address, size_t length, eeprom::contents& data);
+    void read(size_t i2c_addr, int address, size_t length, eeprom::contents& data);
 
     /**
      * @brief Reads the entire EEPROM
+     * @param[in] i2c_addr The I2C device address
      * @param[out] data  A data structure to hold the contents of the read
      */
-    void read(eeprom::contents& data);
+    void read(size_t i2c_addr, eeprom::contents& data);
 };
 }  // namespace i2c
 }  // namespace hw

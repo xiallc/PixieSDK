@@ -30,19 +30,21 @@ namespace i2c {
 i2cm24c64::i2cm24c64(module::module& module, int reg, uint32_t SDA, uint32_t SCL, uint32_t CTRL)
     : bitbash(module, reg, 400000, SDA, SCL, CTRL) {}
 
-void i2cm24c64::read(int address, size_t length, eeprom::contents& data) {
+void i2cm24c64::read(size_t i2c_addr, int address, size_t length, eeprom::contents& data) {
     module::module::bus_guard guard(module);
     data.clear();
     data.reserve(length);
 
     start();
 
-    write_ack(0xA0, "i2cm24c64::sequential_read: no ACK after DevSel");
+    auto i2c_addr_u8 = static_cast<uint8_t>(i2c_addr);
+
+    write_ack(i2c_addr_u8, "i2cm24c64::sequential_read: no ACK after DevSel");
     write_ack(address >> 8, "i2cm24c64::sequential_read: no ACK after addr (MSB)");
     write_ack(address & 0xff, "i2cm24c64::sequential_read: no ACK after addr (LSB)");
 
     start();
-    write_ack(0xA1, "i2cm24c64::sequential_read: no ACK after DevSel");
+    write_ack(i2c_addr_u8 | 1, "i2cm24c64::sequential_read: no ACK after DevSel");
     for (size_t k = 0; k < length - 1; k++) {
         data.push_back(read_ack());
     }
@@ -51,8 +53,8 @@ void i2cm24c64::read(int address, size_t length, eeprom::contents& data) {
     stop();
 }
 
-void i2cm24c64::read(eeprom::contents& data) {
-    read(0, size, data);
+void i2cm24c64::read(size_t i2c_addr, eeprom::contents& data) {
+    read(i2c_addr, 0, size, data);
 }
 };  // namespace i2c
 };  // namespace hw

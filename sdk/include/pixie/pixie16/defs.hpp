@@ -307,6 +307,18 @@ struct mask {
 };
 
 /**
+ * @brief Data structure defining I2C device addresses
+ *
+ * @note these value must be even
+ */
+struct i2c_device {
+    static constexpr size_t mb_eeprom = 0xa0;
+    static constexpr size_t mb_config_pio = 0x42;
+    static constexpr size_t mb_gain_pio_0 = 0x22;
+    static constexpr size_t mb_gain_pio_1 = 0x24;
+};
+
+/**
  * @brief Data structure defining limits for variables and parameters.
  */
 struct limit {

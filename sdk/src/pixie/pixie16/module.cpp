@@ -936,7 +936,7 @@ void module::open(size_t device_number) {
         const uint32_t i2c_SDA = 1 << 0;
 
         hw::i2c::pcf8574 pio(*this, hw::device::PCF8574, i2c_SDA, i2c_SCL, i2c_CTRL, reg_trace);
-        uint8_t pio_value = pio.read_a_byte();
+        uint8_t pio_value = pio.read_a_byte(hw::i2c_device::mb_config_pio);
 
         if (pio_value == 0) {
             have_hardware = false;
@@ -955,7 +955,7 @@ void module::open(size_t device_number) {
                             << ", board version: " << std::hex << board_revision;
 
         hw::i2c::i2cm24c64 i2cm24c64(*this, hw::device::I2CM24C64, i2c_SDA, i2c_SCL, i2c_CTRL);
-        i2cm24c64.read(0, hw::eeprom_block_size, eeprom.data);
+        i2cm24c64.read(hw::i2c_device::mb_eeprom, 0, hw::eeprom_block_size, eeprom.data);
 
         if (eeprom.data.size() != hw::eeprom_block_size) {
             have_hardware = false;
