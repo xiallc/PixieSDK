@@ -37,222 +37,222 @@ using firmware_set_defs = std::vector<firmware_set_def>;
 static const firmware_set_defs fw_defs_good = {
     /* 15-250-12 custom */
     {"version=r33330, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin",
+     "device=sys, mask=1, file=syspixie16_revfgeneral_adc250mhz_r33339.bin",
      "version=r42070, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_12b250m_r42081.bin",
+     "device=fippi, mask=0xf, file=fippixie16_revfgeneral_12b250m_r42081.bin",
      "version=r41807, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
+     "device=dsp, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
      "version=r41840, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.var"},
+     "device=var, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.var"},
     /* 13-100-12 released 0.9.1 */
     {"release=0.9.1, version=r30882, revision=13, adc-msps=100, adc-bits=12, " \
-     "device=sys, mask=1, file=firmware/syspixie16_revdgeneral_adc100mhz_r30882.bin",
+     "device=sys, mask=1, file=syspixie16_revdgeneral_adc100mhz_r30882.bin",
      "release=0.9.1, version=r30944, revision=13, adc-msps=100, adc-bits=12, " \
-     "device=fippi, mask=0xf, file=firmware/fippixie16_revdgeneral_12b100m_r30944.bin",
+     "device=fippi, mask=0xf, file=fippixie16_revdgeneral_12b100m_r30944.bin",
      "release=0.9.1, version=r30918, revision=13, adc-msps=100, adc-bits=12, " \
-     "device=dsp, mask=1, file=dsp/Pixie16DSP_revdgeneral_12b100m_r30918.ldr",
+     "device=dsp, mask=1, file=Pixie16DSP_revdgeneral_12b100m_r30918.ldr",
      "release=0.9.1, version=r30918, revision=13, adc-msps=100, adc-bits=12, " \
-     "device=var, mask=1, file=dsp/Pixie16DSP_revdgeneral_12b100m_r30918.var"},
+     "device=var, mask=1, file=Pixie16DSP_revdgeneral_12b100m_r30918.var"},
     /* 15-250-12 released 1.1.1 */
     {"release=1.1.1, version=r33339, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin",
+     "device=sys, mask=1, file=syspixie16_revfgeneral_adc250mhz_r33339.bin",
      "release=1.1.1, version=r42081, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_12b250m_r42081.bin",
+     "device=fippi, mask=0xf, file=fippixie16_revfgeneral_12b250m_r42081.bin",
      "release=1.1.1, version=r41847, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
+     "device=dsp, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
      "release=1.1.1, version=r41847, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.var"},
+     "device=var, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.var"},
     /* 15-500-14 released 1.1.1 */
     {"release=1.1.1, version=r33339, revision=15, adc-msps=500, adc-bits=14, " \
-     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin",
+     "device=sys, mask=1, file=syspixie16_revfgeneral_adc250mhz_r33339.bin",
      "release=1.1.1, version=r42081, revision=15, adc-msps=500, adc-bits=14, " \
-     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_12b250m_r42081.bin",
+     "device=fippi, mask=0xf, file=fippixie16_revfgeneral_12b250m_r42081.bin",
      "release=1.1.1, version=r41847, revision=15, adc-msps=500, adc-bits=14, " \
-     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
+     "device=dsp, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
      "release=1.1.1, version=r41847, revision=15, adc-msps=500, adc-bits=14, " \
-     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.var"},
+     "device=var, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.var"},
     /* 15-500-14 released 1.2.3 */
     {"release=1.2.3, version=r33339, revision=15, adc-msps=500, adc-bits=14, " \
-     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc500mhz_r33339.bin",
+     "device=sys, mask=1, file=syspixie16_revfgeneral_adc500mhz_r33339.bin",
      "release=1.2.3, version=r42081, revision=15, adc-msps=500, adc-bits=14, " \
-     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_14b500m_r42081.bin",
+     "device=fippi, mask=0xf, file=fippixie16_revfgeneral_14b500m_r42081.bin",
      "release=1.2.3, version=r41847, revision=15, adc-msps=500, adc-bits=14, " \
-     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_14b500m_r41847.ldr",
+     "device=dsp, mask=1, file=Pixie16DSP_revfgeneral_14b500m_r41847.ldr",
      "release=1.2.3, version=r41847, revision=15, adc-msps=500, adc-bits=14, " \
-     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_14b500m_r41847.var"},
+     "device=var, mask=1, file=Pixie16DSP_revfgeneral_14b500m_r41847.var"},
     /* 15-500-14 released 1.1.4 */
     {"release=1.1.4, version=r33339, revision=15, adc-msps=500, adc-bits=14, " \
-     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin",
+     "device=sys, mask=1, file=syspixie16_revfgeneral_adc250mhz_r33339.bin",
      "release=1.1.4, version=r42081, revision=15, adc-msps=500, adc-bits=14, " \
-     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_12b250m_r42081.bin",
+     "device=fippi, mask=0xf, file=fippixie16_revfgeneral_12b250m_r42081.bin",
      "release=1.1.4, version=r41847, revision=15, adc-msps=500, adc-bits=14, " \
-     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
+     "device=dsp, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
      "release=1.1.4, version=r41847, revision=15, adc-msps=500, adc-bits=14, " \
-     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.var"},
+     "device=var, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.var"},
     /* 17-500-14 released 2.2.2 */
     {"release=2.2.2, version=r133339, revision=17, adc-msps=500, adc-bits=14, " \
-     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc500mhz_r33339.bin",
+     "device=sys, mask=1, file=syspixie16_revfgeneral_adc500mhz_r33339.bin",
      "release=2.2.2, version=r42081, revision=17, adc-msps=500, adc-bits=14, " \
-     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_14b500m_r42081.bin",
+     "device=fippi, mask=0xf, file=fippixie16_revfgeneral_14b500m_r42081.bin",
      "release=2.2.2, version=r41847, revision=17, adc-msps=500, adc-bits=14, " \
-     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_14b500m_r41847.ldr",
+     "device=dsp, mask=1, file=Pixie16DSP_revfgeneral_14b500m_r41847.ldr",
      "release=2.2.2, version=r41847, revision=17, adc-msps=500, adc-bits=14, " \
-     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_14b500m_r41847.var"}
+     "device=var, mask=1, file=Pixie16DSP_revfgeneral_14b500m_r41847.var"}
 };
 
 static const firmware_set_defs fw_defs_custom = {
     /* 15-250-12 custom 2 */
     {"version=r33339, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc250mhz_r33338.bin",
+     "device=sys, mask=1, file=syspixie16_revfgeneral_adc250mhz_r33338.bin",
      "version=r42081, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_12b250m_r42080.bin",
+     "device=fippi, mask=0xf, file=fippixie16_revfgeneral_12b250m_r42080.bin",
      "version=r41847, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41848.ldr",
+     "device=dsp, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41848.ldr",
      "version=r41847, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41848.var"},
+     "device=var, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41848.var"},
     /* 17-500-14 released 2.2.2 with bad sys mask */
     {"release=2.2.2, version=r133339, revision=17, adc-msps=500, adc-bits=14, " \
-     "device=sys, mask=2, file=firmware/syspixie16_revfgeneral_adc500mhz_r33339.bin",
+     "device=sys, mask=2, file=syspixie16_revfgeneral_adc500mhz_r33339.bin",
      "release=2.2.2, version=r42081, revision=17, adc-msps=500, adc-bits=14, " \
-     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_14b500m_r42081.bin",
+     "device=fippi, mask=0xf, file=fippixie16_revfgeneral_14b500m_r42081.bin",
      "release=2.2.2, version=r41847, revision=17, adc-msps=500, adc-bits=14, " \
-     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_14b500m_r41847.ldr",
+     "device=dsp, mask=1, file=Pixie16DSP_revfgeneral_14b500m_r41847.ldr",
      "release=2.2.2, version=r41847, revision=17, adc-msps=500, adc-bits=14, " \
-     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_14b500m_r41847.var"}
+     "device=var, mask=1, file=Pixie16DSP_revfgeneral_14b500m_r41847.var"}
 };
 
 static const firmware_set_defs fw_defs_bad_1 = {
     {"revision=15, adc-msps=250, adc-bits=12, " \
-     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin",
+     "device=sys, mask=1, file=syspixie16_revfgeneral_adc250mhz_r33339.bin",
      "version=r42070, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_12b250m_r42081.bin",
+     "device=fippi, mask=0xf, file=fippixie16_revfgeneral_12b250m_r42081.bin",
      "version=r41807, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
+     "device=dsp, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
      "version=r41840, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.var"}
+     "device=var, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.var"}
 };
 
 static const firmware_set_defs fw_defs_rev_d = {
     {"release=0.9.1, version=r30882, revision=13, adc-msps=100, adc-bits=12, " \
-     "device=sys, mask=1, file=firmware/syspixie16_revdgeneral_adc100mhz_r30882.bin",
+     "device=sys, mask=1, file=syspixie16_revdgeneral_adc100mhz_r30882.bin",
      "release=0.9.1, version=r30944, revision=13, adc-msps=100, adc-bits=12, " \
-     "device=fippi, mask=0xf, file=firmware/fippixie16_revdgeneral_12b100m_r30944.bin",
+     "device=fippi, mask=0xf, file=fippixie16_revdgeneral_12b100m_r30944.bin",
      "release=0.9.1, version=r30918, revision=13, adc-msps=100, adc-bits=12, " \
-     "device=dsp, mask=1, file=dsp/Pixie16DSP_revdgeneral_12b100m_r30918.ldr",
+     "device=dsp, mask=1, file=Pixie16DSP_revdgeneral_12b100m_r30918.ldr",
      "release=0.9.1, version=r30918, revision=13, adc-msps=100, adc-bits=12, " \
-     "device=var, mask=1, file=dsp/Pixie16DSP_revdgeneral_12b100m_r30918.var"}
+     "device=var, mask=1, file=Pixie16DSP_revdgeneral_12b100m_r30918.var"}
 };
 
 static const char* fw_defs_bad_1_exc =
     "firmware version mandatory: revision=15, adc-msps=250, adc-bits=12, device=sys, mask=1, " \
-    "file=firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin";
+    "file=syspixie16_revfgeneral_adc250mhz_r33339.bin";
 
 static const firmware_set_defs fw_defs_bad_2 = {
     {"version=r33330, adc-msps=250, adc-bits=12, " \
-     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin",
+     "device=sys, mask=1, file=syspixie16_revfgeneral_adc250mhz_r33339.bin",
      "version=r42070, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_12b250m_r42081.bin",
+     "device=fippi, mask=0xf, file=fippixie16_revfgeneral_12b250m_r42081.bin",
      "version=r41807, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
+     "device=dsp, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
      "version=r41840, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.var"}
+     "device=var, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.var"}
 };
 static const char* fw_defs_bad_2_exc =
     "firmware revision mandatory: version=r33330, adc-msps=250, adc-bits=12, device=sys, mask=1, " \
-    "file=firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin";
+    "file=syspixie16_revfgeneral_adc250mhz_r33339.bin";
 
 static const firmware_set_defs fw_defs_bad_3 = {
     {"version=r33330, revision=15, adc-bits=12, " \
-     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin",
+     "device=sys, mask=1, file=syspixie16_revfgeneral_adc250mhz_r33339.bin",
      "version=r42070, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_12b250m_r42081.bin",
+     "device=fippi, mask=0xf, file=fippixie16_revfgeneral_12b250m_r42081.bin",
      "version=r41807, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
+     "device=dsp, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
      "version=r41840, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.var"}
+     "device=var, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.var"}
 };
 static const char* fw_defs_bad_3_exc =
     "firmware ADC MSPS mandatory: version=r33330, revision=15, adc-bits=12, device=sys, mask=1, " \
-    "file=firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin";
+    "file=syspixie16_revfgeneral_adc250mhz_r33339.bin";
 
 static const firmware_set_defs fw_defs_bad_4 = {
     {"version=r33330, revision=15, adc-msps=250, " \
-     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin",
+     "device=sys, mask=1, file=syspixie16_revfgeneral_adc250mhz_r33339.bin",
      "version=r42070, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_12b250m_r42081.bin",
+     "device=fippi, mask=0xf, file=fippixie16_revfgeneral_12b250m_r42081.bin",
      "version=r41807, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
+     "device=dsp, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
      "version=r41840, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.var"}
+     "device=var, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.var"}
 };
 static const char* fw_defs_bad_4_exc =
     "firmware ADC bits mandatory: version=r33330, revision=15, adc-msps=250, device=sys, mask=1, " \
-    "file=firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin";
+    "file=syspixie16_revfgeneral_adc250mhz_r33339.bin";
 
 static const firmware_set_defs fw_defs_bad_5 = {
     {"version=r33330, revision=15, adc-msps=250, adc-bits=12, " \
-     "mask=1, file=firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin",
+     "mask=1, file=syspixie16_revfgeneral_adc250mhz_r33339.bin",
      "version=r42070, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_12b250m_r42081.bin",
+     "device=fippi, mask=0xf, file=fippixie16_revfgeneral_12b250m_r42081.bin",
      "version=r41807, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
+     "device=dsp, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
      "version=r41840, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.var"}
+     "device=var, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.var"}
 };
 static const char* fw_defs_bad_5_exc =
     "firmware: check: invalid device: invalid";
 
 static const firmware_set_defs fw_defs_bad_6 = {
     {"version=r33330, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=sys, file=firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin",
+     "device=sys, file=syspixie16_revfgeneral_adc250mhz_r33339.bin",
      "version=r42070, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_12b250m_r42081.bin",
+     "device=fippi, mask=0xf, file=fippixie16_revfgeneral_12b250m_r42081.bin",
      "version=r41807, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
+     "device=dsp, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
      "version=r41840, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.var"}
+     "device=var, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.var"}
 };
 static const char* fw_defs_bad_6_exc =
     "firmware mask mandatory: version=r33330, revision=15, adc-msps=250, adc-bits=12, device=sys, " \
-    "file=firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin";
+    "file=syspixie16_revfgeneral_adc250mhz_r33339.bin";
 
 static const firmware_set_defs fw_defs_bad_7 = {
     {"version=r33330, revision=15, adc-msps=250, adc-bits=12, " \
      "device=sys, mask=1",
      "version=r42070, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_12b250m_r42081.bin",
+     "device=fippi, mask=0xf, file=fippixie16_revfgeneral_12b250m_r42081.bin",
      "version=r41807, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
+     "device=dsp, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
      "version=r41840, revision=15, adc-msps=250, adc-bits=12, " \
-     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_12b250m_r41847.var"}
+     "device=var, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.var"}
 };
 static const char* fw_defs_bad_7_exc =
     "firmware file name mandatory: version=r33330, revision=15, adc-msps=250, adc-bits=12, device=sys, mask=1";
 
 static const firmware_set_defs fw_defs_bad_8 = {
     {"version=r33330, revision=a, adc-msps=250, adc-bits=12, " \
-     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin"}
+     "device=sys, mask=1, file=syspixie16_revfgeneral_adc250mhz_r33339.bin"}
 };
 static const char* fw_defs_bad_8_exc =
     "firmware: module revision not a number: revision=a: a: invalid arg";
 
 static const firmware_set_defs fw_defs_bad_9 = {
     {"version=r33330, revision=15, adc-msps=xx, adc-bits=12, " \
-     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin"}
+     "device=sys, mask=1, file=syspixie16_revfgeneral_adc250mhz_r33339.bin"}
 };
 static const char* fw_defs_bad_9_exc =
     "firmware: module ADC MSPS not a number: adc-msps=xx: xx: invalid arg";
 
 static const firmware_set_defs fw_defs_bad_10 = {
     {"version=r33330, revision=15, adc-msps=15, adc-bits=yy, " \
-     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin"}
+     "device=sys, mask=1, file=syspixie16_revfgeneral_adc250mhz_r33339.bin"}
 };
 static const char* fw_defs_bad_10_exc =
     "firmware: module ADC BITS not a number: adc-bits=yy: yy: invalid arg";
 
 static const firmware_set_defs fw_defs_bad_11 = {
     {"version=r33330, revision=15, adc-msps=15, adc-bits=12, " \
-     "device=sys, mask=zz, file=firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin"}
+     "device=sys, mask=zz, file=syspixie16_revfgeneral_adc250mhz_r33339.bin"}
 };
 static const char* fw_defs_bad_11_exc =
     "firmware: mask not a number: mask=zz: zz: invalid arg";
@@ -308,7 +308,7 @@ TEST_SUITE("Firmware") {
         CHECK(fw_sys.device.mod_revision == 17);
         CHECK(fw_sys.device.mod_adc_msps == 500);
         CHECK(fw_sys.device.mod_adc_bits == 14);
-        CHECK(fw_sys.filename == "firmware/syspixie16_revfgeneral_adc500mhz_r33339.bin");
+        CHECK(fw_sys.filename == "syspixie16_revfgeneral_adc500mhz_r33339.bin");
         CHECK(fw_sys.crc == 0);
 
         auto fw_fippi = xia::pixie::firmware::parse(fw_release, fw_def[1], ',');
@@ -322,7 +322,7 @@ TEST_SUITE("Firmware") {
         CHECK(fw_fippi.device.mod_revision == 17);
         CHECK(fw_fippi.device.mod_adc_msps == 500);
         CHECK(fw_fippi.device.mod_adc_bits == 14);
-        CHECK(fw_fippi.filename == "firmware/fippixie16_revfgeneral_14b500m_r42081.bin");
+        CHECK(fw_fippi.filename == "fippixie16_revfgeneral_14b500m_r42081.bin");
         CHECK(fw_fippi.crc == 0);
 
         auto fw_dsp = xia::pixie::firmware::parse(fw_release, fw_def[2], ',');
@@ -336,7 +336,7 @@ TEST_SUITE("Firmware") {
         CHECK(fw_dsp.device.mod_revision == 17);
         CHECK(fw_dsp.device.mod_adc_msps == 500);
         CHECK(fw_dsp.device.mod_adc_bits == 14);
-        CHECK(fw_dsp.filename == "dsp/Pixie16DSP_revfgeneral_14b500m_r41847.ldr");
+        CHECK(fw_dsp.filename == "Pixie16DSP_revfgeneral_14b500m_r41847.ldr");
         CHECK(fw_dsp.crc == 0);
 
         auto fw_var = xia::pixie::firmware::parse(fw_release, fw_def[3], ',');
@@ -350,7 +350,7 @@ TEST_SUITE("Firmware") {
         CHECK(fw_var.device.mod_revision == 17);
         CHECK(fw_var.device.mod_adc_msps == 500);
         CHECK(fw_var.device.mod_adc_bits == 14);
-        CHECK(fw_var.filename == "dsp/Pixie16DSP_revfgeneral_14b500m_r41847.var");
+        CHECK(fw_var.filename == "Pixie16DSP_revfgeneral_14b500m_r41847.var");
         CHECK(fw_var.crc == 0);
 
         /* firmware_set::empty */
@@ -416,7 +416,7 @@ TEST_SUITE("Firmware") {
         CHECK(fw_sys_user.device.mod_revision == 15);
         CHECK(fw_sys_user.device.mod_adc_msps == 250);
         CHECK(fw_sys_user.device.mod_adc_bits == 12);
-        CHECK(fw_sys_user.filename == "firmware/syspixie16_revfgeneral_adc250mhz_r33339.bin");
+        CHECK(fw_sys_user.filename == "syspixie16_revfgeneral_adc250mhz_r33339.bin");
         CHECK(fw_sys_user.crc == 0);
 
         auto fw_fippi_user = xia::pixie::firmware::parse(fw_custom, fw_def_user[1], ',');
@@ -430,7 +430,7 @@ TEST_SUITE("Firmware") {
         CHECK(fw_fippi_user.device.mod_revision == 15);
         CHECK(fw_fippi_user.device.mod_adc_msps == 250);
         CHECK(fw_fippi_user.device.mod_adc_bits == 12);
-        CHECK(fw_fippi_user.filename == "firmware/fippixie16_revfgeneral_12b250m_r42081.bin");
+        CHECK(fw_fippi_user.filename == "fippixie16_revfgeneral_12b250m_r42081.bin");
         CHECK(fw_fippi_user.crc == 0);
 
         auto fw_dsp_user = xia::pixie::firmware::parse(fw_custom, fw_def_user[2], ',');
@@ -444,7 +444,7 @@ TEST_SUITE("Firmware") {
         CHECK(fw_dsp_user.device.mod_revision == 15);
         CHECK(fw_dsp_user.device.mod_adc_msps == 250);
         CHECK(fw_dsp_user.device.mod_adc_bits == 12);
-        CHECK(fw_dsp_user.filename == "dsp/Pixie16DSP_revfgeneral_12b250m_r41847.ldr");
+        CHECK(fw_dsp_user.filename == "Pixie16DSP_revfgeneral_12b250m_r41847.ldr");
         CHECK(fw_dsp_user.crc == 0);
 
         auto fw_var_user = xia::pixie::firmware::parse(fw_custom, fw_def_user[3], ',');
@@ -458,7 +458,7 @@ TEST_SUITE("Firmware") {
         CHECK(fw_var_user.device.mod_revision == 15);
         CHECK(fw_var_user.device.mod_adc_msps == 250);
         CHECK(fw_var_user.device.mod_adc_bits == 12);
-        CHECK(fw_var_user.filename == "dsp/Pixie16DSP_revfgeneral_12b250m_r41847.var");
+        CHECK(fw_var_user.filename == "Pixie16DSP_revfgeneral_12b250m_r41847.var");
         CHECK(fw_var_user.crc == 0);
 
         auto fw_sys_user_b = xia::pixie::firmware::parse(fw_custom, fw_def_user_b[0], ',');
@@ -467,7 +467,7 @@ TEST_SUITE("Firmware") {
         CHECK(fw_sys_user_b.tag == "15-250-12");
         CHECK(fw_sys_user_b.version == "r33339");
         CHECK(fw_sys_user_b.device.name == "sys");
-        CHECK(fw_sys_user_b.filename == "firmware/syspixie16_revfgeneral_adc250mhz_r33338.bin");
+        CHECK(fw_sys_user_b.filename == "syspixie16_revfgeneral_adc250mhz_r33338.bin");
 
         auto fw_fippi_user_b = xia::pixie::firmware::parse(fw_custom, fw_def_user_b[1], ',');
         CHECK(fw_custom == rCustom);
@@ -475,7 +475,7 @@ TEST_SUITE("Firmware") {
         CHECK(fw_fippi_user_b.tag == "15-250-12");
         CHECK(fw_fippi_user_b.version == "r42081");
         CHECK(fw_fippi_user_b.device.name == "fippi");
-        CHECK(fw_fippi_user_b.filename == "firmware/fippixie16_revfgeneral_12b250m_r42080.bin");
+        CHECK(fw_fippi_user_b.filename == "fippixie16_revfgeneral_12b250m_r42080.bin");
 
         auto fw_dsp_user_b = xia::pixie::firmware::parse(fw_custom, fw_def_user_b[2], ',');
         CHECK(fw_custom == rCustom);
@@ -483,7 +483,7 @@ TEST_SUITE("Firmware") {
         CHECK(fw_dsp_user_b.tag == "15-250-12");
         CHECK(fw_dsp_user_b.version == "r41847");
         CHECK(fw_dsp_user_b.device.name == "dsp");
-        CHECK(fw_dsp_user_b.filename == "dsp/Pixie16DSP_revfgeneral_12b250m_r41848.ldr");
+        CHECK(fw_dsp_user_b.filename == "Pixie16DSP_revfgeneral_12b250m_r41848.ldr");
 
         auto fw_var_user_b = xia::pixie::firmware::parse(fw_custom, fw_def_user_b[3], ',');
         CHECK(fw_custom == rCustom);
@@ -491,7 +491,7 @@ TEST_SUITE("Firmware") {
         CHECK(fw_var_user_b.tag == "15-250-12");
         CHECK(fw_var_user_b.version == "r41847");
         CHECK(fw_var_user_b.device.name == "var");
-        CHECK(fw_var_user_b.filename == "dsp/Pixie16DSP_revfgeneral_12b250m_r41848.var");
+        CHECK(fw_var_user_b.filename == "Pixie16DSP_revfgeneral_12b250m_r41848.var");
 
         /* Filling a user firmware set */
         xia::pixie::firmware::firmware_set fw_set_user;
@@ -567,7 +567,7 @@ TEST_SUITE("Firmware") {
         CHECK_NOTHROW(fw_set_user_sys_bad_filename.add(fw_sys_user_b));
         CHECK_THROWS_WITH_AS(xia::pixie::firmware::add(firmwares, fw_set_user_sys_bad_filename),
                             "firmware: set: merge: file name changed: device:sys file:"
-                            "firmware/syspixie16_revfgeneral_adc250mhz_r33338.bin", fw_error);
+                            "syspixie16_revfgeneral_adc250mhz_r33338.bin", fw_error);
         CHECK_NOTHROW(fw_set_user_sys_bad_filename.clear());
 
         /* Duplicate user set w/ partial firmware continued */
@@ -778,7 +778,7 @@ TEST_SUITE("Firmware") {
         CHECK(fw_sys_d.device.mod_revision == 13);
         CHECK(fw_sys_d.device.mod_adc_msps == 100);
         CHECK(fw_sys_d.device.mod_adc_bits == 12);
-        CHECK(fw_sys_d.filename == "firmware/syspixie16_revdgeneral_adc100mhz_r30882.bin");
+        CHECK(fw_sys_d.filename == "syspixie16_revdgeneral_adc100mhz_r30882.bin");
 
         auto fw_fippi_d = xia::pixie::firmware::parse(fw_release, fw_def_rev_d[1], ',');
         CHECK(fw_fippi_d.tag == "13-100-12");
@@ -786,7 +786,7 @@ TEST_SUITE("Firmware") {
         CHECK(fw_fippi_d.device.mod_revision == 13);
         CHECK(fw_fippi_d.device.mod_adc_msps == 100);
         CHECK(fw_fippi_d.device.mod_adc_bits == 12);
-        CHECK(fw_fippi_d.filename == "firmware/fippixie16_revdgeneral_12b100m_r30944.bin");
+        CHECK(fw_fippi_d.filename == "fippixie16_revdgeneral_12b100m_r30944.bin");
 
         auto fw_dsp_d = xia::pixie::firmware::parse(fw_release, fw_def_rev_d[2], ',');
         CHECK(fw_dsp_d.tag == "13-100-12");
@@ -794,7 +794,7 @@ TEST_SUITE("Firmware") {
         CHECK(fw_dsp_d.device.mod_revision == 13);
         CHECK(fw_dsp_d.device.mod_adc_msps == 100);
         CHECK(fw_dsp_d.device.mod_adc_bits == 12);
-        CHECK(fw_dsp_d.filename == "dsp/Pixie16DSP_revdgeneral_12b100m_r30918.ldr");
+        CHECK(fw_dsp_d.filename == "Pixie16DSP_revdgeneral_12b100m_r30918.ldr");
 
         auto fw_var_d = xia::pixie::firmware::parse(fw_release, fw_def_rev_d[3], ',');
         CHECK(fw_var_d.tag == "13-100-12");
@@ -802,7 +802,7 @@ TEST_SUITE("Firmware") {
         CHECK(fw_var_d.device.mod_revision == 13);
         CHECK(fw_var_d.device.mod_adc_msps == 100);
         CHECK(fw_var_d.device.mod_adc_bits == 12);
-        CHECK(fw_var_d.filename == "dsp/Pixie16DSP_revdgeneral_12b100m_r30918.var");
+        CHECK(fw_var_d.filename == "Pixie16DSP_revdgeneral_12b100m_r30918.var");
 
         xia::pixie::firmware::firmware_set fw_set_rev_d;
         CHECK(fw_set_rev_d.size() == 0);

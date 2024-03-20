@@ -46,29 +46,29 @@ static const std::vector<std::string> module_defs = {
 
 static const xia::pixie::sim::firmware_set_defs firmware_defs = {
     {"version=sim, revision=13, adc-msps=100, adc-bits=16, " \
-     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc100mhz_rsim.bin",
+     "device=sys, mask=1, file=syspixie16_revfgeneral_adc100mhz_rsim.bin",
      "version=sim, revision=13, adc-msps=100, adc-bits=16, " \
-     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_16b100m_rsim.bin",
+     "device=fippi, mask=0xf, file=fippixie16_revfgeneral_16b100m_rsim.bin",
      "version=sim, revision=13, adc-msps=100, adc-bits=16, " \
-     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_16b100m_rsim.ldr",
+     "device=dsp, mask=1, file=Pixie16DSP_revfgeneral_16b100m_rsim.ldr",
      "version=sim, revision=13, adc-msps=100, adc-bits=16, " \
-     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_16b100m_rsim.var"},
+     "device=var, mask=1, file=Pixie16DSP_revfgeneral_16b100m_rsim.var"},
     {"version=sim, revision=15, adc-msps=250, adc-bits=16, " \
-     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc250mhz_rsim.bin",
+     "device=sys, mask=1, file=syspixie16_revfgeneral_adc250mhz_rsim.bin",
      "version=sim, revision=15, adc-msps=250, adc-bits=16, " \
-     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_16b250m_rsim.bin",
+     "device=fippi, mask=0xf, file=fippixie16_revfgeneral_16b250m_rsim.bin",
      "version=sim, revision=15, adc-msps=250, adc-bits=16, " \
-     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_16b250m_rsim.ldr",
+     "device=dsp, mask=1, file=Pixie16DSP_revfgeneral_16b250m_rsim.ldr",
      "version=sim, revision=15, adc-msps=250, adc-bits=16, " \
-     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_16b250m_rsim.var"},
+     "device=var, mask=1, file=Pixie16DSP_revfgeneral_16b250m_rsim.var"},
     {"version=sim, revision=15, adc-msps=500, adc-bits=14, " \
-     "device=sys, mask=1, file=firmware/syspixie16_revfgeneral_adc500mhz_rsim.bin",
+     "device=sys, mask=1, file=syspixie16_revfgeneral_adc500mhz_rsim.bin",
      "version=sim, revision=15, adc-msps=500, adc-bits=14, " \
-     "device=fippi, mask=0xf, file=firmware/fippixie16_revfgeneral_16b250m_rsim.bin",
+     "device=fippi, mask=0xf, file=fippixie16_revfgeneral_16b250m_rsim.bin",
      "version=sim, revision=15, adc-msps=500, adc-bits=14, " \
-     "device=dsp, mask=1, file=dsp/Pixie16DSP_revfgeneral_14b500m_rsim.ldr",
+     "device=dsp, mask=1, file=Pixie16DSP_revfgeneral_14b500m_rsim.ldr",
      "version=sim, revision=15, adc-msps=500, adc-bits=14, " \
-     "device=var, mask=1, file=dsp/Pixie16DSP_revfgeneral_14b500m_rsim.var"}
+     "device=var, mask=1, file=Pixie16DSP_revfgeneral_14b500m_rsim.var"}
 };
 
 static const uint32_t max_fifo_length = 16380;
