@@ -82,9 +82,86 @@ static const eeprom_data rev_h_db04 = {
     "00000070 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
 };
 
+static const eeprom_data rev_h_db01_75 = {
+    "00000000 3d ea f3 22 f2 ff 0b e1-07 00 00 0c 11 0d 42 0e ................",
+    "00000010 02 0f 00 28 00 01 28 00-02 28 00 03 28 00 04 ff ................",
+    "00000020 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000030 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000040 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000050 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000060 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000070 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+};
+
+static const eeprom_data rev_h_db01_125 = {
+    "00000000 0f ed 83 79 f2 ff 0b e1-07 00 00 0c 11 0d 42 0e ................",
+    "00000010 02 0f 00 28 01 01 28 01-02 28 01 03 28 01 04 ff ................",
+    "00000020 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000030 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000040 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000050 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000060 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000070 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+};
+
+static const eeprom_data rev_h_db02 = {
+    "00000000 59 e4 13 94 f2 ff 0b e1-07 00 00 0c 11 0d 42 0e ................",
+    "00000010 02 0f 00 28 02 01 28 02-02 28 02 03 28 02 04 ff ................",
+    "00000020 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000030 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000040 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000050 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000060 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000070 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+};
+
 static const eeprom_data rev_h_db05 = {
     "00000000 86 f7 32 cf f2 ff 0b e1-07 00 00 0c 11 0d 42 0e ................",
     "00000010 02 0f 00 28 05 01 28 05-02 28 05 03 28 05 04 ff ................",
+    "00000020 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000030 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000040 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000050 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000060 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000070 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+};
+
+static const eeprom_data rev_h_db06 = {
+    "00000000 d0 fe a2 22 f2 ff 0b e1-07 00 00 0c 11 0d 42 0e ................",
+    "00000010 02 0f 00 28 06 01 28 06-02 28 06 03 28 06 04 ff ................",
+    "00000020 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000030 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000040 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000050 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000060 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000070 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+};
+
+static const eeprom_data rev_h_db07 = {
+    "00000000 e2 f9 d2 79 f2 ff 0b e1-07 00 00 0c 11 0d 42 0e ................",
+    "00000010 02 0f 00 28 07 01 28 07-02 28 07 03 28 07 04 ff ................",
+    "00000020 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000030 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000040 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000050 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000060 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000070 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+};
+
+static const eeprom_data rev_h_few_dbs = {
+    "00000000 5b 9c f5 a5 f2 ff 0b e1-07 00 00 0c 11 0d 42 0e ................",
+    "00000010 02 0f 00 28 04 01 ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000020 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000030 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000040 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000050 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000060 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000070 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+};
+
+static const eeprom_data rev_h_mixed_dbs = {
+    "00000000 73 d1 90 bf f2 ff 0b e1-07 00 00 0c 11 0d 42 0e ................",
+    "00000010 02 0f 00 28 04 01 28 05-02 28 04 03 28 05 04 ff ................",
     "00000020 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
     "00000030 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
     "00000040 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
@@ -120,7 +197,14 @@ static const rev_eeprom_data eeproms = {
     { "D", rev_d },
     { "F", rev_f },
     { "H:DB04", rev_h_db04 },
+    { "H:DB01-75", rev_h_db01_75 },
+    { "H:DB01-125", rev_h_db01_125 },
+    { "H:DB02", rev_h_db02 },
     { "H:DB05", rev_h_db05 },
+    { "H:DB06", rev_h_db06 },
+    { "H:DB07", rev_h_db07 },
+    { "H:few-dbs", rev_h_few_dbs },
+    { "H:mixed-dbs", rev_h_mixed_dbs },
     { "H:bad-crc", rev_h_bad_crc },
     { "H:DB10", rev_h_db10 },
 };
@@ -301,12 +385,149 @@ TEST_SUITE("xia::pixie::eeprom") {
             }
         }
     }
+    TEST_CASE("Rev H - DB01 - 75 msps") {
+        SUBCASE("Load data") {
+            CHECK_NOTHROW(eetest::load("H:DB01-75", eeprom));
+        }
+        SUBCASE("Process") {
+            CHECK_NOTHROW(eeprom.process());
+        }
+        SUBCASE("Validate module") {
+            CHECK(eeprom.format == 2);
+            CHECK(eeprom.valid());
+            CHECK(eeprom.serial_num == 2017);
+            CHECK(eeprom.revision == 17);
+            CHECK(eeprom.major_revision == 66);
+            CHECK(eeprom.minor_revision == 2);
+            CHECK(eeprom.mod_strike == 0);
+        }
+        SUBCASE("Fixtures") {
+            CHECK(eeprom.dbs.size() == 4);
+            for (size_t i = 0; i < eeprom.dbs.size(); i++) {
+                CHECK(eeprom.dbs[i].label == "DB01");
+                CHECK(eeprom.dbs[i].index == 0);
+                CHECK(eeprom.dbs[i].position == (i + 1));
+            }
+        }
+        SUBCASE("Configs") {
+            int index = 0;
+            for (auto& cfg : eeprom.configs) {
+                CHECK(cfg.index == index);
+                CHECK(cfg.fixture == xia::pixie::hw::module_fixture::DB01);
+                CHECK(cfg.adc_bits == 14);
+                CHECK(cfg.adc_msps == 75);
+                CHECK(cfg.adc_clk_div == 2);
+                CHECK(cfg.fpga_clk_mhz == cfg.adc_msps / cfg.adc_clk_div);
+                CHECK(cfg.max_histogram_length == 16384);
+                CHECK(cfg.max_adc_trace_length == 8192);
+                CHECK(cfg.max_num_baselines == 1927);
+                ++index;
+            }
+        }
+    }
+    TEST_CASE("Rev H - DB01 - 125 msps") {
+        SUBCASE("Load data") {
+            CHECK_NOTHROW(eetest::load("H:DB01-125", eeprom));
+        }
+        SUBCASE("Process") {
+            CHECK_NOTHROW(eeprom.process());
+        }
+        SUBCASE("Validate module") {
+            CHECK(eeprom.format == 2);
+            CHECK(eeprom.valid());
+            CHECK(eeprom.serial_num == 2017);
+            CHECK(eeprom.revision == 17);
+            CHECK(eeprom.major_revision == 66);
+            CHECK(eeprom.minor_revision == 2);
+            CHECK(eeprom.mod_strike == 0);
+        }
+        SUBCASE("Fixtures") {
+            CHECK(eeprom.dbs.size() == 4);
+            for (size_t i = 0; i < eeprom.dbs.size(); i++) {
+                CHECK(eeprom.dbs[i].label == "DB01");
+                CHECK(eeprom.dbs[i].index == 1);
+                CHECK(eeprom.dbs[i].position == (i + 1));
+            }
+        }
+        SUBCASE("Configs") {
+            int index = 0;
+            for (auto& cfg : eeprom.configs) {
+                CHECK(cfg.index == index);
+                CHECK(cfg.fixture == xia::pixie::hw::module_fixture::DB01);
+                CHECK(cfg.adc_bits == 14);
+                CHECK(cfg.adc_msps == 125);
+                CHECK(cfg.adc_clk_div == 2);
+                CHECK(cfg.fpga_clk_mhz == cfg.adc_msps / cfg.adc_clk_div);
+                CHECK(cfg.max_histogram_length == 16384);
+                CHECK(cfg.max_adc_trace_length == 8192);
+                CHECK(cfg.max_num_baselines == 1927);
+                ++index;
+            }
+        }
+    }
+    TEST_CASE("Rev H - DB02") {
+        SUBCASE("Load data") {
+            CHECK_NOTHROW(eetest::load("H:DB02", eeprom));
+        }
+        SUBCASE("Process") {
+            CHECK_NOTHROW(eeprom.process());
+        }
+        SUBCASE("Validate module") {
+            CHECK(eeprom.format == 2);
+            CHECK(eeprom.valid());
+            CHECK(eeprom.serial_num == 2017);
+            CHECK(eeprom.revision == 17);
+            CHECK(eeprom.major_revision == 66);
+            CHECK(eeprom.minor_revision == 2);
+            CHECK(eeprom.mod_strike == 0);
+        }
+        SUBCASE("Fixtures") {
+            CHECK(eeprom.dbs.size() == 4);
+            for (size_t i = 0; i < eeprom.dbs.size(); i++) {
+                CHECK(eeprom.dbs[i].label == "DB02");
+                CHECK(eeprom.dbs[i].index == 2);
+                CHECK(eeprom.dbs[i].position == (i + 1));
+            }
+        }
+        SUBCASE("Configs") {
+            int index = 0;
+            for (auto& cfg : eeprom.configs) {
+                CHECK(cfg.index == index);
+                CHECK(cfg.fixture == xia::pixie::hw::module_fixture::DB02);
+                CHECK(cfg.adc_bits == 12);
+                CHECK(cfg.adc_msps == 250);
+                CHECK(cfg.adc_clk_div == 2);
+                CHECK(cfg.fpga_clk_mhz == cfg.adc_msps / cfg.adc_clk_div);
+                CHECK(cfg.max_histogram_length == 16384);
+                CHECK(cfg.max_adc_trace_length == 8192);
+                CHECK(cfg.max_num_baselines == 1927);
+                ++index;
+            }
+        }
+    }
     TEST_CASE("Rev H - DB05") {
         SUBCASE("Load data") {
             CHECK_NOTHROW(eetest::load("H:DB05", eeprom));
         }
         SUBCASE("Process") {
             CHECK_NOTHROW(eeprom.process());
+        }
+        SUBCASE("Validate module") {
+            CHECK(eeprom.format == 2);
+            CHECK(eeprom.valid());
+            CHECK(eeprom.serial_num == 2017);
+            CHECK(eeprom.revision == 17);
+            CHECK(eeprom.major_revision == 66);
+            CHECK(eeprom.minor_revision == 2);
+            CHECK(eeprom.mod_strike == 0);
+        }
+        SUBCASE("Fixtures") {
+            CHECK(eeprom.dbs.size() == 4);
+            for (size_t i = 0; i < eeprom.dbs.size(); i++) {
+                CHECK(eeprom.dbs[i].label == "DB05");
+                CHECK(eeprom.dbs[i].index == 5);
+                CHECK(eeprom.dbs[i].position == (i + 1));
+            }
         }
         SUBCASE("Configs") {
             int index = 0;
@@ -324,13 +545,84 @@ TEST_SUITE("xia::pixie::eeprom") {
             }
         }
     }
-    TEST_CASE("Rev H - bad crc") {
+    TEST_CASE("Rev H - DB06") {
         SUBCASE("Load data") {
-            CHECK_NOTHROW(eetest::load("H:bad-crc", eeprom));
+            CHECK_NOTHROW(eetest::load("H:DB06", eeprom));
         }
         SUBCASE("Process") {
-            CHECK_THROWS_WITH_AS(
-                eeprom.process(), "invalid ADC MSPS: 65535", eeprom_error);
+            CHECK_NOTHROW(eeprom.process());
+        }
+        SUBCASE("Validate module") {
+            CHECK(eeprom.format == 2);
+            CHECK(eeprom.valid());
+            CHECK(eeprom.serial_num == 2017);
+            CHECK(eeprom.revision == 17);
+            CHECK(eeprom.major_revision == 66);
+            CHECK(eeprom.minor_revision == 2);
+            CHECK(eeprom.mod_strike == 0);
+        }
+        SUBCASE("Fixtures") {
+            CHECK(eeprom.dbs.size() == 4);
+            for (size_t i = 0; i < eeprom.dbs.size(); i++) {
+                CHECK(eeprom.dbs[i].label == "DB06");
+                CHECK(eeprom.dbs[i].index == 6);
+                CHECK(eeprom.dbs[i].position == (i + 1));
+            }
+        }
+        SUBCASE("Configs") {
+            int index = 0;
+            for (auto& cfg : eeprom.configs) {
+                CHECK(cfg.index == index);
+                CHECK(cfg.fixture == xia::pixie::hw::module_fixture::DB06);
+                CHECK(cfg.adc_bits == 16);
+                CHECK(cfg.adc_msps == 250);
+                CHECK(cfg.adc_clk_div == 2);
+                CHECK(cfg.fpga_clk_mhz == cfg.adc_msps / cfg.adc_clk_div);
+                CHECK(cfg.max_histogram_length == 16384);
+                CHECK(cfg.max_adc_trace_length == 8192);
+                CHECK(cfg.max_num_baselines == 1927);
+                ++index;
+            }
+        }
+    }
+    TEST_CASE("Rev H - DB07") {
+        SUBCASE("Load data") {
+            CHECK_NOTHROW(eetest::load("H:DB07", eeprom));
+        }
+        SUBCASE("Process") {
+            CHECK_NOTHROW(eeprom.process());
+        }
+        SUBCASE("Validate module") {
+            CHECK(eeprom.format == 2);
+            CHECK(eeprom.valid());
+            CHECK(eeprom.serial_num == 2017);
+            CHECK(eeprom.revision == 17);
+            CHECK(eeprom.major_revision == 66);
+            CHECK(eeprom.minor_revision == 2);
+            CHECK(eeprom.mod_strike == 0);
+        }
+        SUBCASE("Fixtures") {
+            CHECK(eeprom.dbs.size() == 4);
+            for (size_t i = 0; i < eeprom.dbs.size(); i++) {
+                CHECK(eeprom.dbs[i].label == "DB07");
+                CHECK(eeprom.dbs[i].index == 7);
+                CHECK(eeprom.dbs[i].position == (i + 1));
+            }
+        }
+        SUBCASE("Configs") {
+            int index = 0;
+            for (auto& cfg : eeprom.configs) {
+                CHECK(cfg.index == index);
+                CHECK(cfg.fixture == xia::pixie::hw::module_fixture::DB07);
+                CHECK(cfg.adc_bits == 14);
+                CHECK(cfg.adc_msps == 500);
+                CHECK(cfg.adc_clk_div == 5);
+                CHECK(cfg.fpga_clk_mhz == cfg.adc_msps / cfg.adc_clk_div);
+                CHECK(cfg.max_histogram_length == 16384);
+                CHECK(cfg.max_adc_trace_length == 8192);
+                CHECK(cfg.max_num_baselines == 1927);
+                ++index;
+            }
         }
     }
     TEST_CASE("Rev H - DB10") {
@@ -356,6 +648,71 @@ TEST_SUITE("xia::pixie::eeprom") {
                 CHECK(eeprom.dbs[i].index == 10);
                 CHECK(eeprom.dbs[i].position == (i + 1));
             }
+        }
+        SUBCASE("Configs") {
+            int index = 0;
+            for (auto& cfg : eeprom.configs) {
+                CHECK(cfg.index == index);
+                CHECK(cfg.fixture == xia::pixie::hw::module_fixture::DB10);
+                CHECK(cfg.adc_bits == 12);
+                CHECK(cfg.adc_msps == 500);
+                CHECK(cfg.adc_clk_div == 4);
+                CHECK(cfg.fpga_clk_mhz == cfg.adc_msps / cfg.adc_clk_div);
+                CHECK(cfg.max_histogram_length == 16384);
+                CHECK(cfg.max_adc_trace_length == 8192);
+                CHECK(cfg.max_num_baselines == 1927);
+                ++index;
+            }
+        }
+    }
+    TEST_CASE("Rev H - too few DBs") {
+        SUBCASE("Load data") {
+            CHECK_NOTHROW(eetest::load("H:few-dbs", eeprom));
+        }
+        SUBCASE("Process") {
+            CHECK_NOTHROW(eeprom.process());
+        }
+        SUBCASE("Fixtures") {
+            CHECK(eeprom.dbs.size() == 1);
+            for (auto& db : eeprom.dbs) {
+                CHECK(db.label == "DB04");
+                CHECK(db.index == 4);
+                CHECK(db.position == 1);
+            }
+        }
+        SUBCASE("Configs") {
+            CHECK(eeprom.configs.size() == 8);
+            int index = 0;
+            for (auto& cfg : eeprom.configs) {
+                CHECK(cfg.index == index);
+                CHECK(cfg.fixture == xia::pixie::hw::module_fixture::DB04);
+                CHECK(cfg.adc_bits == 14);
+                CHECK(cfg.adc_msps == 250);
+                CHECK(cfg.adc_clk_div == 2);
+                CHECK(cfg.fpga_clk_mhz == cfg.adc_msps / cfg.adc_clk_div);
+                CHECK(cfg.max_histogram_length == 16384);
+                CHECK(cfg.max_adc_trace_length == 8192);
+                CHECK(cfg.max_num_baselines == 1927);
+                ++index;
+            }
+        }
+    }
+    TEST_CASE("Rev H - mixed DBs") {
+        SUBCASE("Load data") {
+            CHECK_NOTHROW(eetest::load("H:mixed-dbs", eeprom));
+        }
+        SUBCASE("Process") {
+            CHECK_THROWS_WITH_AS(eeprom.process(), "daughter board configuration error: mixture of DBs",
+                                 eeprom_error);
+        }
+    }
+    TEST_CASE("Rev H - bad crc") {
+        SUBCASE("Load data") {
+            CHECK_NOTHROW(eetest::load("H:bad-crc", eeprom));
+        }
+        SUBCASE("Process") {
+            CHECK_THROWS_WITH_AS(
+                eeprom.process(), "invalid ADC MSPS: 65535", eeprom_error);
         }
     }
 }
