@@ -93,12 +93,24 @@ static const eeprom_data rev_h_bad_crc = {
     "00000070 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
 };
 
+static const eeprom_data rev_h_db10 = {
+    "00000000 6d d7 f4 fe f2 ff 0b de-07 00 00 0c 11 0d 42 0e ................",
+    "00000010 02 0f 00 28 0a 01 28 0a-02 28 0a 03 28 0a 04 ff ................",
+    "00000020 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000030 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000040 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000050 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000060 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+    "00000070 ff ff ff ff ff ff ff ff-ff ff ff ff ff ff ff ff ................",
+};
+
 static const rev_eeprom_data eeproms = {
     { "blank", blank },
     { "D", rev_d },
     { "F", rev_f },
     { "H", rev_h },
     { "H:bad-crc", rev_h_bad_crc },
+    { "H:DB10", rev_h_db10 },
 };
 
 template<typename T>
@@ -284,6 +296,31 @@ TEST_SUITE("xia::pixie::eeprom") {
         SUBCASE("Process") {
             CHECK_THROWS_WITH_AS(
                 eeprom.process(), "invalid ADC MSPS: 65535", eeprom_error);
+        }
+    }
+    TEST_CASE("Rev H - DB10") {
+        SUBCASE("Load data") {
+            CHECK_NOTHROW(eetest::load("H:DB10", eeprom));
+        }
+        SUBCASE("Process") {
+            CHECK_NOTHROW(eeprom.process());
+        }
+        SUBCASE("Validate module") {
+            CHECK(eeprom.format == 2);
+            CHECK(eeprom.valid());
+            CHECK(eeprom.serial_num == 2014);
+            CHECK(eeprom.revision == 17);
+            CHECK(eeprom.major_revision == 66);
+            CHECK(eeprom.minor_revision == 2);
+            CHECK(eeprom.mod_strike == 0);
+        }
+        SUBCASE("Fixtures") {
+            CHECK(eeprom.dbs.size() == 4);
+            for (size_t i = 0; i < eeprom.dbs.size(); i++) {
+                CHECK(eeprom.dbs[i].label == "DB10");
+                CHECK(eeprom.dbs[i].index == 10);
+                CHECK(eeprom.dbs[i].position == (i + 1));
+            }
         }
     }
 }

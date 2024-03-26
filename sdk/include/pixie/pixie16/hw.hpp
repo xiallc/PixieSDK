@@ -204,10 +204,11 @@ enum struct module_fixture {
     mainboard,
     DB01,
     DB02,
-    DB04,
-    DB05,
+    DB04,   /* DB04 PCB DB04 parts */
+    DB05,   /* DB05 PCB DB05 parts */
     DB06,
-    DB07
+    DB07,
+    DB10
 };
 
 /**
