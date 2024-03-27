@@ -129,10 +129,17 @@ static void initialize(xia::omnitool::command::context& context) {
         opts.out << "modules: detected=" << crate.get_num_modules()
                  << " time=" << tp << std::endl;
     }
-    if (!opts.slots.empty()) {
+    if (!opts.slots.empty() || !opts.excluded_slots.empty()) {
+        auto slots = crate.get_modules();
+        if (!opts.slots.empty()) {
+            slots = opts.slots;
+        }
         xia::pixie::module::number_slots slot_map;
-        for (auto s : opts.slots) {
-            slot_map.emplace_back(std::make_pair(int(slot_map.size()), s));
+        for (auto s : slots) {
+            auto exclude = std::find(opts.excluded_slots.begin(), opts.excluded_slots.end(), s);
+            if (exclude == opts.excluded_slots.end()) {
+                slot_map.emplace_back(std::make_pair(int(slot_map.size()), s));
+            }
         }
         crate.assign(slot_map);
     }
