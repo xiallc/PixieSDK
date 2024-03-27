@@ -34,6 +34,7 @@
 #include <pixie/error.hpp>
 #include <pixie/log.hpp>
 #include <pixie/os_compat.hpp>
+#include <pixie/utils/io.hpp>
 
 namespace xia {
 namespace logging {
@@ -280,89 +281,13 @@ log::level get_logging_level(void) {
 
 void memdump(log::level level, const std::string label, const void* addr, size_t length,
              size_t size, size_t line_length, size_t offset) {
-    if (level_logging(level) && length > 0) {
-        const uint8_t* addr8 = static_cast<const uint8_t*>(addr);
-        std::ostringstream out;
-        size_t b = 0;
-
-        out << std::hex << std::setfill('0') << label << std::endl;
-
-        while (true) {
-            std::vector<char> data(line_length);
-            if (((b % line_length) == 0) || (b >= length)) {
-                if (b != 0) {
-                    size_t line = b % line_length;
-                    if (line != 0) {
-                        size_t remaining = line_length - line;
-                        remaining = (remaining * 2) + (remaining / size);
-                        out << std::setfill(' ') << std::setw(remaining) << ' '
-                            << std::setfill('0');
-                    } else {
-                        line = line_length;
-                    }
-                    out << ' ';
-                    for (size_t c = 0; c < line; c++) {
-                        if ((data[c] < 0x20) || (data[c] > 0x7e)) {
-                            out << '.';
-                        } else {
-                            out << data[c];
-                        }
-                    }
-                    if (b >= length) {
-                        break;
-                    }
-                    out << std::endl;
-                }
-                out << std::setw(8) << (uint32_t) (offset + b);
-            }
-
-            if ((b & (line_length - 1)) == (line_length >> 1)) {
-                out << "-";
-            } else {
-                out << " ";
-            }
-
-            uint8_t d8 = 0;
-            uint16_t d16 = 0;
-            uint32_t d32 = 0;
-            uint64_t d64 = 0;
-
-            switch (size) {
-                case sizeof(uint8_t):
-                default:
-                    d8 = *(addr8 + b);
-                    out << std::setw(2) << (uint32_t) d8;
-                    data[(b % line_length) + 0] = d8;
-                    break;
-                case sizeof(uint16_t):
-                    d16 = *((const uint16_t*) (addr8 + b));
-                    out << std::setw(4) << d16;
-                    data[(b % line_length) + 0] = (uint8_t) (d16 >> 8);
-                    data[(b % line_length) + 1] = (uint8_t) d16;
-                    break;
-                case sizeof(uint32_t):
-                    d32 = *((const uint32_t*) (addr8 + b));
-                    out << std::setw(8) << d32;
-                    for (int i = sizeof(uint32_t); i > 0; --i) {
-                        data[(b % line_length) + i] = (uint8_t) d32;
-                        d32 >>= 8;
-                    }
-                    break;
-                case sizeof(uint64_t):
-                    d64 = *((const uint64_t*) (addr8 + b));
-                    out << std::setw(16) << d64;
-                    for (int i = sizeof(uint64_t); i > 0; --i) {
-                        data[(b % line_length) + i] = (uint8_t) d64;
-                        d64 >>= 8;
-                    }
-                    break;
-            }
-            b += size;
-        }
-        write(level, out.str());
+    if (level_logging(level)) {
+        util::io::write_string_func writer = [level](const std::string& out) {
+            write(level, out);
+        };
+        util::io::memdump(addr, length, writer, label, size, line_length, offset);
     }
 }
-
 }  // namespace logging
 
 log::~log() {

@@ -123,7 +123,6 @@ struct log_level_guard {
 
 /**
  * @brief Outputs a memory segment as hex values.
- * @see https://git.rtems.org/rtems-tools/tree/rtemstoolkit/rtems-utils.cpp%23n39
  * @param[in] level The logging level for the output.
  * @param[in] label A label that can be used to name the output for finding it in the logs.
  * @param[in] addr The address of the memory to display.

@@ -26,6 +26,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
@@ -42,6 +43,8 @@ namespace xia {
  */
 namespace util {
 namespace io {
+
+using write_string_func = std::function<void(const std::string& out)>;
 
 /**
  * @brief Save and restore the output stream's settings.
@@ -274,6 +277,20 @@ std::string humanize(T value, const std::string suffix = "") {
     oss << std::setprecision(3) << std::fixed << num << *unit << suffix;
     return oss.str();
 }
+
+/**
+ * @brief Writes a memory segment as hex values.
+ * @see https://git.rtems.org/rtems-tools/tree/rtemstoolkit/rtems-utils.cpp#n39
+ * @param[in] addr The address of the memory to display.
+ * @param[in] length The number of elements to display.
+ * @param[in] writer The function to write the memory segment with.
+ * @param[in] label A label that can be used to name the output.
+ * @param[in] size The size of the data element.
+ * @param[in] line_length Number of elements per line.
+ * @param[in] offset The printed offset.
+ */
+void memdump(const void* addr, size_t length, write_string_func writer, std::string label = "",
+             size_t size = 1, size_t line_length = 16, size_t offset = 0);
 
 /**
  * @brief Struct to represent file reading/writing
