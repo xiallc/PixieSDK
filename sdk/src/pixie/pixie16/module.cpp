@@ -1165,6 +1165,9 @@ void module::force_online() {
                     xia_log(log::error) << module_label(*this)
                                         << "force online: module needs booting";
                 }
+            } else {
+                xia_log(log::error) << module_label(*this)
+                                    << "force online: module needs booting";
             }
         } catch (pixie::error::error& e) {
             xia_log(log::error) << module_label(*this) << "force online: " << e;
@@ -1204,7 +1207,12 @@ void module::check_channel_num(T num) {
 void module::probe(const firmware::system& firmwares) {
     lock_guard guard(lock_);
     firmware::firmware_set firmware;
-    firmware_get(firmware, firmwares);
+    try {
+        firmware_get(firmware, firmwares);
+    } catch (...) {
+        mib_disable();
+        return;
+    }
     probe(firmware);
 }
 
