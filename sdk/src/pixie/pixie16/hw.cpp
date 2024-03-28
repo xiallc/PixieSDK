@@ -72,6 +72,10 @@ void config::clear() {
     fpga_clk_mhz = 0;
 }
 
+db_assembly::db_assembly(const int prom_id_, const int position_)
+    : prom_id(prom_id_), position(position_) {
+}
+
 module_fixture get_module_fixture(const std::string label) {
     for (auto& fixture : fixtures) {
         if (fixture.label == label) {

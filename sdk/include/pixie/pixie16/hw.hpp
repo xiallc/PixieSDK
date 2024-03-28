@@ -268,6 +268,24 @@ struct config {
 typedef std::vector<config> configs;
 
 /**
+ * @brief A daughter board assembly
+ */
+struct db_assembly {
+    /*
+     * EEPROM data
+     */
+    int prom_id;     /**< DB PROM ID defined in Steps to Release Spreadsheet */
+    int position;    /**< Position on the main board */
+
+    std::string label;
+    size_t index;
+
+    db_assembly(const int prom_id, const int position);
+};
+
+using db_assemblies = std::vector<db_assembly>;
+
+/**
  * Return the module fixture given a label. The motherboard fixture
  * is not a valid result.
  */

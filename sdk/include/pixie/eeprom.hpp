@@ -115,19 +115,6 @@ struct header {
 using contents = std::vector<uint8_t>;
 
 /**
- * @brief A daughter board assembly
- */
-struct db_assemble {
-    std::string label;
-    int index;  /**< Daughter board definition table index *. */
-    int position; /**< Position on the main board */
-
-    db_assemble();
-};
-
-using db_assembles = std::vector<db_assemble>;
-
-/**
  * @brief A data structure holding the data decoded from a module's EEPROM.
  *
  * ### EEPROM Format
@@ -155,8 +142,8 @@ struct eeprom {
     using tag = xia::pixie::eeprom::tag;
     using element_type = xia::pixie::eeprom::element_type;
     using contents = xia::pixie::eeprom::contents;
-    using db_assemble = xia::pixie::eeprom::db_assemble;
-    using db_assembles = xia::pixie::eeprom::db_assembles;
+    using db_assembly = xia::pixie::hw::db_assembly;
+    using db_assemblies = xia::pixie::hw::db_assemblies;
 
     contents data;
     util::crc::crc32 crc;
@@ -177,7 +164,7 @@ struct eeprom {
 
     hw::configs configs;
 
-    db_assembles dbs;
+    db_assemblies dbs;
 
     eeprom();
 
@@ -211,23 +198,42 @@ struct eeprom {
     }
 
     /**
-     * Get the DB index for a given DB label. @note the index is not the index
-     * into this table of DBs, it is the index identifier for the DB.
+     * Get the DB PROM IS for a given DB label. @note the index is not
+     * the index into this table of DBs, it is the index identifier
+     * for the DB in the vector that holds it.
      */
-    int db_find_index(const std::string label) const;
+    int db_find_prom_id(const std::string label) const;
 
     /**
      * Get the DB label given a DB index.
      */
-    std::string db_find_label(const int index) const;
+    std::string db_find_label(const int prom_id) const;
+
+    /**
+     * Get the DB configuration given a DB label
+     */
+    hw::config db_config(const std::string label) const;
+
+    /**
+     * Get the DB configuration given a DB type index
+     */
+    hw::config db_config(const int prom_id) const;
 
     /**
      * Get the DB channel base.
      *
-     * @param number The DB number
-     * @returns int Return -1 if the number of out of range
+     * @param index The DB index
+     * @returns int Return -1 if the index of out of range
      */
-    int db_channel_base(const int number) const;
+    int db_channel_base(const int index) const;
+
+    /**
+     * Get the DB channel count.
+     *
+     * @param index The DB index
+     * @returns int Return -1 if the index of out of range
+     */
+    int db_channel_count(const int index) const;
 
     /*
      * Tag queries.

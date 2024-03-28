@@ -364,8 +364,9 @@ TEST_SUITE("xia::pixie::eeprom") {
             CHECK(eeprom.dbs.size() == 4);
             for (size_t i = 0; i < eeprom.dbs.size(); i++) {
                 CHECK(eeprom.dbs[i].label == "DB04");
-                CHECK(eeprom.dbs[i].index == 4);
+                CHECK(eeprom.dbs[i].prom_id == 4);
                 CHECK(eeprom.dbs[i].position == (i + 1));
+                CHECK(eeprom.dbs[i].index == i);
             }
         }
         SUBCASE("Configs") {
@@ -405,8 +406,9 @@ TEST_SUITE("xia::pixie::eeprom") {
             CHECK(eeprom.dbs.size() == 4);
             for (size_t i = 0; i < eeprom.dbs.size(); i++) {
                 CHECK(eeprom.dbs[i].label == "DB01");
-                CHECK(eeprom.dbs[i].index == 0);
+                CHECK(eeprom.dbs[i].prom_id == 0);
                 CHECK(eeprom.dbs[i].position == (i + 1));
+                CHECK(eeprom.dbs[i].index == i);
             }
         }
         SUBCASE("Configs") {
@@ -445,8 +447,9 @@ TEST_SUITE("xia::pixie::eeprom") {
             CHECK(eeprom.dbs.size() == 4);
             for (size_t i = 0; i < eeprom.dbs.size(); i++) {
                 CHECK(eeprom.dbs[i].label == "DB01");
-                CHECK(eeprom.dbs[i].index == 1);
+                CHECK(eeprom.dbs[i].prom_id == 1);
                 CHECK(eeprom.dbs[i].position == (i + 1));
+                CHECK(eeprom.dbs[i].index == i);
             }
         }
         SUBCASE("Configs") {
@@ -485,8 +488,9 @@ TEST_SUITE("xia::pixie::eeprom") {
             CHECK(eeprom.dbs.size() == 4);
             for (size_t i = 0; i < eeprom.dbs.size(); i++) {
                 CHECK(eeprom.dbs[i].label == "DB02");
-                CHECK(eeprom.dbs[i].index == 2);
+                CHECK(eeprom.dbs[i].prom_id == 2);
                 CHECK(eeprom.dbs[i].position == (i + 1));
+                CHECK(eeprom.dbs[i].index == i);
             }
         }
         SUBCASE("Configs") {
@@ -525,8 +529,9 @@ TEST_SUITE("xia::pixie::eeprom") {
             CHECK(eeprom.dbs.size() == 4);
             for (size_t i = 0; i < eeprom.dbs.size(); i++) {
                 CHECK(eeprom.dbs[i].label == "DB05");
-                CHECK(eeprom.dbs[i].index == 5);
+                CHECK(eeprom.dbs[i].prom_id == 5);
                 CHECK(eeprom.dbs[i].position == (i + 1));
+                CHECK(eeprom.dbs[i].index == i);
             }
         }
         SUBCASE("Configs") {
@@ -565,8 +570,9 @@ TEST_SUITE("xia::pixie::eeprom") {
             CHECK(eeprom.dbs.size() == 4);
             for (size_t i = 0; i < eeprom.dbs.size(); i++) {
                 CHECK(eeprom.dbs[i].label == "DB06");
-                CHECK(eeprom.dbs[i].index == 6);
+                CHECK(eeprom.dbs[i].prom_id == 6);
                 CHECK(eeprom.dbs[i].position == (i + 1));
+                CHECK(eeprom.dbs[i].index == i);
             }
         }
         SUBCASE("Configs") {
@@ -605,8 +611,9 @@ TEST_SUITE("xia::pixie::eeprom") {
             CHECK(eeprom.dbs.size() == 4);
             for (size_t i = 0; i < eeprom.dbs.size(); i++) {
                 CHECK(eeprom.dbs[i].label == "DB07");
-                CHECK(eeprom.dbs[i].index == 7);
+                CHECK(eeprom.dbs[i].prom_id == 7);
                 CHECK(eeprom.dbs[i].position == (i + 1));
+                CHECK(eeprom.dbs[i].index == i);
             }
         }
         SUBCASE("Configs") {
@@ -645,8 +652,9 @@ TEST_SUITE("xia::pixie::eeprom") {
             CHECK(eeprom.dbs.size() == 4);
             for (size_t i = 0; i < eeprom.dbs.size(); i++) {
                 CHECK(eeprom.dbs[i].label == "DB10");
-                CHECK(eeprom.dbs[i].index == 10);
+                CHECK(eeprom.dbs[i].prom_id == 10);
                 CHECK(eeprom.dbs[i].position == (i + 1));
+                CHECK(eeprom.dbs[i].index == i);
             }
         }
         SUBCASE("Configs") {
@@ -676,7 +684,7 @@ TEST_SUITE("xia::pixie::eeprom") {
             CHECK(eeprom.dbs.size() == 1);
             for (auto& db : eeprom.dbs) {
                 CHECK(db.label == "DB04");
-                CHECK(db.index == 4);
+                CHECK(db.prom_id == 4);
                 CHECK(db.position == 1);
             }
         }

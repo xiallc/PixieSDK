@@ -76,7 +76,7 @@ static const std::map<tag, element_decs> descriptors = {
     {tag::end, {tag::end, "end", null, 0, true, false}}};
 
 struct v2_config {
-    int index;
+    int prom_id;  /* See hardware teams Steps to Release spreadsheet */
     int channels;
     hw::config config;
     std::string label;
@@ -100,7 +100,7 @@ static const std::map<hw::rev_tag, int> rev_max_channels = {
 
 static const v2_config& find_v2_config(const int id) {
     for (auto& db : v2_configs) {
-        if (id == db.index) {
+        if (id == db.prom_id) {
             return db;
         }
     }
@@ -128,9 +128,6 @@ void header::clear() {
 
 int header::version() const {
     return int(control & 0xf);
-}
-
-db_assemble::db_assemble() : index(-1), position(-1) {
 }
 
 eeprom::eeprom() {
@@ -267,7 +264,7 @@ void eeprom::process() {
 
         int index = 0;
         for (auto db : dbs) {
-            auto db_config = find_v2_config(db.index);
+            auto db_config = find_v2_config(db.prom_id);
             db_config.config.fixture = hw::get_module_fixture(db.label);
             for (int c = 0; c < db_config.channels; ++c) {
                 configs.push_back(db_config.config);
@@ -372,15 +369,18 @@ void eeprom::process_dbs()
         size_t offset = find(tag::db, dbs.size() + 1, false);
         if (offset == 0) {
             std::sort(dbs.begin(), dbs.end(),
-                      [](const db_assemble& a, const db_assemble& b) {
+                      [](const db_assembly& a, const db_assembly& b) {
                           return a.position < b.position;
                       });
+            size_t index = 0;
+            for (auto& db : dbs) {
+                db.index = index;
+                ++index;
+            }
             break;
         }
-        db_assemble db;
-        db.index = get8<int>(offset + 0);
-        db.position = get8<int>(offset + 1);
-        db.label = db_find_label(db.index);
+        db_assembly db(get8<int>(offset + 0), get8<int>(offset + 1));
+        db.label = db_find_label(db.prom_id);
         dbs.push_back(db);
     }
     /*
@@ -388,9 +388,11 @@ void eeprom::process_dbs()
      */
     if (!dbs.empty()) {
         auto matching =
-            std::all_of(std::begin(dbs), std::end(dbs), [index = dbs[0].index](auto& db) {
-                return db.index == index;
-            });
+            std::all_of(
+                std::begin(dbs), std::end(dbs),
+                [prom_id = dbs[0].prom_id](auto& db) {
+                    return db.prom_id == prom_id;
+                });
         if (!matching) {
             throw error(error::code::device_eeprom_failure,
                         "daughter board configuration error: mixture of DBs");
@@ -401,7 +403,7 @@ void eeprom::process_dbs()
 int eeprom::db_find(const int channel) const {
     int index = 0;
     for (unsigned int db = 0; db < dbs.size(); ++db) {
-        auto db_config = find_v2_config(dbs[db].index);
+        auto db_config = find_v2_config(dbs[db].prom_id);
         if (channel < (index + db_config.channels)) {
             return db;
         }
@@ -410,26 +412,43 @@ int eeprom::db_find(const int channel) const {
     return -1;
 }
 
-int eeprom::db_find_index(const std::string label) const {
-    return find_v2_config(label).index;
+int eeprom::db_find_prom_id(const std::string label) const {
+    return find_v2_config(label).prom_id;
 }
 
-std::string eeprom::db_find_label(const int index) const {
-    return find_v2_config(index).label;
+std::string eeprom::db_find_label(const int prom_id) const {
+    return find_v2_config(prom_id).label;
 }
 
 int eeprom::db_channel_base(const int index) const {
-    int base = -1;
-    if (index < static_cast<int>(dbs.size())) {
-        int db = 0;
-        base = 0;
-        while (db < index) {
-            auto db_config = find_v2_config(dbs[db].index);
+    if (index >= 0 && index < static_cast<int>(dbs.size())) {
+        int base = 0;
+        for (int db = 0; db < index; ++db) {
+            auto db_config = find_v2_config(dbs[db].prom_id);
             base += db_config.channels;
-            ++db;
+        }
+        return base;
+    }
+    return -1;
+}
+
+int eeprom::db_channel_count(const int index) const {
+    if (index >= 0 && index < static_cast<int>(dbs.size())) {
+        try {
+            auto db_config = find_v2_config(dbs[index].prom_id);
+            return db_config.channels;
+        } catch (...) {
         }
     }
-    return base;
+    return -1;
+}
+
+hw::config eeprom::db_config(const std::string label) const {
+    return find_v2_config(label).config;
+}
+
+hw::config eeprom::db_config(const int prom_id) const {
+    return find_v2_config(prom_id).config;
 }
 
 std::string eeprom::get_string(const tag key, size_t count) {
