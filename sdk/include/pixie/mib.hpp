@@ -25,6 +25,7 @@
 
 #include <atomic>
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <type_traits>
 #include <vector>
@@ -485,6 +486,11 @@ struct node_base {
 };
 
 /**
+ * Node base pointers need to reference counted.
+ */
+using node_base_ptr = std::shared_ptr<node_base>;
+
+/**
  * A node in MIB tree. A node as a single type for it's life time.
  */
 struct node {
@@ -509,7 +515,17 @@ struct node {
     /**
      * Internal
      */
-    node(node_base& base);
+    node(node_base_ptr base);
+
+    /**
+     * Remove the MIB deleting the entry. This makes the node invalid.
+     */
+    void remove();
+
+    /**
+     * Reset the node making it invalid
+     */
+    void reset();
 
     node& operator=(const node& other);
 
@@ -549,11 +565,11 @@ struct node {
 
     std::string str(bool attributes = false);
 
-    bool valid() const { return base != nullptr; }
+    bool valid() const { if (base) return true; return false; }
 
 private:
     void check_base() const;
-    node_base* base;
+    node_base_ptr base;
 };
 
 /**
@@ -801,6 +817,12 @@ template<typename T> bool node::operator>=(const T& val) const {
  */
 void add(const name_type& name, const type type_, const bool enabled = true);
 void add(const char* name, const type type_, const bool enabled = true);
+
+/**
+ * Remove a MIB
+ */
+void remove(const name_type& name);
+void remove(const char* name);
 
 /**
  * Find a MIB

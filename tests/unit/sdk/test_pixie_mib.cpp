@@ -103,18 +103,18 @@ TEST_SUITE("xia::pixie::mib") {
         CHECK_NOTHROW(s1.unlock_writes());
         CHECK(s1.write_locked() == false);
         CHECK_NOTHROW(s1 = "write while locked");
-        CHECK_THROWS_WITH_AS(s1 = true, "mib::node::check: invalid type: 0/1", xia::mib::error);
-        CHECK_THROWS_WITH_AS(s1 = false, "mib::node::check: invalid type: 0/1", xia::mib::error);
-        CHECK_THROWS_WITH_AS(s1 = int(1), "mib::node::check: invalid type: 0/2", xia::mib::error);
-        CHECK_THROWS_WITH_AS(s1 = 1, "mib::node::check: invalid type: 0/2", xia::mib::error);
-        CHECK_THROWS_WITH_AS(s1 = 1L, "mib::node::check: invalid type: 0/2", xia::mib::error);
-        CHECK_THROWS_WITH_AS(s1 = 1LL, "mib::node::check: invalid type: 0/2", xia::mib::error);
-        CHECK_THROWS_WITH_AS(s1 = ui, "mib::node::check: invalid type: 0/3", xia::mib::error);
-        CHECK_THROWS_WITH_AS(s1 = 1U, "mib::node::check: invalid type: 0/3", xia::mib::error);
-        CHECK_THROWS_WITH_AS(s1 = 1UL, "mib::node::check: invalid type: 0/3", xia::mib::error);
-        CHECK_THROWS_WITH_AS(s1 = 1ULL, "mib::node::check: invalid type: 0/3", xia::mib::error);
-        CHECK_THROWS_WITH_AS(s1 = 1.0, "mib::node::check: invalid type: 0/4", xia::mib::error);
-        CHECK_THROWS_WITH_AS(s1 = ts, "mib::node::check: invalid type: 0/5", xia::mib::error);
+        CHECK_THROWS_WITH_AS(s1 = true, "mib::node::check: s.1: invalid type: 0/1", xia::mib::error);
+        CHECK_THROWS_WITH_AS(s1 = false, "mib::node::check: s.1: invalid type: 0/1", xia::mib::error);
+        CHECK_THROWS_WITH_AS(s1 = int(1), "mib::node::check: s.1: invalid type: 0/2", xia::mib::error);
+        CHECK_THROWS_WITH_AS(s1 = 1, "mib::node::check: s.1: invalid type: 0/2", xia::mib::error);
+        CHECK_THROWS_WITH_AS(s1 = 1L, "mib::node::check: s.1: invalid type: 0/2", xia::mib::error);
+        CHECK_THROWS_WITH_AS(s1 = 1LL, "mib::node::check: s.1: invalid type: 0/2", xia::mib::error);
+        CHECK_THROWS_WITH_AS(s1 = ui, "mib::node::check: s.1: invalid type: 0/3", xia::mib::error);
+        CHECK_THROWS_WITH_AS(s1 = 1U, "mib::node::check: s.1: invalid type: 0/3", xia::mib::error);
+        CHECK_THROWS_WITH_AS(s1 = 1UL, "mib::node::check: s.1: invalid type: 0/3", xia::mib::error);
+        CHECK_THROWS_WITH_AS(s1 = 1ULL, "mib::node::check: s.1: invalid type: 0/3", xia::mib::error);
+        CHECK_THROWS_WITH_AS(s1 = 1.0, "mib::node::check: s.1: invalid type: 0/4", xia::mib::error);
+        CHECK_THROWS_WITH_AS(s1 = ts, "mib::node::check: s.1: invalid type: 0/5", xia::mib::error);
     }
     TEST_CASE("MIB: boolean") {
         CHECK_NOTHROW(xia::mib::node("b.1", xia::mib::type::boolean, false));
@@ -125,8 +125,8 @@ TEST_SUITE("xia::pixie::mib") {
         CHECK(b1.type_is() == xia::mib::type::boolean);
         CHECK(b1.type_is() != xia::mib::type::string);
         CHECK(b1.is_enabled() == true);
-        CHECK_THROWS_WITH_AS(b1 = ss, "mib::node::check: invalid type: 1/0", xia::mib::error);
-        CHECK_THROWS_WITH_AS(b1 = sp, "mib::node::check: invalid type: 1/0", xia::mib::error);
+        CHECK_THROWS_WITH_AS(b1 = ss, "mib::node::check: b.1: invalid type: 1/0", xia::mib::error);
+        CHECK_THROWS_WITH_AS(b1 = sp, "mib::node::check: b.1: invalid type: 1/0", xia::mib::error);
         CHECK_NOTHROW(b1 = true);
         CHECK(b1 == true);
         CHECK(b1 != false);
@@ -139,16 +139,16 @@ TEST_SUITE("xia::pixie::mib") {
         CHECK(b1 < true);
         CHECK(b1 <= false);
         CHECK(b1.str() == "false");
-        CHECK_THROWS_WITH_AS(b1 = int(1), "mib::node::check: invalid type: 1/2", xia::mib::error);
-        CHECK_THROWS_WITH_AS(b1 = 1, "mib::node::check: invalid type: 1/2", xia::mib::error);
-        CHECK_THROWS_WITH_AS(b1 = 1L, "mib::node::check: invalid type: 1/2", xia::mib::error);
-        CHECK_THROWS_WITH_AS(b1 = 1LL, "mib::node::check: invalid type: 1/2", xia::mib::error);
-        CHECK_THROWS_WITH_AS(b1 = ui, "mib::node::check: invalid type: 1/3", xia::mib::error);
-        CHECK_THROWS_WITH_AS(b1 = 1U, "mib::node::check: invalid type: 1/3", xia::mib::error);
-        CHECK_THROWS_WITH_AS(b1 = 1UL, "mib::node::check: invalid type: 1/3", xia::mib::error);
-        CHECK_THROWS_WITH_AS(b1 = 1ULL, "mib::node::check: invalid type: 1/3", xia::mib::error);
-        CHECK_THROWS_WITH_AS(b1 = 1.0, "mib::node::check: invalid type: 1/4", xia::mib::error);
-        CHECK_THROWS_WITH_AS(b1 = ts, "mib::node::check: invalid type: 1/5", xia::mib::error);
+        CHECK_THROWS_WITH_AS(b1 = int(1), "mib::node::check: b.1: invalid type: 1/2", xia::mib::error);
+        CHECK_THROWS_WITH_AS(b1 = 1, "mib::node::check: b.1: invalid type: 1/2", xia::mib::error);
+        CHECK_THROWS_WITH_AS(b1 = 1L, "mib::node::check: b.1: invalid type: 1/2", xia::mib::error);
+        CHECK_THROWS_WITH_AS(b1 = 1LL, "mib::node::check: b.1: invalid type: 1/2", xia::mib::error);
+        CHECK_THROWS_WITH_AS(b1 = ui, "mib::node::check: b.1: invalid type: 1/3", xia::mib::error);
+        CHECK_THROWS_WITH_AS(b1 = 1U, "mib::node::check: b.1: invalid type: 1/3", xia::mib::error);
+        CHECK_THROWS_WITH_AS(b1 = 1UL, "mib::node::check: b.1: invalid type: 1/3", xia::mib::error);
+        CHECK_THROWS_WITH_AS(b1 = 1ULL, "mib::node::check: b.1: invalid type: 1/3", xia::mib::error);
+        CHECK_THROWS_WITH_AS(b1 = 1.0, "mib::node::check: b.1: invalid type: 1/4", xia::mib::error);
+        CHECK_THROWS_WITH_AS(b1 = ts, "mib::node::check: b.1: invalid type: 1/5", xia::mib::error);
     }
     TEST_CASE("MIB: integer") {
         CHECK_NOTHROW(xia::mib::node("i.1", xia::mib::type::integer));
@@ -157,10 +157,10 @@ TEST_SUITE("xia::pixie::mib") {
         CHECK(i1.type_is() == xia::mib::type::integer);
         CHECK(i1.type_is() != xia::mib::type::string);
         CHECK(i1.is_enabled() == true);
-        CHECK_THROWS_WITH_AS(i1 = ss, "mib::node::check: invalid type: 2/0", xia::mib::error);
-        CHECK_THROWS_WITH_AS(i1 = sp, "mib::node::check: invalid type: 2/0", xia::mib::error);
-        CHECK_THROWS_WITH_AS(i1 = true, "mib::node::check: invalid type: 2/1", xia::mib::error);
-        CHECK_THROWS_WITH_AS(i1 = false, "mib::node::check: invalid type: 2/1", xia::mib::error);
+        CHECK_THROWS_WITH_AS(i1 = ss, "mib::node::check: i.1: invalid type: 2/0", xia::mib::error);
+        CHECK_THROWS_WITH_AS(i1 = sp, "mib::node::check: i.1: invalid type: 2/0", xia::mib::error);
+        CHECK_THROWS_WITH_AS(i1 = true, "mib::node::check: i.1: invalid type: 2/1", xia::mib::error);
+        CHECK_THROWS_WITH_AS(i1 = false, "mib::node::check: i.1: invalid type: 2/1", xia::mib::error);
         CHECK_NOTHROW(i1 = int(1));
         CHECK(i1 == 1);
         CHECK(i1 == 1U);
@@ -180,8 +180,8 @@ TEST_SUITE("xia::pixie::mib") {
         CHECK_NOTHROW(i1 = 1U);
         CHECK_NOTHROW(i1 = 1UL);
         CHECK_NOTHROW(i1 = 1ULL);
-        CHECK_THROWS_WITH_AS(i1 = 1.0, "mib::node::check: invalid type: 2/4", xia::mib::error);
-        CHECK_THROWS_WITH_AS(i1 = ts, "mib::node::check: invalid type: 2/5", xia::mib::error);
+        CHECK_THROWS_WITH_AS(i1 = 1.0, "mib::node::check: i.1: invalid type: 2/4", xia::mib::error);
+        CHECK_THROWS_WITH_AS(i1 = ts, "mib::node::check: i.1: invalid type: 2/5", xia::mib::error);
     }
     TEST_CASE("MIB: uinteger") {
         CHECK_NOTHROW(xia::mib::node("u.1", xia::mib::type::uinteger));
@@ -190,10 +190,10 @@ TEST_SUITE("xia::pixie::mib") {
         CHECK(u1.type_is() == xia::mib::type::uinteger);
         CHECK(u1.type_is() != xia::mib::type::string);
         CHECK(u1.is_enabled() == true);
-        CHECK_THROWS_WITH_AS(u1 = ss, "mib::node::check: invalid type: 3/0", xia::mib::error);
-        CHECK_THROWS_WITH_AS(u1 = sp, "mib::node::check: invalid type: 3/0", xia::mib::error);
-        CHECK_THROWS_WITH_AS(u1 = true, "mib::node::check: invalid type: 3/1", xia::mib::error);
-        CHECK_THROWS_WITH_AS(u1 = false, "mib::node::check: invalid type: 3/1", xia::mib::error);
+        CHECK_THROWS_WITH_AS(u1 = ss, "mib::node::check: u.1: invalid type: 3/0", xia::mib::error);
+        CHECK_THROWS_WITH_AS(u1 = sp, "mib::node::check: u.1: invalid type: 3/0", xia::mib::error);
+        CHECK_THROWS_WITH_AS(u1 = true, "mib::node::check: u.1: invalid type: 3/1", xia::mib::error);
+        CHECK_THROWS_WITH_AS(u1 = false, "mib::node::check: u.1: invalid type: 3/1", xia::mib::error);
         CHECK_NOTHROW(u1 = int(1));
         CHECK_NOTHROW(u1 = 1);
         CHECK_NOTHROW(u1 = 1L);
@@ -210,8 +210,8 @@ TEST_SUITE("xia::pixie::mib") {
         CHECK_NOTHROW(u1 = 1U);
         CHECK_NOTHROW(u1 = 1UL);
         CHECK_NOTHROW(u1 = 1ULL);
-        CHECK_THROWS_WITH_AS(u1 = 1.0, "mib::node::check: invalid type: 3/4", xia::mib::error);
-        CHECK_THROWS_WITH_AS(u1 = ts, "mib::node::check: invalid type: 3/5", xia::mib::error);
+        CHECK_THROWS_WITH_AS(u1 = 1.0, "mib::node::check: u.1: invalid type: 3/4", xia::mib::error);
+        CHECK_THROWS_WITH_AS(u1 = ts, "mib::node::check: u.1: invalid type: 3/5", xia::mib::error);
     }
     TEST_CASE("MIB: real") {
         CHECK_NOTHROW(xia::mib::node("r.1", xia::mib::type::real));
@@ -220,23 +220,23 @@ TEST_SUITE("xia::pixie::mib") {
         CHECK(r1.type_is() == xia::mib::type::real);
         CHECK(r1.type_is() != xia::mib::type::string);
         CHECK(r1.is_enabled() == true);
-        CHECK_THROWS_WITH_AS(r1 = ss, "mib::node::check: invalid type: 4/0", xia::mib::error);
-        CHECK_THROWS_WITH_AS(r1 = sp, "mib::node::check: invalid type: 4/0", xia::mib::error);
-        CHECK_THROWS_WITH_AS(r1 = true, "mib::node::check: invalid type: 4/1", xia::mib::error);
-        CHECK_THROWS_WITH_AS(r1 = false, "mib::node::check: invalid type: 4/1", xia::mib::error);
-        CHECK_THROWS_WITH_AS(r1 = int(1), "mib::node::check: invalid type: 4/2", xia::mib::error);
-        CHECK_THROWS_WITH_AS(r1 = 1, "mib::node::check: invalid type: 4/2", xia::mib::error);
-        CHECK_THROWS_WITH_AS(r1 = 1L, "mib::node::check: invalid type: 4/2", xia::mib::error);
-        CHECK_THROWS_WITH_AS(r1 = 1LL, "mib::node::check: invalid type: 4/2", xia::mib::error);
-        CHECK_THROWS_WITH_AS(r1 = ui, "mib::node::check: invalid type: 4/3", xia::mib::error);
-        CHECK_THROWS_WITH_AS(r1 = 1U, "mib::node::check: invalid type: 4/3", xia::mib::error);
-        CHECK_THROWS_WITH_AS(r1 = 1UL, "mib::node::check: invalid type: 4/3", xia::mib::error);
-        CHECK_THROWS_WITH_AS(r1 = 1ULL, "mib::node::check: invalid type: 4/3", xia::mib::error);
+        CHECK_THROWS_WITH_AS(r1 = ss, "mib::node::check: r.1: invalid type: 4/0", xia::mib::error);
+        CHECK_THROWS_WITH_AS(r1 = sp, "mib::node::check: r.1: invalid type: 4/0", xia::mib::error);
+        CHECK_THROWS_WITH_AS(r1 = true, "mib::node::check: r.1: invalid type: 4/1", xia::mib::error);
+        CHECK_THROWS_WITH_AS(r1 = false, "mib::node::check: r.1: invalid type: 4/1", xia::mib::error);
+        CHECK_THROWS_WITH_AS(r1 = int(1), "mib::node::check: r.1: invalid type: 4/2", xia::mib::error);
+        CHECK_THROWS_WITH_AS(r1 = 1, "mib::node::check: r.1: invalid type: 4/2", xia::mib::error);
+        CHECK_THROWS_WITH_AS(r1 = 1L, "mib::node::check: r.1: invalid type: 4/2", xia::mib::error);
+        CHECK_THROWS_WITH_AS(r1 = 1LL, "mib::node::check: r.1: invalid type: 4/2", xia::mib::error);
+        CHECK_THROWS_WITH_AS(r1 = ui, "mib::node::check: r.1: invalid type: 4/3", xia::mib::error);
+        CHECK_THROWS_WITH_AS(r1 = 1U, "mib::node::check: r.1: invalid type: 4/3", xia::mib::error);
+        CHECK_THROWS_WITH_AS(r1 = 1UL, "mib::node::check: r.1: invalid type: 4/3", xia::mib::error);
+        CHECK_THROWS_WITH_AS(r1 = 1ULL, "mib::node::check: r.1: invalid type: 4/3", xia::mib::error);
         CHECK_NOTHROW(r1 = 1.0);
         CHECK(r1.str() == "1.000000000");
         CHECK_NOTHROW(r1 = 1.123456789);
         CHECK(r1.str() == "1.123456789");
-        CHECK_THROWS_WITH_AS(r1 = ts, "mib::node::check: invalid type: 4/5", xia::mib::error);
+        CHECK_THROWS_WITH_AS(r1 = ts, "mib::node::check: r.1: invalid type: 4/5", xia::mib::error);
     }
     TEST_CASE("MIB: timestamp") {
         CHECK_NOTHROW(xia::mib::node("t.1", xia::mib::type::timestamp));
@@ -245,19 +245,19 @@ TEST_SUITE("xia::pixie::mib") {
         CHECK(t1.type_is() == xia::mib::type::timestamp);
         CHECK(t1.type_is() != xia::mib::type::string);
         CHECK(t1.is_enabled() == true);
-        CHECK_THROWS_WITH_AS(t1 = ss, "mib::node::check: invalid type: 5/0", xia::mib::error);
-        CHECK_THROWS_WITH_AS(t1 = sp, "mib::node::check: invalid type: 5/0", xia::mib::error);
-        CHECK_THROWS_WITH_AS(t1 = true, "mib::node::check: invalid type: 5/1", xia::mib::error);
-        CHECK_THROWS_WITH_AS(t1 = false, "mib::node::check: invalid type: 5/1", xia::mib::error);
-        CHECK_THROWS_WITH_AS(t1 = int(1), "mib::node::check: invalid type: 5/2", xia::mib::error);
-        CHECK_THROWS_WITH_AS(t1 = 1, "mib::node::check: invalid type: 5/2", xia::mib::error);
-        CHECK_THROWS_WITH_AS(t1 = 1L, "mib::node::check: invalid type: 5/2", xia::mib::error);
-        CHECK_THROWS_WITH_AS(t1 = 1LL, "mib::node::check: invalid type: 5/2", xia::mib::error);
-        CHECK_THROWS_WITH_AS(t1 = ui, "mib::node::check: invalid type: 5/3", xia::mib::error);
-        CHECK_THROWS_WITH_AS(t1 = 1U, "mib::node::check: invalid type: 5/3", xia::mib::error);
-        CHECK_THROWS_WITH_AS(t1 = 1UL, "mib::node::check: invalid type: 5/3", xia::mib::error);
-        CHECK_THROWS_WITH_AS(t1 = 1ULL, "mib::node::check: invalid type: 5/3", xia::mib::error);
-        CHECK_THROWS_WITH_AS(t1 = 1.0, "mib::node::check: invalid type: 5/4", xia::mib::error);
+        CHECK_THROWS_WITH_AS(t1 = ss, "mib::node::check: t.1: invalid type: 5/0", xia::mib::error);
+        CHECK_THROWS_WITH_AS(t1 = sp, "mib::node::check: t.1: invalid type: 5/0", xia::mib::error);
+        CHECK_THROWS_WITH_AS(t1 = true, "mib::node::check: t.1: invalid type: 5/1", xia::mib::error);
+        CHECK_THROWS_WITH_AS(t1 = false, "mib::node::check: t.1: invalid type: 5/1", xia::mib::error);
+        CHECK_THROWS_WITH_AS(t1 = int(1), "mib::node::check: t.1: invalid type: 5/2", xia::mib::error);
+        CHECK_THROWS_WITH_AS(t1 = 1, "mib::node::check: t.1: invalid type: 5/2", xia::mib::error);
+        CHECK_THROWS_WITH_AS(t1 = 1L, "mib::node::check: t.1: invalid type: 5/2", xia::mib::error);
+        CHECK_THROWS_WITH_AS(t1 = 1LL, "mib::node::check: t.1: invalid type: 5/2", xia::mib::error);
+        CHECK_THROWS_WITH_AS(t1 = ui, "mib::node::check: t.1: invalid type: 5/3", xia::mib::error);
+        CHECK_THROWS_WITH_AS(t1 = 1U, "mib::node::check: t.1: invalid type: 5/3", xia::mib::error);
+        CHECK_THROWS_WITH_AS(t1 = 1UL, "mib::node::check: t.1: invalid type: 5/3", xia::mib::error);
+        CHECK_THROWS_WITH_AS(t1 = 1ULL, "mib::node::check: t.1: invalid type: 5/3", xia::mib::error);
+        CHECK_THROWS_WITH_AS(t1 = 1.0, "mib::node::check: t.1: invalid type: 5/4", xia::mib::error);
         CHECK_NOTHROW(t1 = ts);
         CHECK(t1.str() == "0.000000001");
         CHECK_NOTHROW(t1 = xia::mib::timestamp(1123456789));
@@ -269,13 +269,13 @@ TEST_SUITE("xia::pixie::mib") {
         CHECK_NOTHROW(xia::mib::add(a1, xia::mib::type::string));
         CHECK_THROWS_WITH_AS(
             xia::mib::add(a1, xia::mib::type::integer),
-            "mib::add: mib already registered", xia::mib::error);
+            "mib::add: mib already registered: a.1", xia::mib::error);
         CHECK(xia::mib::contains(a1) == true);
         CHECK(xia::mib::contains("a.2") == false);
         CHECK_NOTHROW(xia::mib::add("a.2", xia::mib::type::string));
         CHECK_THROWS_WITH_AS(
             xia::mib::add("a.2", xia::mib::type::integer),
-            "mib::add: mib already registered", xia::mib::error);
+            "mib::add: mib already registered: a.2", xia::mib::error);
         CHECK(xia::mib::contains("a.2") == true);
     }
     TEST_CASE("MIB: read-only") {
@@ -547,5 +547,18 @@ TEST_SUITE("xia::pixie::mib") {
         CHECK(n.valid());
         CHECK(n.read_only());
         CHECK(n.write_locked());
+    }
+    TEST_CASE("MIB: remove nodes") {
+        xia::mib::node n1;
+        xia::mib::node n2;
+        CHECK_NOTHROW(n1 = xia::mib::find("a.1"));
+        CHECK_NOTHROW(n2 = n1);
+        CHECK_THROWS_WITH_AS(n2.remove(), "mib::remove: mib base has references: a.1", xia::mib::error);
+        CHECK(n2.valid() == true);
+        CHECK_NOTHROW(n2.reset());
+        CHECK(n2.valid() == false);
+        CHECK_NOTHROW(n1.remove());
+        CHECK(n1.valid() == false);
+        CHECK_THROWS_WITH_AS(n2 = xia::mib::find("a.1"), "mib::find: mib not found: a.1", xia::mib::error);
     }
 }

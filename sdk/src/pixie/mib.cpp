@@ -66,7 +66,7 @@ struct mib_nodes {
         }
     };
 
-    using nodes_type = std::map<name_type, node_base, name_cmp>;
+    using nodes_type = std::map<name_type, node_base_ptr, name_cmp>;
     using lock_type = std::mutex;
     using lock_guard = std::lock_guard<lock_type>;
 
@@ -80,12 +80,13 @@ struct mib_nodes {
     mib_nodes(const mib_nodes&& ) = delete;
     mib_nodes& operator=(const mib_nodes& ) = delete;
 
-    node_base& add(const name_type& name, const type type_, const bool enabled);
-    node_base& add(const char* name, const type type_, const bool enabled);
-    template<typename T> node_base& add(
+    node_base_ptr add(const name_type& name, const type type_, const bool enabled);
+    node_base_ptr add(const char* name, const type type_, const bool enabled);
+    template<typename T> node_base_ptr add(
         const name_type& name, const T& val, const bool enabled);
-    node_base& find(const name_type& name);
-    node_base& find(const char* name);
+    void remove(node_base_ptr& base);
+    node_base_ptr find(const name_type& name);
+    node_base_ptr find(const char* name);
     bool contains(const name_type& name);
     void walk(mib_walk_func& walk_func);
 };
@@ -94,21 +95,21 @@ mib_nodes mib;
 
 mib_nodes::mib_nodes() {}
 
-node_base& mib_nodes::add(const name_type& name, const type type_, const bool enabled) {
+node_base_ptr mib_nodes::add(const name_type& name, const type type_, const bool enabled) {
     if (name.empty()) {
         throw error(error::code::invalid_value, "mib::add: name empty");
     }
     lock_guard guard(lock);
-    auto ni = nodes.emplace(
-        std::piecewise_construct, std::forward_as_tuple(name),
-        std::forward_as_tuple(name, type_, enabled));
+    auto ni = nodes.emplace(name, std::make_shared<node_base>(name, type_, enabled));
     if (!ni.second) {
-        throw error(error::code::invalid_value, "mib::add: mib already registered");
+        throw error(
+          error::code::invalid_value,
+          "mib::add: mib already registered: " + name);
     }
     return (*ni.first).second;
 }
 
-node_base& mib_nodes::add(const char* name, const type type_, const bool enabled) {
+node_base_ptr mib_nodes::add(const char* name, const type type_, const bool enabled) {
     if (name == nullptr) {
         throw error(error::code::invalid_value, "mib::add: name empty");
     }
@@ -116,21 +117,47 @@ node_base& mib_nodes::add(const char* name, const type type_, const bool enabled
 }
 
 template<typename T>
-node_base& mib_nodes::add(const name_type& name, const T& val, const bool enabled) {
+node_base_ptr mib_nodes::add(const name_type& name, const T& val, const bool enabled) {
     if (name.empty()) {
         throw error(error::code::invalid_value, "mib::add: name empty");
     }
     lock_guard guard(lock);
-    auto ni = nodes.emplace(
-        std::piecewise_construct, std::forward_as_tuple(name),
-        std::forward_as_tuple(name, val, enabled));
+    auto ni = nodes.emplace(name, std::make_shared<node_base>(name, val, enabled));
     if (!ni.second) {
-        throw error(error::code::invalid_value, "mib::add: mib already registered");
+        throw error(
+          error::code::invalid_value,
+          "mib::add: mib already registered: " + name);
     }
     return (*ni.first).second;
 }
 
-node_base& mib_nodes::find(const name_type& name) {
+void mib_nodes::remove(node_base_ptr& base) {
+    lock_guard guard(lock);
+    base->lock.lock();
+    auto ni = nodes.find(base->name);
+    if (ni == nodes.end()) {
+        base->lock.unlock();
+        throw error(
+            error::code::internal_failure,
+            "mib::remove: mib not found: " + base->name);
+    }
+    /*
+     * Chekc if the base passed in is the one in the container. It
+     * should never be possible but changes could let it happen.
+     */
+    if (base.use_count() > 2 ||
+        (&base == &(*ni).second && base.use_count() > 1)) {
+        base->lock.unlock();
+        throw error(
+            error::code::internal_failure,
+            "mib::remove: mib base has references: " + base->name);
+    }
+    nodes.erase(ni);
+    base->lock.unlock();
+    base.reset();
+}
+
+node_base_ptr mib_nodes::find(const name_type& name) {
     if (name.empty()) {
         throw error(error::code::invalid_value, "mib::add: name empty");
     }
@@ -142,7 +169,7 @@ node_base& mib_nodes::find(const name_type& name) {
     return (*ni).second;
 }
 
-node_base& mib_nodes::find(const char* name) {
+node_base_ptr mib_nodes::find(const char* name) {
     if (name == nullptr) {
         throw error(error::code::invalid_value, "mib::add: name empty");
     }
@@ -186,7 +213,8 @@ node_base::node_base(const name_type& name_, const type type__, const bool enabl
      */
     switch (type_) {
     default:
-        throw error(error::code::internal_failure, "mib::node: invalid type");
+        throw error(
+            error::code::internal_failure, "mib::node: invalid type: " + name);
         break;
     case type::string:
         v.s = std::string();
@@ -244,7 +272,8 @@ bool node_base::is_enabled() {
 void node_base::check(const type type__) {
     if (type_ != type__) {
         std::ostringstream oss;
-        oss << "mib::node::check: invalid type: " << int(type_) << '/' << int(type__);
+        oss << "mib::node::check: " << name
+            << ": invalid type: " << int(type_) << '/' << int(type__);
         throw error(error::code::invalid_value, oss.str());
     }
 }
@@ -393,31 +422,39 @@ void node::check_base() const {
 }
 
 node::node(const name_type& name, const type type_, const bool enabled)
-    : base(&mib.add(name, type_, enabled)) {
+    : base(mib.add(name, type_, enabled)) {
 }
 
 node::node(const char* name, const type type_, const bool enabled)
-    : base(&mib.add(name, type_, enabled)) {
+    : base(mib.add(name, type_, enabled)) {
 }
 
 node::node(const name_type& name)
-    : base(&mib.find(name)) {
+    : base(mib.find(name)) {
 }
 
 node::node(const char* name)
-    : base(&mib.find(name)) {
+    : base(mib.find(name)) {
 }
 
-node::node()
-    : base(nullptr) {
-}
+node::node() {}
 
 node::node(const node& orig)
     : base(orig.base) {
 }
 
-node::node(node_base& base_)
-    : base(&base_) {
+node::node(node_base_ptr base_)
+    : base(base_) {
+}
+
+void node::remove() {
+    if (valid()) {
+        mib.remove(base);
+    }
+}
+
+void node::reset() {
+    base.reset();
 }
 
 node& node::operator=(const node& other) {
@@ -621,6 +658,14 @@ void add_ro_timestamp(const char* name, const timestamp& val, const bool enabled
         throw error(error::code::invalid_value, "mib::add: name empty");
     }
     mib.add(name_type(name), val, enabled);
+}
+
+void remove(const name_type& name) {
+    node(name).remove();
+}
+
+void remove(const char* name) {
+    node(name).remove();
 }
 
 node find(const name_type& name) {
