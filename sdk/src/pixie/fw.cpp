@@ -298,7 +298,7 @@ void firmware::load() {
                 file.close();
             }
             std::stringstream error_tag;
-            error_tag << e.what() <<  ": " << tag;
+            error_tag << e.what() <<  ": " << tag << ": " << filename;
             throw error(e.type, error_tag.str());
         } catch (...) {
             if (file.valid()) {
