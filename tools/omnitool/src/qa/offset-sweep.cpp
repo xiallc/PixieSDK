@@ -488,10 +488,11 @@ void offset_sweep(command::context& context) {
     auto datetime = xia::util::time::datetime_iso8601();
     util::time::datetime_iso8601_as_filename(datetime);
     thread::set_num_slot(crate, mod_nums, offset_sweeps);
-    for (auto mod_num : mod_nums) {
+    for (size_t mn = 0; mn < mod_nums.size(); ++mn) {
+        auto mod_num = mod_nums[mn];
         pixie::channel::range channels;
         command::channels_option(channels, chans_opt, crate[mod_num].num_channels);
-        auto& worker = offset_sweeps[mod_num];
+        auto& worker = offset_sweeps[mn];
         worker.channels = channels;
         worker.dac_settle_usec = dac_settle_msec * 1000UL;
         worker.offset_start = offset_start;
