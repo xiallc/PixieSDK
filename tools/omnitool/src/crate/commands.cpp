@@ -63,9 +63,9 @@ static const xia::omnitool::command::definition fw_report_cmd = {
     "Crate", "/crate/firmware/report",
     omnitool_command_handers(fw_report),
     {"init"},
-    0, 1, 0,
+    0, 2, 0,
     {},
-    "[file]",
+    "[file [module]]",
     "Report on the system's firmware"
 };
 

@@ -122,6 +122,20 @@ void fw_report(pixie::crate::crate& crate, std::ostream& out);
  * @param out The stream to write the report to
  */
 void fw_report(pixie::crate::crate& crate, std::string& out);
+/**
+ * A report for a crate's firmware
+ * @param crate The crate holding the firmware
+ * @param out The stream to write the report to
+ * @param module The module to report on
+ */
+void fw_report(pixie::crate::crate& crate, std::ostream& out, pixie::module::module& mod);
+/**
+ * A report for a crate's firmware
+ * @param crate The crate holding the firmware
+ * @param out The stream to write the report to
+ * @param module The module to report on
+ */
+void fw_report(pixie::crate::crate& crate, std::string& out, pixie::module::module& mod);
 
 /*
  * Serialises a JSON object into std::string

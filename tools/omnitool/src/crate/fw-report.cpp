@@ -28,6 +28,7 @@
 #include <pixie/reports/reports.hpp>
 
 #include <omnitool-commands.hpp>
+#include <omnitool-completions.hpp>
 
 namespace xia {
 namespace omnitool {
@@ -35,6 +36,7 @@ namespace crate {
 void fw_report(command::context& context) {
     auto& crate = context.crate;
     auto file_opt = context.cmd.get_arg();
+    auto mod_nums_opt = context.cmd.get_arg();
     if (!file_opt.empty()) {
         std::ofstream out(file_opt);
         if (!out) {
@@ -42,13 +44,22 @@ void fw_report(command::context& context) {
                 std::string(
                     "opening report: " + file_opt + ": " + std::strerror(errno)));
         }
-        reports::fw_report(crate, out);
-    } else {
+        command::module_range mod_nums;
+        command::modules_option(mod_nums, mod_nums_opt, crate.get_modules());
+        if (mod_nums.size() == 1) {
+            reports::fw_report(crate, out, crate[mod_nums[0]]);
+        } else if (mod_nums.empty()) {
+            reports::fw_report(crate, out);
+        } else {
+            throw std::runtime_error("Can only report one module at a time.");
+        }
     }
     crate->output_firmware(context.opts.out);
 }
 
-void fw_report_comp(command::context& , command::completion& ) {
+void fw_report_comp(command::context& context, command::completion& completions) {
+    const std::string cmd = context.cmd.def.name;
+    command::completions::module_completions(context, cmd, 2, completions);
 }
 } // namespace crate
 } // namespace omnitool

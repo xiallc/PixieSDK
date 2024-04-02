@@ -61,5 +61,45 @@ void fw_report(pixie::crate::crate& crate, std::string& out) {
     fw_report(crate, rpt);
     out = rpt.dump();
 }
+
+static void fw_report(pixie::crate::crate& crate, pixie::format::json& jfws,
+    pixie::module::module& mod) {
+    for (auto& fws : crate.firmware) {
+        for (auto fw_set : std::get<1>(fws)) {
+            if (fw_set->tag() == mod.get_fw_tag()) {
+                pixie::format::json fw_set_info;
+                fw_set_info["release"] = fw_set->release.to_string();
+                fw_set_info["release-data"] = fw_set->release_date;
+                fw_set_info["tag"] = fw_set->tag();
+                fw_set_info["resident"] = mod.firmware_resident(fw_set->release);
+                for (auto fw : fw_set->firmwares) {
+                    pixie::format::json fw_file;
+                    fw_file["version"] = fw->version;
+                    fw_file["filename"] = fw->filename;
+                    fw_file["crc32"] = fw->crc;
+                    if (fw->device.name == "fippi") {
+                        fw_file["mask"] = fw->mask;
+                        fw_set_info["device"][fw->device.name].push_back(fw_file);
+                    } else {
+                        fw_set_info["device"][fw->device.name] = fw_file;
+                    }
+                }
+                jfws.push_back(fw_set_info);
+            }
+        }
+    }
+}
+
+void fw_report(pixie::crate::crate& crate, std::ostream& out, pixie::module::module& mod) {
+    pixie::format::json rpt;
+    fw_report(crate, rpt, mod);
+    out << rpt;
+}
+
+void fw_report(pixie::crate::crate& crate, std::string& out, pixie::module::module& mod) {
+    pixie::format::json rpt;
+    fw_report(crate, rpt, mod);
+    out = rpt.dump();
+}
 }
 }
