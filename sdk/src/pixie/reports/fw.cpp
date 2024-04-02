@@ -26,8 +26,7 @@
 namespace xia {
 namespace reports {
 
-void fw_report(pixie::crate::crate& crate, std::ostream& out) {
-    pixie::format::json jfws = pixie::format::json::array();
+static void fw_report(pixie::crate::crate& crate, pixie::format::json& jfws) {
     for (auto& fws : crate.firmware) {
         for (auto fw_set : std::get<1>(fws)) {
             pixie::format::json fw_set_info;
@@ -49,7 +48,18 @@ void fw_report(pixie::crate::crate& crate, std::ostream& out) {
             jfws.push_back(fw_set_info);
         }
     }
-    out << jfws;
+}
+
+void fw_report(pixie::crate::crate& crate, std::ostream& out) {
+    pixie::format::json rpt;
+    fw_report(crate, rpt);
+    out << rpt;
+}
+
+void fw_report(pixie::crate::crate& crate, std::string& out) {
+    pixie::format::json rpt;
+    fw_report(crate, rpt);
+    out = rpt.dump();
 }
 }
 }
