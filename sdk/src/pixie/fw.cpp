@@ -1356,33 +1356,6 @@ void load_firmwares(system& firmwares, const char* path, bool ignore_error) {
         load_firmware_set(firmwares, md, ignore_error);
     }
 }
-
-void system_fw_report(std::ostream& out, system& firmwares) {
-    format::json jfws = format::json::array();
-    for (auto& fws : firmwares) {
-        for (auto fw_set : std::get<1>(fws)) {
-            format::json fw_set_info;
-            fw_set_info["release"] = fw_set->release.to_string();
-            fw_set_info["release-data"] = fw_set->release_date;
-            fw_set_info["tag"] = fw_set->tag();
-            format::json jfw = format::json::array();
-            for (auto fw : fw_set->firmwares) {
-                format::json fw_info;
-                fw_info["tag"] = fw->tag;
-                fw_info["version"] = fw->version;
-                fw_info["mod-revision"] = fw->device.mod_revision;
-                fw_info["adc-msps"] = fw->device.mod_adc_msps;
-                fw_info["adc-bits"] = fw->device.mod_adc_bits;
-                fw_info["device"] = fw->device.name;
-                fw_info["file"] = fw->filename;
-                fw_info["crc32"] = fw->crc;
-                jfw.push_back(fw_info);
-            }
-            jfws.push_back(fw_set_info);
-        }
-    }
-    out << jfws;
-}
 };  // namespace firmware
 };  // namespace pixie
 };  // namespace xia

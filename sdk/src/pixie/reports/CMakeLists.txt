@@ -4,5 +4,6 @@ set(SDK_REPORT_SOURCES
         reports/channel.cpp
         reports/stats.cpp
         reports/fixture.cpp
+        reports/fw.cpp
         reports/hw.cpp
         PARENT_SCOPE)

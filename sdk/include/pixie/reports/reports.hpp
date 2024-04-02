@@ -110,6 +110,12 @@ void report(pixie::crate::crate& crate, pixie::format::json& out, pixie::hw::slo
  * @param out The stream to write the report to
  */
 void stats_report(pixie::module::module& module, std::ostream& out);
+/**
+ * A report for a crate's firmware
+ * @param crate The crate to report on
+ * @param out The stream to write the report to
+ */
+void fw_report(pixie::crate::crate& crate, std::ostream& out);
 
 /*
  * Serialises a JSON object into std::string

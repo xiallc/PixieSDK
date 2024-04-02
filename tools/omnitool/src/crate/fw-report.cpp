@@ -25,6 +25,7 @@
 
 #include <pixie/pixie16/crate.hpp>
 #include <pixie/pixie16/module.hpp>
+#include <pixie/reports/reports.hpp>
 
 #include <omnitool-commands.hpp>
 
@@ -41,7 +42,7 @@ void fw_report(command::context& context) {
                 std::string(
                     "opening report: " + file_opt + ": " + std::strerror(errno)));
         }
-        pixie::firmware::system_fw_report(out, crate->firmware);
+        reports::fw_report(crate, out);
     } else {
     }
     crate->output_firmware(context.opts.out);

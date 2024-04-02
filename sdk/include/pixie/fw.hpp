@@ -747,14 +747,6 @@ void load_firmwares(
  * @param ignore_error If true ignore any error
 */
 void load_firmwares(system& firmwares, const char* path, bool ignore_error = false);
-
-/**
- * @brief Get a report of all the firmware files in the system
- *
- * @param out Where to output the firmware report
- * @param firmwares The firmwares to report
-*/
-void system_fw_report(std::ostream& out, system& firmwares);
 }  // namespace firmware
 }  // namespace pixie
 }  // namespace xia
