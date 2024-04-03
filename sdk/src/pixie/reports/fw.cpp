@@ -34,18 +34,17 @@ void fw_report(pixie::crate::crate& crate, std::ostream& out) {
             fw_set_info["release"] = fw_set->release.to_string();
             fw_set_info["release-data"] = fw_set->release_date;
             fw_set_info["tag"] = fw_set->tag();
-            pixie::format::json jfw = pixie::format::json::array();
             for (auto fw : fw_set->firmwares) {
-                pixie::format::json fw_info;
-                fw_info["tag"] = fw->tag;
-                fw_info["version"] = fw->version;
-                fw_info["mod-revision"] = fw->device.mod_revision;
-                fw_info["adc-msps"] = fw->device.mod_adc_msps;
-                fw_info["adc-bits"] = fw->device.mod_adc_bits;
-                fw_info["device"] = fw->device.name;
-                fw_info["file"] = fw->filename;
-                fw_info["crc32"] = fw->crc;
-                jfw.push_back(fw_info);
+                pixie::format::json fw_file;
+                fw_file["version"] = fw->version;
+                fw_file["filename"] = fw->filename;
+                fw_file["crc32"] = fw->crc;
+                if (fw->device.name == "fippi") {
+                    fw_file["mask"] = fw->mask;
+                    fw_set_info["device"][fw->device.name].push_back(fw_file);
+                } else {
+                    fw_set_info["device"][fw->device.name] = fw_file;
+                }
             }
             jfws.push_back(fw_set_info);
         }
