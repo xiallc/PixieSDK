@@ -601,7 +601,7 @@ const size_t module::max_fifo_dma_trigger_level = hw::max_dma_block_size;
 
 module::module(backplane::backplane& backplane_)
     : slot(hw::slot_invalid), number(-1), serial_num(0), revision(0), major_revision(0),
-      minor_revision(0), num_channels(0), vmaddr(nullptr), open_count(0), backplane(backplane_),
+      minor_revision(0), num_channels(0), max_channels(0), vmaddr(nullptr), open_count(0), backplane(backplane_),
       eeprom_format(-1), run_task(hw::run::run_task::nop), control_task(hw::run::control_task::nop),
       fifo_buffers(default_fifo_buffers), fifo_run_wait_usecs(default_fifo_run_wait_usec),
       fifo_idle_wait_usecs(default_fifo_idle_wait_usec), fifo_hold_usecs(default_fifo_hold_usec),
@@ -616,7 +616,7 @@ module::module(backplane::backplane& backplane_)
 
 module::module(module&& m)
     : slot(m.slot), number(m.number), serial_num(m.serial_num), revision(m.revision),
-      major_revision(0), minor_revision(0), num_channels(m.num_channels), vmaddr(m.vmaddr),
+      major_revision(0), minor_revision(0), num_channels(m.num_channels), max_channels(m.max_channels), vmaddr(m.vmaddr),
       open_count(m.open_count), backplane(m.backplane), eeprom(m.eeprom), eeprom_format(m.eeprom_format),
       module_var_descriptors(std::move(m.module_var_descriptors)),
       module_vars(std::move(m.module_vars)),
@@ -645,6 +645,7 @@ module::module(module&& m)
     m.major_revision = 0;
     m.minor_revision = 0;
     m.num_channels = 0;
+    m.max_channels = 0;
     m.vmaddr = nullptr;
     m.open_count = 0;
     m.eeprom.clear();
