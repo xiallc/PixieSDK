@@ -603,4 +603,51 @@ TEST_SUITE("xia::util") {
         v1.from_string("5.6.7");
         CHECK(v1 > v2);
     }
+
+    TEST_CASE("token editor") {
+        xia::util::string::token_editor te1("a,b,e,c");
+        CHECK(te1.get() == "a,b,c,e");
+        CHECK_NOTHROW(te1.add("d"));
+        CHECK(te1.get() == "a,b,c,d,e");
+        CHECK_NOTHROW(te1.add("z"));
+        CHECK(te1.get() == "a,b,c,d,e,z");
+        CHECK_NOTHROW(te1.remove("z"));
+        CHECK(te1.get() == "a,b,c,d,e");
+        xia::util::string::token_editor te2;
+        CHECK_NOTHROW(te2 = "1,4,3,7,2,8");
+        CHECK(te2.get() == "1,2,3,4,7,8");
+        CHECK(te2.has("7") == true);
+        CHECK(te2.has("5") == false);
+        xia::util::string::token_editor te3("red:abc,blue:123,green:###", ',', false);
+        CHECK(te3.get() == "red:abc,blue:123,green:###");
+        CHECK_NOTHROW(te3.update("^red", "red:efg"));
+        CHECK(te3.get() == "red:efg,blue:123,green:###");
+        CHECK_NOTHROW(te3.update("^pink", "pink:xyz"));
+        CHECK(te3.get() == "red:efg,blue:123,green:###,pink:xyz");
+        std::string s1 = "aaa,ggg,jabc,jcde,jbcd";
+        xia::util::string::token_editor te4(s1);
+        CHECK(te4.get() == "aaa,ggg,jabc,jbcd,jcde");
+        std::string s2 = "3335,3334,567,0123,jbcd";
+        CHECK_NOTHROW(te4.set(s2));
+        CHECK(te4.get() == "0123,3334,3335,567,jbcd");
+        CHECK_NOTHROW(te4.tokens.clear());
+        CHECK_NOTHROW(te4 = s2);
+        CHECK(te4.get() == "0123,3334,3335,567,jbcd");
+        CHECK_NOTHROW(te4.set("test:123,test:456,test:789"));
+        CHECK_THROWS_WITH_AS(
+            te4.update("^test:", "xxx"),
+            "token edit: multiple tokens match: ^test:",
+            std::runtime_error);
+        CHECK_NOTHROW(
+            te4.update("^test:", [](std::string& token) {
+                if (token == "test:123") {
+                    token = "test:abc";
+                    return true;
+                }
+                return false;
+            }));
+        CHECK(te4.get() == "test:456,test:789,test:abc");
+        CHECK_NOTHROW(te4.remove("^test:"));
+        CHECK(te4.tokens.empty() == true);
+    }
 }

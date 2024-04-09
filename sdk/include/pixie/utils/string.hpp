@@ -23,6 +23,7 @@
 #ifndef PIXIESDK_UTIL_STRING_HPP
 #define PIXIESDK_UTIL_STRING_HPP
 
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -139,6 +140,48 @@ bool check_number(const std::string& s);
  */
 bool check_number_range(const std::string& s);
 
+/**
+ * @brief Token editor splits a string by a token separator allowing
+ * you to add, edit or remove tokens. You can export the list as a
+ * string. This is useful for holding state information in MIB
+ * strings. Removing and updating uses a regular expression string to
+ * find the token.
+ */
+struct token_editor {
+    using edit_func = std::function<bool(std::string& token)>;
+
+    strings tokens;
+    char separator;
+    bool sorted;
+
+    token_editor(const std::string& str, char separator =',', bool sort = true);
+    token_editor(const char* str, char separator =',', bool sort = true);
+    token_editor();
+    token_editor(const token_editor& orig);
+
+    void set(const std::string& str);
+    void set(const char* str);
+    std::string get() const;
+
+    bool has(const std::string& token) const;
+    bool has(const char* token) const;
+
+    void add(const std::string& token);
+    void add(const char* token);
+
+    void remove(const std::string& token_regx);
+    void remove(const char* token_regx);
+
+    void update(const std::string& token_regx, const std::string& token);
+    void update(const char* token_regx, const char* token);
+    void update(const std::string& token_regx, edit_func editor);
+    void update(const char* token_regx, edit_func editor);
+
+    void sort();
+
+    token_editor& operator=(const std::string& str);
+    token_editor& operator=(const char* str);
+};
 } // namespace string
 } // namespace util
 } // namespace xia

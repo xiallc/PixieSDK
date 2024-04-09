@@ -122,6 +122,150 @@ bool check_number_range(const std::string& s) {
     }
     throw std::runtime_error("invalid range: " + s);
 }
+
+token_editor::token_editor(const std::string& str, char separator_, bool sort_)
+    : separator(separator_), sorted(sort_) {
+    set(str);
+}
+
+token_editor::token_editor(const char* str, char separator_, bool sort_)
+    : separator(separator_), sorted(sort_) {
+    set(str);
+}
+
+token_editor::token_editor() : separator(','), sorted(true) {
+}
+
+token_editor::token_editor(const token_editor& orig)
+    : separator(orig.separator), sorted(orig.sorted) {
+}
+
+void token_editor::set(const std::string& str) {
+    split(tokens, str, separator);
+    sort();
+}
+
+void token_editor::set(const char* str) {
+    split(tokens, str, separator);
+    sort();
+}
+
+std::string token_editor::get() const {
+    return join(tokens, separator);
+}
+
+bool token_editor::has(const std::string& token) const {
+    return has(token.c_str());
+}
+
+bool token_editor::has(const char* token) const {
+    auto ti = std::find_if(
+        std::begin(tokens), std::end(tokens),
+        [token](const std::string& t) {
+            return t == token;
+        });
+    return ti != std::end(tokens);
+}
+
+void token_editor::add(const std::string& token) {
+    tokens.push_back(token);
+    sort();
+}
+
+void token_editor::add(const char* token) {
+    tokens.push_back(token);
+    sort();
+}
+
+void token_editor::remove(const std::string& token_regx) {
+    remove(token_regx.c_str());
+}
+
+void token_editor::remove(const char* token_regx) {
+    std::regex token_match(token_regx);
+    /*
+     * No C++-20 and std:;erase_if to handle the invalidated iterator
+     */
+    bool updated = false;
+    bool erased = true;
+    while (erased) {
+        erased = false;
+        for (auto ti = std::begin(tokens); ti != std::end(tokens); ++ti) {
+            if (std::regex_search(*ti, token_match)) {
+                tokens.erase(ti);
+                erased = true;
+                updated = true;
+                break;
+            }
+        }
+    }
+    if (updated) {
+        sort();
+    }
+}
+
+void token_editor::update(const std::string& token_regx, const std::string& token) {
+    update(token_regx.c_str(), token.c_str());
+}
+
+void token_editor::update(const char* token_regx, const char* token) {
+    std::regex token_match(token_regx);
+    auto count = std::count_if(
+        std::begin(tokens), std::end(tokens),
+        [&token_match](const std::string& t) {
+            return std::regex_search(t, token_match);
+        });
+    if (count > 1) {
+        throw std::runtime_error(
+            std::string("token edit: multiple tokens match: ") + token_regx);
+    }
+    auto ti = std::find_if(
+        std::begin(tokens), std::end(tokens),
+        [&token_match](const std::string& t) {
+            return std::regex_search(t, token_match);
+        });
+    if (ti != std::end(tokens)) {
+        *ti = token;
+    } else {
+        add(token);
+    }
+    sort();
+}
+
+void token_editor::update(const std::string& token_regx, edit_func editor) {
+    update(token_regx.c_str(), editor);
+}
+
+void token_editor::update(const char* token_regx, edit_func editor) {
+    std::regex token_match(token_regx);
+    bool updated = false;
+    for (auto& token : tokens) {
+        if (std::regex_search(token, token_match)) {
+            if (editor(token)) {
+                updated = true;
+            }
+        }
+    }
+    if (updated) {
+        sort();
+    }
+}
+
+void token_editor::sort() {
+    if (sorted) {
+        std::sort(std::begin(tokens), std::end(tokens));
+    }
+}
+
+token_editor& token_editor::operator=(const std::string& str) {
+    set(str);
+    return *this;
+}
+
+token_editor& token_editor::operator=(const char* str) {
+    set(str);
+    return *this;
+}
 }
 }
 }
