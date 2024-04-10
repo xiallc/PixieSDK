@@ -791,7 +791,7 @@ bool module::present() const {
     return device && device->device_number >= 0;
 }
 
-bool module::hardware_accessable() const {
+bool module::hardware_accessible() const {
     return have_hardware;
 }
 
@@ -1851,7 +1851,7 @@ param::value_type module::read_var(param::module_var var, size_t offset, bool io
     param::value_type value;
     {
         lock_guard guard(lock_);
-        if (hardware_accessable() && io) {
+        if (hardware_accessible() && io) {
             hw::memory::dsp dsp(*this);
             hw::word mem = dsp.read(offset, desc.address);
             hw::convert(mem, value);
@@ -1893,7 +1893,7 @@ param::value_type module::read_var(param::channel_var var, size_t channel, size_
     param::value_type value;
     {
         lock_guard guard(lock_);
-        if (hardware_accessable() && io) {
+        if (hardware_accessible() && io) {
             hw::memory::dsp dsp(*this);
             hw::convert(dsp.read(channel, offset, desc.address), value);
             channels[channel].vars[index].value[offset].value = value;
@@ -1946,7 +1946,7 @@ void module::write_var(param::module_var var, param::value_type value, size_t of
     lock_guard guard(lock_);
     module_vars[index].value[offset].value = value;
     module_vars[index].value[offset].dirty = true;
-    if (hardware_accessable() && io) {
+    if (hardware_accessible() && io) {
         hw::word word;
         hw::convert(value, word);
         hw::memory::dsp dsp(*this);
@@ -1984,7 +1984,7 @@ void module::write_var(param::channel_var var, param::value_type value, size_t c
     lock_guard guard(lock_);
     channels[channel].vars[index].value[offset].value = value;
     channels[channel].vars[index].value[offset].dirty = true;
-    if (hardware_accessable() && io) {
+    if (hardware_accessible() && io) {
         hw::word word;
         hw::convert(value, word);
         hw::memory::dsp dsp(*this);
@@ -1997,7 +1997,7 @@ void module::sync_vars(const sync_var_mode sync_mode) {
     online_check();
     xia_log(log::info) << module_label(*this) << "sync variables: mode: "
                        << (char*) (sync_mode == sync_to_dsp ? "to dsp" : "from dsp");
-    if (!hardware_accessable()) {
+    if (!hardware_accessible()) {
         return;
     }
     lock_guard guard(lock_);
@@ -2677,7 +2677,7 @@ void module::mib_disable() {
 void module::module_csrb(param::value_type value, size_t offset, bool io) {
     backplane_csrb(value);
     write_var(param::module_var::ModCSRB, value, offset, io);
-    if (io) {
+    if (hardware_accessible() && io) {
         hw::run::control(*this, hw::run::control_task::program_fippi);
         sync_csrb();
     }
@@ -2697,7 +2697,7 @@ void module::slow_filter_range(param::value_type value, size_t offset, bool io) 
 
     write_var(param::module_var::SlowFilterRange, value, offset, io);
 
-    if (io) {
+    if (hardware_accessible() && io) {
         value = 1 << read_var(param::module_var::FastFilterRange, 0, false);
         for (size_t channel = 0; channel < num_channels; ++channel) {
             param::value_type paf_length =
@@ -2731,7 +2731,7 @@ void module::fast_filter_range(param::value_type value, size_t offset, bool io) 
 
     write_var(param::module_var::FastFilterRange, value, offset, io);
 
-    if (io) {
+    if (hardware_accessible() && io) {
         param::value_type last_ffr = 1 << read_var(param::module_var::FastFilterRange, 0, false);
 
         for (size_t channel = 0; channel < num_channels; ++channel) {

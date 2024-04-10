@@ -733,6 +733,26 @@ TEST_SUITE("Crate: modules") {
             }
         }
     }
+    TEST_CASE("sim read/write") {
+        using namespace xia::pixie;
+        using namespace xia::pixie::param;
+        sim::crate sim_crate;
+        sim::load_firmware_sets(sim_crate.firmware, firmware_defs);
+        crate::view::module crate(sim_crate);
+        CHECK_NOTHROW(crate->initialize());
+        CHECK_NOTHROW(crate->probe());
+        CHECK_NOTHROW(crate->boot());
+        CHECK(crate[0].read("MODULE_CSRB") == 0);
+        CHECK(crate[0].read("SLOW_FILTER_RANGE") == 0);
+        CHECK(crate[0].read("FAST_FILTER_RANGE") == 0);
+        CHECK_NOTHROW(crate[0].write("MODULE_CSRB", 4));
+        CHECK_NOTHROW(crate[0].write("SLOW_FILTER_RANGE", 6));
+        CHECK_NOTHROW(crate[0].write("FAST_FILTER_RANGE", 3));
+        CHECK(crate[0].read("MODULE_CSRB") == 4);
+        CHECK(crate[0].read("SLOW_FILTER_RANGE") == 6);
+        /* fast filter range can only be set to 0 currently */
+        CHECK(crate[0].read("FAST_FILTER_RANGE") == 0);
+    }
     TEST_CASE("TEARDOWN") {
         xia::logging::stop("log");
     }

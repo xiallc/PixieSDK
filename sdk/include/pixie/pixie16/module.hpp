@@ -456,7 +456,7 @@ public:
     /**
      * Is the hardware accessable?
      */
-    bool hardware_accessable() const;
+    bool hardware_accessible() const;
 
     /**
      * Is the slot number valid?
