@@ -45,16 +45,17 @@ namespace memory {
 /*
  * Bus addresses
  */
-static const address IO_BUFFER_ADDR = 0x00050000; /* R */
-static const address FIFO_MEM_DMA = 0x00200000; /* R */
-static const address DSP_MEM_DMA = 0x00300000; /* R */
-static const address MCA_MEM_DMA = 0x00400000; /* R */
-static const address MCA_MEM_DATA = 0x00400000; /* R W */
+static constexpr address IO_BUFFER_ADDR = 0x00050000; /* R */
+static constexpr address FIFO_MEM_DMA = 0x00200000; /* R */
+static constexpr address DSP_MEM_DMA = 0x00300000; /* R */
+static constexpr address MCA_MEM_DMA = 0x00400000; /* R */
+static constexpr address MCA_MEM_DATA = 0x00400000; /* R W */
 
 /*
  * MCA addresses
  */
-static const address HISTOGRAM_MEMORY = 0x00000000;
+static constexpr address HISTOGRAM_MEMORY = 0x00000000;
+static constexpr size_t MCA_MEMORY_LENGTH = 0x80000;
 
 /**
  * @brief Defines a memory bus for low level communication with the hardware.
@@ -158,6 +159,7 @@ struct mca : public bus {
     void read(const address addr, words& values);
     void read(const address addr, word_ptr values, size_t size);
     void write(const address addr, const words& values);
+    void write(const address addr, const_word_ptr values, const size_t size);
 };
 
 /**

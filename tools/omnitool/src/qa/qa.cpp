@@ -48,9 +48,21 @@ static const command::definition adc_sweet_spot_cmd = {
     "Channel ADC sweet spot test"
 };
 
+omnitool_command_handler_decl(mca_mem);
+static const command::definition mca_mem_cmd = {
+    "QA", "/qa/mca_mem",
+    omnitool_command_handers(mca_mem),
+    {"init", "probe"},
+    0, 5, 0,
+    {},
+    "[module(s) [legacy] [alias] [bitwalk] [checker]]",
+    "MCA Memory tests"
+};
+
 static const command::definitions commands = {
     offset_sweep_cmd,
-    adc_sweet_spot_cmd
+    adc_sweet_spot_cmd,
+    mca_mem_cmd
 };
 
 void register_commands() {

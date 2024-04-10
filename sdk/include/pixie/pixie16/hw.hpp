@@ -156,6 +156,11 @@ typedef uint32_t word;
 typedef word* word_ptr;
 
 /**
+ * @brief defines a type for a const pointer to a word
+ */
+typedef const word* const_word_ptr;
+
+/**
  * @brief Defines a type for a vector of words. Used to handle blocks of memory.
  */
 typedef std::vector<word> words;

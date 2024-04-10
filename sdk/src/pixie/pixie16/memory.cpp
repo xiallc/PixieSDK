@@ -208,6 +208,10 @@ void mca::read(const address addr, word_ptr values, size_t size) {
 }
 
 void mca::write(const address addr, const words& values) {
+    write(addr, values.data(), values.size());
+}
+
+void mca::write(const address addr, const_word_ptr values, const size_t size) {
     module::module::bus_guard guard(module);
 
     /*
@@ -216,8 +220,8 @@ void mca::write(const address addr, const words& values) {
     csr::set_clear csr(module, 1 << hw::bit::PCIACTIVE);
 
     bus_write(hw::device::WRT_EXT_MEM, addr);
-    for (auto value : values) {
-        bus_write(MCA_MEM_DATA, value);
+    for (size_t i = 0; i < size; i++) {
+        bus_write(MCA_MEM_DATA, values[i]);
     }
 }
 
