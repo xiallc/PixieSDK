@@ -679,6 +679,8 @@ module::module(module&& m)
     m.test_mode = test::off;
     m.mibs_size_t_rw.clear();
     m.mibs_double_rw.clear();
+    m.hw_word_read = nullptr;
+    m.hw_word_write = nullptr;
 }
 
 module::~module() {
@@ -783,6 +785,8 @@ module& module::operator=(module&& m) {
     m.persistent = m.persistent;
     m.mibs_size_t_rw = std::move(m.mibs_size_t_rw);
     m.mibs_double_rw = std::move(m.mibs_double_rw);
+    m.hw_word_read = nullptr;
+    m.hw_word_write = nullptr;
 
     return *this;
 }

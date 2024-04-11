@@ -73,6 +73,9 @@ private:
     std::string make_what(const int num, const hw::slot_type slot, const char* what);
 };
 
+using hw_read_func = std::function<hw::word(hw::address )>;
+using hw_write_func = std::function<void(hw::address , hw::word )>;
+
 /**
  * PCI bus handle is opaque. No direct access as it is
  * specific to the PCI drivers.
@@ -411,6 +414,12 @@ public:
      */
     util::time::timepoint run_interval; /* Period of the run */
     fifo_stats run_stats;
+
+    /*
+     * Calls for reading/writing to hardware
+     */
+    hw_read_func hw_word_read;
+    hw_write_func hw_word_write;
 
     /**
      * Crate revision
@@ -1035,10 +1044,10 @@ using module_states = std::vector<module_state>;
 
 inline hw::word module::read_word(int reg) {
     hw::word value;
-    if (have_hardware) {
-        value = hw::read_word(vmaddr, reg);
+    if (hw_word_read) {
+        value = hw_word_read(reg);
     } else {
-        value = 0;
+        value = hw::read_word(vmaddr, reg);
     }
     if (reg_trace) {
         trace_reg('r', " => ", vmaddr, reg, value);
@@ -1050,7 +1059,9 @@ inline void module::write_word(int reg, const hw::word value) {
     if (reg_trace) {
         trace_reg('w', " <= ", vmaddr, reg, value);
     }
-    if (have_hardware) {
+    if (hw_word_write) {
+        hw_word_write(reg, value);
+    } else {
         hw::write_word(vmaddr, reg, value);
     }
 }

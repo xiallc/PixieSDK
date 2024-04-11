@@ -69,6 +69,8 @@ public:
     firmware::firmware_set::set_type fw_type;
 
     bool init_online;
+    void sim_reg(int reg, hw::word val);
+    void sim_csr(hw::word val);
 };
 
 /**

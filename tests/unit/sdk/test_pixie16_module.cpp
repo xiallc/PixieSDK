@@ -884,6 +884,34 @@ TEST_SUITE("Crate: modules") {
         /* fast filter range can only be set to 0 currently */
         CHECK(crate[0].read("FAST_FILTER_RANGE") == 0);
     }
+    TEST_CASE("sim run/control tasks") {
+        using namespace xia::pixie;
+        using namespace xia::pixie::param;
+        sim::crate sim_crate;
+        sim::load_firmware_sets(sim_crate.firmware, firmware_defs);
+        crate::view::module crate(sim_crate);
+        CHECK_NOTHROW(crate->initialize());
+        CHECK_NOTHROW(crate->probe());
+        CHECK_NOTHROW(crate->boot());
+
+        CHECK(crate[0].run_active() == false);
+        CHECK_NOTHROW(crate[0].start_histograms(hw::run::run_mode::new_run));
+        CHECK(crate[0].run_active() == true);
+        CHECK_NOTHROW(crate[0].run_end());
+        CHECK(crate[0].run_active() == false);
+
+        CHECK_NOTHROW(crate[0].start_listmode(hw::run::run_mode::new_run));
+        CHECK(crate[0].run_active() == true);
+        CHECK_NOTHROW(crate[0].run_end());
+        CHECK(crate[0].run_active() == false);
+
+        CHECK_NOTHROW(crate[0].start_test(xia::pixie::module::module::test::lm_fifo));
+        CHECK(crate[0].run_active() == true);
+        CHECK(crate[0].control_task.load() == hw::run::control_task::fill_ext_fifo);
+        CHECK_NOTHROW(crate[0].run_end());
+        CHECK(crate[0].run_active() == false);
+        CHECK(crate[0].control_task.load() == hw::run::control_task::nop);
+    }
     TEST_CASE("TEARDOWN") {
         xia::logging::stop("log");
     }

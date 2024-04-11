@@ -28,6 +28,7 @@
 #include <pixie/utils/string.hpp>
 #include <pixie/utils/time.hpp>
 
+#include <pixie/pixie16/defs.hpp>
 #include <pixie/pixie16/sim.hpp>
 
 namespace xia {
@@ -142,11 +143,49 @@ void module::open(size_t device_number) {
             var_defaults = mod_def.var_defaults;
 
             opened_ = true;
+            hw_word_read = [&self = *this](int reg) {
+                return hw::read_word(self.vmaddr, reg);
+            };
+            hw_word_write = [&self = *this](int reg, hw::word val) {
+                self.sim_reg(reg, val);
+            };
             return;
         }
     }
 
     throw error(number, slot, error::code::module_initialize_failure, "no device found");
+}
+
+void module::sim_reg(int reg, hw::word val) {
+    switch(reg) {
+        case hw::device::CSR:
+            sim_csr(val);
+            break;
+        default:
+            hw::write_word(vmaddr, reg, val);
+    }
+}
+
+void module::sim_csr(hw::word val) {
+    switch(control_task) {
+        case hw::run::control_task::set_dacs:
+        case hw::run::control_task::enable_input:
+        case hw::run::control_task::ramp_offsetdacs:
+        case hw::run::control_task::get_traces:
+        case hw::run::control_task::program_fippi:
+        case hw::run::control_task::get_baselines:
+        case hw::run::control_task::adjust_offsets:
+        case hw::run::control_task::tau_finder:
+        case hw::run::control_task::reset_adc:
+            if (!(val == 0 || val == 1)) {
+                hw::write_word(vmaddr, hw::device::CSR, val);
+            }
+            break;
+        case hw::run::control_task::fill_ext_fifo:
+        case hw::run::control_task::nop:
+        default:
+            hw::write_word(vmaddr, hw::device::CSR, val);
+    }
 }
 
 void module::close() {
