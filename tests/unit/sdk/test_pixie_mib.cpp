@@ -561,4 +561,78 @@ TEST_SUITE("xia::pixie::mib") {
         CHECK(n1.valid() == false);
         CHECK_THROWS_WITH_AS(n2 = xia::mib::find("a.1"), "mib::find: mib not found: a.1", xia::mib::error);
     }
+    TEST_CASE("MIB: set value") {
+        xia::mib::node n;
+        CHECK_NOTHROW(n = xia::mib::find("s.1"));
+        CHECK_NOTHROW(n.set_value("string string"));
+        CHECK(n == "string string");
+        CHECK_NOTHROW(n = xia::mib::find("b.1"));
+        CHECK_NOTHROW(n.set_value("false"));
+        CHECK(n == false);
+        CHECK_NOTHROW(n.set_value("0"));
+        CHECK(n == false);
+        CHECK_NOTHROW(n.set_value("1"));
+        CHECK(n == true);
+        CHECK_NOTHROW(n.set_value("true"));
+        CHECK(n == true);
+        CHECK_THROWS_WITH_AS(
+                n.set_value("2345"),
+                "mib::node: set: invalid value: b.1: 2345",
+                xia::mib::error);
+        CHECK_NOTHROW(n = xia::mib::find("i.1"));
+        CHECK_NOTHROW(n.set_value("0"));
+        CHECK(n == 0);
+        CHECK_NOTHROW(n.set_value("100"));
+        CHECK(n == 100);
+        CHECK_NOTHROW(n.set_value("-200"));
+        CHECK(n == -200);
+        CHECK_NOTHROW(n.set_value("0x4000"));
+        CHECK(n == 0x4000);
+        CHECK_NOTHROW(n.set_value("0777"));
+        CHECK(n == 0777);
+        CHECK_THROWS_WITH_AS(
+                n.set_value("0xffffffffffffffff"),
+                "mib::node: set: invalid value: i.1: 0xffffffffffffffff",
+                xia::mib::error);
+        CHECK_THROWS_WITH_AS(
+                n.set_value("abcd"),
+                "mib::node: set: invalid value: i.1: abcd",
+                xia::mib::error);
+        CHECK_NOTHROW(n = xia::mib::find("u.1"));
+        CHECK_NOTHROW(n.set_value("0"));
+        CHECK(n == 0);
+        CHECK_NOTHROW(n.set_value("100"));
+        CHECK(n == 100);
+        CHECK_NOTHROW(n.set_value("0x4000"));
+        CHECK(n == 0x4000);
+        CHECK_NOTHROW(n.set_value("0777"));
+        CHECK(n == 0777);
+        CHECK_NOTHROW(n.set_value("0xffffffffffffffff"));
+        CHECK(n == 0xffffffffffffffffUL);
+        CHECK_THROWS_WITH_AS(
+                n.set_value("-200"),
+                "mib::node: set: invalid value: u.1: -200",
+                xia::mib::error);
+        CHECK_THROWS_WITH_AS(
+                n.set_value("abcd"),
+                "mib::node: set: invalid value: u.1: abcd",
+                xia::mib::error);
+        CHECK_NOTHROW(n = xia::mib::find("r.1"));
+        CHECK_NOTHROW(n.set_value("0"));
+        CHECK(n == 0.0);
+        CHECK_NOTHROW(n.set_value("100"));
+        CHECK(n == 100.0);
+        CHECK_NOTHROW(n.set_value("0.0001"));
+        CHECK(n == 0.0001);
+        CHECK_NOTHROW(n.set_value("-1.23456789"));
+        CHECK(n == -1.23456789);
+        CHECK_THROWS_WITH_AS(
+                n.set_value("abcd"),
+                "mib::node: set: invalid value: r.1: abcd",
+                xia::mib::error);
+        CHECK_NOTHROW(n = xia::mib::find("t.1"));
+        CHECK_NOTHROW(n.set_value("2024-04-10T01:04:24.001386"));
+        xia::mib::timestamp t(1712711064001386000);
+        CHECK(n == t);
+    }
 }

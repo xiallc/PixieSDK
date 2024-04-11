@@ -378,9 +378,9 @@ union data_type {
     template<
         typename T, std::enable_if_t<std::is_same_v<T, timestamp>, bool> = true>
     bool cmp(const T& val, const char op) const {
-        if (op == '<') { return t < val; }
-        if (op == '>') { return t > val; }
-        return t == val;
+        if (op == '<') { return t.nsecs < val.nsecs; }
+        if (op == '>') { return t.nsecs > val.nsecs; }
+        return t.nsecs == val.nsecs;
     }
 };
 
@@ -471,6 +471,9 @@ struct node_base {
     template<typename T> void set(const T& val);
     template<typename T> T get();
     template<typename T> bool cmp(const T& val, const char op);
+
+    void set_value(const std::string& val);
+    void set_value(const char* val);
 
     void check(const type type_);
 
@@ -563,6 +566,12 @@ struct node {
     template<typename T> void set(const T& val);
     template<typename T> T get() const;
 
+    /**
+     * Set the node converting the string into the node's type.
+     */
+    void set_value(const std::string& val);
+    void set_value(const char* val);
+
     std::string str(bool attributes = false);
 
     bool valid() const { if (base) return true; return false; }
@@ -610,7 +619,7 @@ template<typename T> struct read_write {
 };
 
 /**
- * Read/write references to data. Lockind is via the lock you provide.
+ * Read/write references to data. Locking is via the lock you provide.
  */
 template<typename T, typename M> struct read_write_lock {
     rw_mode mode;

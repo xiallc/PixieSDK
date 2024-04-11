@@ -22,6 +22,7 @@
 
 #include <chrono>
 #include <cstring>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <map>
@@ -269,6 +270,119 @@ bool node_base::is_enabled() {
     return enabled;
 }
 
+void node_base::set_value(const std::string& val) {
+    set_value(val.c_str());
+}
+
+void node_base::set_value(const char* val) {
+    std::istringstream iss(val);
+    iss >> std::skipws;
+    iss.exceptions(std::ifstream::failbit);
+    bool ok = false;
+    switch (type_) {
+    case type::string:
+        v.s = val;
+        ok = true;
+        break;
+    case type::boolean:
+        try {
+            iss >> v.b;
+            ok = true;
+        } catch (...) {
+        }
+        if (!ok) {
+            iss.clear();
+            iss.seekg(0);
+            try {
+                iss >> std::boolalpha >> v.b;
+                ok = true;
+            } catch (...) {
+            }
+        }
+        break;
+    case type::integer:
+        try {
+            integer i;
+            iss >> std::setbase(0) >> i;
+            v.u = i;
+            ok = true;
+        } catch (...) {
+        }
+        break;
+    case type::uinteger:
+        try {
+            /*
+             * A value such as -1 is converted and we want an
+             * error. If the value is parsed without error parse again
+             * as an integer and if that falis the value is unsigned
+             * as it overflowed the integer. If it is parsed as an
+             * integer make sure it is not negative.
+             */
+            iss >> std::setbase(0) >> v.u;
+            try {
+                iss.seekg(0);
+                integer i;
+                iss >> std::setbase(0) >> i;
+                if (i >= 0) {
+                    ok = true;
+                }
+            } catch (...) {
+                ok = true;
+            }
+        } catch (...) {
+        }
+        break;
+    case type::real:
+        try {
+            iss >> v.r;
+            ok = true;
+        } catch (...) {
+        }
+        break;
+    case type::timestamp:
+        #ifdef XIA_PIXIE_WINDOWS
+            #define timegm _mkgmtime64
+        #endif
+        try {
+            std::tm t = {};
+            iss >> std::get_time(&t, "%Y-%m-%dT%H:%M:%S");
+            auto tt = timegm(&t);
+            v.t.nsecs = tt * 1000000000;
+            iss.seekg(0);
+            auto count = iss.str().size();
+            while (count-- > 0) {
+                char c;
+                iss >> c;
+                if (c == '.') {
+                    uinteger u;
+                    iss >> std::setbase(10) >> u;
+                    uinteger scale = 1000;
+                    if (count > 6) {
+                        for (size_t c = 6; c < count; ++c) {
+                            scale *= 10;
+                        }
+                    }
+                    v.t.nsecs += u * scale;
+                    break;
+                }
+            }
+            ok = true;
+        } catch (...) {
+            throw;
+        }
+        break;
+    default:
+        throw error(
+            error::code::internal_failure, "mib::node: invalid type: " + name);
+        break;
+    }
+    if (!ok) {
+        throw error(
+            error::code::invalid_value,
+            "mib::node: set: invalid value: " + name + ": " + val);
+    }
+}
+
 void node_base::check(const type type__) {
     if (type_ != type__) {
         std::ostringstream oss;
@@ -394,8 +508,9 @@ std::string node_base::str(bool attributes) {
         oss << std::fixed << std::setprecision(9) << v.r;
         break;
     case type::timestamp:
-        oss << std::fixed << std::setprecision(9)
-            << v.t.nsecs / 1000000000.0;
+        oss << v.t.nsecs / 1000000000UL
+            << '.' << std::setw(9) << std::setfill('0')
+            << v.t.nsecs % 1000000000UL;
         break;
     }
     if (attributes) {
@@ -559,6 +674,15 @@ node::operator real() {
 node::operator timestamp() {
     check_base();
     return base->get<timestamp>();
+}
+
+void node::set_value(const std::string& val) {
+    set_value(val.c_str());
+}
+
+void node::set_value(const char* val) {
+    check_base();
+    base->set_value(val);
 }
 
 std::string node::str(bool attributes) {
