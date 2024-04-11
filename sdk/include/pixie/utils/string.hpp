@@ -161,7 +161,10 @@ struct token_editor {
 
     void set(const std::string& str);
     void set(const char* str);
+
     std::string get() const;
+    std::string get(const std::string& token_regx) const;
+    std::string get(const char* token_regx) const;
 
     bool has(const std::string& token) const;
     bool has(const char* token) const;

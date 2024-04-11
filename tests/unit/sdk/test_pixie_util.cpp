@@ -624,6 +624,12 @@ TEST_SUITE("xia::util") {
         CHECK(te3.get() == "red:efg,blue:123,green:###");
         CHECK_NOTHROW(te3.update("^pink", "pink:xyz"));
         CHECK(te3.get() == "red:efg,blue:123,green:###,pink:xyz");
+        auto gs1 = te3.get("^pink:");
+        CHECK(gs1 == "pink:xyz");
+        auto gs2 = te3.get("grey");
+        CHECK(gs2.empty());
+        auto gs3 = te3.get("123");
+        CHECK(gs3 == "blue:123");
         std::string s1 = "aaa,ggg,jabc,jcde,jbcd";
         xia::util::string::token_editor te4(s1);
         CHECK(te4.get() == "aaa,ggg,jabc,jbcd,jcde");
@@ -647,6 +653,10 @@ TEST_SUITE("xia::util") {
                 return false;
             }));
         CHECK(te4.get() == "test:456,test:789,test:abc");
+        CHECK_THROWS_WITH_AS(
+            auto gse = te4.get("^test:"),
+            "token edit: multiple tokens match: ^test:",
+            std::runtime_error);
         CHECK_NOTHROW(te4.remove("^test:"));
         CHECK(te4.tokens.empty() == true);
     }

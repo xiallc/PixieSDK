@@ -154,6 +154,33 @@ std::string token_editor::get() const {
     return join(tokens, separator);
 }
 
+std::string token_editor::get(const std::string& token_regx) const {
+    return get(token_regx.c_str());
+}
+
+std::string token_editor::get(const char* token_regx) const {
+    std::regex token_match(token_regx);
+    auto count = std::count_if(
+        std::begin(tokens), std::end(tokens),
+        [&token_match](const std::string& t) {
+            return std::regex_search(t, token_match);
+        });
+    if (count > 1) {
+        throw std::runtime_error(
+            std::string("token edit: multiple tokens match: ") + token_regx);
+    }
+    auto ti = std::find_if(
+        std::begin(tokens), std::end(tokens),
+        [&token_match](const std::string& t) {
+            return std::regex_search(t, token_match);
+        });
+    std::string result;
+    if (ti != std::end(tokens)) {
+        result = *ti;
+    }
+    return result;
+}
+
 bool token_editor::has(const std::string& token) const {
     return has(token.c_str());
 }
