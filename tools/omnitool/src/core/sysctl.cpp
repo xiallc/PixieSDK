@@ -20,6 +20,8 @@
  * @brief System Control (sysctl) command
  */
 
+#include <regex>
+
 #include <pixie/mib.hpp>
 
 #include <omnitool-commands.hpp>
@@ -39,12 +41,15 @@ void sys_control(context& context) {
             }
         }
     }
+    std::regex mib_match(mib_opt);
     bool attributes = false;
     xia::mib::mib_walk_func walker =
-        [&mib_opt, attributes](xia::mib::node& nod) {
+        [&mib_opt, &value_opt, &mib_match, attributes](xia::mib::node& nod) {
             auto name = nod.name();
-            if (mib_opt.empty() ||
-                xia::util::string::starts_with(name, mib_opt)) {
+            if (mib_opt.empty() || std::regex_search(name, mib_match)) {
+                if (!value_opt.empty()) {
+                    nod.set_value(value_opt);
+                }
                 std::cout << name << " = " << nod.str(attributes) << std::endl;
             }
         };
