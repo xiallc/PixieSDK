@@ -30,6 +30,7 @@
 #include <pixie/log.hpp>
 #include <pixie/mib.hpp>
 #include <pixie/utils/string.hpp>
+#include <pixie/utils/time.hpp>
 
 namespace xia {
 namespace mib {
@@ -205,7 +206,7 @@ data_type::~data_type() {
 
 node_base::node_base(const name_type& name_, const type type__, const bool enabled_)
     : name(name_), type_(type__), read_only(false), write_lock(false),
-      enabled(enabled_), in_event_call(false) {
+      enabled(enabled_), in_event_call(false), hints(0) {
     /*
      * A mib can only ever be one type. The union has classes and they
      * could contain references to resources such as memory. The
@@ -488,15 +489,48 @@ void node_base::call_timer_event_func() {
 }
 
 std::string node_base::str(bool attributes) {
-    std::ostringstream oss;
     lock_guard guard(lock);
     call_get_event_func();
+    std::ostringstream oss;
+    oss << std::boolalpha
+        << std::dec
+        << std::showbase
+        << std::fixed;
+    bool s_fmt_no_quotes = false;
+    bool ts_fmt_iso8601 = false;
+    switch (hints & (fmt_mask << fmt_base)) {
+    case fmt_no_quotes:
+        s_fmt_no_quotes = true;
+        break;
+    case fmt_boolnum:
+        oss << std::noboolalpha;
+        break;
+    case fmt_dec:
+        break;
+    case fmt_oct:
+        oss << std::oct;
+        break;
+    case fmt_hex:
+        oss << std::hex;
+        break;
+    case fmt_fixed:
+        break;
+    case fmt_iso8601:
+        ts_fmt_iso8601 = true;
+        break;
+    default:
+        break;
+    }
     switch (type_) {
     case type::string:
-        oss << '"' << v.s << '"';
+        if (s_fmt_no_quotes) {
+            oss << v.s;
+        } else {
+            oss << '"' << v.s << '"';
+        }
         break;
     case type::boolean:
-        oss << std::boolalpha << v.b;
+        oss << v.b;
         break;
     case type::integer:
         oss << static_cast<integer>(v.u);
@@ -505,12 +539,27 @@ std::string node_base::str(bool attributes) {
         oss << v.u;
         break;
     case type::real:
-        oss << std::fixed << std::setprecision(9) << v.r;
+        oss << std::setprecision(9) << v.r;
         break;
     case type::timestamp:
-        oss << v.t.nsecs / 1000000000UL
-            << '.' << std::setw(9) << std::setfill('0')
-            << v.t.nsecs % 1000000000UL;
+        if (ts_fmt_iso8601) {
+            /*
+             * Stage the conversion of nanoseconds to a system clock
+             * time point to cater for different clock precisions on
+             * different host platforms. Use a temporary system clock
+             * time point to add the duration to to deal with possible
+             * differences in the clock types.
+             */
+            std::chrono::duration td = std::chrono::nanoseconds{v.t.nsecs};
+            util::time::datetime_timepoint temp_dtp;
+            auto dp =
+                std::chrono::time_point_cast<std::chrono::system_clock::duration>(temp_dtp + td);
+            oss << util::time::datetime_iso8601(dp);
+        } else {
+            oss << v.t.nsecs / 1000000000UL
+                << '.' << std::setw(9) << std::setfill('0')
+                << v.t.nsecs % 1000000000UL;
+        }
         break;
     }
     if (attributes) {
@@ -528,6 +577,101 @@ std::string node_base::str(bool attributes) {
         oss << ')';
     }
     return oss.str();
+}
+
+void node_base::set_hint(hint hint_) {
+    lock_guard guard(lock);
+    switch (hint_) {
+    case hint::fmt_defaults:
+        hints &= ~(fmt_mask << fmt_base);
+        hints |= fmt_defaults;
+        break;
+    case hint::fmt_no_quotes:
+        hints &= ~(fmt_mask << fmt_base);
+        hints |= fmt_no_quotes;
+        break;
+    case hint::fmt_boolnum:
+        hints &= ~(fmt_mask << fmt_base);
+        hints |= fmt_boolnum;
+        break;
+    case hint::fmt_dec:
+        hints &= ~(fmt_mask << fmt_base);
+        hints |= fmt_dec;
+        break;
+    case hint::fmt_oct:
+        hints &= ~(fmt_mask << fmt_base);
+        hints |= fmt_oct;
+        break;
+    case hint::fmt_hex:
+        hints &= ~(fmt_mask << fmt_base);
+        hints |= fmt_hex;
+        break;
+    case hint::fmt_fixed:
+        hints &= ~(fmt_mask << fmt_base);
+        hints |= fmt_fixed;
+        break;
+    case hint::fmt_iso8601:
+        hints &= ~(fmt_mask << fmt_base);
+        hints |= fmt_iso8601;
+        break;
+    default:
+        break;
+    }
+}
+
+bool node_base::get_hint(hint hint_) {
+    lock_guard guard(lock);
+    bool result = false;
+    switch (hint_) {
+    case hint::fmt_defaults:
+        if ((hints & fmt_defaults) != 0) {
+            result = true;
+        }
+        break;
+    case hint::fmt_no_quotes:
+        if ((hints & fmt_no_quotes) != 0) {
+            result = true;
+        }
+        break;
+    case hint::fmt_boolnum:
+        if ((hints & fmt_boolnum) != 0) {
+            result = true;
+        }
+        break;
+    case hint::fmt_dec:
+        if ((hints & fmt_dec) != 0) {
+            result = true;
+        }
+        break;
+    case hint::fmt_oct:
+        if ((hints & fmt_oct) != 0) {
+            result = true;
+        }
+        break;
+    case hint::fmt_hex:
+        if ((hints & fmt_hex) != 0) {
+            result = true;
+        }
+        break;
+    case hint::fmt_fixed:
+        if ((hints & fmt_fixed) != 0) {
+            result = true;
+        }
+        break;
+    case hint::fmt_iso8601:
+        if ((hints & fmt_iso8601) != 0) {
+            result = true;
+        }
+        break;
+    default:
+        break;
+    }
+    return result;
+}
+
+node& node::operator=(hint hint_) {
+    set_hint(hint_);
+    return *this;
 }
 
 void node::check_base() const {
@@ -605,7 +749,8 @@ void node::lock_writes() {
     node_base::lock_guard guard(base->lock);
     if (base->read_only) {
         throw error(
-            error::code::read_only, "mib::node::lock-write: MIB is read-only");
+            error::code::read_only,
+            "mib::node::lock-write: MIB is read-only: " + base->name);
     }
     base->write_lock = true;
  }
@@ -688,6 +833,16 @@ void node::set_value(const char* val) {
 std::string node::str(bool attributes) {
     check_base();
     return base->str(attributes);
+}
+
+void node::set_hint(hint hint_) {
+    check_base();
+    base->set_hint(hint_);
+}
+
+bool node::get_hint(hint hint_) const {
+    check_base();
+    return base->get_hint(hint_);
 }
 
 void add(const name_type& name, const type type_, const bool enabled) {

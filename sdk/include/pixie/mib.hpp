@@ -64,6 +64,20 @@ enum struct type {
 };
 
 /**
+ * String formating hints
+ */
+enum struct hint {
+    fmt_defaults,   /**< Use the default format for the MIB type */
+    fmt_no_quotes,  /**< If string do not wrap in quoutes, default is quotes */
+    fmt_boolnum,    /**< If boolean use 0 or 1, default is boolalpha */
+    fmt_dec,        /**< If integer or uinteger use decimal, default is decimal */
+    fmt_oct,        /**< If integer or uinteger use octal */
+    fmt_hex,        /**< If integer or uinteger use hexadecimal */
+    fmt_fixed,      /**< If real use fixed point, default is fixed point */
+    fmt_iso8601     /**< If timestamp use ISO8601 format */
+};
+
+/**
  * The type of the types for a MIB
  */
 using string = std::string;
@@ -441,6 +455,22 @@ struct node_base {
     using lock_type = std::mutex;
     using lock_guard = std::lock_guard<lock_type>;
 
+    using hint_flag_type = uint64_t;
+
+    static constexpr hint_flag_type fmt_mask = 0x1f;
+    static constexpr hint_flag_type fmt_base = 0;
+    static constexpr hint_flag_type fixed_mask = 0x1f;
+    static constexpr hint_flag_type fixed_base = 5;
+    static constexpr hint_flag_type fmt_defaults = 0;
+    static constexpr hint_flag_type fmt_no_quotes = 1;
+    static constexpr hint_flag_type fmt_boolnum = 2;
+    static constexpr hint_flag_type fmt_dec = 3;
+    static constexpr hint_flag_type fmt_oct = 4;
+    static constexpr hint_flag_type fmt_hex = 5;
+    static constexpr hint_flag_type fmt_fixed = 6;
+    static constexpr hint_flag_type fmt_iso8601 = 7;
+
+    lock_type lock;
     const name_type name;
     const type type_;
     const bool read_only;
@@ -451,7 +481,7 @@ struct node_base {
     event_func set_event;
     event_func timer_event;
     bool in_event_call;
-    lock_type lock;
+    hint_flag_type hints;
 
     node_base(const name_type& name, const type type_, const bool enabled);
     /*
@@ -486,6 +516,8 @@ struct node_base {
     void call_timer_event_func();
 
     std::string str(bool attributes);
+    void set_hint(hint hint_);
+    bool get_hint(hint hint_);
 };
 
 /**
@@ -556,6 +588,8 @@ struct node {
     template<typename T> bool operator<=(const T& val) const;
     template<typename T> bool operator>=(const T& val) const;
 
+    node& operator=(hint hint_);
+
     operator string();
     operator boolean();
     operator integer();
@@ -573,6 +607,8 @@ struct node {
     void set_value(const char* val);
 
     std::string str(bool attributes = false);
+    void set_hint(hint hint_);
+    bool get_hint(hint hint_) const;
 
     bool valid() const { if (base) return true; return false; }
 
@@ -685,10 +721,12 @@ template<typename T> node_base::node_base(
 template<typename T> void node_base::set(const T& val) {
     lock_guard guard(lock);
     if (read_only) {
-        throw error(error::code::read_only, "mib::node::set: MIB is read-only");
+        throw error(
+            error::code::read_only, "mib::node::set: MIB is read-only: " + name);
     }
     if (write_lock) {
-        throw error(error::code::read_only, "mib::node::set: MIB is write locked");
+        throw error(
+            error::code::read_only, "mib::node::set: MIB is write locked: " + name);
     }
     if (std::is_same_v<T, string> ||
         std::is_same_v<T, stringp> ||

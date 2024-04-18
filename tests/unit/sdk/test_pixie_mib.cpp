@@ -99,7 +99,7 @@ TEST_SUITE("xia::pixie::mib") {
         CHECK_NOTHROW(s1.lock_writes());
         CHECK(s1.write_locked() == true);
         CHECK_THROWS_WITH_AS(s1 = "write while locked",
-                             "mib::node::set: MIB is write locked", xia::mib::error);
+                             "mib::node::set: MIB is write locked: s.1", xia::mib::error);
         CHECK_NOTHROW(s1.unlock_writes());
         CHECK(s1.write_locked() == false);
         CHECK_NOTHROW(s1 = "write while locked");
@@ -286,8 +286,8 @@ TEST_SUITE("xia::pixie::mib") {
         CHECK_NOTHROW(xia::mib::add_ro_real("r.2.ro", 3.33333));
         CHECK_NOTHROW(xia::mib::add_ro_timestamp("t.2.ro", xia::mib::timestamp(987654321)));
         auto s = xia::mib::node("s.2.ro");
-        CHECK_THROWS_WITH_AS(s = "abc", "mib::node::set: MIB is read-only", xia::mib::error);
-        CHECK_THROWS_WITH_AS(s.lock_writes(), "mib::node::lock-write: MIB is read-only", xia::mib::error);
+        CHECK_THROWS_WITH_AS(s = "abc", "mib::node::set: MIB is read-only: s.2.ro", xia::mib::error);
+        CHECK_THROWS_WITH_AS(s.lock_writes(), "mib::node::lock-write: MIB is read-only: s.2.ro", xia::mib::error);
     }
     TEST_CASE("MIB: events") {
         auto s1 = xia::mib::node("s.1");
@@ -509,7 +509,8 @@ TEST_SUITE("xia::pixie::mib") {
         std::mutex lock;
         std::string s = "locked ro mib read";
         auto ro1 = xia::mib::read_write_lock("rw.2", s, lock);
-        CHECK_THROWS_WITH_AS(ro1.nod = "write locked set", "mib::node::set: MIB is write locked", xia::mib::error);
+        CHECK_THROWS_WITH_AS(ro1.nod = "write locked set",
+                             "mib::node::set: MIB is write locked: rw.2", xia::mib::error);
         CHECK(*ro1 == "locked ro mib read");
         std::atomic_int as1 = 100;
         auto rw3 = xia::mib::read_write("rw.3", as1, xia::mib::rw_mode::rw);
@@ -634,5 +635,44 @@ TEST_SUITE("xia::pixie::mib") {
         CHECK_NOTHROW(n.set_value("2024-04-10T01:04:24.001386"));
         xia::mib::timestamp t(1712711064001386000);
         CHECK(n == t);
+    }
+    TEST_CASE("MIB: hints") {
+        xia::mib::node n;
+        CHECK_NOTHROW(n = xia::mib::find("s.1"));
+        CHECK(n.str() == "\"string string\"");
+        CHECK_NOTHROW(n = xia::mib::hint::fmt_no_quotes);
+        CHECK(n.str() == "string string");
+        CHECK_NOTHROW(n = xia::mib::find("b.1"));
+        CHECK_NOTHROW(n = true);
+        CHECK(n.str() == "true");
+        CHECK_NOTHROW(n = xia::mib::hint::fmt_boolnum);
+        CHECK(n.str() == "1");
+        CHECK_NOTHROW(n = xia::mib::find("i.1"));
+        CHECK_NOTHROW(n = 128);
+        CHECK(n.str() == "128");
+        CHECK_NOTHROW(n = xia::mib::hint::fmt_dec);
+        CHECK(n.str() == "128");
+        CHECK_NOTHROW(n = xia::mib::hint::fmt_oct);
+        CHECK(n.str() == "0200");
+        CHECK_NOTHROW(n = xia::mib::hint::fmt_hex);
+        CHECK(n.str() == "0x80");
+        CHECK_NOTHROW(n = xia::mib::hint::fmt_hex);
+        CHECK_NOTHROW(n = xia::mib::find("u.1"));
+        CHECK_NOTHROW(n = 256);
+        CHECK(n.str() == "256");
+        CHECK_NOTHROW(n = xia::mib::hint::fmt_oct);
+        CHECK(n.str() == "0400");
+        CHECK_NOTHROW(n = xia::mib::hint::fmt_hex);
+        CHECK(n.str() == "0x100");
+        CHECK_NOTHROW(n = xia::mib::find("r.1"));
+        CHECK_NOTHROW(n = 1.123456789);
+        CHECK(n.str() == "1.123456789");
+        CHECK_NOTHROW(n = xia::mib::hint::fmt_fixed);
+        CHECK(n.str() == "1.123456789");
+        CHECK_NOTHROW(n = xia::mib::find("t.1"));
+        CHECK_NOTHROW(n.set_value("2024-04-10T01:04:24.123456"));
+        CHECK(n.str() == "1712711064.123456000");
+        CHECK_NOTHROW(n = xia::mib::hint::fmt_iso8601);
+        CHECK(n.str() == "2024-04-10T01:04:24.123Z");
     }
 }
