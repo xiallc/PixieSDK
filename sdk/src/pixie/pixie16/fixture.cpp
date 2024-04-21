@@ -196,6 +196,34 @@ void assembly::tau_finder() {
     unsupported_op("tau finder is using the DSP");
 }
 
+void assembly::event(const std::string name) {
+    unsupported_op("no event support: " + name);
+}
+
+void assembly::set(const std::string item, bool ) {
+    unsupported_op("no set support: bool: " + item);
+}
+
+void assembly::set(const std::string item, unsigned int ) {
+    unsupported_op("no set support: int: " + item);
+}
+
+void assembly::set(const std::string item, double ) {
+    unsupported_op("no set support: double: " + item);
+}
+
+void assembly::get(const std::string , bool& value) {
+    value = false;
+}
+
+void assembly::get(const std::string item, unsigned int& ) {
+    unsupported_op("no get support: unsigned int: " + item);
+}
+
+void assembly::get(const std::string item, double& ) {
+    unsupported_op("no get support: double: " + item);
+}
+
 bool assembly::has_test(const std::string ) {
     return false;
 }

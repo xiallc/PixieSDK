@@ -53,10 +53,10 @@ using output = std::function<void(const std::string&, T arg)>;
 using log_output = output<log::level>;
 
 /**
- * @brief An assembly is an assemblyd part of a system
+ * @brief An assembly is a part of a system
  *
  * An assembly is a PWA or printed wiring assembly that forms part of
- * a  system. An assembly may be formed by subassemblys. A module owns
+ * a  system. An assembly may be formed by subassemblies. A module owns
  * all assembly fixures and is the root assembly.
  *
  * The things you can do in each event handler will depend on the
@@ -79,7 +79,7 @@ struct assembly {
     pixie::module::module& module_;
 
     /**
-     * The assemblys this module hosts
+     * The assemblies this module hosts
      */
     assembly_ptrs subassemblies;
 
@@ -203,6 +203,33 @@ struct assembly {
      * Tau Finder
      */
     virtual void tau_finder();
+
+    /**
+     * An event
+     *
+     * Overload if required
+     */
+    virtual void event(const std::string name);
+
+    /**
+     * Set a value.
+     *
+     * Overload the types required. Integers are all unsigned and the
+     * template provides conversion for fixture users only.
+     */
+    virtual void set(const std::string item, bool value);
+    virtual void set(const std::string item, unsigned int value);
+    virtual void set(const std::string item, double value);
+
+    /**
+     * Get a value.
+     *
+     * Overload the types required. Integers are all unsigned and the
+     * template provides conversion for fixture users only.
+     */
+    virtual void get(const std::string item, bool& value);
+    virtual void get(const std::string item, unsigned int& value);
+    virtual void get(const std::string item, double& value);
 
     /*
      * Tests

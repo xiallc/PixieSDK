@@ -2007,7 +2007,7 @@ void module::write_var(param::channel_var var, param::value_type value, size_t c
     }
 }
 
-  void module::sync_vars(const param::sync_mode sync_mode) {
+void module::sync_vars(const param::sync_mode sync_mode) {
     online_check();
     const char* sync_mode_label =
         (char*) (sync_mode == param::sync_mode::to_hw ? "to hardware" : "from hardware");
