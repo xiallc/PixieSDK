@@ -979,6 +979,18 @@ void module::open(size_t device_number) {
         minor_revision = eeprom.minor_revision;
         eeprom_format = eeprom.format;
 
+        if (eeprom.configs.size() > 0) {
+            max_histogram_length = eeprom.configs[0].max_histogram_length;
+            for (auto& config : eeprom.configs) {
+                if (max_histogram_length != config.max_histogram_length) {
+                    max_histogram_length = hw::large_histogram_length;
+                    break;
+                }
+            }
+        } else {
+            max_histogram_length = hw::large_histogram_length;
+        }
+
         opened_ = true;
 
         device->update_opens(slot);

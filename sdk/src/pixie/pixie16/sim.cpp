@@ -112,6 +112,7 @@ void module::open(size_t device_number) {
             eeprom_format = mod_def.eeprom_format;
             serial_num = mod_def.serial_num;
             num_channels = mod_def.num_channels;
+            max_histogram_length = hw::large_histogram_length;
             hw::config config;
             config.adc_bits = mod_def.adc_bits;
             config.adc_msps = mod_def.adc_msps;

@@ -297,9 +297,14 @@ public:
     size_t num_channels;
 
     /**
-     * Maximum umber of channels
+     * Maximum number of channels
      */
     size_t max_channels;
+
+    /**
+     * Maximum length of histograms
+     */
+    size_t max_histogram_length;
 
     /**
      * Module's register VM address.
