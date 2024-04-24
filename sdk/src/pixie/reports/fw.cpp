@@ -31,7 +31,7 @@ static void fw_report(pixie::crate::crate& crate, pixie::format::json& jfws) {
         for (auto fw_set : std::get<1>(fws)) {
             pixie::format::json fw_set_info;
             fw_set_info["release"] = fw_set->release.to_string();
-            fw_set_info["release-data"] = fw_set->release_date;
+            fw_set_info["release_date"] = fw_set->release_date;
             fw_set_info["tag"] = fw_set->tag();
             for (auto fw : fw_set->firmwares) {
                 pixie::format::json fw_file;
