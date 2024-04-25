@@ -184,7 +184,7 @@ void module::crate_event(crate::crate_event event) {
 }
 
 void module::slot_event(hw::slot_type slot, crate::slot_event event) {
-    xia_log(log::debug) << "module-crate: event: slot=" << slot
+    xia_log(log::info) << "module-crate: event: slot=" << slot
                         << " slot-event=" << slot_event_label(event);
     lock_guard guard(lock_);
     check();

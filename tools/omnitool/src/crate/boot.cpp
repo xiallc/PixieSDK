@@ -38,7 +38,6 @@ void boot(command::context& context) {
     pixie::crate::crate::boot_params boot_params;
     bool first = true;
     bool clear_boots = true;
-    xia::logging::log_level_guard log_guard(xia::log::debug);
     while (context.cmd.has_arg()) {
         auto opt = context.cmd.get_arg();
         if (opt.empty()) {

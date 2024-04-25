@@ -118,7 +118,6 @@ static void initialize(xia::omnitool::command::context& context) {
     auto& crate = context.crate;
     auto& opts = context.opts;
     xia::util::time::timepoint tp;
-    xia::logging::log_level_guard log_guard(xia::log::debug);
     if (opts.verbose) {
         opts.out << "crate: initialize" << std::endl;
         tp.start();
@@ -148,7 +147,6 @@ static void initialize(xia::omnitool::command::context& context) {
 static void probe(xia::omnitool::command::context& context) {
     auto& crate = context.crate;
     auto& opts = context.opts;
-    xia::logging::log_level_guard log_guard(xia::log::debug);
     crate->probe();
     if (opts.verbose) {
         opts.out << "modules: slots=" << crate->num_slots

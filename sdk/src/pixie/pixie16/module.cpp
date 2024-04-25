@@ -808,7 +808,7 @@ bool module::online() const {
 }
 
 void module::open(size_t device_number) {
-    xia_log(log::debug) << "module: open: device-number=" << device_number;
+    xia_log(log::info) << "module: open: device-number=" << device_number;
 
     lock_guard guard(lock_);
 
@@ -952,7 +952,7 @@ void module::open(size_t device_number) {
         const uint32_t cfg_rdver = read_word(0xc);
         board_revision = cfg_rdver & 0xffff;
 
-        xia_log(log::debug) << module_label(*this) << "crate version: " << crate_revision
+        xia_log(log::info) << module_label(*this) << "crate version: " << crate_revision
                             << ", board version: " << std::hex << board_revision;
 
         hw::i2c::i2cm24c64 i2cm24c64(*this, hw::device::I2CM24C64, i2c_SDA, i2c_SCL, i2c_CTRL);
@@ -966,7 +966,7 @@ void module::open(size_t device_number) {
             throw error(number, slot, error::code::module_info_failure, oss);
         }
 
-        logging::memdump(log::debug, module_label(*this) + "EEPROM:", eeprom.data.data(),
+        logging::memdump(log::info, module_label(*this) + "EEPROM:", eeprom.data.data(),
                          eeprom.data.size());
 
         eeprom.process();
@@ -1062,7 +1062,7 @@ void module::close() {
         PLX_STATUS ps_unmap_bar = PLX_STATUS_OK;
         PLX_STATUS ps_close;
 
-        xia_log(log::debug) << module_label(*this) << "close: device-number=" << device->device_number;
+        xia_log(log::info) << module_label(*this) << "close: device-number=" << device->device_number;
 
         if (online()) {
             if (run_active()) {
@@ -1080,7 +1080,7 @@ void module::close() {
         if (have_hardware) {
             ps_dma = ::PlxPci_DmaChannelClose(&device->handle, 0);
             if (ps_dma != PLX_STATUS_OK) {
-                xia_log(log::debug) << module_label(*this) << "DMA close: " << pci_error_text(ps_dma);
+                xia_log(log::info) << module_label(*this) << "DMA close: " << pci_error_text(ps_dma);
                 if (ps_dma == PLX_STATUS_IN_PROGRESS) {
                     ::PlxPci_DeviceReset(&device->handle);
                     ::PlxPci_DmaChannelClose(&device->handle, 0);
@@ -1250,17 +1250,17 @@ void module::probe(const firmware::firmware_set& firmware) {
         }
 
         if (device->firmware_crc() != crc.value) {
-            xia_log(log::warning) << std::boolalpha << module_label(*this) << "Firmware: "
-                                  << "Firmware CRCs do not match. Mailbox-CRC=0x"
+            xia_log(log::warning) << std::boolalpha << module_label(*this) << "firmware: "
+                                  << "firmware crcs do not match. mailbox-crc=0x"
                                   << std::hex << device->firmware_crc();
         } else if (!crc_match) {
-            xia_log(log::warning) << std::boolalpha << module_label(*this) << "Firmware: "
-                                  << "Provided firmware CRC and calculated CRC do not "
-                                  << "match. Mailbox-CRC=0x"
+            xia_log(log::warning) << std::boolalpha << module_label(*this) << "firmware: "
+                                  << "provided firmware crc and calculated crc do not "
+                                  << "match. mailbox-crc=0x"
                                   << std::hex << device->firmware_crc();
         } else {
-            xia_log(log::info) << std::boolalpha << module_label(*this) << "Firmware: "
-                                  << "Firmware CRCs match. Mailbox-CRC=0x"
+            xia_log(log::info) << std::boolalpha << module_label(*this) << "firmware: "
+                                  << "firmware crcs match. mailbox-crc=0x"
                                   << std::hex << device->firmware_crc();
         }
 
@@ -1480,10 +1480,10 @@ void module::firmware_get(
             fw_release = firmware::not_released;
         }
     }
-    xia_log(log::debug) << module_label(*this)
-                        << "firmware get: tag=" << fw_tag
-                        << " release=" << fw_release
-                        << " slot=" << slot;
+    xia_log(log::info) << module_label(*this)
+                       << "firmware get: tag=" << fw_tag
+                       << " release=" << fw_release
+                       << " slot=" << slot;
     firmware::find_filter filter(fw_tag, fw_release, slot);
     firmware::find(firmware, firmwares, filter);
 }
@@ -2184,7 +2184,7 @@ void module::start_listmode(hw::run::run_mode mode) {
 }
 
 void module::read_adc(size_t channel, hw::adc_word* buffer, size_t size, bool run) {
-    xia_log(log::info) << module_label(*this) << "read-adc: channel=" << channel << " size=" << size
+    xia_log(log::debug) << module_label(*this) << "read-adc: channel=" << channel << " size=" << size
                        << " run=" << std::boolalpha << run;
     online_check();
     lock_guard guard(lock_);

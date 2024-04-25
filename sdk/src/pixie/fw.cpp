@@ -310,12 +310,12 @@ void firmware::load() {
         util::crc::crc32 crc_;
         crc_.update(data);
 
-        xia_log(log::debug) << "firmware: load: tag=" << tag
-                            << " release=" << release.to_string()
-                            << std::hex << std::showbase << std::internal
-                            << " crc=" << crc_.value
-                            << " time=" << load_time
-                            << " total=" << total_image_size.load();
+        xia_log(log::info) << "firmware: load: tag=" << tag
+                           << " release=" << release.to_string()
+                           << std::hex << std::showbase << std::internal
+                           << " crc=" << crc_.value
+                           << " time=" << load_time
+                           << " total=" << total_image_size.load();
     }
 }
 

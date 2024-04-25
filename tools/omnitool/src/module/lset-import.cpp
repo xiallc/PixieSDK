@@ -39,7 +39,6 @@ void lset_import(command::context& context) {
     command::module_range mod_nums;
     command::modules_option(mod_nums, mod_nums_opt, crate.get_modules());
     std::string action;
-    xia::logging::log_level_guard log_guard(xia::log::debug);
     for (auto mod_num : mod_nums) {
         crate[mod_num].run_check();
     }

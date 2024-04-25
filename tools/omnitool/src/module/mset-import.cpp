@@ -37,7 +37,6 @@ void mset_import(command::context& context) {
     auto settings_opt = context.cmd.get_arg();
     command::module_range mod_nums;
     std::string action;
-    xia::logging::log_level_guard log_guard(xia::log::debug);
     if (context.cmd.has_arg()) {
         auto action_opt = context.cmd.get_arg();
         if (action_opt == "flush" || action_opt == "sync") {

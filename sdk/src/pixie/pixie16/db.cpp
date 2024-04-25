@@ -197,7 +197,7 @@ void db::get(const std::string item, double& value) {
 
 afe_dbs::afe_dbs(pixie::module::module& module__)
     : module(module__), adcctrl { } {
-    log(log::debug) << pixie::module::module_label(module_, "fixture: afe_dbs")
+    log(log::info) << pixie::module::module_label(module_, "fixture: afe_dbs")
                     << "create";
 }
 
