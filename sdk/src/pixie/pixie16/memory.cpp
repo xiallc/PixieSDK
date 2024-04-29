@@ -197,13 +197,6 @@ void mca::read(const address addr, word_ptr values, size_t size) {
     bus_write(hw::device::WRT_EXT_MEM, addr);
 
     /*
-     * Dummy read to make the FPGA not glitch at the end of addr write.
-     */
-    if (module >= hw::rev_H) {
-        (void) bus_read(MCA_MEM_DATA);
-    }
-
-    /*
      * Set up short FIFO in System FPGA
      */
     bus_write(hw::device::SET_EXMEM_FIFO, 0);
