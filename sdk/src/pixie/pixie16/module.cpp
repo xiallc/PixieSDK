@@ -2103,7 +2103,9 @@ void module::run_end() {
 }
 
 bool module::run_active() {
-    online_check();
+    if (!online()) {
+        return false;
+    }
     lock_guard guard(lock_);
     return hw::run::active(*this);
 }

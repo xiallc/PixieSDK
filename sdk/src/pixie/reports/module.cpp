@@ -100,8 +100,8 @@ void report(pixie::module::module& module, pixie::format::json& out) {
         out["pci_bus"] = module.pci_bus();
         out["pci_slot"] = module.pci_slot();
         out["crate_slot"] = module.slot;
-        out["adc_res"] = module.channels[0].fixture->config.adc_bits;
-        out["adc_freq"] = module.channels[0].fixture->config.adc_msps;
+        out["adc_res"] = module.eeprom.configs[0].adc_bits;
+        out["adc_freq"] = module.eeprom.configs[0].adc_msps;
         out["num_channels"] = module.num_channels;
         out["max_channels"] = module.max_channels;
         out["eeprom_version"] = module.eeprom_format;
