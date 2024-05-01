@@ -66,7 +66,7 @@ static std::atomic_size_t total_image_size;
  */
 const char* system_firmware_path =
 #ifdef XIA_PIXIE_WINDOWS
-    "c:/xia/pixie-16/firmware";
+    "C:/Program Files/xia/pixie-16/firmware";
 #else
     "/usr/local/xia/pixie-16/firmware";
 #endif
