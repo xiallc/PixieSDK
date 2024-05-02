@@ -41,8 +41,10 @@ namespace util {
 namespace path {
 #ifdef XIA_PIXIE_WINDOWS
 const char path_sep =  '\\';
+static const char* valid_path_seps = "/\\";
 #else
 const char path_sep =  '/';
+static const char* valid_path_seps = "/";
 #endif
 
 void find_files(
@@ -71,10 +73,10 @@ void find_files(
             if (ent->d_type == DT_REG) {
                 if (name.size() > ext.size() &&
                     name.compare(name.size() - ext.size(), ext.size(), ext) == 0) {
-                    files_.push_back(path + '/' + name);
+                    files_.push_back(join(path, {name}));
                 }
             } else if (ent->d_type == DT_DIR && name != "." && name != "..") {
-                std::string child = path + '/' + name;
+                std::string child = join(path, {name});
                 find_files(child, files_, ext, ignore_error, depth + 1);
             }
         }
@@ -90,7 +92,7 @@ void find_files(
 }
 
 const std::string basename(const std::string& name) {
-    size_t b = name.find_last_of(path_sep);
+    size_t b = name.find_last_of(valid_path_seps);
     if (b != std::string::npos) {
         return name.substr(b + 1);
     }
@@ -98,7 +100,7 @@ const std::string basename(const std::string& name) {
 };
 
 const std::string dirname(const std::string& name) {
-    size_t b = name.find_last_of(path_sep);
+    size_t b = name.find_last_of(valid_path_seps);
     if (b != std::string::npos) {
         return name.substr(0, b);
     }

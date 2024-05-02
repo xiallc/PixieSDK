@@ -355,9 +355,21 @@ TEST_SUITE("xia::util") {
     TEST_CASE("Path") {
         SUBCASE("basename") {
             CHECK(xia::util::path::basename(__FILE__) == "test_pixie_util.cpp");
+#ifdef XIA_PIXIE_WINDOWS
+            CHECK(xia::util::path::basename("\\a\\b\\c\\d") == "d");
+            CHECK(xia::util::path::basename("\\a\\b\\c/d") == "d");
+            CHECK(xia::util::path::basename("/a/b/c\\d") == "d");
+#endif
+            CHECK(xia::util::path::basename("/a/b/c/d") == "d");
         }
         SUBCASE("dirname") {
             CHECK(xia::util::path::basename(xia::util::path::dirname(__FILE__)) == "sdk");
+#ifdef XIA_PIXIE_WINDOWS
+            CHECK(xia::util::path::basename(xia::util::path::dirname("\\a\\b\\c\\d")) == "c");
+            CHECK(xia::util::path::basename(xia::util::path::dirname("\\a\\b\\c/d")) == "c");
+            CHECK(xia::util::path::basename(xia::util::path::dirname("/a/b/c\\d")) == "c");
+#endif
+            CHECK(xia::util::path::basename(xia::util::path::dirname("/a/b/c/d")) == "c");
         }
         SUBCASE("join") {
 #ifdef XIA_PIXIE_WINDOWS
