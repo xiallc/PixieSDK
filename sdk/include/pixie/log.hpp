@@ -30,19 +30,35 @@
 
 #include <pixie/os_compat.h>
 
+#include <pixie/mib.hpp>
+
 namespace xia {
 /**
  * @brief Components for logging to a file or stream.
  */
 namespace logging {
 /**
- * @brief An outputter outputs a log stream. Destruct them last.
+ * @brief A log handle contains the log mib and outputter outputs that
+ * log stream. Destruct them last.
+ *
+ * The MIB header has to be included in this header before the static
+ * below is declared. This ensures the MIB is created before the log
+ * MIB is created and destructed after the log MIB is destroyed.
  */
+struct log_mib;
+using log_mib_ptr = std::unique_ptr<log_mib>;
 struct outputter;
 using outputters = std::list<outputter>;
-using outputters_ptr = std::shared_ptr<outputters>;
-PIXIE_EXPORT outputters_ptr PIXIE_API make_outputters();
-static outputters_ptr outputs_ptr = make_outputters();
+using outputters_ptr = std::unique_ptr<outputters>;
+struct log_handle {
+    log_mib_ptr mibs;
+    outputters_ptr outputs;
+    log_handle();
+    ~log_handle();
+};
+using log_handle_ptr = std::shared_ptr<log_handle>;
+PIXIE_EXPORT log_handle_ptr PIXIE_API make_log_handle();
+static log_handle_ptr logs = make_log_handle();
 };  // namespace logging
 
 /**
@@ -55,8 +71,6 @@ static outputters_ptr outputs_ptr = make_outputters();
  * runtime performance.
  */
 class log {
-    friend logging::outputter;
-
 public:
     /**
      * The log level defines what type of messages get processed.
@@ -77,6 +91,10 @@ public:
 
     log::level get_level() const {
         return level_.load();
+    }
+
+    const std::string get_entry() const {
+        return output.str();
     }
 
 private:
@@ -119,6 +137,28 @@ struct log_level_guard {
     ~log_level_guard() {
         xia::logging::set_level(level);
     }
+};
+
+/*
+ * Parse and return the log.command status returned with a MIB node
+ * get operation.
+ */
+struct log_mib_status {
+    enum mode_type { follow, hold };
+    size_t count;
+    size_t entries;
+    size_t mib_count;
+    size_t in;
+    size_t at;
+    bool on;
+    mode_type mode;
+
+    log_mib_status();
+    log_mib_status(const std::string& status);
+
+    void parse(const std::string& status);
+
+    void clear();
 };
 
 /**

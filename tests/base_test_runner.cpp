@@ -25,17 +25,11 @@
 
 #include <iostream>
 
-#if __rtems__
-#include <rtems.h>
-#endif /* __rtems__ */
+#include <thread>
 
 int
 get_num_cpus(void) {
-#if __rtems__
-    return rtems_scheduler_get_processor_maximum();
-#else /* __rtems__ */
-    return 1;
-#endif /* __rtems__ */
+    return std::thread::hardware_concurrency();
 }
 
 std::string
