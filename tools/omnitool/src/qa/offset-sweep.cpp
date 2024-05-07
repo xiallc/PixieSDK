@@ -406,12 +406,6 @@ void offset_sweep_worker::worker(
             mod_results[idx].channel = channels[idx];
         }
         period.start();
-        for (auto channel : channels) {
-            /*
-             * 4 is a magic number to make this work!
-             */
-            module.write_var("ChanCSRa", 4, channel);
-        }
         for (int offset = offset_start;
              offset <= offset_end;
              offset += offset_step) {
