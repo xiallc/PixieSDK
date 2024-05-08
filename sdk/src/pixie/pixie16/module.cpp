@@ -351,7 +351,7 @@ int pci_bus_handle::serial_num() const {
 }
 
 int pci_bus_handle::revision() const {
-    return (get(mailbox::config) >> 8) && 0xff;
+    return (get(mailbox::config) >> 8) & 0xff;
 }
 
 size_t pci_bus_handle::opens() const {
@@ -994,7 +994,7 @@ void module::open(size_t device_number) {
         opened_ = true;
 
         device->update_opens(slot);
-        device->set_config(slot, revision, serial_num);
+        device->set_config(slot, serial_num, revision);
 
         erase_values();
         erase_channels();
