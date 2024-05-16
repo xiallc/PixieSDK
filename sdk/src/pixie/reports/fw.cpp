@@ -69,7 +69,7 @@ static void fw_report(pixie::crate::crate& crate, pixie::format::json& jfws,
             if (fw_set->tag() == mod.get_fw_tag()) {
                 pixie::format::json fw_set_info;
                 fw_set_info["release"] = fw_set->release.to_string();
-                fw_set_info["release-data"] = fw_set->release_date;
+                fw_set_info["release_date"] = fw_set->release_date;
                 fw_set_info["tag"] = fw_set->tag();
                 fw_set_info["resident"] = mod.firmware_resident(fw_set->release);
                 for (auto fw : fw_set->firmwares) {
