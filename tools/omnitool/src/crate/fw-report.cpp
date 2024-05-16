@@ -48,7 +48,7 @@ void fw_report(command::context& context) {
         command::modules_option(mod_nums, mod_nums_opt, crate.get_modules());
         if (mod_nums.size() == 1) {
             reports::fw_report(crate, out, crate[mod_nums[0]]);
-        } else if (mod_nums.empty()) {
+        } else if (mod_nums_opt.empty()) {
             reports::fw_report(crate, out);
         } else {
             throw std::runtime_error("Can only report one module at a time.");
