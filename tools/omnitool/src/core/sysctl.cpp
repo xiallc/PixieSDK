@@ -30,6 +30,7 @@ namespace xia {
 namespace omnitool {
 namespace command {
 void sys_control(context& context) {
+    auto json_opt = context.cmd.get_option("-j");
     std::string value_opt;
     auto mib_opt = context.cmd.get_arg();
     if (!mib_opt.empty()) {
@@ -43,17 +44,26 @@ void sys_control(context& context) {
     }
     std::regex mib_match(mib_opt);
     bool attributes = false;
+    bool json_mode = json_opt == "true";
+    xia::pixie::format::json json_out;
     xia::mib::mib_walk_func walker =
-        [&mib_opt, &value_opt, &mib_match, attributes](xia::mib::node& nod) {
+        [&mib_opt, &value_opt, &mib_match, attributes, json_mode, &json_out](xia::mib::node& nod) {
             auto name = nod.name();
             if (mib_opt.empty() || std::regex_search(name, mib_match)) {
                 if (!value_opt.empty()) {
                     nod.set_value(value_opt);
                 }
-                std::cout << name << " = " << nod.str(attributes) << std::endl;
+                if (json_mode) {
+                    mib::mib_to_json(json_out, nod.str(attributes), name);
+                } else {
+                    std::cout << name << " = " << nod.str(attributes) << std::endl;
+                }
             }
         };
     xia::mib::walk(walker);
+    if (json_mode) {
+        std::cout << json_out.dump(4) << std::endl;
+    }
 }
 
 void sys_control_comp(context& , completion& ) {

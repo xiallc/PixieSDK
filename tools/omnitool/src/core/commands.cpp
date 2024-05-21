@@ -503,9 +503,9 @@ static const definition sys_control_cmd = {
     "Module", "/util/sysctl",
     omnitool_command_handers(sys_control),
     {"init", "probe"},
-    0, 3, 0,
-    {},
-    "[mib]",
+    0, 4, 0,
+    {omnitool_command_opt_decl("j")},
+    "[-j] [mib]",
     "System control read/write of the MIB"
 };
 

@@ -998,6 +998,20 @@ bool contains(const char* name) {
 void walk(mib_walk_func& walk_func) {
     mib.walk(walk_func);
 }
+
+void mib_to_json(xia::pixie::format::json& mib_json, std::string val, std::string names) {
+    if (!names.empty()) {
+        auto n = names.find_first_of(mib::mibsep);
+        if (n == std::string::npos) {
+            xia::util::string::dequote(val);
+            mib_json[names] = val;
+        } else {
+            auto name = names.substr(0, n);
+            names = names.substr(n + 1);
+            mib_to_json(mib_json[name], val, names);
+        }
+    }
+}
 }  // namespace mib
 }  // namespace xia
 

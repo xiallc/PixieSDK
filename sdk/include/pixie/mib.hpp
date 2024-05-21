@@ -31,6 +31,7 @@
 #include <vector>
 
 #include <pixie/error.hpp>
+#include <pixie/format.hpp>
 
 namespace xia {
 namespace mib {
@@ -916,6 +917,8 @@ bool contains(const char* name);
  */
 using mib_walk_func = std::function<void(node& nod)>;
 void walk(mib_walk_func& walk_func);
+
+void mib_to_json(pixie::format::json& mib_json, std::string val, std::string names);
 
 } // mib
 } // xia
