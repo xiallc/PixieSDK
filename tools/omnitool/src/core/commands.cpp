@@ -140,7 +140,7 @@ command::command(const definition& cmd) : def(cmd) {}
 void command::parse(arguments_iter& ai, arguments_iter& ae) {
     while (ai != ae) {
         auto& arg = *ai;
-        if (arg[0] != '-') {
+        if (arg[0] != '-' || util::string::check_number(arg.substr(1))) {
             break;
         }
         ++ai;
@@ -176,7 +176,11 @@ void command::parse(arguments_iter& ai, arguments_iter& ae) {
     while (ai != ae) {
         auto& arg = *ai++;
         if (arg[0] == '-') {
-            throw std::runtime_error("command option after argument: " + def.name);
+            if (util::string::check_number(arg.substr(1))) {
+                args.push_back(arg);
+            } else {
+                throw std::runtime_error("command option after argument: " + def.name);
+            }
         } else {
             args.push_back(arg);
         }
