@@ -6,6 +6,7 @@ add_executable(pixie_sdk_unit_test_runner $<TARGET_OBJECTS:BaseTestRunnerObjLib>
         test_list_mode.cpp
         test_param.cpp
         test_pixie_buffer.cpp
+        test_pixie_db.cpp
         test_pixie_eeprom.cpp
         test_pixie_error.cpp
         test_pixie_firmware.cpp
