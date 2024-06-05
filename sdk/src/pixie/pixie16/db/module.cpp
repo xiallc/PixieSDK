@@ -199,6 +199,9 @@ void module::adc_self_test(bool use_log) {
 }
 
 bool module::adc_pattern_check(log_output& out) {
+    if (!module_.hardware_accessible()) {
+        return false;
+    }
     if (!has_test("adc.pattern-check")) {
         return false;
     }
@@ -258,6 +261,9 @@ bool module::adc_pattern_check(log_output& out) {
 }
 
 bool module::adc_sweet_spot(log_output& out) {
+    if (!module_.hardware_accessible()) {
+        return false;
+    }
     bool result = true;
     /*
      * Zero means sweet spot sweeping is not supported
@@ -403,6 +409,9 @@ bool module::adc_sweet_spot(log_output& out) {
 }
 
 bool module::adc_channel_swap(log_output& out) {
+    if (!module_.hardware_accessible()) {
+        return false;
+    }
     bool result = true;
     /*
      * Some DBs do not have the swap problem and will disable swapping

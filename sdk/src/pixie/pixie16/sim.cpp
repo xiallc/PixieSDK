@@ -34,6 +34,7 @@ namespace xia {
 namespace pixie {
 namespace sim {
 module_defs mod_defs;
+eeprom_defs eep_defs;
 
 struct assembly : public xia::pixie::fixture::assembly {
     assembly(xia::pixie::module::module& module_);
@@ -83,6 +84,8 @@ void assembly::get_traces() {}
 void assembly::adjust_offsets() {}
 void assembly::tau_finder() {}
 
+static void load_module_eeprom(const eeprom_data& data, xia::pixie::module::module& module_);
+
 module::module(xia::pixie::backplane::backplane& backplane_)
     : xia::pixie::module::module(backplane_), fw_release(firmware::not_released),
       fw_type(firmware::firmware_set::set_type::undefined), init_online(true) {
@@ -112,16 +115,27 @@ void module::open(size_t device_number) {
             serial_num = mod_def.serial_num;
             num_channels = mod_def.num_channels;
             max_histogram_length = hw::large_histogram_length;
-            hw::config config;
-            config.adc_bits = mod_def.adc_bits;
-            config.adc_msps = mod_def.adc_msps;
-            config.adc_clk_div = mod_def.adc_clk_div;
-            config.fpga_clk_mhz = mod_def.adc_msps / mod_def.adc_clk_div;
-            eeprom.configs.resize(num_channels, config);
+            auto eep_finder = [slot = mod_def.slot](eeprom_def def) {
+                return slot == def.slot;
+            };
+            auto eep_data = std::find_if(eep_defs.begin(), eep_defs.end(), eep_finder);
+            if (eep_data == eep_defs.end()) {
+                hw::config config;
+                config.adc_bits = mod_def.adc_bits;
+                config.adc_msps = mod_def.adc_msps;
+                config.adc_clk_div = mod_def.adc_clk_div;
+                config.fpga_clk_mhz = mod_def.adc_msps / mod_def.adc_clk_div;
+                eeprom.configs.resize(num_channels, config);
+                fixtures = std::make_shared<assembly>(*this);
+            } else {
+                load_module_eeprom(eep_data->data, *this);
+                eeprom.process();
+                fixtures = fixture::make(*this);
+                fixtures->init_assemblies();
+            }
 
             var_defaults = mod_def.var_defaults;
 
-            fixtures = std::make_shared<assembly>(*this);
 
             opened_ = true;
             return;
@@ -184,6 +198,8 @@ void module::boot(const boot_params& params, const firmware::firmware_set& firmw
     online_ = comms_fpga && fippi_fpga && dsp_online;
     fw_release = firmware.release;
     fw_type = firmware.type();
+    fixtures->boot();
+    fixtures->online();
 }
 
 void module::initialize() {}
@@ -357,6 +373,76 @@ void add_module_def(const std::string mod_desc, const char delimiter) {
 
     mod_defs.push_back(mod_def);
 }
+
+void clear_module_defs() {
+    mod_defs.clear();
+}
+
+void load_eeprom_defs(const eeprom_slot_def& defs) {
+    auto& slots = std::get<0>(defs);
+    auto& datas = std::get<1>(defs);
+    if (slots.size() != datas.size()) {
+        throw error(error::code::invalid_value, "Number of slots and EEPROMs don't match");
+    }
+    for (size_t i = 0; i < slots.size(); i++) {
+        add_eeprom_def(slots[i], datas[i]);
+    }
+}
+
+void add_eeprom_def(const int slot, const eeprom_data& data) {
+    eeprom_def eep_def;
+    eep_def.data = data;
+    eep_def.slot = slot;
+    eep_defs.push_back(eep_def);
+}
+
+void clear_eeprom_defs() {
+    eep_defs.clear();
+}
+
+template<typename T>
+static T get_value(const std::string& opt, int base = 9) {
+    T value = 0;
+    try {
+        value = T(std::stoul(opt, nullptr, base));
+    } catch (std::invalid_argument& ) {
+        throw std::runtime_error("invalid number: " + opt);
+    } catch (std::out_of_range& ) {
+        throw std::runtime_error("number out of range: " + opt);
+    }
+    return value;
+}
+
+static void load_module_eeprom(const eeprom_data& data, xia::pixie::module::module& module_) {
+    auto& eeprom = module_.eeprom;
+    eeprom.clear();
+    eeprom.data.resize(xia::pixie::hw::eeprom_block_size);
+    for (auto& s : data) {
+        xia::util::string::strings ss;
+        xia::util::string::split(ss, s);
+        if (ss.size() != 17) {
+            throw std::runtime_error("invalid EEPROM format");
+        }
+        eeprom_addr a = get_value<eeprom_addr>(ss[0], 16);
+        if ((a + 16) > eeprom.data.size()) {
+            throw std::runtime_error("invalid EEPROM address: " + ss[0]);
+        }
+        for (int b = 0; b < 7; ++b) {
+            eeprom.data[a + b] = get_value<uint8_t>(ss[b + 1], 16);
+        }
+        xia::util::string::strings ss7_8;
+        xia::util::string::split(ss7_8, ss[8], '-');
+        if (ss7_8.size() != 2) {
+            throw std::runtime_error("invalid EEPROM format");
+        }
+        eeprom.data[a + 7] = get_value<uint8_t>(ss7_8[0], 16);
+        eeprom.data[a + 8] = get_value<uint8_t>(ss7_8[1], 16);
+        for (int b = 9; b < 16; ++b) {
+            eeprom.data[a + b] = get_value<uint8_t>(ss[b], 16);
+        }
+    }
+    return;
+};
 }  // namespace sim
 }  // namespace pixie
 }  // namespace xia

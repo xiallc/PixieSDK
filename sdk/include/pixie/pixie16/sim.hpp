@@ -119,6 +119,28 @@ extern module_defs mod_defs;
 void load_module_defs(const std::string mod_def_file);
 void load_module_defs(std::istream& input);
 void add_module_def(const std::string mod_desc, const char delimiter = ' ');
+void clear_module_defs();
+
+/**
+ * @brief EEPROM data for a given module.
+ */
+using eeprom_data = std::vector<std::string>;
+using eeprom_slot_def = std::pair<std::vector<int>, std::vector<eeprom_data>>;
+
+struct eeprom_def {
+    eeprom_data data;
+    int slot;
+};
+
+using eeprom_defs = std::vector<eeprom_def>;
+using eeprom_addr = unsigned long;
+
+extern eeprom_defs eep_defs;
+
+void load_eeprom_defs(const eeprom_slot_def& defs);
+void add_eeprom_def(const int slot, const eeprom_data& data);
+void clear_eeprom_defs();
+
 }  // namespace sim
 }  // namespace pixie
 }  // namespace xia
