@@ -56,6 +56,7 @@ struct module : public fixture::assembly {
     mib::node testing;
 
     module(pixie::module::module& module_);
+    virtual ~module();
 
     virtual void fpga_fippi_loaded() override;
     virtual void boot() override;

@@ -165,6 +165,10 @@ module::module(pixie::module::module& module__)
     testing.set_event_func(mib::event::set, testing_set);
 }
 
+module::~module() {
+    testing.remove();
+}
+
 void module::fpga_fippi_loaded() {
     adcctrl = { };
 }
