@@ -22,6 +22,7 @@
 
 #include <pixie/pixie16/hw.hpp>
 #include <pixie/pixie16/memory.hpp>
+#include <pixie/utils/io.hpp>
 
 #include <omnitool-commands.hpp>
 #include <omnitool-completions.hpp>
@@ -89,6 +90,7 @@ static size_t legacy_mca_test(const pixie::hw::words& profile_write,
 }
 
 void mca_mem(command::context& context) {
+    util::io::ostream_guard guard(context.opts.out);
     auto& crate = context.crate;
     command::module_range mod_nums;
     bool first = true;
