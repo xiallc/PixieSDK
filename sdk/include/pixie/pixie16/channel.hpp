@@ -45,7 +45,7 @@ namespace channel {
  * @brief Defines Channel errors to throw.
  */
 struct error : public pixie::error::error {
-    typedef pixie::error::code code;
+    using code = pixie::error::code;
     explicit error(const int num, const hw::slot_type slot, const size_t channel, const code type,
                    const std::ostringstream& what);
     explicit error(const int num, const hw::slot_type slot, const size_t channel, const code type,
@@ -63,7 +63,7 @@ struct channel;
 /**
  * @brief Defines a range as a list of channels for an operation.
  */
-typedef std::vector<size_t> range;
+using range = std::vector<size_t>;
 
 /**
  * @brief Sets the range of all channels to [first, first + size).
@@ -76,9 +76,9 @@ void range_set(range& range_, size_t first = 0);
 struct baseline {
     static const size_t max_num = 3640;
 
-    typedef std::pair<double, double> value;
-    typedef std::array<value, max_num> values;
-    typedef std::vector<values> channels_values;
+    using value = std::pair<double, double>;
+    using values = std::array<value, max_num>;
+    using channels_values = std::vector<values>;
 
     module::module& module;
     range& channels;
@@ -295,7 +295,7 @@ struct channel {
 /**
  * @brief Defines a type for a vector of channel objects
  */
-typedef std::vector<channel> channels;
+using channels = std::vector<channel>;
 }  // namespace channel
 }  // namespace pixie
 }  // namespace xia

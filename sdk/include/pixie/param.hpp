@@ -38,7 +38,7 @@ namespace xia {
 namespace pixie {
 namespace firmware {
 struct firmware;
-typedef std::shared_ptr<firmware> firmware_ref;
+using firmware_ref = std::shared_ptr<firmware>;
 }  // namespace firmware
 /**
  * @brief Tools for working with parameters and variables in the SDK.
@@ -592,12 +592,12 @@ enum struct sync_mode {
 /*
  * Value type.
  */
-typedef uint32_t value_type;
+using value_type = uint32_t;
 
 /*
  * Values.
  */
-typedef std::vector<value_type> values;
+using values = std::vector<value_type>;
 
 /**
  * @brief A data structure describing information about Parameters.
@@ -631,20 +631,20 @@ struct variable_desc : public parameter_desc<V> {
 /*
  * Parameter descriptor sets for the system, modules and channels
  */
-typedef parameter_desc<system_param> system_param_desc;
-typedef std::vector<system_param_desc> system_param_descs;
-typedef parameter_desc<module_param> module_param_desc;
-typedef std::vector<module_param_desc> module_param_descs;
-typedef parameter_desc<channel_param> channel_param_desc;
-typedef std::vector<channel_param_desc> channel_param_descs;
+using system_param_desc = parameter_desc<system_param>;
+using system_param_descs = std::vector<system_param_desc>;
+using module_param_desc = parameter_desc<module_param>;
+using module_param_descs = std::vector<module_param_desc>;
+using channel_param_desc = parameter_desc<channel_param>;
+using channel_param_descs = std::vector<channel_param_desc>;
 
 /*
  * Variable descriptor sets for modules and channels
  */
-typedef variable_desc<module_var> module_var_desc;
-typedef std::vector<module_var_desc> module_var_descs;
-typedef variable_desc<channel_var> channel_var_desc;
-typedef std::vector<channel_var_desc> channel_var_descs;
+using module_var_desc = variable_desc<module_var>;
+using module_var_descs = std::vector<module_var_desc>;
+using channel_var_desc = variable_desc<channel_var>;
+using channel_var_descs = std::vector<channel_var_desc>;
 
 /**
  * @brief A variable is an object that combines descriptors with values.
@@ -670,15 +670,15 @@ struct variable {
 /*
  * Module variables
  */
-typedef variable<module_var_desc> module_variable;
-typedef std::vector<module_variable> module_variables;
+using module_variable = variable<module_var_desc>;
+using module_variables = std::vector<module_variable>;
 
 /*
  * Channel variables
  */
-typedef variable<channel_var_desc> channel_variable;
-typedef std::vector<channel_variable> channel_variables;
-typedef std::vector<channel_variables> channels_variables;
+using channel_variable = variable<channel_var_desc>;
+using channel_variables = std::vector<channel_variable>;
+using channels_variables = std::vector<channel_variables>;
 
 /**
  * @brief Copies filter variables from one channel to another. Only used with channel objects.
@@ -691,8 +691,8 @@ struct copy_filter_var {
     copy_filter_var(V var_, uint32_t mask_ = UINT32_MAX) : var(var_), mask(mask_) {}
 };
 
-typedef std::vector<copy_filter_var<module_var>> copy_filter_module;
-typedef std::vector<copy_filter_var<channel_var>> copy_filter_channel;
+using copy_filter_module = std::vector<copy_filter_var<module_var>>;
+using copy_filter_channel = std::vector<copy_filter_var<channel_var>>;
 
 /*
  * Copy filter masks. The masks select the filters used in a copy.
@@ -715,11 +715,11 @@ const unsigned int all_mask = (1 << 12) - 1;
 /*
  * Look up maps. A fast way to map a name to a parameter or variable.
  */
-typedef std::map<std::string, system_param> system_param_map;
-typedef std::map<std::string, module_param> module_param_map;
-typedef std::map<std::string, channel_param> channel_param_map;
-typedef std::map<std::string, module_var> module_var_map;
-typedef std::map<std::string, channel_var> channel_var_map;
+using system_param_map = std::map<std::string, system_param>;
+using module_param_map = std::map<std::string, module_param>;
+using channel_param_map = std::map<std::string, channel_param>;
+using module_var_map = std::map<std::string, module_var>;
+using channel_var_map = std::map<std::string, channel_var>;
 
 /**
  * @brief Defines an Address map that can be used to parse binary data blobs.
@@ -727,8 +727,8 @@ typedef std::map<std::string, channel_var> channel_var_map;
  * This structure is typically used to parse Statistics or configuration data from the DSP.
  */
 struct address_map {
-    typedef std::pair<size_t, hw::address> desc_address;
-    typedef std::vector<desc_address> desc_addresses;
+    using desc_address = std::pair<size_t, hw::address>;
+    using desc_addresses = std::vector<desc_address>;
     /**
      * @brief Data structure for working with address ranges
      */

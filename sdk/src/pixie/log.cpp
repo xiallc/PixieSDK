@@ -54,7 +54,7 @@ static std::atomic<log::level> log_level(xia::log::warning);
  * Can be made asynchronous with a fixed size queue and worker thread.
  */
 struct outputter {
-    typedef std::mutex lock_type;
+    using lock_type = std::mutex;
 
     const std::string name;
     const std::string filename;
@@ -176,7 +176,7 @@ void outputter::write(const log::level entry_level, const std::string& entry) {
     }
 
     if (show_datetime) {
-        typedef std::chrono::microseconds us;
+        using us = std::chrono::microseconds;
         auto now = std::chrono::system_clock::now();
         auto as_time_t = std::chrono::system_clock::to_time_t(now);
         const auto now_us = std::chrono::duration_cast<us>(now.time_since_epoch());

@@ -39,8 +39,8 @@ namespace logging {
  * @brief An outputter outputs a log stream. Destruct them last.
  */
 struct outputter;
-typedef std::list<outputter> outputters;
-typedef std::shared_ptr<outputters> outputters_ptr;
+using outputters = std::list<outputter>;
+using outputters_ptr = std::shared_ptr<outputters>;
 PIXIE_EXPORT outputters_ptr PIXIE_API make_outputters();
 static outputters_ptr outputs_ptr = make_outputters();
 };  // namespace logging

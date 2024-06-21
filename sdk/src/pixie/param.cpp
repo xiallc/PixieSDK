@@ -43,7 +43,7 @@ namespace param {
 /*
  * Param errors
  */
-typedef pixie::error::error error;
+using error = pixie::error::error;
 
 static const system_param_map system_params = {
     {"NUMBER_MODULES", {system_param::number_modules}},

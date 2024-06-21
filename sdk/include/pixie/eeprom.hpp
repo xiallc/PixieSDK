@@ -41,7 +41,7 @@ namespace eeprom {
 /*
  * Local error
  */
-typedef pixie::error::error error;
+using error = pixie::error::error;
 
 /**
  * @brief Supported tags. Gaps allow additions in each section.

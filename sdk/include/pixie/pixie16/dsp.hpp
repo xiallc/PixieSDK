@@ -49,7 +49,7 @@ struct dsp {
     /**
      * The word loaded into the DSP.
      */
-    typedef uint16_t load_value_type;
+    using load_value_type = uint16_t;
 
     module::module& module;
 

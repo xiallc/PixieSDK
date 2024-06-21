@@ -73,7 +73,7 @@ struct stats_legacy {
     void validate() const;
 };
 
-typedef stats_legacy* stats_legacy_ptr;
+using stats_legacy_ptr = stats_legacy*;
 
 /*
  * API Crate

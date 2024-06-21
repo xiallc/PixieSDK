@@ -378,7 +378,7 @@ enum struct code {
  * @brief All PixieSDK exceptions need to be based on this error.
  */
 struct error : public std::runtime_error {
-    typedef pixie::error::code code;
+    using code = pixie::error::code;
     const code type;
 
     explicit error(const code type, const std::ostringstream& what);

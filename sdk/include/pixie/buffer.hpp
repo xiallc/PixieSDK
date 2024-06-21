@@ -44,38 +44,38 @@ namespace buffer {
 /*
  * Local error
  */
-typedef pixie::error::error error;
+using error = pixie::error::error;
 
 /**
  * @brief Defines the Buffer lock type
  */
-typedef std::mutex lock_type;
+using lock_type = std::mutex;
 /**
  * @brief A vector of lock_types is a lock_guard.
  */
-typedef std::lock_guard<lock_type> lock_guard;
+using lock_guard = std::lock_guard<lock_type>;
 
 /**
  * @brief A buffer value is still based on the hardware words.
  * A generic container is more work than it is worth at this point in time.
  */
-typedef pixie::hw::word buffer_value;
+using buffer_value = pixie::hw::word;
 /**
  * @brief Defines a type for pointers to buffer_values
  */
-typedef pixie::hw::word_ptr buffer_value_ptr;
+using buffer_value_ptr = pixie::hw::word_ptr;
 /**
  * @brief Defines a type for a vector of buffer words.
 */
-typedef pixie::hw::words buffer;
+using buffer = pixie::hw::words;
 /**
  * @brief Defines a pointer to a vector of buffer words.
 */
-typedef buffer* buffer_ptr;
+using buffer_ptr = buffer*;
 /**
  * @brief Defines a shared pointer of buffer objects to share between threads.
 */
-typedef std::shared_ptr<buffer> handle;
+using handle = std::shared_ptr<buffer>;
 
 /**
  * @brief The buffer pool to manage the buffer workers.
@@ -125,7 +125,7 @@ private:
  * @brief Buffer queue for allocating work to the workers.
  */
 struct queue {
-    typedef std::deque<handle> handles;
+    using handles = std::deque<handle>;
 
     queue();
 

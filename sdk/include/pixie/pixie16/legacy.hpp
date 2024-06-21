@@ -38,7 +38,7 @@ namespace pixie {
  */
 namespace legacy {
 
-typedef pixie::error::error error;
+using error = pixie::error::error;
 
 /**
  * @brief Defines a data structure related to binary settings files.

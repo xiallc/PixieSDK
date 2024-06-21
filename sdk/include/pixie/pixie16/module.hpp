@@ -59,7 +59,7 @@ namespace module {
  * @brief Defines an error structure for module specific errors.
  */
 struct error : public pixie::error::error {
-    typedef pixie::error::code code;
+    using code = pixie::error::code;
     explicit error(
         const int num, const hw::slot_type slot, const code type,
         const std::ostringstream& what);
@@ -81,7 +81,7 @@ struct pci_bus_handle;
 /**
  * @brief Defines a vector of unique pci_bus_handles to ensure thread safety.
  */
-typedef std::unique_ptr<pci_bus_handle> bus_handle;
+using bus_handle = std::unique_ptr<pci_bus_handle>;
 
 /**
  * @brief Defines a Pixie-16 Module
@@ -99,14 +99,14 @@ class module {
     /*
      * Module lock
      */
-    typedef std::recursive_mutex lock_type;
-    typedef std::lock_guard<lock_type> lock_guard;
+    using lock_type = std::recursive_mutex;
+    using lock_guard = std::lock_guard<lock_type>;
 
     /*
      * Bus lock
      */
-    typedef std::mutex bus_lock_type;
-    typedef std::lock_guard<bus_lock_type> bus_lock_guard;
+    using bus_lock_type = std::mutex;
+    using bus_lock_guard = std::lock_guard<bus_lock_type>;
 
     /*
      * A datasotre for persistent module wide data. This is for
@@ -1063,18 +1063,18 @@ std::string module_label(const module& mod, const char* label = "module");
 /*
  * A list of numbers that can be assigned to modules by slots
  */
-typedef std::pair<size_t, size_t> number_slot;
-typedef std::vector<number_slot> number_slots;
+using number_slot = std::pair<size_t, size_t>;
+using number_slots = std::vector<number_slot>;
 
 /**
  * A module pointer.
  */
-typedef std::shared_ptr<module> module_ptr;
+using module_ptr = std::shared_ptr<module>;
 
 /**
  * A container of modules.
  */
-typedef std::vector<module_ptr> modules;
+using modules = std::vector<module_ptr>;
 
 /**
  * Assign the number to the slots in the rack.

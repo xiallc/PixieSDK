@@ -143,62 +143,62 @@ static const size_t pci_bus_datarate = 100;
 /**
  * @brief Defines a type for memory register addresses.
  */
-typedef uint32_t address;
+using address = uint32_t;
 
 /**
  * @brief Defines a type for the basic unit of read/write communication
  */
-typedef uint32_t word;
+using word = uint32_t;
 
 /**
  * @brief defines a type for a pointer to a word
  */
-typedef word* word_ptr;
+using word_ptr = word*;
 
 /**
  * @brief defines a type for a const pointer to a word
  */
-typedef const word* const_word_ptr;
+using const_word_ptr = const word*;
 
 /**
  * @brief Defines a type for a vector of words. Used to handle blocks of memory.
  */
-typedef std::vector<word> words;
+using words = std::vector<word>;
 
 /**
  * @brief Defines a type for ADC trace words.
  */
-typedef uint16_t adc_word;
+using adc_word = uint16_t;
 
 /**
  * @brief Defines a type used to handle IO data from the hardware.
  */
-typedef std::array<word, io_buffer_length> io_buffer;
+using io_buffer = std::array<word, io_buffer_length>;
 
 /**
  * @brief Defines a type for an ADC trace buffer, as read from the channel
  */
-typedef std::array<word, max_adc_trace_length> adc_trace_buffer;
+using adc_trace_buffer = std::array<word, max_adc_trace_length>;
 
 /**
  * @brief defines a type for ADC traces
  */
-typedef std::vector<adc_word> adc_trace;
+using adc_trace = std::vector<adc_word>;
 
 /**
  * @brief defines a type for a container of ADC traces
  */
-typedef std::vector<adc_trace> adc_traces;
+using adc_traces = std::vector<adc_trace>;
 
 /**
  * @brief defines a type for a container of doubles
  */
-typedef std::vector<double> doubles;
+using doubles = std::vector<double>;
 
 /**
  * @brief Defines a type for Hardware errors
  */
-typedef error::error error;
+using error = error::error;
 
 /**
  * @brief Type of fixtures modules support.
@@ -270,7 +270,7 @@ struct config {
     void clear();
 };
 
-typedef std::vector<config> configs;
+using configs = std::vector<config>;
 
 /**
  * @brief A daughter board assembly

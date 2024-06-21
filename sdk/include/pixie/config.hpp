@@ -38,7 +38,7 @@ namespace pixie {
  */
 namespace config {
 
-typedef pixie::error::error error;
+using error = pixie::error::error;
 
 /**
  * @brief Import a JSON configuration into a crate's internal variables.

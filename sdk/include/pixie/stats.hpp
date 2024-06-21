@@ -63,7 +63,7 @@ struct channel {
     double live_time() const;
 };
 
-typedef std::vector<channel> channels;
+using channels = std::vector<channel>;
 
 /**
  * @brief A data structure holding module statistics read from the module.
@@ -80,7 +80,7 @@ struct module {
     double real_time() const;
 };
 
-typedef std::vector<module> modules;
+using modules = std::vector<module>;
 
 /**
  * @brief A data structure aggregating module and channel statistics from a single module.
