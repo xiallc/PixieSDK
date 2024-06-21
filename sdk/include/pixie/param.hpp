@@ -569,7 +569,7 @@ enum struct channel_var {
 /**
  * @brief defines the Variable's input/output mode.
  */
-enum rwrowr { rw, ro, wr };
+enum rwrowr { rw, ro, wr, rd_wronce };
 
 /**
  * @brief Variable enabled or disabled
@@ -655,9 +655,10 @@ struct variable {
      * @brief Structure to describe the data associated with a descriptor.
      */
     struct data {
+        bool written_once;
         bool dirty; /*!< Written to hardware? */
         value_type value;
-        data() : dirty(false), value(0) {}
+        data() : written_once(false), dirty(false), value(0) {}
     };
     const Vdesc& var; /*!< The variable descriptor */
     std::vector<data> value; /*!< The value(s) */

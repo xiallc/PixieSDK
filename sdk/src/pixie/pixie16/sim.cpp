@@ -141,7 +141,6 @@ void module::open(size_t device_number) {
 
             var_defaults = mod_def.var_defaults;
 
-
             opened_ = true;
             return;
         }
@@ -186,6 +185,7 @@ void module::boot(const boot_params& params, const firmware::firmware_set& firmw
     auto boot_comms = params.boot_comms;
     auto boot_fippi = params.boot_fippi;
     auto boot_dsp = params.boot_dsp;
+    init_values();
     if (boot_comms) {
         comms_fpga = true;
         fixtures->fpga_comms_loaded();
@@ -198,13 +198,13 @@ void module::boot(const boot_params& params, const firmware::firmware_set& firmw
         dsp_online = true;
         fixtures->dsp_loaded();
     }
-    init_values();
     init_channels();
     online_ = comms_fpga && fippi_fpga && dsp_online;
     fw_release = firmware.release;
     fw_type = firmware.type();
     fixtures->boot();
     fixtures->online();
+    write_var(param::module_var::SlotID, param::value_type(slot));
 }
 
 void module::initialize() {}

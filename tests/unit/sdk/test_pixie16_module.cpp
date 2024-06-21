@@ -155,7 +155,7 @@ static xia::pixie::format::json short_config = {
         {"VetoStretch", {30}},
         {"Xavg", {0}},
         {"Xwait", {8}}}}}},
-    {"metadata", {{"hardware_revision", "DEFAULT"}, {"slot", 99}}},
+    {"metadata", {{"hardware_revision", "DEFAULT"}, {"slot", 2}}},
     {"module",
      {{"input",
        {{"CoincPattern", 0},
@@ -182,6 +182,8 @@ static xia::pixie::format::json short_config = {
         {"U00", {0, 0, 0, 0, 0, 0, 0}},
         {"UserIn", {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}}}}}}};
 
+/* The long configs were taken from exported settings files, with values changed by hand to create
+ * testable differences between the two */
 static std::string long_config =
     "{\"channel\":{\"input\":{\"BLcut\":[1,1,1,1,1,0,1,1,1,0,1,1,1,1,1,3],\"BaselinePercent\":"
     "[10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10],\"CFDDelay\":[8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8],"
@@ -248,6 +250,74 @@ static std::string long_config =
     "\"FastTrigBackplaneEna\":0,\"HostIO\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"HostRunTimePreset\":0,"
     "\"InSynch\":0,\"MaxEvents\":0,\"ModCSRA\":0,\"ModCSRB\":65,\"ModFormat\":0,\"ModID\":0,"
     "\"ModNum\":0,\"Resume\":1,\"RunTask\":0,\"SlotID\":2,\"SlowFilterRange\":6,\"SynchWait\":0,"
+    "\"TrigConfig\":[0,0,0,0],\"U00\":[0,0,0,0,0,0,0],\"UserIn\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}}}";
+
+static std::string long_config_2 =
+    "{\"channel\":{\"input\":{\"BLcut\":[4,3,4,3,3,3,3,4,3,4,3,3,3,3,4,3],\"BaselinePercent\":"
+    "[13,13,10,10,10,13,10,13,10,10,10,10,13,10,10,10],\"CFDDelay\":[8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8],"
+    "\"CFDScale\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"CFDThresh\":[120,120,120,120,120,120,120,120,"
+    "120,120,120,120,120,120,120,120],\"ChanCSRa\":[292,292,292,292,292,292,292,292,292,292,292,292,"
+    "292,292,292,292],\"ChanCSRb\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"ChanTrigStretch\":[0,0,0,0,0,"
+    "0,0,0,0,0,0,0,0,0,0,0],\"DigGain\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"EnergyLow\":[0,0,0,0,0,"
+    "0,0,0,0,0,0,0,0,0,0,0],\"ExtTrigStretch\":[150,150,150,150,150,150,150,150,150,150,150,150,150,"
+    "150,150,150],\"ExternDelayLen\":[20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20],\"FastGap\":"
+    "[10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10],\"FastLength\":[20,20,20,20,20,20,20,20,20,20,"
+    "20,20,20,20,20,20],\"FastThresh\":[20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20],"
+    "\"FastTrigBackLen\":[10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10],\"FtrigoutDelay\":[0,0,0,"
+    "0,0,0,0,0,0,0,0,0,0,0,0,0],\"GainDAC\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"Integrator\":[0,0,0,"
+    "0,0,0,0,0,0,0,0,0,0,0,0,0],\"Log2Bweight\":[4294967294,4294967294,4294967294,4294967294,"
+    "4294967294,4294967294,4294967294,4294967294,4294967294,4294967294,4294967294,4294967294,"
+    "4294967294,4294967294,4294967294,4294967294],\"Log2Ebin\":[4294967295,4294967295,4294967295,"
+    "4294967295,4294967295,4294967295,4294967295,4294967295,4294967295,4294967295,4294967295,"
+    "4294967295,4294967295,4294967295,4294967295,4294967295],\"MultiplicityMaskH\":[0,0,0,0,0,0,0,0,"
+    "0,0,0,0,0,0,0,0],\"MultiplicityMaskL\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"OffsetDAC\":[25056,"
+    "25184,24736,24800,24864,24608,24608,24608,24608,24608,24608,24608,23200,23776,24608,24608],"
+    "\"PAFlength\":[1344,1344,1344,1344,1344,1344,1344,1344,1344,1344,1344,1344,1344,1344,1344,1344],"
+    "\"PSAlength\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"PSAoffset\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"
+    "\"PeakSample\":[42,42,42,42,42,42,42,42,42,42,42,42,42,42,42,42],\"PeakSep\":[44,44,44,44,44,"
+    "44,44,44,44,44,44,44,44,44,44,44],\"PreampTau\":[1126105088,1126105088,1126105088,1126105088,"
+    "1126105088,1126105088,1126105088,1126105088,1126105088,1126105088,1126105088,1126105088,"
+    "1126105088,1126105088,1126105088,1126105088],\"QDCLen0\":[30,30,30,30,30,30,30,30,30,30,30,30,"
+    "30,30,30,30],\"QDCLen1\":[63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,63],\"QDCLen2\":[88,88,"
+    "88,88,88,88,88,88,88,88,88,88,88,88,88,88],\"QDCLen3\":[113,113,113,113,113,113,113,113,113,"
+    "113,113,113,113,113,113,113],\"QDCLen4\":[138,138,138,138,138,138,138,138,138,138,138,138,138,"
+    "138,138,138],\"QDCLen5\":[163,163,163,163,163,163,163,163,163,163,163,163,163,163,163,163],"
+    "\"QDCLen6\":[188,188,188,188,188,188,188,188,188,188,188,188,188,188,188,188],\"QDCLen7\":"
+    "[213,213,213,213,213,213,213,213,213,213,213,213,213,213,213,213],\"ResetDelay\":[0,0,0,0,0,0,"
+    "0,0,0,0,0,0,0,0,0,0],\"SlowGap\":[19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19],"
+    "\"SlowLength\":[25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25],\"ThreshWidth\":[0,0,0,0,0,0,"
+    "0,0,0,0,0,0,0,0,0,0],\"TraceLength\":[500,500,500,500,500,500,500,500,500,500,500,500,500,500,"
+    "500,500],\"TrigOutLen\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"TriggerDelay\":[344,344,344,344,344,"
+    "344,344,344,344,344,344,344,344,344,344,344],\"VetoStretch\":[30,30,30,30,30,30,30,30,30,30,30,"
+    "30,30,30,30,30],\"Xavg\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"Xwait\":[6,8,8,8,8,8,8,8,8,8,8,8,"
+    "8,8,8,8]}},\"metadata\":{\"config\":[{\"adc_bits\":14,\"adc_clk_div\":5,\"adc_msps\":500,"
+    "\"fpga_clk_mhz\":100},{\"adc_bits\":14,\"adc_clk_div\":5,\"adc_msps\":500,\"fpga_clk_mhz\":100},"
+    "{\"adc_bits\":14,\"adc_clk_div\":5,\"adc_msps\":500,\"fpga_clk_mhz\":100},{\"adc_bits\":14,"
+    "\"adc_clk_div\":5,\"adc_msps\":500,\"fpga_clk_mhz\":100},{\"adc_bits\":14,\"adc_clk_div\":5,"
+    "\"adc_msps\":500,\"fpga_clk_mhz\":100},{\"adc_bits\":14,\"adc_clk_div\":5,\"adc_msps\":500,"
+    "\"fpga_clk_mhz\":100},{\"adc_bits\":14,\"adc_clk_div\":5,\"adc_msps\":500,\"fpga_clk_mhz\":100},"
+    "{\"adc_bits\":14,\"adc_clk_div\":5,\"adc_msps\":500,\"fpga_clk_mhz\":100},{\"adc_bits\":14,"
+    "\"adc_clk_div\":5,\"adc_msps\":500,\"fpga_clk_mhz\":100},{\"adc_bits\":14,\"adc_clk_div\":5,"
+    "\"adc_msps\":500,\"fpga_clk_mhz\":100},{\"adc_bits\":14,\"adc_clk_div\":5,\"adc_msps\":500,"
+    "\"fpga_clk_mhz\":100},{\"adc_bits\":14,\"adc_clk_div\":5,\"adc_msps\":500,\"fpga_clk_mhz\":100},"
+    "{\"adc_bits\":14,\"adc_clk_div\":5,\"adc_msps\":500,\"fpga_clk_mhz\":100},{\"adc_bits\":14,"
+    "\"adc_clk_div\":5,\"adc_msps\":500,\"fpga_clk_mhz\":100},{\"adc_bits\":14,\"adc_clk_div\":5,"
+    "\"adc_msps\":500,\"fpga_clk_mhz\":100},{\"adc_bits\":14,\"adc_clk_div\":5,\"adc_msps\":500,"
+    "\"fpga_clk_mhz\":100}],\"dsp\":{\"adc_bits\":14,\"adc_msps\":500,\"file\":"
+    "\"Pixie16DSP_revfgeneral_14b500m_r41847.ldr\",\"rev\":15,\"tag\":\"15-500-14\",\"version\":"
+    "\"r41847\"},\"fifo\":{\"buffers\":100,\"hold\":10000,\"idle-wait\":150000,\"run-wait\":5000},"
+    "\"fippi\":{\"adc_bits\":14,\"adc_msps\":500,\"file\":\"fippixie16_revfgeneral_14b500m_r42081.bin\","
+    "\"rev\":15,\"tag\":\"15-500-14\",\"version\":\"r42081\"},\"firmware-release\":\"1.2.3\","
+    "\"firmware-tag\":\"15-500-14\",\"hardware_revision\":\"F\",\"num-channels\":16,\"number\":0,"
+    "\"serial-num\":1034,\"slot\":6,\"sys\":{\"adc_bits\":14,\"adc_msps\":500,\"file\":"
+    "\"syspixie16_revfgeneral_adc500mhz_r33339.bin\",\"rev\":15,\"tag\":\"15-500-14\",\"version\":"
+    "\"r33339\"},\"var\":{\"adc_bits\":14,\"adc_msps\":500,\"file\":"
+    "\"Pixie16DSP_revfgeneral_14b500m_r41847.var\",\"rev\":15,\"tag\":\"15-500-14\",\"version\":"
+    "\"r41847\"}},\"module\":{\"input\":{\"ChanNum\":0,\"CoincPattern\":0,\"CoincWait\":0,"
+    "\"ControlTask\":7,\"CrateID\":0,\"FIFOLength\":20470,\"FastFilterRange\":0,"
+    "\"FastTrigBackplaneEna\":0,\"HostIO\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"HostRunTimePreset\":0,"
+    "\"InSynch\":0,\"MaxEvents\":0,\"ModCSRA\":0,\"ModCSRB\":65,\"ModFormat\":0,\"ModID\":0,"
+    "\"ModNum\":0,\"Resume\":1,\"RunTask\":0,\"SlotID\":6,\"SlowFilterRange\":5,\"SynchWait\":0,"
     "\"TrigConfig\":[0,0,0,0],\"U00\":[0,0,0,0,0,0,0],\"UserIn\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]}}}";
 
 static void test_setup() {
@@ -671,15 +741,15 @@ TEST_SUITE("Crate: modules") {
         }
         SUBCASE("single module load - shortened config") {
             std::string cfg = '[' + short_config.dump() + ']';
-            CHECK(crate[0].read("SlotID") == 0);
-            CHECK(crate[1].read("SlotID") == 0);
+            CHECK(crate[0].read("SlotID") == 2);
+            CHECK(crate[1].read("SlotID") == 6);
             CHECK(crate[0].read("SLOW_FILTER_RANGE") == 0);
             CHECK(crate[1].read("SLOW_FILTER_RANGE") == 0);
             CHECK(crate[0].read("BLCUT", 0) == 0);
             CHECK(crate[1].read("BLCUT", 0) == 0);
             CHECK_NOTHROW(xia::pixie::config::import_settings(cfg, crate[0]));
             CHECK(crate[0].read("SlotID") == 2);
-            CHECK(crate[1].read("SlotID") == 0);
+            CHECK(crate[1].read("SlotID") == 6);
             CHECK(crate[0].read("SLOW_FILTER_RANGE") == 6);
             CHECK(crate[1].read("SLOW_FILTER_RANGE") == 0);
             CHECK(crate[0].read("BLCUT", 0) == 1);
@@ -687,25 +757,49 @@ TEST_SUITE("Crate: modules") {
         }
         SUBCASE("single module load - full config") {
             std::string cfg = '[' + long_config + ']';
-            CHECK(crate[0].read("SlotID") == 0);
-            CHECK(crate[1].read("SlotID") == 0);
+            CHECK(crate[0].read("SlotID") == 2);
+            CHECK(crate[1].read("SlotID") == 6);
             CHECK(crate[0].read("SLOW_FILTER_RANGE") == 0);
             CHECK(crate[1].read("SLOW_FILTER_RANGE") == 0);
             CHECK(crate[0].read("BLCUT", 0) == 0);
             CHECK(crate[1].read("BLCUT", 0) == 0);
             CHECK_NOTHROW(xia::pixie::config::import_settings(cfg, crate[0]));
             CHECK(crate[0].read("SlotID") == 2);
-            CHECK(crate[1].read("SlotID") == 0);
+            CHECK(crate[1].read("SlotID") == 6);
             CHECK(crate[0].read("SLOW_FILTER_RANGE") == 6);
             CHECK(crate[1].read("SLOW_FILTER_RANGE") == 0);
             CHECK(crate[0].read("BLCUT", 0) == 1);
             CHECK(crate[1].read("BLCUT", 0) == 0);
         }
+        SUBCASE("multiple module load - full config") {
+            std::string cfg = '[' + long_config + ',' + long_config_2 + ']';
+            CHECK(crate[0].read("SlotID") == 2);
+            CHECK(crate[1].read("SlotID") == 6);
+            CHECK(crate[0].read("SLOW_FILTER_RANGE") == 0);
+            CHECK(crate[1].read("SLOW_FILTER_RANGE") == 0);
+            CHECK(crate[0].read("BLCUT", 0) == 0);
+            CHECK(crate[1].read("BLCUT", 0) == 0);
+            CHECK_NOTHROW(xia::pixie::config::import_settings(cfg, crate[0]));
+            CHECK_NOTHROW(xia::pixie::config::import_settings(cfg, crate[2]));
+            CHECK_NOTHROW(xia::pixie::config::import_settings(cfg, crate[1]));
+            CHECK(crate[0].read("SlotID") == 2);
+            CHECK(crate[1].read("SlotID") == 6);
+            CHECK(crate[2].read("SlotID") == 10);
+            CHECK(crate[3].read("SlotID") == 13);
+            CHECK(crate[0].read("SLOW_FILTER_RANGE") == 6);
+            CHECK(crate[1].read("SLOW_FILTER_RANGE") == 5);
+            CHECK(crate[2].read("SLOW_FILTER_RANGE") == 3);
+            CHECK(crate[3].read("SLOW_FILTER_RANGE") == 0);
+            CHECK(crate[0].read("BLCUT", 0) == 1);
+            CHECK(crate[1].read("BLCUT", 0) == 4);
+            CHECK(crate[2].read("BLCUT", 0) == 3);
+            CHECK(crate[3].read("BLCUT", 0) == 0);
+        }
         SUBCASE("single module load - crate") {
             slots_loaded.clear();
             std::string cfg = '[' + long_config + ']';
-            CHECK(crate[0].read("SlotID") == 0);
-            CHECK(crate[1].read("SlotID") == 0);
+            CHECK(crate[0].read("SlotID") == 2);
+            CHECK(crate[1].read("SlotID") == 6);
             CHECK(crate[0].read("SLOW_FILTER_RANGE") == 0);
             CHECK(crate[1].read("SLOW_FILTER_RANGE") == 0);
             CHECK(crate[0].read("BLCUT", 0) == 0);
@@ -727,8 +821,8 @@ TEST_SUITE("Crate: modules") {
                 crate_config += long_config;
             }
             std::string cfg = '[' + crate_config + ']';
-            CHECK(crate[0].read("SlotID") == 0);
-            CHECK(crate[1].read("SlotID") == 0);
+            CHECK(crate[0].read("SlotID") == 2);
+            CHECK(crate[1].read("SlotID") == 6);
             CHECK(crate[0].read("SLOW_FILTER_RANGE") == 0);
             CHECK(crate[1].read("SLOW_FILTER_RANGE") == 0);
             CHECK(crate[0].read("BLCUT", 0) == 0);

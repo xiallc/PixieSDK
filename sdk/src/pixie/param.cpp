@@ -276,7 +276,7 @@ static const module_var_descs module_var_descriptors_default = {
     {module_var::RunTask, enable, rw, 1, "RunTask"},
     {module_var::RunTimeA, enable, ro, 1, "RunTimeA"},
     {module_var::RunTimeB, enable, ro, 1, "RunTimeB"},
-    {module_var::SlotID, enable, rw, 1, "SlotID"},
+    {module_var::SlotID, enable, rd_wronce, 1, "SlotID"},
     {module_var::SlowFilterRange, enable, rw, 1, "SlowFilterRange"},
     {module_var::SynchDone, enable, ro, 1, "SynchDone"},
     {module_var::SynchWait, enable, rw, 1, "SynchWait"},
@@ -556,7 +556,8 @@ template<typename V>
 void address_map::get(const V& vars, desc_addresses& addresses, const rwrowr mode) {
     addresses.clear();
     for (size_t d = 0; d < vars.size(); ++d) {
-        if (vars[d].mode == mode) {
+        if (vars[d].mode == mode ||
+            (mode == rwrowr::rw && vars[d].mode == rwrowr::rd_wronce)) {
             auto da = desc_address(d, vars[d].address);
             addresses.push_back(da);
         }
@@ -894,6 +895,9 @@ std::string label(rwrowr mode) {
         break;
     case param::wr:
         l = "write only";
+        break;
+    case param::rd_wronce:
+        l = "read, write once";
         break;
     }
     return l;

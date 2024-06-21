@@ -130,9 +130,9 @@ static void fill_config(module::module& module, format::json& settings) {
         throw error(error::code::config_json_error, "'channel' not found");
     }
 
-    auto metadata = settings["metadata"];
-    auto moddata = settings["module"];
-    auto chandata = settings["channel"];
+    auto& metadata = settings["metadata"];
+    auto& moddata = settings["module"];
+    auto& chandata = settings["channel"];
 
     if (!moddata.contains("input")) {
         throw error(error::code::config_json_error, "module 'input' not found");
@@ -194,7 +194,7 @@ static void fill_config(module::module& module, format::json& settings) {
                     } else {
                         try {
                             if (desc.par == xia::pixie::param::module_var::SlotID) {
-                                module.write_var(var, param::value_type(module.slot), 0, false);
+                                /* ignore as set when the module lboots */
                             } else if (desc.par == xia::pixie::param::module_var::ModNum) {
                                 module.write_var(var, module.number, 0, false);
                             } else {
@@ -324,12 +324,18 @@ static void import_json_obj(format::json& config, crate::crate& crate,
 }
 
 static void import_json_obj(format::json& config, module::module& mod) {
-    auto ci = config.begin();
-
     if (!mod.online()) {
         xia_log(log::warning) << "module " << mod.number << " not online, skipping";
     } else {
-        auto& settings = *ci;
+        for (auto& settings : config) {
+            auto& metadata = settings["metadata"];
+            if (metadata["slot"] == mod.slot) {
+                fill_config(mod, settings);
+                mod.sync_vars();
+                return;
+            }
+        }
+        auto settings = default_config;
         fill_config(mod, settings);
         mod.sync_vars();
     }

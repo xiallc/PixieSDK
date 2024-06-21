@@ -1347,7 +1347,6 @@ void module::boot(
                     "partial boot: firmware does not match resident firmware");
     }
 
-
     if (firmware.type() == firmware::firmware_set::set_type::release) {
         auto valid_crcs = true;
         if (boot_comms && valid_crcs) {
@@ -1469,6 +1468,7 @@ void module::boot(
         fixtures->boot();
         fixtures->online();
         mib_enable();
+        write_var(param::module_var::SlotID, param::value_type(slot));
     }
 }
 
@@ -1958,6 +1958,11 @@ void module::write_var(param::module_var var, param::value_type value, size_t of
                     "invalid module variable offset: " + desc.name);
     }
     lock_guard guard(lock_);
+    if (desc.mode == param::rd_wronce && module_vars[index].value[offset].written_once) {
+        throw error(number, slot, error::code::module_param_readonly,
+                    "module variable not writeable, already written: " + desc.name);
+    }
+    module_vars[index].value[offset].written_once = true;
     module_vars[index].value[offset].value = value;
     module_vars[index].value[offset].dirty = true;
     if (hardware_accessible() && io) {
