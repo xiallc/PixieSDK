@@ -1308,7 +1308,8 @@ void module::boot(
     }
 
     if (forced_offline_.load()) {
-        xia_log(log::warning) << "module forced offline";
+        xia_log(log::warning) << "module is forced offline, no boot performed";
+        return;
     }
 
     if (online() &&
