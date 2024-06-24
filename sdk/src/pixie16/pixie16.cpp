@@ -156,7 +156,7 @@ const api_crate::module_defs api_crate::sim_module_defs = {
 /*
  * The crate. We only handle a single crate with the legacy API.
  */
-api_crate crate;
+static api_crate crate;
 
 stats_legacy::stats_legacy(const xia::pixie::hw::configs& configs)
     : marker_1(mark_1), marker_2(mark_2) {
