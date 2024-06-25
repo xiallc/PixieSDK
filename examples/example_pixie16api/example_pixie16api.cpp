@@ -166,11 +166,11 @@ void verify_json_module(const json& mod) {
 
     if (mod.contains("fw")) {
         auto& fw = mod["fw"];
-        if (!fw.contains("adc_bits") || !fw.contains("adc_msps") || !fw.contains("fw_revision") ||
-            !fw.contains("fw_set") || !fw.contains("revision") || !fw.contains("type")) {
+        if (!fw.contains("adc_bits") || !fw.contains("adc_msps") || !fw.contains("fw_set") ||
+            !fw.contains("revision")) {
             throw std::invalid_argument(
                 "Missing firmware configuration (fw) definition (adc_bits, adc_msps, fw_set,"
-                " revision, tag, type).");
+                " revision).");
         }
     }
 
@@ -248,10 +248,6 @@ void read_config(const std::string& config_file_name, configuration& cfg) {
         }
         if (module.contains("fw")) {
             auto& jfw = module["fw"];
-            std::strncpy(
-                mcfg.cfg.fw_revision,
-                jfw["fw_revision"].template get<std::string>().c_str(),
-                sizeof(mcfg.cfg.fw_revision) - 1);
             if (jfw.contains("adc_msps")) {
                 mcfg.cfg.adc_sampling_frequency = jfw["adc_msps"];
             }
@@ -260,12 +256,6 @@ void read_config(const std::string& config_file_name, configuration& cfg) {
             }
             if (jfw.contains("revision")) {
                 mcfg.cfg.revision = jfw["revision"];
-            }
-            if (jfw.contains("type")) {
-                std::strncpy(
-                    mcfg.cfg.fw_type,
-                    jfw["type"].template get<std::string>().c_str(),
-                    sizeof(mcfg.cfg.fw_type) - 1);
             }
             if (jfw.contains("fw_set")) {
                 size_t dev = 0;
@@ -300,61 +290,6 @@ void read_config(const std::string& config_file_name, configuration& cfg) {
         }
         cfg.modules.push_back(mcfg);
     }
-}
-
-bool write_config(
-    const std::string& config_file_name, const std::string& par_file_name, unsigned int num_mods) {
-    configuration config;
-    for (unsigned int mod = 0; mod < num_mods; ++mod) {
-        mod_cfg cfg;
-        if (!verify_api_return_value(::PixieGetModuleInfo(mod, &cfg.cfg), "PixieGetModuleInfo", false)) {
-            return false;
-        }
-        if (!verify_api_return_value(
-                ::PixieGetFifoConfiguration(mod, &cfg.fifo_config), "PixieGetFifoConfiguration", false)) {
-            return false;
-        }
-        cfg.has_fifo_cfg = true;
-        config.modules.push_back(cfg);
-    }
-    json j;
-    for (auto& mod : config.modules) {
-        json jm;
-        jm["slot"] = mod.cfg.slot;
-        json jdsp;
-        jdsp["par"] = par_file_name;
-        jm["dsp"] = jdsp;
-        json jfw;
-        jfw["fw_revision"] = mod.cfg.fw_revision;
-        jfw["revision"] = mod.cfg.revision;
-        jfw["type"] = mod.cfg.fw_type;
-        jfw["adc_msps"] = mod.cfg.adc_sampling_frequency;
-        jfw["adc_bits"] = mod.cfg.adc_bit_resolution;
-        json jfw_set;
-        for (size_t dev = 0;
-             dev < PIXIE16_API_MOD_CONFIG_MAX_DEVICES && mod.cfg.fw_device[dev] != nullptr;
-             ++dev) {
-            jfw_set[mod.cfg.fw_device[dev]] = mod.cfg.fw_device_file[dev];
-        }
-        jfw["fw_set"] = jfw_set;
-        jm["fw"] = jfw;
-        json jfc;
-        jfc["bandwidth_mb_per_sec"] = mod.fifo_config.bandwidth_mb_per_sec;
-        jfc["buffers"] = mod.fifo_config.buffers;
-        jfc["dma_trigger_level_bytes"] = mod.fifo_config.dma_trigger_level_bytes;
-        jfc["hold_usecs"] = mod.fifo_config.hold_usecs;
-        jfc["idle_wait_usecs"] = mod.fifo_config.idle_wait_usecs;
-        jfc["run_wait_usecs"] = mod.fifo_config.run_wait_usecs;
-        jm["fifo_config"] = jfc;
-        j.push_back(jm);
-    }
-    std::ofstream output(config_file_name, std::ios::out);
-    if (output.fail()) {
-        throw std::ios_base::failure("open: " + config_file_name + ": " + std::strerror(errno));
-    }
-    output << std::setw(4) << j;
-    output.close();
-    return true;
 }
 
 std::string generate_hardware_statistics_header() {
@@ -1106,10 +1041,6 @@ void output_module_info(mod_cfg& mod) {
               << logging("INFO") << "End module information for Module " << mcfg.number << std::endl;
 }
 
-/**
- * Fast boots can be done the old way (Pixie16Boot), we are working on exposing similar
- * functionality for crate boots.
- */
 bool boot_crate(const std::string& par_file, unsigned int boot_pattern) {
     auto start = std::chrono::system_clock::now();
     std::cout << logging("INFO") << "Calling PixieBootCrate with settings: " << par_file << std::endl;
@@ -1119,19 +1050,23 @@ bool boot_crate(const std::string& par_file, unsigned int boot_pattern) {
 
     PIXIE_BOOT_MODE boot_mode;
     switch (boot_pattern) {
+        case 0x00:
+            boot_mode = PIXIE_BOOT_PROBE;
+            break;
+        case 0x70:
+            boot_mode = PIXIE_BOOT_SETTINGS_LOAD;
+            break;
         case 0x0F:
         case 0x7F:
             boot_mode = PIXIE_BOOT_RESET_LOAD;
             break;
-        case 0x00:
-        case 0x70:
         default:
-            std::cout << logging("ERROR") << "boot mode " << boot_pattern << " not supported"
-                      << std::endl;
+            std::cout << logging("ERROR") << "boot mode " << std::hex << boot_pattern
+                      << " not supported" << std::endl;
             return false;
     }
 
-    if (boot_pattern == 0x7F && par_file.empty()) {
+    if (boot_mode == PIXIE_BOOT_SETTINGS_LOAD && par_file.empty()) {
         std::cout << logging("ERROR") << "settings file required for boot pattern: 0x"
                   << std::hex << boot_pattern << std::endl;
         return false;
@@ -1287,7 +1222,7 @@ bool execute_boot(configuration& cfg, args::ValueFlag<std::string>& boot_flag,
         if (mod.has_firmware_files) {
             if (mod.has_firmware_spec) {
                 for (size_t dev = 0;
-                     dev < PIXIE16_API_MOD_CONFIG_MAX_DEVICES && mod.cfg.fw_device[dev] != nullptr;
+                     dev < PIXIE16_API_MOD_CONFIG_MAX_DEVICES && strcmp(mod.cfg.fw_device[dev], "") != 0;
                      ++dev) {
                     if (!register_firmware(mod, mod.cfg.fw_device_file[dev], mod.cfg.fw_device[dev])) {
                         return false;
@@ -1295,7 +1230,7 @@ bool execute_boot(configuration& cfg, args::ValueFlag<std::string>& boot_flag,
                 }
             } else {
                 for (size_t dev = 0;
-                     dev < PIXIE16_API_MOD_CONFIG_MAX_DEVICES && mod.cfg.fw_device[dev] != nullptr;
+                     dev < PIXIE16_API_MOD_CONFIG_MAX_DEVICES && strcmp(mod.cfg.fw_device[dev], "") != 0;
                      ++dev) {
                     if (!set_firmware(mod, mod.cfg.fw_device_file[dev], mod.cfg.fw_device[dev])) {
                         return false;
@@ -1321,9 +1256,6 @@ int main(int argc, char** argv) {
     args::Group commands(parser, "commands");
     args::Command boot(commands, "boot", "Boots the crate of modules.");
     args::Command copy(commands, "copy", "Copies DSP parameters from source to destination.");
-    args::Command export_config(
-        commands, "export-config",
-        "Writes the configuration  to the file defined in the cfg option.");
     args::Command export_settings(
         commands, "export-settings",
         "Boots the system and dumps the settings to the file defined in the config.");
@@ -1394,12 +1326,6 @@ int main(int argc, char** argv) {
         list_mode, "in_synch",
         "InSynch = 0 to reset clocks prior to starting a run. (default)\nInSynch = 1 to take no clock action.",
         {"in-synch"}, static_cast<unsigned int>(0));
-    args::ValueFlag<unsigned int> num_mods(
-        arguments, "num_mods", "The number of modules to initialise.",
-        {"num-mods"}, (unsigned int) (0));
-    args::ValueFlag<std::string> par_file(
-        arguments, "par", "The parameter file to write.",
-        {'p', "par"});
 
     adjust_offsets.Add(conf_flag);
     adjust_offsets.Add(boot_pattern_flag);
@@ -1444,8 +1370,6 @@ int main(int argc, char** argv) {
     write.Add(crate);
     write.Add(module);
     write.Add(channel);
-    export_config.Add(num_mods);
-    export_config.Add(par_file);
 
     try {
         parser.ParseCLI(argc, argv);
@@ -1460,30 +1384,7 @@ int main(int argc, char** argv) {
     }
 
     configuration cfg;
-    unsigned int num_modules = num_mods.Get();
     int offline_mode = 0;
-
-    if (export_config) {
-        if (!par_file) {
-            std::cout << logging("ERROR") << "no par file provided" << std::endl;
-            return EXIT_FAILURE;
-        }
-        if (!init_system(num_modules, offline_mode)) {
-            return EXIT_FAILURE;
-        }
-        std::string empty;
-        if (!boot_crate(empty, 0x00)) {
-            return EXIT_FAILURE;
-        }
-        if (!save_dsp_pars(par_file.Get())) {
-            return EXIT_FAILURE;
-        }
-        if (!write_config(conf_flag.Get(), par_file.Get(), num_modules)) {
-            return EXIT_FAILURE;
-        }
-        execute_close_module_connection(cfg.num_modules());
-        return EXIT_SUCCESS;
-    }
 
     if (!is_offline) {
         if (conf_flag) {
@@ -1509,10 +1410,6 @@ int main(int argc, char** argv) {
         }
         cfg.slot_def = {2, 3, 4, 5};
         boot_pattern_flag.ParseValue({"0x70"});
-    }
-
-    if (cfg.num_modules() != 0) {
-        num_modules = cfg.num_modules();
     }
 
     std::cout << logging("INFO") << "Finished reading config in "
