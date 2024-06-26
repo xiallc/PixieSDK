@@ -32,10 +32,19 @@
 
 #include <pixie/error.hpp>
 #include <pixie/format.hpp>
+#include <pixie/os_compat.hpp>
 
 namespace xia {
 namespace mib {
 using error = xia::pixie::error::error;
+
+/**
+ * @brief MIB nodes shared pointer, constructed beforeand destructed after any use.
+ */
+struct mib_nodes;
+using mib_nodes_ptr = std::shared_ptr<mib_nodes>;
+PIXIE_EXPORT mib_nodes_ptr PIXIE_API make_mib_nodes();
+static mib_nodes_ptr mib_nodes_ = make_mib_nodes();
 
 /**
  * MIB separator

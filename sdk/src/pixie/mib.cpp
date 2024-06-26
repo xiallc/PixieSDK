@@ -93,7 +93,18 @@ struct mib_nodes {
     void walk(mib_walk_func& walk_func);
 };
 
-mib_nodes mib;
+/*
+ * Access the mib as a pointer, ie `mib->` and no check needed. All
+ * functions accessing the pointer must be declared in mib.hpp.
+ */
+mib_nodes_ptr mib;
+
+PIXIE_EXPORT mib_nodes_ptr PIXIE_API make_mib_nodes() {
+    if (!mib) {
+        mib = std::make_shared<mib_nodes>();
+    }
+    return mib;
+}
 
 mib_nodes::mib_nodes() {}
 
@@ -115,7 +126,7 @@ node_base_ptr mib_nodes::add(const char* name, const type type_, const bool enab
     if (name == nullptr) {
         throw error(error::code::invalid_value, "mib::add: name empty");
     }
-    return mib.add(name_type(name), type_, enabled);
+    return mib->add(name_type(name), type_, enabled);
 }
 
 template<typename T>
@@ -189,7 +200,7 @@ bool mib_nodes::contains(const name_type& name) {
 
 void mib_nodes::walk(mib_walk_func& walk_func) {
     lock_guard guard(lock);
-    for (auto& [key, base] : mib.nodes) {
+    for (auto& [key, base] : mib->nodes) {
         auto n = node(base);
         if (n.is_enabled()) {
             walk_func(n);
@@ -683,19 +694,19 @@ void node::check_base() const {
 }
 
 node::node(const name_type& name, const type type_, const bool enabled)
-    : base(mib.add(name, type_, enabled)) {
+    : base(mib->add(name, type_, enabled)) {
 }
 
 node::node(const char* name, const type type_, const bool enabled)
-    : base(mib.add(name, type_, enabled)) {
+    : base(mib->add(name, type_, enabled)) {
 }
 
 node::node(const name_type& name)
-    : base(mib.find(name)) {
+    : base(mib->find(name)) {
 }
 
 node::node(const char* name)
-    : base(mib.find(name)) {
+    : base(mib->find(name)) {
 }
 
 node::node() {}
@@ -710,7 +721,7 @@ node::node(node_base_ptr base_)
 
 void node::remove() {
     if (valid()) {
-        mib.remove(base);
+        mib->remove(base);
     }
 }
 
@@ -848,32 +859,32 @@ bool node::get_hint(hint hint_) const {
 }
 
 void add(const name_type& name, const type type_, const bool enabled) {
-    mib.add(name, type_, enabled);
+    mib->add(name, type_, enabled);
 }
 
 void add(const char* name, const type type_, const bool enabled) {
     if (name == nullptr) {
         throw error(error::code::invalid_value, "mxpib::add: name empty");
     }
-    mib.add(name_type(name), type_, enabled);
+    mib->add(name_type(name), type_, enabled);
 }
 
 void add_ro_str(const name_type& name, const string& val, const bool enabled) {
-    mib.add(name, val, enabled);
+    mib->add(name, val, enabled);
 }
 
 void add_ro_str(const char* name, const string& val, const bool enabled) {
     if (name == nullptr) {
         throw error(error::code::invalid_value, "mib::add: name empty");
     }
-    mib.add(name_type(name), val, enabled);
+    mib->add(name_type(name), val, enabled);
 }
 
 void add_ro_str(const name_type& name, const stringp val, const bool enabled) {
     if (val == nullptr) {
         throw error(error::code::invalid_value, "mib::add: value empty");
     }
-    mib.add(name, val, enabled);
+    mib->add(name, val, enabled);
 }
 
 void add_ro_str(const char* name, const stringp val, const bool enabled) {
@@ -883,62 +894,62 @@ void add_ro_str(const char* name, const stringp val, const bool enabled) {
     if (val == nullptr) {
         throw error(error::code::invalid_value, "mib::add: value empty");
     }
-    mib.add(name_type(name), val, enabled);
+    mib->add(name_type(name), val, enabled);
 }
 
 void add_ro_bool(const name_type& name, const boolean val, const bool enabled) {
-    mib.add(name, val, enabled);
+    mib->add(name, val, enabled);
 }
 
 void add_ro_bool(const char* name, const boolean val, const bool enabled) {
     if (name == nullptr) {
         throw error(error::code::invalid_value, "mib::add: name empty");
     }
-    mib.add(name_type(name), val, enabled);
+    mib->add(name_type(name), val, enabled);
 }
 
 void add_ro_int(const name_type& name, const integer val, const bool enabled) {
-    mib.add(name, val, enabled);
+    mib->add(name, val, enabled);
 }
 
 void add_ro_int(const char* name, const integer val, const bool enabled) {
     if (name == nullptr) {
         throw error(error::code::invalid_value, "mib::add: name empty");
     }
-    mib.add(name_type(name), val, enabled);
+    mib->add(name_type(name), val, enabled);
 }
 
 void add_ro_uint(const name_type& name, const uinteger val, const bool enabled) {
-    mib.add(name, val, enabled);
+    mib->add(name, val, enabled);
 }
 
 void add_ro_uint(const char* name, const uinteger val, const bool enabled) {
     if (name == nullptr) {
         throw error(error::code::invalid_value, "mib::add: name empty");
     }
-    mib.add(name_type(name), val, enabled);
+    mib->add(name_type(name), val, enabled);
 }
 
 void add_ro_real(const name_type& name, const real val, const bool enabled) {
-    mib.add(name, val, enabled);
+    mib->add(name, val, enabled);
 }
 
 void add_ro_real(const char* name, const real val, const bool enabled) {
     if (name == nullptr) {
         throw error(error::code::invalid_value, "mib::add: name empty");
     }
-    mib.add(name_type(name), val, enabled);
+    mib->add(name_type(name), val, enabled);
 }
 
 void add_ro_timestamp(const name_type& name, const timestamp& val, const bool enabled) {
-    mib.add(name, val, enabled);
+    mib->add(name, val, enabled);
 }
 
 void add_ro_timestamp(const char* name, const timestamp& val, const bool enabled) {
     if (name == nullptr) {
         throw error(error::code::invalid_value, "mib::add: name empty");
     }
-    mib.add(name_type(name), val, enabled);
+    mib->add(name_type(name), val, enabled);
 }
 
 void remove(const name_type& name) {
@@ -985,18 +996,18 @@ bool is_enabled(const char* name) {
 }
 
 bool contains(const name_type& name) {
-    return mib.contains(name);
+    return mib->contains(name);
 }
 
 bool contains(const char* name) {
     if (name == nullptr) {
         return false;
     }
-    return mib.contains(std::string(name));
+    return mib->contains(std::string(name));
 }
 
 void walk(mib_walk_func& walk_func) {
-    mib.walk(walk_func);
+    mib->walk(walk_func);
 }
 
 void mib_to_json(xia::pixie::format::json& mib_json, std::string val, std::string names) {
