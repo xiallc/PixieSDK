@@ -260,6 +260,29 @@ enum PIXIE_INSTALL_PATH {
 
 PIXIE_EXPORT const char* PIXIE_API PixieGetInstallationPath(const enum PIXIE_INSTALL_PATH opt, ...);
 
+enum PIXIE_SYSCTL_FORMAT {
+    PIXIE_SYSCTL_FORMAT_TEXT,
+    PIXIE_SYSCTL_FORMAT_JSON,
+};
+
+PIXIE_EXPORT int PIXIE_API PixieSysControlOpen(const char* query, const enum PIXIE_SYSCTL_FORMAT format);
+PIXIE_EXPORT int PIXIE_API PixieSysControlRead(char* buffer, size_t* size);
+PIXIE_EXPORT int PIXIE_API PixieSysControlSize(size_t* size);
+PIXIE_EXPORT int PIXIE_API PixieSysControlClose(void);
+
+PIXIE_EXPORT int PIXIE_API PixieSysControlGet(const char* path, char* value, size_t size);
+PIXIE_EXPORT int PIXIE_API PixieSysControlGetInt(const char* path, int* value);
+PIXIE_EXPORT int PIXIE_API PixieSysControlGetDouble(const char* path, double* value);
+
+PIXIE_EXPORT int PIXIE_API PixieSysControlSet(const char* path, const char* value);
+PIXIE_EXPORT int PIXIE_API PixieSysControlSetInt(const char* path, const int value);
+PIXIE_EXPORT int PIXIE_API PixieSysControlSetDouble(const char* path, const double value);
+
+PIXIE_EXPORT int PIXIE_API PixieSysControlSetValues(const char* values,
+                                                    const enum PIXIE_SYSCTL_FORMAT format);
+PIXIE_EXPORT int PIXIE_API PixieSysControlSetFileValues(const char* filename,
+                                                        const enum PIXIE_SYSCTL_FORMAT format);
+
 #ifdef __cplusplus
 }
 #endif

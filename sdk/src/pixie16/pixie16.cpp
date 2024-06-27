@@ -22,6 +22,9 @@
 
 #include <bitset>
 #include <cstring>
+#include <regex>
+
+#include <sys/stat.h>
 
 #include <pixie16/pixie16.h>
 
@@ -31,6 +34,7 @@
 #include <pixie/log.hpp>
 #include <pixie/os_compat.hpp>
 #include <pixie/stats.hpp>
+#include <pixie/utils/io.hpp>
 #include <pixie/utils/numerics.hpp>
 #include <pixie/utils/path.hpp>
 
@@ -115,9 +119,16 @@ struct api_crate {
      * Simulation module definitions. Currently this is hard coded.
      */
     static const module_defs sim_module_defs;
+
+    /*
+     * System control buffer stream and reader.
+     */
+    xia::util::io::bufferstream sysctl;
+    xia::util::io::bufferstream::reader sysctl_reader;
 };
 
-api_crate::api_crate() : modules(crate_hw), run_check_override(false) {
+api_crate::api_crate()
+    : modules(crate_hw), run_check_override(false), sysctl_reader(sysctl) {
 }
 
 void api_crate::set_simulation() {
@@ -2191,4 +2202,341 @@ PIXIE_EXPORT const char* PIXIE_API PixieGetInstallationPath(const enum PIXIE_INS
             break;
     }
     return nullptr;
+}
+
+PIXIE_EXPORT int PIXIE_API PixieSysControlOpen(const char* path, const enum PIXIE_SYSCTL_FORMAT format) {
+    try {
+        bool is_json;
+        switch (format) {
+            case PIXIE_SYSCTL_FORMAT_TEXT:
+                is_json = false;
+                break;
+            case PIXIE_SYSCTL_FORMAT_JSON:
+                is_json = true;
+                break;
+            default:
+                throw xia_error(xia_error::code::invalid_value, "invalid system control format");
+        }
+        std::string spath;
+        if (path != nullptr) {
+            spath = path;
+        }
+        crate.sysctl.create();
+        crate.sysctl_reader.seek(0);
+        std::regex mib_match(spath);
+        xia::pixie::format::json json_out;
+        xia::mib::mib_walk_func walker =
+            [&spath, is_json, &mib_match, &json_out](xia::mib::node& nod) {
+                auto name = nod.name();
+                if (spath.empty() || std::regex_search(name, mib_match)) {
+                    if (is_json) {
+                        xia::mib::mib_to_json(json_out, nod.str(), name);
+                    } else {
+                        std::stringstream oss;
+                        oss << name << " = " << nod.str() << std::endl;
+                        auto s = oss.str();
+                        crate.sysctl.push(s);
+                    }
+                }
+            };
+        xia::mib::walk(walker);
+        if (is_json) {
+            auto s = json_out.dump();
+            crate.sysctl.push(s);
+        }
+    } catch (xia_error& e) {
+        xia_log(xia::log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (...) {
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+    return 0;
+}
+
+PIXIE_EXPORT int PIXIE_API PixieSysControlRead(char* buffer, size_t* size) {
+    try {
+        *size = crate.sysctl_reader.read(buffer, *size);
+    } catch (xia_error& e) {
+        xia_log(xia::log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (...) {
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+    return 0;
+}
+
+PIXIE_EXPORT int PIXIE_API PixieSysControlSize(size_t* size) {
+    try {
+        *size = crate.sysctl_reader.size();
+    } catch (xia_error& e) {
+        xia_log(xia::log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (...) {
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+    return 0;
+}
+
+PIXIE_EXPORT int PIXIE_API PixieSysControlClose(void) {
+    try {
+        crate.sysctl.destroy();
+    } catch (xia_error& e) {
+        xia_log(xia::log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (...) {
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+    return 0;
+}
+
+PIXIE_EXPORT int PIXIE_API PixieSysControlGet(
+    const char* path, char* value, size_t size) {
+    try {
+        if (path == nullptr) {
+            throw xia_error(
+                xia_error::code::invalid_value, "system control path is null");
+        }
+        auto node = xia::mib::find(path);
+        auto s = node.str();
+        size_t len = s.length();
+        if (len >= size) {
+            len = size - 1;
+        }
+        std::memcpy(value, s.c_str(), len);
+        value[len] = '\0';
+    } catch (xia_error& e) {
+        xia_log(xia::log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (...) {
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+    return 0;
+}
+
+PIXIE_EXPORT int PIXIE_API PixieSysControlGetInt(const char* path, int* value) {
+    try {
+        if (path == nullptr) {
+            throw xia_error(
+                xia_error::code::invalid_value, "system control path is null");
+        }
+        auto node = xia::mib::find(path);
+        *value = node;
+    } catch (xia_error& e) {
+        xia_log(xia::log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (...) {
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+    return 0;
+}
+
+PIXIE_EXPORT int PIXIE_API PixieSysControlGetDouble(const char* path, double* value) {
+    try {
+        if (path == nullptr) {
+            throw xia_error(
+                xia_error::code::invalid_value, "system control path is null");
+        }
+        auto node = xia::mib::find(path);
+        *value = node;
+    } catch (xia_error& e) {
+        xia_log(xia::log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (...) {
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+    return 0;
+}
+
+PIXIE_EXPORT int PIXIE_API PixieSysControlSet(const char* path, const char* value) {
+    try {
+        if (path == nullptr) {
+            throw xia_error(
+                xia_error::code::invalid_value, "system control path is null");
+        }
+        auto node = xia::mib::find(path);
+        node.set_value(value);
+    } catch (xia_error& e) {
+        xia_log(xia::log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (...) {
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+    return 0;
+}
+
+PIXIE_EXPORT int PIXIE_API PixieSysControlSetInt(const char* path, const int value) {
+    try {
+        if (path == nullptr) {
+            throw xia_error(
+                xia_error::code::invalid_value, "system control path is null");
+        }
+        auto node = xia::mib::find(path);
+        node = value;
+    } catch (xia_error& e) {
+        xia_log(xia::log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (...) {
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+    return 0;
+}
+
+PIXIE_EXPORT int PIXIE_API PixieSysControlSetDouble(const char* path, const double value) {
+    try {
+        if (path == nullptr) {
+            throw xia_error(
+                xia_error::code::invalid_value, "system control path is null");
+        }
+        auto node = xia::mib::find(path);
+        node = value;
+    } catch (xia_error& e) {
+        xia_log(xia::log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (...) {
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+    return 0;
+}
+
+PIXIE_EXPORT int PIXIE_API PixieSysControlSetValues(const char* values,
+                                                    const PIXIE_SYSCTL_FORMAT format) {
+    try {
+        xia::pixie::format::json json_in;
+        std::vector<xia::util::string::strings> values_in;
+        bool is_json;
+        switch (format) {
+            case PIXIE_SYSCTL_FORMAT_TEXT:
+                is_json = false;
+                {
+                    /*
+                     * Using \n should be compatible on Unix and Windows
+                     */
+                    xia::util::string::strings vals;
+                    xia::util::string::split(vals, values, '\n');
+                    for (auto& val : vals) {
+                        xia::util::string::strings key_value;
+                        xia::util::string::split(key_value, val, '=', 2);
+                        values_in.push_back(key_value);
+                    }
+                }
+                break;
+            case PIXIE_SYSCTL_FORMAT_JSON:
+                is_json = true;
+                try {
+                    json_in = xia::pixie::format::json::parse(values);
+                } catch (xia::pixie::format::json::exception& e) {
+                    throw xia_error(
+                        xia::pixie::error::code::config_json_error,
+                        std::string("system control set values: ") + e.what());
+                }
+                break;
+            default:
+                throw xia_error(
+                    xia_error::code::invalid_value, "invalid system control format");
+        }
+        xia::mib::mib_walk_func walker =
+            [is_json, &values_in, &json_in](xia::mib::node& nod) {
+                auto name = nod.name();
+                if (is_json) {
+                    xia::util::string::strings path_pieces;
+                    xia::util::string::split(path_pieces, name, xia::mib::mibsep);
+                    auto& jvalue = json_in;
+                    bool found = true;
+                    for (auto& piece : path_pieces) {
+                        if (!jvalue.contains(piece)) {
+                            break;
+                        }
+                        jvalue = jvalue[piece];
+                    }
+                    if (found) {
+                    }
+                } else {
+                    for (auto& key_val : values_in) {
+                        if (name == key_val[0]) {
+                            nod.set_value(key_val[1]);
+                        }
+                    }
+                }
+            };
+        xia::mib::walk(walker);
+    } catch (xia_error& e) {
+        xia_log(xia::log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (...) {
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+    return 0;
+}
+
+PIXIE_EXPORT int PIXIE_API PixieSysControlSetFileValues(const char* filename,
+                                                        const PIXIE_SYSCTL_FORMAT format) {
+    try {
+        xia::util::io::file file;
+        file.open(filename, file.flag::ro);
+        struct stat sb;
+        auto r = ::fstat(file.handle, &sb);
+        if (r != 0) {
+            throw xia_error(
+                xia_error::code::file_size_invalid, "cannot get file size");
+        }
+        size_t size = size_t(sb.st_size);
+        std::vector<char> data(size);
+        file.read(data, size);
+        file.close();
+        return PixieSysControlSetValues(data.data(), format);
+    } catch (xia_error& e) {
+        xia_log(xia::log::error) << e;
+        return e.return_code();
+    } catch (std::bad_alloc& e) {
+        xia_log(xia::log::error) << "bad allocation: " << e.what();
+        return xia::pixie::error::return_code_bad_alloc_error();
+    } catch (...) {
+        xia_log(xia::log::error) << "unknown error: unhandled exception";
+        return xia::pixie::error::return_code_unknown_error();
+    }
+    return 0;
 }

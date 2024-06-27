@@ -1247,6 +1247,108 @@ bool execute_boot(configuration& cfg, args::ValueFlag<std::string>& boot_flag,
     return true;
 }
 
+bool execute_sysctl(std::string query, std::string format) {
+    const char* queryp = nullptr;
+    if (!query.empty()) {
+        queryp = query.c_str();
+    }
+    auto mib_format = PIXIE_SYSCTL_FORMAT_TEXT;
+    if (format == "text") {
+        /* alreadtt set, do nothing */
+    } else if (format == "json") {
+        mib_format = PIXIE_SYSCTL_FORMAT_JSON;
+    }
+    int rc = PixieSysControlOpen(queryp, mib_format);
+    if (!verify_api_return_value(rc, "PixieSysControlOpen", false)) {
+        return false;
+    }
+    char buf[1024 + 1];
+    size_t size = 0;
+    rc = PixieSysControlSize(&size);
+    std::cout << "MIB size: " << size << std::endl;
+    while (size != 0) {
+        size = sizeof(buf) - 1;
+        rc = PixieSysControlRead(&buf[0], &size);
+        if (!verify_api_return_value(rc, "PixieSysControlRead", false)) {
+            return false;
+        }
+        if (size != 0) {
+            buf[size] = '\0';
+            std::cout << buf;
+        }
+    }
+    rc = PixieSysControlClose();
+    if (!verify_api_return_value(rc, "PixieSysControlClose", false)) {
+        return false;
+    }
+    if (mib_format == PIXIE_SYSCTL_FORMAT_JSON) {
+        std::cout << std::endl;
+    }
+    return true;
+}
+
+bool execute_sysctl_config(std::string file, std::string format) {
+    auto mib_format = PIXIE_SYSCTL_FORMAT_TEXT;
+    if (format == "text") {
+        /* alreadtt set, do nothing */
+    } else if (format == "json") {
+        mib_format = PIXIE_SYSCTL_FORMAT_JSON;
+    }
+    int rc = PixieSysControlSetFileValues(file.c_str(), mib_format);
+    if (!verify_api_return_value(rc, "PixieSysControlSetFileValues", false)) {
+        return false;
+    }
+    return true;
+}
+
+bool execute_sysctl_get(std::string val_name, std::string val_type) {
+    if (val_type == "string") {
+        char val[256];
+        int rc = PixieSysControlGet(val_name.c_str(), val, sizeof(val));
+        if (!verify_api_return_value(rc, "PixieSysControlGet", false)) {
+            return false;
+        }
+        std::cout << val_name << " = " << val << std::endl;
+    } else if (val_type == "integer") {
+        int val;
+        int rc = PixieSysControlGetInt(val_name.c_str(), &val);
+        if (!verify_api_return_value(rc, "PixieSysControlGetInt", false)) {
+            return false;
+        }
+        std::cout << val_name << " = " << val << std::endl;
+    } else if (val_type == "real") {
+        double val;
+        int rc = PixieSysControlGetDouble(val_name.c_str(), &val);
+        if (!verify_api_return_value(rc, "PixieSysControlGetDouble", false)) {
+            return false;
+        }
+        std::cout << val_name << " = " << val << std::endl;
+    }
+    return true;
+}
+
+bool execute_sysctl_set(std::string val_name, std::string val_type, std::string val) {
+    if (val_type == "string") {
+        int rc = PixieSysControlSet(val_name.c_str(), val.c_str());
+        if (!verify_api_return_value(rc, "PixieSysControlSet", false)) {
+            return false;
+        }
+    } else if (val_type == "integer") {
+        int ival = std::atoi(val.c_str());
+        int rc = PixieSysControlSetInt(val_name.c_str(), ival);
+        if (!verify_api_return_value(rc, "PixieSysControlSetInt", false)) {
+            return false;
+        }
+    } else if (val_type == "real") {
+        double rval = std::strtod(val.c_str(), nullptr);
+        int rc = PixieSysControlSetDouble(val_name.c_str(), rval);
+        if (!verify_api_return_value(rc, "PixieSysControlSetDouble", false)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 int main(int argc, char** argv) {
     auto start = std::chrono::system_clock::now();
     args::ArgumentParser parser(
@@ -1275,6 +1377,10 @@ int main(int argc, char** argv) {
     args::Command dacs(commands, "dacs", "Starts a control task to set the module's DACs");
     args::Command tau_finder(commands, "tau_finder",
                              "Executes the Tau Finder control task and returns the values.");
+    args::Command sysctl(commands, "sysctl", "System Control query using MIB path.");
+    args::Command sysctl_config(commands, "sysctl-config", "System Control configuration from a file of values.");
+    args::Command sysctl_get(commands, "sysctl-get", "System Control command to get a MIB.");
+    args::Command sysctl_set(commands, "sysctl-set", "System Control command to set a MIB.");
 
     args::Group arguments(parser, "arguments", args::Group::Validators::AtLeastOne,
                           args::Options::Global);
@@ -1326,6 +1432,27 @@ int main(int argc, char** argv) {
         list_mode, "in_synch",
         "InSynch = 0 to reset clocks prior to starting a run. (default)\nInSynch = 1 to take no clock action.",
         {"in-synch"}, static_cast<unsigned int>(0));
+    args::ValueFlag<std::string> par_file(
+        arguments, "par", "The parameter file to write.",
+        {'p', "par"});
+    args::ValueFlag<std::string> query(
+        arguments, "query", "The regx query.",
+        {'q', "query"});
+    args::ValueFlag<std::string> format(
+        arguments, "format", "Format of output.",
+        {'F', "format"});
+    args::ValueFlag<std::string> val_file(
+        arguments, "vals", "File name for the command.",
+        {"vals"});
+    args::ValueFlag<std::string> val_name(
+        arguments, "val-name", "The MIB variable name.",
+        {"val-name"});
+    args::ValueFlag<std::string> val_type(
+        arguments, "val-type", "Type of variable.",
+        {"val-type"});
+    args::ValueFlag<std::string> value(
+        arguments, "val", "The value of a varable.",
+        {"val"});
 
     adjust_offsets.Add(conf_flag);
     adjust_offsets.Add(boot_pattern_flag);
@@ -1361,6 +1488,19 @@ int main(int argc, char** argv) {
     read.Add(module);
     read.Add(channel);
     read.Add(parameter);
+    sysctl.Add(conf_flag);
+    sysctl.Add(query);
+    sysctl.Add(format);
+    sysctl_config.Add(conf_flag);
+    sysctl_config.Add(val_file);
+    sysctl_config.Add(format);
+    sysctl_get.Add(conf_flag);
+    sysctl_get.Add(val_name);
+    sysctl_get.Add(val_type);
+    sysctl_set.Add(conf_flag);
+    sysctl_set.Add(val_name);
+    sysctl_set.Add(val_type);
+    sysctl_set.Add(value);
     tau_finder.Add(conf_flag);
     trace.Add(conf_flag);
     trace.Add(boot_pattern_flag);
@@ -1427,6 +1567,34 @@ int main(int argc, char** argv) {
 
     if (!init_system(cfg, offline_mode) || !set_fifo_configs(cfg)) {
         return EXIT_FAILURE;
+    }
+
+    if (sysctl) {
+        if (!execute_sysctl(query.Get(), format.Get())) {
+            return EXIT_FAILURE;
+        }
+        return EXIT_SUCCESS;
+    }
+
+    if (sysctl_config) {
+        if (!execute_sysctl_config(val_file.Get(), format.Get())) {
+            return EXIT_FAILURE;
+        }
+        return EXIT_SUCCESS;
+    }
+
+    if (sysctl_get) {
+        if (!execute_sysctl_get(val_name.Get(), val_type.Get())) {
+            return EXIT_FAILURE;
+        }
+        return EXIT_SUCCESS;
+    }
+
+    if (sysctl_set) {
+        if (!execute_sysctl_set(val_name.Get(), val_type.Get(), value.Get())) {
+            return EXIT_FAILURE;
+        }
+        return EXIT_SUCCESS;
     }
 
     if (init) {
