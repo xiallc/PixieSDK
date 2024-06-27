@@ -1374,7 +1374,7 @@ PIXIE_EXPORT int PIXIE_API PixieGetModuleInfo(unsigned short mod_num, module_con
         cfg->serial_number = module->serial_num;
         cfg->slot = static_cast<unsigned short>(module->slot);
 
-        if (xia::pixie::firmware::has_system_firmware_path()) {
+        if (module->online()) {
             using firmware_set = xia::pixie::firmware::firmware_set;
 
             firmware_set fw_set;
