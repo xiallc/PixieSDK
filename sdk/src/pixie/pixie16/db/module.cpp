@@ -186,16 +186,18 @@ void module::boot() {
 }
 
 void module::adc_self_test(bool use_log) {
-    log_output out = [use_log](const std::string& s, log::level level) {
-        if (use_log) {
-            xia_log(level) << s;
-        } else {
-            std::cout << s << std::endl;
-        }
-    };
-    adc_sweet_spot(out);
-    adc_pattern_check(out);
-    adc_channel_swap(out);
+    if (module_.online()) {
+        log_output out = [use_log](const std::string& s, log::level level) {
+            if (use_log) {
+                xia_log(level) << s;
+            } else {
+                std::cout << s << std::endl;
+            }
+        };
+        adc_sweet_spot(out);
+        adc_pattern_check(out);
+        adc_channel_swap(out);
+    }
 }
 
 bool module::adc_pattern_check(log_output& out) {
