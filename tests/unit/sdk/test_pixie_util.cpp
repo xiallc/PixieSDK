@@ -20,6 +20,7 @@
  * @brief Provides test coverage for SDK utility functions
  */
 
+#include <algorithm>
 
 #include <doctest/doctest.h>
 #include <pixie/os_compat.hpp>
@@ -626,6 +627,78 @@ TEST_SUITE("xia::util") {
 
         CHECK(file.valid() == false);
         CHECK(remove(filename.c_str()) == 0);
+    }
+
+    TEST_CASE("buffer stream") {
+        xia::util::io::bufferstream bufstream;
+        auto s1 = std::string("0123456789");
+        {
+            xia::util::io::bufferstream::reader r1(bufstream);
+            CHECK_THROWS_WITH_AS(
+                bufstream.push(s1),
+                "bufferstream: not created",
+                xia::pixie::error::error);
+            CHECK_THROWS_WITH_AS(
+                r1.tell(),
+                "bufferstream: not created",
+                xia::pixie::error::error);
+            CHECK_THROWS_WITH_AS(
+                r1.seek(100),
+                "bufferstream: not created",
+                xia::pixie::error::error);
+            CHECK_NOTHROW(bufstream.create());
+            CHECK(bufstream.available() == xia::util::io::bufferstream::default_page_size);
+            CHECK_NOTHROW(bufstream.push(s1));
+            CHECK_NOTHROW(bufstream.push(s1));
+            CHECK_NOTHROW(bufstream.push(s1));
+            CHECK_NOTHROW(bufstream.push(s1));
+            CHECK_NOTHROW(bufstream.push(s1));
+            CHECK(r1.read(s1, 5) == 5);
+            CHECK(s1 == "01234");
+            CHECK(r1.tell() == 5);
+            CHECK(r1.read(s1, 10) == 10);
+            CHECK(s1 == "5678901234");
+            CHECK(r1.tell() == 15);
+            CHECK(r1.seek(1) == 1);
+            CHECK(r1.read(s1, 10) == 10);
+            CHECK(s1 == "1234567890");
+            CHECK(r1.seek(100) == 50);
+            CHECK(r1.size() == 50);
+            CHECK(r1.full() == false);
+            CHECK(r1.available() == xia::util::io::bufferstream::default_page_size - 50);
+            s1.resize(r1.available());
+            std::fill(s1.begin(), s1.end(), '#');
+            CHECK_NOTHROW(bufstream.push(s1));
+            CHECK(r1.available() == 0);
+            CHECK(
+                r1.seek(xia::util::io::bufferstream::default_page_size - 50) ==
+                xia::util::io::bufferstream::default_page_size - 50);
+            CHECK(r1.read(s1, 100) == 50);
+            s1 = '1';
+            CHECK_NOTHROW(bufstream.push(s1));
+            CHECK(r1.available() == xia::util::io::bufferstream::default_page_size - 1);
+            CHECK(r1.size() == xia::util::io::bufferstream::default_page_size + 1);
+        }
+        CHECK_NOTHROW(bufstream.destroy());
+        bufstream.create(200);
+        {
+            xia::util::io::bufferstream::reader r2(bufstream);
+            CHECK(r2.available() == 200);
+            CHECK(r2.full() == false);
+            CHECK(r2.seek(0) == 0);
+            s1 = "0123456789";
+            for (size_t i = 0; i < 10; ++i) {
+                CHECK_NOTHROW(bufstream.push(s1));
+            }
+            CHECK(r2.size() == 100);
+            CHECK(r2.available() == 100);
+            CHECK(r2.full() == false);
+            for (size_t i = 0; i < 10; ++i) {
+                CHECK_NOTHROW(bufstream.push(s1));
+            }
+            CHECK(r2.available() == 0);
+            CHECK(r2.full() == true);
+        }
     }
 
     TEST_CASE("version") {

@@ -295,6 +295,209 @@ size_t file::write(const_value_ptr data, size_t size) {
     }
     throw error(error::code::file_not_found, "io: file: write: not open");
 }
+
+bufferstream::bufferstream()
+    : open(false), max_size(0), page_size(default_page_size) {
+}
+
+bufferstream::bufferstream(size_t max_size_)
+    : open(false), max_size(max_size_), page_size(default_page_size) {
+}
+
+bufferstream::~bufferstream() {
+}
+
+void bufferstream::create(size_t max_size_, size_t page_size_) {
+    if (max_size_ == 0 && page_size_ == 0) {
+        throw error(
+            error::code::invalid_value, "bufferstream: max size and page size are 0");
+    }
+    /*
+     * No need to cheak max size and page size alignment as page size
+     * is only used if max size is 0.
+     */
+    lock_guard guard(lock);
+    if (open) {
+        throw error(error::code::file_open_failure, "bufferstream: already open");
+    }
+    max_size = max_size_;
+    page_size = page_size_;
+    reset();
+    open = true;
+}
+
+void bufferstream::destroy() {
+    lock_guard guard(lock);
+    if (open) {
+        buffer.clear();
+        buffer.shrink_to_fit();
+        open = false;
+    }
+}
+
+void bufferstream::set_page_size(size_t page_size_) {
+    lock_guard guard(lock);
+    page_size = page_size_;
+}
+
+void bufferstream::clear() {
+    lock_guard guard(lock);
+    if (!open) {
+        throw error(error::code::file_open_failure, "bufferstream: not created");
+    }
+    reset();
+}
+
+bool bufferstream::full() {
+    lock_guard guard(lock);
+    if (!open) {
+        throw error(error::code::file_open_failure, "bufferstream: not created");
+    }
+    if (max_size != 0) {
+        return buffer.size() == max_size;
+    }
+    return false;
+}
+
+size_t bufferstream::size() {
+    lock_guard guard(lock);
+    if (!open) {
+        throw error(error::code::file_open_failure, "bufferstream: not created");
+    }
+    return buffer.size();
+}
+
+size_t bufferstream::available() {
+    lock_guard guard(lock);
+    if (!open) {
+        throw error(error::code::file_open_failure, "bufferstream: not created");
+    }
+    return buffer.capacity() - buffer.size();
+}
+
+void bufferstream::push(std::string& data) {
+    auto size = data.size();
+    push(reinterpret_cast<const_data_type_ptr>(data.c_str()), size);
+}
+
+void bufferstream::push(const_data_type_ptr data, size_t& size) {
+    lock_guard guard(lock);
+    if (!open) {
+        throw error(error::code::file_open_failure, "bufferstream: not created");
+    }
+    extend(size);
+    if (size != 0) {
+        auto buf_size = buffer.size();
+        buffer.resize(buf_size + size);
+        std::memcpy(buffer.data() + buf_size, data, size);
+    }
+}
+
+void bufferstream::reset() {
+    buffer.clear();
+    if (max_size != 0) {
+        buffer.reserve(max_size);
+    } else {
+        buffer.reserve(page_size);
+    }
+}
+
+void bufferstream::extend(size_t& size) {
+    if (max_size != 0) {
+        if (buffer.size() == max_size) {
+            size = 0;
+            return;
+        }
+    }
+    auto remaining = buffer.capacity() - buffer.size();
+    if (size > remaining) {
+        auto need = size - remaining;
+        if (max_size != 0) {
+            size -= need;
+        } else {
+            auto pages = ((need - 1) / page_size) + 1;
+            buffer.reserve(buffer.capacity() + pages * page_size);
+        }
+    }
+}
+
+bufferstream::reader::reader(bufferstream& bufstream_)
+    : bufstream(bufstream_), pos(0) {
+}
+
+bufferstream::reader::~reader() {
+}
+
+size_t bufferstream::reader::read(std::string& data, size_t size) {
+    data.clear();
+    data.resize(size);
+    return read(reinterpret_cast<data_type_ptr>(data.data()), size);
+}
+
+size_t bufferstream::reader::read(char* data, size_t size) {
+    if (data == nullptr) {
+        throw error(error::code::invalid_value, "bufferstream::reader: null pointer in read");
+    }
+    return read(reinterpret_cast<data_type_ptr>(data), size);
+}
+
+size_t bufferstream::reader::read(data_type_ptr data, size_t size) {
+    lock_guard guard(bufstream.lock);
+    if (!bufstream.open) {
+        throw error(error::code::file_open_failure, "bufferstream: not created");
+    }
+    auto buf_size = bufstream.buffer.size();
+    if (pos > buf_size) {
+        pos = buf_size;
+    }
+    auto end = pos + size;
+    if (end > buf_size) {
+        end = buf_size;
+    }
+    size = end - pos;
+    if (size > 0) {
+        std::memcpy(data, bufstream.buffer.data() + pos, size);
+        pos += size;
+    }
+    return size;
+}
+
+size_t bufferstream::reader::seek(size_t pos_) {
+    lock_guard guard(bufstream.lock);
+    if (!bufstream.open) {
+        throw error(error::code::file_open_failure, "bufferstream: not created");
+    }
+    auto buf_size = bufstream.buffer.size();
+    pos = pos_;
+    if (pos > buf_size) {
+        pos = buf_size;
+    }
+    return pos;
+}
+
+size_t bufferstream::reader::tell() {
+    lock_guard guard(bufstream.lock);
+    if (!bufstream.open) {
+        throw error(error::code::file_open_failure, "bufferstream: not created");
+    }
+    auto buf_size = bufstream.buffer.size();
+    if (pos > buf_size) {
+        pos = buf_size;
+    }
+    return pos;
+}
+
+bool bufferstream::reader::full() {
+    return bufstream.full();
+}
+
+size_t bufferstream::reader::size() {
+    return bufstream.size();
+}
+
+size_t bufferstream::reader::available() {
+    return bufstream.available();
+}
 } // namespace io
 } // namespace util
 } // namespace xia

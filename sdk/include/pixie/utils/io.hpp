@@ -29,6 +29,7 @@
 #include <functional>
 #include <iomanip>
 #include <iostream>
+#include <mutex>
 #include <numeric>
 #include <sstream>
 #include <string>
@@ -280,7 +281,7 @@ std::string humanize(T value, const std::string suffix = "") {
 
 /**
  * @brief Writes a memory segment as hex values.
- * @see https://git.rtems.org/rtems-tools/tree/rtemstoolkit/rtems-utils.cpp#n39
+ * @see https://gitlab.rtems.org/rtems/tools/rtems-tools/-/blob/main/rtemstoolkit/rtems-utils.cpp#L39
  * @param[in] addr The address of the memory to display.
  * @param[in] length The number of elements to display.
  * @param[in] writer The function to write the memory segment with.
@@ -386,6 +387,70 @@ private:
     int64_t seek(int64_t offset, seek_mode mode);
     size_t read(value_ptr data, size_t size);
     size_t write(const_value_ptr data, size_t size);
+};
+
+/**
+ * @brief Struct to stream buffer like a file.
+ *
+ * The struct provides a means to capture a buffer of data
+ */
+struct bufferstream {
+    static constexpr size_t default_page_size = 4096;
+
+    using data_type = uint8_t;
+    using data_type_ptr = uint8_t*;
+    using const_data_type_ptr = const uint8_t*;
+    using buffer_type = std::vector<data_type>;
+
+    using lock_type = std::mutex;
+    using lock_guard = std::lock_guard<lock_type>;
+
+    struct reader {
+        bufferstream& bufstream;
+        size_t pos;
+        reader(bufferstream& bufstream);
+        ~reader();
+        /**
+         * Read data from the buffer stream up to the size. The amount
+         * read is returned.
+         */
+        size_t read(std::string& data, size_t size);
+        size_t read(char* data, size_t size);
+        size_t read(data_type_ptr data, size_t size);
+        /**
+         * Read position control. Pop has not controls.
+         */
+        size_t seek(size_t pos);
+        size_t tell();
+        bool full();
+        size_t size();
+        size_t available();
+    };
+
+    lock_type lock;
+    bool open;
+    buffer_type buffer;
+    size_t max_size;
+    size_t page_size;
+
+    bufferstream();
+    bufferstream(size_t max_size);
+    ~bufferstream();
+
+    void create(size_t max_size = 0, size_t page_size = default_page_size);
+    void destroy();
+    void set_page_size(size_t page_size);
+    void clear();
+    bool full();
+    size_t size();
+    size_t available();
+
+    void push(std::string& data);
+    void push(const_data_type_ptr data, size_t& size);
+
+private:
+    void reset();
+    void extend(size_t& size);
 };
 
 } // namespace io

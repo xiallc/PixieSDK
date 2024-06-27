@@ -120,6 +120,7 @@ static const std::map<code, result_code> result_codes = {
     {code::file_read_failure, {702, "file read failure"}},
     {code::file_size_invalid, {703, "invalid file size"}},
     {code::file_create_failure, {704, "file create failure"}},
+    {code::file_close_failure, {705, "file close failure"}},
     /*
      * System
      */

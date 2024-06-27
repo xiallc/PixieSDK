@@ -310,6 +310,10 @@ enum struct code {
      * @brief 704
      */
     file_create_failure,
+    /**
+     * @brief 705
+     */
+    file_close_failure,
     /*
      * System
      */
