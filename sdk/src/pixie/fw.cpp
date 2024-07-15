@@ -1340,8 +1340,18 @@ void load_system_firmwares(system& firmwares) {
     if (sys_fw_path_env != nullptr) {
         system_firmware_path = sys_fw_path_env;
     }
-    xia_log(log::info) << "firmware: system: loading from " << system_firmware_path;
-    load_firmwares(firmwares, system_firmware_path, true);
+    auto disable_sys_fw_env = std::getenv("PIXIE_DISABLE_SYSTEM_FIRMWARE");
+    bool disable_sys_fw = false;
+    if (disable_sys_fw_env != NULL) {
+        std::string s(disable_sys_fw_env);
+        disable_sys_fw = util::string::check_affirmative(s);
+    }
+    if (!disable_sys_fw) {
+        xia_log(log::info) << "firmware: system: loading from " << system_firmware_path;
+        load_firmwares(firmwares, system_firmware_path, true);
+    } else {
+        xia_log(log::info) << "firmware: system: disabled";
+    }
 }
 
 void load_firmwares(system& firmwares, const std::string path, bool ignore_error) {

@@ -141,6 +141,13 @@ bool check_number(const std::string& s);
 bool check_number_range(const std::string& s);
 
 /**
+ * @brief Check if a string is an affirmative value.
+ * @param[in] s the string that we'll check.
+ * @return @true if the string is affirmative else @false
+ */
+bool check_affirmative(const std::string& s);
+
+/**
  * @brief Token editor splits a string by a token separator allowing
  * you to add, edit or remove tokens. You can export the list as a
  * string. This is useful for holding state information in MIB

@@ -123,6 +123,12 @@ bool check_number_range(const std::string& s) {
     throw std::runtime_error("invalid range: " + s);
 }
 
+bool check_affirmative(const std::string& s) {
+    std::string e(s);
+    util::string::tolower(e);
+    return (e == "true" || e == "t" || e == "yes" || e == "y" || e == "1");
+}
+
 token_editor::token_editor(const std::string& str, char separator_, bool sort_)
     : separator(separator_), sorted(sort_) {
     set(str);
