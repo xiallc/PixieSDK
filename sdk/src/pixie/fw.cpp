@@ -1342,7 +1342,7 @@ void load_system_firmwares(system& firmwares) {
     }
     auto disable_sys_fw_env = std::getenv("PIXIE_DISABLE_SYSTEM_FIRMWARE");
     bool disable_sys_fw = false;
-    if (disable_sys_fw_env != NULL) {
+    if (disable_sys_fw_env != nullptr) {
         std::string s(disable_sys_fw_env);
         disable_sys_fw = util::string::check_affirmative(s);
     }

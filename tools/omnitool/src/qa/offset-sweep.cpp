@@ -512,7 +512,7 @@ void offset_sweep_comp(
     command::context& context, command::completion& completions) {
     auto offset_sweep_cmd = context.cmd.def;
 
-    auto not_completed = !command::completions::flag_completion(NULL,
+    auto not_completed = !command::completions::flag_completion(nullptr,
         offset_sweep_cmd.name, completions);
     if (not_completed) {
         auto off = command::completions::get_pos_arg_offset(

@@ -90,7 +90,7 @@ void hist_save_comp(
     const std::string cmd = context.cmd.def.name;
 
     auto not_completed = !command::completions::flag_completion(
-        NULL, cmd, completions);
+        nullptr, cmd, completions);
     if (not_completed) {
         auto off = command::completions::get_pos_arg_offset(cmd, completions);
         if (off != 0) {

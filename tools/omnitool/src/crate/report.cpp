@@ -68,7 +68,7 @@ void report(command::context& context) {
 void report_comp(command::context& context, command::completion& completions) {
     auto report_cmd = context.cmd.def;
 
-    auto not_completed = !command::completions::flag_completion(NULL, report_cmd.name,
+    auto not_completed = !command::completions::flag_completion(nullptr, report_cmd.name,
                                                                 completions);
 
     if (not_completed) {

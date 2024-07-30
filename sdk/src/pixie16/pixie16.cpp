@@ -2190,5 +2190,5 @@ PIXIE_EXPORT const char* PIXIE_API PixieGetInstallationPath(const enum PIXIE_INS
         default:
             break;
     }
-    return NULL;
+    return nullptr;
 }

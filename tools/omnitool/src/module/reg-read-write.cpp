@@ -207,7 +207,7 @@ void reg_read_comp(
     auto reg_read_cmd = context.cmd.def;
 
     auto not_completed = !command::completions::flag_completion(
-        NULL, reg_read_cmd.name, completions);
+        nullptr, reg_read_cmd.name, completions);
 
     if (not_completed) {
         auto off = command::completions::get_pos_arg_offset(
@@ -266,7 +266,7 @@ void reg_write_comp(
     auto reg_write_cmd = context.cmd.def;
 
     auto not_completed = !command::completions::flag_completion(
-        NULL, reg_write_cmd.name, completions);
+        nullptr, reg_write_cmd.name, completions);
 
     if (not_completed) {
         auto off = command::completions::get_pos_arg_offset(
