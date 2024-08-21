@@ -32,6 +32,7 @@
 #ifdef XIA_PIXIE_WINDOWS
 #include <io.h>
 #else
+#include <sys/stat.h>
 #include <unistd.h>
 #endif
 

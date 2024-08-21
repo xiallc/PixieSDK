@@ -32,6 +32,32 @@
 #include <pixie/utils/time.hpp>
 #include <pixie/utils/version.hpp>
 
+
+/*
+ * RTEMS file system is empty. We need to create a file to test with.
+ */
+#if defined(__rtems__)
+#define CREATE_TEST_FILE 1
+#endif /* __rtems__ */
+
+#if CREATE_TEST_FILE
+#define PATH_TEST_FILE "test/sdk/test_pixie_util.cpp"
+#include <fstream>
+#include <sys/stat.h>
+#else
+#define PATH_TEST_FILE __FILE__
+#endif /* CREATE_TEST_FILE */
+
+static void create_test_file() {
+#if CREATE_TEST_FILE
+    mkdir("test", S_IRWXU | S_IRWXG | S_IRWXO);
+    mkdir("test/sdk", S_IRWXU | S_IRWXG | S_IRWXO);
+    std::ofstream out(PATH_TEST_FILE, std::ios::out | std::ios::binary);
+    out << "hello" << std::endl;
+    out.close();
+#endif
+}
+
 TEST_SUITE("xia::util") {
     TEST_CASE("Verify ostream_guard") {
         auto expected_flags(std::cout.flags());
@@ -353,6 +379,7 @@ TEST_SUITE("xia::util") {
     }
 
     TEST_CASE("Path") {
+        create_test_file();
         SUBCASE("basename") {
             CHECK(xia::util::path::basename(__FILE__) == "test_pixie_util.cpp");
 #ifdef XIA_PIXIE_WINDOWS

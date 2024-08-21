@@ -20,5 +20,46 @@
  * @brief Initializes a test runner to generate test suites.
  */
 
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#define DOCTEST_CONFIG_IMPLEMENT
 #include "doctest.h"
+
+#include <iostream>
+
+#if __rtems__
+#include <rtems.h>
+#endif /* __rtems__ */
+
+int
+get_num_cpus(void) {
+#if __rtems__
+    return rtems_scheduler_get_processor_maximum();
+#else /* __rtems__ */
+    return 1;
+#endif /* __rtems__ */
+}
+
+std::string
+get_version(void) {
+#if __GNUC__
+    return __VERSION__;
+#elif defined(_MSC_VER)
+    return std::to_string(_MSC_FULL_VER);
+#else
+    return "N/A";
+#endif
+}
+
+int
+main(int argc, char** argv) {
+    int num_cpus = get_num_cpus();
+    auto version = get_version();
+    std::cout << std::endl
+              << "Pixie Tests" << std::endl
+              << "   Compiler: " << version << std::endl
+              << "   CPU(s): " << num_cpus << std::endl
+              << std::endl;
+    int rc = doctest::Context(argc, argv).run();
+    std::cout << std::endl
+              << "result: " << rc << std::endl;
+    return rc;
+}
