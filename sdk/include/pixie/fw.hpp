@@ -50,7 +50,7 @@
 #include <mutex>
 #include <vector>
 
-#include <pixie/os_compat.hpp>
+#include <pixie/os_compat.h>
 #include <pixie/utils/crc.hpp>
 #include <pixie/utils/version.hpp>
 

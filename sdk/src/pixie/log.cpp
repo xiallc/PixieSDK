@@ -33,7 +33,7 @@
 
 #include <pixie/error.hpp>
 #include <pixie/log.hpp>
-#include <pixie/os_compat.hpp>
+#include <pixie/os_compat.h>
 #include <pixie/utils/io.hpp>
 
 namespace xia {

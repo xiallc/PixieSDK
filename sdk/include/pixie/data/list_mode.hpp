@@ -28,7 +28,7 @@
 #include <vector>
 
 #include <pixie/error.hpp>
-#include <pixie/os_compat.hpp>
+#include <pixie/os_compat.h>
 
 namespace xia {
 namespace pixie {

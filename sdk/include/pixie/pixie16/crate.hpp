@@ -28,7 +28,7 @@
 
 #include <pixie/error.hpp>
 #include <pixie/fw.hpp>
-#include <pixie/os_compat.hpp>
+#include <pixie/os_compat.h>
 
 #include <pixie/pixie16/backplane.hpp>
 #include <pixie/pixie16/module.hpp>

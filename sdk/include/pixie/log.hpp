@@ -28,7 +28,7 @@
 #include <memory>
 #include <sstream>
 
-#include <pixie/os_compat.hpp>
+#include <pixie/os_compat.h>
 
 namespace xia {
 /**

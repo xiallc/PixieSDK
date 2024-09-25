@@ -23,7 +23,7 @@
 #include <algorithm>
 
 #include <doctest/doctest.h>
-#include <pixie/os_compat.hpp>
+#include <pixie/os_compat.h>
 #include <pixie/utils/crc.hpp>
 #include <pixie/utils/io.hpp>
 #include <pixie/utils/numerics.hpp>

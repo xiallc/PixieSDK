@@ -23,7 +23,7 @@
 #include <cmath>
 #include <numeric>
 
-#include <pixie/os_compat.hpp>
+#include <pixie/os_compat.h>
 
 #include <pixie/log.hpp>
 #include <pixie/utils/io.hpp>

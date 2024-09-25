@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-/** @file os_compat.hpp
+/** @file os_compat.h
  * @brief Defines OS specific compatibility flags and defines
  */
 
-#ifndef XIA_OS_COMPAT_HPP
-#define XIA_OS_COMPAT_HPP
+#ifndef XIA_OS_COMPAT_H
+#define XIA_OS_COMPAT_H
 
 #if defined(_WIN64) || defined(_WIN32)
 #define _USE_MATH_DEFINES
@@ -38,4 +38,4 @@
 #define PIXIE_API
 #endif
 
-#endif /* XIA_OS_COMPAT_HPP */
+#endif /* XIA_OS_COMPAT_H */

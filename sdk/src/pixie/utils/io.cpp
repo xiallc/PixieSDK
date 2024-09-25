@@ -25,7 +25,7 @@
 #include <pixie/error.hpp>
 #include <pixie/utils/io.hpp>
 
-#include <pixie/os_compat.hpp>
+#include <pixie/os_compat.h>
 
 #include <fcntl.h>
 

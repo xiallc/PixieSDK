@@ -32,7 +32,7 @@
 #include <pixie/error.hpp>
 #include <pixie/fw.hpp>
 #include <pixie/log.hpp>
-#include <pixie/os_compat.hpp>
+#include <pixie/os_compat.h>
 #include <pixie/stats.hpp>
 #include <pixie/utils/io.hpp>
 #include <pixie/utils/numerics.hpp>

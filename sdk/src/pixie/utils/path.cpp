@@ -25,7 +25,7 @@
 #include <pixie/error.hpp>
 #include <pixie/utils/path.hpp>
 
-#include <pixie/os_compat.hpp>
+#include <pixie/os_compat.h>
 
 #ifdef XIA_PIXIE_WINDOWS
 #include <isakbosman/dirent.h>

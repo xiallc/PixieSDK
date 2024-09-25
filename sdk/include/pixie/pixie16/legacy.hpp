@@ -27,7 +27,7 @@
 #include <string>
 
 #include <pixie/error.hpp>
-#include <pixie/os_compat.hpp>
+#include <pixie/os_compat.h>
 
 #include <pixie/pixie16/crate.hpp>
 

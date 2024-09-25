@@ -25,7 +25,7 @@
 
 #include <stddef.h>
 
-#include <pixie/os_compat.hpp>
+#include <pixie/os_compat.h>
 
 #ifdef __cplusplus
 extern "C" {
