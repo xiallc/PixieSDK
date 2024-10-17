@@ -52,6 +52,10 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           & "$Env:GITHUB_WORKSPACE\build\tests\integration\${{matrix.env.BUILD_TYPE}}\pixie_sdk_integration_test_runner.exe"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $env:Path += ";$Env:GITHUB_WORKSPACE\build\sdk\src\pixie16\${{matrix.env.BUILD_TYPE}}"
+          cd "$Env:GITHUB_WORKSPACE\build\tests\integration\${{matrix.env.BUILD_TYPE}}"
+          .\test_pixie16_c.exe
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
 
   build-Linux:
     # The CMake configure and build commands are platform agnostic and should work equally
@@ -95,3 +99,4 @@ jobs:
         run: |
           ./tests/unit/sdk/pixie_sdk_unit_test_runner
           ./tests/integration/pixie_sdk_integration_test_runner
+          cd tests/integration; ./test_pixie16_c
