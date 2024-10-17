@@ -156,13 +156,14 @@ api_crate::operator xia::pixie::crate::view::module&() {
 
 const api_crate::module_defs api_crate::sim_module_defs = {
     "device-number=0 slot=2 revision=15 eeprom-format=1 " \
-    "serial-num=250 num-channels=16 adc-msps=250 adc-bits=16 adc-clk-div=1",
+    "serial-num=250 num-channels=16 adc-msps=250 adc-bits=16 adc-clk-div=2",
     "device-number=1 slot=3 revision=15 eeprom-format=1 " \
-    "serial-num=1000 num-channels=16 adc-msps=500 adc-bits=14 adc-clk-div=1",
+    "serial-num=1000 num-channels=16 adc-msps=500 adc-bits=14 adc-clk-div=5",
     "device-number=2 slot=4 revision=15 eeprom-format=1 " \
-    "serial-num=1001 num-channels=16 adc-msps=250 adc-bits=14 adc-clk-div=1",
-    "device-number=3 slot=5 revision=17 eeprom-format=1 " \
-    "serial-num=1002 num-channels=32 adc-msps=250 adc-bits=14 adc-clk-div=1"};
+    "serial-num=1001 num-channels=16 adc-msps=250 adc-bits=14 adc-clk-div=2",
+    "device-number=3 slot=5 revision=17 eeprom-format=2 " \
+    "serial-num=1002 num-channels=32 adc-msps=250 adc-bits=14 adc-clk-div=2 " \
+    "db_pid=4 db_count=4"};
 
 /*
  * The crate. We only handle a single crate with the legacy API.

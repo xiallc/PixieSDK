@@ -1093,6 +1093,8 @@ void module::close() {
             fixtures.reset();
         }
 
+        eeprom.clear();
+
         force_offline();
 
         if (have_hardware) {
@@ -1123,6 +1125,48 @@ void module::close() {
         online_ = false;
         forced_offline_ = false;
         opened_ = false;
+
+        mibs_size_t_rw.clear();
+        mibs_double_rw.clear();
+
+        mib::remove(mib_base + "run.min-bandwidth");
+        mib::remove(mib_base + "run.max-bandwidth");
+        mib::remove(mib_base + "run.bandwidth");
+        mib::remove(mib_base + "run.hw-overflows");
+        mib::remove(mib_base + "run.dropped");
+        mib::remove(mib_base + "run.overflows");
+        mib::remove(mib_base + "run.dma_in");
+        mib::remove(mib_base + "run.out");
+        mib::remove(mib_base + "run.in");
+
+        mib::remove(mib_base + "pci.mbox.fw.release");
+        mib::remove(mib_base + "pci.mbox.fw.type");
+        mib::remove(mib_base + "pci.mbox.opens");
+        mib::remove(mib_base + "pci.mbox.revision");
+        mib::remove(mib_base + "pci.mbox.serial-num");
+        mib::remove(mib_base + "pci.mbox.slot");
+        mib::remove(mib_base + "pci.mbox.version");
+
+        mib::remove(mib_base + "pci.plx.chip.revision");
+        mib::remove(mib_base + "pci.plx.chip.type");
+        mib::remove(mib_base + "pci.plx.driver.minor");
+        mib::remove(mib_base + "pci.plx.driver.major");
+
+        mib::remove(mib_base + "pci.reset");
+        mib::remove(mib_base + "pci.slot");
+        mib::remove(mib_base + "pci.bus");
+        mib::remove(mib_base + "pci.domain");
+        mib::remove(mib_base + "pci.device-num");
+
+        mib::remove(mib_base + "eeprom.format");
+        mib::remove(mib_base + "eeprom.revision.minor");
+        mib::remove(mib_base + "eeprom.revision.major");
+
+        mib::remove(mib_base + "revision");
+        mib::remove(mib_base + "serial-num");
+        mib::remove(mib_base + "max-channels");
+        mib::remove(mib_base + "num-channels");
+        mib::remove(mib_base + "slot");
 
         if (ps_unmap_bar != PLX_STATUS_OK || ps_close != PLX_STATUS_OK) {
             std::ostringstream oss;

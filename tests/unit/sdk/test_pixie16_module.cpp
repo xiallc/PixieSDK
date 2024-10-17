@@ -39,8 +39,8 @@ static const std::vector<std::string> module_def = {
     "adc-bits=14 adc-msps=500 adc-clk-div=5",
     "device-number=1 slot=6 revision=15 eeprom-format=1 serial-num=1035 num-channels=16 "
     "adc-bits=14 adc-msps=500 adc-clk-div=5",
-    "device-number=2 slot=10 revision=17 eeprom-format=1 serial-num=2034 num-channels=32 "
-    "adc-bits=14 adc-msps=500 adc-clk-div=5",
+    "device-number=2 slot=10 revision=17 eeprom-format=2 serial-num=2034 num-channels=32 "
+    "adc-bits=14 adc-msps=250 adc-clk-div=2 db_pid=4 db_count=4",
     "device-number=3 slot=13 revision=12 eeprom-format=1 serial-num=1001 num-channels=16 "
     "adc-bits=12 adc-msps=100 adc-clk-div=1"};
 
@@ -87,13 +87,13 @@ static const xia::pixie::sim::firmware_set_defs firmware_defs = {
      "device=dsp, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.ldr",
      "release=1.1.4, version=r41847, revision=15, adc-msps=500, adc-bits=14, " \
      "device=var, mask=1, file=Pixie16DSP_revfgeneral_12b250m_r41847.var"},
-    {"release=2.2.2, version=r133339, revision=17, adc-msps=500, adc-bits=14, " \
+    {"release=2.2.2, version=r133339, revision=17, adc-msps=250, adc-bits=14, " \
      "device=sys, mask=1, file=syspixie16_revfgeneral_adc500mhz_r33339.bin",
-     "release=2.2.2, version=r42081, revision=17, adc-msps=500, adc-bits=14, " \
+     "release=2.2.2, version=r42081, revision=17, adc-msps=250, adc-bits=14, " \
      "device=fippi, mask=0xf, file=fippixie16_revfgeneral_14b500m_r42081.bin",
-     "release=2.2.2, version=r41847, revision=17, adc-msps=500, adc-bits=14, " \
+     "release=2.2.2, version=r41847, revision=17, adc-msps=250, adc-bits=14, " \
      "device=dsp, mask=1, file=Pixie16DSP_revfgeneral_14b500m_r41847.ldr",
-     "release=2.2.2, version=r41847, revision=17, adc-msps=500, adc-bits=14, " \
+     "release=2.2.2, version=r41847, revision=17, adc-msps=250, adc-bits=14, " \
      "device=var, mask=1, file=Pixie16DSP_revfgeneral_14b500m_r41847.var"},
     {"release=0.9.1, version=r30882, revision=12, adc-msps=100, adc-bits=12, " \
      "device=sys, mask=1, file=syspixie16_revdgeneral_adc100mhz_r30882.bin",

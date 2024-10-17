@@ -109,6 +109,8 @@ struct module_def {
     int adc_bits;
     int adc_msps;
     int adc_clk_div;
+    int db_pid;
+    int db_count;
     std::string var_defaults;
 
     module_def();

@@ -121,24 +121,54 @@ void module::open(size_t device_number) {
             };
             auto eep_data = std::find_if(eep_defs.begin(), eep_defs.end(), eep_finder);
             if (eep_data == eep_defs.end()) {
-                hw::config config;
-                config.adc_bits = mod_def.adc_bits;
-                config.adc_msps = mod_def.adc_msps;
-                config.adc_clk_div = mod_def.adc_clk_div;
-                config.fpga_clk_mhz = mod_def.adc_msps / mod_def.adc_clk_div;
-                eeprom.configs.resize(num_channels, config);
+                if (revision == hw::rev_H) {
+                    auto pid = mod_def.db_pid;
+                    for (int p = 1; p <= mod_def.db_count; p++) {
+                        hw::db_assembly db(pid, p);
+                        db.label = eeprom.db_find_label(pid);
+                        db.index = eeprom.dbs.size();
+                        eeprom.dbs.push_back(db);
+
+                        auto db_config = eeprom.db_config(pid);
+                        db_config.fixture = hw::get_module_fixture(db.label);
+                        size_t channels = eeprom.db_channel_count(db.index);
+                        for (size_t c = 0; c < channels; ++c) {
+                            eeprom.configs.push_back(db_config);
+                        }
+                    }
+                    max_histogram_length = eeprom.configs[0].max_histogram_length;
+                    for (auto& config : eeprom.configs) {
+                        if (max_histogram_length != config.max_histogram_length) {
+                            max_histogram_length = hw::large_histogram_length;
+                            break;
+                        }
+                    }
+                } else {
+                    hw::config config;
+                    config.adc_bits = mod_def.adc_bits;
+                    config.adc_msps = mod_def.adc_msps;
+                    config.adc_clk_div = mod_def.adc_clk_div;
+                    config.fpga_clk_mhz = mod_def.adc_msps / mod_def.adc_clk_div;
+                    eeprom.configs.resize(num_channels, config);
+                }
+                eeprom.num_channels = int(eeprom.configs.size());
                 int index = 0;
                 for (auto& cfg : eeprom.configs) {
                     cfg.index = index;
                     ++index;
                 }
-                fixtures = std::make_shared<assembly>(*this);
             } else {
                 load_module_eeprom(eep_data->data, *this);
                 eeprom.process();
-                fixtures = fixture::make(*this);
-                fixtures->init_assemblies();
             }
+
+            run_config = hw::run::make(*this);
+            fixtures = fixture::make(*this);
+            fixtures->init_assemblies();
+
+            start_fifo_services();
+
+            fixtures->open();
 
             var_defaults = mod_def.var_defaults;
 
@@ -149,6 +179,41 @@ void module::open(size_t device_number) {
             hw_word_write = [&self = *this](int reg, hw::word val) {
                 self.sim_reg(reg, val);
             };
+
+            mib_base = "module." + std::to_string(slot) + '.';
+
+            /*
+             * Read-only, never disabled
+             */
+            mib::add_ro_int(mib_base + "slot", slot);
+            mib::add_ro_int(mib_base + "num-channels", num_channels);
+            mib::add_ro_int(mib_base + "max-channels", max_channels);
+            mib::add_ro_int(mib_base + "serial-num", serial_num);
+            mib::add_ro_int(mib_base + "revision", revision);
+
+            mib::add_ro_int(mib_base + "eeprom.revision.major", eeprom.major_revision);
+            mib::add_ro_int(mib_base + "eeprom.revision.minor", eeprom.minor_revision);
+            mib::add_ro_int(mib_base + "eeprom.format", eeprom_format);
+
+            mib::add_ro_int(mib_base + "sim.device-num", device_number);
+
+            mib::add(mib_base + "sim.test.str", mib::type::string);
+            mib::add(mib_base + "sim.test.int", mib::type::integer);
+            mib::add(mib_base + "sim.test.dbl", mib::type::real);
+
+            /*
+             * Active, disabled when offline
+             */
+            mibs_size_t_rw.emplace_back(mib_base + "run.in", run_stats.in);
+            mibs_size_t_rw.emplace_back(mib_base + "run.out", run_stats.out);
+            mibs_size_t_rw.emplace_back(mib_base + "run.dma_in", run_stats.dma_in);
+            mibs_size_t_rw.emplace_back(mib_base + "run.overflows", run_stats.overflows);
+            mibs_size_t_rw.emplace_back(mib_base + "run.dropped", run_stats.dropped);
+            mibs_size_t_rw.emplace_back(mib_base + "run.hw-overflows", run_stats.hw_overflows);
+            mibs_double_rw.emplace_back(mib_base + "run.bandwidth", run_stats.bandwidth);
+            mibs_double_rw.emplace_back(mib_base + "run.max-bandwidth", run_stats.max_bandwidth);
+            mibs_double_rw.emplace_back(mib_base + "run.min-bandwidth", run_stats.min_bandwidth);
+
             return;
         }
     }
@@ -189,10 +254,67 @@ void module::sim_csr(hw::word val) {
 }
 
 void module::close() {
-    xia_log(log::info) << "sim: module: close";
-    opened_ = false;
-    vmaddr = nullptr;
-    pci_memory.release();
+    if (opened()) {
+        xia_log(log::info) << "sim: module: close";
+        if (online()) {
+            if (run_active()) {
+                run_end();
+            }
+        }
+
+        if (fixtures) {
+            fixtures->close();
+            fixtures.reset();
+        }
+
+        eeprom.clear();
+
+        force_offline();
+
+        if (vmaddr != nullptr) {
+            pci_memory.release();
+            vmaddr = nullptr;
+        }
+
+        comms_fpga = false;
+        fippi_fpga = false;
+        dsp_online = false;
+
+        number = -1;
+
+        online_ = false;
+        forced_offline_ = false;
+        opened_ = false;
+
+        mibs_size_t_rw.clear();
+        mibs_double_rw.clear();
+
+        mib::remove(mib_base + "run.min-bandwidth");
+        mib::remove(mib_base + "run.max-bandwidth");
+        mib::remove(mib_base + "run.bandwidth");
+        mib::remove(mib_base + "run.hw-overflows");
+        mib::remove(mib_base + "run.dropped");
+        mib::remove(mib_base + "run.overflows");
+        mib::remove(mib_base + "run.dma_in");
+        mib::remove(mib_base + "run.out");
+        mib::remove(mib_base + "run.in");
+
+        mib::remove(mib_base + "sim.test.dbl");
+        mib::remove(mib_base + "sim.test.int");
+        mib::remove(mib_base + "sim.test.str");
+
+        mib::remove(mib_base + "sim.device-num");
+
+        mib::remove(mib_base + "eeprom.format");
+        mib::remove(mib_base + "eeprom.revision.minor");
+        mib::remove(mib_base + "eeprom.revision.major");
+
+        mib::remove(mib_base + "revision");
+        mib::remove(mib_base + "serial-num");
+        mib::remove(mib_base + "max-channels");
+        mib::remove(mib_base + "num-channels");
+        mib::remove(mib_base + "slot");
+    }
 }
 
 void module::probe(const firmware::firmware_set& firmware) {
@@ -221,6 +343,7 @@ void module::boot(const boot_params& params, const firmware::firmware_set& firmw
         }
     }
     online_ = false;
+    mib_disable();
     auto boot_comms = params.boot_comms;
     auto boot_fippi = params.boot_fippi;
     auto boot_dsp = params.boot_dsp;
@@ -243,6 +366,7 @@ void module::boot(const boot_params& params, const firmware::firmware_set& firmw
     fw_type = firmware.type();
     fixtures->boot();
     fixtures->online();
+    mib_enable();
     write_var(param::module_var::SlotID, param::value_type(slot));
 }
 
@@ -400,6 +524,10 @@ void add_module_def(const std::string mod_desc, const char delimiter) {
                 mod_def.adc_msps = std::stoul(label_value[1]);
             } else if (label_value[0] == "adc-clk-div") {
                 mod_def.adc_clk_div = std::stoul(label_value[1]);
+            } else if (label_value[0] == "db_pid") {
+                mod_def.db_pid = std::stoul(label_value[1]);
+            } else if (label_value[0] == "db_count") {
+                mod_def.db_count = std::stoul(label_value[1]);
             } else if (label_value[0] == "var-defaults") {
                 mod_def.var_defaults = label_value[1];
             } else {
