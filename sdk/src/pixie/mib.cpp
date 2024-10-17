@@ -288,6 +288,14 @@ void node_base::set_value(const std::string& val) {
 
 void node_base::set_value(const char* val) {
     lock_guard guard(lock);
+    if (read_only) {
+        throw error(
+            error::code::read_only, "mib::node::set: MIB is read-only: " + name);
+    }
+    if (write_lock) {
+        throw error(
+            error::code::read_only, "mib::node::set: MIB is write locked: " + name);
+    }
     std::istringstream iss(val);
     iss >> std::skipws;
     iss.exceptions(std::ifstream::failbit);
@@ -864,7 +872,7 @@ void add(const name_type& name, const type type_, const bool enabled) {
 
 void add(const char* name, const type type_, const bool enabled) {
     if (name == nullptr) {
-        throw error(error::code::invalid_value, "mxpib::add: name empty");
+        throw error(error::code::invalid_value, "mib::add: name empty");
     }
     mib->add(name_type(name), type_, enabled);
 }

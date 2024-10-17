@@ -2234,7 +2234,7 @@ PIXIE_EXPORT int PIXIE_API PixieSysControlOpen(const char* path, const enum PIXI
                         xia::mib::mib_to_json(json_out, nod.str(), name);
                     } else {
                         std::stringstream oss;
-                        oss << name << " = " << nod.str() << std::endl;
+                        oss << name << " = " << nod.str();
                         auto s = oss.str();
                         crate.sysctl.push(s);
                     }
@@ -2341,7 +2341,7 @@ PIXIE_EXPORT int PIXIE_API PixieSysControlGetInt(const char* path, int* value) {
                 xia_error::code::invalid_value, "system control path is null");
         }
         auto node = xia::mib::find(path);
-        *value = node;
+        *value = node.get<int>();
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
         return e.return_code();
@@ -2362,7 +2362,7 @@ PIXIE_EXPORT int PIXIE_API PixieSysControlGetDouble(const char* path, double* va
                 xia_error::code::invalid_value, "system control path is null");
         }
         auto node = xia::mib::find(path);
-        *value = node;
+        *value = node.get<double>();
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
         return e.return_code();
@@ -2481,15 +2481,17 @@ PIXIE_EXPORT int PIXIE_API PixieSysControlSetValues(const char* values,
                 if (is_json) {
                     xia::util::string::strings path_pieces;
                     xia::util::string::split(path_pieces, name, xia::mib::mibsep);
-                    auto& jvalue = json_in;
+                    auto jvalue = json_in;
                     bool found = true;
                     for (auto& piece : path_pieces) {
                         if (!jvalue.contains(piece)) {
+                            found = false;
                             break;
                         }
                         jvalue = jvalue[piece];
                     }
                     if (found) {
+                        nod.set_value(jvalue);
                     }
                 } else {
                     for (auto& key_val : values_in) {
@@ -2524,11 +2526,12 @@ PIXIE_EXPORT int PIXIE_API PixieSysControlSetFileValues(const char* filename,
             throw xia_error(
                 xia_error::code::file_size_invalid, "cannot get file size");
         }
-        size_t size = size_t(sb.st_size);
+        auto size = size_t(sb.st_size) + 1;
         std::vector<char> data(size);
         file.read(data, size);
         file.close();
-        return PixieSysControlSetValues(data.data(), format);
+        data[size - 1] = '\0';
+        return PixieSysControlSetValues(&data[0], format);
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
         return e.return_code();
