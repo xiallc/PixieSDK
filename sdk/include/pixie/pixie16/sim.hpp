@@ -58,6 +58,7 @@ public:
     void firmware_release(
         firmware::release_type& release, firmware::firmware_set::set_type& type) override;
     void init_values() override;
+    void dma_read(const hw::address source, hw::word_ptr values, const size_t size) override;
 
     void load_var_defaults(const std::string& file);
     void load_var_defaults(std::istream& input);
@@ -94,6 +95,7 @@ public:
 using firmware_set_def = std::vector<std::string>;
 using firmware_set_defs = std::vector<firmware_set_def>;
 
+void load_firmware_sets(firmware::system& firmwares);
 void load_firmware_sets(firmware::system& firmwares, const firmware_set_defs& sets);
 
 /**

@@ -37,6 +37,29 @@ namespace sim {
 module_defs mod_defs;
 eeprom_defs eep_defs;
 
+static const xia::pixie::sim::firmware_set_defs default_firmware_defs = {
+    {"version=n/a, revision=15, adc-msps=250, adc-bits=16, device=sys, mask=1, file=sys.bin",
+     "version=n/a, revision=15, adc-msps=250, adc-bits=16, device=fippi, mask=0xf, file=fippi.bin",
+     "version=n/a, revision=15, adc-msps=250, adc-bits=16, device=dsp, mask=1, file=dsp.ldr",
+     "version=n/a, revision=15, adc-msps=250, adc-bits=16, device=var, mask=1, file=dsp.var"},
+    {"version=n/a, revision=15, adc-msps=500, adc-bits=14, device=sys, mask=1, file=sys.bin",
+     "version=n/a, revision=15, adc-msps=500, adc-bits=14, device=fippi, mask=0xf, file=fippi.bin",
+     "version=n/a, revision=15, adc-msps=500, adc-bits=14, device=dsp, mask=1, file=dsp.ldr",
+     "version=n/a, revision=15, adc-msps=500, adc-bits=14, device=var, mask=1, file=dsp.var"},
+    {"version=n/a, revision=15, adc-msps=250, adc-bits=14, device=sys, mask=1, file=sys.bin",
+     "version=n/a, revision=15, adc-msps=250, adc-bits=14, device=fippi, mask=0xf, file=fippi.bin",
+     "version=n/a, revision=15, adc-msps=250, adc-bits=14, device=dsp, mask=1, file=dsp.ldr",
+     "version=n/a, revision=15, adc-msps=250, adc-bits=14, device=var, mask=1, file=dsp.var"},
+    {"version=n/a, revision=17, adc-msps=250, adc-bits=14, device=sys, mask=1, file=sys.bin",
+     "version=n/a, revision=17, adc-msps=250, adc-bits=14, device=fippi, mask=0xf, file=fippi.bin",
+     "version=n/a, revision=17, adc-msps=250, adc-bits=14, device=dsp, mask=1, file=dsp.ldr",
+     "version=n/a, revision=17, adc-msps=250, adc-bits=14, device=var, mask=1, file=dsp.var"},
+    {"version=n/a, revision=13, adc-msps=100, adc-bits=12, device=sys, mask=1, file=sys.bin",
+     "version=n/a, revision=13, adc-msps=100, adc-bits=12, device=fippi, mask=0xf, file=fippi.bin",
+     "version=n/a, revision=13, adc-msps=100, adc-bits=12, device=dsp, mask=1, file=dsp.ldr",
+     "version=n/a, revision=13, adc-msps=100, adc-bits=12, device=var, mask=1, file=dsp.var"},
+};
+
 struct assembly : public xia::pixie::fixture::assembly {
     assembly(xia::pixie::module::module& module_);
     virtual ~assembly() override;
@@ -115,6 +138,7 @@ void module::open(size_t device_number) {
             eeprom_format = mod_def.eeprom_format;
             serial_num = mod_def.serial_num;
             num_channels = mod_def.num_channels;
+            max_channels = mod_def.num_channels;
             max_histogram_length = hw::large_histogram_length;
             auto eep_finder = [slot = mod_def.slot](eeprom_def def) {
                 return slot == def.slot;
@@ -232,6 +256,7 @@ void module::sim_reg(int reg, hw::word val) {
 }
 
 void module::sim_csr(hw::word val) {
+    auto run_enabled = (val & (1 << hw::bit::RUNENA)) == 0;
     switch(control_task) {
         case hw::run::control_task::set_dacs:
         case hw::run::control_task::enable_input:
@@ -242,7 +267,7 @@ void module::sim_csr(hw::word val) {
         case hw::run::control_task::adjust_offsets:
         case hw::run::control_task::tau_finder:
         case hw::run::control_task::reset_adc:
-            if (!(val == 0 || val == 1)) {
+            if (run_enabled) {
                 hw::write_word(vmaddr, hw::device::CSR, val);
             }
             break;
@@ -368,6 +393,7 @@ void module::boot(const boot_params& params, const firmware::firmware_set& firmw
     fixtures->online();
     mib_enable();
     write_var(param::module_var::SlotID, param::value_type(slot));
+    write_word(hw::device::CSR, 1 << hw::bit::EXTFIFO_WML);
 }
 
 void module::initialize() {}
@@ -382,6 +408,18 @@ void module::init_values() {
     pixie::module::module::init_values();
     if (!var_defaults.empty()) {
         load_var_defaults(var_defaults);
+    }
+}
+
+void module::dma_read(const hw::address source, hw::word_ptr values, const size_t size) {
+    xia_log(log::debug) << module_label(*this) << "dma read: addr=0x" << std::hex << source
+                        << " length=" << std::dec << size;
+
+    online_check();
+    size_t s = 0;
+    while (s++ < size) {
+        *values = read_word(int(source + s));
+        ++values;
     }
 }
 
@@ -455,10 +493,14 @@ module_def::module_def()
     : device_number(0), slot(0), revision(0), eeprom_format(0), serial_num(0), num_channels(0),
       adc_bits(0), adc_msps(0), adc_clk_div(0) {}
 
+void load_firmware_sets(firmware::system& firmwares) {
+    load_firmware_sets(firmwares, default_firmware_defs);
+}
+
 void load_firmware_sets(firmware::system& firmwares, const firmware_set_defs& set_defs) {
-    xia::pixie::firmware::release_type release;
+    xia::pixie::firmware::release_type release = xia::pixie::firmware::not_released;
     for (auto& fw_set_def : set_defs) {
-        xia::pixie::firmware::firmware_set fw_set(release, "release date");
+        xia::pixie::firmware::firmware_set fw_set(release, "");
         for (auto& fw_def : fw_set_def) {
             auto fw = xia::pixie::firmware::parse(release, fw_def, ',');
             if (release == xia::pixie::firmware::not_released && fw.release != release) {
