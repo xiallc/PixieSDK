@@ -1,0 +1,3 @@
+module.2.sim.test.string = "jabberwoky"
+module.2.sim.test.int = 1337
+module.2.sim.test.dbl = 0.1337
