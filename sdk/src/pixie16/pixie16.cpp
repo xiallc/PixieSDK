@@ -226,6 +226,9 @@ PIXIE_EXPORT int PIXIE_API PixieGetHistogramLength(const unsigned short mod_num,
                                                    const unsigned short chan_num,
                                                    unsigned int* hist_length) {
     try {
+        if (hist_length == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "hist_length is null");
+        }
         crate->ready();
         xia::pixie::crate::view::module_handle module(crate, mod_num);
         module->channel_check(chan_num);
@@ -251,6 +254,9 @@ PIXIE_EXPORT int PIXIE_API PixieGetTraceLength(const unsigned short mod_num,
                                                const unsigned short chan_num,
                                                unsigned int* trace_length) {
     try {
+        if (trace_length == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "trace_length is null");
+        }
         crate->ready();
         xia::pixie::crate::view::module_handle module(crate, mod_num);
         module->channel_check(chan_num);
@@ -423,7 +429,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16BLcutFinder(unsigned short ModNum, unsigned sh
 
     try {
         if (BLcut == nullptr) {
-            throw xia_error(xia_error::code::invalid_value, "BLcut is NULL");
+            throw xia_error(xia_error::code::invalid_value, "BLcut is null");
         }
         crate->ready();
         xia::pixie::crate::view::module_handle module(crate, ModNum);
@@ -478,7 +484,7 @@ static void PixieBootModule(xia::pixie::module::module& module, const char* ComF
     device.name = "sys";
     firmware comm_fw(device, "n/a", 1);
     device.name = "fippi";
-    firmware fippi_fw(device, "n/a", 1);
+    firmware fippi_fw(device, "n/a", 0xF);
     device.name = "dsp";
     firmware dsp_fw(device, "n/a", 1);
     device.name = "var";
@@ -554,32 +560,50 @@ PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
                                              const char* DSPCodeFile, const char* DSPParFile,
                                              const char* DSPVarFile, unsigned short ModNum,
                                              unsigned short BootPattern) {
-    xia_log(xia::log::info) << "Pixie16BootModule: ModNum=" << ModNum << std::hex
-                            << " BootPattern=0x" << BootPattern;
-    xia_log(xia::log::info) << "Pixie16BootModule: ModNum=" << ModNum
-                            << " ComFPGAConfigFile=" << ComFPGAConfigFile;
-    xia_log(xia::log::info) << "Pixie16BootModule: ModNum=" << ModNum
-                            << " SPFPGAConfigFile=" << SPFPGAConfigFile;
-    xia_log(xia::log::info) << "Pixie16BootModule: ModNum=" << ModNum
-                            << " DSPCodeFile=" << DSPCodeFile;
-    xia_log(xia::log::info) << "Pixie16BootModule: ModNum=" << ModNum
-                            << " DSPParFile=" << DSPParFile;
-    xia_log(xia::log::info) << "Pixie16BootModule: ModNum=" << ModNum
-                            << " DSPVarFile=" << DSPVarFile;
-
-    const unsigned short device_boot_mask = (1 << BOOTPATTERN_COMFPGA_BIT) |
-                                            (1 << BOOTPATTERN_SPFPGA_BIT) |
-                                            (1 << BOOTPATTERN_DSPCODE_BIT);
-    const unsigned short devices_boot = BootPattern & device_boot_mask;
-
-    if (devices_boot != 0 && devices_boot != device_boot_mask) {
-        xia_log(xia::log::error) << "invalid value: must boot COMM, FPGA and DSP together";
-        return xia::pixie::error::return_code(
-            xia::pixie::error::api_result(xia_error::code::invalid_value));
-    }
-
     try {
+        if (ComFPGAConfigFile == nullptr) {
+            throw xia_error(xia_error::code::invalid_value,
+                            "ComFPGAConfigFile is null");
+        }
+        if (SPFPGAConfigFile == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "SPFPGAConfigFile is null");
+        }
+        if (DSPCodeFile == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "DSPCodeFile is null");
+        }
+        if (DSPParFile == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "DSPParFile is null");
+        }
+        if (DSPVarFile == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "DSPVarFile is null");
+        }
+
+        xia_log(xia::log::info) << "Pixie16BootModule: ModNum=" << ModNum << std::hex
+                                << " BootPattern=0x" << BootPattern;
+        xia_log(xia::log::info) << "Pixie16BootModule: ModNum=" << ModNum
+                                << " ComFPGAConfigFile=" << ComFPGAConfigFile;
+        xia_log(xia::log::info) << "Pixie16BootModule: ModNum=" << ModNum
+                                << " SPFPGAConfigFile=" << SPFPGAConfigFile;
+        xia_log(xia::log::info)
+            << "Pixie16BootModule: ModNum=" << ModNum << " DSPCodeFile=" << DSPCodeFile;
+        xia_log(xia::log::info)
+            << "Pixie16BootModule: ModNum=" << ModNum << " DSPParFile=" << DSPParFile;
+        xia_log(xia::log::info)
+            << "Pixie16BootModule: ModNum=" << ModNum << " DSPVarFile=" << DSPVarFile;
+
+        const unsigned short device_boot_mask = (1 << BOOTPATTERN_COMFPGA_BIT) |
+                                                (1 << BOOTPATTERN_SPFPGA_BIT) |
+                                                (1 << BOOTPATTERN_DSPCODE_BIT);
+        const auto devices_boot = BootPattern & device_boot_mask;
+
+        if (devices_boot != 0 && devices_boot != device_boot_mask) {
+            throw xia_error(xia_error::code::invalid_value,
+                            "must boot COMM, FPGA and DSP together");
+        }
+
         xia::pixie::crate::crate::user user(crate);
+        crate->ready();
+
         if (ModNum == crate.modules.num_modules) {
             if (!crate.run_check_override) {
                 crate->check_active_run();
@@ -614,23 +638,27 @@ PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
 
 PIXIE_EXPORT int PIXIE_API Pixie16BootModuleFirmware(const char* DSPParFile, unsigned short ModNum,
                                              unsigned short BootPattern) {
-    xia_log(xia::log::info) << "Pixie16BootModule: ModNum=" << ModNum << std::hex
-                            << " BootPattern=0x" << BootPattern;
-    xia_log(xia::log::info) << "Pixie16BootModule: ModNum=" << ModNum
-                            << " DSPParFile=" << DSPParFile;
-
-    const unsigned short device_boot_mask = (1 << BOOTPATTERN_COMFPGA_BIT) |
-                                            (1 << BOOTPATTERN_SPFPGA_BIT) |
-                                            (1 << BOOTPATTERN_DSPCODE_BIT);
-    const unsigned short devices_boot = BootPattern & device_boot_mask;
-
-    if (devices_boot != 0 && devices_boot != device_boot_mask) {
-        xia_log(xia::log::error) << "invalid value: must boot COMM, FPGA and DSP together";
-        return xia::pixie::error::return_code(
-            xia::pixie::error::api_result(xia_error::code::invalid_value));
-    }
-
     try {
+        if (DSPParFile == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "DSPParFile is null");
+        }
+        xia_log(xia::log::info) << "Pixie16BootModule: ModNum=" << ModNum << std::hex
+                                << " BootPattern=0x" << BootPattern;
+        xia_log(xia::log::info) << "Pixie16BootModule: ModNum=" << ModNum
+                                << " DSPParFile=" << DSPParFile;
+
+        const unsigned short device_boot_mask = (1 << BOOTPATTERN_COMFPGA_BIT) |
+                                                (1 << BOOTPATTERN_SPFPGA_BIT) |
+                                                (1 << BOOTPATTERN_DSPCODE_BIT);
+        const auto devices_boot = BootPattern & device_boot_mask;
+
+        if (devices_boot != 0 && devices_boot != device_boot_mask) {
+            throw xia_error(xia_error::code::invalid_value,
+                            "invalid value: must boot COMM, FPGA and DSP together");
+        }
+
+        crate->ready();
+
         if (ModNum == crate.modules.num_modules) {
             if (!crate.run_check_override) {
                 crate->check_active_run();
@@ -668,6 +696,10 @@ PIXIE_EXPORT int PIXIE_API Pixie16CheckExternalFIFOStatus(unsigned int* nFIFOWor
     int result = 0;
 
     try {
+        if (nFIFOWords == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "nFIFOWords is null");
+        }
+
         crate->ready();
         xia::pixie::crate::view::module_handle module(crate, ModNum);
         *nFIFOWords = static_cast<unsigned int>(module->read_list_mode_level());
@@ -726,7 +758,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeInputCountRate(unsigned int* Statist
 
     try {
         if (Statistics == nullptr) {
-            throw xia_error(xia_error::code::invalid_value, "statistics pointer is NULL");
+            throw xia_error(xia_error::code::invalid_value, "statistics is null");
         }
         stats_legacy_ptr stats = reinterpret_cast<stats_legacy_ptr>(Statistics);
         stats->validate();
@@ -761,7 +793,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeLiveTime(unsigned int* Statistics,
 
     try {
         if (Statistics == nullptr) {
-            throw xia_error(xia_error::code::invalid_value, "statistics pointer is NULL");
+            throw xia_error(xia_error::code::invalid_value, "statistics is null");
         }
         auto stats = reinterpret_cast<stats_legacy_ptr>(Statistics);
         stats->validate();
@@ -796,7 +828,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeOutputCountRate(unsigned int* Statis
 
     try {
         if (Statistics == nullptr) {
-            throw xia_error(xia_error::code::invalid_value, "statistics pointer is NULL");
+            throw xia_error(xia_error::code::invalid_value, "statistics is null");
         }
         stats_legacy_ptr stats = reinterpret_cast<stats_legacy_ptr>(Statistics);
         stats->validate();
@@ -831,7 +863,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeRawInputCount(unsigned int* Statisti
 
     try {
         if (Statistics == nullptr) {
-            throw xia_error(xia_error::code::invalid_value, "statistics pointer is NULL");
+            throw xia_error(xia_error::code::invalid_value, "statistics is null");
         }
         auto stats = reinterpret_cast<stats_legacy_ptr>(Statistics);
         stats->validate();
@@ -866,7 +898,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeRawOutputCount(unsigned int* Statist
 
     try {
         if (Statistics == nullptr) {
-            throw xia_error(xia_error::code::invalid_value, "statistics pointer is NULL");
+            throw xia_error(xia_error::code::invalid_value, "statistics is null");
         }
         auto stats = reinterpret_cast<stats_legacy_ptr>(Statistics);
         stats->validate();
@@ -899,7 +931,7 @@ PIXIE_EXPORT double PIXIE_API Pixie16ComputeRealTime(unsigned int* Statistics,
 
     try {
         if (Statistics == nullptr) {
-            throw xia_error(xia_error::code::invalid_value, "statistics pointer is NULL");
+            throw xia_error(xia_error::code::invalid_value, "statistics is null");
         }
         auto stats = reinterpret_cast<stats_legacy_ptr>(Statistics);
         stats->validate();
@@ -925,36 +957,40 @@ PIXIE_EXPORT int PIXIE_API Pixie16CopyDSPParameters(unsigned short BitMask,
                                                     unsigned short SourceModule,
                                                     unsigned short SourceChannel,
                                                     unsigned short* DestinationMask) {
-    xia_log(xia::log::debug) << "Pixie16CopyDSPParameters: Source Module=" << SourceModule
-                             << " Source Channel=" << SourceChannel
-                             << "  Destination Mask=" << DestinationMask
-                             << " Bit Mask=" << BitMask;
-
     try {
+        if (DestinationMask == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "DestinationMask is null");
+        }
+
+        xia_log(xia::log::debug) << "Pixie16CopyDSPParameters: Source Module=" << SourceModule
+                                 << " Source Channel=" << SourceChannel
+                                 << " Destination Mask=" << DestinationMask
+                                 << " Bit Mask=" << BitMask;
+
         crate->ready();
         xia::pixie::crate::view::module_handle source(crate, SourceModule);
+
+        if (SourceChannel > source->num_channels) {
+            throw xia_error(xia_error::code::invalid_value, "SourceChannel too large");
+        }
+
         if (!crate.run_check_override) {
             crate->check_active_run();
         }
+
+        size_t offset = 0;
         for (size_t dest_mod = 0; dest_mod < crate.modules.num_modules; dest_mod++) {
             xia::pixie::crate::view::module_handle dest_handle(crate, dest_mod);
 
-            if (SourceChannel < dest_handle->num_channels) {
-                for (size_t dest_chan = 0; dest_chan < dest_handle->num_channels; dest_chan++) {
-                    if (DestinationMask[dest_mod * dest_handle->num_channels + dest_chan] == 0) {
-                        continue;
-                    }
-                    xia::pixie::param::copy_parameters(BitMask, source->channels[SourceChannel].vars,
-                                                       dest_handle->channels[dest_chan].vars,
-                                                       source->module_vars, dest_handle->module_vars);
-                }
-            } else {
-                if (DestinationMask[dest_mod] == 0) {
+            for (size_t dest_chan = 0; dest_chan < dest_handle->num_channels; dest_chan++) {
+                if (DestinationMask[offset + dest_chan] == 0) {
                     continue;
                 }
-                xia::pixie::param::copy_parameters(BitMask, source->module_vars,
-                                                   dest_handle->module_vars);
+                xia::pixie::param::copy_parameters(BitMask, source->channels[SourceChannel].vars,
+                                                   dest_handle->channels[dest_chan].vars,
+                                                   source->module_vars, dest_handle->module_vars);
             }
+            offset += dest_handle->num_channels;
             dest_handle->sync_vars();
         }
     } catch (xia_error& e) {
@@ -1096,20 +1132,31 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(
     xia::logging::start("log", "Pixie16Msg.log", true);
     xia::logging::set_level(log_level);
 
-    if (OfflineMode > 1) {
-        xia_log(xia::log::warning) << "Pixie16InitSystem: OfflineMode can only be 0 or 1";
-        OfflineMode = 1;
-    }
-
-    if (OfflineMode == 1) {
-        crate.set_simulation();
-        NumModules = crate.num_simulation_modules();
-    }
-
-    xia_log(xia::log::info) << "Pixie16InitSystem: NumModules=" << NumModules
-                            << " PXISlotMap=" << PXISlotMap << " OfflineMode=" << OfflineMode;
-
     try {
+        if (NumModules > xia::pixie::hw::max_slots) {
+            throw xia_error(xia::pixie::error::code::module_total_invalid,
+                            "requested more modules than slots");
+        }
+
+        if (NumModules == 0) {
+            throw xia_error(xia::pixie::error::code::module_total_invalid,
+                            "no modules requested");
+        }
+
+        if (OfflineMode > 1) {
+            xia_log(xia::log::warning) << "Pixie16InitSystem: OfflineMode can only be 0 or 1";
+            OfflineMode = 1;
+        }
+
+        if (OfflineMode == 1) {
+            crate.set_simulation();
+            NumModules = crate.num_simulation_modules();
+            xia::pixie::sim::load_firmware_sets(crate->firmware);
+        }
+
+        xia_log(xia::log::info) << "Pixie16InitSystem: NumModules=" << NumModules
+                                << " PXISlotMap=" << PXISlotMap << " OfflineMode=" << OfflineMode;
+
         /*
          * Load the system firmware into the crate
          */
@@ -1183,6 +1230,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(
 
 PIXIE_EXPORT int PIXIE_API Pixie16LoadModuleFirmware(const char* SearchPath) {
     try {
+        if (SearchPath == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "SearchPath is null");
+        }
         crate->ready();
         if (!crate.run_check_override) {
             crate->check_active_run();
@@ -1206,6 +1256,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16LoadModuleFirmware(const char* SearchPath) {
 
 PIXIE_EXPORT int PIXIE_API Pixie16SetModuleFirmware(const char* FwFile, unsigned int ModSlot, const char* Device) {
     try {
+        if (FwFile == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "FwFile is null");
+        }
+        if (Device == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "Device is null");
+        }
+
         using firmware = xia::pixie::firmware::firmware;
         using firmware_set = xia::pixie::firmware::firmware_set;
         using device_detail = xia::pixie::firmware::device_detail;
@@ -1215,6 +1272,11 @@ PIXIE_EXPORT int PIXIE_API Pixie16SetModuleFirmware(const char* FwFile, unsigned
             crate->check_active_run();
         }
         xia::pixie::module::module_ptr module = crate->find(ModSlot);
+
+        if (!module->present() || !module) {
+            throw xia_error(xia_error::code::module_not_found, "invalid slot");
+        }
+
         hw_config config = module->eeprom.configs[0];
         device_detail dev;
         dev.name = Device;
@@ -1251,6 +1313,10 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadDataFromExternalFIFO(unsigned int* ExtFIFO
                              << " nFIFOWords=" << nFIFOWords;
 
     try {
+        if (ExtFIFO_Data == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "nFIFOWords is null");
+        }
+
         crate->ready();
         xia::pixie::crate::view::module_handle module(crate, ModNum);
 
@@ -1290,6 +1356,10 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
                              << " ChanNum=" << ChanNum << " NumWords=" << NumWords;
 
     try {
+        if (Histogram == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "Histogram is null");
+        }
+
         crate->ready();
         xia::pixie::crate::view::module_handle module(crate, ModNum);
         module->channel_check(ChanNum);
@@ -1305,8 +1375,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadHistogramFromModule(unsigned int* Histogra
 
             for (unsigned int i = read_words; i < NumWords; i++)
                 Histogram[i] = std::numeric_limits<unsigned int>::max();
-        }
-        if (read_words < chan.fixture->config.max_histogram_length) {
+        } else {
             xia_log(xia::log::warning)
                 << "NumWords (" << NumWords << ") less than the max_histogram_length ("
                 << chan.fixture->config.max_histogram_length << ") for Module " << ModNum
@@ -1337,6 +1406,19 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadModuleInfo(unsigned short ModNum, unsigned
     xia_log(xia::log::debug) << "Pixie16ReadModuleInfo: ModNum=" << ModNum;
 
     try {
+        if (ModRev == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "ModRev is null");
+        }
+        if (ModSerNum == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "ModSerNum is null");
+        }
+        if (ModADCBits == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "ModADCBits is null");
+        }
+        if (ModADCMSPS == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "ModADCMSPS is null");
+        }
+
         crate->ready();
         xia::pixie::crate::view::module_handle module(crate, ModNum,
                                                 xia::pixie::module::check::open);
@@ -1366,10 +1448,9 @@ PIXIE_EXPORT int PIXIE_API PixieGetModuleInfo(unsigned short mod_num, module_con
     xia_log(xia::log::debug) << "PixieReadModuleInfo: ModNum=" << mod_num;
 
     try {
-        if (!cfg) {
+        if (cfg == nullptr) {
             throw xia::pixie::error::error(
-                xia::pixie::error::code::module_info_failure,
-                "Module configuration object was null. Please provide a structure to populate.");
+                xia::pixie::error::code::module_info_failure, "cfg is null");
         }
 
         crate->ready();
@@ -1434,6 +1515,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanADCTrace(unsigned short* Trace_Buff
                              << " ChanNum=" << ChanNum << " Trace_Length=" << Trace_Length;
 
     try {
+        if (Trace_Buffer == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "Trace_Buffer is null");
+        }
         crate->ready();
         xia::pixie::crate::view::module_handle module(crate, ModNum);
         if (!crate.run_check_override) {
@@ -1467,10 +1551,10 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanBaselines(double* Baselines, double
 
     try {
         if (Baselines == nullptr) {
-            throw xia_error(xia_error::code::invalid_value, "Baselines is NULL");
+            throw xia_error(xia_error::code::invalid_value, "Baselines is null");
         }
         if (TimeStamps == nullptr) {
-            throw xia_error(xia_error::code::invalid_value, "TimeStamps is NULL");
+            throw xia_error(xia_error::code::invalid_value, "TimeStamps is null");
         }
 
         crate->ready();
@@ -1512,6 +1596,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglChanPar(const char* ChanParName, double
                              << " ChanParName=" << ChanParName;
 
     try {
+        if (ChanParName == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "ChanParName is null");
+        }
+        if (ChanParData == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "ChanParData is null");
+        }
+
         crate->ready();
         xia::pixie::crate::view::module_handle module(crate, ModNum);
         if (!crate.run_check_override) {
@@ -1546,6 +1637,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadSglModPar(const char* ModParName, unsigned
                              << " ModParName=" << ModParName;
 
     try {
+        if (ModParName == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "ModParName is null");
+        }
+        if (ModParData == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "ModParData is null");
+        }
+
         crate->ready();
         xia::pixie::crate::view::module_handle module(crate, ModNum);
         if (!crate.run_check_override) {
@@ -1578,7 +1676,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadStatisticsFromModule(unsigned int* Statist
 
     try {
         if (Statistics == nullptr) {
-            throw xia_error(xia_error::code::invalid_value, "statistics pointer is NULL");
+            throw xia_error(xia_error::code::invalid_value, "statistics is null");
         }
         crate->ready();
         xia::pixie::crate::view::module_handle module(crate, ModNum);
@@ -1593,6 +1691,7 @@ PIXIE_EXPORT int PIXIE_API Pixie16ReadStatisticsFromModule(unsigned int* Statist
         }
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
+        return e.return_code();
     } catch (std::bad_alloc& e) {
         xia_log(xia::log::error) << "bad allocation: " << e.what();
         return xia::pixie::error::return_code_bad_alloc_error();
@@ -1774,6 +1873,10 @@ PIXIE_EXPORT int PIXIE_API Pixie16TauFinder(unsigned short ModNum, double* Tau) 
     xia_log(xia::log::debug) << "Pixie16TauFinder: ModNum=" << ModNum;
 
     try {
+        if (Tau == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "Tau is null");
+        }
+
         crate->ready();
         xia::pixie::crate::view::module_handle module(crate, ModNum);
         if (!crate.run_check_override) {
@@ -1809,6 +1912,10 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglChanPar(const char* ChanParName, doubl
                              << " ChanParData=" << ChanParData;
 
     try {
+        if (ChanParName == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "ChanParName is null");
+        }
+
         crate->ready();
         xia::pixie::crate::view::module_handle module(crate, ModNum);
         if (!crate.run_check_override) {
@@ -1839,6 +1946,10 @@ PIXIE_EXPORT int PIXIE_API Pixie16WriteSglModPar(const char* ModParName, unsigne
                              << " ModParName=" << ModParName << " ModParData=" << ModParData;
 
     try {
+        if (ModParName == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "ModParName is null");
+        }
+
         crate->ready();
         bool bcast;
         if (ModNum == crate.modules.num_modules) {
@@ -1901,7 +2012,7 @@ PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file,
             case PIXIE_BOOT_SETTINGS_LOAD:
                 if (settings_file == nullptr || strlen(settings_file) == 0) {
                     throw xia_error(xia_error::code::invalid_value,
-                                    "settings file pointer is NULL or empty");
+                                    "settings file is null or empty");
                 }
                 import_settings = true;
                 boot = false;
@@ -1956,6 +2067,10 @@ PIXIE_EXPORT int PIXIE_API PixieGetWorkerConfiguration(const unsigned short mod_
     xia_log(xia::log::debug) << "PixieGetWorkerConfiguration: Module=" << mod_num;
 
     try {
+        if (worker_config == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "worker_config is null");
+        }
+
         crate->ready();
         xia::pixie::crate::view::module_handle module(crate, mod_num,
                                                 xia::pixie::module::check::open);
@@ -1983,10 +2098,9 @@ PIXIE_EXPORT int PIXIE_API PixieGetFifoConfiguration(const unsigned short mod_nu
     xia_log(xia::log::debug) << "PixieGetFifoConfiguration: Module=" << mod_num;
 
     try {
-        if (!fifo_config) {
+        if (fifo_config == nullptr) {
             throw xia::pixie::error::error(
-                xia::pixie::error::code::module_info_failure,
-                "FIFO configuration object was null. Please provide a structure to populate.");
+                xia::pixie::error::code::module_info_failure, "fifo_config is null");
         }
         crate->ready();
         xia::pixie::crate::view::module_handle module(crate, mod_num,
@@ -2013,15 +2127,25 @@ PIXIE_EXPORT int PIXIE_API PixieGetFifoConfiguration(const unsigned short mod_nu
 PIXIE_EXPORT int PIXIE_API PixieRegisterCrateFirmware(const unsigned int version, const int revision,
                                                       const int adc_msps, const int adc_bits,
                                                       const char* device, const char* path) {
-    xia_log(xia::log::debug) << "Pixie16RegisterFirmware: version=" << version
-                             << " revision=" << revision << " adc_msps=" << adc_msps
-                             << " adc_bits=" << adc_bits << " device=" << device << " path=" << path;
-
     using firmware_set = xia::pixie::firmware::firmware_set;
     using firmware = xia::pixie::firmware::firmware;
     using device_detail = xia::pixie::firmware::device_detail;
 
     try {
+        if (device == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "device is null");
+        }
+        if (path == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "path is null");
+        }
+
+        xia_log(xia::log::debug)
+            << "Pixie16RegisterFirmware: version=" << version
+            << " revision=" << revision << " adc_msps=" << adc_msps
+            << " adc_bits=" << adc_bits << " device=" << device << " path=" << path;
+
+        crate->ready();
+
         if (!crate.run_check_override) {
             crate->check_active_run();
         }
@@ -2057,18 +2181,35 @@ PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version, con
                                                  const int adc_msps, const int adc_bits,
                                                  const char* device, const char* path,
                                                  unsigned short ModNum) {
-    xia_log(xia::log::debug) << "PixieRegisterFirmware: version=" << version
-                             << " revision=" << revision << " adc_msps=" << adc_msps
-                             << " adc_bits=" << adc_bits << " device=" << device << " path=" << path
-                             << " ModNum=" << ModNum;
-
+    using firmware_set = xia::pixie::firmware::firmware_set;
+    using firmware = xia::pixie::firmware::firmware;
+    using device_detail = xia::pixie::firmware::device_detail;
 
     try {
-        using firmware_set = xia::pixie::firmware::firmware_set;
-        using firmware = xia::pixie::firmware::firmware;
-        using device_detail = xia::pixie::firmware::device_detail;
+        if (device == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "device is null");
+        }
+        if (path == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "path is null");
+        }
+
+        xia_log(xia::log::debug) << "PixieRegisterFirmware: version=" << version
+                                 << " revision=" << revision << " adc_msps=" << adc_msps
+                                 << " adc_bits=" << adc_bits << " device=" << device << " path=" << path
+                                 << " ModNum=" << ModNum;
+
+        crate->ready();
         xia::pixie::crate::view::module_handle module(crate, ModNum,
                                                 xia::pixie::module::check::open);
+
+        if (module->revision != revision) {
+            xia_log(xia::log::error) << "requested " << revision
+                                     << " != " << "expected " << module->revision;
+            throw xia_error(
+                xia_error::code::module_invalid_firmware,
+                "can only register firmware to module with matching revision");
+        }
+
         if (!crate.run_check_override) {
             module->run_check();
         }
@@ -2107,6 +2248,10 @@ PIXIE_EXPORT int PIXIE_API PixieSetWorkerConfiguration(const unsigned short mod_
     xia_log(xia::log::debug) << "PixieGetWorkerConfiguration: Module=" << mod_num;
 
     try {
+        if (worker_config == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "worker_config is null");
+        }
+
         crate->ready();
         xia::pixie::crate::view::module_handle module(crate,
             mod_num, xia::pixie::module::check::open);
@@ -2137,10 +2282,9 @@ PIXIE_EXPORT int PIXIE_API PixieSetFifoConfiguration(const unsigned short mod_nu
     xia_log(xia::log::debug) << "PixieSetFifoConfiguration: Module=" << mod_num;
 
     try {
-        if (!fifo_config) {
+        if (fifo_config == nullptr) {
             throw xia::pixie::error::error(
-                xia::pixie::error::code::module_info_failure,
-                "FIFO configuration object was null. Please provide a structure to read from.");
+                xia::pixie::error::code::module_info_failure, "fifo_config is null");
         }
         crate->ready();
         xia::pixie::crate::view::module_handle module(crate, mod_num, xia::pixie::module::check::open);
@@ -2171,6 +2315,10 @@ PIXIE_EXPORT int PIXIE_API PixieReadRunFifoStats(unsigned short mod_num,
     xia_log(xia::log::debug) << "PixieReadModuleRunFifoStats: Module=" << mod_num;
 
     try {
+        if (fifo_stats == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "fifo_stats is null");
+        }
+
         crate->ready();
         xia::pixie::crate::view::module_handle module(crate,
             mod_num, xia::pixie::module::check::open);
@@ -2260,6 +2408,10 @@ PIXIE_EXPORT int PIXIE_API PixieSysControlOpen(const char* path, const enum PIXI
 
 PIXIE_EXPORT int PIXIE_API PixieSysControlRead(char* buffer, size_t* size) {
     try {
+        if (size == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "size is null");
+        }
+
         *size = crate.sysctl_reader.read(buffer, *size);
     } catch (xia_error& e) {
         xia_log(xia::log::error) << e;
@@ -2313,7 +2465,19 @@ PIXIE_EXPORT int PIXIE_API PixieSysControlGet(
             throw xia_error(
                 xia_error::code::invalid_value, "system control path is null");
         }
+
+        if (value == nullptr) {
+            throw xia_error(
+                xia_error::code::invalid_value, "value is null");
+        }
+
+        if (size < 2) {
+            throw xia_error(
+                xia_error::code::invalid_value, "size too small");
+        }
+
         auto node = xia::mib::find(path);
+        node.set_hint(xia::mib::hint::fmt_no_quotes);
         auto s = node.str();
         size_t len = s.length();
         if (len >= size) {
@@ -2442,6 +2606,10 @@ PIXIE_EXPORT int PIXIE_API PixieSysControlSetDouble(const char* path, const doub
 PIXIE_EXPORT int PIXIE_API PixieSysControlSetValues(const char* values,
                                                     const PIXIE_SYSCTL_FORMAT format) {
     try {
+        if (values == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "values is null");
+        }
+
         xia::pixie::format::json json_in;
         std::vector<xia::util::string::strings> values_in;
         bool is_json;
@@ -2518,6 +2686,18 @@ PIXIE_EXPORT int PIXIE_API PixieSysControlSetValues(const char* values,
 PIXIE_EXPORT int PIXIE_API PixieSysControlSetFileValues(const char* filename,
                                                         const PIXIE_SYSCTL_FORMAT format) {
     try {
+        if (filename == nullptr) {
+            throw xia_error(xia_error::code::invalid_value, "filename is null");
+        }
+
+        switch (format) {
+            case PIXIE_SYSCTL_FORMAT_TEXT:
+            case PIXIE_SYSCTL_FORMAT_JSON:
+                break;
+            default:
+                throw xia_error(xia_error::code::invalid_value, "invalid format");
+        }
+
         xia::util::io::file file;
         file.open(filename, file.flag::ro);
         struct stat sb;
