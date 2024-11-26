@@ -22,6 +22,7 @@
 
 #include <cstring>
 #include <fstream>
+#include <iomanip>
 
 #include <pixie/error.hpp>
 #include <pixie/utils/crc.hpp>
@@ -60,7 +61,7 @@ void crc32::file(const std::string path) {
 
 crc32::operator const std::string() const {
     std::ostringstream oss;
-    oss << std::hex << value;
+    oss << std::setw(8) << std::setfill('0') << std::hex << value;
     return oss.str();
 }
 
