@@ -76,7 +76,7 @@ struct crc32 {
     /**
      * Return the CRC32 value as a hex string
      */
-    explicit operator const std::string() const;
+    operator const std::string() const;
 
     crc32();
 
