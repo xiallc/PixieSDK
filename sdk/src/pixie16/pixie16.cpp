@@ -1663,29 +1663,6 @@ PIXIE_EXPORT int PIXIE_API PixieBootCrate(const char* settings_file,
     return err_handler(call);
 }
 
-PIXIE_EXPORT int PIXIE_API PixieGetWorkerConfiguration(const unsigned short mod_num,
-                                                       fifo_worker_config* worker_config) {
-    xia_log(xia::log::debug) << "PixieGetWorkerConfiguration: Module=" << mod_num;
-
-    auto call = [&mod_num, &worker_config]() {
-        if (worker_config == nullptr) {
-            throw xia_error(xia_error::code::invalid_value, "worker_config is null");
-        }
-
-        crate->ready();
-        xia::pixie::crate::view::module_handle module(crate, mod_num,
-                                                xia::pixie::module::check::open);
-        worker_config->bandwidth_mb_per_sec = module->fifo_bandwidth;
-        worker_config->buffers = module->fifo_buffers;
-        worker_config->dma_trigger_level_bytes = module->fifo_dma_trigger_level;
-        worker_config->hold_usecs = module->fifo_hold_usecs;
-        worker_config->idle_wait_usecs = module->fifo_idle_wait_usecs;
-        worker_config->run_wait_usecs = module->fifo_run_wait_usecs;
-        return 0;
-    };
-    return err_handler(call);
-}
-
 PIXIE_EXPORT int PIXIE_API PixieGetFifoConfiguration(const unsigned short mod_num,
                                                      module_fifo_config* fifo_config) {
     xia_log(xia::log::debug) << "PixieGetFifoConfiguration: Module=" << mod_num;
@@ -1804,32 +1781,6 @@ PIXIE_EXPORT int PIXIE_API PixieRegisterFirmware(const unsigned int version, con
         return 0;
     };
 
-    return err_handler(call);
-}
-
-PIXIE_EXPORT int PIXIE_API PixieSetWorkerConfiguration(const unsigned short mod_num,
-                                                       fifo_worker_config* worker_config) {
-    xia_log(xia::log::debug) << "PixieGetWorkerConfiguration: Module=" << mod_num;
-
-    auto call = [&mod_num, &worker_config]() {
-        if (worker_config == nullptr) {
-            throw xia_error(xia_error::code::invalid_value, "worker_config is null");
-        }
-
-        crate->ready();
-        xia::pixie::crate::view::module_handle module(crate,
-            mod_num, xia::pixie::module::check::open);
-        if (!crate.run_check_override) {
-            module->run_check();
-        }
-        module->set_fifo_bandwidth(worker_config->bandwidth_mb_per_sec);
-        module->set_fifo_buffers(worker_config->buffers);
-        module->set_fifo_dma_trigger_level(worker_config->dma_trigger_level_bytes);
-        module->set_fifo_hold(worker_config->hold_usecs);
-        module->set_fifo_idle_wait(worker_config->idle_wait_usecs);
-        module->set_fifo_run_wait(worker_config->run_wait_usecs);
-        return 0;
-    };
     return err_handler(call);
 }
 

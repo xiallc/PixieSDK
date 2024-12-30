@@ -1846,11 +1846,6 @@ void run_guards(void) {
         retval = PixieSetFifoConfiguration(mod, &exp);
         TEST_CHECK(retval == -218);
         TEST_MSG("PixieSetFifoConfiguration | %s", tst_msg(errmsg, MSGLEN, retval, -218));
-
-        struct fifo_worker_config wkr = {10, 150, 2048, 14000, 15000, 6000};
-        retval = PixieSetWorkerConfiguration(mod, &wkr);
-        TEST_CHECK(retval == -218);
-        TEST_MSG("PixieSetWorkerConfiguration | %s", tst_msg(errmsg, MSGLEN, retval, -218));
     }
 
     TEST_CASE("List-mode");
@@ -1953,11 +1948,6 @@ void run_guards(void) {
         retval = PixieSetFifoConfiguration(mod, &exp);
         TEST_CHECK(retval == -218);
         TEST_MSG("PixieSetFifoConfiguration | %s", tst_msg(errmsg, MSGLEN, retval, -218));
-
-        struct fifo_worker_config wkr = {10, 150, 2048, 14000, 15000, 6000};
-        retval = PixieSetWorkerConfiguration(mod, &wkr);
-        TEST_CHECK(retval == -218);
-        TEST_MSG("PixieSetWorkerConfiguration | %s", tst_msg(errmsg, MSGLEN, retval, -218));
     }
 
     retval = Pixie16EndRun(NUM_TEST_MODULES);
