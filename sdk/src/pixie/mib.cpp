@@ -34,6 +34,29 @@
 
 namespace xia {
 namespace mib {
+static bool is_number(const char* s, size_t len) {
+    while (*s != '\0' && len != 0) {
+        if (!std::isdigit(*s)) {
+            return false;
+        }
+        s++;
+        len--;
+    }
+    return true;
+}
+
+static long get_number(const char* s) {
+    return std::strtol(s, nullptr, 10);
+}
+
+static void next_field(
+    const std::string& str, size_t& pos, size_t& end, size_t& len) {
+    end = str.find(mibsep, pos);
+    if (end == std::string::npos) {
+        end = str.size();
+    }
+    len = end - pos;
+}
 
 /**
  * The MIB is held in a single map with each MIB node holding its
@@ -44,27 +67,50 @@ namespace mib {
 struct mib_nodes {
     struct name_cmp {
         bool operator()(const name_type& lhs, const name_type& rhs) const {
-            util::string::strings lhss;
-            util::string::strings rhss;
-            util::string::split(lhss, lhs, mib::mibsep);
-            util::string::split(rhss, rhs, mib::mibsep);
-            auto pieces = std::min(lhss.size(), rhss.size());
+            auto l_pieces =
+                std::count_if(lhs.begin(), lhs.end(), [](char c) {
+                    return c == mibsep; }) + 1;
+            auto r_pieces =
+                std::count_if(rhs.begin(), rhs.end(), [](char c) {
+                    return c == mibsep; }) + 1;
+            size_t l_p = 0;
+            size_t r_p = 0;
+            size_t pieces = std::min(l_pieces, r_pieces);
             for (size_t p = 0; p < pieces; ++p) {
-                if (lhss[p] != rhss[p]) {
-                    bool l_isnum = util::string::check_number(lhss[p]);
-                    bool r_isnum = util::string::check_number(rhss[p]);
+                size_t l_end = 0;
+                size_t l_len = 0;
+                size_t r_end = 0;
+                size_t r_len = 0;
+                const char* ls = lhs.c_str() + l_p;
+                const char* rs = rhs.c_str() + r_p;
+                next_field(lhs, l_p, l_end, l_len);
+                next_field(rhs, r_p, r_end, r_len);
+                bool no_match = true;
+                if (l_len == r_len) {
+                    no_match = std::strncmp(ls, rs, l_len) != 0;
+                }
+                if (no_match) {
+                    bool l_isnum = is_number(ls, l_len);
+                    bool r_isnum = is_number(rs, r_len);
                     if (!l_isnum && !r_isnum) {
-                        return lhss[p] < rhss[p];
+                        auto min = std::min(l_len, r_len);
+                        auto result = std::strncmp(ls, rs, min);
+                        if (result != 0) {
+                            return result < 0;
+                        }
+                        return l_len <= r_len;
                     } else if (l_isnum && r_isnum) {
-                        return std::stoi(lhss[p]) < std::stoi(rhss[p]);
+                        return get_number(ls) < get_number(rs);
                     } else if (l_isnum) {
                         return true;
                     } else {
                         return false;
                     }
                 }
+                l_p = l_end + 1;
+                r_p = r_end + 1;
             }
-            return lhss.size() < rhss.size();
+            return l_pieces < r_pieces;
         }
     };
 
