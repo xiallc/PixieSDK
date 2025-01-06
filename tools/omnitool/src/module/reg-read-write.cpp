@@ -191,6 +191,8 @@ void reg_read(command::context& context) {
         } else if (mem == "dsp") {
             auto dsp = pixie::hw::memory::dsp(mod);
             value = dsp.read(address);
+        } else {
+            throw std::runtime_error("reg-read: invalid mem type provided");
         }
     }
     if (hex_opt == "true") {

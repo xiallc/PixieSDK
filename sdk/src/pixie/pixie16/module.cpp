@@ -743,6 +743,9 @@ module& module::operator=(module&& m) {
     vars_loaded = m.vars_loaded;
     cfg_ctrlcs = m.cfg_ctrlcs;
     test_mode = m.test_mode.load();
+    persistent = std::move(m.persistent);
+    mibs_size_t_rw = std::move(m.mibs_size_t_rw);
+    mibs_double_rw = std::move(m.mibs_double_rw);
 
     device = std::move(m.device);
 
@@ -782,9 +785,8 @@ module& module::operator=(module&& m) {
     m.vars_loaded = false;
     m.cfg_ctrlcs = 0xaaa;
     m.test_mode = test::off;
-    m.persistent = m.persistent;
-    m.mibs_size_t_rw = std::move(m.mibs_size_t_rw);
-    m.mibs_double_rw = std::move(m.mibs_double_rw);
+    m.mibs_size_t_rw.clear();
+    m.mibs_double_rw.clear();
     m.hw_word_read = nullptr;
     m.hw_word_write = nullptr;
 

@@ -23,6 +23,7 @@
 #ifndef PIXIESDK_UTIL_CRC_HPP
 #define PIXIESDK_UTIL_CRC_HPP
 
+#include <cstdint>
 #include <string>
 #include <vector>
 

@@ -314,7 +314,7 @@ void adjust_offsets(void) {
 
 void baseline(void) {
     int retval;
-    double* dummy = malloc(0 * sizeof(double));
+    double* dummy = malloc(1 * sizeof(double));
 
     TEST_CASE("NullArg");
     {
@@ -1209,7 +1209,7 @@ void load_settings(void) {
 void mca(void) {
     int retval;
     unsigned int dummy_len;
-    unsigned int* dummy = malloc(1 * sizeof(unsigned short));
+    unsigned int* dummy = malloc(1 * sizeof(unsigned int));
 
     TEST_CASE("Null Length");
     {
