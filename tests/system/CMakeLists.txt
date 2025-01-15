@@ -12,5 +12,14 @@ if (BUILD_SDK)
                 ${PROJECT_SOURCE_DIR}/externals/
                 ${PLX_INCLUDE_DIR})
         xia_configure_target(TARGET p16-1142 USE_PLX LIBS PixieSDK)
+
+        add_executable(support-1859 src/support-1859.cpp
+                $<TARGET_OBJECTS:Pixie16ApiObjLib>
+                $<TARGET_OBJECTS:PixieDataObjLib>)
+        target_include_directories(support-1859 PUBLIC
+                ${PROJECT_SOURCE_DIR}/sdk/include
+                ${PROJECT_SOURCE_DIR}/externals/
+                ${PLX_INCLUDE_DIR})
+        xia_configure_target(TARGET support-1859 USE_PLX LIBS PixieSDK)
     endif ()
 endif ()
