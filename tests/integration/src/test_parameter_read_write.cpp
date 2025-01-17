@@ -40,9 +40,14 @@ static xia::pixie::crate::view::module crate(sim_crate);
 
 
 static const std::vector<std::string> module_defs = {
-    "device-number=0 slot=2  revision=13 eeprom-format=1 serial-num=250 num-channels=16 adc-msps=100 adc-bits=16 adc-clk-div=1",
-    "device-number=1 slot=3  revision=15 eeprom-format=1 serial-num=1000 num-channels=16 adc-msps=250 adc-bits=16 adc-clk-div=2",
-    "device-number=2 slot=4  revision=15 eeprom-format=1 serial-num=1001 num-channels=16 adc-msps=500 adc-bits=14 adc-clk-div=5"};
+    "device-number=0 slot=2  revision=13 eeprom-format=1 serial-num=250 num-channels=16 "
+    "adc-msps=100 adc-bits=16 adc-clk-div=1",
+    "device-number=1 slot=3  revision=15 eeprom-format=1 serial-num=1000 num-channels=16 "
+    "adc-msps=250 adc-bits=16 adc-clk-div=2",
+    "device-number=2 slot=4  revision=15 eeprom-format=1 serial-num=1001 num-channels=16 "
+    "adc-msps=500 adc-bits=14 adc-clk-div=5",
+    "device-number=3 slot=5  revision=17 eeprom-format=2 serial-num=2034 num-channels=32 "
+    "adc-msps=250 adc-bits=14 adc-clk-div=2 db_pid=4 db_count=4"};
 
 static const xia::pixie::sim::firmware_set_defs firmware_defs = {
     {"version=sim, revision=13, adc-msps=100, adc-bits=16, " \
@@ -68,10 +73,19 @@ static const xia::pixie::sim::firmware_set_defs firmware_defs = {
      "version=sim, revision=15, adc-msps=500, adc-bits=14, " \
      "device=dsp, mask=1, file=Pixie16DSP_revfgeneral_14b500m_rsim.ldr",
      "version=sim, revision=15, adc-msps=500, adc-bits=14, " \
-     "device=var, mask=1, file=Pixie16DSP_revfgeneral_14b500m_rsim.var"}
+     "device=var, mask=1, file=Pixie16DSP_revfgeneral_14b500m_rsim.var"},
+    {"version=sim, revision=17, adc-msps=250, adc-bits=14, " \
+     "device=sys, mask=1, file=syspixie16_revhgeneral_adc250mhz_rsim.bin",
+     "version=sim, revision=17, adc-msps=250, adc-bits=14, " \
+     "device=fippi, mask=0xf, file=fippixie16_revhgeneral_14b250m_rsim.bin",
+     "version=sim, revision=17, adc-msps=250, adc-bits=14, " \
+     "device=dsp, mask=1, file=Pixie16DSP_revhgeneral_14b250m_rsim.ldr",
+     "version=sim, revision=17, adc-msps=250, adc-bits=14, " \
+     "device=var, mask=1, file=Pixie16DSP_revhgeneral_14b250m_rsim.var"}
 };
 
 static const uint32_t max_fifo_length = 16380;
+static const uint32_t max_fifo_length_revh = 4000;
 static const double a_big_value = 1e6;
 static const double a_small_value = 1.e-6;
 
@@ -452,6 +466,21 @@ TEST_SUITE("Channel Parameter Reads and Writes") {
             crate[1].write("TRACE_LENGTH", 0, a_big_value);
             CHECK(crate[1].read_var("TraceLength", 0, 0) == max_fifo_length);
             CHECK(crate[1].read("TRACE_LENGTH", 0) == 65.52);
+        }
+        SUBCASE("RevH - Happy Path") {
+            crate[3].write("TRACE_LENGTH", 0, 3.2);
+            CHECK(crate[3].read_var("TraceLength", 0) == 800);
+            CHECK(crate[3].read("TRACE_LENGTH", 0) == 3.2);
+        }
+        SUBCASE("RevH - Round up") {
+            crate[3].write("TRACE_LENGTH", 0, 0.4);
+            CHECK(crate[3].read_var("TraceLength", 0) == 128);
+            CHECK(crate[3].read("TRACE_LENGTH", 0) == 0.512);
+        }
+        SUBCASE("RevH - Too Big") {
+            crate[3].write("TRACE_LENGTH", 0, a_big_value);
+            CHECK(crate[3].read_var("TraceLength", 0) == max_fifo_length_revh);
+            CHECK(crate[3].read("TRACE_LENGTH", 0) == 16.0);
         }
     }
     TEST_CASE("VetoStretch") {

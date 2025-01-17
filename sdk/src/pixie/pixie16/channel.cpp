@@ -575,9 +575,19 @@ void channel::trace_length(double value) {
             break;
     }
 
-    //TODO : Add the check for rev and round up to 32 for rev H
     if (trace_length > fifo_length) {
         trace_length = fifo_length;
+    }
+    if (mod.revision >= hw::rev_H) {
+        const bool trace_length_not_aligned =
+            (trace_length % hw::limit::TRACE_STEP_SIZE_REVH) != 0;
+        if (trace_length > hw::limit::TRACELENGTH_MAX_REVH) {
+            trace_length = hw::limit::TRACELENGTH_MAX_REVH;
+        } else if (trace_length_not_aligned) {
+            trace_length =
+                ((trace_length / hw::limit::TRACE_STEP_SIZE_REVH) + 1) *
+                hw::limit::TRACE_STEP_SIZE_REVH;
+        }
     }
 
     mod.write_var(param::channel_var::TraceLength, trace_length, number);

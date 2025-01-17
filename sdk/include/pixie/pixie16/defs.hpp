@@ -417,6 +417,8 @@ struct limit {
     static const size_t SLOWGAP_MIN_LEN = 3;
     static const size_t SLOWLENGTH_MIN_LEN = 2;
     static const size_t TRACEDELAY_MAX = 1023;
+    static const size_t TRACELENGTH_MAX_REVH = 4000;
+    static const size_t TRACE_STEP_SIZE_REVH = 32;
     static const size_t VETOSTRETCH_MAX = 4095;
     static const size_t VETOSTRETCH_MIN = 1;
 };
