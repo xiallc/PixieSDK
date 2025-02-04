@@ -1150,7 +1150,9 @@ PIXIE_EXPORT int PIXIE_API Pixie16InitSystem(
 
         if (OfflineMode == 1) {
             crate.set_simulation();
-            NumModules = crate.num_simulation_modules();
+            if (NumModules > crate.num_simulation_modules())
+                throw xia_error(xia::pixie::error::code::module_total_invalid,
+                                "more modules requested than available");
             xia::pixie::sim::load_firmware_sets(crate->firmware);
         }
 

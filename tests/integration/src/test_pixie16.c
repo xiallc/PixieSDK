@@ -931,6 +931,27 @@ void ieee_float(void) {
     }
 }
 
+void init_one_w_map(void) {
+    int retval;
+    TEST_CASE("One Mod");
+    {
+        unsigned short order[] = {3};
+        retval = Pixie16InitSystem(1, order, 1);
+        TEST_CHECK(retval == 0);
+        TEST_MSG("Pixie16InitSystem | %s", tst_msg(errmsg, MSGLEN, retval, 0));
+    }
+}
+
+void init_one_wo_map(void) {
+    int retval;
+    TEST_CASE("One Mod");
+    {
+        retval = Pixie16InitSystem(1, NULL, 1);
+        TEST_CHECK(retval == 0);
+        TEST_MSG("Pixie16InitSystem | %s", tst_msg(errmsg, MSGLEN, retval, 0));
+    }
+}
+
 void init_system(void) {
     int retval;
 
@@ -2868,6 +2889,8 @@ TEST_LIST = {
     {"Copy Parameters", copy_par},
     {"Fifo Config", fifo},
     {"IEEE FLoating", ieee_float},
+    {"Init.One.WithMap", init_one_w_map},
+    {"Init.One.WithoutMap", init_one_wo_map},
     {"Init.Order", init_order},
     {"Init.System", init_system},
     {"Install Paths", install_path},
