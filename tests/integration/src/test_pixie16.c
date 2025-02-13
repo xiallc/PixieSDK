@@ -1188,7 +1188,7 @@ void load_mod_fw(void) {
         TEST_CASE("Offline.Empty Path");
         {
             retval = Pixie16LoadModuleFirmware("");
-            TEST_CHECK(retval == -900);
+            TEST_CHECK(retval == -902);
             TEST_MSG("Pixie16LoadModuleFirmware | %s", tst_msg(errmsg, MSGLEN, retval, -900));
         }
 
@@ -1992,9 +1992,15 @@ void save_settings(void) {
         TEST_CHECK(retval == 0);
         TEST_MSG("Pixie16SaveDSPParametersToFile | %s", tst_msg(errmsg, MSGLEN, retval, 0));
 
+#ifdef XIA_PIXIE_WINDOWS
+        retval = Pixie16SaveDSPParametersToFile(" ");
+        TEST_CHECK(retval == -701);
+        TEST_MSG("Pixie16SaveDSPParametersToFile | %s", tst_msg(errmsg, MSGLEN, retval, -701));
+#else
         retval = Pixie16SaveDSPParametersToFile(" ");
         TEST_CHECK(retval == 0);
         TEST_MSG("Pixie16SaveDSPParametersToFile | %s", tst_msg(errmsg, MSGLEN, retval, 0));
+#endif
     }
 }
 
@@ -2677,21 +2683,21 @@ void sysctl_set_file_values(void) {
     {
         retval = PixieSysControlSetFileValues(NULL, PIXIE_SYSCTL_FORMAT_JSON);
         TEST_CHECK(retval == -802);
-        TEST_MSG("PixieSysControlSetInt | %s", tst_msg(errmsg, MSGLEN, retval, -802));
+        TEST_MSG("PixieSysControlSetFileValues | %s", tst_msg(errmsg, MSGLEN, retval, -802));
     }
 
     TEST_CASE("Bad Format Arg");
     {
         retval = PixieSysControlSetFileValues("", 100);
         TEST_CHECK(retval == -802);
-        TEST_MSG("PixieSysControlSetInt | %s", tst_msg(errmsg, MSGLEN, retval, -802));
+        TEST_MSG("PixieSysControlSetFileValues | %s", tst_msg(errmsg, MSGLEN, retval, -802));
     }
 
     TEST_CASE("Missing file");
     {
         retval = PixieSysControlSetFileValues("jabber.wok", PIXIE_SYSCTL_FORMAT_JSON);
         TEST_CHECK(retval == -700);
-        TEST_MSG("PixieSysControlSetInt | %s", tst_msg(errmsg, MSGLEN, retval, -700));
+        TEST_MSG("PixieSysControlSetFileValues | %s", tst_msg(errmsg, MSGLEN, retval, -700));
     }
 
     TEST_CASE("JSON syntax error");
@@ -2699,7 +2705,7 @@ void sysctl_set_file_values(void) {
         retval =
             PixieSysControlSetFileValues("data/capi/sysctl-in.badfmt", PIXIE_SYSCTL_FORMAT_JSON);
         TEST_CHECK(retval == -602);
-        TEST_MSG("PixieSysControlSetInt | %s", tst_msg(errmsg, MSGLEN, retval, -602));
+        TEST_MSG("PixieSysControlSetFileValues | %s", tst_msg(errmsg, MSGLEN, retval, -602));
     }
 
     TEST_CASE("Online");
