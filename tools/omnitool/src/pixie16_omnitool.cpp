@@ -85,7 +85,7 @@ static void firmware_load(xia::omnitool::command::context& context) {
     firmware_sets fw_sets;
     if (!opts.firmware_files.empty()) {
         for (auto& fwfile : opts.firmware_files) {
-            firmware_line_parse(fw_sets, fwfile,  ':');
+            firmware_line_parse(fw_sets, fwfile,  ',');
         }
     }
     if (!opts.firmware_crate_files.empty()) {
@@ -218,8 +218,9 @@ int main(int argc, char* argv[]) {
     args_strings_flag fw_file_flag(
         option_group, "fw_file_flag",
         "Firmware file(s) to load. Can be repeated. "
-        "Takes the form rev:mod-rev-num:type:name"
-        "Ex. r33339:15:sys:syspixie16_revfgeneral_adc250mhz_r33339.bin",
+        "Takes the form version,revision,adc-msps,adc-bits,device,mask,file "
+        "Ex. version=r33339,revision=15,adc-msps=250,adc-bits=14,device=sys,"
+        "mask=0x0000000F,file=syspixie16_revfgeneral_adc250mhz_r33339.bin",
         {'F', "firmware"});
     args_strings_flag crate_file_flag(
         option_group, "crate_file_flag",
