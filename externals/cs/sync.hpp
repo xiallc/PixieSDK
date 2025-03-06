@@ -23,6 +23,7 @@
 #ifndef CS_SYNC_H
 #define CS_SYNC_H
 
+#include <chrono>
 #include <condition_variable>
 #include <mutex>
 

@@ -20,6 +20,7 @@
  * @brief Defines utility functions and data structures related to threads useful throughout the SDK.
  */
 
+#include <chrono>
 #include <thread>
 
 #include <pixie/error.hpp>
