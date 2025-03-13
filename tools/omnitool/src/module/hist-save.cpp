@@ -27,6 +27,7 @@
 
 #include <pixie/pixie16/crate.hpp>
 #include <pixie/pixie16/module.hpp>
+#include <pixie/pixie16/plot.hpp>
 
 #include <omnitool-commands.hpp>
 #include <omnitool-completions.hpp>
@@ -99,6 +100,60 @@ void hist_save_comp(
 
             command::completions::channels_completions(context, cmd,
                 off, off + 1, completions);
+        }
+    }
+}
+
+void hist_plot(command::context& context) {
+    auto& crate = context.crate;
+    auto& out = context.opts.out;
+    auto bins_opt = context.cmd.get_option("-b");
+    auto mod_nums_opt = context.cmd.get_arg();
+    auto chans_opt = context.cmd.get_arg();
+    command::module_range mod_nums;
+    command::modules_option(mod_nums, mod_nums_opt, crate.get_modules());
+    for (auto mod_num : mod_nums) {
+        crate[mod_num].run_check();
+    }
+    pixie::plot::write_string_func writer =
+        [&out](const std::string& s) { out << s; };
+    for (auto mod_num : mod_nums) {
+        pixie::channel::range channels;
+        command::channels_option(
+            channels, chans_opt, crate[mod_num].num_channels);
+        auto& mod = crate[mod_num];
+        size_t length = mod.channels[0].fixture->config.max_histogram_length;
+        if (!bins_opt.empty()) {
+            length = util::io::get_value<size_t>(bins_opt);
+        }
+        for (auto chan : channels) {
+            pixie::hw::words histogram(length);
+            crate[mod_num].read_histogram(chan, histogram);
+            if (!histogram.empty()) {
+                out << "Module: " << mod.number
+                    << " channel: " << chan
+                    << std::endl;
+                pixie::plot::ascii(histogram, writer, 70, 25);
+                out << std::endl;
+            }
+        }
+    }
+}
+
+void hist_plot_comp(
+    command::context& context, command::completion& completions) {
+    const std::string cmd = context.cmd.def.name;
+
+    auto not_completed = !command::completions::flag_completion(
+        nullptr, cmd, completions);
+    if (not_completed) {
+        auto off = command::completions::get_pos_arg_offset(cmd, completions);
+        if (off != 0) {
+            command::completions::modules_completions(context, cmd,
+                                                      off, completions);
+
+            command::completions::channels_completions(context, cmd,
+                                                       off, off + 1, completions);
         }
     }
 }

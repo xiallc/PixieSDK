@@ -17,7 +17,7 @@
  */
 
 /**
- * @brief Module ADC TRace Save
+ * @brief Module ADC TRace Save & Plotting
  */
 
 #include <fstream>
@@ -27,6 +27,7 @@
 
 #include <pixie/pixie16/crate.hpp>
 #include <pixie/pixie16/module.hpp>
+#include <pixie/pixie16/plot.hpp>
 
 #include <omnitool-commands.hpp>
 #include <omnitool-completions.hpp>
@@ -105,6 +106,62 @@ void adc_save_comp(
 
     command::completions::channels_completions(context, adc_save_cmd.name,
         1, 2, completions);
+}
+
+void adc_plot(command::context& context) {
+    auto& crate = context.crate;
+    auto& out = context.opts.out;
+    auto acquire_opt = context.cmd.get_option("-a");
+    auto mod_nums_opt = context.cmd.get_arg();
+    auto chans_opt = context.cmd.get_arg();
+    command::module_range mod_nums;
+    command::modules_option(mod_nums, mod_nums_opt, crate.get_modules());
+    for (auto mod_num : mod_nums) {
+        crate[mod_num].run_check();
+    }
+    pixie::plot::write_string_func writer =
+        [&out](const std::string& s) { out << s; };
+    for (auto mod_num : mod_nums) {
+        pixie::channel::range channels;
+        command::channels_option(
+            channels, chans_opt, crate[mod_num].num_channels);
+        auto& mod = crate[mod_num];
+        if (acquire_opt == "true") {
+            mod.get_traces();
+        }
+        for (auto chan : channels) {
+            auto& channel = mod.channels[chan];
+            if (!channel.adc_trace.empty()) {
+                out << "Module: " << mod.number
+                    << " channel: " << channel.number
+                    << std::endl;
+                pixie::plot::ascii(channel.adc_trace, writer, 70, 25);
+                out << std::endl;
+            }
+        }
+    }
+}
+
+void adc_plot_comp(
+    command::context& context, command::completion& completions) {
+    auto adc_plot_cmd = context.cmd.def;
+
+    auto not_completed = !command::completions::flag_completion(
+        nullptr, adc_plot_cmd.name, completions);
+    if (not_completed) {
+        auto off = command::completions::get_pos_arg_offset(
+            adc_plot_cmd.name, completions);
+        if (off != 0) {
+            command::completions::modules_completions(context,
+                                                      adc_plot_cmd.name,
+                                                      off, completions);
+
+            command::completions::channels_completions(context,
+                                                       adc_plot_cmd.name,
+                                                       off, off + 1,
+                                                       completions);
+        }
+    }
 }
 } // namespace module
 } // namespace omnitool

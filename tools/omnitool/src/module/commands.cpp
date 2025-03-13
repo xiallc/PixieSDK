@@ -36,6 +36,17 @@ static const xia::omnitool::command::definition adc_acq_cmd = {
     "Acquire a module's ADC trace"
 };
 
+omnitool_command_handler_decl(adc_plot);
+static const xia::omnitool::command::definition adc_plot_cmd = {
+    "Module", "/module/adc-plot",
+    omnitool_command_handers(adc_plot),
+    {"init", "probe"},
+    0, 2, 0,
+    {omnitool_command_opt_decl("a")},
+    "[module(s) [channel(s)]] [-a]",
+    "Plot ADC traces for the modules and acquire if `-a` provided"
+};
+
 omnitool_command_handler_decl(adc_save);
 static const command::definition adc_save_cmd = {
     "Module", "/module/adc-save",
@@ -135,6 +146,17 @@ static const command::definition fifo_status_cmd = {
     {},
     "[module(s)]",
     "Check the current module(s) fifo stats"
+};
+
+omnitool_command_handler_decl(hist_plot);
+static const command::definition hist_plot_cmd = {
+    "Module", "/module/hist-plot",
+    omnitool_command_handers(hist_plot),
+    {"init", "probe"},
+    1, 2, 0,
+    {omnitool_command_opt_arg_decl("b")},
+    "[-b bins] module(s) [channel(s)]",
+    "Plot a module's histogram"
 };
 
 omnitool_command_handler_decl(hist_resume);
@@ -414,6 +436,7 @@ static const command::definition var_write_cmd = {
 
 static const command::definitions commands = {
     adc_acq_cmd,
+    adc_plot_cmd,
     adc_save_cmd,
     adj_off_cmd,
     bl_acq_cmd,
@@ -423,6 +446,7 @@ static const command::definitions commands = {
     fifo_config_read_cmd,
     fifo_config_write_cmd,
     fifo_status_cmd,
+    hist_plot_cmd,
     hist_resume_cmd,
     hist_save_cmd,
     hist_start_cmd,
