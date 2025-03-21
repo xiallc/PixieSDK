@@ -99,6 +99,9 @@ void db10_channel::set_dac(param::value_type value) {
 void db10_channel::event(const std::string name) {
     if (name == "adc.init") {
         adc.set_dc_coupled();
+        if (board.module_.hardware_accessible()) {
+            adc.self_test();
+        }
     } else {
         channel::event(name);
     }

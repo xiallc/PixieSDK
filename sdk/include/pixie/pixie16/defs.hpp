@@ -96,6 +96,7 @@ struct fippi {
     static constexpr address GROUPMODE_EFGH = 0x0080041c;
     static constexpr address GROUPMODE_FIP = 0x0080041e;
     static constexpr address VALID_WINDOW = 0x00800420;
+    static constexpr address ADCFRAME = 0x00800428;
     /*
      * Input/Output registers are 64bit wide.
      *

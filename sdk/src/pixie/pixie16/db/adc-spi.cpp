@@ -79,12 +79,13 @@ param::value_type adc_spi_driver::read_reg(channel& chan, param::value_type reg)
     hw::word wval = adc_value(chan_num, true, reg, 0);
     fippi.write(addr, wval);
     hw::wait(4000);
-    hw::word val = fippi.read(addr);
+    hw::address raddr = hw::fippi_addr(board.number.get<hw::address>(), hw::fippi::ADCFRAME);
+    hw::word val = fippi.read(raddr);
     log(log::debug) << db_label(board)
                     << chan_num << std::hex
                     << ": adc: read: reg=0x" << reg << " value=0x" << (val & 0xff)
-                    << " (addr=0x" << addr << " write=0x" << wval << " read=0x" << val << ')';
-    return val && 0xff;
+                    << " (addr=0x" << raddr << " write=0x" << wval << " read=0x" << val << ')';
+    return val & 0xff;
 }
 };  // namespace db
 };  // namespace fixture

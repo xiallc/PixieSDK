@@ -39,21 +39,29 @@ struct adc_channel_ad9434 {
     channel& channel_;
     adc_spi_driver& driver;
     std::string label;
+    xia::mib::node active_reg;
+    xia::mib::node spi_value;
     xia::mib::node state;
     util::string::token_editor states;
     adc_channel_ad9434(channel& channel_, adc_spi_driver& driver);
     ~adc_channel_ad9434();
     void self_test();
     bool self_test_pass() const;
+    hw::word bits_from_test_mode(channel::adc_test_mode mode);
+    channel::adc_test_mode test_mode_from_bits(hw::word bits);
     void set_test_mode(channel::adc_test_mode mode);
     void set_ac_coupled();
     void set_dc_coupled();
     void set_invert_on();
     void set_invert_off();
+    void set_format(param::value_type fmt);
     void enable_mibs();
     void disable_mibs();
     void set_state(const char* token, const std::string& value);
     void set_state(const char* token, const char* value);
+protected:
+    void write_adc_setting(param::value_type reg, param::value_type val);
+    void sync_adc_settings();
 };
 }  // namespace db
 }  // namespace fixture
