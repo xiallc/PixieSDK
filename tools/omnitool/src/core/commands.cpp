@@ -491,6 +491,17 @@ static const definition help_cmd = {
     "Command specific help. Add '-l' to list all commands"
 };
 
+omnitool_command_handler_decl(script);
+static const definition script_cmd = {
+    "Utilities", "/util/script",
+    omnitool_command_handers(script),
+    {"init"},
+    1, 1, 0,
+    {},
+    "file",
+    "run an omni script. Limit 2 recursive calls (including shell)"
+};
+
 omnitool_command_handler_decl(shell);
 static const definition shell_cmd = {
     "Utilities", "/util/shell",
@@ -526,6 +537,7 @@ static const definition wait_cmd = {
 
 static const definitions util_commands = {
     help_cmd,
+    script_cmd,
     shell_cmd,
     sys_control_cmd,
     wait_cmd

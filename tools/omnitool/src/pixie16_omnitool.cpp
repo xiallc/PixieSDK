@@ -246,7 +246,7 @@ int main(int argc, char* argv[]) {
         "A list of slots to exclude from being used. "
         " Use this option to limit slots available to use by excluding some.",
         {'X', "slot_exclude_map"});
-    args_strings_flag cmd_file_flag(
+    args_string_flag cmd_file_flag(
         option_group, "cmd_file_flag",
         "File of commands to execute.", {'c', "cmd"});
     args_string_flag cmd_path(
@@ -387,9 +387,8 @@ int main(int argc, char* argv[]) {
             cmds.push_back(cmd);
         }
         if (cmd_file_flag) {
-            for (const auto& name : args::get(cmd_file_flag)) {
-                xia::omnitool::command::load_commands(name, cmds);
-            }
+            cmds.push_back("script");
+            cmds.push_back(args::get(cmd_file_flag));
         }
 
         /*
