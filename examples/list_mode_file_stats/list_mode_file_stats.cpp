@@ -194,6 +194,13 @@ int main(int argc, char** argv) {
         output.open(output_flag.Get());
     }
 
+    static const auto bytes_per_word = 4;
+    /*
+     * This is the approximate maximum size of a Rev H record (header + trace). Results
+     * in an empirically optimized processing time.
+     */
+    static const auto chunk_size_words = 16398;
+
     for (const auto& cfg : cfgs) {
         for (const auto& file : cfg.files) {
             start = std::chrono::system_clock::now();
@@ -208,36 +215,38 @@ int main(int argc, char** argv) {
                     throw std::ios_base::failure("open: " + file + ": " + std::strerror(errno));
                 }
 
-                static const auto bytes_per_word = 4;
-                /*
-                 * This is the approximate maximum size of a Rev H record (header + trace).
-                 */
-                static const auto chunk_size_words = 16398;
-                auto size_bytes = input.tellg();
-                auto size_words = size_bytes / bytes_per_word;
+                const auto size_bytes = input.tellg();
+                const auto size_words = size_bytes / bytes_per_word;
+                auto remaining_words = size_words;
                 auto num_chunks = size_words / chunk_size_words;
                 auto data_vec_size = chunk_size_words;
                 auto max_retries = 10;
                 auto retries = max_retries;
-
-                if (size_words < chunk_size_words) {
-                    data_vec_size = int(size_words);
-                }
 
                 std::cout << LOG("INFO") << "File Size In Bytes: " << size_bytes
                           << " | File Size In Words: " << size_words << std::endl;
 
                 input.seekg(0);
                 std::cout << LOG("INFO") << "Starting to decode data." << std::endl;
-                for (int chunk_num = 0; chunk_num <= num_chunks; chunk_num++) {
+
+                for (int chunk_num = 0; chunk_num <= num_chunks;
+                     chunk_num++, remaining_words -= chunk_size_words) {
                     if (retries == 0) {
                         std::cout << LOG("ERROR") << "Failed to resync data stream." << std::endl;
                         break;
                     }
 
+                    if (remaining_words < chunk_size_words) {
+                        data_vec_size = int(remaining_words);
+                    }
+
                     xia::pixie::data::list_mode::buffer data(data_vec_size, 0);
                     input.read(reinterpret_cast<char*>(&data[0]),
                                chunk_size_words * bytes_per_word);
+
+                    std::cout << LOG("INFO") << "Read words: " << chunk_size_words * chunk_num
+                              << " Remaining words: " << remaining_words << std::endl;
+
                     if (!remainder.empty()) {
                         data.insert(data.begin(), remainder.begin(), remainder.end());
                         remainder.clear();
