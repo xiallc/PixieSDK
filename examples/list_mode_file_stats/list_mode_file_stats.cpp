@@ -307,13 +307,14 @@ int main(int argc, char** argv) {
                         std::cout << LOG("WARN") << "Decoding failed on chunk " << chunk_num - 1
                                   << " starting at byte "
                                   << (chunk_num - 1) * chunk_size_words * bytes_per_word
-                                  << " with the following error."
-                                  << std::endl;
+                                  << " with the following error." << std::endl;
                         std::cout << LOG("ERROR") << error.what() << std::endl;
                         if (chunk_num == num_chunks) {
-                            std::cout << LOG("INFO") << "Possible data loss in last chunk." << std::endl;
+                            std::cout << LOG("INFO") << "Possible data loss in last chunk."
+                                      << std::endl;
                         } else {
-                            std::cout << LOG("INFO") << "Attempting to resync data stream." << std::endl;
+                            std::cout << LOG("INFO") << "Attempting to resync data stream."
+                                      << std::endl;
                         }
                         retries--;
                     }
@@ -351,7 +352,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    if(output.is_open()) {
+    if (output.is_open()) {
         output.close();
     }
 
