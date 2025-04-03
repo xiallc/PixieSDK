@@ -71,6 +71,7 @@ void par_read(command::context& context) {
             pixie::channel::range channels;
             command::channels_option(
                 channels, chans_opt, crate[mod_num].num_channels);
+            auto ss = context.opts.out.precision(10);
             for (auto channel_num : channels) {
                 context.opts.out << "# channel param read: " << mod_num
                                  << ':' << channel_num << ": "
@@ -94,6 +95,7 @@ void par_read(command::context& context) {
                         crate[mod_num].read(param_opt, channel_num));
                 }
             }
+            context.opts.out.precision(ss);
         }
     }
 }

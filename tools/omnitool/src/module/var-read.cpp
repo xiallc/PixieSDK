@@ -60,9 +60,9 @@ void var_read(command::context& context) {
                     param_opt, mod.module_var_descriptors);
             auto offsets =
                 util::io::get_values<size_t>(offsets_opt, desc.size);
+            context.opts.out << "# module var read: " << mod_num << ": "
+                             << param_opt << std::endl;
             if (param_opt == "all") {
-                context.opts.out << "# module var read: " << mod_num << ": "
-                                 << param_opt << std::endl;
                 for (auto& var : mod.module_var_descriptors) {
                     for (auto offset : offsets) {
                         try {
@@ -93,9 +93,9 @@ void var_read(command::context& context) {
                         param_opt, mod.channel_var_descriptors);
                 auto offsets =
                     util::io::get_values<size_t>(offsets_opt, desc.size);
+                context.opts.out << "# channel var read: " << mod_num << ':'
+                                 << channel << ": " << param_opt << std::endl;
                 if (param_opt == "all") {
-                    context.opts.out << "# channel var read: " << mod_num << ':'
-                                     << channel << ": " << param_opt << std::endl;
                     for (auto& var : mod.channel_var_descriptors) {
                         for (auto offset : offsets) {
                             try {
