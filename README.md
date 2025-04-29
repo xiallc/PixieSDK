@@ -48,12 +48,7 @@ Ubuntu should work as well as it is a Debian variant, but we can not guarantee t
 * [Broadcom PCI/PCIe SDK 8.00+](https://github.com/xiallc/broadcom_pci_pcie_sdk)
     * You should have `PLX_SDK_DIR` exported in your environment before building.
 
-For more detailed 
-[installation instructions please see the documentation](https://docs.pixie16.xia.com/user/installation/index.html).
-
-## Library Architecture
-
-![PixieSDK Architecture](https://docs.pixie16.xia.com/pixiesdk-library-architecture.png "PixieSDK Architecture")
+The [compilation documentation is available on the web](https://docs.pixie16.xia.com/latest/pixie-sdk/installation.html).
 
 ## Copyright
 
