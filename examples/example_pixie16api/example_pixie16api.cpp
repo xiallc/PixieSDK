@@ -1389,9 +1389,9 @@ int main(int argc, char** argv) {
     args::ValueFlag<std::string> additional_cfg_flag(
         arguments, "cfg", "The configuration file to load.", {"additional-config"});
     args::HelpFlag help_flag(arguments, "help", "Displays this message", {'h', "help"});
-    args::ValueFlag<std::string> is_offline(arguments, "Offline Mode",
-                                            "Tells the API to use Offline mode when running.",
-                                            {'o', "offline"});
+    args::Flag is_offline(arguments, "Offline Mode",
+                          "Tells the API to use Offline mode when running.",
+                          {'o', "offline"});
     args::ValueFlag<std::string> boot_pattern_flag(arguments, "boot_pattern",
                                                    "The boot pattern used for booting.",
                                                    {'b', "boot_pattern"}, "0x7F");
