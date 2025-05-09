@@ -17,7 +17,7 @@
  */
 
 /**
- * @brief Module Regster Read command
+ * @brief Module Register Read command
  */
 
 #include <pixie/utils/io.hpp>

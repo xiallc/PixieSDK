@@ -30,10 +30,10 @@ static const command::definition offset_sweep_cmd = {
     "QA", "/qa/afe/offset-sweep",
     omnitool_command_handers(offset_sweep),
     {"init", "probe"},
-    0, 2, 0,
+    0, 6, 0,
     {omnitool_command_opt_decl("p"), omnitool_command_opt_arg_decl("s"),
      omnitool_command_opt_arg_decl("o"), omnitool_command_opt_arg_decl("t")},
-    "[-p] [-s msec] [-o start,[stop,[step]]] [-t threshold-multipler] [module(s) [channel(s)]]",
+    "[-p] [-s msec] [-o start,[stop,[step]]] [-t threshold-multiplier] [module(s) [channel(s)]]",
     "Channel offset sweep test, optionally create a plot (-p)"
 };
 

@@ -255,7 +255,7 @@ static const command::definition lset_load_cmd = {
     2, 3, 0,
     {},
     "module(s) file [flush/sync]",
-    "Load a legacy settings file to a modul's DSP memory"
+    "Load a legacy settings file to a module's DSP memory"
 };
 
 omnitool_command_handler_decl(lset_report);
@@ -266,7 +266,7 @@ static const command::definition lset_report_cmd = {
     2, 2, 0,
     {},
     "module(s) file",
-    "Output a legacy settings fie in a readable format"
+    "Output a legacy settings file in a readable format"
 };
 
 omnitool_command_handler_decl(mod_offline);
@@ -342,7 +342,7 @@ static const command::definition reg_write_cmd = {
     {"init"},
     3, 3, 0,
     {},
-    "module address/name/memory:name [value]",
+    "module address/name/memory:name value",
     "Write to a register in a module memory address"
 };
 
@@ -365,7 +365,7 @@ static const command::definition run_end_cmd = {
     1, 1, 0,
     {},
     "module(s)",
-    "End module run(s)"
+    "End module(s) run"
 };
 
 omnitool_command_handler_decl(set_dacs);
@@ -419,7 +419,7 @@ static const command::definition var_read_cmd = {
     {"init", "probe"},
     2, 4, 0,
     {},
-    "module(s) [channel(s)] param [offset(s)]",
+    "module(s) [channel(s)] var [offset(s)]",
     "Read module/channel variable. A channel references a channel variable."
 };
 
@@ -430,7 +430,7 @@ static const command::definition var_write_cmd = {
     {"init", "probe"},
     3, 5, 0,
     {},
-    "module(s) [channel(s)] param [offset(s)] value",
+    "module(s) [channel(s)] var [offset(s)] value",
     "Write module/channel variable. A channel references a channel variable."
 };
 

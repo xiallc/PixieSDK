@@ -19,7 +19,7 @@
 /**
  * @brief A General Purpose Tool for Pixie16
  *
- * Named after an all purpose tool in the Mass Effect's video game.
+ * Named after an all-purpose tool in the Mass Effect video game.
  */
 
 #include <cstring>
@@ -420,7 +420,7 @@ int main(int argc, char* argv[]) {
         bool execute = !args::get(no_execute);
 
         /*
-         * By default run the shell if the user passes no options.
+         * By default, run the shell if the user passes no options.
          */
         if (cmds.empty()) {
             cmds.push_back("shell");

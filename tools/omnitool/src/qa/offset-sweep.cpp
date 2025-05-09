@@ -42,7 +42,7 @@ struct offset_sweep_worker : public thread::module_worker {
     static constexpr int default_offset_start = 1000;
     static constexpr int default_offset_end = 65000;
     static constexpr int default_offset_step = 1000;
-    static constexpr int default_threshold_multipler = 100;
+    static constexpr int default_threshold_multiplier = 100;
     static constexpr size_t default_window = 5;
 
     /*
@@ -76,7 +76,7 @@ struct offset_sweep_worker : public thread::module_worker {
     int offset_end;
     int offset_step;
 
-    int threshold_multipler;
+    int threshold_multiplier;
     size_t window;
 
     std::string filename;
@@ -125,7 +125,7 @@ static double adc_stddev(xia::pixie::hw::adc_trace& adc_trace, double mean) {
 offset_sweep_worker::offset_sweep_worker()
     : dac_settle_usec(default_dac_settle_msec), offset_start(default_offset_start),
       offset_end(default_offset_end), offset_step(default_offset_step),
-      threshold_multipler(default_threshold_multipler), window(default_window),
+      threshold_multiplier(default_threshold_multiplier), window(default_window),
       plot(false) {}
 
 void offset_sweep_worker::csv_generate(
@@ -284,7 +284,7 @@ void offset_sweep_worker::find_slope(
             chan_results.error = "Invalid signal, no slope found";
             continue;
         }
-        const double threshold = threshold_multipler * find_max_stddev(chan_results);
+        const double threshold = threshold_multiplier * find_max_stddev(chan_results);
         bool searching = true;
         while (searching && min_index < max_index - window) {
             if (chan_results.results[min_index].delta >= threshold) {
@@ -444,7 +444,7 @@ void offset_sweep(command::context& context) {
     auto offset_opt = context.cmd.get_option("-o");
     auto plot_opt = context.cmd.get_option("-p");
     auto dac_settle_opt = context.cmd.get_option("-s");
-    auto threshold_multipler_opt = context.cmd.get_option("-t");
+    auto threshold_multiplier_opt = context.cmd.get_option("-t");
     auto mod_nums_opt = context.cmd.get_arg();
     auto chans_opt = context.cmd.get_arg();
     command::module_range mod_nums;
@@ -452,7 +452,7 @@ void offset_sweep(command::context& context) {
         mod_nums, mod_nums_opt, crate.get_modules());
     if (mod_nums.size() > 6) {
         throw std::runtime_error(
-            "test: offset sweep: too modules for test; max 6, select fewer");
+            "test: offset sweep: too many modules for test; max 6, select fewer");
     }
     for (auto mod_num : mod_nums) {
         crate[mod_num].run_check();
@@ -464,9 +464,9 @@ void offset_sweep(command::context& context) {
     int offset_start = offset_sweep_worker::default_offset_start;
     int offset_end = offset_sweep_worker::default_offset_end;
     int offset_step = offset_sweep_worker::default_offset_step;
-    int threshold_multipler = offset_sweep_worker::default_threshold_multipler;
-    if (!threshold_multipler_opt.empty()) {
-        threshold_multipler = util::io::get_value<int>(threshold_multipler_opt);
+    int threshold_multiplier = offset_sweep_worker::default_threshold_multiplier;
+    if (!threshold_multiplier_opt.empty()) {
+        threshold_multiplier = util::io::get_value<int>(threshold_multiplier_opt);
     }
     auto offset_nums = util::io::get_values<int>(offset_opt);
     if (offset_nums.size() > 0) {
@@ -492,7 +492,7 @@ void offset_sweep(command::context& context) {
         worker.offset_start = offset_start;
         worker.offset_end = offset_end;
         worker.offset_step = offset_step;
-        worker.threshold_multipler = threshold_multipler;
+        worker.threshold_multiplier = threshold_multiplier;
         worker.filename =
             datetime + '_' + std::to_string(worker.serial_num) + "_dac-sweep";
         worker.plot = plot_opt == "true";
@@ -502,7 +502,7 @@ void offset_sweep(command::context& context) {
                      << " end=" << offset_end
                      << " step=" << offset_step
                      << " settle-period=" << dac_settle_msec << "msec"
-                     << " threshold-multipler=" << threshold_multipler
+                     << " threshold-multiplier=" << threshold_multiplier
                      << std::endl;
     module_threads(
         context, mod_nums, offset_sweeps, "offset sweep test error; see log", false);

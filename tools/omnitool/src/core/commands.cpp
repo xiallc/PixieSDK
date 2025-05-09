@@ -59,7 +59,7 @@ named_operations::operation& named_operations::operation::operator=(
     const named_operations::operation& orig) {
     /*
      * The once flag cannot be moved or copied so ignore it. This lets
-     * the asignment to the map work without error.
+     * the assignment to the map work without error.
      */
     run_once = orig.run_once;
     handler = orig.handler;
@@ -88,7 +88,7 @@ void named_operations::set(
     const std::string& name, operation_func func, bool run_once) {
     auto check = ops.find(name);
     if (check != ops.end()) {
-        throw std::runtime_error("operation aleady registered: " + name);
+        throw std::runtime_error("operation already registered: " + name);
     }
     ops[name] = operation({func, run_once});
 }
@@ -426,7 +426,7 @@ void load_commands(const std::string& name, arguments& cmds) {
 
 void list_commands(const std::string& path, completion_entries& entries) {
     /*
-     * Spliting is not fast but simple. If this is a performance issue
+     * Splitting is not fast but simple. If this is a performance issue
      * we can look at faster ways to do this.
      */
     util::string::strings path_parts;
@@ -515,10 +515,10 @@ static const definition shell_cmd = {
 
 omnitool_command_handler_decl(sys_control);
 static const definition sys_control_cmd = {
-    "Module", "/util/sysctl",
+    "Utilities", "/util/sysctl",
     omnitool_command_handers(sys_control),
     {"init", "probe"},
-    0, 4, 0,
+    0, 2, 0,
     {omnitool_command_opt_decl("j")},
     "[-j] [mib]",
     "System control read/write of the MIB"
@@ -531,8 +531,8 @@ static const definition wait_cmd = {
     {"none"},
     1, 1, 0,
     {},
-    "msecs",
-    "wait a number of msecs; add 's' for seconds and 'm' for minutes"
+    "msecs [unit]",
+    "wait a number of msecs; change units with 's' (seconds) or 'm' (minutes)"
 };
 
 static const definitions util_commands = {
@@ -1071,7 +1071,7 @@ void shell_comp(context& , completion& ) {
 
 void wait(xia::omnitool::command::context& context) {
     auto period_opt = context.cmd.get_arg();
-    size_t multipler = 1;
+    size_t multiplier = 1;
     switch (period_opt.back()) {
     case '0':
     case '1':
@@ -1085,17 +1085,17 @@ void wait(xia::omnitool::command::context& context) {
     case '9':
       break;
     case 's':
-      multipler = 1000;
+      multiplier = 1000;
       break;
     case 'm':
-      multipler = 60 * 1000;
+      multiplier = 60 * 1000;
       break;
     default:
       throw std::runtime_error("wait: invalid time units: " + period_opt.back());
       break;
     }
     auto msecs = util::io::get_value<size_t>(period_opt);
-    msecs *= multipler;
+    msecs *= multiplier;
     if (context.opts.verbose) {
         context.opts.out << "waiting " << msecs << " msecs" << std::endl;
     }
