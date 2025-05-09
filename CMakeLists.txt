@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(PixieSDK)
+project(Pixie-SDK)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux" OR ${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     message(STATUS "${CMAKE_SYSTEM_NAME} is a supported environment.")
@@ -9,8 +9,11 @@ endif ()
 
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-        set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/xia/${PROJECT_NAME} CACHE PATH "..." FORCE)
+        set(BASE_INSTALL_PATH ${CMAKE_INSTALL_PREFIX})
+    else()
+        set(BASE_INSTALL_PATH "C:/Program Files")
     endif ()
+    set(CMAKE_INSTALL_PREFIX "${BASE_INSTALL_PATH}/xia/pixie-16/pixie-sdk" CACHE PATH "..." FORCE)
 endif (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 message(STATUS "Install Path: ${CMAKE_INSTALL_PREFIX}")
 
