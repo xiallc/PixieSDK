@@ -126,7 +126,7 @@ static const std::map<code, result_code> result_codes = {
      */
     {code::no_memory, {800, "no memory"}},
     {code::slot_map_invalid, {801, "invalid slot map"}},
-    {code::invalid_value, {802, "invalid number"}},
+    {code::invalid_value, {802, "invalid value"}},
     {code::not_supported, {803, "not supported"}},
     {code::buffer_pool_empty, {804, "buffer pool empty"}},
     {code::buffer_pool_not_empty, {805, "buffer pool not empty"}},
