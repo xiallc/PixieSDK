@@ -6,4 +6,6 @@ This library provides users a C wrapper to the ``PixieSDK``. We also
 provide a python example that uses the same configuration file and
 library.
 
-See https://docs.pixie16.xia.com/user/examples/example_pixie16api.html for more info on the C API example
+See the 
+[full documentation](https://docs.pixie16.xia.com/latest/pixie-sdk/examples/example_pixie16api.html) 
+for more info on the C API example
