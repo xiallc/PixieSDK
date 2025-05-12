@@ -52,7 +52,7 @@ using xia_error = xia::pixie::error::error;
 /*
  * Boot patterns
  */
-#define BOOTPATTERN_COMFPGA_BIT 1
+#define BOOTPATTERN_COMFPGA_BIT 0
 #define BOOTPATTERN_SPFPGA_BIT 2
 #define BOOTPATTERN_DSPCODE_BIT 3
 #define BOOTPATTERN_DSPPAR_BIT 4
