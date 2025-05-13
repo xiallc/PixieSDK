@@ -518,9 +518,9 @@ static const definition sys_control_cmd = {
     "Utilities", "/util/sysctl",
     omnitool_command_handers(sys_control),
     {"init", "probe"},
-    0, 2, 0,
+    0, 3, 0,
     {omnitool_command_opt_decl("j")},
-    "[-j] [mib]",
+    "[-j] [mib [= value]]",
     "System control read/write of the MIB"
 };
 
@@ -529,7 +529,7 @@ static const definition wait_cmd = {
     "Utilities", "/util/wait",
     omnitool_command_handers(wait),
     {"none"},
-    1, 1, 0,
+    1, 2, 0,
     {},
     "msecs [unit]",
     "wait a number of msecs; change units with 's' (seconds) or 'm' (minutes)"
