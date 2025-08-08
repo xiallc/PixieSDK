@@ -43,8 +43,8 @@ static const xia::omnitool::command::definition adc_plot_cmd = {
     {"init", "probe"},
     0, 2, 0,
     {omnitool_command_opt_decl("a")},
-    "[module(s) [channel(s)]] [-a]",
-    "Plot ADC traces for the modules and acquire if `-a` provided"
+    "[-a] [module(s) [channel(s)]]",
+    "Plot ADC traces for the modules and acquire if `-a` provided. Rev H only"
 };
 
 omnitool_command_handler_decl(adc_save);
