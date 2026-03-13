@@ -327,16 +327,13 @@ static void import_json_obj(format::json& config, module::module& mod) {
     if (!mod.online()) {
         xia_log(log::warning) << "module " << mod.number << " not online, skipping";
     } else {
-        for (auto& settings : config) {
-            auto& metadata = settings["metadata"];
-            if (metadata["slot"] == mod.slot) {
-                fill_config(mod, settings);
-                mod.sync_vars();
-                return;
-            }
+        if (mod.number < static_cast<int>(config.size())) {
+            auto settings = config.at(mod.number);
+            fill_config(mod, settings);
+        } else {
+            auto settings = default_config;
+            fill_config(mod, settings);
         }
-        auto settings = default_config;
-        fill_config(mod, settings);
         mod.sync_vars();
     }
 }

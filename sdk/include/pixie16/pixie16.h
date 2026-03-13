@@ -108,8 +108,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
                                              const char* DSPVarFile, unsigned short ModNum,
                                              unsigned short BootPattern);
 
-PIXIE_EXPORT int PIXIE_API Pixie16BootModuleFirmware(const char* DSPParFile, unsigned short ModNum,
-                                                    unsigned short BootPattern);
+PIXIE_EXPORT int PIXIE_API Pixie16RebootModule(const char* DSPParFile, unsigned short ModNum,
+                                               unsigned short BootPattern);
+
+DEPRECATED(PIXIE_EXPORT int PIXIE_API Pixie16BootModuleFirmware(const char* DSPParFile,
+                                                                unsigned short ModNum,
+                                                                unsigned short BootPattern),
+           "Pixie16BootModuleFirmware", "2027-03-13");
 
 PIXIE_EXPORT int PIXIE_API Pixie16CheckExternalFIFOStatus(unsigned int* nFIFOWords,
                                                           unsigned short ModNum);

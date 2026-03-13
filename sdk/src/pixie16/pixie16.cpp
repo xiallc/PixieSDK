@@ -573,8 +573,13 @@ PIXIE_EXPORT int PIXIE_API Pixie16BootModule(const char* ComFPGAConfigFile,
     return err_handler(call);
 }
 
+PIXIE_EXPORT int PIXIE_API Pixie16RebootModule(const char* DSPParFile, unsigned short ModNum,
+                                               unsigned short BootPattern) {
+    return Pixie16BootModuleFirmware(DSPParFile, ModNum, BootPattern);
+}
+
 PIXIE_EXPORT int PIXIE_API Pixie16BootModuleFirmware(const char* DSPParFile, unsigned short ModNum,
-                                             unsigned short BootPattern) {
+                                                     unsigned short BootPattern) {
     auto call = [&DSPParFile, &ModNum, &BootPattern]() {
         if (DSPParFile == nullptr) {
             throw xia_error(xia_error::code::invalid_value, "DSPParFile is null");
