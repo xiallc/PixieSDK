@@ -202,6 +202,8 @@ struct pci_bus_handle {
     uint32_t mailboxes[num_mailboxes];
 
     pci_bus_handle();
+    pci_bus_handle(int number, PLX_DEVICE_KEY key);
+    pci_bus_handle(const pci_bus_handle& other);
     unsigned int pci_domain() const;
     unsigned int pci_bus() const;
     unsigned int pci_slot() const;
@@ -266,6 +268,15 @@ struct pci_bus_handle {
     }
 };
 
+using pci_handles = std::vector<pci_bus_handle>;
+struct pci_devices {
+    std::once_flag devices_found;
+    pci_handles pci_device_handles;
+    void get_pci_devices();
+    bool device_exists(const PLX_DEVICE_KEY& key);
+};
+static pci_devices devices;
+
 static std::string pci_error_text(PLX_STATUS ps) {
     std::ostringstream oss;
     oss << "PLX (" << int(ps) << ") ";
@@ -307,10 +318,20 @@ static void plx_mailbox_write(
 
 pci_bus_handle::pci_bus_handle() : device_number(-1) {
     ::memset(&key, PCI_FIELD_IGNORE, sizeof(PLX_DEVICE_KEY));
+}
+
+pci_bus_handle::pci_bus_handle(int number, PLX_DEVICE_KEY key_)
+     : device_number(number)  {
+    ::memcpy(&key, &key_, sizeof(PLX_DEVICE_KEY));
     ::memset(&dma, 0, sizeof(PLX_DMA_PROP));
     ::memset(mailboxes, 0, sizeof(mailboxes));
-    key.VendorId = vendor_id;
-    key.DeviceId = device_id;
+}
+
+pci_bus_handle::pci_bus_handle(const pci_bus_handle& other)
+     : device_number(other.device_number)  {
+    ::memcpy(&key, &other.key, sizeof(PLX_DEVICE_KEY));
+    ::memset(&dma, 0, sizeof(PLX_DMA_PROP));
+    ::memset(mailboxes, 0, sizeof(mailboxes));
 }
 
 unsigned int pci_bus_handle::pci_domain() const {
@@ -422,6 +443,51 @@ void pci_bus_handle::update_opens(hw::slot_type slot) {
     set(mailbox::opens, get(mailbox::opens) + 1);
     int mb = int(mailbox::opens);
     plx_mailbox_write(*this, slot, mb, get(mailbox::opens));
+}
+
+void pci_devices::get_pci_devices() {
+    int device_num = 0;
+    int device_count = 0;
+    PLX_DEVICE_KEY key;
+    PLX_API_MODE mode;
+    PLX_MODE_PROP prop;
+    PLX_STATUS rc = PLX_STATUS_OK;
+    do {
+        ::memset(&key, PCI_FIELD_IGNORE, sizeof(PLX_DEVICE_KEY));
+        mode = PLX_API_MODE_PCI;
+        rc = ::PlxPci_DeviceFindEx(&key, device_num, mode, &prop);
+        if (rc == PLX_STATUS_OK) {
+            std::stringstream info;
+            info << "bus=" << (int)key.bus << " dev=" << (int)key.slot
+                 << " func=" << (int)key.function << std::hex << " ven_id="
+                 << key.VendorId << " dev_id=" << key.DeviceId
+                 << " chip_id=" << key.PlxChip;
+            if (key.DeviceId == device_id && key.VendorId == vendor_id) {
+                if (!device_exists(key)) {
+                    pci_device_handles.emplace_back(device_count, key);
+                    device_count++;
+                    xia_log(log::info) << "plx_scan: module found: "
+                                       << info.str();
+                }
+            } else {
+                xia_log(log::debug) << "plx_scan: " << info.str();
+            }
+            device_num++;
+        }
+    } while (rc == PLX_STATUS_OK);
+}
+
+bool pci_devices::device_exists(const PLX_DEVICE_KEY& key) {
+    for (auto& device : pci_device_handles) {
+        if (key.domain == device.key.domain &&
+            key.bus == device.key.bus &&
+            key.slot == device.key.slot &&
+            key.function == device.key.function &&
+            key.ApiMode == device.key.ApiMode) {
+            return true;
+        }
+    }
+    return false;
 }
 
 module::guard::guard(module& mod) : lock_(mod.lock_), guard_(lock_) {}
@@ -612,7 +678,11 @@ module::module(backplane::backplane& backplane_)
       opened_(false), online_(false), forced_offline_(false), pause_fifo_worker(true),
       comms_fpga(false), fippi_fpga(false), dsp_online(false), have_hardware(false),
       vars_loaded(false), cfg_ctrlcs(0xaaa), device(std::make_unique<pci_bus_handle>()),
-      test_mode(test::off) {}
+      test_mode(test::off) {
+    std::call_once(devices.devices_found, []() {
+        devices.get_pci_devices();
+    });
+}
 
 module::module(module&& m)
     : slot(m.slot), number(m.number), serial_num(m.serial_num), revision(m.revision),
@@ -692,7 +762,7 @@ module::~module() {
     } catch (pixie::error::error& e) {
         xia_log(log::error) << e;
     }
-    device.release();
+    device.reset();
 }
 
 module& module::operator=(module&& m) {
@@ -830,8 +900,7 @@ void module::open(size_t device_number) {
     if (!present()) {
         PLX_STATUS ps;
 
-        ps = ::PlxPci_DeviceFind(&device->key, uint16_t(device_number));
-        if (ps != PLX_STATUS_OK) {
+        if (device_number >= devices.pci_device_handles.size()) {
             /*
              * Module not found so the device is not present. Users
              * need to check for the device or module being present.
@@ -842,10 +911,12 @@ void module::open(size_t device_number) {
         /*
          * The module device is present.
          */
-        device->device_number = int(device_number);
+        device = std::make_unique<pci_bus_handle>(
+            devices.pci_device_handles[device_number]);
 
         ps = ::PlxPci_DeviceOpen(&device->key, &device->handle);
         if (ps != PLX_STATUS_OK) {
+            device.reset();
             std::ostringstream oss;
             oss << "PCI open: device: " << device_number << ": " << pci_error_text(ps);
             throw error(number, slot, error::code::module_initialize_failure, oss);
