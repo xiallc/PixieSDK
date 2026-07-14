@@ -1,3 +1,4 @@
+add_subdirectory(api)
 add_subdirectory(example_pixie16api)
 add_subdirectory(list_mode_file_stats)
 
